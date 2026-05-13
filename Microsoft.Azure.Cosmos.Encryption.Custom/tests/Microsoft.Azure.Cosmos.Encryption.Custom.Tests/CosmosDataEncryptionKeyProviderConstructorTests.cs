@@ -275,10 +275,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [TestMethod]
         public async Task StoreProvider_DistributedCacheIsWiredToDekCache()
         {
-            // REQ: When the provider is constructed with a distributed cache, the first source
-            //      fetch must populate that distributed cache so that a peer process (or this
-            //      process after memory-cache discard) can read it.
-            // SOURCE: PR #5428 description — "cross-process/cross-instance caching of DEK properties."
             InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
             TestEncryptionKeyStoreProvider storeProvider = new TestEncryptionKeyStoreProvider();
 
@@ -366,8 +362,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [TestMethod]
         public async Task WrapProvider_WithoutDistributedCache_MemoryCacheHonored()
         {
-            // REQ: Repeated lookups for the same dekId must be served from the in-memory cache
-            //      without re-invoking the fetcher.
             TestKeyWrapProvider wrapProvider = new TestKeyWrapProvider();
 
             CosmosDataEncryptionKeyProvider provider = new CosmosDataEncryptionKeyProvider(

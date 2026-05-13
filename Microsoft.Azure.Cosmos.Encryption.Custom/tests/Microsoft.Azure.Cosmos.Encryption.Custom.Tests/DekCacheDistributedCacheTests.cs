@@ -54,11 +54,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [TestMethod]
         public async Task DekCache_WithDistributedCache_SurvivesMemoryCacheRestart()
         {
-            // REQ: When the in-process memory cache is discarded (process restart / cold start)
-            //      but a peer-populated entry is present in the distributed cache, the next
-            //      lookup must serve from the distributed cache and avoid a source fetch.
-            // SOURCE: SOURCE-PR-INTENT (cross-process/cross-instance caching) and DekCache.cs:260-272.
-            //
             // This exercises the COLD-MISS path (empty L1 dictionary). The parallel scenario of
             // "L1 has an expired entry" is a different code path and is covered by
             // DekCacheResilienceTests.ExpiredL1_L2HasFreshEntry_CosmosFails_ServesFromL2.
@@ -313,10 +308,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [TestMethod]
         public async Task DekCache_CustomCacheKeyPrefix_KeysAreScopedToPrefix()
         {
-            // REQ: A custom prefix must scope the L2 keyspace — another cache with a different
-            //      (default) prefix must NOT see entries written by this cache for the same dekId.
-            // SOURCE: CosmosDataEncryptionKeyProvider XML doc on distributedCacheKeyPrefix
-            //         ("avoid collisions when multiple providers share the same cache instance").
             // NOTE: This asserts behavioural isolation, not the literal cache-key shape, so it
             //       continues to hold if the cache-key format evolves (e.g., container-scoping).
             InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
@@ -430,12 +421,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             await tenant2Cache.LastDistributedCacheWriteTask;
 
-            // REQ: Distinct explicit prefixes must isolate entries — each tenant's read path
-            //      invokes its own fetcher and produces its own result. This test asserts
-            //      behavioural isolation (no cross-pollination of keys / KEK metadata),
-            //      not the literal cache-key shape.
-            // SOURCE: CosmosDataEncryptionKeyProvider XML doc on distributedCacheKeyPrefix
-            //         ("avoid collisions when multiple providers share the same cache instance").
             Assert.AreEqual(1, tenant1FetchCount, "Tenant 1 should fetch once");
             Assert.AreEqual(1, tenant2FetchCount, "Tenant 2 should fetch once");
 
@@ -481,11 +466,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [TestMethod]
         public void DekCache_NullCacheKeyPrefix_WithDistributedCache_Throws()
         {
-            // REQ: When the distributed cache is configured, a cacheKeyPrefix is REQUIRED so
-            //      that multiple providers sharing one cache cannot silently collide on
-            //      identical DEK ids. Null is rejected via ArgumentNullException; whitespace is
-            //      rejected via ArgumentException. We assert the base ArgumentException to
-            //      tolerate either derived type while still pinning the parameter name.
             ArgumentException ex = Assert.ThrowsException<ArgumentNullException>(
                 () => new DekCache(
                     distributedCache: new InMemoryDistributedCache(),

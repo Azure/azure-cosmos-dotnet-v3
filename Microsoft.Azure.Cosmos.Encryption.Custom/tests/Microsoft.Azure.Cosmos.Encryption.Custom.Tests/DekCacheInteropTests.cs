@@ -40,10 +40,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         // A. Round-trip fidelity across independent DekCache instances
         // ---------------------------------------------------------------
 
-        // REQ: CreatedTime is preserved exactly (UTC, second-precision per UnixDateTimeConverter)
-        //      when a payload written by one peer is read by another peer via L2.
-        // SOURCE: DekCache.cs:420-426 (DateTimeZoneHandling.Utc, IsoDateFormat) +
-        //         DataEncryptionKeyProperties.cs:99-101 (CreatedTime has UnixDateTimeConverter).
         [TestMethod]
         public async Task PeerA_Writes_PeerB_Reads_CreatedTime_PreservedUtc()
         {
@@ -68,11 +64,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             Assert.AreEqual(DateTimeKind.Utc, read.CreatedTime.Value.Kind, "CreatedTime must be UTC after the round-trip.");
         }
 
-        // REQ: A complex EncryptionKeyWrapMetadata (all four fields: type/algorithm/name/value)
-        //      survives the L2 round-trip without field loss.
-        // SOURCE: DataEncryptionKeyProperties.cs:168-169 (EncryptionKeyWrapMetadata equality
-        //         is part of DataEncryptionKeyProperties.Equals) +
-        //         EncryptionKeyWrapMetadata.cs:109-116 (equality spans Type, Algorithm, Value, Name).
         [TestMethod]
         public async Task PeerA_Writes_PeerB_Reads_EncryptionKeyWrapMetadata_AllFieldsPreserved()
         {
@@ -106,11 +97,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 "All four EncryptionKeyWrapMetadata fields (Type, Algorithm, Name, Value) must round-trip through L2.");
         }
 
-        // REQ: A large WrappedDataEncryptionKey survives the L2 round-trip byte-for-byte.
-        //      Mutation of wrapped key material across the cache boundary would make
-        //      the feature not merely wrong but dangerous (decrypt would fail or, worse, succeed with corruption).
-        // SOURCE: PR description (SOURCE-PR-INTENT: "cross-process/cross-instance caching of
-        //         Data Encryption Key (DEK) properties") + DataEncryptionKeyProperties.cs:87-88.
         [TestMethod]
         public async Task PeerA_Writes_PeerB_Reads_LargeWrappedDataEncryptionKey_ByteForByte()
         {
@@ -139,11 +125,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 "WrappedDataEncryptionKey bytes must be identical after an L2 round-trip.");
         }
 
-        // REQ: A freshly-constructed third peer (never warmed, never shared state in-memory)
-        //      can read an entry written by another peer through the L2 byte payload alone.
-        //      This is the cross-process correctness claim of the PR.
-        // SOURCE: SOURCE-PR-INTENT + CosmosDataEncryptionKeyProvider.cs:79 XML doc
-        //         ("cross-process/cross-instance caching").
         [TestMethod]
         public async Task FreshThirdPeer_ReadsEntryWrittenByFirstPeer()
         {
@@ -173,10 +154,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         // B. Field stability / format pinning
         // ---------------------------------------------------------------
 
-        // REQ: The L2 JSON wire format uses the pinned property names "v", "serverProperties",
-        //      "serverPropertiesExpiryUtc". These names are the interop contract; renaming them
-        //      without a version bump silently breaks peers on older SDKs.
-        // SOURCE: DekCache.cs:464-474 (JsonProperty attributes on CachedDekPropertiesDto).
         [TestMethod]
         public async Task RawL2Payload_ContainsPinnedJsonPropertyNames()
         {
@@ -199,10 +176,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             Assert.AreEqual(1, (int)parsed["v"], "Current wire version must be v:1.");
         }
 
-        // REQ: The L2 JSON payload must not contain a "$type" polymorphic discriminator.
-        //      Allowing polymorphic deserialization exposes the process to well-known Newtonsoft
-        //      deserialization-gadget vulnerabilities via a compromised IDistributedCache peer.
-        // SOURCE: DekCache.cs:420-426 (TypeNameHandling.None).
         [TestMethod]
         public async Task RawL2Payload_DoesNotContainTypeDiscriminator()
         {
@@ -220,11 +193,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 $"L2 JSON must not contain a '$type' discriminator (TypeNameHandling.None). Payload was: {json}");
         }
 
-        // REQ: The L2 JSON encodes serverPropertiesExpiryUtc in a form peer B can
-        //      unambiguously interpret as an instant in UTC -- ISO 8601 with a UTC offset/Z,
-        //      equal to write-time + TTL.
-        // SOURCE: DekCache.cs:420-426 (IsoDateFormat + DateTimeZoneHandling.Utc) +
-        //         DekCache.cs:357-359 (expiry = utcNow + TTL).
         [TestMethod]
         public async Task RawL2Payload_ExpiryStampIsIsoUtc_AndEqualsWriteTimePlusTtl()
         {
@@ -255,12 +223,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         // C. Forward-compat: tolerating unknown extra fields
         // ---------------------------------------------------------------
 
-        // REQ: A future SDK may add new JSON fields to the payload. An older peer must still
-        //      deserialize such a payload correctly (additive change is forward-compatible).
-        // SOURCE: SOURCE-PR-INTENT interpretation (cross-process interop requires forward-
-        //         compatibility for the cache to be rolled out heterogeneously) +
-        //         DekCache.cs:420-426 serializer settings do NOT set MissingMemberHandling.Error,
-        //         so unknown members are ignored by design.
         [TestMethod]
         public async Task L2PayloadWithUnknownExtraField_PeerStillDeserializes()
         {
@@ -297,12 +259,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         // D. Version handling: missing "v" field -> treated as v1
         // ---------------------------------------------------------------
 
-        // REQ: A payload with no "v" field at all (a hypothetical pre-versioning write) must
-        //      be treated as version 1 rather than rejected as "unsupported".
-        // SOURCE: DekCache.cs:467 (`public int Version { get; set; } = 1;`) -- the class-field
-        //         initializer runs in the parameterless ctor that Newtonsoft invokes before
-        //         property population, so an absent "v" property leaves Version at 1.
-        //         DekCache.cs:451-454 gates on Version != 1 throwing, so missing "v" must NOT throw.
         [TestMethod]
         public async Task L2PayloadMissingVersionField_IsTreatedAsV1_AndServed()
         {
@@ -335,12 +291,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         // E. Concurrent writers
         // ---------------------------------------------------------------
 
-        // REQ: When two peers race to write the same dekId, a third peer must read ONE of
-        //      the two payloads intact -- never a byte-level merge or a deserialization error.
-        // SOURCE: IDistributedCache contract is last-write-wins at the byte level; the
-        //         DekCache serializer must not introduce any interleaving that would corrupt
-        //         the payload. Grounded in SOURCE-PR-INTENT (interop) and the fact that
-        //         DekCache.cs:382-390 writes with a single SetAsync call per write.
         [TestMethod]
         public async Task ConcurrentWrites_ByTwoPeers_PeerCReadsOneValidValue()
         {
@@ -379,13 +329,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         // F. Remove propagation across instances
         // ---------------------------------------------------------------
 
-        // REQ: RemoveAsync(dekId) invalidates the L2 entry. A different peer that has never
-        //      seen the DEK in-memory must, on the next GetOrAddDekPropertiesAsync, re-fetch
-        //      from the source -- and, if the source is down, must surface that error, proving
-        //      it was not served stale data from L2.
-        // SOURCE: DekCache.cs:222-244 (RemoveAsync always removes the distributed-cache entry,
-        //         per the XML doc "Always remove from distributed cache regardless of memory
-        //         cache state, since another instance may have populated it").
         [TestMethod]
         public async Task RemoveAsync_ByPeerA_InvalidatesL2_ForPeerB()
         {

@@ -26,15 +26,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         private readonly DataEncryptionKeyContainerCore dataEncryptionKeyContainerCore;
 
-        // 0 = alive, 1 = disposed. Updated via Interlocked.Exchange so Dispose is idempotent
-        // across concurrent callers.
         private int isDisposed;
 
         private Container container;
 
         internal DekCache DekCache { get; }
 
-        // MDE's Protected Data Encryption key Cache TTL.
         internal TimeSpan? PdekCacheTimeToLive { get; private set; }
 
         internal Container Container
@@ -140,7 +137,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         /// <summary>
         /// Materialises a <see cref="DekCache"/> from a (possibly null) <see cref="DekCacheOptions"/>.
-        /// Centralised so all options-bag ctors share the same defaulting logic.
         /// </summary>
         private static DekCache NewDekCache(DekCacheOptions dekCacheOptions)
         {
@@ -155,10 +151,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
 
         /// <summary>
-        /// Configures the static <see cref="ProtectedDataEncryptionKey.TimeToLive"/> from the
-        /// <see cref="EncryptionKeyStoreProvider.DataEncryptionKeyCacheTimeToLive"/> of the
-        /// supplied store provider. NOTE: this is a process-global mutation; the lifetime is
-        /// shared across providers (out of scope for this PR; see review comments).
+        /// Mirrors <see cref="EncryptionKeyStoreProvider.DataEncryptionKeyCacheTimeToLive"/> onto
+        /// the static <see cref="ProtectedDataEncryptionKey.TimeToLive"/>. Process-global mutation;
+        /// shared across providers.
         /// </summary>
         private void InitializeProtectedDataEncryptionKeyTimeToLive()
         {
@@ -169,8 +164,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
             else
             {
-                // If null is passed to DataEncryptionKeyCacheTimeToLive it results in forever caching, hence setting
-                // arbitrarily large caching period. ProtectedDataEncryptionKey does not seem to handle TimeSpan.MaxValue.
+                // Null = forever caching upstream; ProtectedDataEncryptionKey rejects TimeSpan.MaxValue,
+                // so use ~100 years as a stand-in.
                 ProtectedDataEncryptionKey.TimeToLive = TimeSpan.FromDays(36500);
             }
         }
@@ -261,7 +256,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 diagnosticsContext: CosmosDiagnosticsContext.Create(null),
                 cancellationToken: cancellationToken);
 
-            // supports Encryption with MDE based algorithm using Legacy Encryption Algorithm Configured DEK.
+            // Encryption with MDE algorithm using a Legacy-algorithm-configured DEK.
 #pragma warning disable CS0618 // Type or member is obsolete
             if (string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized, StringComparison.Ordinal) &&
                 string.Equals(dataEncryptionKeyProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized, StringComparison.Ordinal))
@@ -272,7 +267,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 #pragma warning restore CS0618 // Type or member is obsolete
 
-            // supports Encryption with Legacy based algorithm using Mde Encryption Algorithm Configured DEK.
+            // Encryption with Legacy algorithm using an MDE-algorithm-configured DEK.
 #pragma warning disable CS0618 // Type or member is obsolete
             if (string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized, StringComparison.Ordinal) &&
                 string.Equals(dataEncryptionKeyProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized, StringComparison.Ordinal))
@@ -296,16 +291,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         /// <summary>
         /// Cancels in-flight background distributed-cache writes owned by this provider's
-        /// <see cref="DekCache"/> and best-effort drains them. Idempotent.
+        /// <see cref="DekCache"/> and best-effort drains them. Idempotent. Does NOT dispose
+        /// externally-supplied dependencies (providers, container, or
+        /// <see cref="Microsoft.Extensions.Caching.Distributed.IDistributedCache"/>) — caller
+        /// owns those lifetimes. <see cref="DekCache.RemoveAsync(string,System.Threading.CancellationToken)"/>
+        /// invalidations in flight are not interrupted by disposal.
         /// </summary>
-        /// <remarks>
-        /// Disposal does NOT dispose externally-supplied dependencies — namely the
-        /// <see cref="EncryptionKeyWrapProvider"/>, <see cref="EncryptionKeyStoreProvider"/>, the
-        /// Cosmos <see cref="Container"/>, or any <see cref="Microsoft.Extensions.Caching.Distributed.IDistributedCache"/>
-        /// passed to the constructor — the caller owns those lifetimes.
-        /// User-initiated DEK invalidations (<see cref="DekCache.RemoveAsync(string,System.Threading.CancellationToken)"/>)
-        /// are not interrupted by disposal so the distributed cache cannot end up with stale entries.
-        /// </remarks>
         public void Dispose()
         {
             if (Interlocked.Exchange(ref this.isDisposed, 1) != 0)
@@ -317,8 +308,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
 
         /// <summary>
-        /// Async counterpart of <see cref="Dispose"/>: cancels in-flight background writes and
-        /// awaits a bounded drain instead of blocking. Idempotent.
+        /// Async counterpart of <see cref="Dispose"/>. Idempotent.
         /// </summary>
         /// <returns>A <see cref="ValueTask"/> that completes when the bounded drain finishes.</returns>
         public ValueTask DisposeAsync()

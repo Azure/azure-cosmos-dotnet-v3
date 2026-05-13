@@ -13,42 +13,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
-    /// Contract-shaped behavioral specification for the DekCache distributed-cache (L2) feature
-    /// introduced in PR #5428. These tests are scoped to behaviors the SDK must honor for any
-    /// conformant <see cref="IDistributedCache"/> implementation — independent of the specific
-    /// backing store — and do not repeat coverage already present in
-    /// <see cref="DekCacheDistributedCacheTests"/> (basic null/present L2 handling) or
-    /// <see cref="DekCacheResilienceTests"/> (corrupted JSON, partial DEK, future version,
-    /// resilience/TTL coupling).
-    ///
-    /// Sources of truth referenced below:
-    ///   SOURCE-CONTRACT:
-    ///     IDistributedCache interface — https://learn.microsoft.com/dotnet/api/microsoft.extensions.caching.distributed.idistributedcache
-    ///     - GetAsync returns null for missing keys.
-    ///     - SetAsync takes a non-null DistributedCacheEntryOptions.
-    ///     - RemoveAsync/RefreshAsync are the sole mutation/touch methods.
-    ///     - Thread safety is NOT mandated by the interface.
-    ///
-    ///   SOURCE-EXCEPTION-CLASS:
-    ///     IDistributedCache implementations may throw arbitrary exceptions on backend errors.
-    ///     The SDK MUST degrade gracefully — fail-open for reads (DekCache.cs:329-340) and
-    ///     fire-and-forget for writes (DekCache.cs:380-401, 185-208).
-    ///
-    ///   SOURCE-CANCELLATION-CONVENTION:
-    ///     .NET convention — a cancelled CancellationToken should cause OperationCanceledException
-    ///     to be thrown promptly; cancellation during I/O should propagate.
-    ///
-    ///   SOURCE-XMLDOC:
-    ///     CosmosDataEncryptionKeyProvider XML docs describe the distributedCache parameter as
-    ///     "Optional distributed cache implementation". "Optional" means null must be handled
-    ///     gracefully (the SDK must function with no L2 integration).
-    ///
-    ///   SOURCE-FAIL-SAFE:
-    ///     DekCache.cs:337-340 ("If distributed cache fails, fall back to source / Don't throw -
-    ///     this is an optimization layer") — L2 failures are never permitted to fail a read.
-    ///
-    /// All tests use a deterministic clock and an IDistributedCache test double that respects
-    /// that clock. No real wall-clock sleeps.
+    /// Contract-shaped behavioral specification for the DekCache distributed-cache (L2) feature:
+    /// behaviors the SDK must honor for any conformant <see cref="IDistributedCache"/>
+    /// implementation. Uses a deterministic clock and an in-memory test double; no wall-clock sleeps.
     /// </summary>
     [TestClass]
     public class DekCacheDistributedCacheContractTests
@@ -66,12 +33,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [TestMethod]
         public async Task GetAsync_ReturnsEmptyByteArray_IsTreatedAsGracefulMiss()
         {
-            // REQ: An IDistributedCache returning an empty (non-null) byte[] from GetAsync must
-            //      not surface as a user-visible error. The SDK must either treat it as a miss or
-            //      otherwise recover; it must never bubble a deserialization exception to the caller.
-            // SOURCE: SOURCE-CONTRACT (GetAsync return value is unconstrained beyond "null means miss";
-            //         empty is not defined) + SOURCE-FAIL-SAFE (DekCache.cs:329-340 — never fail a
-            //         read because of an L2 oddity).
             DateTime now = NewClock();
             SpyDistributedCache l2 = new SpyDistributedCache(() => now);
             DekCache cache = NewCache(DefaultTtl, l2, () => now);
@@ -97,11 +58,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [TestMethod]
         public async Task GetAsync_ThrowsTimeoutException_FallsBackToCosmos()
         {
-            // REQ: When L2 GetAsync throws a non-cancellation transient exception (e.g. TimeoutException),
-            //      the SDK must swallow it and fall through to the source fetcher. A distributed cache
-            //      is an optimization layer; its failure must not fail the operation.
-            // SOURCE: SOURCE-EXCEPTION-CLASS + SOURCE-FAIL-SAFE (DekCache.cs:329-340 catches Exception
-            //         and logs — only OperationCanceledException is rethrown).
             DateTime now = NewClock();
             ThrowingDistributedCache l2 = new ThrowingDistributedCache(() => new TimeoutException("simulated L2 timeout"));
             DekCache cache = NewCache(DefaultTtl, l2, () => now);
@@ -120,19 +76,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [TestMethod]
         public async Task GetAsync_ThrowsOperationCanceledException_CallerTokenNotCancelled_MustNotFailTheOperation()
         {
-            // REQ: If an IDistributedCache implementation throws OperationCanceledException for reasons
-            //      unrelated to the caller's token (e.g., the impl used an internal timeout token that
-            //      fired), the SDK must still serve the caller — either by falling through to Cosmos or
-            //      otherwise recovering. Propagating OCE when the caller never cancelled would break the
-            //      fail-open contract of the L2 layer.
-            //
-            //      NOTE: This is legitimately ambiguous. Current code at DekCache.cs:325-327 unconditionally
-            //      rethrows OperationCanceledException. That would cause this test to fail. Per the fail-open
-            //      contract for an optimization layer, the correct behavior is to fall through. This test is
-            //      intentionally written to the required behavior so it will surface the issue if unimplemented.
-            // SOURCE: SOURCE-FAIL-SAFE (optimization layer must not fail reads) vs
-            //         SOURCE-CANCELLATION-CONVENTION (OCE should propagate when cancellation was requested).
-            //         Because the caller's CT is NOT cancelled in this scenario, SOURCE-FAIL-SAFE governs.
             DateTime now = NewClock();
             ThrowingDistributedCache l2 = new ThrowingDistributedCache(() => new OperationCanceledException("internal L2 timeout, not caller's CT"));
             DekCache cache = NewCache(DefaultTtl, l2, () => now);
@@ -160,10 +103,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [TestMethod]
         public async Task GetOrAddDekPropertiesAsync_CallerTokenAlreadyCancelled_ThrowsOperationCanceledExceptionPromptly()
         {
-            // REQ: If the caller's CancellationToken is already cancelled when GetOrAddDekPropertiesAsync
-            //      is invoked, the SDK must throw an OperationCanceledException promptly, without invoking
-            //      the fetcher or the L2 GetAsync.
-            // SOURCE: SOURCE-CANCELLATION-CONVENTION — .NET convention for IsCancellationRequested on entry.
             DateTime now = NewClock();
             SpyDistributedCache l2 = new SpyDistributedCache(() => now);
             DekCache cache = NewCache(DefaultTtl, l2, () => now);
@@ -186,12 +125,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [TestMethod]
         public async Task SetDekProperties_BackgroundL2Write_DecoupledFromCallerCancellation()
         {
-            // REQ: SetDekProperties performs its distributed-cache write as a fire-and-forget Task.Run
-            //      with CancellationToken.None (DekCache.cs:185-208, 195). The caller's token — even if
-            //      cancelled after the SetDekProperties call returns — must not cancel or fail the
-            //      background write; the background write must proceed to completion and populate L2.
-            // SOURCE: DekCache.cs:185-208 (Task.Run fire-and-forget) and DekCache.cs:195 (explicit
-            //         CancellationToken.None).
             DateTime now = NewClock();
             SpyDistributedCache l2 = new SpyDistributedCache(() => now);
             DekCache cache = NewCache(DefaultTtl, l2, () => now);
@@ -216,12 +149,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [TestMethod]
         public async Task SetAsync_IsCalledWithNonNullDistributedCacheEntryOptions()
         {
-            // REQ: The SDK must always pass a non-null DistributedCacheEntryOptions to
-            //      IDistributedCache.SetAsync. The interface does not forbid null options, but many
-            //      real implementations dereference it; passing null is an interop hazard.
-            // SOURCE: SOURCE-CONTRACT — SetAsync signature requires a DistributedCacheEntryOptions
-            //         parameter and its nullness is unspecified, so a conformant consumer must not
-            //         pass null.
             DateTime now = NewClock();
             SpyDistributedCache l2 = new SpyDistributedCache(() => now);
             DekCache cache = NewCache(DefaultTtl, l2, () => now);
@@ -237,12 +164,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [TestMethod]
         public async Task SetAsync_AbsoluteExpirationIsSetToAFutureInstant()
         {
-            // REQ: The SDK must set DistributedCacheEntryOptions.AbsoluteExpiration to a DateTimeOffset
-            //      that is strictly in the future relative to the clock at write time. A past/MinValue
-            //      value is rejected by some IDistributedCache implementations and makes the entry
-            //      unreachable by peers even when they arrive microseconds later.
-            // SOURCE: SOURCE-CONTRACT — DistributedCacheEntryOptions.AbsoluteExpiration semantics:
-            //         entries with a past expiration are treated as already expired.
             DateTime now = NewClock();
             SpyDistributedCache l2 = new SpyDistributedCache(() => now);
             DekCache cache = NewCache(DefaultTtl, l2, () => now);
@@ -266,13 +187,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [TestMethod]
         public async Task NullDistributedCache_AllOperationsBehaveAsPreFeatureDekCache()
         {
-            // REQ: Constructing DekCache with distributedCache: null must disable the L2 integration
-            //      entirely. GetOrAddDekPropertiesAsync, SetDekProperties, and RemoveAsync must all
-            //      succeed without touching any IDistributedCache member — the SDK must function as
-            //      it did before PR #5428 when the feature is opted out.
-            // SOURCE: SOURCE-XMLDOC ("Optional distributed cache implementation.") and
-            //         DekCache.cs:283-286 (TryGet null guard), :375-378 (Update null guard), :232
-            //         (RemoveAsync null guard).
             DateTime now = NewClock();
             DekCache cache = new DekCache(
                 dekPropertiesTimeToLive: DefaultTtl,
@@ -314,13 +228,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [TestMethod]
         public async Task ConcurrentGetOrAdd_WithSerializingL2_CompletesWithoutDeadlockOrError()
         {
-            // REQ: The SDK assumes the supplied IDistributedCache is safe to call concurrently (the
-            //      interface itself does not mandate thread safety — SOURCE-CONTRACT). That assumption
-            //      must hold even when the implementation serializes internally (e.g., via a lock).
-            //      Concurrent GetOrAddDekPropertiesAsync calls for distinct DEK ids must all complete
-            //      without deadlock and without spurious errors.
-            // SOURCE: SOURCE-CONTRACT (thread safety unspecified by the interface) combined with the
-            //         SDK's observable use pattern (every public operation issues an L2 call).
             DateTime now = NewClock();
             SerializingDistributedCache l2 = new SerializingDistributedCache(() => now);
             DekCache cache = NewCache(DefaultTtl, l2, () => now);
@@ -356,12 +263,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [TestMethod]
         public async Task RefreshAsync_IsNeverCalledByAnySdkOperation()
         {
-            // REQ: DekCache uses AbsoluteExpiration only (no sliding-expiration semantics). Therefore
-            //      the SDK must never call IDistributedCache.RefreshAsync or IDistributedCache.Refresh
-            //      across any of its operations (GetOrAddDekPropertiesAsync cold miss, warm hit,
-            //      SetDekProperties, or RemoveAsync).
-            // SOURCE: SOURCE-CONTRACT (Refresh is for sliding expiration) + inspection of DekCache.cs
-            //         which references no .Refresh call (only Get/Set/Remove on IDistributedCache).
             DateTime now = NewClock();
             SpyDistributedCache l2 = new SpyDistributedCache(() => now);
             DekCache cache = NewCache(DefaultTtl, l2, () => now);
@@ -397,11 +298,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [TestMethod]
         public async Task ColdMiss_WritesToL2_ExactlyOnce()
         {
-            // REQ: A cold miss that falls through to Cosmos must write the fetched value to L2
-            //      exactly once — no retry loop, no duplicate write from the outer and inner cache
-            //      layers.
-            // SOURCE: DekCache.cs:362 — FetchFromSourceAndUpdateCachesAsync awaits
-            //         UpdateDistributedCacheAsync exactly once; there is no loop.
             DateTime now = NewClock();
             SpyDistributedCache l2 = new SpyDistributedCache(() => now);
             DekCache cache = NewCache(DefaultTtl, l2, () => now);
@@ -422,11 +318,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [TestMethod]
         public async Task WarmL1Hit_DoesNotWriteToL2()
         {
-            // REQ: A second GetOrAddDekPropertiesAsync call that is satisfied from L1 (memory) must
-            //      NOT cause any L2 write. The only write paths are SetDekProperties
-            //      (DekCache.cs:167) and the miss-refill at DekCache.cs:362 — both miss/explicit paths.
-            // SOURCE: DekCache.cs:58-100 — GetOrAddDekPropertiesAsync memory-cache path does not call
-            //         UpdateDistributedCacheAsync when the entry is fresh.
             DateTime now = NewClock();
             SpyDistributedCache l2 = new SpyDistributedCache(() => now);
             DekCache cache = NewCache(DefaultTtl, l2, () => now);
@@ -628,11 +519,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         }
 
         /// <summary>
-        /// An IDistributedCache that serializes all Get/Set/Remove calls through a single
-        /// non-reentrant lock. Models a backing store that is NOT thread-safe for concurrent
-        /// access — exactly the lower bound permitted by SOURCE-CONTRACT. Detects re-entrant
-        /// access, which would indicate the SDK assumes more parallelism than the contract allows
-        /// without yielding.
+        /// IDistributedCache that serializes all Get/Set/Remove calls through a single
+        /// non-reentrant lock and detects re-entrant access (which would indicate the SDK
+        /// assumes more parallelism than the contract allows).
         /// </summary>
         private sealed class SerializingDistributedCache : IDistributedCache
         {

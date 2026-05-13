@@ -14,17 +14,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
     using Newtonsoft.Json;
 
     /// <summary>
-    /// Security-invariant specification for PR #5428's IDistributedCache (L2) integration.
-    ///
-    /// These tests do not re-verify the resilience behavior covered by
-    /// <c>DekCacheResilienceTests</c> and <c>DekCacheDistributedCacheTests</c>.
-    /// They instead pin down the invariants that the L2 boundary MUST uphold regardless
-    /// of implementation: raw-DEK exclusion, deserialization-gadget protection,
-    /// metadata-substitution surface, cache-key isolation, fail-safe error handling on
-    /// both read and write, and payload hygiene.
-    ///
-    /// Each test is grounded in a named source-of-truth (see SOURCE-* comments).
-    /// GAPs are flagged where the invariant cannot be positively proven from code.
+    /// Security-invariant specification for the IDistributedCache (L2) integration: pins down
+    /// invariants the L2 boundary MUST uphold — raw-DEK exclusion, deserialization-gadget
+    /// protection, metadata-substitution surface, cache-key isolation, fail-safe error handling,
+    /// and payload hygiene.
     /// </summary>
     [TestClass]
     public class DekCacheSecurityInvariantsTests
@@ -49,13 +42,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         // A. Raw DEK material exclusion
         // ---------------------------------------------------------------
 
-        /// <summary>
-        /// REQ: Raw (unwrapped) DEK bytes MUST NEVER be written to the IDistributedCache.
-        /// SOURCE: SOURCE-SECURITY-INTENT — DekCache.cs line 26-28 (two caches), 167-215
-        /// (SetDekProperties → UpdateDistributedCacheAsync); RawDekCache has no L2 code path.
-        /// SOURCE: SOURCE-DEK-WRAP — DataEncryptionKeyProperties.cs line 87-88 (only
-        /// WrappedDataEncryptionKey is cacheable).
-        /// </summary>
         [TestMethod]
         public async Task RawDekMarker_NeverAppearsInL2Bytes_ForAnyCachedDek()
         {
@@ -99,11 +85,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 "Raw/unwrapped DEK bytes must NEVER appear in the IDistributedCache payload.");
         }
 
-        /// <summary>
-        /// REQ: SetRawDek writes only to the in-memory RawDekCache; it MUST NOT touch L2.
-        /// SOURCE: SOURCE-SECURITY-INTENT — DekCache.cs line 217-220 (SetRawDek body has no
-        /// distributedCache reference at all).
-        /// </summary>
         [TestMethod]
         public async Task SetRawDek_DoesNotWriteToDistributedCache()
         {
@@ -121,11 +102,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             Assert.AreEqual(0, l2.RemoveCount, "SetRawDek must not cause an L2 Remove.");
         }
 
-        /// <summary>
-        /// REQ: GetOrAddRawDekAsync consults only the in-memory RawDekCache. It MUST NOT
-        /// read from or write to L2, because L2 is only authorized to carry wrapped material.
-        /// SOURCE: SOURCE-SECURITY-INTENT — DekCache.cs line 102-125 (no distributedCache use).
-        /// </summary>
         [TestMethod]
         public async Task GetOrAddRawDekAsync_DoesNotReadOrWriteDistributedCache()
         {
@@ -159,13 +135,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         // B. Deserialization gadget protection
         // ---------------------------------------------------------------
 
-        /// <summary>
-        /// REQ: An attacker-planted $type-discriminator at the top of the cache payload MUST
-        /// NOT trigger instantiation of arbitrary CLR types. The read must fail closed,
-        /// treat the entry as corrupt, and fall through to Cosmos.
-        /// SOURCE: SOURCE-TYPENAMEHANDLING — DekCache.cs line 422 (TypeNameHandling.None).
-        /// SOURCE: SOURCE-FAIL-SAFE — DekCache.cs line 329-340 (catch + fall back).
-        /// </summary>
         [TestMethod]
         public async Task L2PayloadWithTopLevelDollarTypeGadget_TreatedAsMissAndFallsThrough()
         {
@@ -188,12 +157,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             Assert.AreEqual(1, cosmosCalls, "Gadget payload must be treated as corrupt — fall through to Cosmos.");
         }
 
-        /// <summary>
-        /// REQ: A $type property nested inside serverProperties MUST NOT cause the unwrap
-        /// pipeline to instantiate an attacker-chosen type. The read must fail closed.
-        /// SOURCE: SOURCE-TYPENAMEHANDLING — DekCache.cs line 422.
-        /// SOURCE: SOURCE-FAIL-SAFE — DekCache.cs line 329-340.
-        /// </summary>
         [TestMethod]
         public async Task L2PayloadWithNestedDollarTypeGadget_TreatedAsMissAndFallsThrough()
         {
@@ -217,12 +180,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             Assert.AreEqual(DekId, result.Id);
 
-            // The sole gadget-protection invariant under SOURCE-TYPENAMEHANDLING:
-            // no arbitrary CLR type (FileInfo, Process, ...) may be constructed from a
-            // $type discriminator. With TypeNameHandling.None pinned in
-            // CacheSerializerSettings, Newtonsoft must ignore $type entirely. The result
-            // must therefore be exactly DataEncryptionKeyProperties (not a subtype, not a
-            // surrogate, not a gadget type).
+            // Gadget-protection invariant: with TypeNameHandling.None pinned in CacheSerializerSettings,
+            // Newtonsoft must ignore $type entirely. The result must be exactly DataEncryptionKeyProperties
+            // (not a subtype, not a gadget type).
             Assert.AreEqual(
                 typeof(DataEncryptionKeyProperties),
                 result.GetType(),
@@ -236,19 +196,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         // C. Metadata-substitution attack surface
         // ---------------------------------------------------------------
 
-        /// <summary>
-        /// REQ: If an attacker overwrites L2 with a DEK payload whose EncryptionKeyWrapMetadata
-        /// points at a KEK under attacker control, Peer B MUST NOT receive that attacker
-        /// metadata as an authoritative answer without independent verification.
-        /// SOURCE: SOURCE-METADATA-INTEGRITY — EncryptionKeyWrapMetadata is what the unwrap
-        /// provider uses to locate the KEK (EncryptionKeyWrapProvider.cs line 41).
-        /// GAP: PR #5428 ships no cryptographic integrity check on L2 entries. The intent
-        /// statement in the PR ("peer-populated cache entry can rescue the request") is
-        /// silent on integrity. This test documents the observable behavior so that when
-        /// a signing/HMAC scheme is added the test can be tightened to Assert.AreNotEqual.
-        /// Until then it pins down the current observable: Peer B DOES receive the
-        /// substituted metadata verbatim, making L2 integrity a customer concern.
-        /// </summary>
         [TestMethod]
         public async Task L2MetadataSubstitution_ExposesPeerBToAttackerControlledMetadata_DocumentedGap()
         {
@@ -317,14 +264,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         // D. Cache-key isolation
         // ---------------------------------------------------------------
 
-        /// <summary>
-        /// REQ: Cache keys are constructed by joining prefix + ':' + dekId. Two providers
-        /// MUST NOT produce colliding L2 keys when the colon character is present in
-        /// either the user-supplied prefix or the dekId. The join must be unambiguous.
-        /// SOURCE: SOURCE-CROSS-TENANT — CosmosDataEncryptionKeyProvider.cs line 81 doc:
-        /// "to avoid collisions when multiple providers share the same cache instance".
-        /// SOURCE: DekCache.cs line 417 key-format implementation.
-        /// </summary>
         [TestMethod]
         public async Task CacheKey_WithColonInPrefixOrDekId_MustNotCollideAcrossProviders()
         {
@@ -374,14 +313,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         // E. L2 read error does not leak data
         // ---------------------------------------------------------------
 
-        /// <summary>
-        /// REQ: When L2 GetAsync throws an exception (network timeout, serialization crash,
-        /// etc.), the cache MUST swallow the exception, fall back to Cosmos, and return
-        /// the legitimate result. The exception's message MUST NOT be reflected anywhere
-        /// in the returned DataEncryptionKeyProperties.
-        /// SOURCE: SOURCE-FAIL-SAFE — DekCache.cs line 329-340 ("fall back to source. Don't throw").
-        /// SOURCE: SOURCE-CONTRACT — IDistributedCache implementations are untrusted.
-        /// </summary>
         [TestMethod]
         public async Task L2GetAsyncThrows_FallsBackToCosmos_ErrorStringNotReflectedInResult()
         {
@@ -421,14 +352,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         // F. Write-side invariants
         // ---------------------------------------------------------------
 
-        /// <summary>
-        /// REQ: SetDekProperties MUST be synchronously safe even if L2.SetAsync throws.
-        /// The in-memory cache must still be updated; the caller must not observe the
-        /// L2 write failure.
-        /// SOURCE: SOURCE-FAIL-SAFE — DekCache.cs line 193-207 (catch on fire-and-forget).
-        /// SOURCE: DekCache.cs line 132-165 xmldoc ("memory cache is updated synchronously...
-        /// distributed cache asynchronously").
-        /// </summary>
         [TestMethod]
         public async Task SetDekProperties_WhenL2SetAsyncThrows_DoesNotPropagateToCaller()
         {
@@ -465,12 +388,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             Assert.AreEqual(0, cosmosCalls, "Memory cache must remain authoritative after an L2 write failure.");
         }
 
-        /// <summary>
-        /// REQ: RemoveAsync MUST NOT throw to the caller when L2.RemoveAsync throws.
-        /// The memory cache must still be cleaned.
-        /// SOURCE: SOURCE-FAIL-SAFE — DekCache.cs line 232-243 catch block
-        /// ("Don't fail the operation if distributed cache removal fails").
-        /// </summary>
         [TestMethod]
         public async Task RemoveAsync_WhenL2RemoveAsyncThrows_DoesNotPropagateToCaller()
         {
@@ -493,10 +410,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             }
 
             // The RemoveAsync must have also cleaned the in-memory cache BEFORE encountering
-            // the L2 failure. We assert this via a second RemoveAsync that, observing an empty
-            // in-memory cache, returns cleanly. (We cannot assert via subsequent Get because a
-            // prior fire-and-forget SetDekProperties may have populated L2, which would legitimately
-            // serve the Get. SOURCE-FAIL-SAFE requires only that the caller never sees the L2 error.)
+            // the L2 failure. A second RemoveAsync that observes an empty in-memory cache should
+            // return cleanly. (Cannot assert via subsequent Get because a prior fire-and-forget
+            // SetDekProperties may have legitimately populated L2.)
             try
             {
                 await cache.RemoveAsync(DekId);
@@ -511,14 +427,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         // G. Cache payload does not leak sensitive non-key data
         // ---------------------------------------------------------------
 
-        /// <summary>
-        /// REQ: The L2 payload MUST contain only the intended DTO fields (v, serverProperties,
-        /// serverPropertiesExpiryUtc). It must not leak environment variables, host-level
-        /// JsonConvert.DefaultSettings-injected type discriminators, or any ambient data.
-        /// SOURCE: SOURCE-TYPENAMEHANDLING + DekCache.cs line 420-426 CacheSerializerSettings
-        /// (TypeNameHandling.None + DefaultContractResolver, pinned per-call to ignore
-        /// JsonConvert.DefaultSettings).
-        /// </summary>
         [TestMethod]
         public async Task L2Payload_DoesNotLeakEnvironmentOrDollarTypeDiscriminator()
         {

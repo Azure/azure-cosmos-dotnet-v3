@@ -38,13 +38,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         // A. Concurrency / coalescing
         // =======================================================================
 
-        // REQ: On a cold cache, two concurrent GetOrAdd calls for the same dekId
-        //      must coalesce: Cosmos is invoked at most once, and both callers
-        //      observe the same DEK properties instance.
-        // SOURCE-ASYNCCACHE: Mirrored/AsyncCache.cs:85-140 documents that "If another
-        //                    initialization function is already running, new initialization
-        //                    function will not be started. The result will be result of
-        //                    currently running initialization function."
         [TestMethod]
         public async Task ColdL1_TwoConcurrentCallers_CoalesceIntoSingleCosmosFetch()
         {
@@ -80,12 +73,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 "Both coalesced callers must observe the same DEK properties instance.");
         }
 
-        // REQ: When L1 has an expired entry, L2 is empty, and N callers race the refresh
-        //      path, the fetcher (Cosmos) must be invoked at most once. A resilience cache
-        //      must not amplify upstream load at the TTL boundary.
-        // SOURCE-ASYNCCACHE: Mirrored/AsyncCache.cs:128-131 — compare-and-swap on
-        //                    AddOrUpdate guarantees a single forceRefresh generator
-        //                    wins even with N concurrent callers.
         // NOTE: distributedCache is intentionally null — with an L2 populated by the warmup,
         //       racers would be served from L2 and the fetcher would not be invoked at all,
         //       which is correct but not the coalescing behaviour under test here.
@@ -135,11 +122,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         // B. Cancellation propagation
         // =======================================================================
 
-        // REQ: A CancellationToken that is already cancelled at the time of the call
-        //      must cause the operation to throw OperationCanceledException rather
-        //      than proceeding to any cache read or fetcher invocation.
-        // SOURCE-ASYNCCACHE: Mirrored/AsyncCache.cs:92 — "cancellationToken.ThrowIfCancellationRequested();"
-        //                    at the entry of GetAsync.
         [TestMethod]
         public async Task CancellationToken_AlreadyCancelled_ThrowsOperationCanceledException()
         {
@@ -166,15 +148,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             Assert.AreEqual(0, l2Reads, "No L2 read must occur when the CT is already cancelled.");
         }
 
-        // REQ: When the distributed cache blocks on a read and the caller's
-        //      CancellationToken is cancelled mid-read, the cancellation must be
-        //      propagated to the caller as OperationCanceledException. The cache
-        //      must not silently swallow cancellation as a generic L2 "miss".
-        // SOURCE-DEKCACHE: src/DekCache.cs:325-327 — a dedicated
-        //                  catch (OperationCanceledException) { throw; } clause
-        //                  separates cancellation from generic L2-failure swallowing.
-        // SOURCE-CONTRACT: IDistributedCache.GetAsync(key, CancellationToken) — the
-        //                  CT parameter must be observed per the published contract.
         [TestMethod]
         public async Task CancellationDuringL2Read_PropagatesOperationCanceledException()
         {
@@ -199,13 +172,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 $"Expected OperationCanceledException (or subclass) on CT-cancelled L2 read; observed {caughtA?.GetType().Name ?? "<none>"}.");
         }
 
-        // REQ: Cancellation during a Cosmos fetch must propagate to the caller
-        //      and must not poison L1 — a subsequent call with a fresh token
-        //      must be able to retry cleanly.
-        // SOURCE-ASYNCCACHE: Mirrored/AsyncCache.cs:112-122 — the cache-hit branch
-        //                    "Don't check Task if there's an exception or it's been
-        //                    canceled" guarantees cancelled lazies do not return stale
-        //                    values; subsequent calls re-enter the fetcher path.
         [TestMethod]
         public async Task CancellationDuringCosmosFetch_PropagatesAndDoesNotPoisonL1()
         {
@@ -246,13 +212,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         // C. Clock edge cases
         // =======================================================================
 
-        // REQ: When the wall clock reaches exactly ServerPropertiesExpiryUtc, the
-        //      entry must be treated as expired consistently across the read-side
-        //      (distributed cache validation) and the write-side (L1 expiry check).
-        // SOURCE-DEKCACHE: src/DekCache.cs:75 uses "expiryUtc <= utcNow()" to mark
-        //                  L1 expired. Line 310 uses "expiryUtc > utcNow()" to mark
-        //                  an L2 entry valid. Both sides therefore say "expired" when
-        //                  now == expiry.
         // NOTE: L2 is intentionally null because this test targets the L1-expiry boundary,
         //       not L2-rescue. With L2 populated, the refresh would be served from L2 and
         //       the Cosmos counter would not move, which is correct resilience behaviour but
@@ -284,12 +243,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 "At now == expiry the entry must be treated as expired (ServerPropertiesExpiryUtc <= utcNow()), forcing a refresh.");
         }
 
-        // REQ: A small backward adjustment of the wall clock (e.g. NTP correction)
-        //      must not corrupt the cache. A valid cached entry must remain valid
-        //      and no spurious refresh is required.
-        // SOURCE-DEKCACHE: src/DekCache.cs:75/:310 — expiry is a simple comparison
-        //                  of ServerPropertiesExpiryUtc against the current clock.
-        //                  Going backward only makes the entry "more valid", not less.
         [TestMethod]
         public async Task ClockGoingBackwardAfterWarmup_DoesNotCorruptCache()
         {
@@ -319,12 +272,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         // D. Proactive refresh nuances
         // =======================================================================
 
-        // REQ: Entering the proactive-refresh window must NOT block the synchronous
-        //      caller. The call must return the still-fresh cached value even when
-        //      the background refresh has not yet completed.
-        // SOURCE-XMLDOC: src/DekCache.cs:91-92 "Trigger background refresh without
-        //                blocking caller. Use CancellationToken.None since this runs
-        //                independently of the caller's request lifecycle."
         [TestMethod]
         public async Task ProactiveRefresh_DoesNotBlockSynchronousCaller()
         {
@@ -362,12 +309,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             neverCompletes.TrySetCanceled();
         }
 
-        // REQ: Within the proactive-refresh window, N synchronous calls must
-        //      trigger AT MOST ONE in-flight background refresh. N calls must not
-        //      produce N concurrent Cosmos refreshes.
-        // SOURCE-ASYNCCACHE: Mirrored/AsyncCache.cs:220-230 — BackgroundRefreshNonBlocking
-        //                    short-circuits when a value is still being generated:
-        //                    "if a value is currently being generated, we do nothing".
         [TestMethod]
         public async Task ProactiveRefresh_NCallsInWindow_AtMostOneRefreshInflight()
         {
@@ -413,11 +354,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             gate.SetResult(true);
         }
 
-        // REQ: After a successful proactive refresh, a subsequent synchronous read
-        //      must observe the refreshed value.
-        // SOURCE-PR: PR #5428 description — "Adds proactive refresh capability" — the
-        //            observable consequence is that the cached value moves forward to
-        //            the refreshed one.
         [TestMethod]
         public async Task ProactiveRefresh_AfterCompletion_SubsequentReadObservesRefreshedValue()
         {
@@ -474,16 +410,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         // E. Negative-fetcher scenarios
         // =======================================================================
 
-        // REQ: The fetcher must not be allowed to cross-pollute cache entries by
-        //      returning a DEK whose Id differs from the requested dekId. The
-        //      distributed cache key is derived from the dekId
-        //      (src/DekCache.cs:415-418, "{cacheKeyPrefix}:{dekId}"), so storing
-        //      mismatched properties under that key would produce a cache entry
-        //      whose payload.Id disagrees with its key — a correctness hazard when
-        //      peers read that entry and trust the stored Id.
-        // SOURCE-DEKCACHE: src/DekCache.cs:415-418 establishes key == dekId. The
-        //                  integrity invariant "payload.Id == dekId" follows directly
-        //                  from that key derivation.
         [TestMethod]
         public async Task FetcherReturnsDifferentId_RejectedToPreventCrossPollution()
         {
@@ -516,14 +442,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         // F. Resilience composition
         // =======================================================================
 
-        // REQ: On a cold L1 miss, if the distributed cache throws on read, the
-        //      operation must fall through to Cosmos and return the fetched value.
-        //      Distributed cache is an optimization layer; its failures must not be
-        //      surfaced to callers.
-        // SOURCE-DEKCACHE: src/DekCache.cs:329-340 — "If distributed cache fails,
-        //                  fall back to source. Don't throw - this is an optimization
-        //                  layer" (with the explicit OperationCanceledException
-        //                  re-throw carve-out immediately above).
         [TestMethod]
         public async Task ColdL1_L2ReadThrows_CosmosAvailable_FallsThroughToCosmos()
         {
@@ -545,15 +463,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 "A throwing L2 read must not abort the request; the cache must fall through to Cosmos.");
         }
 
-        // REQ: If the distributed cache hangs indefinitely on read, the operation
-        //      must not hang indefinitely when the caller supplies a cancellable
-        //      token with a deadline. The operation must either honour the
-        //      cancellation or complete via fallback — it must NOT deadlock.
-        // SOURCE-CONTRACT: IDistributedCache.GetAsync(key, CancellationToken) — the
-        //                  CT parameter must be honoured per the published contract.
-        // SOURCE-DEKCACHE: src/DekCache.cs:298-300 — the CT is forwarded to
-        //                  distributedCache.GetAsync, so cooperating caches must
-        //                  observe cancellation.
         [TestMethod]
         public async Task ColdL1_L2Hangs_CancellationTokenShortDeadline_DoesNotHangIndefinitely()
         {

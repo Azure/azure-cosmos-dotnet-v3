@@ -8,27 +8,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System.Diagnostics.Tracing;
 
     /// <summary>
-    /// EventSource for the Microsoft.Azure.Cosmos.Encryption.Custom package.
+    /// EventSource for the Microsoft.Azure.Cosmos.Encryption.Custom package. Source name
+    /// <c>Azure-Cosmos-Encryption-Custom</c> follows the <c>Azure-{Service}-{Subsystem}</c>
+    /// convention, so it is auto-discovered by <c>AzureEventSourceListener</c> and
+    /// <c>dotnet-trace --providers Azure-Cosmos-Encryption-Custom</c>.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// Source name: <c>Azure-Cosmos-Encryption-Custom</c> — follows the <c>Azure-{Service}-{Subsystem}</c>
-    /// naming convention used by other Azure SDK EventSources so that it is auto-discovered by
-    /// <c>Azure.Core.Diagnostics.AzureEventSourceListener</c> and tools like <c>dotnet-trace</c>
-    /// (e.g. <c>dotnet-trace --providers Azure-Cosmos-Encryption-Custom</c>).
-    /// </para>
-    /// <para>
-    /// Use this for Release-visible diagnostics that are best-effort: failures from the optional
+    /// Used for Release-visible best-effort diagnostics on the optional
     /// <see cref="Microsoft.Extensions.Caching.Distributed.IDistributedCache"/> integration
-    /// (read / write / remove / background write) which are intentionally swallowed because the
-    /// in-memory cache or source-of-truth still satisfy the operation. The event payload is a
-    /// short message; do not log key material, wrapped key bytes, or full exception strings.
-    /// </para>
-    /// <para>
-    /// <see cref="System.Diagnostics.Activity"/> tags on the surrounding cache scopes remain the
-    /// primary correlation channel; this EventSource exists so the same failures are observable
-    /// in environments where no <see cref="System.Diagnostics.ActivityListener"/> is attached.
-    /// </para>
+    /// (read / write / background write / remove). Activity tags on the surrounding cache
+    /// scopes remain the primary correlation channel; this EventSource exists so the same
+    /// failures are observable when no <see cref="System.Diagnostics.ActivityListener"/> is
+    /// attached. Payloads must not contain key material, wrapped key bytes, or full exception
+    /// strings.
     /// </remarks>
     [EventSource(Name = EventSourceName)]
     internal sealed class EncryptionCustomEventSource : EventSource
@@ -43,8 +35,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
 
         /// <summary>
-        /// Records that a distributed cache read failed and the caller fell back to the source.
-        /// Operation correctness is preserved.
+        /// Distributed cache read failed; caller fell back to source.
         /// </summary>
         [NonEvent]
         public static void DistributedCacheReadFailed(string dekId, Exception exception)
@@ -61,8 +52,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
 
         /// <summary>
-        /// Records that a synchronous distributed cache write (cold-path / refresh population)
-        /// failed. The in-memory cache still holds the value; subsequent fetches will retry.
+        /// Synchronous distributed cache write (cold-path / refresh population) failed.
         /// </summary>
         [NonEvent]
         public static void DistributedCacheWriteFailed(string dekId, Exception exception)
@@ -79,9 +69,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
 
         /// <summary>
-        /// Records that a fire-and-forget distributed cache write (e.g. from <c>SetDekProperties</c>)
-        /// failed. The in-memory cache is authoritative for the current process; peers will repopulate
-        /// L2 on their next miss.
+        /// Fire-and-forget distributed cache write failed.
         /// </summary>
         [NonEvent]
         public static void DistributedCacheBackgroundWriteFailed(string dekId, Exception exception)
@@ -98,9 +86,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
 
         /// <summary>
-        /// Records that a distributed cache <c>RemoveAsync</c> failed. The L1 entry has already
-        /// been invalidated; the stale L2 entry will be superseded by the next write or expire on
-        /// its own AbsoluteExpiration.
+        /// Distributed cache <c>RemoveAsync</c> failed. The L1 entry has already been invalidated.
         /// </summary>
         [NonEvent]
         public static void DistributedCacheRemoveFailed(string dekId, Exception exception)
