@@ -20,11 +20,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// Resilience: if the container is deleted or unavailable after initialization, operations surface the underlying exception (for example NotFound). Automatic re-creation is not attempted.
     /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
-    public sealed class CosmosDataEncryptionKeyProvider : DataEncryptionKeyProvider
+    public sealed class CosmosDataEncryptionKeyProvider : DataEncryptionKeyProvider, IDisposable, IAsyncDisposable
     {
         private const string ContainerPartitionKeyPath = "/id";
 
         private readonly DataEncryptionKeyContainerCore dataEncryptionKeyContainerCore;
+
+        // 0 = alive, 1 = disposed. Updated via Interlocked.Exchange so Dispose is idempotent
+        // across concurrent callers.
+        private int isDisposed;
 
         private Container container;
 
@@ -325,6 +329,43 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 withRawKey);
 
             return inMemoryRawDek.DataEncryptionKey;
+        }
+
+        /// <summary>
+        /// Cancels in-flight background distributed-cache writes owned by this provider's
+        /// <see cref="DekCache"/> and best-effort drains them. Idempotent.
+        /// </summary>
+        /// <remarks>
+        /// Disposal does NOT dispose externally-supplied dependencies — namely the
+        /// <see cref="EncryptionKeyWrapProvider"/>, <see cref="EncryptionKeyStoreProvider"/>, the
+        /// Cosmos <see cref="Container"/>, or any <see cref="Microsoft.Extensions.Caching.Distributed.IDistributedCache"/>
+        /// passed to the constructor — the caller owns those lifetimes.
+        /// User-initiated DEK invalidations (<see cref="DekCache.RemoveAsync(string,System.Threading.CancellationToken)"/>)
+        /// are not interrupted by disposal so the distributed cache cannot end up with stale entries.
+        /// </remarks>
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref this.isDisposed, 1) != 0)
+            {
+                return;
+            }
+
+            this.DekCache?.Dispose();
+        }
+
+        /// <summary>
+        /// Async counterpart of <see cref="Dispose"/>: cancels in-flight background writes and
+        /// awaits a bounded drain instead of blocking. Idempotent.
+        /// </summary>
+        /// <returns>A <see cref="ValueTask"/> that completes when the bounded drain finishes.</returns>
+        public ValueTask DisposeAsync()
+        {
+            if (Interlocked.Exchange(ref this.isDisposed, 1) != 0)
+            {
+                return default;
+            }
+
+            return this.DekCache?.DisposeAsync() ?? default;
         }
     }
 }

@@ -5,20 +5,28 @@
 namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Diagnostics;
     using System.IO;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Extensions.Caching.Distributed;
     using Newtonsoft.Json;
 
-    internal class DekCache
+    internal sealed class DekCache : IDisposable, IAsyncDisposable
     {
         // Cache-entry format version. Embedded both in the cache key (so mixed-version fleets
         // do not share a slot and therefore cannot downgrade each other) and in the serialised
         // payload (so a peer can reject a blob whose shape it does not understand). Bump this
         // whenever CachedDekPropertiesDto gains, loses, or changes the semantics of a field.
         private const int CurrentCacheFormatVersion = 1;
+
+        // Bounded best-effort drain timeout used by Dispose / DisposeAsync. Background
+        // distributed-cache writes that fail to complete within this window are abandoned —
+        // the L1 cache is authoritative for the current process and peers will repopulate
+        // L2 on their next miss, so abandonment never produces a correctness regression.
+        private static readonly TimeSpan DisposeDrainTimeout = TimeSpan.FromSeconds(5);
 
         private readonly TimeSpan dekPropertiesTimeToLive;
         private readonly TimeSpan distributedCacheEntryLifetime;
@@ -27,7 +35,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         private readonly string cacheKeyPrefix;
         private readonly Func<DateTime> utcNow;
 
-        private static readonly ActivitySource ActivitySource = new ("Microsoft.Azure.Cosmos.Encryption.Custom.DekCache");
+        private readonly CancellationTokenSource disposalCts = new CancellationTokenSource();
+
+        // Captured once at construction so the IsCancellationRequested check survives even after
+        // the CTS is disposed (CTS.Token throws ObjectDisposedException once disposed). We never
+        // re-read disposalCts.Token after Dispose has run.
+        private readonly CancellationToken disposalToken;
+
+        // Tracks every in-flight fire-and-forget distributed-cache write so Dispose can drain
+        // them. The companion ContinueWith both observes the task's exception (preventing
+        // UnobservedTaskException) and removes it from this dictionary when it finishes.
+        private readonly ConcurrentDictionary<Task, byte> inFlightWrites = new ConcurrentDictionary<Task, byte>();
+
+        // 0 = alive, 1 = disposed. Updated via Interlocked.Exchange so the transition is atomic
+        // and Dispose is idempotent across concurrent callers.
+        private int isDisposed;
+
+        private static readonly ActivitySource ActivitySource = new ("Microsoft.Azure.Cosmos.Encryption.Custom");
 
         // Internal for unit testing
         internal AsyncCache<string, CachedDekProperties> DekPropertiesCache { get; } = new AsyncCache<string, CachedDekProperties>();
@@ -85,6 +109,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this.refreshBeforeExpiry = refreshBeforeExpiry;
             this.cacheKeyPrefix = cacheKeyPrefix;
             this.utcNow = utcNow ?? (() => DateTime.UtcNow);
+
+            // Capture the disposal token once so post-Dispose IsCancellationRequested checks
+            // never read disposalCts.Token (which would throw ObjectDisposedException).
+            this.disposalToken = this.disposalCts.Token;
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (Volatile.Read(ref this.isDisposed) != 0)
+            {
+                throw new ObjectDisposedException(nameof(DekCache));
+            }
         }
 
         public async Task<DataEncryptionKeyProperties> GetOrAddDekPropertiesAsync(
@@ -93,6 +129,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
+            this.ThrowIfDisposed();
+
             using (Activity activity = ActivitySource.StartActivity("DekCache.GetOrAddProperties"))
             {
                 activity?.SetTag("cache.system", "cosmos.encryption.dek");
@@ -102,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         dekId,
                         null,
                         () => this.FetchDekPropertiesAsync(dekId, fetcher, diagnosticsContext, cancellationToken),
-                        cancellationToken);
+                        cancellationToken).ConfigureAwait(false);
 
                 if (cachedDekProperties.ServerPropertiesExpiryUtc <= this.utcNow())
                 {
@@ -119,17 +157,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         null,
                         () => this.FetchDekPropertiesAsync(dekId, fetcher, diagnosticsContext, cancellationToken),
                         cancellationToken,
-                        forceRefresh: true);
+                        forceRefresh: true).ConfigureAwait(false);
                 }
                 else if (this.ShouldProactivelyRefresh(cachedDekProperties))
                 {
                     activity?.SetTag("cache.proactive_refresh", true);
 
                     // Trigger background refresh without blocking caller.
-                    // Use CancellationToken.None since this runs independently of the caller's request lifecycle.
+                    // Pass the disposal token so a stale BackgroundRefresh task that survives the
+                    // owning provider can be cancelled on shutdown rather than hammering Cosmos /
+                    // L2 from a process that is on its way out.
                     this.DekPropertiesCache.BackgroundRefreshNonBlocking(
                         dekId,
-                        () => this.FetchFromSourceAndUpdateCachesAsync(dekId, fetcher, diagnosticsContext, CancellationToken.None));
+                        () => this.FetchFromSourceAndUpdateCachesAsync(dekId, fetcher, diagnosticsContext, this.disposalToken));
                 }
 
                 return cachedDekProperties.ServerProperties;
@@ -142,11 +182,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
+            this.ThrowIfDisposed();
+
             InMemoryRawDek inMemoryRawDek = await this.RawDekCache.GetAsync(
                    dekProperties.SelfLink,
                    null,
                    () => unwrapper(dekProperties, diagnosticsContext, cancellationToken),
-                   cancellationToken);
+                   cancellationToken).ConfigureAwait(false);
 
             if (inMemoryRawDek.RawDekExpiry <= this.utcNow())
             {
@@ -155,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                    null,
                    () => unwrapper(dekProperties, diagnosticsContext, cancellationToken),
                    cancellationToken,
-                   forceRefresh: true);
+                   forceRefresh: true).ConfigureAwait(false);
             }
 
             return inMemoryRawDek;
@@ -197,12 +239,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// </para>
         /// <para>
         /// For scenarios requiring strict consistency guarantees during DEK rotation, consider using
-        /// <see cref="RemoveAsync(string)"/> to explicitly invalidate the cache entry, followed by a
+        /// <see cref="RemoveAsync"/> to explicitly invalidate the cache entry, followed by a
         /// fresh read operation to force synchronization across all cache layers.
         /// </para>
         /// </remarks>
         public void SetDekProperties(string dekId, DataEncryptionKeyProperties dekProperties)
         {
+            this.ThrowIfDisposed();
+
             using (Activity activity = ActivitySource.StartActivity("DekCache.SetProperties"))
             {
                 activity?.SetTag("cache.system", "cosmos.encryption.dek");
@@ -214,35 +258,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 this.DekPropertiesCache.Set(dekId, cachedDekProperties);
                 activity?.SetTag("cache.memory.updated", true);
 
-                // Update distributed cache if available (fire-and-forget)
+                // Update distributed cache if available (fire-and-forget).
+                // Cold-path / refresh-path L2 writes (FetchFromSourceAndUpdateCachesAsync) and
+                // SetDekProperties go through the same StartFireAndForgetDistributedCacheWriteAsync
+                // helper so they share the same lifecycle, drain semantics, and diagnostics
+                // contract — the helper tracks the task in inFlightWrites so Dispose can drain
+                // it, and surfaces failures on EncryptionCustomEventSource.
                 if (this.distributedCache != null)
                 {
                     activity?.SetTag("cache.distributed.enabled", true);
-
-                    this.LastDistributedCacheWriteTask = Task.Run(async () =>
-                    {
-                        using (Activity dcActivity = ActivitySource.StartActivity("DekCache.UpdateDistributedCache"))
-                        {
-                            dcActivity?.SetTag("cache.system", "cosmos.encryption.dek");
-                            dcActivity?.SetTag("cache.key", dekId);
-                            dcActivity?.SetTag("cache.operation", "write");
-
-                            try
-                            {
-                                await this.UpdateDistributedCacheAsync(dekId, cachedDekProperties, CancellationToken.None).ConfigureAwait(false);
-                                dcActivity?.SetTag("cache.result", "success");
-                            }
-                            catch (Exception ex)
-                            {
-                                dcActivity?.SetTag("cache.result", "failure");
-                                dcActivity?.SetTag("cache.error", ex.GetType().Name);
-                                dcActivity?.SetStatus(ActivityStatusCode.Error, ex.Message);
-
-                                // Log the failure but don't fail the operation
-                                Debug.WriteLine($"Failed to update distributed cache for DEK '{dekId}': {ex.Message}");
-                            }
-                        }
-                    });
+                    this.StartFireAndForgetDistributedCacheWrite(dekId, cachedDekProperties);
                 }
                 else
                 {
@@ -251,18 +276,108 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
         }
 
+        /// <summary>
+        /// Starts a fire-and-forget distributed-cache write that:
+        /// (a) is tracked in <see cref="inFlightWrites"/> so <see cref="Dispose"/> /
+        ///     <see cref="DisposeAsync"/> can drain it;
+        /// (b) honours the captured <see cref="disposalToken"/> for cooperative cancellation;
+        /// (c) emits failures via <see cref="EncryptionCustomEventSource"/> so they are visible
+        ///     in Release without an <see cref="System.Diagnostics.ActivityListener"/>;
+        /// (d) updates <see cref="LastDistributedCacheWriteTask"/> so test seams stay deterministic.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="Task.Run(System.Action)"/> is intentionally NOT given the disposal token —
+        /// passing it would surface as <see cref="TaskCanceledException"/> on the
+        /// <see cref="LastDistributedCacheWriteTask"/> seam if the token was already set when
+        /// scheduling. The lambda checks the token explicitly instead so the returned task
+        /// always completes cleanly (skipped on shutdown).
+        /// </remarks>
+        private void StartFireAndForgetDistributedCacheWrite(string dekId, CachedDekProperties cachedDekProperties)
+        {
+            Task write = Task.Run(async () =>
+            {
+                using (Activity dcActivity = ActivitySource.StartActivity("DekCache.UpdateDistributedCache"))
+                {
+                    dcActivity?.SetTag("cache.system", "cosmos.encryption.dek");
+                    dcActivity?.SetTag("cache.key", dekId);
+                    dcActivity?.SetTag("cache.operation", "write");
+
+                    if (this.disposalToken.IsCancellationRequested)
+                    {
+                        dcActivity?.SetTag("cache.result", "skipped-disposed");
+                        return;
+                    }
+
+                    try
+                    {
+                        await this.UpdateDistributedCacheAsync(dekId, cachedDekProperties, this.disposalToken).ConfigureAwait(false);
+                        dcActivity?.SetTag("cache.result", "success");
+                    }
+                    catch (OperationCanceledException) when (this.disposalToken.IsCancellationRequested)
+                    {
+                        // Expected on disposal. Tag without escalating to an error event.
+                        dcActivity?.SetTag("cache.result", "cancelled-disposed");
+                    }
+                    catch (Exception ex)
+                    {
+                        dcActivity?.SetTag("cache.result", "failure");
+                        dcActivity?.SetTag("cache.error", ex.GetType().Name);
+                        dcActivity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
+                        // Surface the failure on the package EventSource so the failure is visible
+                        // in Release without requiring an ActivityListener. Activity tags above
+                        // remain the primary correlation channel for subscribers with OTel wired up.
+                        EncryptionCustomEventSource.DistributedCacheBackgroundWriteFailed(dekId, ex);
+                    }
+                }
+            });
+
+            this.inFlightWrites.TryAdd(write, 0);
+
+            // Observe + deregister. Static lambda + state object keeps allocations low and prevents
+            // the continuation from rooting `this`. ExecuteSynchronously is safe because the
+            // continuation only touches a ConcurrentDictionary and observes a Task's exception.
+            // The continuation Task itself is intentionally discarded — it is a synchronous,
+            // exception-free bookkeeping callback whose completion has no observers.
+            _ = write.ContinueWith(
+                static (t, state) =>
+                {
+                    _ = t.Exception; // observe to suppress UnobservedTaskException
+                    ((ConcurrentDictionary<Task, byte>)state).TryRemove(t, out _);
+                },
+                this.inFlightWrites,
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+
+            this.LastDistributedCacheWriteTask = write;
+        }
+
         public void SetRawDek(string dekId, InMemoryRawDek inMemoryRawDek)
         {
+            this.ThrowIfDisposed();
             this.RawDekCache.Set(dekId, inMemoryRawDek);
         }
 
-        public async Task RemoveAsync(string dekId)
+        /// <summary>
+        /// Removes a DEK from the in-memory and (if configured) distributed caches.
+        /// </summary>
+        /// <param name="dekId">The DEK identifier to invalidate.</param>
+        /// <param name="cancellationToken">
+        /// Optional cancellation token. NOTE: this is the CALLER's token, not the disposal
+        /// token. RemoveAsync is a user-initiated invalidation and disposal MUST NOT abort it,
+        /// because abandoning it would leave stale entries in the distributed cache.
+        /// </param>
+        public async Task RemoveAsync(string dekId, CancellationToken cancellationToken = default)
         {
-            CachedDekProperties cachedDekProperties = await this.DekPropertiesCache.RemoveAsync(dekId);
-            if (cachedDekProperties != null)
-            {
-                this.RawDekCache.Remove(dekId);
-            }
+            this.ThrowIfDisposed();
+
+            CachedDekProperties cachedDekProperties = await this.DekPropertiesCache.RemoveAsync(dekId).ConfigureAwait(false);
+
+            // Always evict the raw DEK regardless of whether DekPropertiesCache had a local entry,
+            // since RawDekCache may have been populated under either dekId (via SetRawDek) or the
+            // properties' SelfLink (via GetOrAddRawDekAsync). RemoveRawDek covers both keys.
+            this.RemoveRawDek(dekId, cachedDekProperties?.ServerProperties);
 
             // Always remove from distributed cache regardless of memory cache state,
             // since another instance may have populated it.
@@ -270,13 +385,40 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 try
                 {
-                    await this.distributedCache.RemoveAsync(this.GetDistributedCacheKey(dekId));
+                    await this.distributedCache.RemoveAsync(this.GetDistributedCacheKey(dekId), cancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
                 }
                 catch (Exception ex)
                 {
-                    // Don't fail the operation if distributed cache removal fails
-                    Debug.WriteLine($"Failed to remove DEK '{dekId}' from distributed cache: {ex.Message}");
+                    // Don't fail the operation if distributed cache removal fails.
+                    EncryptionCustomEventSource.DistributedCacheRemoveFailed(dekId, ex);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Removes RawDekCache entries that could plausibly correspond to <paramref name="dekId"/>.
+        /// </summary>
+        /// <remarks>
+        /// RawDekCache is populated under two different keys depending on the path:
+        /// <see cref="SetRawDek"/> uses the caller's <c>dekId</c>, while <see cref="GetOrAddRawDekAsync"/>
+        /// uses <see cref="DataEncryptionKeyProperties.SelfLink"/>. To make invalidation robust we
+        /// remove under both candidate keys when we have them.
+        /// </remarks>
+        private void RemoveRawDek(string dekId, DataEncryptionKeyProperties dekProperties)
+        {
+            if (!string.IsNullOrEmpty(dekId))
+            {
+                this.RawDekCache.Remove(dekId);
+            }
+
+            string selfLink = dekProperties?.SelfLink;
+            if (!string.IsNullOrEmpty(selfLink) && !string.Equals(selfLink, dekId, StringComparison.Ordinal))
+            {
+                this.RawDekCache.Remove(selfLink);
             }
         }
 
@@ -295,7 +437,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 activity?.SetTag("cache.key", dekId);
 
                 // Try distributed cache first if available
-                CachedDekProperties cachedProperties = await this.TryGetFromDistributedCacheAsync(dekId, cancellationToken);
+                CachedDekProperties cachedProperties = await this.TryGetFromDistributedCacheAsync(dekId, cancellationToken).ConfigureAwait(false);
                 if (cachedProperties != null)
                 {
                     activity?.SetTag("cache.hit", true);
@@ -306,7 +448,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 // Cache miss - fetch from source and update all caches
                 activity?.SetTag("cache.hit", false);
                 activity?.SetTag("cache.miss", true);
-                return await this.FetchFromSourceAndUpdateCachesAsync(dekId, fetcher, diagnosticsContext, cancellationToken);
+                return await this.FetchFromSourceAndUpdateCachesAsync(dekId, fetcher, diagnosticsContext, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -334,7 +476,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 {
                     byte[] cachedBytes = await this.distributedCache.GetAsync(
                         this.GetDistributedCacheKey(dekId),
-                        cancellationToken);
+                        cancellationToken).ConfigureAwait(false);
 
                     stopwatch.Stop();
                     activity?.SetTag("cache.latency_ms", stopwatch.ElapsedMilliseconds);
@@ -376,7 +518,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     // raised by the IDistributedCache implementation itself (e.g., an internal
                     // timeout it wired up) falls here — the caller's token was not cancelled, so
                     // surfacing it would defeat the fail-open contract of this optimization layer.
-                    Debug.WriteLine($"Failed to retrieve DEK '{dekId}' from distributed cache: {ex.Message}");
+                    EncryptionCustomEventSource.DistributedCacheReadFailed(dekId, ex);
                 }
 
                 return null;
@@ -393,7 +535,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CancellationToken cancellationToken)
         {
             // Fetch from source (Cosmos DB)
-            DataEncryptionKeyProperties serverProperties = await fetcher(dekId, diagnosticsContext, cancellationToken);
+            DataEncryptionKeyProperties serverProperties = await fetcher(dekId, diagnosticsContext, cancellationToken).ConfigureAwait(false);
 
             // Guard against a fetcher returning a DEK whose Id disagrees with the one the caller
             // requested. Caching such a result under the requested key would cross-pollinate the
@@ -409,15 +551,39 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 serverProperties,
                 this.utcNow() + this.dekPropertiesTimeToLive);
 
-            // Update distributed cache (best effort - don't fail if this fails)
-            await this.UpdateDistributedCacheAsync(dekId, cachedProperties, cancellationToken);
+            // Best-effort raw DEK invalidation on properties refresh: after a rewrap the wrapped
+            // key bytes change but SelfLink does not, so a stale RawDekCache entry keyed by
+            // SelfLink would unwrap with the old wrapped bytes. Eviction forces re-unwrap on
+            // next use. NOT atomic with the L1 properties update — a concurrent reader can
+            // briefly observe new properties + old raw, in which case it unwraps the new wrapped
+            // bytes (correct) and the stale raw entry is overwritten on its next miss.
+            this.RemoveRawDek(dekId, serverProperties);
+
+            // Update distributed cache via the shared fire-and-forget helper so cold-path /
+            // refresh-path L2 writes have the same lifecycle, drain semantics, and Release-visible
+            // diagnostics contract as SetDekProperties. Resolves C1 (inconsistent fire-and-forget
+            // L2 writes) — caller no longer pays L2 RTT on cold miss / forced refresh, and the
+            // request's CancellationToken does not abort an in-flight L2 hydration.
+            if (this.distributedCache != null)
+            {
+                this.StartFireAndForgetDistributedCacheWrite(dekId, cachedProperties);
+            }
 
             return cachedProperties;
         }
 
         /// <summary>
-        /// Updates the distributed cache with DEK properties (best effort, non-blocking on failures)
+        /// Writes the cached DEK properties to the distributed cache.
         /// </summary>
+        /// <remarks>
+        /// Exceptions from <see cref="IDistributedCache.SetAsync"/> propagate to the caller so that
+        /// each call site can categorise the failure (e.g. background fire-and-forget vs cold-path
+        /// best-effort) on the appropriate <see cref="EncryptionCustomEventSource"/> event.
+        /// <see cref="OperationCanceledException"/> raised because the caller's token was cancelled
+        /// is rethrown so callers honour cancellation; cancellation raised by an
+        /// <see cref="IDistributedCache"/> implementation's own internal timeout still propagates
+        /// here (caller decides whether to swallow).
+        /// </remarks>
         private async Task UpdateDistributedCacheAsync(
             string dekId,
             CachedDekProperties cachedProperties,
@@ -428,35 +594,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 return;
             }
 
-            try
-            {
-                byte[] serialized = SerializeCachedDekProperties(cachedProperties);
+            byte[] serialized = SerializeCachedDekProperties(cachedProperties);
 
-                // L2's absolute expiration is the L2 entry's hard lifetime, intentionally longer
-                // than L1's TTL so that a peer's L2 entry survives the peer's (or this process')
-                // L1 expiry. This decoupling is what lets L2 rescue the caller on L1 expiry when
-                // Cosmos is unavailable.
-                DateTime l2HardExpiry = this.utcNow() + this.distributedCacheEntryLifetime;
+            // L2's absolute expiration is the L2 entry's hard lifetime, intentionally longer
+            // than L1's TTL so that a peer's L2 entry survives the peer's (or this process')
+            // L1 expiry. This decoupling is what lets L2 rescue the caller on L1 expiry when
+            // Cosmos is unavailable.
+            DateTime l2HardExpiry = this.utcNow() + this.distributedCacheEntryLifetime;
 
-                await this.distributedCache.SetAsync(
-                    this.GetDistributedCacheKey(dekId),
-                    serialized,
-                    new DistributedCacheEntryOptions
-                    {
-                        AbsoluteExpiration = new DateTimeOffset(l2HardExpiry, TimeSpan.Zero),
-                    },
-                    cancellationToken);
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                // Don't fail the operation if distributed cache write fails
-                // The memory cache still has the value, and we'll try again on next fetch
-                Debug.WriteLine($"Failed to write DEK '{dekId}' to distributed cache: {ex.Message}");
-            }
+            await this.distributedCache.SetAsync(
+                this.GetDistributedCacheKey(dekId),
+                serialized,
+                new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpiration = new DateTimeOffset(l2HardExpiry, TimeSpan.Zero),
+                },
+                cancellationToken).ConfigureAwait(false);
         }
 
         private bool ShouldProactivelyRefresh(CachedDekProperties cached)
@@ -550,6 +703,114 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             [JsonProperty("serverPropertiesExpiryUtc")]
             public DateTime ServerPropertiesExpiryUtc { get; set; }
+        }
+
+        /// <summary>
+        /// Cancels in-flight background distributed-cache writes and best-effort drains them
+        /// up to <see cref="DisposeDrainTimeout"/>. Idempotent.
+        /// </summary>
+        /// <remarks>
+        /// Synchronous Dispose blocks the calling thread on the drain. <see cref="DisposeAsync"/>
+        /// is preferred. Dispose does NOT dispose the externally-supplied
+        /// <see cref="IDistributedCache"/> — the caller owns that lifetime.
+        /// </remarks>
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref this.isDisposed, 1) != 0)
+            {
+                return;
+            }
+
+            try
+            {
+                this.disposalCts.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+                // Already disposed concurrently — Cancel is a no-op contract.
+            }
+
+            Task[] pending = this.inFlightWrites.Keys.ToArray();
+            if (pending.Length > 0)
+            {
+                try
+                {
+                    // Bounded best-effort drain. Background writes that fail to complete in time
+                    // are abandoned; the L1 cache is authoritative for the current process and
+                    // peers will repopulate L2 on their next miss. The synchronous Wait is the
+                    // accepted SDK precedent for IDisposable.Dispose drain (see
+                    // BatchAsyncStreamer.Dispose) — DisposeAsync remains the preferred path for
+                    // hosts that can avoid the block.
+#pragma warning disable VSTHRD002 // sync Wait inside Dispose is intentional and bounded
+                    Task.WhenAll(pending).Wait(DisposeDrainTimeout);
+#pragma warning restore VSTHRD002
+                }
+                catch
+                {
+                    // Drain failures (faulted background writes / aggregate exceptions) have
+                    // already been observed by the per-task ContinueWith. Swallow here so
+                    // Dispose itself never throws.
+                }
+            }
+
+            try
+            {
+                this.disposalCts.Dispose();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+        }
+
+        /// <summary>
+        /// Async counterpart of <see cref="Dispose"/>: cancels in-flight background writes and
+        /// awaits a bounded drain instead of blocking. Idempotent.
+        /// </summary>
+        public async ValueTask DisposeAsync()
+        {
+            if (Interlocked.Exchange(ref this.isDisposed, 1) != 0)
+            {
+                return;
+            }
+
+            try
+            {
+                this.disposalCts.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+
+            Task[] pending = this.inFlightWrites.Keys.ToArray();
+            if (pending.Length > 0)
+            {
+                // netstandard2.0 lacks Task.WaitAsync(TimeSpan); use WhenAny + Task.Delay as a
+                // bounded wait. The unobserved Task.Delay completes shortly after the timeout
+                // and is GC-eligible; for an at-most-once Dispose path this is acceptable.
+                Task drain = Task.WhenAll(pending);
+                Task timeout = Task.Delay(DisposeDrainTimeout);
+                Task winner = await Task.WhenAny(drain, timeout).ConfigureAwait(false);
+                if (winner == drain)
+                {
+                    // Observe any aggregate exception from the drained tasks; per-task continuations
+                    // already observed individual exceptions, so this is belt-and-braces.
+                    try
+                    {
+                        await drain.ConfigureAwait(false);
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+
+            try
+            {
+                this.disposalCts.Dispose();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
         }
     }
 }

@@ -205,6 +205,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
 
+            // L2 hydration on cold-miss / forced-refresh paths is now fire-and-forget (C1 fix);
+            // wait for the background write to settle before asserting L2 state.
+            await cache.LastDistributedCacheWriteTask;
+
             Assert.AreEqual(1, cosmosCalls, "With L2 empty the expiry path must fetch from Cosmos.");
             Assert.IsTrue(l2.ContainsKey(DefaultCacheKey), "The fresh fetch must repopulate L2.");
         }
