@@ -8,13 +8,13 @@ schedules:
   displayName: Cosmos Weekly Rolling
   branches:
     include: 
-    - master
+    - main
   always: true # whether to always run the pipeline or only if there have been source code changes since the last run. The default is false
 - cron: "0 0/2 * * 0,6" # cron syntax https://learn.microsoft.com/en-us/azure/devops/pipelines/process/scheduled-triggers?view=azure-devops&tabs=yaml#cron-syntax
   displayName: Cosmos Weekly Rolling
   branches:
     include: 
-    - master
+    - main
   always: true # whether to always run the pipeline or only if there have been source code changes since the last run. The default is false
 
 variables:

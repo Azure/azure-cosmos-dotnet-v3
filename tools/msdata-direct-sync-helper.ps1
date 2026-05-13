@@ -1,12 +1,12 @@
 <#
 .SYNOPSIS
-    Helper script for syncing the msdata/direct branch with latest v3 master and msdata CosmosDB repo.
+    Helper script for syncing the msdata/direct branch with latest v3 main and msdata CosmosDB repo.
 
 .DESCRIPTION
     Automates the mechanical parts of the msdata/direct sync workflow:
     - Validates prerequisites (git, dotnet CLI, gh CLI)
     - Creates feature branch with correct naming convention
-    - Merges master into the feature branch
+    - Merges main into the feature branch
     - Configures and runs msdata_sync.ps1
     - Runs build validation
     - Optionally creates a PR
@@ -199,20 +199,20 @@ function Invoke-SetupPhase {
 }
 
 # ============================================================================
-# Phase: Branch — Create feature branch and merge master
+# Phase: Branch — Create feature branch and merge main
 # ============================================================================
 
 function Invoke-BranchPhase {
-    Write-Phase "Branch" "Creating feature branch and merging master"
+    Write-Phase "Branch" "Creating feature branch and merging main"
     
     $username = Get-GitHubUsername
     $script:BranchName = "users/$username/update_msdata_direct_$script:DateStamp"
     
     # Step 1: Fetch latest
     Write-Step 1 "Fetching latest branches from origin..."
-    git fetch origin master --quiet 2>$null
+    git fetch origin main --quiet 2>$null
     git fetch origin msdata/direct --quiet 2>$null
-    Write-Success "Fetched latest master and msdata/direct"
+    Write-Success "Fetched latest main and msdata/direct"
     
     # Step 2: Check if branch already exists
     Write-Step 2 "Checking for existing feature branch..."
@@ -235,9 +235,9 @@ function Invoke-BranchPhase {
     }
     Write-Success "Created branch: $($script:BranchName)"
     
-    # Step 4: Merge master
-    Write-Step 4 "Merging master into feature branch..."
-    $mergeOutput = git merge origin/master --no-edit 2>&1
+    # Step 4: Merge main
+    Write-Step 4 "Merging main into feature branch..."
+    $mergeOutput = git merge origin/main --no-edit 2>&1
     if ($LASTEXITCODE -ne 0) {
         Write-Info "Merge conflicts detected. Listing conflicted files:"
         $conflicts = git diff --name-only --diff-filter=U 2>$null
@@ -247,9 +247,9 @@ function Invoke-BranchPhase {
             }
         }
         Write-Host ""
-        Write-Info "Attempting auto-resolution (accept master changes)..."
+        Write-Info "Attempting auto-resolution (accept main changes)..."
         
-        # Try to auto-resolve by accepting master (theirs) changes
+        # Try to auto-resolve by accepting main (theirs) changes
         foreach ($file in $conflicts) {
             git checkout --theirs $file 2>$null
             git add $file 2>$null
@@ -531,7 +531,7 @@ function Invoke-PRPhase {
         git add -A 2>$null
         $status = git status --porcelain 2>$null
         if ($status) {
-            git commit -m "[Internal] Direct package: Adds msdata/direct update from master" 2>$null
+            git commit -m "[Internal] Direct package: Adds msdata/direct update from main" 2>$null
             if ($LASTEXITCODE -ne 0) {
                 Write-Failure "Commit failed"
                 return $false
@@ -558,13 +558,13 @@ function Invoke-PRPhase {
 ## Description
 
 Syncs the ``msdata/direct`` branch with:
-- Latest ``master`` branch (v3 SDK changes)
+- Latest ``main`` branch (v3 SDK changes)
 - Latest ``Microsoft.Azure.Cosmos.Direct`` files from msdata CosmosDB repo
 
 ### Changes Include
-- Merged latest ``master`` branch into ``msdata/direct``
+- Merged latest ``main`` branch into ``msdata/direct``
 - Updated ``Microsoft.Azure.Cosmos.Direct`` files via ``msdata_sync.ps1``
-- Resolved merge conflicts (accepted master changes)
+- Resolved merge conflicts (accepted main changes)
 - Build validated: ``dotnet build`` passes
 
 ## Type of change
@@ -578,7 +578,7 @@ Syncs the ``msdata/direct`` branch with:
         
         $prUrl = gh pr create --draft `
             --base "msdata/direct" `
-            --title "[Internal] Direct package: Adds msdata/direct update from master" `
+            --title "[Internal] Direct package: Adds msdata/direct update from main" `
             --body $prBody `
             --reviewer "kirillg,khdang,adityasa,sboshra,FabianMeiswinkel,leminh98,neildsh" 2>&1
         
