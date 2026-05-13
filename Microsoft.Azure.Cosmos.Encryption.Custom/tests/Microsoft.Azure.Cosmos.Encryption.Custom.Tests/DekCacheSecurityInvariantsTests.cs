@@ -80,6 +80,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
 
+            // L2 hydration on the cold-miss path is fire-and-forget (C1); wait for it to
+            // complete before asserting on L2 state.
+            await cache.LastDistributedCacheWriteTask;
+
             // Simulate the downstream "unwrap" step putting the raw key into the RawDekCache.
             // This is exactly the caller flow in DataEncryptionKeyContainerCore.SetRawDek.
             // Only the in-memory RawDekCache is touched; nothing here should write to L2.
@@ -542,6 +546,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                     (id, ctx, ct) => Task.FromResult(MakeDekProperties(id)),
                     CosmosDiagnosticsContext.Create(null),
                     CancellationToken.None);
+
+                // L2 hydration on the cold-miss path is fire-and-forget (C1); wait for it to
+                // complete before inspecting the on-the-wire payload.
+                await cache.LastDistributedCacheWriteTask;
 
                 byte[] payload = l2.GetRawForTest(DefaultCacheKey);
                 Assert.IsNotNull(payload, "Baseline: L2 must have been populated.");

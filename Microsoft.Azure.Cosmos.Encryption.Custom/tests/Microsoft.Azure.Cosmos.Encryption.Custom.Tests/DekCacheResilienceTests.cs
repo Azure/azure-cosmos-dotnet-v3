@@ -90,6 +90,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
 
+            // L2 hydration on the cold-miss path is fire-and-forget (C1); wait for it to
+            // complete before asserting on L2 state.
+            await cache.LastDistributedCacheWriteTask;
+
             Assert.AreEqual(1, cosmosCalls);
             Assert.IsTrue(l2.ContainsKey(DefaultCacheKey), "L2 must be populated on first fetch.");
         }
