@@ -650,15 +650,16 @@ namespace Microsoft.Azure.Cosmos.Tests
                 $"SessionToken must be null when the sessionToken value is whitespace ('{whitespaceToken}').");
         }
 
-        [TestMethod]
-        [Description("When sessionToken already contains a colon (canonical form), FromJson leaves it as-is even without partitionKeyRangeId.")]
-        public async Task FromResponseMessage_OperationResult_SessionToken_PreservedWhenAlreadyCanonical()
+        [DataTestMethod]
+        [DataRow("0:-1#425344#1=12345", "0:-1#425344#1=12345", DisplayName = "Well-formed canonical token preserved")]
+        [DataRow("3:500", "3:500", DisplayName = "Simple pkRangeId:lsn preserved")]
+        [Description("When sessionToken is already in canonical {pkRangeId}:{lsn} form (colon at position > 0 with content on both sides), FromJson leaves it as-is even without partitionKeyRangeId.")]
+        public async Task FromResponseMessage_OperationResult_SessionToken_PreservedWhenAlreadyCanonical(string token, string expected)
         {
-            const string canonicalToken = "0:-1#425344#1=12345";
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
 
             // sessionToken is already canonical; partitionKeyRangeId is absent
-            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""sessionToken"":""{canonicalToken}""}}]}}";
+            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""sessionToken"":""{token}""}}]}}";
             ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
 
             DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
@@ -668,8 +669,30 @@ namespace Microsoft.Azure.Cosmos.Tests
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
-            Assert.AreEqual(canonicalToken, response[0].SessionToken,
-                "A session token that already contains ':' must be left as-is (already canonical).");
+            Assert.AreEqual(expected, response[0].SessionToken,
+                $"A well-formed canonical token '{token}' must be left as-is.");
+        }
+
+        [DataTestMethod]
+        [DataRow(":-1#425344", "3", DisplayName = "Leading colon (no pkRangeId) — not canonical, assembles with pkRangeId")]
+        [DataRow("3:", "5", DisplayName = "Trailing colon only (no LSN) — not canonical, assembles with pkRangeId")]
+        [Description("Session tokens with a colon at position 0 or at the last character are not valid canonical tokens — they get assembled with the provided partitionKeyRangeId.")]
+        public async Task FromResponseMessage_OperationResult_SessionToken_AssembledWhenColonIsAtEdge(string token, string pkRangeId)
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""sessionToken"":""{token}"",""partitionKeyRangeId"":""{pkRangeId}""}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(pkRangeId + ":" + token, response[0].SessionToken,
+                $"A token with edge colon '{token}' must be assembled with pkRangeId '{pkRangeId}'.");
         }
 
         [TestMethod]

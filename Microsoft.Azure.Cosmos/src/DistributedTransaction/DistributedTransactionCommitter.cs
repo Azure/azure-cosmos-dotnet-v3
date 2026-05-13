@@ -193,10 +193,6 @@ namespace Microsoft.Azure.Cosmos
             for (int i = 0; i < response.Count; i++)
             {
                 DistributedTransactionOperationResult result = response[i];
-                if (result == null)
-                {
-                    continue;
-                }
 
                 DistributedTransactionOperation operation = null;
                 try

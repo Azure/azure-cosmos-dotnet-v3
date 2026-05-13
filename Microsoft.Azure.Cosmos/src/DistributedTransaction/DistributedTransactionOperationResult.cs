@@ -166,7 +166,8 @@ namespace Microsoft.Azure.Cosmos
 
             if (!string.IsNullOrWhiteSpace(result.SessionToken))
             {
-                if (result.SessionToken.IndexOf(':') >= 0)
+                int colonIndex = result.SessionToken.IndexOf(':');
+                if (colonIndex > 0 && colonIndex < result.SessionToken.Length - 1)
                 {
                     // Already in canonical {pkRangeId}:{lsn} form — leave as-is.
                 }
