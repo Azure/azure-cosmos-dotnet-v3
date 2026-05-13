@@ -267,14 +267,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
                 // Update distributed cache if available (fire-and-forget).
                 // Cold-path / refresh-path L2 writes (FetchFromSourceAndUpdateCachesAsync) and
-                // SetDekProperties go through the same StartFireAndForgetDistributedCacheWriteAsync
+                // SetDekProperties go through the same UpdateDistributedCacheInBackground
                 // helper so they share the same lifecycle, drain semantics, and diagnostics
                 // contract — the helper tracks the task in inFlightWrites so Dispose can drain
                 // it, and surfaces failures on EncryptionCustomEventSource.
                 if (this.distributedCache != null)
                 {
                     activity?.SetTag("cache.distributed.enabled", true);
-                    this.StartFireAndForgetDistributedCacheWrite(dekId, cachedDekProperties);
+                    this.UpdateDistributedCacheInBackground(dekId, cachedDekProperties);
                 }
                 else
                 {
@@ -284,22 +284,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
 
         /// <summary>
-        /// Starts a fire-and-forget distributed-cache write that:
-        /// (a) is tracked in <see cref="inFlightWrites"/> so <see cref="Dispose"/> /
-        ///     <see cref="DisposeAsync"/> can drain it;
-        /// (b) honours the captured <see cref="disposalToken"/> for cooperative cancellation;
-        /// (c) emits failures via <see cref="EncryptionCustomEventSource"/> so they are visible
-        ///     in Release without an <see cref="System.Diagnostics.ActivityListener"/>;
-        /// (d) updates <see cref="LastDistributedCacheWriteTask"/> so test seams stay deterministic.
+        /// Schedules a non-blocking write to the distributed cache and returns immediately.
+        /// The returned task is tracked so disposal can drain it; failures surface on
+        /// <see cref="EncryptionCustomEventSource"/>.
         /// </summary>
         /// <remarks>
+        /// Pairs with <see cref="UpdateDistributedCacheAsync"/> (the awaiting helper). Both
+        /// SetDekProperties and the cold-miss / forced-refresh path go through this helper
+        /// so they share lifecycle, drain semantics, and diagnostics.
+        /// <para>
         /// <see cref="Task.Run(System.Action)"/> is intentionally NOT given the disposal token —
         /// passing it would surface as <see cref="TaskCanceledException"/> on the
         /// <see cref="LastDistributedCacheWriteTask"/> seam if the token was already set when
         /// scheduling. The lambda checks the token explicitly instead so the returned task
         /// always completes cleanly (skipped on shutdown).
+        /// </para>
         /// </remarks>
-        private void StartFireAndForgetDistributedCacheWrite(string dekId, CachedDekProperties cachedDekProperties)
+        private void UpdateDistributedCacheInBackground(string dekId, CachedDekProperties cachedDekProperties)
         {
             Task write = Task.Run(async () =>
             {
@@ -573,7 +574,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             // request's CancellationToken does not abort an in-flight L2 hydration.
             if (this.distributedCache != null)
             {
-                this.StartFireAndForgetDistributedCacheWrite(dekId, cachedProperties);
+                this.UpdateDistributedCacheInBackground(dekId, cachedProperties);
             }
 
             return cachedProperties;
