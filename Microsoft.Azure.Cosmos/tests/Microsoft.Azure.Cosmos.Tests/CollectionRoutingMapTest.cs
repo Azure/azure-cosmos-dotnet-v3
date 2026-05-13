@@ -242,6 +242,258 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        /// <summary>
+        /// Regression test for: HPK partial partition key query silently returns empty results.
+        /// 
+        /// Scenario: A container with a single pre-split PKRange [0, FF) (i.e., PKRange0, no children).
+        /// A query uses a 2-of-3 HPK partial key, producing a 64-char EPK
+        /// "00EB57A7EE7D5CAFE2751C18938111BC33F19FD36AD3B8EFC4A4AA4A09878654"
+        /// and a query range [EPK, EPK+"FF"].
+        /// 
+        /// GetOverlappingRanges must return PKRange0 (count=1) since the EPK clearly falls
+        /// within [0, FF). Returning empty (count=0) would cause EmptyQueryPipelineStage
+        /// and silent zero results with no backend contact.
+        /// 
+        /// Confirmed via memory dump: single PKRange in orderedPartitionKeyRanges._size=1,
+        /// goneRanges._count=0, useLengthAwareRangeComparer=false (SDK 3.58.0).
+        /// </summary>
+        [TestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public void TestGetOverlappingRanges_PresplitMap_PartialHpkEpk_MustReturnOneRange(bool useLengthAwareComparer)
+        {
+            // Arrange: Single pre-split PKRange0 covering the full keyspace [0, FF)
+            // This matches the memory dump: orderedPartitionKeyRanges._size=1, goneRanges._count=0
+            CollectionRoutingMap routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(
+                new[]
+                {
+                    Tuple.Create(
+                        new PartitionKeyRange
+                        {
+                            Id = "0",
+                            MinInclusive = "",
+                            MaxExclusive = "FF"
+                        },
+                        (ServiceIdentity)null)
+                },
+                string.Empty,
+                useLengthAwareComparer);
+
+            // Customer's 64-char partial EPK (2-of-3 HPK components)
+            // Confirmed from production diagnostic: EPK 00EB57A7...654 
+            string epk = "00EB57A7EE7D5CAFE2751C18938111BC33F19FD36AD3B8EFC4A4AA4A09878654";
+            Range<string> queryRange = new Range<string>(
+                epk,
+                epk + "FF",
+                isMinInclusive: true,
+                isMaxInclusive: true);
+
+            // Act
+            IReadOnlyList<PartitionKeyRange> overlappingRanges = routingMap.GetOverlappingRanges(queryRange);
+
+            // Assert: EPK "00EB57A7..." is clearly within [0, FF) — must return PKRange0
+            // Returning count=0 would cause silent empty query results (EmptyQueryPipelineStage)
+            Assert.AreEqual(1, overlappingRanges.Count,
+                $"GetOverlappingRanges returned {overlappingRanges.Count} ranges for EPK '{epk}' " +
+                $"against PKRange0 [0,FF) with useLengthAwareComparer={useLengthAwareComparer}. " +
+                "Expected 1 — empty result causes silent query failure.");
+            Assert.AreEqual("0", overlappingRanges[0].Id);
+        }
+
+        /// <summary>
+        /// Regression test: post-split routing map (2 ranges, 128-char boundaries) must correctly
+        /// route a 96-char full-3-component HPK EPK to PKRange1.
+        /// The 128-char split boundary ends in 32 zero chars (padding for the 3rd hash component).
+        /// With both ordinal and LengthAware comparators, the EPK must resolve to PKRange1
+        /// because the Cosmos DB service uses ordinal ordering: EPK_96 &lt; boundary_128 (ordinal)
+        /// since EPK_96 is a prefix of boundary_128. Production evidence confirms the document
+        /// is found in PKRange1. With the bug (before fix), LengthAware returned 0 ranges because
+        /// the MinComparer placed the EPK at the start of PKRange2, but ordinal CheckOverlapping
+        /// then rejected PKRange2, yielding an empty result and a silent EmptyQueryPipelineStage.
+        /// </summary>
+        [TestMethod]
+        [DataRow(false, "00EB57A7EE7D5CAFE2751C18938111BC33F19FD36AD3B8EFC4A4AA4A09878654AABBCCDDAABBCCDDAABBCCDD00000000", 1, "1", DisplayName = "Ordinal: EPK clearly before boundary → in PKRange1")]
+        [DataRow(true,  "00EB57A7EE7D5CAFE2751C18938111BC33F19FD36AD3B8EFC4A4AA4A09878654AABBCCDDAABBCCDDAABBCCDD00000000", 1, "1", DisplayName = "LengthAware: EPK clearly before boundary → in PKRange1")]
+        [DataRow(false, "20D8EBCDF57AFA2EF9C0E7058BC2A6352816441F2F87193E9FCC5F9B374B0A582816441F2F87193E9FCC5F9B374B0A58", 1, "1", DisplayName = "Ordinal: EPK=trimmed-boundary (EPK_96 < boundary_128 ordinal) → in PKRange1")]
+        [DataRow(true,  "20D8EBCDF57AFA2EF9C0E7058BC2A6352816441F2F87193E9FCC5F9B374B0A582816441F2F87193E9FCC5F9B374B0A58", 1, "1", DisplayName = "LengthAware: EPK=trimmed-boundary, fallback to ordinal → in PKRange1")]
+        public void TestGetOverlappingRanges_PostSplitMap_FullHpkEpk_MustNotReturnEmpty(bool useLengthAwareComparer, string epk96, int expectedCount, string expectedRangeId)
+        {
+            // Customer split boundary from production diagnostic trace (128 chars = 3×32 hash + 32 zeros)
+            string splitBoundary = "20D8EBCDF57AFA2EF9C0E7058BC2A6352816441F2F87193E9FCC5F9B374B0A582816441F2F87193E9FCC5F9B374B0A5800000000000000000000000000000000";
+
+            CollectionRoutingMap routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(
+                new[]
+                {
+                    Tuple.Create(
+                        new PartitionKeyRange { Id = "1", MinInclusive = "",            MaxExclusive = splitBoundary },
+                        (ServiceIdentity)null),
+                    Tuple.Create(
+                        new PartitionKeyRange { Id = "2", MinInclusive = splitBoundary, MaxExclusive = "FF" },
+                        (ServiceIdentity)null),
+                },
+                string.Empty,
+                useLengthAwareComparer);
+
+            Assert.IsNotNull(routingMap, "Routing map creation failed");
+
+            // Build a point range for the EPK (full 3-component HPK lookup)
+            Range<string> queryRange = new Range<string>(epk96, epk96, isMinInclusive: true, isMaxInclusive: true);
+
+            IReadOnlyList<PartitionKeyRange> overlappingRanges = routingMap.GetOverlappingRanges(queryRange);
+
+            Assert.AreNotEqual(0, overlappingRanges.Count,
+                $"GetOverlappingRanges returned 0 ranges for EPK '{epk96}' " +
+                $"against post-split routing map with useLengthAwareComparer={useLengthAwareComparer}. " +
+                "A count of 0 causes silent EmptyQueryPipelineStage — this is a bug.");
+            Assert.AreEqual(expectedCount, overlappingRanges.Count,
+                $"Expected {expectedCount} range(s) for EPK '{epk96}' with useLengthAwareComparer={useLengthAwareComparer}");
+            Assert.AreEqual(expectedRangeId, overlappingRanges[0].Id,
+                $"Expected range ID '{expectedRangeId}' but got '{overlappingRanges[0].Id}' for EPK '{epk96}' with useLengthAwareComparer={useLengthAwareComparer}");
+        }
+
+        /// <summary>
+        /// Tests that with the legacy ordinal comparator (useLengthAwareRangeComparer=false), querying
+        /// a full 3-component HPK partition whose EPK is exactly at the 128-char split boundary
+        /// (EPK_96 == TrimEnd(boundary_128)) still routes to SOME range and NEVER returns 0 ranges.
+        /// 
+        /// Note: with the legacy comparator, the query might go to the WRONG range (PKRange1 instead 
+        /// of PKRange2 for an EPK at the boundary), but that results in a backend 410 Gone + retry,
+        /// NOT a silent EmptyQueryPipelineStage. This test guards against the silent empty result.
+        /// </summary>
+        [TestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public void TestGetOverlappingRanges_PostSplitMap_EpkAtBoundary_MustNotReturnEmpty(bool useLengthAwareComparer)
+        {
+            // The split boundary (128 chars = H1+H2+H3 concatenated + 32 trailing zeros)
+            string splitBoundary = "20D8EBCDF57AFA2EF9C0E7058BC2A6352816441F2F87193E9FCC5F9B374B0A582816441F2F87193E9FCC5F9B374B0A5800000000000000000000000000000000";
+
+            CollectionRoutingMap routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(
+                new[]
+                {
+                    Tuple.Create(
+                        new PartitionKeyRange { Id = "1", MinInclusive = "",            MaxExclusive = splitBoundary },
+                        (ServiceIdentity)null),
+                    Tuple.Create(
+                        new PartitionKeyRange { Id = "2", MinInclusive = splitBoundary, MaxExclusive = "FF" },
+                        (ServiceIdentity)null),
+                },
+                string.Empty,
+                useLengthAwareComparer);
+
+            Assert.IsNotNull(routingMap, "Routing map creation failed");
+
+            // EPK = first 96 chars of the 128-char boundary (i.e., TrimEnd(boundary) == EPK)
+            // This is the case where hash(comp1)+hash(comp2)+hash(comp3) == splitBoundary[0..95]
+            string epkAtBoundary = splitBoundary.Substring(0, 96);
+            Range<string> queryRange = new Range<string>(epkAtBoundary, epkAtBoundary, isMinInclusive: true, isMaxInclusive: true);
+
+            IReadOnlyList<PartitionKeyRange> overlappingRanges = routingMap.GetOverlappingRanges(queryRange);
+
+            // Must NEVER return 0 ranges — the document must be in SOME range
+            Assert.AreNotEqual(0, overlappingRanges.Count,
+                $"GetOverlappingRanges returned 0 ranges for EPK '{epkAtBoundary}' at the boundary. " +
+                $"useLengthAwareComparer={useLengthAwareComparer}. " +
+                "A count of 0 causes silent EmptyQueryPipelineStage — this is a bug.");
+        }
+
+        /// <summary>
+        /// Simulates multiple splits (8 ranges with 128-char boundaries) querying with a 96-char EPK.
+        /// Verifies neither ordinal nor LengthAware comparator returns 0 ranges.
+        /// Covers the case observed at 23:21 when the collection had PKRanges 3,4,5,7,8.
+        /// </summary>
+        [TestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public void TestGetOverlappingRanges_MultiSplitMap_FullHpkEpk_MustNotReturnEmpty(bool useLengthAwareComparer)
+        {
+            // Simulated multi-split boundaries (128-char hex values, each ending with 32 zeros)
+            string[] boundaries = new[]
+            {
+                "0E6F1A2B3C4D5E6F0E6F1A2B3C4D5E6F0E6F1A2B3C4D5E6F0E6F1A2B3C4D5E6F0E6F1A2B3C4D5E6F0E6F1A2B00000000000000000000000000000000",
+                "1A2B3C4D5E6F0E6F1A2B3C4D5E6F0E6F1A2B3C4D5E6F0E6F1A2B3C4D5E6F0E6F1A2B3C4D5E6F0E6F1A2B3C4D00000000000000000000000000000000",
+                "20D8EBCDF57AFA2EF9C0E7058BC2A6352816441F2F87193E9FCC5F9B374B0A582816441F2F87193E9FCC5F9B374B0A5800000000000000000000000000000000",
+                "3C4D5E6F0E6F1A2B3C4D5E6F0E6F1A2B3C4D5E6F0E6F1A2B3C4D5E6F0E6F1A2B3C4D5E6F0E6F1A2B3C4D5E6F0E00000000000000000000000000000000",
+                "5E6F0E6F1A2B3C4D5E6F0E6F1A2B3C4D5E6F0E6F1A2B3C4D5E6F0E6F1A2B3C4D5E6F0E6F1A2B3C4D5E6F0E6F1A00000000000000000000000000000000",
+                "7A8B9C0D1E2F3A4B5C6D7E8F9A0B1C2D3E4F5A6B7C8D9E0F1A2B3C4D5E6F7A8B9C0D1E2F3A4B5C6D7E8F9A0B00000000000000000000000000000000",
+                "9C0D1E2F3A4B5C6D7E8F9A0B1C2D3E4F5A6B7C8D9E0F1A2B3C4D5E6F7A8B9C0D1E2F3A4B5C6D7E8F9A0B1C2D3E00000000000000000000000000000000",
+            };
+
+            var ranges = new List<Tuple<PartitionKeyRange, ServiceIdentity>>();
+            string prevMax = "";
+            for (int i = 0; i < boundaries.Length; i++)
+            {
+                ranges.Add(Tuple.Create(
+                    new PartitionKeyRange { Id = i.ToString(), MinInclusive = prevMax, MaxExclusive = boundaries[i] },
+                    (ServiceIdentity)null));
+                prevMax = boundaries[i];
+            }
+            ranges.Add(Tuple.Create(
+                new PartitionKeyRange { Id = boundaries.Length.ToString(), MinInclusive = prevMax, MaxExclusive = "FF" },
+                (ServiceIdentity)null));
+
+            CollectionRoutingMap routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(
+                ranges,
+                string.Empty,
+                useLengthAwareComparer);
+
+            Assert.IsNotNull(routingMap, "Routing map creation failed");
+
+            // Customer's EPK for partition key Subscriptions:DefaultPartitionKey:DefaultPartitionKey
+            // Clearly falls in the first range (starts with "00EB..." which is < first boundary "0E6F...")
+            string epk = "00EB57A7EE7D5CAFE2751C18938111BC33F19FD36AD3B8EFC4A4AA4A09878654AABBCCDDAABBCCDDAABBCCDD00000000";
+            Range<string> queryRange = new Range<string>(epk, epk, isMinInclusive: true, isMaxInclusive: true);
+
+            IReadOnlyList<PartitionKeyRange> overlappingRanges = routingMap.GetOverlappingRanges(queryRange);
+
+            Assert.AreNotEqual(0, overlappingRanges.Count,
+                $"GetOverlappingRanges returned 0 ranges for EPK in multi-split map with useLengthAwareComparer={useLengthAwareComparer}. " +
+                "A count of 0 causes silent EmptyQueryPipelineStage — this is a bug.");
+            Assert.AreEqual(1, overlappingRanges.Count);
+            Assert.AreEqual("0", overlappingRanges[0].Id);
+        }
+
+        /// <summary>
+        /// Tests the "range query" variant: when EffectiveRangesForPartitionKey returns [EPK, EPK+"FF"]
+        /// (the partial-key range format used in queries), GetOverlappingRanges must return at least 1 range
+        /// from a post-split routing map. This is the exact range format produced by
+        /// PartitionKeyInternal.GetEffectivePartitionKeyRange for partial HPK keys.
+        /// </summary>
+        [TestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public void TestGetOverlappingRanges_PostSplitMap_PartialEpkSuffixRange_MustNotReturnEmpty(bool useLengthAwareComparer)
+        {
+            string splitBoundary = "20D8EBCDF57AFA2EF9C0E7058BC2A6352816441F2F87193E9FCC5F9B374B0A582816441F2F87193E9FCC5F9B374B0A5800000000000000000000000000000000";
+
+            CollectionRoutingMap routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(
+                new[]
+                {
+                    Tuple.Create(
+                        new PartitionKeyRange { Id = "1", MinInclusive = "",            MaxExclusive = splitBoundary },
+                        (ServiceIdentity)null),
+                    Tuple.Create(
+                        new PartitionKeyRange { Id = "2", MinInclusive = splitBoundary, MaxExclusive = "FF" },
+                        (ServiceIdentity)null),
+                },
+                string.Empty,
+                useLengthAwareComparer);
+
+            Assert.IsNotNull(routingMap, "Routing map creation failed");
+
+            // [EPK, EPK+"FF"] format: used for partial HPK queries (EffectiveRangesForPartitionKey)
+            string epkMin = "00EB57A7EE7D5CAFE2751C18938111BC33F19FD36AD3B8EFC4A4AA4A09878654";
+            string epkMax = epkMin + "FF";
+            Range<string> queryRange = new Range<string>(epkMin, epkMax, isMinInclusive: true, isMaxInclusive: true);
+
+            IReadOnlyList<PartitionKeyRange> overlappingRanges = routingMap.GetOverlappingRanges(queryRange);
+
+            Assert.AreNotEqual(0, overlappingRanges.Count,
+                $"GetOverlappingRanges returned 0 ranges for partial EPK range [{epkMin}, {epkMax}] " +
+                $"against post-split map with useLengthAwareComparer={useLengthAwareComparer}. " +
+                "A count of 0 causes silent EmptyQueryPipelineStage — this is a bug.");
+        }
+
         // Test GetOverlappingRanges behavior when the UseLengthAwareRangeComparator environment flag is set to false,
         // which forces the use of legacy Min/Max comparators.
         [TestMethod]

@@ -134,18 +134,13 @@ namespace Microsoft.Azure.Cosmos.Routing
             // Then within that two positions, check for overlapping partition key ranges
             foreach (Range<string> providedRange in providedPartitionKeyRanges)
             {
-                int minIndex = this.orderedRanges.BinarySearch(providedRange, this.comparers.MinComparer);
-                if (minIndex < 0)
-                {
-                    minIndex = Math.Max(0, (~minIndex) - 1);
-                }
+                int minIndexRaw = this.orderedRanges.BinarySearch(providedRange, this.comparers.MinComparer);
+                int minIndex = minIndexRaw < 0 ? Math.Max(0, (~minIndexRaw) - 1) : minIndexRaw;
 
-                int maxIndex = this.orderedRanges.BinarySearch(providedRange, this.comparers.MaxComparer);
-                if (maxIndex < 0)
-                {
-                    maxIndex = Math.Min(this.OrderedPartitionKeyRanges.Count - 1, ~maxIndex);
-                }
+                int maxIndexRaw = this.orderedRanges.BinarySearch(providedRange, this.comparers.MaxComparer);
+                int maxIndex = maxIndexRaw < 0 ? Math.Min(this.OrderedPartitionKeyRanges.Count - 1, ~maxIndexRaw) : maxIndexRaw;
 
+                int countBefore = partitionRanges.Count;
                 for (int i = minIndex; i <= maxIndex; ++i)
                 {
                     if (Range<string>.CheckOverlapping(this.orderedRanges[i], providedRange))
@@ -155,6 +150,22 @@ namespace Microsoft.Azure.Cosmos.Routing
                         // JsonSerializable.GetValue → JToken.ToObject on every access.
                         // See: https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5747
                         partitionRanges[this.orderedRanges[i].Min] = this.OrderedPartitionKeyRanges[i];
+                    }
+                }
+
+                // When a LengthAware comparer finds an exact match (minIndexRaw >= 0) at
+                // range[minIndex], ordinal CheckOverlapping may disagree because LengthAware
+                // trims trailing zeros from boundaries — e.g., a 96-char EPK equals
+                // TrimEnd(128-char boundary), causing MinComparer to place the EPK at the
+                // start of range[minIndex], while ordinal comparison places the EPK before it.
+                // In that case the EPK actually overlaps range[minIndex-1] by ordinal semantics.
+                // Fall back to check it to ensure we never silently return 0 ranges.
+                if (partitionRanges.Count == countBefore && minIndexRaw >= 0 && minIndex > 0)
+                {
+                    int fallbackIndex = minIndex - 1;
+                    if (Range<string>.CheckOverlapping(this.orderedRanges[fallbackIndex], providedRange))
+                    {
+                        partitionRanges[this.orderedRanges[fallbackIndex].Min] = this.OrderedPartitionKeyRanges[fallbackIndex];
                     }
                 }
             }
