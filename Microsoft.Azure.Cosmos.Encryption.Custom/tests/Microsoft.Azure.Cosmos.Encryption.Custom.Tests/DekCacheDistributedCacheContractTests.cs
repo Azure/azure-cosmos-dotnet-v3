@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             // Caller's lifecycle ends / is cancelled — the background write must still finish.
             callerCts.Cancel();
 
-            await cache.LastDistributedCacheWriteTask;
+            await cache.WhenAllPendingWritesAsync();
 
             Assert.IsTrue(l2.ContainsKey(DefaultCacheKey), "Background L2 write must complete independently of caller cancellation.");
             Assert.AreEqual(1, l2.SetCount, "Exactly one background SetAsync must have executed.");
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             DekCache cache = NewCache(DefaultTtl, l2, () => now);
 
             cache.SetDekProperties(DekId, MakeDekProperties(DekId));
-            await cache.LastDistributedCacheWriteTask;
+            await cache.WhenAllPendingWritesAsync();
 
             Assert.AreEqual(1, l2.SetCount);
             Assert.IsTrue(l2.TryGetLastSetOptions(DefaultCacheKey, out DistributedCacheEntryOptions options));
@@ -169,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             DekCache cache = NewCache(DefaultTtl, l2, () => now);
 
             cache.SetDekProperties(DekId, MakeDekProperties(DekId));
-            await cache.LastDistributedCacheWriteTask;
+            await cache.WhenAllPendingWritesAsync();
 
             Assert.IsTrue(l2.TryGetLastSetOptions(DefaultCacheKey, out DistributedCacheEntryOptions options));
             Assert.IsNotNull(options);
@@ -206,7 +206,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             // Set: no throw, no L2 task needed
             cache.SetDekProperties("otherDek", MakeDekProperties("otherDek"));
-            await cache.LastDistributedCacheWriteTask; // must be Task.CompletedTask (default)
+            await cache.WhenAllPendingWritesAsync(); // must be Task.CompletedTask (default)
 
             // Remove: no throw
             await cache.RemoveAsync(DekId);
@@ -283,7 +283,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             // SetDekProperties (fire-and-forget)
             cache.SetDekProperties("otherDek", MakeDekProperties("otherDek"));
-            await cache.LastDistributedCacheWriteTask;
+            await cache.WhenAllPendingWritesAsync();
 
             // RemoveAsync
             await cache.RemoveAsync(DekId);
@@ -310,7 +310,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             // Cold-path L2 hydration is fire-and-forget; await its completion before
             // observing l2.SetCount.
-            await cache.LastDistributedCacheWriteTask;
+            await cache.WhenAllPendingWritesAsync();
 
             Assert.AreEqual(1, l2.SetCount, "Cold miss must perform exactly one L2 SetAsync.");
         }
@@ -331,7 +331,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             // Cold-path L2 hydration is fire-and-forget; await its completion before
             // sampling l2.SetCount.
-            await cache.LastDistributedCacheWriteTask;
+            await cache.WhenAllPendingWritesAsync();
 
             int setCountAfterFirst = l2.SetCount;
             Assert.AreEqual(1, setCountAfterFirst);
@@ -345,7 +345,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             // No new L2 write is expected on a warm hit, but await the seam so the
             // observation is deterministic regardless of any prior state.
-            await cache.LastDistributedCacheWriteTask;
+            await cache.WhenAllPendingWritesAsync();
 
             Assert.AreEqual(setCountAfterFirst, l2.SetCount, "A warm L1 hit must not trigger any additional L2 write.");
         }

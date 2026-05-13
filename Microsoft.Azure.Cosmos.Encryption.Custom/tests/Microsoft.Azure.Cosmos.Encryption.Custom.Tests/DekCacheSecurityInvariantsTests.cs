@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             // L2 hydration on the cold-miss path is fire-and-forget; wait for it to
             // complete before asserting on L2 state.
-            await cache.LastDistributedCacheWriteTask;
+            await cache.WhenAllPendingWritesAsync();
 
             // Simulate the downstream "unwrap" step putting the raw key into the RawDekCache.
             // This is exactly the caller flow in DataEncryptionKeyContainerCore.SetRawDek.
@@ -94,8 +94,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             cache.SetRawDek(DekId, BuildRawDek(RawDekMarker, now));
 
-            // Give any (nonexistent) fire-and-forget a chance to surface.
-            await Task.Delay(20);
+            // Drain any background writes (none expected — assertion below proves it).
+            await cache.WhenAllPendingWritesAsync();
 
             Assert.AreEqual(0, l2.SetCount, "SetRawDek must not cause an L2 Set.");
             Assert.AreEqual(0, l2.GetCount, "SetRawDek must not cause an L2 Get.");
@@ -205,7 +205,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             // Peer A populates L2 with a legit KEK pointer.
             DekCache peerA = NewCache(DefaultTtl, sharedL2, () => now);
             peerA.SetDekProperties(DekId, MakeDekProperties(DekId, kekName: "legit-kek"));
-            await peerA.LastDistributedCacheWriteTask;
+            await peerA.WhenAllPendingWritesAsync();
             Assert.IsTrue(sharedL2.ContainsKey(DefaultCacheKey), "Setup: Peer A must have populated L2.");
 
             // Attacker rewrites the L2 slot with metadata pointing at a KEK they control.
@@ -368,7 +368,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             // back into caller-land; DekCache's internal catch is the guard.
             try
             {
-                await cache.LastDistributedCacheWriteTask;
+                await cache.WhenAllPendingWritesAsync();
             }
             catch (Exception ex)
             {
@@ -457,7 +457,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
                 // L2 hydration on the cold-miss path is fire-and-forget; wait for it to
                 // complete before inspecting the on-the-wire payload.
-                await cache.LastDistributedCacheWriteTask;
+                await cache.WhenAllPendingWritesAsync();
 
                 byte[] payload = l2.GetRawForTest(DefaultCacheKey);
                 Assert.IsNotNull(payload, "Baseline: L2 must have been populated.");

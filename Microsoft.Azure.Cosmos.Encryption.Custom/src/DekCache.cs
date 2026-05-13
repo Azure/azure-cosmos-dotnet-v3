@@ -32,10 +32,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         private readonly CancellationTokenSource disposalCts = new CancellationTokenSource();
 
-        // Captured once so post-Dispose IsCancellationRequested checks never read disposalCts.Token
-        // (which would throw ObjectDisposedException).
-        private readonly CancellationToken disposalToken;
-
         // Tracks every in-flight fire-and-forget write so Dispose can drain. The companion
         // ContinueWith observes the task's exception and removes it from this dictionary.
         private readonly ConcurrentDictionary<Task, byte> inFlightWrites = new ConcurrentDictionary<Task, byte>();
@@ -48,8 +44,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         internal AsyncCache<string, InMemoryRawDek> RawDekCache { get; } = new AsyncCache<string, InMemoryRawDek>();
 
-        // Test seam: deterministic await for fire-and-forget distributed-cache writes.
-        internal Task LastDistributedCacheWriteTask { get; private set; } = Task.CompletedTask;
+        /// <summary>
+        /// Test helper: returns a <see cref="Task"/> that completes when every fire-and-forget
+        /// distributed-cache write currently in flight has finished. Returns <see cref="Task.CompletedTask"/>
+        /// when none are pending.
+        /// </summary>
+        internal Task WhenAllPendingWritesAsync()
+        {
+            Task[] pending = this.inFlightWrites.Keys.ToArray();
+            return pending.Length == 0 ? Task.CompletedTask : Task.WhenAll(pending);
+        }
 
         public DekCache(
             TimeSpan? dekPropertiesTimeToLive = null,
@@ -96,7 +100,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this.refreshBeforeExpiry = refreshBeforeExpiry;
             this.cacheKeyPrefix = cacheKeyPrefix;
             this.utcNow = utcNow ?? (() => DateTime.UtcNow);
-            this.disposalToken = this.disposalCts.Token;
         }
 
         private void ThrowIfDisposed()
@@ -145,11 +148,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 {
                     activity?.SetTag("cache.proactive_refresh", true);
 
-                    // Background refresh; pass disposalToken so a stale BackgroundRefresh task
-                    // surviving the owning provider can be cancelled on shutdown.
+                    // Background refresh; pass the disposal token so a stale BackgroundRefresh
+                    // task surviving the owning provider can be cancelled on shutdown.
                     this.DekPropertiesCache.BackgroundRefreshNonBlocking(
                         dekId,
-                        () => this.FetchFromSourceAndUpdateCachesAsync(dekId, fetcher, diagnosticsContext, this.disposalToken));
+                        () => this.FetchFromSourceAndUpdateCachesAsync(dekId, fetcher, diagnosticsContext, this.disposalCts.Token));
                 }
 
                 return cachedDekProperties.ServerProperties;
@@ -230,9 +233,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// </summary>
         private void UpdateDistributedCacheInBackground(string dekId, CachedDekProperties cachedDekProperties)
         {
-            // Task.Run intentionally does NOT receive the disposal token — that would surface
-            // as TaskCanceledException on LastDistributedCacheWriteTask if the token was already
-            // set. The lambda checks the token explicitly so the seam always completes cleanly.
+            // Task.Run intentionally does NOT receive the disposal token: the lambda checks the
+            // token explicitly and treats post-disposal cancellation as a clean no-op so the
+            // tracked Task always finishes RanToCompletion (never Canceled / Faulted).
             Task write = Task.Run(async () =>
             {
                 using (Activity dcActivity = ActivitySource.StartActivity("DekCache.UpdateDistributedCache"))
@@ -241,7 +244,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     dcActivity?.SetTag("cache.key", dekId);
                     dcActivity?.SetTag("cache.operation", "write");
 
-                    if (this.disposalToken.IsCancellationRequested)
+                    CancellationToken token = this.disposalCts.Token;
+                    if (token.IsCancellationRequested)
                     {
                         dcActivity?.SetTag("cache.result", "skipped-disposed");
                         return;
@@ -249,10 +253,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
                     try
                     {
-                        await this.UpdateDistributedCacheAsync(dekId, cachedDekProperties, this.disposalToken).ConfigureAwait(false);
+                        await this.UpdateDistributedCacheAsync(dekId, cachedDekProperties, token).ConfigureAwait(false);
                         dcActivity?.SetTag("cache.result", "success");
                     }
-                    catch (OperationCanceledException) when (this.disposalToken.IsCancellationRequested)
+                    catch (OperationCanceledException) when (token.IsCancellationRequested)
                     {
                         dcActivity?.SetTag("cache.result", "cancelled-disposed");
                     }
@@ -280,8 +284,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 CancellationToken.None,
                 TaskContinuationOptions.ExecuteSynchronously,
                 TaskScheduler.Default);
-
-            this.LastDistributedCacheWriteTask = write;
         }
 
         public void SetRawDek(string dekId, InMemoryRawDek inMemoryRawDek)
@@ -611,14 +613,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 return;
             }
 
-            try
-            {
-                this.disposalCts.Cancel();
-            }
-            catch (ObjectDisposedException)
-            {
-                // Already disposed concurrently — Cancel is a no-op contract.
-            }
+            this.disposalCts.Cancel();
 
             Task[] pending = this.inFlightWrites.Keys.ToArray();
             if (pending.Length > 0)
@@ -642,14 +637,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     // Dispose itself never throws.
                 }
             }
-
-            try
-            {
-                this.disposalCts.Dispose();
-            }
-            catch (ObjectDisposedException)
-            {
-            }
         }
 
         /// <summary>
@@ -663,13 +650,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 return;
             }
 
-            try
-            {
-                this.disposalCts.Cancel();
-            }
-            catch (ObjectDisposedException)
-            {
-            }
+            this.disposalCts.Cancel();
 
             Task[] pending = this.inFlightWrites.Keys.ToArray();
             if (pending.Length > 0)
@@ -692,14 +673,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     {
                     }
                 }
-            }
-
-            try
-            {
-                this.disposalCts.Dispose();
-            }
-            catch (ObjectDisposedException)
-            {
             }
         }
     }

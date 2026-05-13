@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             DataEncryptionKeyProperties written = MakeDekProperties(DekId, createdTime: created);
             peerA.SetDekProperties(DekId, written);
-            await peerA.LastDistributedCacheWriteTask;
+            await peerA.WhenAllPendingWritesAsync();
 
             DataEncryptionKeyProperties read = await peerB.GetOrAddDekPropertiesAsync(
                 DekId, FailingFetcher, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc));
 
             peerA.SetDekProperties(DekId, written);
-            await peerA.LastDistributedCacheWriteTask;
+            await peerA.WhenAllPendingWritesAsync();
 
             DataEncryptionKeyProperties read = await peerB.GetOrAddDekPropertiesAsync(
                 DekId, FailingFetcher, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             DataEncryptionKeyProperties written = MakeDekProperties(DekId, wrappedKey: wrapped);
             peerA.SetDekProperties(DekId, written);
-            await peerA.LastDistributedCacheWriteTask;
+            await peerA.WhenAllPendingWritesAsync();
 
             DataEncryptionKeyProperties read = await peerB.GetOrAddDekPropertiesAsync(
                 DekId, FailingFetcher, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             DekCache peerA = NewCache(l2, () => now);
             peerA.SetDekProperties(DekId, MakeDekProperties(DekId, wrappedKey: new byte[] { 0x77, 0x88 }));
-            await peerA.LastDistributedCacheWriteTask;
+            await peerA.WhenAllPendingWritesAsync();
 
             // Peer C is constructed AFTER peer A wrote. Nothing in L1 is shared.
             DekCache peerC = NewCache(l2, () => now);
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             DekCache peerA = NewCache(l2, () => now);
 
             peerA.SetDekProperties(DekId, MakeDekProperties(DekId));
-            await peerA.LastDistributedCacheWriteTask;
+            await peerA.WhenAllPendingWritesAsync();
 
             byte[] raw = l2.GetRawForTest(DefaultCacheKey);
             Assert.IsNotNull(raw, "L2 must be populated after SetDekProperties.");
@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             DekCache peerA = NewCache(l2, () => now);
 
             peerA.SetDekProperties(DekId, MakeDekProperties(DekId));
-            await peerA.LastDistributedCacheWriteTask;
+            await peerA.WhenAllPendingWritesAsync();
 
             string json = Encoding.UTF8.GetString(l2.GetRawForTest(DefaultCacheKey));
 
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             DekCache peerA = NewCache(l2, () => now);
 
             peerA.SetDekProperties(DekId, MakeDekProperties(DekId));
-            await peerA.LastDistributedCacheWriteTask;
+            await peerA.WhenAllPendingWritesAsync();
 
             JObject parsed = JObject.Parse(Encoding.UTF8.GetString(l2.GetRawForTest(DefaultCacheKey)));
             JToken stamp = parsed["serverPropertiesExpiryUtc"];
@@ -300,7 +300,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             peerA.SetDekProperties(DekId, MakeDekProperties(DekId, wrappedKey: valueA));
             peerB.SetDekProperties(DekId, MakeDekProperties(DekId, wrappedKey: valueB));
 
-            await Task.WhenAll(peerA.LastDistributedCacheWriteTask, peerB.LastDistributedCacheWriteTask);
+            await Task.WhenAll(peerA.WhenAllPendingWritesAsync(), peerB.WhenAllPendingWritesAsync());
 
             DataEncryptionKeyProperties read = await peerC.GetOrAddDekPropertiesAsync(
                 DekId, FailingFetcher, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
@@ -329,7 +329,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             DekCache peerA = NewCache(l2, () => now);
             peerA.SetDekProperties(DekId, MakeDekProperties(DekId));
-            await peerA.LastDistributedCacheWriteTask;
+            await peerA.WhenAllPendingWritesAsync();
             Assert.IsTrue(l2.ContainsKey(DefaultCacheKey), "Pre-condition: L2 populated by peer A.");
 
             await peerA.RemoveAsync(DekId);

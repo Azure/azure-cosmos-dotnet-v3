@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             // L2 hydration on the cold-miss path is fire-and-forget; wait for it to
             // complete before asserting on L2 state.
-            await cache.LastDistributedCacheWriteTask;
+            await cache.WhenAllPendingWritesAsync();
 
             Assert.AreEqual(1, cosmosCalls);
             Assert.IsTrue(l2.ContainsKey(DefaultCacheKey), "L2 must be populated on first fetch.");
@@ -185,6 +185,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             await cache.GetOrAddDekPropertiesAsync(
                 DekId, HealthyFetcher, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
 
+            // Drain the warmup's fire-and-forget L2 write so RemoveForTest cannot race it.
+            await cache.WhenAllPendingWritesAsync();
+
             // Clear L2 to simulate "no peer has populated yet or L2 entry expired".
             l2.RemoveForTest(DefaultCacheKey);
             now = now.AddMinutes(31);
@@ -198,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             // L2 hydration on cold-miss / forced-refresh paths is now fire-and-forget;
             // wait for the background write to settle before asserting L2 state.
-            await cache.LastDistributedCacheWriteTask;
+            await cache.WhenAllPendingWritesAsync();
 
             Assert.AreEqual(1, cosmosCalls, "With L2 empty the expiry path must fetch from Cosmos.");
             Assert.IsTrue(l2.ContainsKey(DefaultCacheKey), "The fresh fetch must repopulate L2.");
@@ -221,7 +224,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             // Cold-path L2 hydration is fire-and-forget. Wait for it to settle before
             // we mutate l2 below — otherwise the background SetAsync can race with
             // RemoveForTest and leave the entry present.
-            await cache.LastDistributedCacheWriteTask;
+            await cache.WhenAllPendingWritesAsync();
 
             l2.RemoveForTest(DefaultCacheKey);
             now = now.AddMinutes(31);
@@ -249,7 +252,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             DekCache cache = NewCache(DefaultTtl, l2, () => now);
 
             cache.SetDekProperties(DekId, MakeDekProperties(DekId));
-            await cache.LastDistributedCacheWriteTask;
+            await cache.WhenAllPendingWritesAsync();
 
             Assert.IsTrue(l2.TryGetAbsoluteExpiration(DefaultCacheKey, out DateTimeOffset? absExp));
             Assert.IsTrue(absExp.HasValue);
@@ -274,7 +277,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             DekCache cache = NewCache(DefaultTtl, l2, () => now);
 
             cache.SetDekProperties(DekId, MakeDekProperties(DekId));
-            await cache.LastDistributedCacheWriteTask;
+            await cache.WhenAllPendingWritesAsync();
             Assert.IsTrue(l2.ContainsKey(DefaultCacheKey), "Setup: L2 must be populated.");
 
             // Advance clock just past L1/freshness expiry.

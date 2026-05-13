@@ -54,17 +54,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 cacheKeyPrefix: "lifecycle-test");
 
             cache.SetDekProperties("dek1", NewDek("dek1"));
-            Task pending = cache.LastDistributedCacheWriteTask;
+            Task pending = cache.WhenAllPendingWritesAsync();
 
             // Dispose should cancel and bound-drain in well under the 5-second timeout.
             DateTime startedAt = DateTime.UtcNow;
             cache.Dispose();
             TimeSpan elapsed = DateTime.UtcNow - startedAt;
 
-            Assert.IsTrue(elapsed < TimeSpan.FromSeconds(4), $"Dispose should drain quickly once disposalToken is cancelled (elapsed={elapsed}).");
+            Assert.IsTrue(elapsed < TimeSpan.FromSeconds(4), $"Dispose should drain quickly once the disposal token is cancelled (elapsed={elapsed}).");
 
             // The pending task should have completed cleanly (cancellation observed inside the
-            // lambda's `catch (OperationCanceledException) when (this.disposalToken.IsCancellationRequested)`).
+            // background lambda's OperationCanceledException catch when the disposal token fires).
             Assert.IsTrue(pending.IsCompleted, "Pending write task should be observed/completed after drain.");
             Assert.IsFalse(pending.IsFaulted, "Cancellation on disposal must not surface as a fault.");
         }
@@ -89,10 +89,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 cacheKeyPrefix: "lifecycle-test");
 
             cache.SetDekProperties("dek1", NewDek("dek1"));
+            Task pending = cache.WhenAllPendingWritesAsync();
 
             await cache.DisposeAsync();
 
-            Assert.IsTrue(cache.LastDistributedCacheWriteTask.IsCompleted);
+            Assert.IsTrue(pending.IsCompleted, "Pending write task should be observed/completed after the async drain.");
+            Assert.IsFalse(pending.IsFaulted, "Cancellation on disposal must not surface as a fault.");
         }
 
         [TestMethod]
@@ -161,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                     cacheKeyPrefix: "no-unobserved");
 
                 cache.SetDekProperties("dek1", NewDek("dek1"));
-                await cache.LastDistributedCacheWriteTask;
+                await cache.WhenAllPendingWritesAsync();
                 cache.Dispose();
 
                 // Force a GC to provoke any UnobservedTaskException finalizer notifications.

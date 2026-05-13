@@ -298,7 +298,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 CancellationToken.None);
 
             Assert.AreEqual(1, fetchCount);
-            await provider.DekCache.LastDistributedCacheWriteTask;
+            await provider.DekCache.WhenAllPendingWritesAsync();
 
             // A peer DekCache sharing the same L2 (simulating a second process / cold L1) must
             // read the populated entry without invoking its fetcher.

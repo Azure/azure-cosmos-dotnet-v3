@@ -24,6 +24,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     {
         private const string ContainerPartitionKeyPath = "/id";
 
+        // ProtectedDataEncryptionKey rejects TimeSpan.MaxValue, so use ~100 years to model the
+        // upstream "cache forever" semantics that the EncryptionKeyStoreProvider exposes via a
+        // null DataEncryptionKeyCacheTimeToLive.
+        private static readonly TimeSpan EffectivelyForeverTimeToLive = TimeSpan.FromDays(36500);
+
         private readonly DataEncryptionKeyContainerCore dataEncryptionKeyContainerCore;
 
         private int isDisposed;
@@ -158,16 +163,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         private void InitializeProtectedDataEncryptionKeyTimeToLive()
         {
             this.PdekCacheTimeToLive = this.EncryptionKeyStoreProvider.DataEncryptionKeyCacheTimeToLive;
-            if (this.PdekCacheTimeToLive.HasValue)
-            {
-                ProtectedDataEncryptionKey.TimeToLive = this.PdekCacheTimeToLive.Value;
-            }
-            else
-            {
-                // Null = forever caching upstream; ProtectedDataEncryptionKey rejects TimeSpan.MaxValue,
-                // so use ~100 years as a stand-in.
-                ProtectedDataEncryptionKey.TimeToLive = TimeSpan.FromDays(36500);
-            }
+            ProtectedDataEncryptionKey.TimeToLive = this.PdekCacheTimeToLive ?? EffectivelyForeverTimeToLive;
         }
 
         /// <summary>

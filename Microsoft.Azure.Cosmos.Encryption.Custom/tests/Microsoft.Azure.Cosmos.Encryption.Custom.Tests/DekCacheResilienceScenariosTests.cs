@@ -151,14 +151,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             DekCache cache = NewCache(DefaultTtl, l2, () => now);
 
             l2.HangOnGet = true;
+            TaskCompletionSource<bool> l2GetEntered = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            l2.OnGet = (_, _) => l2GetEntered.TrySetResult(true);
 
             using CancellationTokenSource cts = new CancellationTokenSource();
 
             Task<DataEncryptionKeyProperties> call = cache.GetOrAddDekPropertiesAsync(
                 DekId, HealthyFetcher, CosmosDiagnosticsContext.Create(null), cts.Token);
 
-            // Give the operation a moment to reach the L2 read.
-            await Task.Delay(20);
+            // Wait deterministically for the operation to enter the L2 read.
+            await l2GetEntered.Task.WaitAsync(TimeSpan.FromSeconds(5));
             cts.Cancel();
 
             Exception caughtA = null;
@@ -324,29 +326,36 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             now = now.AddMinutes(26);
 
             int refreshCalls = 0;
+            TaskCompletionSource<bool> fetcherEntered = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             TaskCompletionSource<bool> gate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             Func<string, CosmosDiagnosticsContext, CancellationToken, Task<DataEncryptionKeyProperties>> fetcher =
                 async (id, ctx, ct) =>
                 {
                     Interlocked.Increment(ref refreshCalls);
+                    fetcherEntered.TrySetResult(true);
                     await gate.Task;
                     return MakeDekProperties(id);
                 };
 
-            // Fire N synchronous calls in close succession. Each returns the cached value.
-            for (int i = 0; i < N; i++)
-            {
-                await cache.GetOrAddDekPropertiesAsync(
-                    DekId, fetcher, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
-            }
+            // Fire N concurrent reads. The first to enter the proactive-refresh path schedules
+            // the background refresh; the rest may either return the warm cached value or queue
+            // behind the in-flight refresh — but the contract is that the fetcher runs at most once.
+            Task[] reads = Enumerable.Range(0, N)
+                .Select(_ => cache.GetOrAddDekPropertiesAsync(
+                    DekId, fetcher, CosmosDiagnosticsContext.Create(null), CancellationToken.None))
+                .ToArray();
 
-            // Give background scheduling a chance to settle; fetcher is still blocked on the gate.
-            await Task.Delay(50);
+            // Wait deterministically for the proactive refresh's fetcher to start.
+            await fetcherEntered.Task.WaitAsync(TimeSpan.FromSeconds(5));
 
             Assert.AreEqual(1, refreshCalls,
-                $"Expected at most one in-flight proactive refresh across {N} calls in the refresh window; observed {refreshCalls}.");
+                $"Expected exactly one in-flight proactive refresh across {N} concurrent calls in the refresh window; observed {refreshCalls}.");
 
             gate.SetResult(true);
+            await Task.WhenAll(reads).WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.AreEqual(1, refreshCalls,
+                "No additional refresh must run after the proactive refresh completes.");
         }
 
         [TestMethod]
@@ -386,8 +395,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             bool completed = await refreshDone.WaitAsync(TimeSpan.FromSeconds(5));
             Assert.IsTrue(completed, "Background refresh must complete within a reasonable timeout.");
 
-            // Give the bg task a chance to store the refreshed value before we re-read.
-            await Task.Delay(50);
+            // After the proactive refresh's L1 update, a fire-and-forget L2 write is scheduled
+            // from inside the same code path. Awaiting it gives a deterministic happens-before
+            // edge for L1 visibility (the L2 FAF is queued AFTER the L1 lazy is updated).
+            await cache.WhenAllPendingWritesAsync();
 
             DataEncryptionKeyProperties next = await cache.GetOrAddDekPropertiesAsync(
                 DekId,

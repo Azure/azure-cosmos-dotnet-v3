@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 cacheKeyPrefix: "evtest");
 
             cache.SetDekProperties("dek1", NewDek("dek1"));
-            await cache.LastDistributedCacheWriteTask;
+            await cache.WhenAllPendingWritesAsync();
 
             EventWrittenEventArgs evt = listener.WaitForEvent(DistributedCacheBackgroundWriteFailedEventId);
             Assert.IsNotNull(evt, "Expected DistributedCacheBackgroundWriteFailed event to be raised on the EventSource.");

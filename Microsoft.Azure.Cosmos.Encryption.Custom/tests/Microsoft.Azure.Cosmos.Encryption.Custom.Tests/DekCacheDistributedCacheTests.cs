@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
             Assert.AreEqual(1, peerAFetchCount);
-            await peerA.LastDistributedCacheWriteTask;
+            await peerA.WhenAllPendingWritesAsync();
 
             // Peer B is a brand-new DekCache instance sharing the same L2 (simulates a
             // different process / a process that just restarted and has an empty L1).
@@ -331,7 +331,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 (id, ctx, ct) => Task.FromResult(CreateDekProperties(id)),
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
-            await customPrefixCache.LastDistributedCacheWriteTask;
+            await customPrefixCache.WhenAllPendingWritesAsync();
 
             // A cache sharing the same L2 but using the DEFAULT prefix must not see the entry.
             DekCache defaultPrefixCache = new DekCache(
@@ -411,7 +411,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             // Tenant1's cold-miss L2 write is fire-and-forget. Wait for it to complete
             // before tenant1Peer reads from the shared L2 below.
-            await tenant1Cache.LastDistributedCacheWriteTask;
+            await tenant1Cache.WhenAllPendingWritesAsync();
 
             DataEncryptionKeyProperties tenant2Result = await tenant2Cache.GetOrAddDekPropertiesAsync(
                 "shared-dek-id",
@@ -419,7 +419,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
 
-            await tenant2Cache.LastDistributedCacheWriteTask;
+            await tenant2Cache.WhenAllPendingWritesAsync();
 
             Assert.AreEqual(1, tenant1FetchCount, "Tenant 1 should fetch once");
             Assert.AreEqual(1, tenant2FetchCount, "Tenant 2 should fetch once");
@@ -502,7 +502,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             cache.SetDekProperties("dek1", dekProps);
 
             // Wait deterministically for the fire-and-forget distributed cache write
-            await cache.LastDistributedCacheWriteTask;
+            await cache.WhenAllPendingWritesAsync();
 
             // Assert
             Assert.IsTrue(distributedCache.ContainsKey("test-dek:v1:dek1"), "Distributed cache should contain the key after SetDekProperties");
@@ -536,7 +536,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             cache.SetDekProperties("dek1", dekProps);
 
             // Wait deterministically for the fire-and-forget distributed cache write
-            await cache.LastDistributedCacheWriteTask;
+            await cache.WhenAllPendingWritesAsync();
 
             // Assert - memory cache should still have the value
             CachedDekProperties cached = await cache.DekPropertiesCache.GetAsync(
@@ -574,7 +574,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 CancellationToken.None);
 
             // Cold-path L2 hydration is fire-and-forget; await it before checking L2.
-            await cache.LastDistributedCacheWriteTask;
+            await cache.WhenAllPendingWritesAsync();
 
             Assert.IsTrue(distributedCache.ContainsKey("test-dek:v1:dek1"), "Precondition: distributed cache should contain the key");
 
@@ -607,7 +607,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 CancellationToken.None);
 
             // Cold-path L2 hydration is fire-and-forget; await it before checking L2.
-            await cache1.LastDistributedCacheWriteTask;
+            await cache1.WhenAllPendingWritesAsync();
 
             Assert.IsTrue(distributedCache.ContainsKey("test-dek:v1:dek1"), "Precondition: distributed cache populated");
 
