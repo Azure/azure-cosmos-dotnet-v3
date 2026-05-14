@@ -417,8 +417,10 @@ namespace Microsoft.Azure.Cosmos
             // The SDK handles retries with jittered exponential backoff.
             // Only retry in Gateway mode or ThinClient mode. In Direct mode, GoneAndRetryWithRequestRetryPolicy
             // already handles 449 at the transport layer — retrying here would cause double-retry amplification.
+            // Exclude DTX requests: DTX 449/5352 is handled by ShouldRetryDtxRequest with its own budget.
             if (statusCode.HasValue && (int)statusCode.Value == 449
-                && (this.isGatewayClientMode || this.isThinClientEnabled))
+                && (this.isGatewayClientMode || this.isThinClientEnabled)
+                && !this.isDtxRequest)
             {
                 return this.ShouldRetryOnRetryWithStatus();
             }
