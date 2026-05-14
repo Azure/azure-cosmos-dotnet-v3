@@ -55,6 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [5636](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5636) CosmosClientBuilder: Fixes self-referencing loop in GetSerializedConfiguration with STJ TypeInfoResolver
 - [5748](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5748) Routing: Fixes GetOverlappingRanges CPU overhead from repeated JSON deserialization
 - [5807](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5807) ChangeFeedProcessor: Fixes lease de-duplication for /partitionKey-partitioned lease containers
+- [5778](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5778) DocumentClient: Fixes Potential Memory Leak By Properly Disposing `GlobalPartitionEndpointManagerCore`. This bug left the circuit breaker failback loop running indefinitely, leaking `Task.Delay` timers.
 
 ### <a name="3.59.0-preview.0"/> [3.59.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.59.0-preview.0) - 2026-3-19
 
@@ -210,6 +211,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [5252](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5252) TokenCredentialCache: Adds an options to override AAD audience scope
 - [5308](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5308) Query: Adds Weighted RRF capability to LINQ
 - [5213](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5213) Query: Adds GetIndexMetrics LINQ extension method
+- [5284](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5284) PPAF: Removes Environment Variable to Set PPAF at the SDK Layer and Add Support for Internal Client Options
+- [5310](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5310) PPAF: Adds Dynamic Enablement of PPAF
 
 #### Fixed
 
