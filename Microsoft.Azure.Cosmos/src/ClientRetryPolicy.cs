@@ -32,8 +32,6 @@ namespace Microsoft.Azure.Cosmos
         private const int MaxDtxRetryCount = 10;
         private const int MaxDtxInfraFailureRetryCount = 9;
         private const int DtxInfraFailureMaxExponent = 6;
-        private static readonly TimeSpan DtxInfraFailureBaseBackoff = TimeSpan.FromMilliseconds(100);
-        private static readonly TimeSpan DtxInfraFailureMaxBackoff = TimeSpan.FromSeconds(5);
 
         // Default backoff parameters for 449 (RetryWith) - matches direct-mode GoneAndRetryWithRequestRetryPolicy
         // defaults and behavior (penalty-free first retry, then jittered exponential backoff).
@@ -43,6 +41,8 @@ namespace Microsoft.Azure.Cosmos
         private const int DefaultRetryWithTotalWaitTimeMilliseconds = 30000;
         private const int RetryWithBackoffMultiplier = 2;
 
+        private static readonly TimeSpan DtxInfraFailureBaseBackoff = TimeSpan.FromMilliseconds(100);
+        private static readonly TimeSpan DtxInfraFailureMaxBackoff = TimeSpan.FromSeconds(5);
         private static readonly object RetryWithRandomLock = new object();
         private static readonly Random RetryWithRandom = new Random();
 
