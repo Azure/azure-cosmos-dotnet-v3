@@ -3459,6 +3459,11 @@
     "Microsoft.Azure.Cosmos.CosmosDiagnostics;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
+        "Boolean HedgingStarted()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean HedgingStarted();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Int32 GetFailedRequestCount()": {
           "Type": "Method",
           "Attributes": [],
@@ -3468,6 +3473,16 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.ServerSideCumulativeMetrics GetQueryMetrics();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.RequestedRegion] GetRequestedRegions()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.RequestedRegion] GetRequestedRegions();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.IReadOnlyList`1[System.String] GetRespondedRegions()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Collections.Generic.IReadOnlyList`1[System.String] GetRespondedRegions();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Collections.Generic.IReadOnlyList`1[System.ValueTuple`2[System.String,System.Uri]] GetContactedRegions()": {
           "Type": "Method",
@@ -8409,6 +8424,112 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String WestUS3;IsInitOnly:False;IsStatic:True;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.RequestedRegion;System.ValueType;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:False;IsValueType:True;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "Boolean Equals(Microsoft.Azure.Cosmos.RequestedRegion)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean Equals(Microsoft.Azure.Cosmos.RequestedRegion);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:True;"
+        },
+        "Boolean Equals(System.Object)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean Equals(System.Object);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int32 GetHashCode()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Int32 GetHashCode();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.RequestedRegionReason get_Reason()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.RequestedRegionReason get_Reason();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.RequestedRegionReason Reason": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.RequestedRegionReason Reason;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.RequestedRegionReason get_Reason();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Boolean Microsoft.Azure.Cosmos.RequestedRegion.op_Equality(Microsoft.Azure.Cosmos.RequestedRegion, Microsoft.Azure.Cosmos.RequestedRegion)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Boolean Microsoft.Azure.Cosmos.RequestedRegion.op_Equality(Microsoft.Azure.Cosmos.RequestedRegion, Microsoft.Azure.Cosmos.RequestedRegion);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Boolean Microsoft.Azure.Cosmos.RequestedRegion.op_Inequality(Microsoft.Azure.Cosmos.RequestedRegion, Microsoft.Azure.Cosmos.RequestedRegion)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Boolean Microsoft.Azure.Cosmos.RequestedRegion.op_Inequality(Microsoft.Azure.Cosmos.RequestedRegion, Microsoft.Azure.Cosmos.RequestedRegion);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_RegionName()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_RegionName();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String RegionName": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.String RegionName;CanRead:True;CanWrite:False;System.String get_RegionName();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String ToString()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String ToString();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor(System.String, Microsoft.Azure.Cosmos.RequestedRegionReason)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor(System.String, Microsoft.Azure.Cosmos.RequestedRegionReason)"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.RequestedRegionReason;System.Enum;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:True;IsClass:False;IsValueType:True;IsNested:False;IsGenericType:False;IsSerializable:True": {
+      "Subclasses": {},
+      "Members": {
+        "Byte value__": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Byte value__;IsInitOnly:False;IsStatic:False;"
+        },
+        "Microsoft.Azure.Cosmos.RequestedRegionReason CircuitBreakerProbe": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.RequestedRegionReason CircuitBreakerProbe;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.RequestedRegionReason Hedging": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.RequestedRegionReason Hedging;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.RequestedRegionReason Initial": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.RequestedRegionReason Initial;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.RequestedRegionReason OperationRetry": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.RequestedRegionReason OperationRetry;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.RequestedRegionReason RegionFailover": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.RequestedRegionReason RegionFailover;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.RequestedRegionReason TransportRetry": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.RequestedRegionReason TransportRetry;IsInitOnly:False;IsStatic:True;"
         }
       },
       "NestedTypes": {}
