@@ -54,3 +54,14 @@ jobs:
     MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
     MultiRegionMultiMasterConnectionString: $(COSMOSDB_MULTIMASTER)
 
+# Run the preview-flag build (which includes the Encryption / Encryption.Custom
+# SDK-source project-ref + NuGet-surface parity builds added in PR #5798) on
+# the rolling schedule so any newly-added abstract member on Container under
+# #if PREVIEW that lacks an unconditional override in EncryptionContainer is
+# caught off-PR as well.
+- template:  templates/build-preview.yml
+  parameters:
+    BuildConfiguration: Release
+    Arguments: ' '
+    VmImage: $(VmImage)
+
