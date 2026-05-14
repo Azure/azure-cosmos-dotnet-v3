@@ -732,16 +732,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         // Session token handling
 
         [TestMethod]
-        [Description("Session tokens returned in DTC operation responses are merged into the client's session container, preventing ReadSessionNotAvailable errors on subsequent reads.")]
+        [Description("When DTC response carries a session token in the new wire format (LSN-only sessionToken + " +
+            "separate partitionKeyRangeId), the SDK assembles the canonical {pkRangeId}:{lsn} token and merges it " +
+            "into the session container so that subsequent Session-consistency reads succeed.")]
         public async Task ValidateSessionTokenMergedIntoDtcClient()
         {
             ToDoActivity seedDoc = ToDoActivity.CreateRandomToDoActivity();
             ItemResponse<ToDoActivity> seedResponse = await this.container.CreateItemAsync(seedDoc, new PartitionKey(seedDoc.pk), cancellationToken: this.cancellationToken);
 
-            string validSessionToken = seedResponse.Headers.Session;
-            Assert.IsFalse(string.IsNullOrEmpty(validSessionToken), "A valid session token must be obtained from the emulator for this test to be meaningful.");
+            string canonicalToken = seedResponse.Headers.Session;
+            Assert.IsFalse(string.IsNullOrEmpty(canonicalToken), "A valid session token must be obtained from the emulator for this test to be meaningful.");
 
-            string dtcMockResponse = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""sessionToken"":""{validSessionToken}""}}]}}";
+            // Split the canonical {pkRangeId}:{lsn} token into the two fields the DTC endpoint sends.
+            int colonIndex = canonicalToken.IndexOf(':');
+            Assert.IsTrue(colonIndex > 0, $"Emulator session token '{canonicalToken}' must be in {{pkRangeId}}:{{lsn}} format.");
+            string pkRangeId = canonicalToken.Substring(0, colonIndex);
+            string lsnOnly = canonicalToken.Substring(colonIndex + 1);
+
+            // Build a DTC mock response using the new wire contract: LSN-only in sessionToken,
+            // pkRangeId in a separate partitionKeyRangeId field.
+            string dtcMockResponse = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""sessionToken"":""{lsnOnly}"",""partitionKeyRangeId"":""{pkRangeId}""}}]}}";
 
             DistributedTransactionMockHandler handler = new DistributedTransactionMockHandler(
                 request => Task.FromResult(this.BuildMockResponse(HttpStatusCode.OK, dtcMockResponse)));
@@ -754,13 +764,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
                 });
 
-            ToDoActivity newDoc = ToDoActivity.CreateRandomToDoActivity();
+            // Use the same partition key as seedDoc so the DTC operation targets the same physical
+            // partition whose session token is carried in the mock response.
+            ToDoActivity newDoc = ToDoActivity.CreateRandomToDoActivity(pk: seedDoc.pk);
             DistributedTransactionResponse dtcResponse = await dtcClient
                 .CreateDistributedWriteTransaction()
                 .CreateItem(this.database.Id, this.container.Id, new PartitionKey(newDoc.pk), newDoc.id, newDoc)
                 .CommitTransactionAsync(this.cancellationToken);
 
             Assert.IsTrue(dtcResponse.IsSuccessStatusCode, "The simulated DTC commit should appear successful to the client.");
+            Assert.AreEqual(canonicalToken, dtcResponse[0].SessionToken,
+                "SessionToken must be assembled as {pkRangeId}:{lsn} from the two separate wire fields.");
 
             Container dtcContainer = dtcClient.GetContainer(this.database.Id, this.container.Id);
             try
@@ -782,6 +796,53 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     "ReadSessionNotAvailable (404/1002). This indicates that session token " +
                     "merging in DistributedTransactionCommitter is broken.");
             }
+        }
+
+        [TestMethod]
+        [Description("When DTC response carries only an LSN-only sessionToken with no partitionKeyRangeId " +
+            "(current server behavior before coordinator update), the commit must succeed without throwing " +
+            "and the SDK silently skips merging the session token rather than crashing.")]
+        // TODO(issue#5857): Remove this test once the coordinator is updated to emit partitionKeyRangeId and the SDK no longer needs to handle its absence.
+        public async Task ValidateSessionTokenSkipped_WhenPartitionKeyRangeIdAbsent()
+        {
+            ToDoActivity seedDoc = ToDoActivity.CreateRandomToDoActivity();
+            ItemResponse<ToDoActivity> seedResponse = await this.container.CreateItemAsync(seedDoc, new PartitionKey(seedDoc.pk), cancellationToken: this.cancellationToken);
+
+            string canonicalToken = seedResponse.Headers.Session;
+            Assert.IsFalse(string.IsNullOrEmpty(canonicalToken), "A valid session token must be obtained from the emulator.");
+            int colonIndex = canonicalToken.IndexOf(':');
+            Assert.IsTrue(colonIndex > 0, $"Emulator session token '{canonicalToken}' must be in {{pkRangeId}}:{{lsn}} format.");
+            string lsnOnly = canonicalToken.Substring(colonIndex + 1);
+
+            // Current server behavior: LSN-only token, no partitionKeyRangeId field.
+            string dtcMockResponse = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""sessionToken"":""{lsnOnly}""}}]}}";
+
+            DistributedTransactionMockHandler handler = new DistributedTransactionMockHandler(
+                request => Task.FromResult(this.BuildMockResponse(HttpStatusCode.OK, dtcMockResponse)));
+
+            using CosmosClient dtcClient = TestCommon.CreateCosmosClient(
+                clientOptions: new CosmosClientOptions
+                {
+                    CustomHandlers = { handler },
+                    ConnectionMode = ConnectionMode.Gateway,
+                    ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
+                });
+
+            // Use the same partition key as seedDoc for consistency.
+            ToDoActivity newDoc = ToDoActivity.CreateRandomToDoActivity(pk: seedDoc.pk);
+            DistributedTransactionResponse dtcResponse = await dtcClient
+                .CreateDistributedWriteTransaction()
+                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(newDoc.pk), newDoc.id, newDoc)
+                .CommitTransactionAsync(this.cancellationToken);
+
+            // Commit must succeed — this was the crash point before the fix (IndexOutOfRangeException
+            // in SessionContainer.SetSessionToken when it tried tokenParts[1] on an LSN-only token).
+            Assert.IsTrue(dtcResponse.IsSuccessStatusCode, "Commit must succeed even when partitionKeyRangeId is absent.");
+
+            // Session token must be null — FromJson nulls it out when pkRangeId is absent so that
+            // MergeSessionTokens skips the operation rather than passing a bad token to SetSessionToken.
+            Assert.IsNull(dtcResponse[0].SessionToken,
+                "SessionToken must be null when partitionKeyRangeId is absent; the SDK silently skips merging.");
         }
 
         // Read Transaction Tests
