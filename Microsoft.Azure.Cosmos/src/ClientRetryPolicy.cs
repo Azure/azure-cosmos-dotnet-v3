@@ -33,8 +33,7 @@ namespace Microsoft.Azure.Cosmos
         private const int MaxDtxInfraFailureRetryCount = 9;
         private const int DtxInfraFailureMaxExponent = 6;
 
-        // Default backoff parameters for 449 (RetryWith) - matches direct-mode GoneAndRetryWithRequestRetryPolicy
-        // defaults and behavior (penalty-free first retry, then jittered exponential backoff).
+        // ----- RetryWith (449) jittered exponential backoff constants -----
         private const int DefaultRetryWithInitialBackoffMilliseconds = 10;
         private const int DefaultRetryWithMaxBackoffMilliseconds = 1000;
         private const int DefaultRetryWithRandomSaltMilliseconds = 5;
@@ -52,19 +51,14 @@ namespace Microsoft.Azure.Cosmos
         private readonly bool enableEndpointDiscovery;
         private readonly bool isThinClientEnabled;
         private readonly bool isGatewayClientMode;
-
-        // 449 (RetryWith) backoff configuration
         private readonly int retryWithInitialBackoffMilliseconds;
         private readonly int retryWithMaxBackoffMilliseconds;
         private readonly int? retryWithRandomSaltMilliseconds;
         private readonly int retryWithTotalWaitTimeMilliseconds;
-
         private int failoverRetryCount;
 
         private int sessionTokenRetryCount;
         private int serviceUnavailableRetryCount;
-        private int? retryWithCurrentBackoffMilliseconds;
-        private Stopwatch retryWithStopwatch;
         private int distributedTransactionRetryCount;
         private int distributedTransactionInfraFailureRetryCount;
         private bool isReadRequest;
@@ -74,8 +68,11 @@ namespace Microsoft.Azure.Cosmos
         private Uri locationEndpoint;
         private RetryContext retryContext;
         private DocumentServiceRequest documentServiceRequest;
+        private Stopwatch retryWithStopwatch;
+        private int? retryWithCurrentBackoffMilliseconds;
 #if !INTERNAL
         private volatile bool addHubRegionProcessingOnlyHeader;
+        private CrossRegionAvailabilityContext crossRegionAvailabilityContext;
 #endif
 
         public ClientRetryPolicy(
@@ -283,8 +280,21 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 #if !INTERNAL
-            // If previous attempt failed with 404/1002, add the hub-region-processing-only header to all subsequent retry attempts
-            if (this.addHubRegionProcessingOnlyHeader)
+            // Initialize CrossRegionAvailabilityContext from Properties if not already set.
+            // In hedging scenarios, Properties carries the shared context instance injected by
+            // CrossRegionHedgingAvailabilityStrategy before cloning.
+            if (this.crossRegionAvailabilityContext == null
+                && request.Properties != null
+                && request.Properties.TryGetValue(CrossRegionAvailabilityContext.PropertyKey, out object ctxObj)
+                && ctxObj is CrossRegionAvailabilityContext sharedCtx)
+            {
+                this.crossRegionAvailabilityContext = sharedCtx;
+            }
+
+            // If previous attempt failed with 404/1002, add the hub-region-processing-only header to all subsequent retry attempts.
+            // Also check the shared context — another hedged request may have already set the flag.
+            if (this.addHubRegionProcessingOnlyHeader
+                || this.crossRegionAvailabilityContext?.ShouldAddHubRegionProcessingOnlyHeader == true)
             {
                 request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
             }
@@ -531,12 +541,21 @@ namespace Microsoft.Azure.Cosmos
                 else
                 {
 #if !INTERNAL
-                    // Only set the hub region processing header for single master accounts.
-                    // Set header after the second consecutive 404/1002 (count >= 2 means both
-                    // the initial request and the first retry to the write region have failed).
+                    // Hub region discovery: only for single-master accounts.
+                    // In single-master, after 2× 404/1002 (ReadSessionNotAvailable), attach the
+                    // x-ms-cosmos-hub-region-processing-only header so the backend routes the
+                    // next retry to the partition-set level hub (primary) replica in the write region.
                     if (this.sessionTokenRetryCount >= MaxSessionTokenRetryCount)
                     {
                         this.addHubRegionProcessingOnlyHeader = true;
+
+                        // Propagate to shared context so hedged requests
+                        // (running in parallel with their own ClientRetryPolicy)
+                        // pick up the hub region header immediately.
+                        if (this.crossRegionAvailabilityContext != null)
+                        {
+                            this.crossRegionAvailabilityContext.ShouldAddHubRegionProcessingOnlyHeader = true;
+                        }
                     }
 
                     if (this.sessionTokenRetryCount > MaxSessionTokenRetryCount)
