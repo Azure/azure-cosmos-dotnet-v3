@@ -362,6 +362,18 @@ namespace Microsoft.Azure.Cosmos
 
                 this.TryMarkEndpointUnavailableForPkRange(isSystemResourceUnavailableForWrite: false);
 
+                // With only one region available, retrying is futile — the same
+                // endpoint would be resolved every time. Return NoRetry so the
+                // error surfaces immediately instead of looping for ~2 minutes.
+                int availablePreferredLocations = this.globalEndpointManager.PreferredLocationCount;
+                if (availablePreferredLocations <= 1)
+                {
+                    DefaultTrace.TraceInformation(
+                        "ClientRetryPolicy: Not retrying. No other regions available for the request. AvailablePreferredLocations = {0}.",
+                        availablePreferredLocations);
+                    return ShouldRetryResult.NoRetry();
+                }
+
                 return await this.ShouldRetryOnEndpointFailureAsync(
                     isReadRequest: this.isReadRequest,
                     markBothReadAndWriteAsUnavailable: false,
