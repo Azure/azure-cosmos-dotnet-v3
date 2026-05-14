@@ -277,6 +277,20 @@ namespace Microsoft.Azure.Cosmos
                 : this.globalEndpointManager.ResolveServiceEndpoint(request);
 
             request.RequestContext.RouteToLocation(this.locationEndpoint);
+
+            // Hedging-Detection API: tag the upcoming dispatch reason on Properties so that
+            // the downstream dispatch site (TransportHandler / GatewayStoreModel) can append
+            // a RequestedRegion entry with the correct reason. Only override when this is a
+            // genuine retry attempt — first-attempt dispatches default to Initial (set by
+            // the dispatch site), and hedge-arm dispatches have their Hedging reason set by
+            // CrossRegionHedgingAvailabilityStrategy before reaching this policy.
+            if (this.retryContext != null && request.Properties != null)
+            {
+                RequestedRegionReason reason = this.retryContext.RetryRequestOnPreferredLocations
+                    ? RequestedRegionReason.RegionFailover
+                    : RequestedRegionReason.OperationRetry;
+                request.Properties[Tracing.HedgingDetectionState.DispatchReasonPropertyKey] = reason;
+            }
         }
 
         private async Task<ShouldRetryResult> ShouldRetryInternalAsync(

@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -92,6 +93,15 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
+
+            // Hedging-Detection API: record the dispatched region + reason on the trace's
+            // HedgingDetectionState. This is the actual dispatch point for the operation
+            // (after ClientRetryPolicy.OnBeforeSendRequest has resolved the routing endpoint,
+            // before the wire send is invoked). Hedge arms set the reason to Hedging on
+            // Properties prior to entering this handler; retries set the reason to
+            // OperationRetry/RegionFailover via ClientRetryPolicy.OnBeforeSendRequest; all
+            // other first attempts default to Initial.
+            TransportHandler.AppendDispatchedRegion(request, serviceRequest, this.client.DocumentClient.GlobalEndpointManager);
 
             ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, request.Trace);
             serviceRequest.RequestContext.ClientRequestStatistics = clientSideRequestStatisticsTraceDatum;
@@ -182,6 +192,71 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Appends a <see cref="RequestedRegion"/> entry to the operation's
+        /// <see cref="HedgingDetectionState"/> at the dispatch point (after the routing
+        /// endpoint is resolved, before the wire send is invoked).
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The reason is read from <see cref="DocumentServiceRequest.Properties"/> under the
+        /// well-known key <see cref="HedgingDetectionState.DispatchReasonPropertyKey"/>, which
+        /// upstream sites (ClientRetryPolicy, CrossRegionHedgingAvailabilityStrategy) set to
+        /// signal why this particular dispatch is happening. Absence of the key implies a
+        /// first attempt and defaults to <see cref="RequestedRegionReason.Initial"/>. The key
+        /// is removed after consumption so that subsequent retries on the same request
+        /// re-default unless a new reason is set.
+        /// </para>
+        /// <para>
+        /// The region name is resolved from the routing endpoint via
+        /// <see cref="GlobalEndpointManager.GetLocation(Uri)"/> (DocumentServiceRequest's own
+        /// <c>RegionName</c> is not populated until later in the dispatch chain, by
+        /// <c>GatewayStoreModel</c> / <c>AddressResolver</c>).
+        /// </para>
+        /// </remarks>
+        internal static void AppendDispatchedRegion(
+            RequestMessage requestMessage,
+            DocumentServiceRequest serviceRequest,
+            GlobalEndpointManager globalEndpointManager)
+        {
+            if (requestMessage == null || serviceRequest == null)
+            {
+                return;
+            }
+
+            HedgingDetectionState state = requestMessage.Trace?.Summary?.HedgingDetectionState;
+            if (state == null)
+            {
+                return;
+            }
+
+            // Resolve reason; consume the property so retries don't carry a stale value.
+            RequestedRegionReason reason = RequestedRegionReason.Initial;
+            if (serviceRequest.Properties != null
+                && serviceRequest.Properties.TryGetValue(HedgingDetectionState.DispatchReasonPropertyKey, out object reasonObj)
+                && reasonObj is RequestedRegionReason resolvedReason)
+            {
+                reason = resolvedReason;
+                serviceRequest.Properties.Remove(HedgingDetectionState.DispatchReasonPropertyKey);
+            }
+
+            // Resolve region name from the routing endpoint URI.
+            string regionName = null;
+            Uri endpoint = serviceRequest.RequestContext?.LocationEndpointToRoute;
+            if (endpoint != null && globalEndpointManager != null)
+            {
+                regionName = globalEndpointManager.GetLocation(endpoint);
+            }
+
+            // Skip if we couldn't resolve a name; better empty than misleading "unknown".
+            if (string.IsNullOrEmpty(regionName))
+            {
+                return;
+            }
+
+            state.AppendRequested(regionName, reason);
         }
     }
 }
