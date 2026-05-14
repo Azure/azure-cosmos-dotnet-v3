@@ -95,9 +95,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
                         || (ex.StatusCode == System.Net.HttpStatusCode.Forbidden
                             && ex.SubStatusCode == (int)Documents.SubStatusCodes.DatabaseAccountNotFound)))
                 {
-                    // MetadataRequestThrottleRetryPolicy has already marked the
-                    // failing endpoint unavailable, so the next iteration will
-                    // route to a different region.
+                    // The SDK's retry infrastructure (ClientRetryPolicy or
+                    // MetadataRequestThrottleRetryPolicy) may have marked the failing
+                    // endpoint unavailable. If so, the next iteration will route to a
+                    // different region. Otherwise, the delay gives the region time to recover.
                     retryCount++;
                     DefaultTrace.TraceWarning(
                         "BootstrapperCore: Regional failure during initialization "

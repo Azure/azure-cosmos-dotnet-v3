@@ -349,7 +349,10 @@ namespace Microsoft.Azure.Cosmos
                     isSystemResourceUnavailableForWrite: false);
             }
 
-            // Recieved 500 status code or lease not found
+            // 500/read and 410/LeaseNotFound use ShouldRetryOnEndpointFailureAsync (marks endpoint
+            // globally unavailable) rather than ShouldRetryOnUnavailableEndpointStatusCodes used by 503.
+            // 503 already has partition-level failover via TryMarkEndpointUnavailableForPkRange; 500/410
+            // lacked any cross-region retry path before this change.
             if ((statusCode == HttpStatusCode.InternalServerError && this.isReadRequest)
                 || (statusCode == HttpStatusCode.Gone && subStatusCode == SubStatusCodes.LeaseNotFound))
             {
@@ -526,7 +529,8 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// For a ServiceUnavailable (503.0) we could be having a timeout from Direct/TCP locally or a request to Gateway request with a similar response due to an endpoint not yet available.
         /// We try and retry the request only if there are other regions available. The retry logic is applicable for single master write accounts as well.
-        /// Other status codes include InternalServerError (500.0) and LeaseNotFound (410.1022).
+        /// Note: InternalServerError (500.0) for reads and LeaseNotFound (410.1022) are now routed through
+        /// <see cref="ShouldRetryOnEndpointFailureAsync"/> which marks the endpoint globally unavailable and enables cross-region retry.
         /// </summary>
         private ShouldRetryResult ShouldRetryOnUnavailableEndpointStatusCodes()
         {
