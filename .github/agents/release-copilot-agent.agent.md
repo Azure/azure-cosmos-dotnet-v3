@@ -124,17 +124,17 @@ Example: If releasing `3.58.0`:
 
 ### 2.2 Determine the Previous Release Version
 
-Read `Directory.Build.props` on the `master` branch — the current `ClientOfficialVersion` value represents the last released version. Use this to determine which PRs to include in the changelog.
+Read `Directory.Build.props` on the `main` branch — the current `ClientOfficialVersion` value represents the last released version. Use this to determine which PRs to include in the changelog.
 
 ### 2.3 Generate Changelog
 
 #### 2.3.1 List Merged PRs Since Last Release
 
-Use the GitHub MCP server or `gh` CLI to list all merged PRs to `master` since the last release:
+Use the GitHub MCP server or `gh` CLI to list all merged PRs to `main` since the last release:
 
 ```powershell
 # Find the merge commit date of the last release PR, or the date of the last release tag
-gh pr list --repo Azure/azure-cosmos-dotnet-v3 --state merged --base master --limit 200 --json number,title,mergedAt
+gh pr list --repo Azure/azure-cosmos-dotnet-v3 --state merged --base main --limit 200 --json number,title,mergedAt
 ```
 
 Or use the GitHub MCP `list_pull_requests` tool to fetch merged PRs.
@@ -256,7 +256,7 @@ git checkout -b users/<username>/release-X.Y.Z
 
 Where `<username>` is the GitHub username obtained above (e.g., `users/nalutripician/release-3.58.0`).
 
-> **🚫 NEVER push directly to `master`.** Always create a feature branch and PR.
+> **🚫 NEVER push directly to `main`.** Always create a feature branch and PR.
 
 #### 2.6.2 Commit Changes
 
@@ -323,7 +323,7 @@ After the PR is approved and merged:
 
 1. **Create release branch:**
    ```powershell
-   git checkout master && git pull
+   git checkout main && git pull
    git checkout -b releases/X.Y.Z
    git push origin releases/X.Y.Z
    ```
@@ -465,13 +465,13 @@ Present the existing versions and **ask the user to confirm the target hotfix ve
 > **Existing versions for 3.Y: 3.Y.0, 3.Y.1**
 > **What version should this hotfix target?** (suggested: 3.Y.2)
 
-After the user confirms, update versioning accordingly. The preview version is calculated relative to the **hotfix base version**, not from `master`:
+After the user confirms, update versioning accordingly. The preview version is calculated relative to the **hotfix base version**, not from `main`:
 
 - `ClientOfficialVersion` → user-confirmed version (e.g., `3.55.2`)
 - `ClientPreviewVersion` → hotfix minor + 1, patch 0 (e.g., `3.56.0`)
 - `ClientPreviewSuffixVersion` → `preview.{hotfix_patch}` (e.g., `preview.2`)
 
-> **⚠️ Important:** Do NOT use the `master` branch preview version. The hotfix preview version is always derived from the hotfix's own minor version.
+> **⚠️ Important:** Do NOT use the `main` branch preview version. The hotfix preview version is always derived from the hotfix's own minor version.
 
 **Examples:**
 
@@ -578,24 +578,24 @@ git diff --no-index "Microsoft.Azure.Cosmos\contracts\API_PREV_PREVIEW.txt" "Mic
 
 **Capture both diffs — they must be included in the PR description.**
 
-### 3.9 Ensure Master Sync
+### 3.9 Ensure Main Sync
 
-**Important:** Contract file changes and changelog updates must also be reflected on `master`.
+**Important:** Contract file changes and changelog updates must also be reflected on `main`.
 
-1. Create a working branch from `master` for the sync PR:
+1. Create a working branch from `main` for the sync PR:
    ```powershell
-   git checkout master && git pull
-   git checkout -b users/<username>/hotfix-X.Y.Z+1-master-sync
+   git checkout main && git pull
+   git checkout -b users/<username>/hotfix-X.Y.Z+1-main-sync
    ```
 2. Add the following to the branch:
    - The new GA API contract file (`API_X.Y.Z+1.txt`)
    - The new preview API contract file (`API_X.Y+1.0-preview.Z+1.txt`)
    - Changelog entries for the hotfix version
-3. Create a PR targeting `master`:
+3. Create a PR targeting `main`:
    ```powershell
-   gh pr create --base master --title "[Internal] Contracts: Adds hotfix X.Y.Z+1 contract files and changelog" --body "Syncs master with hotfix release X.Y.Z+1 contract files and changelog entries."
+   gh pr create --base main --title "[Internal] Contracts: Adds hotfix X.Y.Z+1 contract files and changelog" --body "Syncs main with hotfix release X.Y.Z+1 contract files and changelog entries."
    ```
-4. This ensures `master` stays in sync with released versions
+4. This ensures `main` stays in sync with released versions
 
 ### 3.10 Create Hotfix PR
 
@@ -626,7 +626,7 @@ gh pr create --base releases/X.Y.Z+1 --title "Hotfix: Adds version X.Y.Z+1" --bo
 ### Checklist
 - [ ] Cherry-picks verified
 - [ ] Contract files (GA and preview) added to hotfix branch
-- [ ] Contract files (GA and preview) synced to master (separate PR)
+- [ ] Contract files (GA and preview) synced to main (separate PR)
 - [ ] Kiran sign-off obtained
 "
 ```
@@ -878,7 +878,7 @@ Then create a new branch and PR:
 
 1. Create a new branch:
    ```powershell
-   git checkout master && git pull
+   git checkout main && git pull
    git checkout -b users/<username>/changelog-fix-X.Y.Z
    ```
 2. Edit `changelog.md` to add the missed entries under the existing X.Y.Z version heading
@@ -888,7 +888,7 @@ Then create a new branch and PR:
    git add changelog.md
    git commit -m "Changelog: Adds missed PRs to X.Y.Z changelog"
    git push origin users/<username>/changelog-fix-X.Y.Z
-   gh pr create --base master --title "Changelog: Adds missed PRs to X.Y.Z release notes" --body "## Changelog Fix for X.Y.Z
+   gh pr create --base main --title "Changelog: Adds missed PRs to X.Y.Z release notes" --body "## Changelog Fix for X.Y.Z
 
    ### Added PRs
    - #PR1: Title

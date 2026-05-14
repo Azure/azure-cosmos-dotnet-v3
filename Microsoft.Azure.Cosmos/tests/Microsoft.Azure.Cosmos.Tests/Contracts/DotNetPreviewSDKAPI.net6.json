@@ -392,10 +392,29 @@
           "Attributes": [],
           "MethodInfo": "System.Nullable`1[System.Int32] ThroughputBucket;CanRead:True;CanWrite:True;System.Nullable`1[System.Int32] get_ThroughputBucket();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_ThroughputBucket(System.Nullable`1[System.Int32]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "System.TimeSpan get_InferenceRequestTimeout()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.TimeSpan get_InferenceRequestTimeout();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.TimeSpan InferenceRequestTimeout": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.TimeSpan InferenceRequestTimeout;CanRead:True;CanWrite:True;System.TimeSpan get_InferenceRequestTimeout();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_InferenceRequestTimeout(System.TimeSpan);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Void set_EnableRemoteRegionPreferredForSessionRetry(Boolean)": {
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void set_EnableRemoteRegionPreferredForSessionRetry(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_InferenceRequestTimeout(System.TimeSpan)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_InferenceRequestTimeout(System.TimeSpan);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_ReadConsistencyStrategy(System.Nullable`1[Microsoft.Azure.Cosmos.ReadConsistencyStrategy])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -1202,6 +1221,197 @@
       },
       "NestedTypes": {}
     },
+    "Microsoft.Azure.Cosmos.Embedding;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "Microsoft.Azure.Cosmos.EmbeddingSource EmbeddingSource[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"embeddingSource\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.EmbeddingSource EmbeddingSource;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.EmbeddingSource get_EmbeddingSource();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_EmbeddingSource(Microsoft.Azure.Cosmos.EmbeddingSource);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.EmbeddingSource get_EmbeddingSource()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.EmbeddingSource get_EmbeddingSource();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_EmbeddingSource(Microsoft.Azure.Cosmos.EmbeddingSource)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_EmbeddingSource(Microsoft.Azure.Cosmos.EmbeddingSource);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.EmbeddingAuthType;System.Enum;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:True;IsClass:False;IsValueType:True;IsNested:False;IsGenericType:False;IsSerializable:True": {
+      "Subclasses": {},
+      "Members": {
+        "Int32 value__": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Int32 value__;IsInitOnly:False;IsStatic:False;"
+        },
+        "Microsoft.Azure.Cosmos.EmbeddingAuthType ApiKey[System.Runtime.Serialization.EnumMemberAttribute(Value = \"ApiKey\")]": {
+          "Type": "Field",
+          "Attributes": [
+            "EnumMemberAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.EmbeddingAuthType ApiKey;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.EmbeddingAuthType Entra[System.Runtime.Serialization.EnumMemberAttribute(Value = \"Entra\")]": {
+          "Type": "Field",
+          "Attributes": [
+            "EnumMemberAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.EmbeddingAuthType Entra;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.EmbeddingAuthType Unknown[System.Runtime.Serialization.EnumMemberAttribute(Value = \"Unknown\")]": {
+          "Type": "Field",
+          "Attributes": [
+            "EnumMemberAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.EmbeddingAuthType Unknown;IsInitOnly:False;IsStatic:True;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.EmbeddingSource;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "Boolean Equals(Microsoft.Azure.Cosmos.EmbeddingSource)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean Equals(Microsoft.Azure.Cosmos.EmbeddingSource);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:True;"
+        },
+        "Boolean Equals(System.Object)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean Equals(System.Object);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int32 GetHashCode()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Int32 GetHashCode();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.EmbeddingAuthType AuthType[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"authType\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonConverterAttribute",
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.EmbeddingAuthType AuthType;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.EmbeddingAuthType get_AuthType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_AuthType(Microsoft.Azure.Cosmos.EmbeddingAuthType);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.EmbeddingAuthType get_AuthType()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.EmbeddingAuthType get_AuthType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.ObjectModel.Collection`1[System.String] get_SourcePaths()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.ObjectModel.Collection`1[System.String] get_SourcePaths();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.ObjectModel.Collection`1[System.String] SourcePaths[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"sourcePaths\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "System.Collections.ObjectModel.Collection`1[System.String] SourcePaths;CanRead:True;CanWrite:True;System.Collections.ObjectModel.Collection`1[System.String] get_SourcePaths();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_SourcePaths(System.Collections.ObjectModel.Collection`1[System.String]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String DeploymentName[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"deploymentName\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "System.String DeploymentName;CanRead:True;CanWrite:True;System.String get_DeploymentName();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DeploymentName(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String Endpoint[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"endpoint\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "System.String Endpoint;CanRead:True;CanWrite:True;System.String get_Endpoint();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Endpoint(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_DeploymentName()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_DeploymentName();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_Endpoint()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_Endpoint();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_ModelName()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_ModelName();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String ModelName[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"modelName\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "System.String ModelName;CanRead:True;CanWrite:True;System.String get_ModelName();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_ModelName(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor()": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor()"
+        },
+        "Void set_AuthType(Microsoft.Azure.Cosmos.EmbeddingAuthType)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_AuthType(Microsoft.Azure.Cosmos.EmbeddingAuthType);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_DeploymentName(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_DeploymentName(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_Endpoint(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_Endpoint(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_ModelName(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_ModelName(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_SourcePaths(System.Collections.ObjectModel.Collection`1[System.String])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_SourcePaths(System.Collections.ObjectModel.Collection`1[System.String]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
     "Microsoft.Azure.Cosmos.Fluent.ChangeFeedPolicyDefinition;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
@@ -1231,6 +1441,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithEnableRemoteRegionPreferredForSessionRetry(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithInferenceRequestTimeout(System.TimeSpan)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithInferenceRequestTimeout(System.TimeSpan);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithReadConsistencyStrategy(Microsoft.Azure.Cosmos.ReadConsistencyStrategy)": {
           "Type": "Method",
@@ -1466,6 +1681,11 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.ReadConsistencyStrategy GlobalStrong;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.ReadConsistencyStrategy LastCommittedSingleWriteRegion": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ReadConsistencyStrategy LastCommittedSingleWriteRegion;IsInitOnly:False;IsStatic:True;"
         },
         "Microsoft.Azure.Cosmos.ReadConsistencyStrategy LatestCommitted": {
           "Type": "Field",

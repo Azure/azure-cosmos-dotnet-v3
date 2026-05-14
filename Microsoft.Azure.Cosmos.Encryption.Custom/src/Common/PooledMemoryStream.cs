@@ -1,0 +1,610 @@
+//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos.Encryption.Custom
+{
+    using System;
+    using System.Buffers;
+    using System.IO;
+    using System.Threading;
+    using System.Threading.Tasks;
+
+    /// <summary>
+    /// A MemoryStream that uses ArrayPool for its underlying buffer to reduce GC pressure.
+    /// The buffer is returned to the pool when the stream is disposed.
+    /// </summary>
+    /// <remarks>
+    /// <para><strong>Thread Safety:</strong></para>
+    /// <para>
+    /// This class is NOT thread-safe. All operations must be synchronized externally if the stream
+    /// is accessed from multiple threads concurrently. Concurrent reads, writes, or property access
+    /// without synchronization will result in data corruption or exceptions.
+    /// </para>
+    /// <para><strong>Disposal Requirements:</strong></para>
+    /// <para>
+    /// CRITICAL: This stream MUST be disposed to return rented ArrayPool buffers. Failure to dispose
+    /// will leak pooled memory and eventually exhaust the ArrayPool. Always use try-finally or using
+    /// statements to ensure disposal, especially when exceptions may occur.
+    /// </para>
+    /// <para><strong>Security Considerations:</strong></para>
+    /// <para>
+    /// GetBuffer() and TryGetBuffer() are internal-only to prevent external code from accessing pooled
+    /// buffers that may contain sensitive cryptographic material. External callers must use ToArray()
+    /// which returns a safe copy. Buffers are always cleared (zeroed) before returning to the pool when
+    /// used for encryption operations, which is enforced by using the default clearOnReturn: true parameter.
+    /// This defense-in-depth approach ensures sensitive data never remains in pooled memory.
+    /// </para>
+    /// </remarks>
+    internal sealed class PooledMemoryStream : Stream
+    {
+        private const int MaxArrayLength = 0X7FFFFFC7; // From Array.MaxLength
+
+        private readonly bool clearOnReturn;
+        private readonly int initialCapacity;
+
+        private byte[] buffer;
+        private int position;
+        private int length;
+        private int capacity;
+        private bool disposed;
+
+#if NET8_0_OR_GREATER
+        public PooledMemoryStream(int capacity = -1, bool clearOnReturn = true)
+        {
+            this.clearOnReturn = clearOnReturn;
+
+            // Use configuration default if not specified
+            if (capacity < 0)
+            {
+                capacity = PooledStreamConfiguration.Current.StreamInitialCapacity;
+            }
+
+            if (capacity < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(capacity));
+            }
+
+            // Defer ArrayPool rental to the first write. This mirrors MemoryStream's
+            // lazy-allocation behavior and eliminates a fixed ~4 KB per-instance cost
+            // for short-lived streams whose final size is smaller than the configured
+            // initial capacity. The configured capacity is preserved as a floor so the
+            // first rent is at least that large, matching the pre-lazy growth policy
+            // for typical writes.
+            this.initialCapacity = capacity;
+            this.buffer = Array.Empty<byte>();
+            this.capacity = 0;
+            this.position = 0;
+            this.length = 0;
+        }
+#else
+        public PooledMemoryStream(int capacity = 4096, bool clearOnReturn = true)
+        {
+            if (capacity < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(capacity));
+            }
+
+            this.clearOnReturn = clearOnReturn;
+            this.initialCapacity = capacity;
+            this.buffer = Array.Empty<byte>();
+            this.capacity = 0;
+            this.position = 0;
+            this.length = 0;
+        }
+#endif
+
+        public override bool CanRead => !this.disposed;
+
+        public override bool CanSeek => !this.disposed;
+
+        public override bool CanWrite => !this.disposed;
+
+        public override long Length
+        {
+            get
+            {
+                this.EnsureNotDisposed();
+                return this.length;
+            }
+        }
+
+        public override long Position
+        {
+            get
+            {
+                this.EnsureNotDisposed();
+                return this.position;
+            }
+
+            set
+            {
+                this.EnsureNotDisposed();
+                if (value < 0 || value > int.MaxValue)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
+
+                this.position = (int)value;
+            }
+        }
+
+        public override void Flush()
+        {
+            this.EnsureNotDisposed();
+        }
+
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            this.EnsureNotDisposed();
+            return Task.CompletedTask;
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            this.EnsureNotDisposed();
+            this.ValidateArguments(buffer, offset, count);
+
+            int availableBytes = this.length - this.position;
+            if (availableBytes <= 0)
+            {
+                return 0;
+            }
+
+            int bytesToRead = Math.Min(availableBytes, count);
+            Buffer.BlockCopy(this.buffer, this.position, buffer, offset, bytesToRead);
+            this.position += bytesToRead;
+            return bytesToRead;
+        }
+
+#if NET8_0_OR_GREATER
+        public override int Read(Span<byte> buffer)
+        {
+            this.EnsureNotDisposed();
+
+            int availableBytes = this.length - this.position;
+            if (availableBytes <= 0)
+            {
+                return 0;
+            }
+
+            int bytesToRead = Math.Min(availableBytes, buffer.Length);
+            this.buffer.AsSpan(this.position, bytesToRead).CopyTo(buffer);
+            this.position += bytesToRead;
+            return bytesToRead;
+        }
+#endif
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            this.EnsureNotDisposed();
+            this.ValidateArguments(buffer, offset, count);
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<int>(cancellationToken);
+            }
+
+            try
+            {
+                int bytesRead = this.Read(buffer, offset, count);
+                return Task.FromResult(bytesRead);
+            }
+            catch (Exception ex)
+            {
+                return Task.FromException<int>(ex);
+            }
+        }
+
+#if NET8_0_OR_GREATER
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled<int>(cancellationToken);
+            }
+
+            try
+            {
+                int bytesRead = this.Read(buffer.Span);
+                return ValueTask.FromResult(bytesRead);
+            }
+            catch (Exception ex)
+            {
+                return ValueTask.FromException<int>(ex);
+            }
+        }
+#endif
+
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            this.EnsureNotDisposed();
+
+            long newPosition = origin switch
+            {
+                SeekOrigin.Begin => offset,
+                SeekOrigin.Current => this.position + offset,
+                SeekOrigin.End => this.length + offset,
+                _ => throw new ArgumentException("Invalid seek origin", nameof(origin))
+            };
+
+            if (newPosition < 0 || newPosition > int.MaxValue)
+            {
+                throw new IOException("Seek position is out of range");
+            }
+
+            this.position = (int)newPosition;
+            return this.position;
+        }
+
+        public override void SetLength(long value)
+        {
+            this.EnsureNotDisposed();
+
+            if (value < 0 || value > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(value));
+            }
+
+            int newLength = (int)value;
+            int oldLength = this.length;
+
+            if (newLength > this.capacity)
+            {
+                this.EnsureCapacity(newLength);
+            }
+
+            // Zero the newly exposed region when expanding length to prevent
+            // leaking pool garbage data. This is unconditional to maintain
+            // MemoryStream semantics (new bytes must read as zero).
+            if (newLength > oldLength)
+            {
+                Array.Clear(this.buffer, oldLength, newLength - oldLength);
+            }
+
+            this.length = newLength;
+            if (this.position > this.length)
+            {
+                this.position = this.length;
+            }
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            this.EnsureNotDisposed();
+            this.ValidateArguments(buffer, offset, count);
+
+            long newPositionLong = (long)this.position + count;
+            if (newPositionLong > int.MaxValue)
+            {
+                throw new IOException("Stream too long");
+            }
+
+            int newPosition = (int)newPositionLong;
+            if (newPosition > this.capacity)
+            {
+                this.EnsureCapacity(newPosition);
+            }
+
+            // Zero any gap between current length and write position to prevent
+            // leaking pool garbage. Unconditional to maintain MemoryStream semantics.
+            if (this.position > this.length)
+            {
+                Array.Clear(this.buffer, this.length, this.position - this.length);
+            }
+
+            Buffer.BlockCopy(buffer, offset, this.buffer, this.position, count);
+            this.position = newPosition;
+            if (this.position > this.length)
+            {
+                this.length = this.position;
+            }
+        }
+
+#if NET8_0_OR_GREATER
+        public override void Write(ReadOnlySpan<byte> buffer)
+        {
+            this.EnsureNotDisposed();
+
+            long newPositionLong = (long)this.position + buffer.Length;
+            if (newPositionLong > int.MaxValue)
+            {
+                throw new IOException("Stream too long");
+            }
+
+            int newPosition = (int)newPositionLong;
+            if (newPosition > this.capacity)
+            {
+                this.EnsureCapacity(newPosition);
+            }
+
+            // Zero any gap between current length and write position to prevent
+            // leaking pool garbage. Unconditional to maintain MemoryStream semantics.
+            if (this.position > this.length)
+            {
+                Array.Clear(this.buffer, this.length, this.position - this.length);
+            }
+
+            buffer.CopyTo(this.buffer.AsSpan(this.position));
+            this.position = newPosition;
+            if (this.position > this.length)
+            {
+                this.length = this.position;
+            }
+        }
+#endif
+
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            this.EnsureNotDisposed();
+            this.ValidateArguments(buffer, offset, count);
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+
+            try
+            {
+                this.Write(buffer, offset, count);
+                return Task.CompletedTask;
+            }
+            catch (Exception ex)
+            {
+                return Task.FromException(ex);
+            }
+        }
+
+#if NET8_0_OR_GREATER
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled(cancellationToken);
+            }
+
+            try
+            {
+                this.Write(buffer.Span);
+                return ValueTask.CompletedTask;
+            }
+            catch (Exception ex)
+            {
+                return ValueTask.FromException(ex);
+            }
+        }
+#endif
+
+        /// <summary>
+        /// Gets the underlying buffer. Only valid before disposal.
+        /// </summary>
+        /// <remarks>
+        /// SECURITY: This method is internal to prevent external code from accessing pooled buffers
+        /// that may contain sensitive cryptographic material. External callers should use ToArray()
+        /// which returns a safe copy. This method is only exposed internally for testing buffer
+        /// clearing behavior.
+        /// </remarks>
+        internal byte[] GetBuffer()
+        {
+            this.EnsureNotDisposed();
+            return this.buffer;
+        }
+
+        /// <summary>
+        /// Tries to get the written portion of the buffer without copying.
+        /// </summary>
+        /// <remarks>
+        /// SECURITY: This method is internal to prevent external code from accessing pooled buffers
+        /// that may contain sensitive cryptographic material. External callers should use ToArray()
+        /// which returns a safe copy. This method is only exposed internally for testing buffer
+        /// clearing behavior.
+        /// </remarks>
+        internal bool TryGetBuffer(out ArraySegment<byte> buffer)
+        {
+            this.EnsureNotDisposed();
+            buffer = new ArraySegment<byte>(this.buffer, 0, this.length);
+            return true;
+        }
+
+        /// <summary>
+        /// Returns a copy of the stream contents as a byte array.
+        /// </summary>
+        public byte[] ToArray()
+        {
+            this.EnsureNotDisposed();
+
+            if (this.length == 0)
+            {
+                return Array.Empty<byte>();
+            }
+
+            byte[] result = new byte[this.length];
+            Buffer.BlockCopy(this.buffer, 0, result, 0, this.length);
+            return result;
+        }
+
+#if NET8_0_OR_GREATER
+        public override void CopyTo(Stream destination, int bufferSize)
+        {
+            this.EnsureNotDisposed();
+
+            if (destination == null)
+            {
+                throw new ArgumentNullException(nameof(destination));
+            }
+
+            if (bufferSize <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(bufferSize));
+            }
+
+            int bytesToCopy = this.length - this.position;
+            if (bytesToCopy > 0)
+            {
+                destination.Write(this.buffer, this.position, bytesToCopy);
+                this.position = this.length;
+            }
+        }
+#endif
+
+        public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+        {
+            this.EnsureNotDisposed();
+
+            if (destination == null)
+            {
+                throw new ArgumentNullException(nameof(destination));
+            }
+
+            if (bufferSize <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(bufferSize));
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            int bytesToCopy = this.length - this.position;
+            if (bytesToCopy > 0)
+            {
+                int sourceOffset = this.position;
+                await destination.WriteAsync(this.buffer, sourceOffset, bytesToCopy, cancellationToken);
+                this.position = this.length;
+            }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (!this.disposed && disposing)
+            {
+                if (this.buffer != null && this.buffer.Length > 0)
+                {
+                    // Defense-in-depth: Explicitly clear the full rented buffer before returning to pool.
+                    // ArrayPool.Return's clearArray parameter only clears when the pool decides to retain
+                    // the buffer for reuse. By clearing explicitly, we guarantee sensitive encryption data
+                    // is zeroed regardless of ArrayPool's internal retention policy.
+                    if (this.clearOnReturn)
+                    {
+                        Array.Clear(this.buffer, 0, this.buffer.Length);
+                    }
+
+                    ArrayPool<byte>.Shared.Return(this.buffer, this.clearOnReturn);
+                    this.buffer = null;
+                }
+
+                this.disposed = true;
+            }
+
+            base.Dispose(disposing);
+        }
+
+        private void EnsureCapacity(int requiredCapacity)
+        {
+            if (requiredCapacity <= this.capacity)
+            {
+                return;
+            }
+
+            int newCapacity;
+            try
+            {
+                // Use checked arithmetic to detect integer overflow when doubling capacity
+                newCapacity = checked(this.capacity * 2);
+                newCapacity = Math.Max(requiredCapacity, newCapacity);
+
+                // Honor the constructor-configured initial-capacity floor on the first rent.
+                // This preserves the pre-lazy growth policy for typical writes: a caller that
+                // asked for a 4 KB initial buffer still gets at least 4 KB on the very first
+                // rent, avoiding an extra realloc/copy for medium payloads.
+                if (this.capacity == 0 && this.initialCapacity > newCapacity)
+                {
+                    newCapacity = this.initialCapacity;
+                }
+
+                // Cap at MaxArrayLength; fail if the required capacity itself exceeds the limit
+                if (newCapacity > MaxArrayLength)
+                {
+                    if (requiredCapacity > MaxArrayLength)
+                    {
+                        throw new IOException($"Cannot allocate a buffer larger than {MaxArrayLength} bytes.");
+                    }
+
+                    newCapacity = MaxArrayLength;
+                }
+            }
+            catch (OverflowException)
+            {
+                // If doubling capacity overflows, cap at MaxArrayLength
+                if (requiredCapacity > MaxArrayLength)
+                {
+                    throw new IOException($"Cannot allocate a buffer larger than {MaxArrayLength} bytes.");
+                }
+
+                newCapacity = MaxArrayLength;
+            }
+
+            byte[] newBuffer = ArrayPool<byte>.Shared.Rent(newCapacity);
+
+            // SECURITY FIX: Clear the new buffer to prevent exposing pool garbage.
+            // Rented buffers from ArrayPool may contain data from previous usage.
+            // Only clear the region beyond copied data — [0, length) will be overwritten by BlockCopy.
+            if (this.clearOnReturn)
+            {
+                if (this.length < newBuffer.Length)
+                {
+                    Array.Clear(newBuffer, this.length, newBuffer.Length - this.length);
+                }
+            }
+
+            if (this.length > 0)
+            {
+                Buffer.BlockCopy(this.buffer, 0, newBuffer, 0, this.length);
+            }
+
+            // Clear the entire old buffer before returning to the pool.
+            // Use buffer.Length (not capacity) to cover the full rented region.
+            if (this.buffer.Length > 0)
+            {
+                if (this.clearOnReturn)
+                {
+                    Array.Clear(this.buffer, 0, this.buffer.Length);
+                }
+
+                ArrayPool<byte>.Shared.Return(this.buffer, this.clearOnReturn);
+            }
+
+            this.buffer = newBuffer;
+            this.capacity = newBuffer.Length;
+        }
+
+        private void EnsureNotDisposed()
+        {
+            if (this.disposed)
+            {
+                throw new ObjectDisposedException(nameof(PooledMemoryStream));
+            }
+        }
+
+        private void ValidateArguments(byte[] buffer, int offset, int count)
+        {
+            if (buffer == null)
+            {
+                throw new ArgumentNullException(nameof(buffer));
+            }
+
+            if (offset < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(offset));
+            }
+
+            if (count < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(count));
+            }
+
+            if (buffer.Length - offset < count)
+            {
+                throw new ArgumentException("Offset and length are out of bounds");
+            }
+        }
+    }
+}

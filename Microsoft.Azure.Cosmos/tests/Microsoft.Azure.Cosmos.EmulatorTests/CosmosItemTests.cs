@@ -4319,12 +4319,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [Owner("aavasthy")]
-        [Description("Forces two consecutive 404/1002 responses from the gateway and verifies ClientRetryPolicy sets the hub region header flag after the first retry fails.")]
+        [Description("Forces three consecutive 404/1002 responses from the gateway and verifies ClientRetryPolicy " +
+                     "sets the hub region header flag after the second 404/1002 and sends it on the third attempt.")]
         public async Task ReadItemAsync_ShouldAddHubHeader_OnRetryAfter_404_1002()
         {
             int requestCount = 0;
             int return404Count = 0;
-            const int maxReturn404 = 2; // Return 404/1002 twice
+            const int maxReturn404 = 3; // Return 404/1002 three times: initial + retry to write region + retry with hub header
+            bool hubHeaderPresentOnThirdRequest = false;
 
             // Created HTTP handler to intercept requests
             HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
@@ -4338,15 +4340,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         requestCount++;
 
-                        // Header should NOT be present on first retry (2nd request)
-                        if (requestCount == 2 &&
-                            request.Headers.TryGetValues(HubRegionHeader, out IEnumerable<string> firstRetryValues) &&
-                            firstRetryValues.Any())
+                        // Header should NOT be present on first two requests
+                        if (requestCount <= 2 &&
+                            request.Headers.TryGetValues(HubRegionHeader, out IEnumerable<string> earlyRetryValues) &&
+                            earlyRetryValues.Any())
                         {
-                            Assert.Fail("Header should NOT be present on first retry attempt.");
+                            Assert.Fail($"Header should NOT be present on request {requestCount}.");
                         }
 
-                        // Return fake 404/1002 for first two requests
+                        // Header MUST be present on third request (after two consecutive 404/1002 failures)
+                        if (requestCount == 3)
+                        {
+                            hubHeaderPresentOnThirdRequest =
+                                request.Headers.TryGetValues(HubRegionHeader, out IEnumerable<string> hubValues)
+                                && hubValues.Any(v => v == bool.TrueString);
+                        }
+
+                        // Return fake 404/1002 for the configured number of requests
                         if (return404Count < maxReturn404)
                         {
                             return404Count++;
@@ -4399,8 +4409,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             try
             {
-                // This should trigger 404/1002 twice
-                // In single-region emulator, after first retry fails with 404/1002, it won't retry again
+                // This should trigger 404/1002 three times then NoRetry
                 ItemResponse<ToDoActivity> response = await customContainer.ReadItemAsync<ToDoActivity>(
                     testItem.id,
                     new Cosmos.PartitionKey(testItem.pk));
@@ -4409,17 +4418,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (CosmosException ex)
             {
-                // Expected: After first retry fails with 404/1002, single master won't retry again
+                // Expected: After third 404/1002 (with hub header), single master stops retrying
                 Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
                 Assert.AreEqual((int)SubStatusCodes.ReadSessionNotAvailable, ex.SubStatusCode);
             }
 
             // Verify the expected behavior:
-            // 1. Initial request (requestCount = 1) fails with 404/1002
-            // 2. First retry (requestCount = 2) fails with 404/1002
-            // 3. No more retries because single master + no additional regions
-            Assert.AreEqual(2, requestCount, $"Expected exactly 2 requests (initial + 1 retry) for single-region emulator, but got {requestCount}");
-            Assert.AreEqual(2, return404Count, "Both requests should have returned 404/1002");
+            // 1. Initial request (requestCount = 1) fails with 404/1002 → no hub header
+            // 2. First retry to write region (requestCount = 2) fails with 404/1002 → no hub header, flag set
+            // 3. Second retry with hub header (requestCount = 3) fails with 404/1002 → hub header present → NoRetry
+            Assert.AreEqual(3, requestCount, $"Expected exactly 3 requests (initial + retry to write region + retry with hub header) for single-region emulator, but got {requestCount}");
+            Assert.AreEqual(3, return404Count, "All three requests should have returned 404/1002");
+            Assert.IsTrue(hubHeaderPresentOnThirdRequest, "Hub region header must be present on the third request (after two consecutive 404/1002 failures).");
         }
 
         private async Task<T> AutoGenerateIdPatternTest<T>(Cosmos.PartitionKey pk, T itemWithoutId)

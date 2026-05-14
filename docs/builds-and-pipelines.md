@@ -29,7 +29,7 @@ This pipeline executes on Azure Pipelines as [dotnet-v3-release](https://cosmos-
 
 ## Nightly release
 
-[azure-pipelines-nightly.yml](../azure-pipelines-nightly.yml) is a scheduled run that executes every day at 0:00 UTC and produces two Nuget packages with the content on the `master` branch:
+[azure-pipelines-nightly.yml](../azure-pipelines-nightly.yml) is a scheduled run that executes every day at 0:00 UTC and produces two Nuget packages with the content on the `main` branch:
 
 * A non-preview package with versioning `Microsoft.Azure.Cosmos.X.Y.Z-nightly-DATE` where `X.Y.Z` is the current version from [Directory.Build.Props](../Directory.Build.props) and `DATE` is the current date in `MMDDYYYY` format.
 * A preview package with versioning `Microsoft.Azure.Cosmos.X.Y.Z-preview-nightly-DATE` where `X.Y.Z` is the current version from [Directory.Build.Props](../Directory.Build.props) and `DATE` is the current date in `MMDDYYYY` format.
@@ -43,7 +43,7 @@ This pipeline executes on Azure Pipelines as [dotnet-v3-nightly](https://cosmos-
 
 ## Docker image for CTL workloads
 
-[azure-pipelines-ctl-publishing.yml](../azure-pipelines-ctl-publishing.yml) executes every time a change is merged into `master` and it will:
+[azure-pipelines-ctl-publishing.yml](../azure-pipelines-ctl-publishing.yml) executes every time a change is merged into `main` and it will:
 
 * Generate [docker config files](../Microsoft.Azure.Cosmos.Samples/Tools/CTL/Dockerfile).
 * Copy the [executable shell file](../Microsoft.Azure.Cosmos.Samples/Tools/CTL/run_ctl.sh).

@@ -76,6 +76,11 @@
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])"
+        },
+        "Void Initialize(Microsoft.Azure.Cosmos.Container)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void Initialize(Microsoft.Azure.Cosmos.Container);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -457,6 +462,11 @@
               "Type": "Constructor",
               "Attributes": [],
               "MethodInfo": "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])"
+            },
+            "Void Initialize(Microsoft.Azure.Cosmos.Container)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Void Initialize(Microsoft.Azure.Cosmos.Container);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             }
           },
           "NestedTypes": {}

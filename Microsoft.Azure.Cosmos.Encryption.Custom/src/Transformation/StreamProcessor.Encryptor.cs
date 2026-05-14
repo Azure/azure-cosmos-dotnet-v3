@@ -24,17 +24,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             EncryptionOptions encryptionOptions,
             CancellationToken cancellationToken)
         {
-            List<string> pathsEncrypted = new ();
+            List<string> pathsEncrypted = new (encryptionOptions.PathsToEncrypt is ICollection<string> c ? c.Count : 0);
 
             using ArrayPoolManager arrayPoolManager = new ();
 
             DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionOptions.DataEncryptionKeyId, encryptionOptions.EncryptionAlgorithm, cancellationToken);
 
-            HashSet<string> pathsToEncrypt = encryptionOptions.PathsToEncrypt as HashSet<string> ?? new (encryptionOptions.PathsToEncrypt, StringComparer.Ordinal);
+            // Pre-encode the paths-to-encrypt as UTF-8 byte sequences so that we can match
+            // against Utf8JsonReader tokens with ValueTextEquals (which correctly handles
+            // JSON escape sequences), without allocating a new string per property name.
+            // The leading '/' is stripped here since ValueTextEquals compares against the
+            // decoded property-name bytes, while the original slash-prefixed path string is
+            // preserved for the pathsEncrypted output list.
+            (byte[] nameBytes, string fullPath)[] encryptedPathsTable = BuildEncryptedPathsTable(encryptionOptions.PathsToEncrypt);
 
             using Utf8JsonWriter writer = new (outputStream);
 
-            byte[] buffer = arrayPoolManager.Rent(InitialBufferSize);
+            byte[] buffer = arrayPoolManager.Rent(PooledStreamConfiguration.Current.StreamProcessorBufferSize);
 
             JsonReaderState state = new (StreamProcessor.JsonReaderOptions);
 
@@ -47,29 +53,43 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             RentArrayBufferWriter bufferWriter = null;
             bool firstTokenValidated = false;
 
-            while (!isFinalBlock)
+            try
             {
-                int dataLength = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
-                int dataSize = dataLength + leftOver;
-                isFinalBlock = dataSize == 0;
-
-                long bytesConsumed = TransformEncryptBuffer(buffer.AsSpan(0, dataSize));
-
-                leftOver = dataSize - (int)bytesConsumed;
-
-                if (leftOver == dataSize)
+                while (!isFinalBlock)
                 {
-                    byte[] newBuffer = arrayPoolManager.Rent(buffer.Length * 2);
-                    buffer.AsSpan().CopyTo(newBuffer);
-                    buffer = newBuffer;
+                    int dataLength = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
+                    int dataSize = dataLength + leftOver;
+                    isFinalBlock = dataLength == 0;
+
+                    long bytesConsumed = TransformEncryptBuffer(buffer.AsSpan(0, dataSize));
+
+                    leftOver = dataSize - (int)bytesConsumed;
+
+                    if (leftOver == dataSize)
+                    {
+                        byte[] newBuffer = arrayPoolManager.Rent(buffer.Length * 2);
+                        buffer.AsSpan().CopyTo(newBuffer);
+                        buffer = newBuffer;
+                    }
+                    else if (leftOver != 0)
+                    {
+                        buffer.AsSpan(dataSize - leftOver, leftOver).CopyTo(buffer);
+                    }
                 }
-                else if (leftOver != 0)
-                {
-                    buffer.AsSpan(dataSize - leftOver, leftOver).CopyTo(buffer);
-                }
+
+                await inputStream.DisposeAsync();
             }
+            finally
+            {
+                if (encryptionPayloadWriter != null)
+                {
+                    await encryptionPayloadWriter.DisposeAsync();
+                }
 
-            await inputStream.DisposeAsync();
+#pragma warning disable VSTHRD103 // Call async methods when in an async method
+                bufferWriter?.Dispose();
+#pragma warning restore VSTHRD103 // Call async methods when in an async method
+            }
 
             EncryptionProperties encryptionProperties = new (
                 encryptionFormatVersion: EncryptionFormatVersion.Mde,
@@ -144,11 +164,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 writer.WriteBase64StringValue(encryptedBytes);
 
                                 encryptPropertyName = null;
-#pragma warning disable VSTHRD103 // Call async methods when in an async method - this method cannot be async, Utf8JsonReader is ref struct
-                                encryptionPayloadWriter.Dispose();
-#pragma warning restore VSTHRD103 // Call async methods when in an async method
                                 encryptionPayloadWriter = null;
-                                bufferWriter.Dispose();
+                                bufferWriter?.Dispose();
                                 bufferWriter = null;
                             }
 
@@ -176,20 +193,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 writer.WriteBase64StringValue(encryptedBytes);
 
                                 encryptPropertyName = null;
-#pragma warning disable VSTHRD103 // Call async methods when in an async method - this method cannot be async, Utf8JsonReader is ref struct
-                                encryptionPayloadWriter.Dispose();
-#pragma warning restore VSTHRD103 // Call async methods when in an async method
                                 encryptionPayloadWriter = null;
-                                bufferWriter.Dispose();
+                                bufferWriter?.Dispose();
                                 bufferWriter = null;
                             }
 
                             break;
                         case JsonTokenType.PropertyName:
-                            string propertyName = "/" + reader.GetString();
-                            if (pathsToEncrypt.Contains(propertyName))
+                            string matchedPath = null;
+                            for (int i = 0; i < encryptedPathsTable.Length; i++)
                             {
-                                encryptPropertyName = propertyName;
+                                if (reader.ValueTextEquals(encryptedPathsTable[i].nameBytes))
+                                {
+                                    matchedPath = encryptedPathsTable[i].fullPath;
+                                    break;
+                                }
+                            }
+
+                            if (matchedPath != null)
+                            {
+                                encryptPropertyName = matchedPath;
                             }
 
                             currentWriter.WritePropertyName(reader.ValueSpan);
@@ -275,6 +298,33 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 pathsEncrypted.Add(encryptPropertyName);
                 return encryptedBytes.AsSpan(0, encryptedBytesCount);
             }
+        }
+
+        private static (byte[] nameBytes, string fullPath)[] BuildEncryptedPathsTable(IEnumerable<string> pathsToEncrypt)
+        {
+            List<(byte[] nameBytes, string fullPath)> table = pathsToEncrypt is ICollection<string> c
+                ? new List<(byte[], string)>(c.Count)
+                : new List<(byte[], string)>();
+            foreach (string path in pathsToEncrypt)
+            {
+                if (string.IsNullOrEmpty(path) || path[0] != '/' || path.Length < 2)
+                {
+                    // Paths are already validated by EncryptionOptions; skip defensively.
+                    continue;
+                }
+
+                // Strip the leading '/'. The property name bytes are what the JSON reader
+                // token surfaces (without the JSON Pointer prefix). The original slash-
+                // prefixed string is preserved for the output pathsEncrypted list so the
+                // serialized _ei metadata remains byte-identical to the previous
+                // implementation.
+                ReadOnlySpan<char> nameChars = path.AsSpan(1);
+                byte[] nameBytes = new byte[Encoding.UTF8.GetByteCount(nameChars)];
+                Encoding.UTF8.GetBytes(nameChars, nameBytes);
+                table.Add((nameBytes, path));
+            }
+
+            return table.ToArray();
         }
 
         private static (byte[] buffer, int length) Serialize(bool value, ArrayPoolManager arrayPoolManager)
