@@ -212,41 +212,6 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
-        [Description("Verifies that 404/1002 (ReadSessionNotAvailable) operation results are excluded from session token merging")]
-        public async Task CommitTransactionAsync_SkipsMerge_When404ReadSessionNotAvailable()
-        {
-            const string sessionToken = "0:1#9#4=8#5=7";
-            const int readSessionNotAvailableSubStatus = 1002;
-
-            SessionContainer sessionContainer = new SessionContainer("testhost");
-
-            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
-                sessionContainer,
-                responseContent: BuildDtcResponseJson(new[] { (statusCode: 404, subStatusCode: (int?)readSessionNotAvailableSubStatus, sessionToken) }),
-                statusCode: HttpStatusCode.NotFound);
-
-            List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
-            {
-                new DistributedTransactionOperation(
-                    OperationType.Create,
-                    operationIndex: 0,
-                    DatabaseName,
-                    ContainerName,
-                    new PartitionKey("pk1"),
-                    id: "doc1")
-            };
-
-            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                operations, mockContext.Object);
-
-            await committer.CommitTransactionAsync(CancellationToken.None);
-
-            string storedToken = sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName));
-            Assert.IsTrue(string.IsNullOrEmpty(storedToken),
-                "Session token should NOT be merged for 404/ReadSessionNotAvailable operation results.");
-        }
-
-        [TestMethod]
         [Description("Verifies that session tokens are still merged into the SessionContainer even when the DTC response indicates a failure")]
         public async Task CommitTransactionAsync_MergesSessionTokens_OnFailureResponse()
         {

@@ -204,12 +204,6 @@ namespace Microsoft.Azure.Cosmos
                         continue;
                     }
 
-                    if (result.StatusCode == HttpStatusCode.NotFound
-                        && result.SubStatusCode == SubStatusCodes.ReadSessionNotAvailable)
-                    {
-                        continue;
-                    }
-
                     // SessionToken is already in canonical {pkRangeId}:{lsn} format, assembled by FromJson.
                     // Note: each SetSessionToken call acquires a write lock on the SessionContainer.
                     // For a future optimization, consider a batch-update API on ISessionContainer to
