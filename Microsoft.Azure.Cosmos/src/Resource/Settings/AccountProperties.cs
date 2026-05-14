@@ -255,10 +255,13 @@ namespace Microsoft.Azure.Cosmos
         /// When this flag is <see langword="true"/>, the SDK disables all hedging (both SDK-default PPAF
         /// hedging and any explicit customer-configured <see cref="Cosmos.AvailabilityStrategy"/>) regardless
         /// of any other configuration. When the flag is <see langword="false"/> or <see langword="null"/>
-        /// (absent from the Gateway response), existing hedging behavior is preserved. The flag is only
-        /// honored for accounts with PPAF enabled and is intended as an operational escape hatch — it is
-        /// not exposed through any public SDK API surface.
+        /// (absent from the Gateway response), existing hedging behavior is preserved. The flag is intended
+        /// as an operational escape hatch and is not exposed through any public SDK API surface.
         /// </remarks>
+        // TODO: The JSON property name is hard-coded here because the corresponding constant has not yet been
+        // published in the Microsoft.Azure.Cosmos.Direct package referenced by this SDK. Once Direct is updated
+        // to expose this name on Constants.Properties, refactor this attribute to read from
+        // Constants.Properties.<NewConstant> for consistency with the other AccountProperties JSON bindings.
         [JsonProperty(PropertyName = "disableCrossRegionalHedging")]
         internal bool? DisableCrossRegionalHedging { get; set; }
 

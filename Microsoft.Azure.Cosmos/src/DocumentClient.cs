@@ -139,9 +139,27 @@ namespace Microsoft.Azure.Cosmos
 
         // Serializes the (disableCrossRegionalHedging, customerConfiguredAvailabilityStrategy,
         // ConnectionPolicy.AvailabilityStrategy) mutation sequence performed by the gateway-driven
-        // hedging-override reconcile path. Without this, two concurrent invocations of
-        // ApplyHedgingStrategyForCurrentState (e.g., a future caller racing the GEM background-refresh
-        // thread) could interleave their stash/clear/restore steps and leave the SDK in an inconsistent state.
+        // hedging-override reconcile path.
+        //
+        // NOTE: This lock is NOT load-bearing under the current set of callers — the GlobalEndpointManager
+        // serializes its account-properties refreshes, and the init-time stash in
+        // InitializeGatewayConfigurationReaderAsync runs strictly before the background-refresh loop is
+        // started and before OnEnablePartitionLevelFailoverConfigChanged is subscribed. So in production
+        // today there is no real concurrency hazard to defend against here.
+        //
+        // The lock exists for two narrower reasons:
+        //   1. Internal test accessors (DisableCrossRegionalHedgingForTests,
+        //      CustomerConfiguredAvailabilityStrategyForTests) can read/write the same state directly
+        //      from arbitrary test threads, so the accessors and the reconcile path need to agree on
+        //      a single mutex.
+        //   2. Future-proofing: UpdatePartitionLevelFailoverConfigWithAccountRefresh and
+        //      ApplyHedgingStrategyForCurrentState are internal/private but reachable from any new
+        //      caller that wires them up. If a future change ever invokes them off the GEM-serialized
+        //      path, the stash/clear/restore sequence stays atomic instead of regressing silently.
+        //
+        // Per-request reads of ConnectionPolicy.AvailabilityStrategy from RequestInvokerHandler continue
+        // to rely on atomic reference assignment; they observe either the pre- or post-transition strategy,
+        // never a half-applied state, and intentionally do not take this lock.
         private readonly object hedgingStrategyLock = new object();
 
         internal bool isThinClientEnabled;
@@ -6991,10 +7009,18 @@ namespace Microsoft.Azure.Cosmos
                 bool ppafEnablementChanged = this.ConnectionPolicy.EnablePartitionLevelFailover != latestIsEnabled;
                 bool hedgingFlagChanged = this.disableCrossRegionalHedging != latestDisableCrossRegionalHedging;
 
-                // No-op when nothing has actually changed. In production GEM only fires the event on
-                // transitions, but this method is internal and may be invoked directly (e.g., from tests
-                // or future callers); without this guard, ApplyHedgingStrategyForCurrentState would still
-                // run and could clear an SDK-default strategy that was correctly installed.
+                // No-op when nothing has actually changed.
+                //
+                // In production this branch is unreachable: GlobalEndpointManager's
+                // RefreshLocationAsync only fires OnEnablePartitionLevelFailoverConfigChanged when
+                // either EnablePartitionLevelFailover or lastKnownDisableCrossRegionalHedging
+                // transitions, so the callback is invoked only on a real change.
+                //
+                // The guard is defense-in-depth for direct callers of this internal method —
+                // primarily unit tests that exercise the reconcile logic without going through the
+                // GEM event, and any future caller that wires up its own invocation. Without it,
+                // ApplyHedgingStrategyForCurrentState would still run on a no-change call and could
+                // clear an SDK-default strategy that was correctly installed.
                 if (!ppafEnablementChanged && !hedgingFlagChanged)
                 {
                     return;
@@ -7023,10 +7049,17 @@ namespace Microsoft.Azure.Cosmos
                     this.disableCrossRegionalHedging = latestDisableCrossRegionalHedging;
                 }
 
-                // Step 3: Reconcile the AvailabilityStrategy with the latest account state. The gateway
-                // disable flag has the highest precedence — when true, hedging is OFF regardless of any
-                // explicit or default configuration. When false, restore the customer's explicit strategy
-                // (if previously stashed) or apply the SDK default for PPAF.
+                // Step 3: Reconcile the AvailabilityStrategy with the latest account state.
+                //
+                // Note: this call is intentionally outside the `if (hedgingFlagChanged)` block above
+                // because reconciliation is also required when PPAF enablement toggles without the
+                // hedging flag changing. Specifically:
+                //   • PPAF transitioned off  → drop the SDK-default strategy we previously installed.
+                //   • PPAF transitioned on with no customer strategy → install the SDK default.
+                // The early-return at the top of the method already guarantees we get here only when
+                // at least one of (ppafEnablementChanged, hedgingFlagChanged) is true, so this call
+                // is never wasted. The gateway disable flag has the highest precedence — when true,
+                // hedging is OFF regardless of any explicit or default configuration.
                 this.ApplyHedgingStrategyForCurrentState();
 
                 if (ppafEnablementChanged)
@@ -7034,9 +7067,16 @@ namespace Microsoft.Azure.Cosmos
                     // Step 4: Update the user agent features. Hedging-flag-only changes do not affect the
                     // PPAF-related user-agent feature flags.
                     this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
+
+                    DefaultTrace.TraceInformation("DocumentClient: Successfully updated PPAF configuration dynamically");
                 }
 
-                DefaultTrace.TraceInformation("DocumentClient: Successfully updated PPAF configuration dynamically");
+                if (hedgingFlagChanged)
+                {
+                    DefaultTrace.TraceInformation(
+                        "DocumentClient: Successfully reconciled hedging strategy dynamically (disableCrossRegionalHedging={0})",
+                        latestDisableCrossRegionalHedging);
+                }
             }
         }
 
@@ -7127,9 +7167,24 @@ namespace Microsoft.Azure.Cosmos
         }
 
         // Test-only accessors. Visible to the unit-test assembly via [InternalsVisibleTo] in
-        // Microsoft.Azure.Cosmos.csproj. Used in lieu of reflection so renames or refactors of the
-        // backing fields are caught at compile time rather than blowing up with NullReferenceException
-        // from a stale System.Reflection.FieldInfo at test runtime.
+        // Microsoft.Azure.Cosmos.csproj.
+        //
+        // Why these exist rather than mocking AccountProperties:
+        //   • The "real-time" path that populates this state runs through
+        //     CosmosAccountServiceConfiguration.InitializeAsync → GatewayAccountReader.InitializeReaderAsync,
+        //     which currently performs a real HTTPS account-properties read against the configured
+        //     endpoint and has no injection seam for a fake account snapshot. Pre-populating these
+        //     fields via AccountProperties is therefore not achievable from a pure unit test today.
+        //   • These accessors let the unit tests pin the (disableCrossRegionalHedging,
+        //     customerConfiguredAvailabilityStrategy) precondition directly and then invoke the
+        //     reconcile entry points (UpdatePartitionLevelFailoverConfigWithAccountRefresh,
+        //     ApplyHedgingStrategyForCurrentState) to verify the transition logic without any I/O.
+        //   • They are preferred over System.Reflection because renames or refactors of the backing
+        //     fields are caught at compile time, rather than blowing up at test runtime with
+        //     NullReferenceException from a stale FieldInfo cache.
+        //
+        // Once a proper IGatewayAccountReader / IAccountServiceConfiguration mocking seam is
+        // introduced these accessors should be removed in favor of mocking the account snapshot.
         internal bool DisableCrossRegionalHedgingForTests
         {
             get
