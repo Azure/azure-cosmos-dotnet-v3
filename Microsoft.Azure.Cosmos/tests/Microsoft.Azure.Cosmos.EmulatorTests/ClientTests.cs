@@ -162,7 +162,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 delayCallBack = true;
                 this.TaskStartedCount = 0;
                 Interlocked.Exchange(ref httpCallCount, 0);
-                Interlocked.Exchange(ref metadataCallCount, 0);
                 // Drain in-place: the RequestCallBack closure captured this specific bag instance,
                 // so we cannot swap the reference without the handler writing into a stale bag.
                 while (httpRequestUris.TryTake(out _))
