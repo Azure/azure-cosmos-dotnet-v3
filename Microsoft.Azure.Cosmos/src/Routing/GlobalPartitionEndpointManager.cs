@@ -26,6 +26,21 @@ namespace Microsoft.Azure.Cosmos.Routing
             DocumentServiceRequest request);
 
         /// <summary>
+        /// Directly sets the partition-level write failover cache to route to a known successful
+        /// endpoint. Used by the hedging strategy when a hedged write succeeds at a non-primary
+        /// region, so that future requests for the same partition route directly to that region
+        /// rather than iterating through endpoints sequentially.
+        /// </summary>
+        /// <param name="request">The document service request containing partition key range context.</param>
+        /// <param name="primaryEndpoint">The primary write endpoint that should be marked as failed.</param>
+        /// <param name="successfulEndpoint">The endpoint where the hedged write succeeded.</param>
+        /// <returns>True if the cache was updated, false otherwise.</returns>
+        public abstract bool TrySetPartitionLevelLocationOverrideForSuccessfulHedge(
+            DocumentServiceRequest request,
+            Uri primaryEndpoint,
+            Uri successfulEndpoint);
+
+        /// <summary>
         /// Increments the failure counter for the specified partition and checks if the partition can fail over.
         /// This method is used to determine if a partition should be failed over based on the number of request failures.
         /// </summary>

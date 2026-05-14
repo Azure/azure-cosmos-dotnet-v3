@@ -35,6 +35,14 @@ namespace Microsoft.Azure.Cosmos.Routing
             return false;
         }
 
+        public override bool TrySetPartitionLevelLocationOverrideForSuccessfulHedge(
+            DocumentServiceRequest request,
+            Uri primaryEndpoint,
+            Uri successfulEndpoint)
+        {
+            return false;
+        }
+
         public override bool IsRequestEligibleForPartitionLevelCircuitBreaker(DocumentServiceRequest request)
         {
             return false;

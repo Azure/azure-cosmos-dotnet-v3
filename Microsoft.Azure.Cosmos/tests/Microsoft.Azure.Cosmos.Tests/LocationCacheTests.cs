@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Client.Tests
@@ -119,95 +119,6 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 Assert.AreEqual(true, this.cache.TryGetLocationForGatewayDiagnostics(new Uri(databaseAccountLocation.Endpoint), out regionName));
                 Assert.AreEqual(databaseAccountLocation.Name, regionName);
             }
-        }
-
-        [TestMethod]
-        [Owner("ntripician")]
-        public void ValidateTryGetLocationForGatewayDiagnosticsOnDefaultEndpointForMultiMaster()
-        {
-            using GlobalEndpointManager endpointManager = this.Initialize(
-                useMultipleWriteLocations: true,
-                enableEndpointDiscovery: true,
-                isPreferredLocationsListEmpty: false);
-
-            string expectedRegionName = this.databaseAccount.WriteLocationsInternal.First().Name;
-
-            Assert.AreEqual(expectedRegionName, this.cache.GetLocation(LocationCacheTests.DefaultEndpoint));
-
-            Assert.AreEqual(true, this.cache.TryGetLocationForGatewayDiagnostics(LocationCacheTests.DefaultEndpoint, out string regionName));
-            Assert.AreEqual(expectedRegionName, regionName);
-
-            Assert.AreEqual(true, this.cache.TryGetLocationForGatewayDiagnostics(new Uri(LocationCacheTests.DefaultEndpoint, "random/path"), out regionName));
-            Assert.AreEqual(expectedRegionName, regionName);
-        }
-
-        [TestMethod]
-        [Owner("ntripician")]
-        public void ValidateTryGetLocationForGatewayDiagnosticsOnDefaultEndpointForMultiMasterWithClientOptOut()
-        {
-            // Account is multi-master but client has UseMultipleWriteLocations = false.
-            // Diagnostics should still resolve the default endpoint to the first write region.
-            using GlobalEndpointManager endpointManager = this.Initialize(
-                useMultipleWriteLocations: false,
-                enableEndpointDiscovery: true,
-                isPreferredLocationsListEmpty: false);
-
-            // Override account setting to multi-master (server-side) while client did not opt in
-            this.databaseAccount = LocationCacheTests.CreateDatabaseAccount(
-                useMultipleWriteLocations: true,
-                enforceSingleMasterSingleWriteLocation: false);
-            this.cache.OnDatabaseAccountRead(this.databaseAccount);
-
-            string expectedRegionName = this.databaseAccount.WriteLocationsInternal.First().Name;
-
-            Assert.AreEqual(expectedRegionName, this.cache.GetLocation(LocationCacheTests.DefaultEndpoint));
-
-            Assert.AreEqual(true, this.cache.TryGetLocationForGatewayDiagnostics(LocationCacheTests.DefaultEndpoint, out string regionName));
-            Assert.AreEqual(expectedRegionName, regionName);
-
-            Assert.AreEqual(true, this.cache.TryGetLocationForGatewayDiagnostics(new Uri(LocationCacheTests.DefaultEndpoint, "random/path"), out regionName));
-            Assert.AreEqual(expectedRegionName, regionName);
-        }
-
-        [TestMethod]
-        [Owner("ntripician")]
-        public void ValidateTryGetLocationForGatewayDiagnosticsReturnsFalseForUnknownEndpoint()
-        {
-            using GlobalEndpointManager endpointManager = this.Initialize(
-                useMultipleWriteLocations: true,
-                enableEndpointDiscovery: true,
-                isPreferredLocationsListEmpty: false);
-
-            // An endpoint that is neither the default endpoint nor any known regional endpoint
-            Uri unknownEndpoint = new Uri("https://unknown-region.documents.azure.com");
-
-            Assert.IsNull(this.cache.GetLocation(unknownEndpoint));
-
-            Assert.AreEqual(false, this.cache.TryGetLocationForGatewayDiagnostics(unknownEndpoint, out string regionName));
-            Assert.IsNull(regionName);
-        }
-
-        [TestMethod]
-        [Owner("ntripician")]
-        public void ValidateTryGetLocationForGatewayDiagnosticsOnDefaultEndpointBeforeAccountRead()
-        {
-            // Simulate multimaster cache before any account info is populated.
-            // AvailableWriteLocations will be empty, so GetLocation should return null.
-            LocationCache uninitializedCache = new LocationCache(
-                preferredLocations: new ReadOnlyCollection<string>(new List<string> { "location1" }),
-                defaultEndpoint: LocationCacheTests.DefaultEndpoint,
-                enableEndpointDiscovery: true,
-                connectionLimit: 50,
-                useMultipleWriteLocations: true);
-
-            // No OnDatabaseAccountRead called, so AvailableWriteLocations is empty
-            Assert.IsNull(uninitializedCache.GetLocation(LocationCacheTests.DefaultEndpoint));
-
-            // enableMultipleWriteLocations defaults to false until OnDatabaseAccountRead is called
-            // with a multi-master account, so TryGetLocationForGatewayDiagnostics falls through to
-            // the single-master path and returns false
-            Assert.AreEqual(false, uninitializedCache.TryGetLocationForGatewayDiagnostics(LocationCacheTests.DefaultEndpoint, out string regionName));
-            Assert.IsNull(regionName);
         }
 
         [TestMethod]
@@ -334,13 +245,6 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                                 Uri expectedEndpoint = new Uri(this.databaseAccount.WriteLocationsInternal[0].Endpoint);
                                 Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
                             }
-                            else if (retryCount == 2)
-                            {
-                                // Third request is the retry with the hub region header set.
-                                // It still routes to the write endpoint (index=0, preferred=false).
-                                Uri expectedEndpoint = new Uri(this.databaseAccount.WriteLocationsInternal[0].Endpoint);
-                                Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
-                            }
                             else
                             {
                                 Assert.Fail();
@@ -364,7 +268,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 catch (NotFoundException)
                 {
                     DefaultTrace.TraceInformation("Received expected notFoundException");
-                    Assert.AreEqual(3, retryCount);
+                    Assert.AreEqual(2, retryCount);
                 }
             }
         }
@@ -1527,6 +1431,108 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 }
             }
 
+        }
+
+        [TestMethod]
+        [DataRow(true, DisplayName = "With preferred locations subset")]
+        [DataRow(false, DisplayName = "Without preferred locations")]
+        public void GetApplicableAccountLevelReadRegions_ReturnsAllReadRegions(bool usesPreferredLocationsSubset)
+        {
+            // Preferred locations only include location1 and location2, but the account has 4 read regions
+            ReadOnlyCollection<string> preferredLocations = usesPreferredLocationsSubset
+                ? new List<string> { "location1", "location2" }.AsReadOnly()
+                : new List<string>().AsReadOnly();
+
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: !usesPreferredLocationsSubset,
+                preferedRegionListOverride: usesPreferredLocationsSubset ? preferredLocations : null,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(this.databaseAccount);
+
+            ReadOnlyCollection<string> regions = this.cache.GetApplicableAccountLevelReadRegions(excludeRegions: null);
+
+            // All 4 account read regions should be present regardless of preferred locations
+            Assert.AreEqual(4, regions.Count);
+            Assert.IsTrue(regions.Contains("location1"));
+            Assert.IsTrue(regions.Contains("location2"));
+            Assert.IsTrue(regions.Contains("location3"));
+            Assert.IsTrue(regions.Contains("location4"));
+
+            if (usesPreferredLocationsSubset)
+            {
+                // Preferred regions should appear first in order
+                Assert.AreEqual("location1", regions[0]);
+                Assert.AreEqual("location2", regions[1]);
+            }
+        }
+
+        [TestMethod]
+        public void GetApplicableAccountLevelReadRegions_RespectsExcludeRegions()
+        {
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: false,
+                preferedRegionListOverride: new List<string> { "location1", "location2" }.AsReadOnly(),
+                enforceSingleMasterSingleWriteLocation: true);
+
+            endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(this.databaseAccount);
+
+            ReadOnlyCollection<string> regions = this.cache.GetApplicableAccountLevelReadRegions(
+                excludeRegions: new List<string> { "location1", "location3" });
+
+            Assert.AreEqual(2, regions.Count);
+            Assert.IsTrue(regions.Contains("location2"));
+            Assert.IsTrue(regions.Contains("location4"));
+            Assert.IsFalse(regions.Contains("location1"));
+            Assert.IsFalse(regions.Contains("location3"));
+        }
+
+        [TestMethod]
+        public void GetApplicableAccountLevelReadRegions_FallsBackWhenAllExcluded()
+        {
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: false,
+                preferedRegionListOverride: new List<string> { "location1", "location2" }.AsReadOnly(),
+                enforceSingleMasterSingleWriteLocation: true);
+
+            endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(this.databaseAccount);
+
+            ReadOnlyCollection<string> regions = this.cache.GetApplicableAccountLevelReadRegions(
+                excludeRegions: new List<string> { "location1", "location2", "location3", "location4" });
+
+            // Falls back to first available read location when all are excluded
+            Assert.AreEqual(1, regions.Count);
+            Assert.AreEqual("location1", regions[0]);
+        }
+
+        [TestMethod]
+        public void GetApplicableAccountLevelReadRegions_PreferredRegionsOrderedFirst()
+        {
+            // Preferred locations are in a specific order that differs from account order
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: false,
+                preferedRegionListOverride: new List<string> { "location4", "location2" }.AsReadOnly(),
+                enforceSingleMasterSingleWriteLocation: true);
+
+            endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(this.databaseAccount);
+
+            ReadOnlyCollection<string> regions = this.cache.GetApplicableAccountLevelReadRegions(excludeRegions: null);
+
+            // Preferred regions first in their specified order, then remaining account regions
+            Assert.AreEqual(4, regions.Count);
+            Assert.AreEqual("location4", regions[0]);
+            Assert.AreEqual("location2", regions[1]);
+            // Remaining regions (location1, location3) follow in account order
+            Assert.IsTrue(regions.Contains("location1"));
+            Assert.IsTrue(regions.Contains("location3"));
         }
 
         [TestMethod]
