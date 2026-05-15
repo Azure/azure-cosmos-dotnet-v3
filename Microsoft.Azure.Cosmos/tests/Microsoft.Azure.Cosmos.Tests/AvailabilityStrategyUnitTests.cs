@@ -834,6 +834,16 @@
         ///  2. Yield observable proof: at least one continuation is posted to the active
         ///     SynchronizationContext during exception propagation, demonstrating the synchronous
         ///     propagation chain was broken.
+        ///
+        /// NOTE on test target framework: this test project (Microsoft.Azure.Cosmos.Tests) only
+        /// targets net6.0, where the underlying StackOverflowException does NOT reproduce — .NET
+        /// Core / .NET 5+ already optimize the synchronous exception-propagation path. The test
+        /// therefore asserts the proximate cure (the yield occurred + stack trace was preserved)
+        /// rather than the absence of an SO. That is sufficient regression coverage: removing the
+        /// production fix in CloneAndSendAsync's catch block makes the PostCount assertion below
+        /// fail, and removing the throw-ex -> throw fix in RequestSenderAndResultCheckAsync makes
+        /// the stack-trace assertion fail. End-to-end SO reproduction would require multi-targeting
+        /// this test project for net472, which is out of scope for this fix.
         /// </summary>
         [TestMethod]
         public async Task SenderException_PropagatesViaYield_PreservesStackTrace()
@@ -864,11 +874,19 @@
             };
 
             // Install a SyncContext we can observe. Task.Yield() posts its continuation to the
-            // current SyncContext when one is set, so non-zero PostCount during exception
-            // propagation proves CloneAndSendAsync's catch yielded before rethrowing.
+            // current SyncContext when one is set, so a non-zero delta in PostCount across the
+            // ExecuteAvailabilityStrategyAsync invocation proves CloneAndSendAsync's catch yielded
+            // before rethrowing.
+            //
+            // IMPORTANT: the helper ThrowDeepInPipelineAsync deliberately does NOT call
+            // Task.Yield() — it awaits Task.CompletedTask (which completes synchronously and does
+            // not post to the SyncContext) before throwing. This guarantees that any Post observed
+            // on customCtx during the invocation is attributable to the production-side fix in
+            // CloneAndSendAsync's catch block, not to the test scaffolding itself.
             SynchronizationContext previousCtx = SynchronizationContext.Current;
             CountingSynchronizationContext customCtx = new CountingSynchronizationContext();
             SynchronizationContext.SetSynchronizationContext(customCtx);
+            int postCountBefore = customCtx.PostCount;
             try
             {
                 CosmosOperationCanceledException caught =
@@ -895,17 +913,25 @@
             // Yield observable proof: CloneAndSendAsync's catch did await Task.Yield() before
             // rethrowing, which posts a continuation to the active SyncContext — without the fix,
             // exception propagation would be fully synchronous and the SyncContext would observe
-            // zero posts.
+            // zero posts. Assert on the delta (not the absolute count) to remain robust against
+            // any future scaffolding that may post during setup.
+            int postCountDelta = customCtx.PostCount - postCountBefore;
             Assert.IsTrue(
-                customCtx.PostCount > 0,
+                postCountDelta > 0,
                 "Task.Yield in CloneAndSendAsync's catch block should have posted at least one " +
                 "continuation to the active SynchronizationContext, proving the synchronous " +
-                "exception propagation chain was broken.");
+                $"exception propagation chain was broken. Observed delta: {postCountDelta}.");
         }
 
         private static async Task ThrowDeepInPipelineAsync()
         {
-            await Task.Yield();
+            // await a pre-completed task so the async state machine satisfies the compiler
+            // (no CS1998 warning) without scheduling a continuation. Critically, this does NOT
+            // post to the active SynchronizationContext — that way, the only Post observed by
+            // CountingSynchronizationContext during the test is from the production-side
+            // `await Task.Yield()` in CloneAndSendAsync's catch block, which is what we are
+            // actually trying to verify.
+            await Task.CompletedTask;
             throw new OperationCanceledException("Simulated deep-pipeline cancellation for hedging stack-overflow regression.");
         }
 
