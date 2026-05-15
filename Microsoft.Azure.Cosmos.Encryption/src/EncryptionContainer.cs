@@ -770,10 +770,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 #endif
 
-        // TODO: Remove this #if guard when the Encryption package bumps its SDK dependency
-        // from current Encryption Nuget Version to a version that includes GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes
-        // as a GA (non-PREVIEW) abstract method. At that point, make the override unconditional
-        // (matching Encryption.Custom/src/EncryptionContainer.cs which already has it unconditional).
 #if ENCRYPTIONPREVIEW || SDKPROJECTREF
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(string processorName, ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate)
         {

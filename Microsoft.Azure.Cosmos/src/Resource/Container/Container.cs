@@ -1872,9 +1872,12 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
-        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
+        public virtual ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
             string processorName,
-            ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate);
+            ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate)
+        {
+            throw new NotSupportedException("Deriving classes are expected to override this method with a valid implementation");
+        }
 
 #if PREVIEW
         /// <summary>
