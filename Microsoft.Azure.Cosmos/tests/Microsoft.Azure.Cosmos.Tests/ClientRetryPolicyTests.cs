@@ -1186,10 +1186,42 @@
                 "CRP's inner retry budget must NOT have been consumed by the deferred body-bearing calls; an empty-body response should still trigger an inner retry.");
         }
 
+        [TestMethod]
+        [Description("AbortDistributedTransaction requests must be recognised as DTX requests by ClientRetryPolicy " +
+                     "so that session-token injection is bypassed and the DTX retry code path is taken.")]
+        public async Task AbortDtxRequest_408_ShouldRetry_SameBehaviorAsCommit()
+        {
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            ClientRetryPolicy policy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+            DocumentServiceRequest request = ClientRetryPolicyTests.CreateAbortDtxRequest();
+            policy.OnBeforeSendRequest(request);
+
+            // An abort 408 triggers the same inner-loop DTX retry as a commit 408
+            ResponseMessage response = new ResponseMessage(HttpStatusCode.RequestTimeout);
+            ShouldRetryResult result = await policy.ShouldRetryAsync(response, CancellationToken.None);
+
+            Assert.IsTrue(result.ShouldRetry,
+                "Abort DTX 408 must be retried — the abort request is idempotent and safe to re-send.");
+        }
+
         private static DocumentServiceRequest CreateDtxRequest()
         {
             return DocumentServiceRequest.Create(
                 OperationType.CommitDistributedTransaction,
+                ResourceType.DistributedTransactionBatch,
+                AuthorizationTokenType.PrimaryMasterKey);
+        }
+
+        private static DocumentServiceRequest CreateAbortDtxRequest()
+        {
+            return DocumentServiceRequest.Create(
+                OperationType.AbortDistributedTransaction,
                 ResourceType.DistributedTransactionBatch,
                 AuthorizationTokenType.PrimaryMasterKey);
         }

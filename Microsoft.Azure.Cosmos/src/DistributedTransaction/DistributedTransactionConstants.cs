@@ -16,9 +16,13 @@ namespace Microsoft.Azure.Cosmos
         internal const int DtcAccountConfigFailure = 5412;     // 500 sub-status: account-config infra failure
         internal const int DtcDispatchFailure = 5413;          // 500 sub-status: dispatch infra failure
 
+        // Custom HTTP status codes returned by the DTC coordinator (non-standard, outside the 200-299 range).
+        internal const int HttpStatusTransactionAborted = 452;  // coordinator aborted the transaction (expected abort response)
+
         internal static bool IsDistributedTransactionRequest(OperationType operationType, ResourceType resourceType)
         {
-            return operationType == OperationType.CommitDistributedTransaction
+            return (operationType == OperationType.CommitDistributedTransaction
+                    || operationType == OperationType.AbortDistributedTransaction)
                 && resourceType == ResourceType.DistributedTransactionBatch;
         }
 

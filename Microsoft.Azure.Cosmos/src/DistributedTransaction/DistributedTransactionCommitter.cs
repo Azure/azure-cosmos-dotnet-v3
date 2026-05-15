@@ -22,12 +22,14 @@ namespace Microsoft.Azure.Cosmos
         internal const int MaxIsRetriableRetryCount = 10;
         private const int RetryMaxExponent = 5; // ~32 s max base delay before jitter
         private static readonly TimeSpan DefaultRetryBaseDelay = TimeSpan.FromSeconds(1);
+        internal static readonly TimeSpan DefaultAbortTimeout = TimeSpan.FromSeconds(30);
         private static readonly string ResourceUri = Paths.OperationsPathSegment + "/" + Paths.Operations_Dtc;
 
         private readonly IReadOnlyList<DistributedTransactionOperation> operations;
         private readonly CosmosClientContext clientContext;
         private readonly TimeSpan retryBaseDelay;
         private readonly Func<TimeSpan, CancellationToken, Task> delayProvider;
+        private readonly TimeSpan abortTimeout;
 
         public DistributedTransactionCommitter(
             IReadOnlyList<DistributedTransactionOperation> operations,
@@ -40,12 +42,14 @@ namespace Microsoft.Azure.Cosmos
             IReadOnlyList<DistributedTransactionOperation> operations,
             CosmosClientContext clientContext,
             TimeSpan retryBaseDelay,
-            Func<TimeSpan, CancellationToken, Task> delayProvider = null)
+            Func<TimeSpan, CancellationToken, Task> delayProvider = null,
+            TimeSpan? abortTimeout = null)
         {
             this.operations = operations ?? throw new ArgumentNullException(nameof(operations));
             this.clientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
             this.retryBaseDelay = retryBaseDelay;
             this.delayProvider = delayProvider ?? Task.Delay;
+            this.abortTimeout = abortTimeout ?? DistributedTransactionCommitter.DefaultAbortTimeout;
         }
 
         public async Task<DistributedTransactionResponse> CommitTransactionAsync(CancellationToken cancellationToken)
@@ -129,18 +133,29 @@ namespace Microsoft.Azure.Cosmos
             {
                 using (MemoryStream bodyStream = serverRequest.CreateBodyStream())
                 {
-                    ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
-                        resourceUri: DistributedTransactionCommitter.ResourceUri,
-                        resourceType: ResourceType.DistributedTransactionBatch,
-                        operationType: OperationType.CommitDistributedTransaction,
-                        requestOptions: null,
-                        cosmosContainerCore: null,
-                        partitionKey: null,
-                        itemId: null,
-                        streamPayload: bodyStream,
-                        requestEnricher: requestMessage => DistributedTransactionCommitter.EnrichRequestMessage(requestMessage, serverRequest),
-                        trace: attemptTrace,
-                        cancellationToken: cancellationToken);
+                    ResponseMessage responseMessage;
+                    try
+                    {
+                        responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
+                            resourceUri: DistributedTransactionCommitter.ResourceUri,
+                            resourceType: ResourceType.DistributedTransactionBatch,
+                            operationType: OperationType.CommitDistributedTransaction,
+                            requestOptions: null,
+                            cosmosContainerCore: null,
+                            partitionKey: null,
+                            itemId: null,
+                            streamPayload: bodyStream,
+                            requestEnricher: requestMessage => DistributedTransactionCommitter.EnrichRequestMessage(requestMessage, serverRequest),
+                            trace: attemptTrace,
+                            cancellationToken: cancellationToken);
+                    }
+                    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                    {
+                        // The commit request was in-flight when the caller cancelled. Signal the coordinator
+                        // to abort the transaction so it can roll back any in-progress changes.
+                        await this.TrySendAbortSignalAsync(serverRequest, attemptTrace).ConfigureAwait(false);
+                        throw;
+                    }
 
                     using (responseMessage)
                     {
@@ -157,6 +172,73 @@ namespace Microsoft.Azure.Cosmos
                             this.clientContext.DocumentClient?.sessionContainer);
 
                         return response;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Best-effort abort signal: sends an <see cref="OperationType.AbortDistributedTransaction"/> request to the
+        /// coordinator using the same idempotency token and operations body so the coordinator can roll back any
+        /// in-progress changes. The coordinator requires the full operations body (identical to the commit request)
+        /// to identify and abort the transaction — an empty body is rejected as invalid.
+        /// Errors are logged and swallowed — the caller will rethrow the original <see cref="OperationCanceledException"/>.
+        /// </summary>
+        private async Task TrySendAbortSignalAsync(DistributedTransactionServerRequest serverRequest, ITrace parentTrace)
+        {
+            using (ITrace abortTrace = parentTrace.StartChild("Abort Distributed Transaction", TraceComponent.Batch, TraceLevel.Info))
+            {
+                using (CancellationTokenSource abortCts = new CancellationTokenSource(this.abortTimeout))
+                {
+                    try
+                    {
+                        using (MemoryStream abortBodyStream = serverRequest.CreateBodyStream())
+                        using (ResponseMessage abortResponse = await this.clientContext.ProcessResourceOperationStreamAsync(
+                            resourceUri: DistributedTransactionCommitter.ResourceUri,
+                            resourceType: ResourceType.DistributedTransactionBatch,
+                            operationType: OperationType.AbortDistributedTransaction,
+                            requestOptions: null,
+                            cosmosContainerCore: null,
+                            partitionKey: null,
+                            itemId: null,
+                            streamPayload: abortBodyStream,
+                            requestEnricher: requestMessage => DistributedTransactionCommitter.EnrichRequestMessage(requestMessage, serverRequest),
+                            trace: abortTrace,
+                            cancellationToken: abortCts.Token).ConfigureAwait(false))
+                        {
+                            // 452 (TransactionAborted) is the coordinator's expected success response for an abort signal.
+                            // 200 (Ok) means the transaction was already committed before the abort arrived — also expected.
+                            // Anything else is a real failure worth warning about.
+                            bool isExpectedOutcome = abortResponse.IsSuccessStatusCode
+                                || (int)abortResponse.StatusCode == DistributedTransactionConstants.HttpStatusTransactionAborted;
+
+                            if (!isExpectedOutcome)
+                            {
+                                DefaultTrace.TraceWarning(
+                                    $"DTC abort signal returned unexpected status (StatusCode={(int)abortResponse.StatusCode}, IdempotencyToken={serverRequest.IdempotencyToken}).");
+                            }
+                            else
+                            {
+                                DefaultTrace.TraceInformation(
+                                    $"DTC abort signal acknowledged (StatusCode={(int)abortResponse.StatusCode}, IdempotencyToken={serverRequest.IdempotencyToken}).");
+                            }
+                        }
+                    }
+                    catch (OperationCanceledException oce) when (abortCts.IsCancellationRequested)
+                    {
+                        // Abort timed out — log and continue so the caller's OperationCanceledException propagates.
+                        // Filter checks abortCts state (not token identity) because the gateway pipeline may wrap
+                        // abortCts.Token in a linked CancellationTokenSource, so the thrown OCE can carry the
+                        // linked token rather than abortCts.Token itself.
+                        DefaultTrace.TraceWarning(
+                            $"DTC abort signal timed out after {this.abortTimeout.TotalSeconds}s (IdempotencyToken={serverRequest.IdempotencyToken}): {oce.Message}");
+                    }
+                    catch (Exception ex)
+                    {
+                        // Best-effort: log and ignore all other failures (non-OCE and OCEs not caused by the
+                        // abort timeout). The outer caller rethrows the original OperationCanceledException.
+                        DefaultTrace.TraceWarning(
+                            $"DTC abort signal failed (IdempotencyToken={serverRequest.IdempotencyToken}): [{ex.GetType().Name}] {ex.Message}");
                     }
                 }
             }

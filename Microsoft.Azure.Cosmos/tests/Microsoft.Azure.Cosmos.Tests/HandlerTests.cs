@@ -1321,5 +1321,29 @@ namespace Microsoft.Azure.Cosmos.Tests
             await invoker.SendAsync(requestMessage, new CancellationToken());
         }
 
+        [TestMethod]
+        [Description("AbortDistributedTransaction must map to HTTP POST so the abort signal reaches the gateway correctly.")]
+        public void GetHttpMethod_AbortDistributedTransaction_ReturnsPost()
+        {
+            HttpMethod method = RequestInvokerHandler.GetHttpMethod(
+                ResourceType.DistributedTransactionBatch,
+                OperationType.AbortDistributedTransaction);
+
+            Assert.AreEqual(HttpMethod.Post, method,
+                "AbortDistributedTransaction must map to HTTP POST, matching CommitDistributedTransaction.");
+        }
+
+        [TestMethod]
+        [Description("CommitDistributedTransaction must map to HTTP POST — verifies the existing behaviour is unchanged after the Abort change.")]
+        public void GetHttpMethod_CommitDistributedTransaction_ReturnsPost()
+        {
+            HttpMethod method = RequestInvokerHandler.GetHttpMethod(
+                ResourceType.DistributedTransactionBatch,
+                OperationType.CommitDistributedTransaction);
+
+            Assert.AreEqual(HttpMethod.Post, method,
+                "CommitDistributedTransaction must continue to map to HTTP POST.");
+        }
+
     }
 }

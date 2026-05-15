@@ -1122,6 +1122,462 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 "Delay beyond maxExponent must still use the capped exponent, producing a similar magnitude.");
         }
 
+        // ─── Abort tests ───────────────────────────────────────────────────────
+
+        [TestMethod]
+        [Description("When the in-flight commit call is cancelled, the committer fires AbortDistributedTransaction " +
+                     "exactly once before rethrowing the OperationCanceledException.")]
+        public async Task AbortTransaction_FiredWhenCommitIsCancelledMidFlight()
+        {
+            using (CancellationTokenSource cts = new CancellationTokenSource())
+            {
+                int abortCallCount = 0;
+                Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+
+                // Commit: cancel mid-flight and return a cancelled task
+                mockContext
+                    .Setup(c => c.ProcessResourceOperationStreamAsync(
+                        It.IsAny<string>(), It.IsAny<ResourceType>(),
+                        OperationType.CommitDistributedTransaction,
+                        It.IsAny<RequestOptions>(), It.IsAny<ContainerInternal>(),
+                        It.IsAny<Cosmos.PartitionKey?>(), It.IsAny<string>(),
+                        It.IsAny<Stream>(), It.IsAny<Action<RequestMessage>>(),
+                        It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                    .Returns(() =>
+                    {
+                        cts.Cancel();
+                        return Task.FromCanceled<ResponseMessage>(cts.Token);
+                    });
+
+                // Abort: succeed and count the call
+                mockContext
+                    .Setup(c => c.ProcessResourceOperationStreamAsync(
+                        It.IsAny<string>(), It.IsAny<ResourceType>(),
+                        OperationType.AbortDistributedTransaction,
+                        It.IsAny<RequestOptions>(), It.IsAny<ContainerInternal>(),
+                        It.IsAny<Cosmos.PartitionKey?>(), It.IsAny<string>(),
+                        It.IsAny<Stream>(), It.IsAny<Action<RequestMessage>>(),
+                        It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                    .Callback(() => abortCallCount++)
+                    .ReturnsAsync(new ResponseMessage(HttpStatusCode.OK));
+
+                DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                    CreateTestOperations(), mockContext.Object, TimeSpan.Zero, null,
+                    abortTimeout: TimeSpan.FromSeconds(5));
+
+                await Assert.ThrowsExceptionAsync<TaskCanceledException>(
+                    () => committer.CommitTransactionAsync(cts.Token));
+
+                Assert.AreEqual(1, abortCallCount,
+                    "Abort must be sent exactly once when the in-flight commit is cancelled.");
+            }
+        }
+
+        [TestMethod]
+        [Description("The abort request must carry the same idempotency token as the original commit request " +
+                     "so the coordinator can identify the in-progress transaction.")]
+        public async Task AbortTransaction_UsesOriginalIdempotencyToken()
+        {
+            using (CancellationTokenSource cts = new CancellationTokenSource())
+            {
+                Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+
+                string capturedCommitToken = null;
+                string capturedAbortToken = null;
+
+                mockContext
+                    .Setup(c => c.ProcessResourceOperationStreamAsync(
+                        It.IsAny<string>(), It.IsAny<ResourceType>(),
+                        OperationType.CommitDistributedTransaction,
+                        It.IsAny<RequestOptions>(), It.IsAny<ContainerInternal>(),
+                        It.IsAny<Cosmos.PartitionKey?>(), It.IsAny<string>(),
+                        It.IsAny<Stream>(), It.IsAny<Action<RequestMessage>>(),
+                        It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                    .Callback<string, ResourceType, OperationType, RequestOptions, ContainerInternal, Cosmos.PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
+                        (_, _, _, _, _, _, _, _, enricher, _, _) =>
+                        {
+                            RequestMessage req = new RequestMessage
+                            {
+                                ResourceType = ResourceType.DistributedTransactionBatch,
+                                OperationType = OperationType.CommitDistributedTransaction,
+                            };
+                            enricher(req);
+                            capturedCommitToken = req.Headers[HttpConstants.HttpHeaders.IdempotencyToken];
+                            cts.Cancel();
+                        })
+                    .Returns(() => Task.FromCanceled<ResponseMessage>(cts.Token));
+
+                mockContext
+                    .Setup(c => c.ProcessResourceOperationStreamAsync(
+                        It.IsAny<string>(), It.IsAny<ResourceType>(),
+                        OperationType.AbortDistributedTransaction,
+                        It.IsAny<RequestOptions>(), It.IsAny<ContainerInternal>(),
+                        It.IsAny<Cosmos.PartitionKey?>(), It.IsAny<string>(),
+                        It.IsAny<Stream>(), It.IsAny<Action<RequestMessage>>(),
+                        It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                    .Callback<string, ResourceType, OperationType, RequestOptions, ContainerInternal, Cosmos.PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
+                        (_, _, _, _, _, _, _, _, enricher, _, _) =>
+                        {
+                            RequestMessage req = new RequestMessage
+                            {
+                                ResourceType = ResourceType.DistributedTransactionBatch,
+                                OperationType = OperationType.AbortDistributedTransaction,
+                            };
+                            enricher(req);
+                            capturedAbortToken = req.Headers[HttpConstants.HttpHeaders.IdempotencyToken];
+                        })
+                    .ReturnsAsync(new ResponseMessage(HttpStatusCode.OK));
+
+                DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                    CreateTestOperations(), mockContext.Object, TimeSpan.Zero, null,
+                    abortTimeout: TimeSpan.FromSeconds(5));
+
+                await Assert.ThrowsExceptionAsync<TaskCanceledException>(
+                    () => committer.CommitTransactionAsync(cts.Token));
+
+                Assert.IsNotNull(capturedCommitToken, "Commit token must have been captured.");
+                Assert.AreEqual(capturedCommitToken, capturedAbortToken,
+                    "Abort must use the same idempotency token as the original commit request.");
+            }
+        }
+
+        [TestMethod]
+        [Description("The abort request must use OperationType.AbortDistributedTransaction and send the operations body " +
+                     "(same as commit) — an empty body is rejected by the coordinator.")]
+        public async Task AbortTransaction_UsesAbortOperationType_AndSendsOperationsBody()
+        {
+            using (CancellationTokenSource cts = new CancellationTokenSource())
+            {
+                Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+
+                OperationType? capturedAbortOpType = null;
+                long capturedAbortStreamLength = -1; // capture length inside callback before stream is disposed
+
+                mockContext
+                    .Setup(c => c.ProcessResourceOperationStreamAsync(
+                        It.IsAny<string>(), It.IsAny<ResourceType>(),
+                        OperationType.CommitDistributedTransaction,
+                        It.IsAny<RequestOptions>(), It.IsAny<ContainerInternal>(),
+                        It.IsAny<Cosmos.PartitionKey?>(), It.IsAny<string>(),
+                        It.IsAny<Stream>(), It.IsAny<Action<RequestMessage>>(),
+                        It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                    .Returns(() =>
+                    {
+                        cts.Cancel();
+                        return Task.FromCanceled<ResponseMessage>(cts.Token);
+                    });
+
+                mockContext
+                    .Setup(c => c.ProcessResourceOperationStreamAsync(
+                        It.IsAny<string>(), It.IsAny<ResourceType>(),
+                        OperationType.AbortDistributedTransaction,
+                        It.IsAny<RequestOptions>(), It.IsAny<ContainerInternal>(),
+                        It.IsAny<Cosmos.PartitionKey?>(), It.IsAny<string>(),
+                        It.IsAny<Stream>(), It.IsAny<Action<RequestMessage>>(),
+                        It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                    .Callback<string, ResourceType, OperationType, RequestOptions, ContainerInternal, Cosmos.PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
+                        (_, _, opType, _, _, _, _, stream, _, _, _) =>
+                        {
+                            capturedAbortOpType = opType;
+                            // Capture Length here — the stream is owned and disposed by TrySendAbortSignalAsync
+                            // after the call returns, so accessing it after CommitTransactionAsync completes
+                            // would throw ObjectDisposedException.
+                            capturedAbortStreamLength = stream?.Length ?? -1;
+                        })
+                    .ReturnsAsync(new ResponseMessage(HttpStatusCode.OK));
+
+                DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                    CreateTestOperations(), mockContext.Object, TimeSpan.Zero, null,
+                    abortTimeout: TimeSpan.FromSeconds(5));
+
+                await Assert.ThrowsExceptionAsync<TaskCanceledException>(
+                    () => committer.CommitTransactionAsync(cts.Token));
+
+                Assert.AreEqual(OperationType.AbortDistributedTransaction, capturedAbortOpType,
+                    "Abort must use OperationType.AbortDistributedTransaction.");
+                Assert.IsTrue(capturedAbortStreamLength > 0,
+                    "Abort body stream must be non-empty — coordinator rejects empty bodies with InvalidRntbdRequest_UnexpectedPayload.");
+            }
+        }
+
+        [TestMethod]
+        [Description("The original OperationCanceledException must propagate to the caller even when the abort signal succeeds.")]
+        public async Task AbortTransaction_OriginalCancelExceptionPropagates_WhenAbortSucceeds()
+        {
+            using (CancellationTokenSource cts = new CancellationTokenSource())
+            {
+                Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+
+                mockContext
+                    .Setup(c => c.ProcessResourceOperationStreamAsync(
+                        It.IsAny<string>(), It.IsAny<ResourceType>(),
+                        OperationType.CommitDistributedTransaction,
+                        It.IsAny<RequestOptions>(), It.IsAny<ContainerInternal>(),
+                        It.IsAny<Cosmos.PartitionKey?>(), It.IsAny<string>(),
+                        It.IsAny<Stream>(), It.IsAny<Action<RequestMessage>>(),
+                        It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                    .Returns(() => { cts.Cancel(); return Task.FromCanceled<ResponseMessage>(cts.Token); });
+
+                mockContext
+                    .Setup(c => c.ProcessResourceOperationStreamAsync(
+                        It.IsAny<string>(), It.IsAny<ResourceType>(),
+                        OperationType.AbortDistributedTransaction,
+                        It.IsAny<RequestOptions>(), It.IsAny<ContainerInternal>(),
+                        It.IsAny<Cosmos.PartitionKey?>(), It.IsAny<string>(),
+                        It.IsAny<Stream>(), It.IsAny<Action<RequestMessage>>(),
+                        It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new ResponseMessage(HttpStatusCode.OK));
+
+                DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                    CreateTestOperations(), mockContext.Object, TimeSpan.Zero, null,
+                    abortTimeout: TimeSpan.FromSeconds(5));
+
+                TaskCanceledException thrown = await Assert.ThrowsExceptionAsync<TaskCanceledException>(
+                    () => committer.CommitTransactionAsync(cts.Token));
+
+                Assert.AreEqual(cts.Token, thrown.CancellationToken,
+                    "The original OperationCanceledException (with the caller's token) must propagate even when abort succeeds.");
+            }
+        }
+
+        [TestMethod]
+        [Description("HTTP 452 (TransactionAborted) is the coordinator's expected success response for an abort signal. " +
+                     "It must NOT be treated as a failure — the OCE must propagate normally.")]
+        public async Task AbortTransaction_CoordinatorReturns452TransactionAborted_TreatedAsSuccess()
+        {
+            using (CancellationTokenSource cts = new CancellationTokenSource())
+            {
+                Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+                int abortCallCount = 0;
+
+                mockContext
+                    .Setup(c => c.ProcessResourceOperationStreamAsync(
+                        It.IsAny<string>(), It.IsAny<ResourceType>(),
+                        OperationType.CommitDistributedTransaction,
+                        It.IsAny<RequestOptions>(), It.IsAny<ContainerInternal>(),
+                        It.IsAny<Cosmos.PartitionKey?>(), It.IsAny<string>(),
+                        It.IsAny<Stream>(), It.IsAny<Action<RequestMessage>>(),
+                        It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                    .Returns(() => { cts.Cancel(); return Task.FromCanceled<ResponseMessage>(cts.Token); });
+
+                // Coordinator returns 452 TransactionAborted — the expected outcome for a successful abort
+                mockContext
+                    .Setup(c => c.ProcessResourceOperationStreamAsync(
+                        It.IsAny<string>(), It.IsAny<ResourceType>(),
+                        OperationType.AbortDistributedTransaction,
+                        It.IsAny<RequestOptions>(), It.IsAny<ContainerInternal>(),
+                        It.IsAny<Cosmos.PartitionKey?>(), It.IsAny<string>(),
+                        It.IsAny<Stream>(), It.IsAny<Action<RequestMessage>>(),
+                        It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                    .Callback(() => abortCallCount++)
+                    .ReturnsAsync(new ResponseMessage((HttpStatusCode)DistributedTransactionConstants.HttpStatusTransactionAborted));
+
+                DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                    CreateTestOperations(), mockContext.Object, TimeSpan.Zero, null,
+                    abortTimeout: TimeSpan.FromSeconds(5));
+
+                TaskCanceledException thrown = await Assert.ThrowsExceptionAsync<TaskCanceledException>(
+                    () => committer.CommitTransactionAsync(cts.Token));
+
+                Assert.AreEqual(1, abortCallCount, "Abort must fire exactly once.");
+                Assert.AreEqual(cts.Token, thrown.CancellationToken,
+                    "The original OCE must propagate even when abort returns 452 TransactionAborted.");
+            }
+        }
+
+        [TestMethod]
+        [Description("The original OperationCanceledException must propagate even when the abort signal itself fails " +
+                     "(abort is best-effort and must never suppress the cancellation).")]
+        public async Task AbortTransaction_OriginalCancelExceptionPropagates_WhenAbortFails()
+        {
+            using (CancellationTokenSource cts = new CancellationTokenSource())
+            {
+                Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+
+                mockContext
+                    .Setup(c => c.ProcessResourceOperationStreamAsync(
+                        It.IsAny<string>(), It.IsAny<ResourceType>(),
+                        OperationType.CommitDistributedTransaction,
+                        It.IsAny<RequestOptions>(), It.IsAny<ContainerInternal>(),
+                        It.IsAny<Cosmos.PartitionKey?>(), It.IsAny<string>(),
+                        It.IsAny<Stream>(), It.IsAny<Action<RequestMessage>>(),
+                        It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                    .Returns(() => { cts.Cancel(); return Task.FromCanceled<ResponseMessage>(cts.Token); });
+
+                // Abort: simulate a network failure
+                mockContext
+                    .Setup(c => c.ProcessResourceOperationStreamAsync(
+                        It.IsAny<string>(), It.IsAny<ResourceType>(),
+                        OperationType.AbortDistributedTransaction,
+                        It.IsAny<RequestOptions>(), It.IsAny<ContainerInternal>(),
+                        It.IsAny<Cosmos.PartitionKey?>(), It.IsAny<string>(),
+                        It.IsAny<Stream>(), It.IsAny<Action<RequestMessage>>(),
+                        It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                    .ThrowsAsync(new IOException("simulated abort network failure"));
+
+                DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                    CreateTestOperations(), mockContext.Object, TimeSpan.Zero, null,
+                    abortTimeout: TimeSpan.FromSeconds(5));
+
+                // The caller must see the original cancellation, not the abort's IOException.
+                TaskCanceledException thrown = await Assert.ThrowsExceptionAsync<TaskCanceledException>(
+                    () => committer.CommitTransactionAsync(cts.Token));
+
+                Assert.AreEqual(cts.Token, thrown.CancellationToken,
+                    "The original OperationCanceledException must propagate even when abort throws.");
+            }
+        }
+
+        [TestMethod]
+        [Description("When the cancellation token is pre-cancelled before CommitTransactionAsync is called, " +
+                     "the commit never reaches the coordinator, so no abort signal must be sent.")]
+        public async Task AbortTransaction_NotFired_WhenPreCancelledBeforeCommitRequest()
+        {
+            using (CancellationTokenSource cts = new CancellationTokenSource())
+            {
+                cts.Cancel(); // pre-cancel
+
+                Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+
+                // Neither commit nor abort should be called.
+                mockContext
+                    .Setup(c => c.ProcessResourceOperationStreamAsync(
+                        It.IsAny<string>(), It.IsAny<ResourceType>(), It.IsAny<OperationType>(),
+                        It.IsAny<RequestOptions>(), It.IsAny<ContainerInternal>(),
+                        It.IsAny<Cosmos.PartitionKey?>(), It.IsAny<string>(),
+                        It.IsAny<Stream>(), It.IsAny<Action<RequestMessage>>(),
+                        It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                    .Throws(new InvalidOperationException("ProcessResourceOperationStreamAsync must not be called on a pre-cancelled token."));
+
+                DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                    CreateTestOperations(), mockContext.Object, TimeSpan.Zero, null,
+                    abortTimeout: TimeSpan.FromSeconds(5));
+
+                await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+                    () => committer.CommitTransactionAsync(cts.Token));
+
+                // Verify neither commit nor abort was called
+                mockContext.Verify(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(), It.IsAny<ResourceType>(), It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(), It.IsAny<ContainerInternal>(),
+                    It.IsAny<Cosmos.PartitionKey?>(), It.IsAny<string>(),
+                    It.IsAny<Stream>(), It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Never,
+                    "No request should be sent when the token is already cancelled before the commit starts.");
+            }
+        }
+
+        [TestMethod]
+        [Description("When the commit succeeds without cancellation, no abort signal must be sent.")]
+        public async Task AbortTransaction_NotFired_WhenCommitSucceeds()
+        {
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            this.SetupProcessResourceOperation(mockContext, () => Task.FromResult(CreateSuccessResponseMessage(operationCount: 1)));
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                CreateTestOperations(), mockContext.Object, TimeSpan.Zero, null,
+                abortTimeout: TimeSpan.FromSeconds(5));
+
+            using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(CancellationToken.None))
+            {
+                Assert.IsTrue(response.IsSuccessStatusCode);
+            }
+
+            // Verify abort was never sent
+            mockContext.Verify(c => c.ProcessResourceOperationStreamAsync(
+                It.IsAny<string>(), It.IsAny<ResourceType>(),
+                OperationType.AbortDistributedTransaction,
+                It.IsAny<RequestOptions>(), It.IsAny<ContainerInternal>(),
+                It.IsAny<Cosmos.PartitionKey?>(), It.IsAny<string>(),
+                It.IsAny<Stream>(), It.IsAny<Action<RequestMessage>>(),
+                It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Never,
+                "Abort must not be sent when the commit completes successfully.");
+        }
+
+        [TestMethod]
+        [Description("When the abort HTTP call hangs beyond the abort timeout, the original OperationCanceledException " +
+                     "must still propagate — the abort timeout must not block the caller indefinitely.")]
+        public async Task AbortTransaction_RespectsAbortTimeout()
+        {
+            using (CancellationTokenSource cts = new CancellationTokenSource())
+            {
+                Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+
+                mockContext
+                    .Setup(c => c.ProcessResourceOperationStreamAsync(
+                        It.IsAny<string>(), It.IsAny<ResourceType>(),
+                        OperationType.CommitDistributedTransaction,
+                        It.IsAny<RequestOptions>(), It.IsAny<ContainerInternal>(),
+                        It.IsAny<Cosmos.PartitionKey?>(), It.IsAny<string>(),
+                        It.IsAny<Stream>(), It.IsAny<Action<RequestMessage>>(),
+                        It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                    .Returns(() => { cts.Cancel(); return Task.FromCanceled<ResponseMessage>(cts.Token); });
+
+                // Abort: respond to the abort's own CancellationToken (honours abort timeout)
+                mockContext
+                    .Setup(c => c.ProcessResourceOperationStreamAsync(
+                        It.IsAny<string>(), It.IsAny<ResourceType>(),
+                        OperationType.AbortDistributedTransaction,
+                        It.IsAny<RequestOptions>(), It.IsAny<ContainerInternal>(),
+                        It.IsAny<Cosmos.PartitionKey?>(), It.IsAny<string>(),
+                        It.IsAny<Stream>(), It.IsAny<Action<RequestMessage>>(),
+                        It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                    .Returns<string, ResourceType, OperationType, RequestOptions, ContainerInternal, Cosmos.PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
+                        (_, _, _, _, _, _, _, _, _, _, abortCt) =>
+                        {
+                            TaskCompletionSource<ResponseMessage> tcs = new TaskCompletionSource<ResponseMessage>();
+                            abortCt.Register(() => tcs.TrySetCanceled(abortCt));
+                            return tcs.Task; // never completes unless abort token fires
+                        });
+
+                // Very short abort timeout (50 ms) so the test completes quickly.
+                DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                    CreateTestOperations(), mockContext.Object, TimeSpan.Zero, null,
+                    abortTimeout: TimeSpan.FromMilliseconds(50));
+
+                TaskCanceledException thrown = await Assert.ThrowsExceptionAsync<TaskCanceledException>(
+                    () => committer.CommitTransactionAsync(cts.Token));
+
+                // Even though abort timed out, the original commit cancellation propagates.
+                Assert.AreEqual(cts.Token, thrown.CancellationToken,
+                    "The caller's OperationCanceledException must propagate even when the abort times out.");
+            }
+        }
+
+        [TestMethod]
+        [Description("When the commit call throws a non-cancellation exception (e.g. IOException), no abort signal " +
+                     "must be sent — abort is only for in-flight cancellation, not generic commit failures.")]
+        public async Task AbortTransaction_NotFired_WhenCommitThrowsNonCancellationException()
+        {
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+
+            mockContext
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(), It.IsAny<ResourceType>(),
+                    OperationType.CommitDistributedTransaction,
+                    It.IsAny<RequestOptions>(), It.IsAny<ContainerInternal>(),
+                    It.IsAny<Cosmos.PartitionKey?>(), It.IsAny<string>(),
+                    It.IsAny<Stream>(), It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new IOException("simulated commit network failure"));
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                CreateTestOperations(), mockContext.Object, TimeSpan.Zero, null,
+                abortTimeout: TimeSpan.FromSeconds(5));
+
+            await Assert.ThrowsExceptionAsync<IOException>(
+                () => committer.CommitTransactionAsync(CancellationToken.None));
+
+            mockContext.Verify(c => c.ProcessResourceOperationStreamAsync(
+                It.IsAny<string>(), It.IsAny<ResourceType>(),
+                OperationType.AbortDistributedTransaction,
+                It.IsAny<RequestOptions>(), It.IsAny<ContainerInternal>(),
+                It.IsAny<Cosmos.PartitionKey?>(), It.IsAny<string>(),
+                It.IsAny<Stream>(), It.IsAny<Action<RequestMessage>>(),
+                It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Never,
+                "Abort must not be sent when the commit throws a non-cancellation exception.");
+        }
+
         // ─── Helpers ───────────────────────────────────────────────────────────
 
         private static string BuildDtcResponseJson(
