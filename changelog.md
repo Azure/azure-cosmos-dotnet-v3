@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [5815](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5815) Read Consistency Strategy: Adds hub region header for LastCommittedSingleWriteRegion strategy.
 - [5848](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5848) VectorEmbeddingPolicy: Adds EmbeddingSource block to Embedding model
+- [5648](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5648) Hub Region Caching: Caches discovered hub region per partition on successful response during 403/3 discovery chain, enabling subsequent requests to skip the discovery and route directly to the cached hub.
 
 #### Breaking Changes
 

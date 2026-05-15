@@ -88,8 +88,10 @@ The hub region caching integrates into the existing partition-level failover inf
 | `ClientRetryPolicy` | `ShouldRetryOnSessionNotAvailable()` | After 2× 404/1002: sets hub header flag, checks cache via `TryAddPartitionLevelLocationOverride`, falls back to region cycling |
 | `ClientRetryPolicy` | `ShouldRetryInternal()` (403/3 path) | Read path with hub header: retries via `TryMarkEndpointUnavailableForPartitionKeyRange`; Write path: normal retry |
 | `GatewayStoreModel` | `InvokeAsync()` | When `IsHubRegionRoutingActive`, resolves PKRange and calls `TryAddPartitionLevelLocationOverride` (even on non-PPAF accounts) |
+| `AbstractRetryHandler` | `SendAsync()` | On success: calls `TryCacheHubRegionLocationForPartition` to confirm hub region in cache |
 | `GlobalPartitionEndpointManagerCore` | `TryAddPartitionLevelLocationOverride()` | When `addHubRegionOverrideFromCache = true`, routes to cached hub from `PartitionKeyRangeToLocationForWrite` |
 | `GlobalPartitionEndpointManagerCore` | `TryMarkEndpointUnavailableForPartitionKeyRange()` | During 403/3 chain, advances the failover cache to the next region |
+| `GlobalPartitionEndpointManagerCore` | `TryCacheHubRegionLocationForPartition()` | On success: sets `Current` to confirmed hub endpoint |
 | `GlobalPartitionEndpointManagerCore` | `IsHubRegionRoutingActive()` | Static check: returns true if request has the hub region header and is a read-only request |
 | `GlobalPartitionEndpointManagerCore` | `IsRequestEligibleForPartitionOrHubRegionFailover()` | Eligibility gate: allows entry when PPAF, circuit breaker, **or** `checkHubRegionOverrideInCache` is true |
 
@@ -132,7 +134,17 @@ The hub region is stored in the `PartitionKeyRangeToLocationForWrite` dictionary
 Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>> PartitionKeyRangeToLocationForWrite
 ```
 
-### 4.5 Using Cached Hub Region
+### 4.5 On-Success Hub Region Confirmation
+
+After the 403/3 discovery chain completes and the request succeeds (200 OK), `AbstractRetryHandler.SendAsync` calls:
+
+```csharp
+globalPartitionEndpointManager.TryCacheHubRegionLocationForPartition(request.DocumentServiceRequest);
+```
+
+This deterministically confirms the hub region by calling `SetCurrent(hubRegionEndpoint)` on the existing `PartitionKeyRangeFailoverInfo` entry (or creating a new one if absent). This is additive to the round-robin cache population during 403/3 — it provides a deterministic signal that the region which returned 200 is definitively the hub, preventing stale cache entries from concurrent 403/3 cycling.
+
+### 4.6 Using Cached Hub Region
 
 Subsequent requests that trigger 2× 404/1002 check the cache via:
 
