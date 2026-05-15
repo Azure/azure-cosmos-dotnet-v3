@@ -547,6 +547,7 @@ namespace Microsoft.Azure.Cosmos
                         // it means we have already discovered the hub region for this partition and can route directly there (skipping the 403/3 discovery chain).
                         // If no override is present, this means we have not yet discovered the hub region for this partition. In that case, route to the account
                         // hub region first.
+#if !INTERNAL
                         if (!this.addHubRegionProcessingOnlyHeader
                             || !this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(request, checkHubRegionOverrideInCache: true))
                         {
@@ -556,6 +557,13 @@ namespace Microsoft.Azure.Cosmos
                                 RetryRequestOnPreferredLocations = false
                             };
                         }
+#else
+                        this.retryContext = new RetryContext
+                        {
+                            RetryLocationIndex = 0,
+                            RetryRequestOnPreferredLocations = false
+                        };
+#endif
 
                         return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
                     }
