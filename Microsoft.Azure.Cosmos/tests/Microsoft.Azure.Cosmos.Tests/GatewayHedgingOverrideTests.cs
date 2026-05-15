@@ -1,7 +1,10 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Net.Http;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -206,6 +209,91 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 client.Dispose();
             }
+        }
+
+        /// <summary>
+        /// Regression test: when the Gateway flag is <c>true</c> on the underlying
+        /// <see cref="DocumentClient"/>, <see cref="RequestInvokerHandler.AvailabilityStrategy(RequestMessage)"/>
+        /// MUST return <c>null</c> even if the request itself supplies a per-request
+        /// <see cref="AvailabilityStrategy"/> via <see cref="RequestOptions.AvailabilityStrategy"/>.
+        /// This is the absolute-precedence guarantee called out in the spec — the operator's
+        /// kill-switch wins over both per-request and client-level configuration.
+        /// </summary>
+        [TestMethod]
+        public void RequestInvokerHandler_FlagTrue_PerRequestStrategy_ReturnsNull()
+        {
+            using CosmosClient mockCosmosClient = MockCosmosUtil.CreateMockCosmosClient();
+            mockCosmosClient.DocumentClient.DisableCrossRegionalHedgingForTests = true;
+
+            RequestInvokerHandler handler = new RequestInvokerHandler(
+                mockCosmosClient,
+                requestedClientConsistencyLevel: null,
+                requestedClientReadConsistencyStrategy: null,
+                requestedClientPriorityLevel: null,
+                requestedClientThroughputBucket: null);
+
+            using RequestMessage request = new RequestMessage(
+                HttpMethod.Get,
+                new Uri("/dbs/testdb/colls/testcontainer/docs/testId", UriKind.Relative))
+            {
+                ResourceType = ResourceType.Document,
+                OperationType = OperationType.Read,
+                RequestOptions = new RequestOptions
+                {
+                    AvailabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                        threshold: TimeSpan.FromMilliseconds(500),
+                        thresholdStep: TimeSpan.FromMilliseconds(100))
+                }
+            };
+
+            AvailabilityStrategyInternal resolved = handler.AvailabilityStrategy(request);
+
+            Assert.IsNull(
+                resolved,
+                "Gateway operator override must take absolute precedence over per-request AvailabilityStrategy");
+        }
+
+        /// <summary>
+        /// Companion to <see cref="RequestInvokerHandler_FlagTrue_PerRequestStrategy_ReturnsNull"/>:
+        /// when the Gateway flag is <c>false</c>, the per-request <see cref="AvailabilityStrategy"/>
+        /// MUST be honored — the override only suppresses hedging while the flag is true.
+        /// </summary>
+        [TestMethod]
+        public void RequestInvokerHandler_FlagFalse_HonorsPerRequestStrategy()
+        {
+            using CosmosClient mockCosmosClient = MockCosmosUtil.CreateMockCosmosClient();
+            mockCosmosClient.DocumentClient.DisableCrossRegionalHedgingForTests = false;
+
+            RequestInvokerHandler handler = new RequestInvokerHandler(
+                mockCosmosClient,
+                requestedClientConsistencyLevel: null,
+                requestedClientReadConsistencyStrategy: null,
+                requestedClientPriorityLevel: null,
+                requestedClientThroughputBucket: null);
+
+            CrossRegionHedgingAvailabilityStrategy perRequestStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                threshold: TimeSpan.FromMilliseconds(500),
+                thresholdStep: TimeSpan.FromMilliseconds(100));
+
+            using RequestMessage request = new RequestMessage(
+                HttpMethod.Get,
+                new Uri("/dbs/testdb/colls/testcontainer/docs/testId", UriKind.Relative))
+            {
+                ResourceType = ResourceType.Document,
+                OperationType = OperationType.Read,
+                RequestOptions = new RequestOptions
+                {
+                    AvailabilityStrategy = perRequestStrategy
+                }
+            };
+
+            AvailabilityStrategyInternal resolved = handler.AvailabilityStrategy(request);
+
+            Assert.IsNotNull(resolved, "Per-request strategy must be honored when Gateway flag is false");
+            Assert.AreSame(
+                perRequestStrategy,
+                resolved,
+                "Per-request strategy must be returned verbatim when Gateway flag is false");
         }
 
         private static DocumentClient CreateClient(ConnectionPolicy policy)

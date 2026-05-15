@@ -16,7 +16,7 @@
 
 ## 4. Request-Level Enforcement
 
-- [ ] 4.1 Update `RequestInvokerHandler` hedging resolution logic to check the Gateway disable flag before evaluating request-level or client-level `AvailabilityStrategy` overrides, ensuring the flag takes absolute precedence when `true`
+- [x] 4.1 Update `RequestInvokerHandler` hedging resolution logic to check the Gateway disable flag before evaluating request-level or client-level `AvailabilityStrategy` overrides, ensuring the flag takes absolute precedence when `true`
 
 ## 5. Diagnostics and Tracing
 
@@ -27,8 +27,8 @@
 
 - [ ] 6.1 Test: PPAF account with default hedging — flag `true` disables hedging, flag toggled to `false` re-enables default hedging
 - [ ] 6.2 Test: PPAF account with explicit customer hedging — flag `true` disables hedging, flag toggled to `false` restores customer strategy
-- [ ] 6.3 Test: PPAF account with request-level hedging override — flag `true` prevents request-level strategy execution
-- [ ] 6.4 Test: Non-PPAF account — flag `true` does not affect explicit customer hedging
+- [x] 6.3 Test: PPAF account with request-level hedging override — flag `true` prevents request-level strategy execution
+- [ ] 6.4 Test: Account with `DisablePartitionLevelFailoverClientLevelOverride=true` — flag `true` does not affect hedging (verifies customer client-level opt-out gate)
 - [ ] 6.5 Test: Flag absent from account properties — existing behavior unchanged
 - [ ] 6.6 Test: Dynamic toggle cycle — enable → disable → re-enable with correct strategy restoration
 

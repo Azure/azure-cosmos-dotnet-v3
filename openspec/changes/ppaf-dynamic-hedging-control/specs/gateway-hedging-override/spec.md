@@ -91,20 +91,21 @@ The SDK SHALL evaluate the Gateway flag on each account-properties refresh cycle
 
 ---
 
-### Requirement: Non-PPAF accounts ignore the flag
-The SDK SHALL NOT evaluate or act on the `disableCrossRegionalHedging` flag for accounts that do not have PPAF enabled.
+### Requirement: Customer client-level opt-out bypasses the flag
+When a customer has set `CosmosClientOptions.DisablePartitionLevelFailover` (surfaced internally as `DisablePartitionLevelFailoverClientLevelOverride`), the SDK SHALL NOT evaluate or act on the `disableCrossRegionalHedging` flag. The customer's local configuration takes precedence over the Gateway-driven operator override. Outside that customer opt-out the flag is honored for both PPAF and non-PPAF accounts.
 
-#### Scenario: Non-PPAF account with flag set to true
-- **WHEN** the account does NOT have PPAF enabled (`EnablePartitionLevelFailover` is `false` or absent)
+#### Scenario: Customer opt-out with flag set to true
+- **WHEN** the customer has set `CosmosClientOptions.DisablePartitionLevelFailover = true`
 - **AND** the Gateway flag `disableCrossRegionalHedging` is `true`
-- **THEN** the SDK SHALL ignore the flag
+- **THEN** the SDK SHALL ignore the Gateway flag
 - **AND** any explicit customer hedging configuration SHALL continue to function normally
 
-#### Scenario: Non-PPAF account with explicit hedging and flag set to true
-- **WHEN** the account does NOT have PPAF enabled
-- **AND** the customer has configured an explicit `AvailabilityStrategy`
+#### Scenario: Non-PPAF account without opt-out with flag set to true
+- **WHEN** the account does NOT have PPAF enabled (`EnablePartitionLevelFailover` is `false` or absent)
+- **AND** the customer has NOT set `CosmosClientOptions.DisablePartitionLevelFailover`
 - **AND** the Gateway flag `disableCrossRegionalHedging` is `true`
-- **THEN** the SDK SHALL NOT disable the customer's explicit hedging strategy
+- **THEN** the SDK SHALL honor the Gateway flag
+- **AND** SHALL disable hedging if the customer had configured an explicit `AvailabilityStrategy`
 
 ---
 

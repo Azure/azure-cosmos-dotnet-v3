@@ -29,7 +29,6 @@ PPAF (Partition-Level Failover) is an account-level feature that, when enabled, 
 
 - Changing customer-authored hedging strategies or their configuration shape.
 - Modifying PPAF enablement or onboarding flows.
-- Supporting non-PPAF accounts with this flag (for the immediate term).
 - Exposing the flag to end users or making it configurable from the SDK.
 
 ## Decisions
@@ -85,4 +84,4 @@ PPAF (Partition-Level Failover) is an account-level feature that, when enabled, 
 
 - **[Risk] Strategy restoration correctness** — When restoring hedging after the flag is toggled off, the SDK must correctly reconstruct the PPAF default strategy or restore the customer's explicit strategy. → **Mitigation:** Store the original strategy reference before nullification. Unit-test the toggle cycle (enable → disable → re-enable).
 
-- **[Trade-off] Non-PPAF accounts ignored** — The flag is only evaluated for PPAF accounts. A future extension could support non-PPAF accounts, but this adds complexity without current demand.
+- **[Trade-off] Customer client-level opt-out bypasses the flag** — Customers who set `CosmosClientOptions.DisablePartitionLevelFailover` (surfaced internally as `DisablePartitionLevelFailoverClientLevelOverride`) opt out of all PPAF-related machinery including this Gateway override. This is consistent with the rest of the PPAF control plane and avoids surprising customers who have explicitly disabled the feature.

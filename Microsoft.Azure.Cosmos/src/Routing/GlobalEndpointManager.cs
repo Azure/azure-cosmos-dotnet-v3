@@ -791,16 +791,31 @@ namespace Microsoft.Azure.Cosmos.Routing
                     && accountProperties.EnablePartitionLevelFailover.HasValue
                     && (this.connectionPolicy.EnablePartitionLevelFailover != accountProperties.EnablePartitionLevelFailover.Value);
 
-                bool currentDisableHedgingFlag = accountProperties.DisableCrossRegionalHedging ?? false;
+                // Hedging change-detection mirrors the PPAF .HasValue guard above:
+                // a missing property in the response is "no signal", NOT an implicit false.
+                // This prevents a transient gateway response that drops the property
+                // (e.g., partial regional failover, stale gateway version) from being
+                // interpreted as a true -> false transition that re-enables hedging
+                // during the very window the operator most wants it disabled.
+                //
+                // Runbook contract: on-call disables via an explicit "false" property
+                // value, not by removing the property override.
                 bool disableHedgingFlagChanged = !ignorePpafChanges
-                    && (currentDisableHedgingFlag != this.lastKnownDisableCrossRegionalHedging);
+                    && accountProperties.DisableCrossRegionalHedging.HasValue
+                    && (accountProperties.DisableCrossRegionalHedging.Value != this.lastKnownDisableCrossRegionalHedging);
 
                 if (ppafEnablementChanged || disableHedgingFlagChanged)
                 {
                     bool latestPpafEnabled = accountProperties.EnablePartitionLevelFailover
                         ?? this.connectionPolicy.EnablePartitionLevelFailover;
-                    this.lastKnownDisableCrossRegionalHedging = currentDisableHedgingFlag;
-                    this.OnEnablePartitionLevelFailoverConfigChanged?.Invoke(latestPpafEnabled, currentDisableHedgingFlag);
+
+                    // Only advance lastKnown when the gateway emitted an explicit value; otherwise
+                    // preserve the cached value so a later property-restored response diffs against
+                    // the previously-honored state (rather than against an implicit false baseline).
+                    bool latestDisableHedging = accountProperties.DisableCrossRegionalHedging
+                        ?? this.lastKnownDisableCrossRegionalHedging;
+                    this.lastKnownDisableCrossRegionalHedging = latestDisableHedging;
+                    this.OnEnablePartitionLevelFailoverConfigChanged?.Invoke(latestPpafEnabled, latestDisableHedging);
                 }
 
                 GlobalEndpointManager.ParseThinClientLocationsFromAdditionalProperties(accountProperties);
