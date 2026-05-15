@@ -812,5 +812,123 @@
             Assert.AreEqual("CrossRegionAvailabilityContext",
                 CrossRegionAvailabilityContext.PropertyKey);
         }
+
+        /// <summary>
+        /// Regression test for the .NET Framework 4.7.2 stack-overflow scenario in
+        /// CrossRegionHedgingAvailabilityStrategy.
+        ///
+        /// On .NET Framework, every async method consumes ~10KB of stack on the synchronous
+        /// exception propagation path (ExceptionDispatchInfo.Throw -> TaskAwaiter.ThrowForNonSuccess
+        /// -> HandleNonSuccessAndDebuggerNotification). When a deep request pipeline beneath
+        /// hedging throws (e.g. CosmosOperationCanceledException after the hedge CTS is signalled),
+        /// the synchronous exception propagation can blow the managed stack.
+        ///
+        /// Fix: <see cref="CrossRegionHedgingAvailabilityStrategy"/>.CloneAndSendAsync wraps its
+        /// awaited call in a try/catch that does <c>await Task.Yield(); throw;</c> — the yield
+        /// resumes the rethrow on a fresh threadpool stack, breaking the synchronous propagation
+        /// chain. This test asserts:
+        ///  1. Functional correctness: a sender that throws OperationCanceledException with the
+        ///     application token already cancelled still surfaces as CosmosOperationCanceledException,
+        ///     and the inner OCE's stack trace preserves the original throwing frame (also covers
+        ///     the throw-ex -> throw fix in RequestSenderAndResultCheckAsync).
+        ///  2. Yield observable proof: at least one continuation is posted to the active
+        ///     SynchronizationContext during exception propagation, demonstrating the synchronous
+        ///     propagation chain was broken.
+        /// </summary>
+        [TestMethod]
+        public async Task SenderException_PropagatesViaYield_PreservesStackTrace()
+        {
+            // Arrange
+            CrossRegionHedgingAvailabilityStrategy availabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                threshold: TimeSpan.FromMilliseconds(10),
+                thresholdStep: TimeSpan.FromMilliseconds(10));
+
+            using RequestMessage request = CreateReadRequest();
+            using CosmosClient mockCosmosClient = CreateMockClientWithRegions(2);
+
+            // Pre-cancelled CTS exercises the propagation path:
+            //   RequestSenderAndResultCheckAsync's catch (OperationCanceledException oce) when
+            //   (hedgeRequestsCancellationTokenSource.IsCancellationRequested) wraps in CosmosOCE,
+            //   ExecuteAvailabilityStrategyAsync's phase-1 loop awaits the faulted task (because
+            //   applicationProvidedCancellationToken.IsCancellationRequested is true) and the
+            //   exception unwinds through CloneAndSendAsync's catch -> await Task.Yield(); throw;
+            CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            const string sentinelMethodName = nameof(ThrowDeepInPipelineAsync);
+
+            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender = async (req, ct) =>
+            {
+                await ThrowDeepInPipelineAsync();
+                return new ResponseMessage(HttpStatusCode.OK);
+            };
+
+            // Install a SyncContext we can observe. Task.Yield() posts its continuation to the
+            // current SyncContext when one is set, so non-zero PostCount during exception
+            // propagation proves CloneAndSendAsync's catch yielded before rethrowing.
+            SynchronizationContext previousCtx = SynchronizationContext.Current;
+            CountingSynchronizationContext customCtx = new CountingSynchronizationContext();
+            SynchronizationContext.SetSynchronizationContext(customCtx);
+            try
+            {
+                CosmosOperationCanceledException caught =
+                    await Assert.ThrowsExceptionAsync<CosmosOperationCanceledException>(
+                        () => availabilityStrategy.ExecuteAvailabilityStrategyAsync(
+                            sender, mockCosmosClient, request, cts.Token));
+
+                // CosmosOperationCanceledException overrides StackTrace to return the original
+                // OCE's stack trace (see CosmosOperationCanceledException.StackTrace).
+                // Stack-trace preservation: the original deep frame must still be present.
+                // With the old `throw ex;` in RequestSenderAndResultCheckAsync this would have
+                // been wiped on rethrow.
+                string stack = caught.StackTrace ?? string.Empty;
+                Assert.IsTrue(
+                    stack.Contains(sentinelMethodName),
+                    $"Stack trace should include the original throwing frame '{sentinelMethodName}'. " +
+                    $"Actual stack trace:\n{stack}");
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(previousCtx);
+            }
+
+            // Yield observable proof: CloneAndSendAsync's catch did await Task.Yield() before
+            // rethrowing, which posts a continuation to the active SyncContext — without the fix,
+            // exception propagation would be fully synchronous and the SyncContext would observe
+            // zero posts.
+            Assert.IsTrue(
+                customCtx.PostCount > 0,
+                "Task.Yield in CloneAndSendAsync's catch block should have posted at least one " +
+                "continuation to the active SynchronizationContext, proving the synchronous " +
+                "exception propagation chain was broken.");
+        }
+
+        private static async Task ThrowDeepInPipelineAsync()
+        {
+            await Task.Yield();
+            throw new OperationCanceledException("Simulated deep-pipeline cancellation for hedging stack-overflow regression.");
+        }
+
+        /// <summary>
+        /// Minimal SynchronizationContext that counts Post invocations and dispatches them
+        /// onto the threadpool so test continuations don't deadlock.
+        /// </summary>
+        private sealed class CountingSynchronizationContext : SynchronizationContext
+        {
+            private int postCount;
+
+            public int PostCount => Volatile.Read(ref this.postCount);
+
+            public override void Post(SendOrPostCallback d, object state)
+            {
+                Interlocked.Increment(ref this.postCount);
+                ThreadPool.QueueUserWorkItem(_ => d(state));
+            }
+
+            public override void Send(SendOrPostCallback d, object state)
+            {
+                d(state);
+            }
+        }
     }
 }
