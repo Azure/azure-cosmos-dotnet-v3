@@ -828,6 +828,181 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void OpenTcpConnectionTimeout_NegativeTimeSpan_Throws()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+            };
+
+            Assert.ThrowsException<ArgumentOutOfRangeException>(
+                () => options.OpenTcpConnectionTimeout = TimeSpan.FromMilliseconds(-1));
+            Assert.ThrowsException<ArgumentOutOfRangeException>(
+                () => options.OpenTcpConnectionTimeout = TimeSpan.FromSeconds(-30));
+        }
+
+        [TestMethod]
+        public void OpenTcpConnectionTimeout_Zero_IsAllowed_AndRoundTripsThroughConnectionPolicy()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                OpenTcpConnectionTimeout = TimeSpan.Zero,
+            };
+
+            ConnectionPolicy policy = options.GetConnectionPolicy(clientId: 0);
+            Assert.AreEqual(TimeSpan.Zero, policy.OpenTcpConnectionTimeout);
+        }
+
+        [TestMethod]
+        public void OpenTcpConnectionTimeout_SubSecond_NormalizesToZero_InRntbdConfig()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                OpenTcpConnectionTimeout = TimeSpan.FromMilliseconds(500),
+            };
+
+            ConnectionPolicy policy = options.GetConnectionPolicy(clientId: 0);
+            CosmosClientBuilder builder = new CosmosClientBuilder(
+                accountEndpoint: AccountEndpoint,
+                authKeyOrResourceToken: MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+            CosmosClient cosmosClient = builder.Build(new MockDocumentClient(connectionPolicy: policy));
+
+            Microsoft.Azure.Cosmos.Tracing.TraceData.RntbdConnectionConfig tcpConfig =
+                cosmosClient.ClientConfigurationTraceDatum.RntbdConnectionConfig;
+
+            Assert.AreEqual(
+                0,
+                tcpConfig.ConnectionTimeout,
+                "Sub-second OpenTcpConnectionTimeout must surface as 0 seconds (fall back to request timeout).");
+        }
+
+        [TestMethod]
+        public void OpenTcpConnectionTimeout_ExactlyOneSecond_PreservedInRntbdConfig()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                OpenTcpConnectionTimeout = TimeSpan.FromSeconds(1),
+            };
+
+            ConnectionPolicy policy = options.GetConnectionPolicy(clientId: 0);
+            CosmosClientBuilder builder = new CosmosClientBuilder(
+                accountEndpoint: AccountEndpoint,
+                authKeyOrResourceToken: MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+            CosmosClient cosmosClient = builder.Build(new MockDocumentClient(connectionPolicy: policy));
+
+            Microsoft.Azure.Cosmos.Tracing.TraceData.RntbdConnectionConfig tcpConfig =
+                cosmosClient.ClientConfigurationTraceDatum.RntbdConnectionConfig;
+
+            Assert.AreEqual(1, tcpConfig.ConnectionTimeout);
+        }
+
+        [TestMethod]
+        public void OpenTcpConnectionTimeout_WholeSeconds_PreservedInRntbdConfig()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                OpenTcpConnectionTimeout = TimeSpan.FromSeconds(7),
+            };
+
+            ConnectionPolicy policy = options.GetConnectionPolicy(clientId: 0);
+            CosmosClientBuilder builder = new CosmosClientBuilder(
+                accountEndpoint: AccountEndpoint,
+                authKeyOrResourceToken: MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+            CosmosClient cosmosClient = builder.Build(new MockDocumentClient(connectionPolicy: policy));
+
+            Microsoft.Azure.Cosmos.Tracing.TraceData.RntbdConnectionConfig tcpConfig =
+                cosmosClient.ClientConfigurationTraceDatum.RntbdConnectionConfig;
+
+            Assert.AreEqual(7, tcpConfig.ConnectionTimeout);
+        }
+
+        [TestMethod]
+        public void OpenTcpConnectionTimeout_Fractional_RoundsUpInRntbdConfig()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                OpenTcpConnectionTimeout = TimeSpan.FromSeconds(2.5),
+            };
+
+            ConnectionPolicy policy = options.GetConnectionPolicy(clientId: 0);
+            CosmosClientBuilder builder = new CosmosClientBuilder(
+                accountEndpoint: AccountEndpoint,
+                authKeyOrResourceToken: MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+            CosmosClient cosmosClient = builder.Build(new MockDocumentClient(connectionPolicy: policy));
+
+            Microsoft.Azure.Cosmos.Tracing.TraceData.RntbdConnectionConfig tcpConfig =
+                cosmosClient.ClientConfigurationTraceDatum.RntbdConnectionConfig;
+
+            Assert.AreEqual(
+                3,
+                tcpConfig.ConnectionTimeout,
+                "Fractional OpenTcpConnectionTimeout (>= 1s) rounds up to the nearest whole second at the transport boundary.");
+        }
+
+        [TestMethod]
+        public void OpenTcpConnectionTimeout_JustOverOneSecond_RoundsUpInRntbdConfig()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                OpenTcpConnectionTimeout = TimeSpan.FromMilliseconds(1001),
+            };
+
+            ConnectionPolicy policy = options.GetConnectionPolicy(clientId: 0);
+            CosmosClientBuilder builder = new CosmosClientBuilder(
+                accountEndpoint: AccountEndpoint,
+                authKeyOrResourceToken: MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+            CosmosClient cosmosClient = builder.Build(new MockDocumentClient(connectionPolicy: policy));
+
+            Microsoft.Azure.Cosmos.Tracing.TraceData.RntbdConnectionConfig tcpConfig =
+                cosmosClient.ClientConfigurationTraceDatum.RntbdConnectionConfig;
+
+            Assert.AreEqual(
+                2,
+                tcpConfig.ConnectionTimeout,
+                "1.001s rounds up to 2s at the transport boundary.");
+        }
+
+        [TestMethod]
+        public void OpenTcpConnectionTimeout_Fractional_PreservedOnConnectionPolicyTimeSpan()
+        {
+            TimeSpan customerSupplied = TimeSpan.FromSeconds(2.5);
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                OpenTcpConnectionTimeout = customerSupplied,
+            };
+
+            Assert.AreEqual(
+                customerSupplied,
+                options.OpenTcpConnectionTimeout,
+                "CosmosClientOptions preserves the supplied TimeSpan unchanged.");
+
+            ConnectionPolicy policy = options.GetConnectionPolicy(clientId: 0);
+            Assert.AreEqual(
+                customerSupplied,
+                policy.OpenTcpConnectionTimeout,
+                "ConnectionPolicy preserves the supplied TimeSpan unchanged.");
+        }
+
+        [TestMethod]
+        public void WithConnectionModeDirect_NegativeOpenTcpTimeout_Throws()
+        {
+            CosmosClientBuilder builder = new CosmosClientBuilder(
+                accountEndpoint: AccountEndpoint,
+                authKeyOrResourceToken: MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+
+            Assert.ThrowsException<ArgumentOutOfRangeException>(
+                () => builder.WithConnectionModeDirect(
+                    openTcpConnectionTimeout: TimeSpan.FromSeconds(-1)));
+        }
+
+        [TestMethod]
         public void VerifyHttpClientFactoryBlockedWithConnectionLimit()
         {
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()

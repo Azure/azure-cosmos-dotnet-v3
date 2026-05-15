@@ -927,7 +927,12 @@ namespace Microsoft.Azure.Cosmos
 
                 if (connectionPolicy.OpenTcpConnectionTimeout.HasValue)
                 {
-                    this.openConnectionTimeoutInSeconds = (int)connectionPolicy.OpenTcpConnectionTimeout.Value.TotalSeconds;
+                    // Values in [TimeSpan.Zero, 1 second) become 0 (use RequestTimeout).
+                    // Values >= 1 second round up to the nearest whole second.
+                    TimeSpan openTcpConnectionTimeout = connectionPolicy.OpenTcpConnectionTimeout.Value;
+                    this.openConnectionTimeoutInSeconds = openTcpConnectionTimeout < TimeSpan.FromSeconds(1)
+                        ? 0
+                        : (int)Math.Ceiling(openTcpConnectionTimeout.TotalSeconds);
                 }
 
                 if (connectionPolicy.MaxRequestsPerTcpConnection.HasValue)

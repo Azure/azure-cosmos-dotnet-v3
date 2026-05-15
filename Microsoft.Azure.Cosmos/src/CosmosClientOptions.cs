@@ -593,12 +593,35 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         /// <remarks>
         /// When the time elapses, the attempt is cancelled and an error is returned. Longer timeouts will delay retries and failures.
+        /// <para>
+        /// The supplied <see cref="TimeSpan"/> is preserved unchanged on this property. At the
+        /// transport boundary the value is converted to whole seconds:
+        /// </para>
+        /// <list type="bullet">
+        /// <item>
+        /// Values in [<see cref="TimeSpan.Zero"/>, 1 second) are treated as 0, causing the
+        /// configured <see cref="RequestTimeout"/> to be used as the open-connection timeout.
+        /// </item>
+        /// <item>
+        /// Values greater than or equal to 1 second are rounded up to the nearest whole second
+        /// (for example, 2.5 seconds becomes 3 seconds).
+        /// </item>
+        /// </list>
         /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="value"/> is negative.</exception>
         public TimeSpan? OpenTcpConnectionTimeout
         {
             get => this.openTcpConnectionTimeout;
             set
             {
+                if (value.HasValue && value.Value < TimeSpan.Zero)
+                {
+                    throw new ArgumentOutOfRangeException(
+                        nameof(this.OpenTcpConnectionTimeout),
+                        value,
+                        $"{nameof(this.OpenTcpConnectionTimeout)} must be greater than or equal to {nameof(TimeSpan)}.{nameof(TimeSpan.Zero)}.");
+                }
+
                 this.openTcpConnectionTimeout = value;
                 this.ValidateDirectTCPSettings();
             }

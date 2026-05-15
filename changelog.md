@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
+- [#4500](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4500) Direct: Fixes silent truncation of `OpenTcpConnectionTimeout`. Sub-second values normalize to `TimeSpan.Zero` (request-timeout fallback). Fractional values greater than or equal to 1 second round up to the nearest whole second at the transport boundary (for example, 2.5 seconds becomes 3 seconds). Negative values throw `ArgumentOutOfRangeException`.
+
 #### Other Changes
 
 ### <a name="3.60.0-preview.0"/> [3.60.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.60.0-preview.0) - 2026-4-24
