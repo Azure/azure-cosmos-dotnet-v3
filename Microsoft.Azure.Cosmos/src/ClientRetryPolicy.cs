@@ -692,14 +692,14 @@ namespace Microsoft.Azure.Cosmos
 
             bool isCoordinatorRetriable =
                 statusCodeValue == (int)HttpStatusCode.RequestTimeout
-                || (statusCodeValue == (int)StatusCodes.RetryWith && subStatusCodeValue == DistributedTransactionConstants.DtcCoordinatorRaceConflict)
-                || (statusCodeValue == (int)StatusCodes.TooManyRequests && subStatusCodeValue == DistributedTransactionConstants.DtcLedgerThrottled);
+                || (statusCodeValue == (int)StatusCodes.RetryWith && subStatusCode == SubStatusCodes.DtcCoordinatorRaceConflict)
+                || (statusCodeValue == (int)StatusCodes.TooManyRequests && subStatusCode == SubStatusCodes.RUBudgetExceeded);
 
             bool isInfraFailure =
                 statusCodeValue == (int)HttpStatusCode.InternalServerError
-                && (subStatusCodeValue == DistributedTransactionConstants.DtcLedgerFailure
-                    || subStatusCodeValue == DistributedTransactionConstants.DtcAccountConfigFailure
-                    || subStatusCodeValue == DistributedTransactionConstants.DtcDispatchFailure);
+                && (subStatusCode == SubStatusCodes.DtcLedgerFailure
+                    || subStatusCode == SubStatusCodes.DtcAccountConfigFailure
+                    || subStatusCode == SubStatusCodes.DtcDispatchFailure);
 
             // Body-bearing response carries per-op isRetriable in JSON. The outer DistributedTransactionCommitter
             // loop owns retry; defer to avoid inner×outer amplification.

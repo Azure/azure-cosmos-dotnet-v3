@@ -1370,7 +1370,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                         It.IsAny<Stream>(), It.IsAny<Action<RequestMessage>>(),
                         It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
                     .Callback(() => abortCallCount++)
-                    .ReturnsAsync(new ResponseMessage((HttpStatusCode)DistributedTransactionConstants.HttpStatusTransactionAborted));
+                    .ReturnsAsync(new ResponseMessage((HttpStatusCode)StatusCodes.TransactionAborted));
 
                 DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                     CreateTestOperations(), mockContext.Object, TimeSpan.Zero, null,

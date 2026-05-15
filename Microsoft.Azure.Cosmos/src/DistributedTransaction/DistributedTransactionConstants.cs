@@ -8,17 +8,6 @@ namespace Microsoft.Azure.Cosmos
 
     internal static class DistributedTransactionConstants
     {
-        // DTX envelope sub-status codes. The full status/body matrix and the inner-vs-outer retry ownership
-        // is documented at the call site in ClientRetryPolicy.ShouldRetryDtxRequest.
-        internal const int DtcCoordinatorRaceConflict = 5352; // 449 sub-status: coordinator ETag race
-        internal const int DtcLedgerThrottled = 3200;          // 429 sub-status: ledger backpressure
-        internal const int DtcLedgerFailure = 5411;            // 500 sub-status: ledger infra failure
-        internal const int DtcAccountConfigFailure = 5412;     // 500 sub-status: account-config infra failure
-        internal const int DtcDispatchFailure = 5413;          // 500 sub-status: dispatch infra failure
-
-        // Custom HTTP status codes returned by the DTC coordinator (non-standard, outside the 200-299 range).
-        internal const int HttpStatusTransactionAborted = 452;  // coordinator aborted the transaction (expected abort response)
-
         internal static bool IsDistributedTransactionRequest(OperationType operationType, ResourceType resourceType)
         {
             return (operationType == OperationType.CommitDistributedTransaction

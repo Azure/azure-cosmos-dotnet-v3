@@ -210,7 +210,7 @@ namespace Microsoft.Azure.Cosmos
                             // 200 (Ok) means the transaction was already committed before the abort arrived — also expected.
                             // Anything else is a real failure worth warning about.
                             bool isExpectedOutcome = abortResponse.IsSuccessStatusCode
-                                || (int)abortResponse.StatusCode == DistributedTransactionConstants.HttpStatusTransactionAborted;
+                                || (int)abortResponse.StatusCode == (int)StatusCodes.TransactionAborted;
 
                             if (!isExpectedOutcome)
                             {
