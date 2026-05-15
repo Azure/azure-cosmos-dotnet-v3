@@ -88,6 +88,16 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// Returns true if hub region header attachment and hub region discovery are active, otherwise false.
         /// </summary>
         public abstract bool IsHubRegionProcessingEnabled();
+
+        /// <summary>
+        /// Caches the hub region location for a partition after a successful response.
+        /// When a request that carried the hub region processing header succeeds (200 OK),
+        /// this method stores the endpoint as the confirmed hub region for the partition,
+        /// enabling direct routing on subsequent 404/1002 retry scenarios.
+        /// </summary>
+        /// <param name="request">The <see cref="DocumentServiceRequest"/> that completed successfully.</param>
+        public abstract void TryCacheHubRegionLocationForPartition(
+            DocumentServiceRequest request);
 #endif
     }
 }

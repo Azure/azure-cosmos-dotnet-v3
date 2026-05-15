@@ -335,6 +335,50 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             return this.isHubRegionProcessingEnabled;
         }
+
+        /// <inheritdoc/>
+        public override void TryCacheHubRegionLocationForPartition(
+            DocumentServiceRequest request)
+        {
+            if (request == null
+                || request.RequestContext == null)
+            {
+                return;
+            }
+
+            // Only cache if this request was part of hub region discovery flow
+            if (!GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request))
+            {
+                return;
+            }
+
+            PartitionKeyRange partitionKeyRange = request.RequestContext.ResolvedPartitionKeyRange;
+            Uri hubRegionEndpoint = request.RequestContext.LocationEndpointToRoute;
+
+            if (partitionKeyRange == null || hubRegionEndpoint == null)
+            {
+                return;
+            }
+
+            // Cache the confirmed hub region for this partition.
+            // If an entry already exists (from the 403/3 discovery cycle), update Current to the confirmed hub.
+            // If no entry exists, create one pointing directly to the hub.
+            this.PartitionKeyRangeToLocationForWrite.Value.AddOrUpdate(
+                partitionKeyRange,
+                (_) => new PartitionKeyRangeFailoverInfo(
+                    request.RequestContext.ResolvedCollectionRid,
+                    hubRegionEndpoint),
+                (_, existingInfo) =>
+                {
+                    existingInfo.SetCurrent(hubRegionEndpoint);
+                    return existingInfo;
+                });
+
+            DefaultTrace.TraceInformation(
+                "Hub region cached on success for partition. PartitionKeyRange: {0}, HubRegion: {1}",
+                partitionKeyRange.Id,
+                hubRegionEndpoint);
+        }
 #endif
 
         /// <summary>
@@ -709,6 +753,14 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             public Uri Current { get; private set; }
+
+            /// <summary>
+            /// Sets the Current endpoint directly (used when hub region is confirmed on success).
+            /// </summary>
+            internal void SetCurrent(Uri location)
+            {
+                this.Current = location;
+            }
 
             public Uri FirstFailedLocation { get; private set; }
 

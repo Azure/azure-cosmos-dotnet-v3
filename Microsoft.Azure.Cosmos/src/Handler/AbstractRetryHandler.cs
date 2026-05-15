@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -16,20 +17,36 @@ namespace Microsoft.Azure.Cosmos.Handlers
     {
         internal abstract Task<IDocumentClientRetryPolicy> GetRetryPolicyAsync(RequestMessage request);
 
+        internal abstract GlobalPartitionEndpointManager GetGlobalPartitionEndpointManager();
+
         public override async Task<ResponseMessage> SendAsync(
             RequestMessage request,
             CancellationToken cancellationToken)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = await this.GetRetryPolicyAsync(request);
+            GlobalPartitionEndpointManager globalPartitionEndpointManager = this.GetGlobalPartitionEndpointManager();
             request.OnBeforeSendRequestActions += retryPolicyInstance.OnBeforeSendRequest;
 
             try
             {
-                return await RetryHandler.ExecuteHttpRequestAsync(
+                ResponseMessage responseMessage = await RetryHandler.ExecuteHttpRequestAsync(
                     callbackMethod: () => base.SendAsync(request, cancellationToken),
                     callShouldRetry: (cosmosResponseMessage, token) => retryPolicyInstance.ShouldRetryAsync(cosmosResponseMessage, cancellationToken),
                     callShouldRetryException: (exception, token) => retryPolicyInstance.ShouldRetryAsync(exception, cancellationToken),
                     cancellationToken: cancellationToken);
+
+#if !INTERNAL
+                // After a successful response, if hub region routing was active, cache the successful endpoint as the confirmed hub region
+                // for this partition. This enables subsequent requests for the same partition to
+                // route directly to the cached hub region, avoiding the 403/3 discovery chain.
+                if (responseMessage.IsSuccessStatusCode
+                    && globalPartitionEndpointManager != null)
+                {
+                    globalPartitionEndpointManager.TryCacheHubRegionLocationForPartition(
+                        request.DocumentServiceRequest);
+                }
+#endif
+                return responseMessage;
             }
             catch (DocumentClientException ex)
             {

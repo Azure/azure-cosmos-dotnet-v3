@@ -20,5 +20,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
         {
             return Task.FromResult<IDocumentClientRetryPolicy>(new InvalidPartitionExceptionRetryPolicy(null));
         }
+
+        internal override GlobalPartitionEndpointManager GetGlobalPartitionEndpointManager()
+        {
+            return null;
+        }
     }
 }
