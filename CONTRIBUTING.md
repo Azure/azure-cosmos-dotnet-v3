@@ -99,6 +99,109 @@ When evaluating adding new tests, please search in the existing test files if th
 1. Check for [test failures](#test-failures) and address them if they are not transient.
 1. Review the **Checks** section to confirm there are no pending steps that might be blocking your work from merging.
 
+## Changelog entry
+
+Every pull request that changes shipped behavior must add a changelog
+entry. This is the same pattern used by the Cosmos DB SDKs for Java
+(`azure-sdk-for-java/sdk/cosmos/azure-cosmos/CHANGELOG.md`) and Python
+(`azure-sdk-for-python/sdk/cosmos/azure-cosmos/CHANGELOG.md`).
+
+### Where to add it
+
+`changelog.md` has a `### Unreleased` section at the top of the "Release
+notes" block. Underneath are four subsections:
+
+- `#### Features Added` — new functionality customers can opt into.
+- `#### Breaking Changes` — anything that could break a customer's
+  build, behavior, or expectations on upgrade.
+- `#### Bugs Fixed` — defects fixed in shipped behavior.
+- `#### Other Changes` — behavioral or performance changes that
+  customers should know about but that aren't features or bugs.
+  Refactors with observable effects, dependency bumps with
+  customer-visible behavior changes, etc.
+
+Add your bullet under the matching subsection.
+
+If your PR touches `Microsoft.Azure.Cosmos/FaultInjection/src/**` instead
+of (or in addition to) the main SDK source, add your bullet to
+`Microsoft.Azure.Cosmos/FaultInjection/changelog.md` under its own
+`### Unreleased` section.
+
+### How to write it
+
+- One line per change.
+- Customer-facing language. The audience is the developer running
+  `dotnet add package Microsoft.Azure.Cosmos`, not a teammate
+  reviewing your PR.
+- Reference the PR by number with a link:
+  `See [PR 1234](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1234).`
+- The PR title and the changelog entry are **not the same thing**. The
+  title is engineering shorthand; the entry is a release-note line.
+
+Example:
+
+| PR title (engineering) | Changelog entry (customer-facing) |
+|---|---|
+| `DocumentClient: Adds tests for PartitionKeyRangeLocation disposal` | `Fixes per-CosmosClient memory and CPU leak introduced in 3.53.0 by disposing GlobalPartitionEndpointManagerCore. See [PR 5778](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5778).` |
+
+### Default verb → subsection mapping
+
+When the change has no other obvious classification, use the verb in your
+PR title as a starting point:
+
+| PR title verb | Default subsection |
+|---|---|
+| `Adds` (customer-visible) | Features Added |
+| `Adds` (internal refactor, no observable effect) | Other Changes (often omit) |
+| `Fixes` (customer-visible defect) | Bugs Fixed |
+| `Removes` (public API removal) | Breaking Changes |
+| `Removes` (internal/private code) | Other Changes (often omit) |
+| `Refactors` | Other Changes (omit if no observable effect) |
+
+The verb regex enforced by `.github/workflows/prlint.yml` still governs
+the PR title, but the PR title no longer drives the changelog content.
+
+### When the `[Internal]` prefix is appropriate
+
+`[Internal]` in the PR title is reserved for changes with **no
+customer-observable impact**:
+
+- Test-pipeline / CI / build-tooling changes.
+- Internal refactors that do not change runtime behavior, allocations,
+  memory profile, CPU profile, or surfaced types.
+- Documentation-only changes inside the repo (not changelog).
+
+`[Internal]` is **not** appropriate for:
+
+- Any change to `Microsoft.Azure.Cosmos/src/**` that a customer could
+  observe by running their workload under different SDK versions, even
+  if the change is to an "internal" type. PR #5310 (PPAF dynamic
+  enablement, which changed `DocumentClient` reference semantics from
+  weak to strong) is the canonical anti-example — the change was
+  preview-internal but had load-bearing customer-observable effects.
+
+**Preview-feature carve-out:** if a preview-only change might affect
+default-config semantics for any customer in the next two minor
+releases, it does not qualify as `[Internal]` — it goes under
+`Other Changes` (or `Bugs Fixed` / `Breaking Changes` as appropriate).
+
+### What reviewers verify
+
+When reviewing a PR, check:
+
+1. The "Changelog" section of the PR description is filled in.
+2. If an entry was added: it is in the right subsection, the language
+   is customer-facing, and the bullet links to the PR.
+3. If the author chose "No changelog entry required": the justification
+   is genuine (test-only, doc-only, CI-only, or pure internal refactor
+   with no customer-observable effect).
+
+### Conflicts in `### Unreleased`
+
+If two PRs add bullets to the same subsection of `### Unreleased` you
+may see a merge conflict. Take both bullets — the order is not
+significant.
+
 ### Test failures
 
 If the Pull Request is experiencing test failures, these will appear as failed checks:

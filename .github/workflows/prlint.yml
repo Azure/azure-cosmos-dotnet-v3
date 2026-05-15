@@ -20,9 +20,9 @@ jobs:
         on-failed-regex-create-review: true
         on-failed-regex-comment: >
          Please follow the required format: \"[Internal] Category: (Adds|Fixes|Refactors|Removes) Description\"<br /><br />
-         Internal should be used for PRs that have no customer impact. This flag is used to help generate the changelog to know which PRs should be included.
+         The `[Internal]` prefix is a review hint indicating no customer-observable impact (test pipelines, CI, doc-only changes, pure internal refactors). It does **not** affect changelog generation — the changelog is maintained per-PR in `### Unreleased` of `changelog.md`. See CONTRIBUTING.md for the full `[Internal]` definition and the preview-feature carve-out.
          Examples:<br />
-         Diagnostics: Adds GetElapsedClientLatency to CosmosDiagnostics<br/> 
-         PartitionKey: Fixes null reference when using default(PartitionKey)<br/> 
+         Diagnostics: Adds GetElapsedClientLatency to CosmosDiagnostics<br/>
+         PartitionKey: Fixes null reference when using default(PartitionKey)<br/>
          [v4] Client Encryption: Refactors code to external project<br/>
          [Internal] Query: Adds code generator for CosmosNumbers for easy additions in the future.<br/>
