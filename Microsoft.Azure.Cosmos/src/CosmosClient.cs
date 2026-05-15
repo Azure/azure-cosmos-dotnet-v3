@@ -1178,6 +1178,20 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Creates a new instance of a distributed read transaction.
+        /// </summary>
+        /// <returns>An instance of <see cref="DistributedReadTransaction"/>.</returns>
+#if INTERNAL
+        public
+#else
+        internal
+#endif
+        virtual DistributedReadTransaction CreateDistributedReadTransaction()
+        {
+            return new DistributedReadTransactionCore(this.ClientContext);
+        }
+
+        /// <summary>
         /// Send a request for creating a database.
         ///
         /// A database manages users, permissions and a set of containers.

@@ -1,4 +1,4 @@
-// ------------------------------------------------------------
+﻿// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
@@ -41,7 +41,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -64,7 +63,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -92,7 +90,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -114,7 +111,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -134,7 +130,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -163,7 +158,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -185,7 +179,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -214,7 +207,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -238,7 +230,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -261,7 +252,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -276,7 +266,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task FromResponseMessage_IdempotencyToken_MissingFromHeader_FallsBackToRequestToken()
         {
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
-            Guid requestToken = Guid.NewGuid();
 
             string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
             ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
@@ -286,11 +275,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                requestToken,
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
-            Assert.AreEqual(requestToken, response.IdempotencyToken,
+            Assert.AreEqual(serverRequest.IdempotencyToken, response.IdempotencyToken,
                 "The request token must be used when the response header is absent.");
         }
 
@@ -299,7 +287,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task FromResponseMessage_IdempotencyToken_InvalidGuidInHeader_FallsBackToRequestToken()
         {
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
-            Guid requestToken = Guid.NewGuid();
 
             string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
             ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
@@ -309,11 +296,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                requestToken,
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
-            Assert.AreEqual(requestToken, response.IdempotencyToken,
+            Assert.AreEqual(serverRequest.IdempotencyToken, response.IdempotencyToken,
                 "An unparseable header value must fall back to the request token.");
         }
 
@@ -332,7 +318,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -340,8 +325,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             response.Dispose();
 
-            // After dispose, result list is nulled — indexer throws ObjectDisposedException
-            Assert.ThrowsException<ObjectDisposedException>(() => _ = response[0]);
+            // Indexer-after-dispose behavior is covered by Indexer_AfterDispose_ThrowsObjectDisposedException.
         }
 
         [TestMethod]
@@ -356,7 +340,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -376,7 +359,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -387,36 +369,17 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         // IsSuccessStatusCode boundaries
 
-        [TestMethod]
-        [Description("HTTP 200 is a success status code.")]
-        public async Task IsSuccessStatusCode_200_ReturnsTrue()
+        [DataTestMethod]
+        [Description("HTTP success-status boundaries: [200, 299] are success, anything outside is not.")]
+        [DataRow(200, true, DisplayName = "200 is success")]
+        [DataRow(299, true, DisplayName = "299 is success boundary")]
+        [DataRow(300, false, DisplayName = "300 is not success")]
+        [DataRow(199, false, DisplayName = "199 is not success")]
+        public async Task IsSuccessStatusCode_Boundaries(int statusCode, bool expected)
         {
-            DistributedTransactionResponse response = await BuildResponseWithStatusAsync(HttpStatusCode.OK, operationCount: 1);
-            Assert.IsTrue(response.IsSuccessStatusCode);
-        }
-
-        [TestMethod]
-        [Description("HTTP 299 is the last success status code.")]
-        public async Task IsSuccessStatusCode_299_ReturnsTrue()
-        {
-            DistributedTransactionResponse response = await BuildResponseWithStatusAsync((HttpStatusCode)299, operationCount: 1);
-            Assert.IsTrue(response.IsSuccessStatusCode);
-        }
-
-        [TestMethod]
-        [Description("HTTP 300 is not a success status code.")]
-        public async Task IsSuccessStatusCode_300_ReturnsFalse()
-        {
-            DistributedTransactionResponse response = await BuildResponseWithStatusAsync((HttpStatusCode)300, operationCount: 1, isError: true);
-            Assert.IsFalse(response.IsSuccessStatusCode);
-        }
-
-        [TestMethod]
-        [Description("HTTP 199 is not a success status code.")]
-        public async Task IsSuccessStatusCode_199_ReturnsFalse()
-        {
-            DistributedTransactionResponse response = await BuildResponseWithStatusAsync((HttpStatusCode)199, operationCount: 1, isError: true);
-            Assert.IsFalse(response.IsSuccessStatusCode);
+            bool isError = !expected;
+            DistributedTransactionResponse response = await BuildResponseWithStatusAsync((HttpStatusCode)statusCode, operationCount: 1, isError: isError);
+            Assert.AreEqual(expected, response.IsSuccessStatusCode);
         }
 
         // Indexer and enumerator
@@ -433,7 +396,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -455,7 +417,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -474,7 +435,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -493,7 +453,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -524,7 +483,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -547,7 +505,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -571,7 +528,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -593,7 +549,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -602,25 +557,235 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Description("SessionToken deserializes from the 'sessionToken' JSON property.")]
+        [Description("SessionToken is assembled as {pkRangeId}:{lsn} from the separate 'sessionToken' (LSN-only) and 'partitionKeyRangeId' JSON fields.")]
         public async Task FromResponseMessage_OperationResult_SessionToken_DeserializesCorrectly()
         {
+            const string lsnOnly = "12345";
+            const string pkRangeId = "0";
             const string expectedSessionToken = "0:12345";
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
 
-            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""sessionToken"":""{expectedSessionToken}""}}]}}";
+            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""sessionToken"":""{lsnOnly}"",""partitionKeyRangeId"":""{pkRangeId}""}}]}}";
             ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
 
             DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
             Assert.AreEqual(expectedSessionToken, response[0].SessionToken,
-                "SessionToken must equal the value from the JSON 'sessionToken' field.");
+                "SessionToken must be assembled as {pkRangeId}:{lsn} from the two separate JSON fields.");
+        }
+
+        [TestMethod]
+        [Description("When partitionKeyRangeId is absent, FromJson sets SessionToken to null so MergeSessionTokens skips the operation.")]
+        // TODO(issue#5857): Remove once the coordinator starts emitting partitionKeyRangeId for all operations.
+        public async Task FromResponseMessage_OperationResult_SessionToken_NullWhenPartitionKeyRangeIdAbsent()
+        {
+            const string lsnOnly = "12345";
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            // partitionKeyRangeId field is omitted — current server behavior
+            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""sessionToken"":""{lsnOnly}""}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.IsNull(response[0].SessionToken,
+                "SessionToken must be null when partitionKeyRangeId is absent so the merge is skipped.");
+        }
+
+        [DataTestMethod]
+        [DataRow("", DisplayName = "Empty string partitionKeyRangeId")]
+        [DataRow(" ", DisplayName = "Whitespace-only partitionKeyRangeId")]
+        [DataRow("   ", DisplayName = "Multiple spaces partitionKeyRangeId")]
+        [Description("When partitionKeyRangeId is present but empty or whitespace, FromJson sets SessionToken to null " +
+                     "so MergeSessionTokens skips the operation. The server has no validation on this field and can " +
+                     "send blank values; failing the commit would be worse than skipping the merge.")]
+        public async Task FromResponseMessage_OperationResult_SessionToken_NullWhenPartitionKeyRangeIdIsBlank(string pkRangeId)
+        {
+            const string lsnOnly = "12345";
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""sessionToken"":""{lsnOnly}"",""partitionKeyRangeId"":""{pkRangeId}""}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.IsNull(response[0].SessionToken,
+                $"SessionToken must be null when partitionKeyRangeId is '{pkRangeId}' (empty/whitespace) so the merge is safely skipped.");
+        }
+
+        [DataTestMethod]
+        [DataRow(" ", DisplayName = "Single space sessionToken")]
+        [DataRow("   ", DisplayName = "Multiple spaces sessionToken")]
+        [Description("When sessionToken is whitespace-only, FromJson treats it the same as absent — SessionToken remains null.")]
+        public async Task FromResponseMessage_OperationResult_SessionToken_NullWhenSessionTokenIsWhitespace(string whitespaceToken)
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""sessionToken"":""{whitespaceToken}"",""partitionKeyRangeId"":""0""}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.IsNull(response[0].SessionToken,
+                $"SessionToken must be null when the sessionToken value is whitespace ('{whitespaceToken}').");
+        }
+
+        [DataTestMethod]
+        [DataRow("0:-1#425344#1=12345", "0:-1#425344#1=12345", DisplayName = "Well-formed canonical token preserved")]
+        [DataRow("3:500", "3:500", DisplayName = "Simple pkRangeId:lsn preserved")]
+        [Description("When sessionToken is already in canonical {pkRangeId}:{lsn} form (colon at position > 0 with content on both sides), FromJson leaves it as-is even without partitionKeyRangeId.")]
+        public async Task FromResponseMessage_OperationResult_SessionToken_PreservedWhenAlreadyCanonical(string token, string expected)
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            // sessionToken is already canonical; partitionKeyRangeId is absent
+            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""sessionToken"":""{token}""}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(expected, response[0].SessionToken,
+                $"A well-formed canonical token '{token}' must be left as-is.");
+        }
+
+        [DataTestMethod]
+        [DataRow(":-1#425344", "3", DisplayName = "Leading colon (no pkRangeId) — not canonical, assembles with pkRangeId")]
+        [DataRow("3:", "5", DisplayName = "Trailing colon only (no LSN) — not canonical, assembles with pkRangeId")]
+        [Description("Session tokens with a colon at position 0 or at the last character are not valid canonical tokens — they get assembled with the provided partitionKeyRangeId.")]
+        public async Task FromResponseMessage_OperationResult_SessionToken_AssembledWhenColonIsAtEdge(string token, string pkRangeId)
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""sessionToken"":""{token}"",""partitionKeyRangeId"":""{pkRangeId}""}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(pkRangeId + ":" + token, response[0].SessionToken,
+                $"A token with edge colon '{token}' must be assembled with pkRangeId '{pkRangeId}'.");
+        }
+
+        [TestMethod]
+        [Description("When sessionToken is absent entirely, SessionToken remains null regardless of partitionKeyRangeId.")]
+        public async Task FromResponseMessage_OperationResult_SessionToken_NullWhenSessionTokenFieldAbsent()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            // Neither sessionToken nor partitionKeyRangeId present
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.IsNull(response[0].SessionToken,
+                "SessionToken must be null when the sessionToken JSON field is absent.");
+        }
+
+        // IsRetriable parsing
+
+        [DataTestMethod]
+        [Description("IsRetriable is true only when the JSON body has isRetriable as a JSON boolean true; absent, false, or string 'true' must all yield false.")]
+        [DataRow(@"{""isRetriable"":true,""operationResponses"":[{""index"":0,""statusCode"":503}]}", true, DisplayName = "JSON boolean true → IsRetriable=true")]
+        [DataRow(@"{""isRetriable"":false,""operationResponses"":[{""index"":0,""statusCode"":503}]}", false, DisplayName = "JSON boolean false → IsRetriable=false")]
+        [DataRow(@"{""operationResponses"":[{""index"":0,""statusCode"":503}]}", false, DisplayName = "isRetriable absent → IsRetriable=false")]
+        [DataRow(@"{""isRetriable"":""true"",""operationResponses"":[{""index"":0,""statusCode"":503}]}", false, DisplayName = "string 'true' (not a JSON boolean) → IsRetriable=false")]
+        public async Task FromResponseMessage_IsRetriable_Parsing(string json, bool expected)
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.ServiceUnavailable, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(expected, response.IsRetriable);
+        }
+
+        // ThrowIfDisposed guards on Count and GetEnumerator
+
+        [TestMethod]
+        [Description("Count after Dispose() must not throw — pre-existing safer behavior on main. Returns 0 because Dispose nulls the underlying list.")]
+        public async Task Count_AfterDispose_DoesNotThrow()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            response.Dispose();
+
+            int count = response.Count;
+            Assert.AreEqual(0, count, "Count must return 0 after disposal without throwing.");
+        }
+
+        [TestMethod]
+        [Description("GetEnumerator after Dispose() must not throw — pre-existing safer behavior on main. Returns an empty enumerator.")]
+        public async Task GetEnumerator_AfterDispose_DoesNotThrow()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            response.Dispose();
+
+            int enumerated = 0;
+            foreach (DistributedTransactionOperationResult _ in response)
+            {
+                enumerated++;
+            }
+
+            Assert.AreEqual(0, enumerated, "Enumeration after disposal must yield no items without throwing.");
         }
 
         // Helpers
@@ -639,7 +804,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     operationIndex: i,
                     database: "testDb",
                     container: "testContainer",
-                    partitionKey: new PartitionKey($"pk{i}")));
+                    partitionKey: new PartitionKey($"pk{i}"),
+                    id: $"doc{i}"));
             }
 
             return await DistributedTransactionServerRequest.CreateAsync(
@@ -690,7 +856,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 BuildResponseMessage(statusCode, json),
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
         }

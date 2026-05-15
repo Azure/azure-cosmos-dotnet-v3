@@ -2390,7 +2390,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsNotNull(responseMessage);
                     Assert.IsNull(responseMessage.Content);
                     Assert.AreEqual(HttpStatusCode.PreconditionFailed, responseMessage.StatusCode, responseMessage.ErrorMessage);
-                    Assert.AreNotEqual(responseMessage.Headers.ActivityId, Guid.Empty);
+                    Assert.AreNotEqual(Guid.Empty.ToString(), responseMessage.Headers.ActivityId);
                     Assert.IsTrue(responseMessage.Headers.RequestCharge > 0);
                     Assert.IsFalse(string.IsNullOrEmpty(responseMessage.ErrorMessage));
                     Assert.IsTrue(responseMessage.ErrorMessage.Contains("One of the specified pre-condition is not met"));
@@ -2407,7 +2407,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Assert.IsNotNull(e);
                     Assert.AreEqual(HttpStatusCode.PreconditionFailed, e.StatusCode, e.Message);
-                    Assert.AreNotEqual(e.ActivityId, Guid.Empty);
+                    Assert.AreNotEqual(Guid.Empty.ToString(), e.ActivityId);
                     Assert.IsTrue(e.RequestCharge > 0);
                     string expectedResponseBody = $"{Environment.NewLine}Errors : [{Environment.NewLine}  \"One of the specified pre-condition is not met. Learn more: https://aka.ms/CosmosDB/sql/errors/precondition-failed\"{Environment.NewLine}]{Environment.NewLine}";
                     Assert.AreEqual(expectedResponseBody, e.ResponseBody);
@@ -4316,6 +4316,122 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 JsonConvert.DefaultSettings = () => default;
             }
         }
+
+        [TestMethod]
+        [Owner("aavasthy")]
+        [Description("Forces three consecutive 404/1002 responses from the gateway and verifies ClientRetryPolicy " +
+                     "sets the hub region header flag after the second 404/1002 and sends it on the third attempt.")]
+        public async Task ReadItemAsync_ShouldAddHubHeader_OnRetryAfter_404_1002()
+        {
+            int requestCount = 0;
+            int return404Count = 0;
+            const int maxReturn404 = 3; // Return 404/1002 three times: initial + retry to write region + retry with hub header
+            bool hubHeaderPresentOnThirdRequest = false;
+
+            // Created HTTP handler to intercept requests
+            HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
+            {
+                RequestCallBack = (request, cancellationToken) =>
+                {
+                    // Track all document read requests
+                    if (request.Method == HttpMethod.Get &&
+                        request.RequestUri != null &&
+                        request.RequestUri.AbsolutePath.Contains("/docs/"))
+                    {
+                        requestCount++;
+
+                        // Header should NOT be present on first two requests
+                        if (requestCount <= 2 &&
+                            request.Headers.TryGetValues(HubRegionHeader, out IEnumerable<string> earlyRetryValues) &&
+                            earlyRetryValues.Any())
+                        {
+                            Assert.Fail($"Header should NOT be present on request {requestCount}.");
+                        }
+
+                        // Header MUST be present on third request (after two consecutive 404/1002 failures)
+                        if (requestCount == 3)
+                        {
+                            hubHeaderPresentOnThirdRequest =
+                                request.Headers.TryGetValues(HubRegionHeader, out IEnumerable<string> hubValues)
+                                && hubValues.Any(v => v == bool.TrueString);
+                        }
+
+                        // Return fake 404/1002 for the configured number of requests
+                        if (return404Count < maxReturn404)
+                        {
+                            return404Count++;
+
+                            var errorResponse = new
+                            {
+                                code = "NotFound",
+                                message = "Message: {\"Errors\":[\"Resource Not Found. Learn more: https://aka.ms/cosmosdb-tsg-not-found\"]}\r\nActivityId: " + Guid.NewGuid() + ", Request URI: " + request.RequestUri,
+                                additionalErrorInfo = ""
+                            };
+
+                            HttpResponseMessage notFoundResponse = new HttpResponseMessage(HttpStatusCode.NotFound)
+                            {
+                                Content = new StringContent(
+                                    JsonConvert.SerializeObject(errorResponse),
+                                    Encoding.UTF8,
+                                    "application/json"
+                                )
+                            };
+
+                            // Add the substatus header for ReadSessionNotAvailable
+                            notFoundResponse.Headers.Add("x-ms-substatus", "1002");
+                            notFoundResponse.Headers.Add("x-ms-activity-id", Guid.NewGuid().ToString());
+                            notFoundResponse.Headers.Add("x-ms-request-charge", "1.0");
+
+                            return Task.FromResult(notFoundResponse);
+                        }
+                    }
+
+                    return Task.FromResult<HttpResponseMessage>(null);
+                }
+            };
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
+                HttpClientFactory = () => new HttpClient(httpHandler),
+                MaxRetryAttemptsOnRateLimitedRequests = 9,
+                MaxRetryWaitTimeOnRateLimitedRequests = TimeSpan.FromSeconds(30)
+            };
+
+            using CosmosClient customClient = TestCommon.CreateCosmosClient(clientOptions);
+
+            Container customContainer = customClient.GetContainer(this.database.Id, this.Container.Id);
+
+            // Create a test item first
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+            await this.Container.CreateItemAsync(testItem, new Cosmos.PartitionKey(testItem.pk));
+
+            try
+            {
+                // This should trigger 404/1002 three times then NoRetry
+                ItemResponse<ToDoActivity> response = await customContainer.ReadItemAsync<ToDoActivity>(
+                    testItem.id,
+                    new Cosmos.PartitionKey(testItem.pk));
+
+                Assert.Fail("Expected CosmosException due to consecutive 404/1002 failures.");
+            }
+            catch (CosmosException ex)
+            {
+                // Expected: After third 404/1002 (with hub header), single master stops retrying
+                Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
+                Assert.AreEqual((int)SubStatusCodes.ReadSessionNotAvailable, ex.SubStatusCode);
+            }
+
+            // Verify the expected behavior:
+            // 1. Initial request (requestCount = 1) fails with 404/1002 → no hub header
+            // 2. First retry to write region (requestCount = 2) fails with 404/1002 → no hub header, flag set
+            // 3. Second retry with hub header (requestCount = 3) fails with 404/1002 → hub header present → NoRetry
+            Assert.AreEqual(3, requestCount, $"Expected exactly 3 requests (initial + retry to write region + retry with hub header) for single-region emulator, but got {requestCount}");
+            Assert.AreEqual(3, return404Count, "All three requests should have returned 404/1002");
+            Assert.IsTrue(hubHeaderPresentOnThirdRequest, "Hub region header must be present on the third request (after two consecutive 404/1002 failures).");
+        }
+
 
         private async Task<T> AutoGenerateIdPatternTest<T>(Cosmos.PartitionKey pk, T itemWithoutId)
         {
