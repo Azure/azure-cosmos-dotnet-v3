@@ -936,6 +936,109 @@
         }
 
         /// <summary>
+        /// Companion regression test that exercises the two stack-trace-preservation changes the
+        /// primary <see cref="SenderException_PropagatesViaYield_PreservesStackTrace"/> test does
+        /// NOT actually cover (per PR review feedback):
+        ///
+        /// 1. <c>throw;</c> (vs. <c>throw ex;</c>) in <c>RequestSenderAndResultCheckAsync</c>'s
+        ///    GENERIC <c>catch (Exception ex)</c> block. The primary test pre-cancels the app CT
+        ///    and throws an <see cref="OperationCanceledException"/>, which routes through the
+        ///    FILTERED catch (<c>catch (OperationCanceledException oce) when (...)</c>) — the
+        ///    generic catch is never entered, so the throw-ex/throw distinction has no effect on
+        ///    that path.
+        /// 2. <c>ExceptionDispatchInfo.Capture(lastException).Throw()</c> (vs.
+        ///    <c>throw lastException;</c>) in <c>ExecuteAvailabilityStrategyAsync</c>'s phase-2
+        ///    "all hedges faulted" branch. The primary test's pre-cancelled app CT routes
+        ///    through phase 1's <c>await (Task&lt;HedgingResponse&gt;)completedTask;</c>
+        ///    re-throw, never reaching phase 2's <c>lastException</c> accumulation loop.
+        ///
+        /// Strategy:
+        /// - App CT is NOT cancelled, so phase 1's faulted-task branch <c>continue</c>s instead
+        ///   of re-awaiting — letting faulted hedge tasks survive into phase 2.
+        /// - Sender awaits a delay LONGER than threshold/thresholdStep, so the hedge timer fires
+        ///   first and the for-loop launches the next region's hedge while the previous one is
+        ///   still in flight. Both hedges remain pending when the for-loop ends, so phase 2's
+        ///   <c>while (requestTasks.Any())</c> runs and accumulates <c>lastException</c>.
+        /// - Sender throws a NON-OCE exception so it routes through the generic catch (covers
+        ///   change #1), which is then captured in the faulted hedge task and surfaced via
+        ///   <c>ExceptionDispatchInfo</c> in phase 2 (covers change #2).
+        ///
+        /// The single stack-trace assertion below would fail if EITHER fix were reverted:
+        /// reverting <c>throw;</c> back to <c>throw ex;</c> resets the stack to
+        /// <c>RequestSenderAndResultCheckAsync</c>'s catch site; reverting
+        /// <c>ExceptionDispatchInfo.Capture</c> back to <c>throw lastException;</c> resets it to
+        /// <c>ExecuteAvailabilityStrategyAsync</c>'s rethrow site. Either way, the sentinel
+        /// frame disappears.
+        /// </summary>
+        [TestMethod]
+        public async Task SenderException_NonOce_AllHedgesFault_PreservesStackTraceThroughGenericCatchAndDispatchInfo()
+        {
+            // Arrange: small thresholds force the hedge timer to fire before the slow sender,
+            // so multiple hedges launch and remain in flight — the prerequisite for phase 2.
+            CrossRegionHedgingAvailabilityStrategy availabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                threshold: TimeSpan.FromMilliseconds(1),
+                thresholdStep: TimeSpan.FromMilliseconds(1));
+
+            using RequestMessage request = CreateReadRequest();
+            using CosmosClient mockCosmosClient = CreateMockClientWithRegions(2);
+
+            const string sentinelMethodName = nameof(ThrowDeepInPipelineWithDelayAsync);
+            const string sentinelMessage = "Simulated deep-pipeline non-OCE failure for hedging stack-overflow regression.";
+
+            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender = async (req, ct) =>
+            {
+                await ThrowDeepInPipelineWithDelayAsync(sentinelMessage);
+                return new ResponseMessage(HttpStatusCode.OK);
+            };
+
+            // Act: app CT explicitly NOT cancelled (the key difference from the primary test).
+            InvalidOperationException caught =
+                await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                    () => availabilityStrategy.ExecuteAvailabilityStrategyAsync(
+                        sender, mockCosmosClient, request, CancellationToken.None));
+
+            // Assert (1): surfaced exception is the sender's, not the strategy's
+            // "Cross-region hedging completed without producing a response." fallback. Equality
+            // on Message proves we actually reached phase 2's lastException branch — if phase 2
+            // were skipped, we'd surface the fallback InvalidOperationException with a different
+            // message.
+            Assert.AreEqual(
+                sentinelMessage,
+                caught.Message,
+                "Surfaced exception's Message must be the sender's original message — proves the " +
+                "InvalidOperationException came from the sender (via phase 2's lastException " +
+                "accumulation), not from the strategy's 'completed without producing a response' " +
+                "fallback.");
+
+            // Assert (2): the original throwing frame survives — covers BOTH undertested fixes.
+            string stack = caught.StackTrace ?? string.Empty;
+            Assert.IsTrue(
+                stack.Contains(sentinelMethodName),
+                $"Stack trace must include the original throwing frame '{sentinelMethodName}'. " +
+                $"This single assertion exercises both:\n" +
+                $"  (a) `throw;` (vs. `throw ex;`) in RequestSenderAndResultCheckAsync's generic " +
+                $"catch — reverting that change resets the stack to the catch site.\n" +
+                $"  (b) `ExceptionDispatchInfo.Capture(lastException).Throw()` (vs. " +
+                $"`throw lastException;`) in ExecuteAvailabilityStrategyAsync's phase-2 " +
+                $"lastException branch — reverting that change resets the stack to the rethrow " +
+                $"site.\n" +
+                $"Actual stack trace:\n{stack}");
+        }
+
+        private static async Task ThrowDeepInPipelineWithDelayAsync(string message)
+        {
+            // Delay must exceed CrossRegionHedgingAvailabilityStrategy threshold/thresholdStep
+            // (set to 1ms by the caller) so the hedge timer fires first and the for-loop
+            // continues to launch the next region's hedge before this one resolves. This forces
+            // both hedges to be in-flight simultaneously when phase 1 ends, which is the only
+            // path that lets phase 2's `while (requestTasks.Any())` accumulate lastException —
+            // and therefore the only path that exercises the
+            // `ExceptionDispatchInfo.Capture(lastException).Throw()` branch.
+            await Task.Delay(50);
+            throw new InvalidOperationException(message);
+        }
+
+        /// <summary>
         /// Minimal SynchronizationContext that counts Post invocations and dispatches them
         /// onto the threadpool so test continuations don't deadlock.
         /// </summary>
