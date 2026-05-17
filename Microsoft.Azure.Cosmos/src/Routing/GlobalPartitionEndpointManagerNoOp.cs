@@ -73,11 +73,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
 #if !INTERNAL
-        public override bool IsHubRegionProcessingEnabled()
-        {
-            return false;
-        }
-
         public override void TryCacheHubRegionLocationForPartition(
             DocumentServiceRequest request)
         {

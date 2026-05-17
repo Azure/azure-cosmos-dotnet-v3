@@ -83,13 +83,6 @@ namespace Microsoft.Azure.Cosmos.Routing
 
 #if !INTERNAL
         /// <summary>
-        /// Gets a value indicating whether hub region processing is enabled for read requests
-        /// encountering repeated 404/1002 (ReadSessionNotAvailable) errors on single-master accounts.
-        /// Returns true if hub region header attachment and hub region discovery are active, otherwise false.
-        /// </summary>
-        public abstract bool IsHubRegionProcessingEnabled();
-
-        /// <summary>
         /// Caches the hub region location for a partition after a successful response.
         /// When a request that carried the hub region processing header succeeds (200 OK),
         /// this method stores the endpoint as the confirmed hub region for the partition,

@@ -67,14 +67,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>> PartitionKeyRangeToLocationForReadAndWrite = new (
             () => new ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>());
 
-#if !INTERNAL
-        /// <summary>
-        /// A boolean flag indicating whether hub region processing is enabled. Read once from the
-        /// environment variable at initialization time to avoid repeated env var lookups per request.
-        /// </summary>
-        private readonly bool isHubRegionProcessingEnabled;
-#endif
-
         /// <summary>
         /// An integer indicating how many times the dispose was invoked.
         /// </summary>
@@ -107,21 +99,16 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <param name="isPartitionLevelFailoverEnabled">A boolean flag indicating if partition level failover is enabled.</param>
         /// <param name="isPartitionLevelCircuitBreakerEnabled">A boolean flag indicating if partition level circuit breaker is enabled.</param>
         /// <param name="isThinClientEnabled">A boolean flag indicating if thinclient is enabled.</param>
-        /// <param name="isHubRegionProcessingEnabled">A boolean flag indicating if hub region processing is enabled.</param>
         public GlobalPartitionEndpointManagerCore(
             IGlobalEndpointManager globalEndpointManager,
             bool isPartitionLevelFailoverEnabled = false,
             bool isPartitionLevelCircuitBreakerEnabled = false,
-            bool isThinClientEnabled = false,
-            bool isHubRegionProcessingEnabled = true)
+            bool isThinClientEnabled = false)
         {
             this.isPartitionLevelAutomaticFailoverEnabled = isPartitionLevelFailoverEnabled ? 1 : 0;
             this.isPartitionLevelCircuitBreakerEnabled = isPartitionLevelCircuitBreakerEnabled ? 1 : 0;
             this.isThinClientEnabled = isThinClientEnabled;
             this.globalEndpointManager = globalEndpointManager ?? throw new ArgumentNullException(nameof(globalEndpointManager));
-#if !INTERNAL
-            this.isHubRegionProcessingEnabled = isHubRegionProcessingEnabled;
-#endif
             this.InitializeAndStartCircuitBreakerFailbackBackgroundRefresh();
         }
 
@@ -332,12 +319,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
 #if !INTERNAL
-        /// <inheritdoc/>
-        public override bool IsHubRegionProcessingEnabled()
-        {
-            return this.isHubRegionProcessingEnabled;
-        }
-
         /// <inheritdoc/>
         public override void TryCacheHubRegionLocationForPartition(
             DocumentServiceRequest request)
