@@ -2568,7 +2568,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 int requestCount = 0;
                 int return404Count = 0;
-                const int maxReturn404 = 2;
+                bool returned403InGateway = false;
                 bool hubHeaderOnFourthRequest = false;
 
                 HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
@@ -2590,8 +2590,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 Assert.IsFalse(hasHubHeader, $"Hub header should NOT be present on request {requestCount}");
                             }
 
-                            // Verify hub header is present on third request.
-                            if (requestCount == 3)
+                            // Verify hub header is present on third request only when hub region processing
+                            // is enabled. When disabled, the SDK never sets the header and the 3rd attempt
+                            // is also a header-less request that will get 404/1002 and surface to the caller.
+                            if (requestCount == 3 && enableHubRegionProcessing)
                             {
                                 Assert.IsTrue(hasHubHeader, $"Hub header should be present on request {requestCount}");
                             }
@@ -2606,8 +2608,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             // hub region without hub header >> Request gets 403/3 >> Request retried again on account hub region with hub header
                             // >> Request succeeds or gets 404/1002 or 403.3. In this test we are simulating a 403.3 from the account hub region.
                             // This will trigger a hub region discovery.
-                            if (requestCount == 3)
+                            //
+                            // 403/3 is gated on the presence of the hub header (mirrors Direct mode mock): the real backend only
+                            // returns WriteForbidden when the hub-region header forces the request to land in the write region but
+                            // that region is not the actual hub for the partition. With hub processing disabled, the SDK never
+                            // sets the header, so 403/3 must NOT fire, and the SDK should keep getting 404/1002 until it gives up.
+                            if (hasHubHeader && !returned403InGateway)
                             {
+                                returned403InGateway = true;
+
                                 HttpResponseMessage writeForbiddenResponse = new HttpResponseMessage(HttpStatusCode.Forbidden)
                                 {
                                     Content = new StringContent(
@@ -2622,7 +2631,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                                 return Task.FromResult(writeForbiddenResponse);
                             }
-                            else if (return404Count < maxReturn404)
+                            else if (!hasHubHeader)
                             {
                                 return404Count++;
 

@@ -107,18 +107,20 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <param name="isPartitionLevelFailoverEnabled">A boolean flag indicating if partition level failover is enabled.</param>
         /// <param name="isPartitionLevelCircuitBreakerEnabled">A boolean flag indicating if partition level circuit breaker is enabled.</param>
         /// <param name="isThinClientEnabled">A boolean flag indicating if thinclient is enabled.</param>
+        /// <param name="isHubRegionProcessingEnabled">A boolean flag indicating if hub region processing is enabled.</param>
         public GlobalPartitionEndpointManagerCore(
             IGlobalEndpointManager globalEndpointManager,
             bool isPartitionLevelFailoverEnabled = false,
             bool isPartitionLevelCircuitBreakerEnabled = false,
-            bool isThinClientEnabled = false)
+            bool isThinClientEnabled = false,
+            bool isHubRegionProcessingEnabled = true)
         {
             this.isPartitionLevelAutomaticFailoverEnabled = isPartitionLevelFailoverEnabled ? 1 : 0;
             this.isPartitionLevelCircuitBreakerEnabled = isPartitionLevelCircuitBreakerEnabled ? 1 : 0;
             this.isThinClientEnabled = isThinClientEnabled;
             this.globalEndpointManager = globalEndpointManager ?? throw new ArgumentNullException(nameof(globalEndpointManager));
 #if !INTERNAL
-            this.isHubRegionProcessingEnabled = ConfigurationManager.IsHubRegionProcessingEnabled();
+            this.isHubRegionProcessingEnabled = isHubRegionProcessingEnabled;
 #endif
             this.InitializeAndStartCircuitBreakerFailbackBackgroundRefresh();
         }

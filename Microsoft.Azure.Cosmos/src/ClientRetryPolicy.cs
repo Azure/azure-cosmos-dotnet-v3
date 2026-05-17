@@ -39,6 +39,9 @@ namespace Microsoft.Azure.Cosmos
         private readonly GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private readonly bool enableEndpointDiscovery;
         private readonly bool isThinClientEnabled;
+#if !INTERNAL
+        private readonly bool isHubRegionProcessingEnabled;
+#endif
         private int failoverRetryCount;
 
         private int sessionTokenRetryCount;
@@ -62,7 +65,8 @@ namespace Microsoft.Azure.Cosmos
             GlobalPartitionEndpointManager partitionKeyRangeLocationCache,
             RetryOptions retryOptions,
             bool enableEndpointDiscovery,
-            bool isThinClientEnabled)
+            bool isThinClientEnabled,
+            bool isHubRegionProcessingEnabled = true)
         {
             this.throttlingRetry = new ResourceThrottleRetryPolicy(
                 retryOptions.MaxRetryAttemptsOnThrottledRequests,
@@ -77,6 +81,9 @@ namespace Microsoft.Azure.Cosmos
             this.canUseMultipleWriteLocations = false;
             this.isMultiMasterWriteRequest = false;
             this.isThinClientEnabled = isThinClientEnabled;
+#if !INTERNAL
+            this.isHubRegionProcessingEnabled = isHubRegionProcessingEnabled;
+#endif
         }
 
         /// <summary> 
@@ -511,11 +518,12 @@ namespace Microsoft.Azure.Cosmos
                 {
 #if !INTERNAL
                     // Hub region discovery: only for single-master accounts.
-                    // In single-master, after 2× 404/1002 (ReadSessionNotAvailable), attach the
-                    // x-ms-cosmos-hub-region-processing-only header so the backend routes the
-                    // next retry to the partition-set level hub (primary) replica in the write region.
-                    if (this.sessionTokenRetryCount >= MaxSessionTokenRetryCount)
+                    if (this.isHubRegionProcessingEnabled
+                        && this.sessionTokenRetryCount >= MaxSessionTokenRetryCount)
                     {
+                        // In single-master, after 2× 404/1002 (ReadSessionNotAvailable), attach the
+                        // x-ms-cosmos-hub-region-processing-only header so the backend routes the
+                        // next retry to the partition-set level hub (primary) replica in the write region.
                         this.addHubRegionProcessingOnlyHeader = true;
 
                         // Propagate to shared context so hedged requests
@@ -529,8 +537,9 @@ namespace Microsoft.Azure.Cosmos
 
                     if (this.sessionTokenRetryCount > MaxSessionTokenRetryCount)
                     {
-                        // Hub region header was set at count == MaxSessionTokenRetryCount and the
-                        // request was retried with it. If the hub still returns 404/1002, stop.
+                        // After MaxSessionTokenRetryCount attempts (including the hub-region attempt when
+                        // enabled), stop. In production this surfaces the 404/1002 to the caller; when hub
+                        // region processing is enabled, the hub-region attempt fired at count == MaxSessionTokenRetryCount.
                         return ShouldRetryResult.NoRetry();
                     }
 #else
