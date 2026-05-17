@@ -57,6 +57,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             get;
             set;
         }
+        
+        [JsonProperty("embeddingParameterMap", NullValueHandling = NullValueHandling.Ignore)]
+        public Dictionary<string, string> EmbeddingParameterMap
+        {
+            get;
+            set;
+        }
+
 
         [JsonProperty("groupByExpressions")]
         public IReadOnlyList<string> GroupByExpressions
@@ -140,6 +148,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         public bool HasGroupBy => (this.GroupByExpressions != null) && (this.GroupByExpressions.Count > 0);
 
         public bool HasOrderBy => (this.OrderBy != null) && (this.OrderBy.Count > 0);
+
+        public bool HasEmbeddingParameters => (this.EmbeddingParameterMap != null) && (this.EmbeddingParameterMap.Count > 0);
 
         public bool HasOffset => this.Offset.HasValue;
 
