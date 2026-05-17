@@ -647,26 +647,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Checks if the request should be retried on the hub region when the preferred read region returns a 404/1002 on a read request.
-        /// </summary>
-        /// <returns>An instance of <see cref="ShouldRetryResult"/> indicating whether the request should be retried.</returns>
-        private ShouldRetryResult ShouldRetryOnHubRegion()
-        {
-            if (this.sessionTokenRetryCount > 1)
-            {
-                return ShouldRetryResult.NoRetry();
-            }
-
-            this.retryContext = new RetryContext
-            {
-                RetryLocationIndex = 0,
-                RetryRequestOnPreferredLocations = false
-            };
-
-            return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
-        }
-
-        /// <summary>
         /// Attempts to mark the endpoint associated with the current partition key range as unavailable
         /// which will influence future routing decisions.
         /// </summary>
