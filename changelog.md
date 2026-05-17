@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
+- [5870](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5870) CrossRegionHedgingAvailabilityStrategy: Fixes StackOverflow in CrossRegionHedgingAvailabilityStrategy Observed in .NET Framework 4.7.2.
+
 #### Other Changes
 
 ### <a name="3.60.0-preview.0"/> [3.60.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.60.0-preview.0) - 2026-4-24
@@ -34,10 +36,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Features Added
 
 - [5804](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5804) SemanticReranking: Adds Configurable Request Timeout
+- [5825](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5825) ChangeFeed: Promotes Full Fidelity Change Feed (AllVersionsAndDeletes) APIs to GA
 
 #### Bugs Fixed
 
 - [5783](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5783) Container: Fixes SemanticRerankAsync TypeLoadException in derived classes
+- [5825](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5825) ChangeFeedProcessor: Exempts AllVersionsAndDeletes from implicit StartTime back-off (not applicable to LSN-based continuation)
 
 ### <a name="3.59.0"/> [3.59.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.59.0) - 2026-4-24
 
