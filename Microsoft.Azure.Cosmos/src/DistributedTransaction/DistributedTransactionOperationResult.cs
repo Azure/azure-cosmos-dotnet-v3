@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Text.Json;
     using System.Text.Json.Serialization;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -35,6 +36,7 @@ namespace Microsoft.Azure.Cosmos
             this.ETag = other.ETag;
             this.ResourceStream = other.ResourceStream;
             this.SessionToken = other.SessionToken;
+            this.PartitionKeyRangeId = other.PartitionKeyRangeId;
             this.RequestCharge = other.RequestCharge;
             this.ActivityId = other.ActivityId;
             this.Trace = other.Trace;
@@ -90,6 +92,13 @@ namespace Microsoft.Azure.Cosmos
         public virtual string SessionToken { get; internal set; }
 
         /// <summary>
+        /// Gets the raw partition key range ID emitted by the server.
+        /// </summary>
+        [JsonInclude]
+        [JsonPropertyName("partitionKeyRangeId")]
+        public virtual string PartitionKeyRangeId { get; internal set; }
+
+        /// <summary>
         /// Gets the resource stream associated with the operation result.
         /// The stream contains the raw response payload returned by the operation.
         /// </summary>
@@ -135,10 +144,11 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a <see cref="DistributedTransactionOperationResult"/> from a JSON element.
         /// </summary>
         /// <param name="json">The JSON element containing the operation result.</param>
-        /// <returns>The deserialized operation result.</returns>
+        /// <returns>The deserialized operation result with a canonical session token.</returns>
         internal static DistributedTransactionOperationResult FromJson(JsonElement json)
         {
-            DistributedTransactionOperationResult result = JsonSerializer.Deserialize<DistributedTransactionOperationResult>(json, DistributedTransactionOperationResult.CaseInsensitiveOptions);
+            DistributedTransactionOperationResult result = JsonSerializer.Deserialize<DistributedTransactionOperationResult>(json, DistributedTransactionOperationResult.CaseInsensitiveOptions)
+                ?? throw new JsonException($"Failed to deserialize DTC operation result: Deserialize returned null. JSON element kind: '{json.ValueKind}'.");
 
             if (json.TryGetProperty(DistributedTransactionSerializer.ResourceBody, out JsonElement resourceBody)
                 && resourceBody.ValueKind != JsonValueKind.Undefined
@@ -152,6 +162,32 @@ namespace Microsoft.Azure.Cosmos
 
                 byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(resourceBody);
                 result.ResourceStream = new MemoryStream(bytes, 0, bytes.Length, writable: false, publiclyVisible: true);
+            }
+
+            if (!string.IsNullOrWhiteSpace(result.SessionToken))
+            {
+                int colonIndex = result.SessionToken.IndexOf(':');
+                if (colonIndex > 0 && colonIndex < result.SessionToken.Length - 1)
+                {
+                    // Already in canonical {pkRangeId}:{lsn} form — leave as-is.
+                }
+                else if (!string.IsNullOrWhiteSpace(result.PartitionKeyRangeId))
+                {
+                    result.SessionToken = result.PartitionKeyRangeId + ":" + result.SessionToken;
+                }
+                else
+                {
+                    DefaultTrace.TraceWarning(
+                        "DTC operation index {0} returned session token without a valid partitionKeyRangeId (value: '{1}'); session token will not be merged into the session container.",
+                        result.Index,
+                        result.PartitionKeyRangeId ?? "<absent>");
+                    result.SessionToken = null;
+                }
+            }
+            else if (result.SessionToken != null)
+            {
+                // Normalize whitespace-only to null so downstream guards don't need to recheck.
+                result.SessionToken = null;
             }
 
             return result;

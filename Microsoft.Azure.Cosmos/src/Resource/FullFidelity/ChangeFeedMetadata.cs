@@ -15,12 +15,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The metadata of a change feed resource with <see cref="ChangeFeedMode"/> is initialized to <see cref="ChangeFeedMode.AllVersionsAndDeletes"/>.
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    class ChangeFeedMetadata
+    public class ChangeFeedMetadata
     {
         private readonly static DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
