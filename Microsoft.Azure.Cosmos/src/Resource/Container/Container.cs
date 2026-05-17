@@ -1798,10 +1798,9 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
             CancellationToken cancellationToken = default);
-#endif
 
         /// <summary>
-        /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing with all versions and deletes.
+        /// Initializes a <see cref="GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes"/> for change feed processing with all versions and deletes.
         /// </summary>
         /// <typeparam name="T">Document type</typeparam>
         /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
@@ -1846,7 +1845,6 @@ namespace Microsoft.Azure.Cosmos
         ///         bool isTimeToLiveExpired = changeFeedItem.Metadata.IsTimeToLiveExpired;
         ///     }
         ///     
-        ///     allProcessedDocumentsEvent.Set();
         ///     return Task.CompletedTask;
         /// })
         /// .WithInstanceName(Guid.NewGuid().ToString())
@@ -1872,14 +1870,10 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
-        public virtual ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
             string processorName,
-            ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate)
-        {
-            throw new NotSupportedException("Deriving classes are expected to override this method with a valid implementation");
-        }
+            ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate);
 
-#if PREVIEW
         /// <summary>
         /// Determines whether the given y feed range is a part of the specified x feed range.
         /// </summary>

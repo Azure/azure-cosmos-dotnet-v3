@@ -53,6 +53,11 @@ namespace Microsoft.Azure.Cosmos
         /// but no events for deletes or intermediary updates would be included.
         /// </remarks>
         /// <returns>A <see cref="ChangeFeedMode"/>  to receive notifications for insertions, updates, and delete operations.</returns>
-        public static ChangeFeedMode AllVersionsAndDeletes => ChangeFeedModeFullFidelity.Instance;
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        static ChangeFeedMode AllVersionsAndDeletes => ChangeFeedModeFullFidelity.Instance;
     }
 }
