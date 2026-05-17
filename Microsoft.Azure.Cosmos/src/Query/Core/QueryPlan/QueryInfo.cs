@@ -65,7 +65,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             set;
         }
 
-
         [JsonProperty("groupByExpressions")]
         public IReadOnlyList<string> GroupByExpressions
         {
