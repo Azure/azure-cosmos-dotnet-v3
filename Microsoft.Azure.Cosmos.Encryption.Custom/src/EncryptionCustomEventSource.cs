@@ -19,35 +19,27 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// <c>dotnet-trace --providers Azure-Cosmos-Encryption-Custom</c>.
     /// </summary>
     /// <remarks>
-    /// Used for Release-visible best-effort diagnostics on the optional
-    /// <see cref="Microsoft.Extensions.Caching.Distributed.IDistributedCache"/> integration
-    /// (read / write / background write / remove / Id mismatch). Activity tags on the
-    /// surrounding cache scopes remain the primary correlation channel; this EventSource
-    /// exists so the same failures are observable when no
-    /// <see cref="System.Diagnostics.ActivityListener"/> is attached.
-    /// <para>
-    /// EventSource payload contract (this class): payloads MUST NOT contain key material,
-    /// wrapped key bytes, or unstructured exception messages (which could leak Redis
-    /// endpoints, SQL parameter values, or HTTP URLs with embedded credentials). Exception
-    /// detail is reduced to a stable category string ('timeout' / 'connection' /
-    /// 'deserialize' / 'other'); exception type FullName is included for diagnostic
-    /// narrowing. The dekId IS emitted verbatim — treat dekId as customer-correlatable,
-    /// not as a secret. The <c>observedDekId</c> payload of the Id-mismatch event
-    /// originates from an untrusted distributed-cache peer; it is truncated to 128
-    /// characters and otherwise emitted verbatim. EventSource subscribers must not assume
-    /// any structure or bound beyond that.
-    /// </para>
-    /// <para>
-    /// Channel-level distinction — why <see cref="System.Diagnostics.Activity"/> status descriptions on the
-    /// surrounding cache scopes intentionally keep the full <c>exception.Message</c> while
-    /// this EventSource scrubs it: an <see cref="System.Diagnostics.ActivityListener"/>
-    /// or OpenTelemetry exporter is attached explicitly by the application owner and ships
-    /// to a destination they control, so the OpenTelemetry convention of placing the
-    /// developer-facing error description in <c>Status.Description</c> is honored.
-    /// This EventSource, in contrast, can be auto-discovered by any process-wide listener
-    /// matching the <c>Azure-*</c> naming convention (for example <c>AzureEventSourceListener</c>),
-    /// so its payload is held to a stricter "no unstructured strings" contract.
-    /// </para>
+    /// Always-on fallback diagnostics for the optional
+    /// <see cref="Microsoft.Extensions.Caching.Distributed.IDistributedCache"/> integration.
+    /// Activity tags on the surrounding cache scopes are the primary channel; this
+    /// EventSource is held to a stricter payload contract because <c>Azure-*</c>-named
+    /// sources can be auto-discovered process-wide (e.g. by <c>AzureEventSourceListener</c>).
+    ///
+    /// Payload contract:
+    /// <list type="bullet">
+    /// <item>No key material, wrapped key bytes, or raw <c>exception.Message</c> (leak
+    /// vector for Redis endpoints, SQL parameters, HTTP URLs with embedded credentials).</item>
+    /// <item>Exceptions are reduced to a stable category ('timeout' / 'connection' /
+    /// 'deserialize' / 'other') plus type FullName.</item>
+    /// <item><c>dekId</c> is emitted verbatim — customer-correlatable, not a secret.</item>
+    /// <item><c>observedDekId</c> (Id-mismatch event) is untrusted peer input — truncated
+    /// to 128 chars.</item>
+    /// </list>
+    ///
+    /// Activity status descriptions intentionally keep <c>exception.Message</c>, matching
+    /// the main SDK's <c>OpenTelemetryAttributeKeys.ExceptionMessage</c> pattern;
+    /// <see cref="System.Diagnostics.ActivityListener"/> subscribers are customer-attached
+    /// and ship to customer-controlled destinations.
     /// </remarks>
     [EventSource(Name = EventSourceName)]
     internal sealed class EncryptionCustomEventSource : EventSource
