@@ -1208,6 +1208,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<ITrace>(),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(containerProperties);
+
+            // The auto-append fast-path early-returns when the client is not initialized
+            // (to avoid re-entering DocumentClient initialization before the first request
+            // has completed). Stub it true here so the slow-path GetCachedContainerPropertiesAsync
+            // mock above is actually exercised.
+            mock.Setup(x => x.IsClientInitialized).Returns(true);
             return mock;
         }
 
