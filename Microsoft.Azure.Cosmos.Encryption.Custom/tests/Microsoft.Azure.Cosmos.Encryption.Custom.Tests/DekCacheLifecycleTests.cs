@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         }
 
         [TestMethod]
-        public async Task Dispose_DrainsInFlightFireAndForgetWrite()
+        public void Dispose_DrainsInFlightFireAndForgetWrite()
         {
             // L2 SetAsync hangs on a TCS so the FAF write is in-flight when we call Dispose.
             // Dispose must cancel the disposal CTS, the await in the lambda must throw OCE on
