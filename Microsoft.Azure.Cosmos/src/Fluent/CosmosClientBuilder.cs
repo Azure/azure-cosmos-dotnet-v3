@@ -438,7 +438,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// At the transport boundary, values in [<see cref="TimeSpan.Zero"/>, 1 second) are treated as 0
         /// (use the configured request timeout). Values greater than or equal to 1 second are rounded up to
         /// the nearest whole second (for example, 2.3 seconds becomes 3 seconds).
-        /// Negative values throw <see cref="ArgumentOutOfRangeException"/>.
+        /// Negative values are invalid and will be reset to the default with a warning log.
         /// </param>
         /// <param name="maxRequestsPerTcpConnection">
         /// Controls the number of requests allowed simultaneously over a single TCP connection. When more requests are in flight simultaneously, the direct/TCP client will open additional connections.

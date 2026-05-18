@@ -30,7 +30,6 @@ namespace Microsoft.Azure.Cosmos
         private Protocol connectionProtocol;
         private ObservableCollection<string> preferredLocations;
         private ObservableCollection<Uri> accountInitializationCustomEndpoints;
-        private TimeSpan? openTcpConnectionTimeout;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConnectionPolicy"/> class to connect to the Azure Cosmos DB service.
@@ -452,23 +451,12 @@ namespace Microsoft.Azure.Cosmos
         /// values in [<see cref="TimeSpan.Zero"/>, 1 second) are treated as 0 (use <see cref="RequestTimeout"/>)
         /// and values greater than or equal to 1 second are rounded up to the nearest whole second
         /// (for example, 2.3 seconds becomes 3 seconds).
+        /// Negative values are invalid and will be reset to the default with a warning log.
         /// </remarks>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="value"/> is negative.</exception>
         public TimeSpan? OpenTcpConnectionTimeout
         {
-            get => this.openTcpConnectionTimeout;
-            set
-            {
-                if (value.HasValue && value.Value < TimeSpan.Zero)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(this.OpenTcpConnectionTimeout),
-                        value,
-                        $"{nameof(this.OpenTcpConnectionTimeout)} must be greater than or equal to {nameof(TimeSpan)}.{nameof(TimeSpan.Zero)}.");
-                }
-
-                this.openTcpConnectionTimeout = value;
-            }
+            get;
+            set;
         }
 
         /// <summary>

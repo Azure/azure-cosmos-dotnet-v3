@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http;
     using System.Net.Security;
     using System.Security.Cryptography.X509Certificates;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
@@ -607,21 +608,13 @@ namespace Microsoft.Azure.Cosmos
         /// (for example, 2.3 seconds becomes 3 seconds).
         /// </item>
         /// </list>
+        /// Negative values are invalid and will be reset to the default with a warning log.
         /// </remarks>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="value"/> is negative.</exception>
         public TimeSpan? OpenTcpConnectionTimeout
         {
             get => this.openTcpConnectionTimeout;
             set
             {
-                if (value.HasValue && value.Value < TimeSpan.Zero)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(this.OpenTcpConnectionTimeout),
-                        value,
-                        $"{nameof(this.OpenTcpConnectionTimeout)} must be greater than or equal to {nameof(TimeSpan)}.{nameof(TimeSpan.Zero)}.");
-                }
-
                 this.openTcpConnectionTimeout = value;
                 this.ValidateDirectTCPSettings();
             }
@@ -1351,6 +1344,15 @@ namespace Microsoft.Azure.Cosmos
             if (!string.IsNullOrEmpty(settingName))
             {
                 throw new ArgumentException($"{settingName} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Direct)}");
+            }
+
+            if (this.OpenTcpConnectionTimeout.HasValue && this.OpenTcpConnectionTimeout.Value < TimeSpan.Zero)
+            {
+                DefaultTrace.TraceWarning(
+                    "{0} is set to a negative value ({1}). Negative values are invalid; resetting to default.",
+                    nameof(this.OpenTcpConnectionTimeout),
+                    this.OpenTcpConnectionTimeout.Value);
+                this.openTcpConnectionTimeout = null;
             }
         }
 

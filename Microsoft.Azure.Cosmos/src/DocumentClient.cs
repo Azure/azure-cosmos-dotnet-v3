@@ -928,11 +928,12 @@ namespace Microsoft.Azure.Cosmos
                 if (connectionPolicy.OpenTcpConnectionTimeout.HasValue)
                 {
                     // Values in [TimeSpan.Zero, 1 second) become 0 (use RequestTimeout).
-                    // Values >= 1 second round up to the nearest whole second.
+                    // Values >= 1 second round up to the nearest whole second, clamped to int.MaxValue.
                     TimeSpan openTcpConnectionTimeout = connectionPolicy.OpenTcpConnectionTimeout.Value;
+                    double ceilingSeconds = Math.Ceiling(openTcpConnectionTimeout.TotalSeconds);
                     this.openConnectionTimeoutInSeconds = openTcpConnectionTimeout < TimeSpan.FromSeconds(1)
                         ? 0
-                        : (int)Math.Ceiling(openTcpConnectionTimeout.TotalSeconds);
+                        : ceilingSeconds > int.MaxValue ? int.MaxValue : (int)ceilingSeconds;
                 }
 
                 if (connectionPolicy.MaxRequestsPerTcpConnection.HasValue)
