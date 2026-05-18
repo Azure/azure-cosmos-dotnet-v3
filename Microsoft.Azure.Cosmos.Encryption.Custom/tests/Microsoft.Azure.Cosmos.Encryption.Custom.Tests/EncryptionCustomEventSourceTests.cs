@@ -5,13 +5,19 @@
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 {
     using System;
+    using System.IO;
     using System.Collections.Generic;
     using System.Diagnostics.Tracing;
+    using System.Linq;
+    using System.Net.Http;
+    using System.Net.Sockets;
+    using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Extensions.Caching.Distributed;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// Locks in the contract of <see cref="EncryptionCustomEventSource"/>: best-effort
@@ -64,6 +70,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             Assert.IsNotNull(evt, "Expected DistributedCacheBackgroundWriteFailed event to be raised on the EventSource.");
             Assert.AreEqual(EventLevel.Warning, evt.Level);
             AssertPayloadContains(evt, "dek1", typeof(InvalidOperationException).FullName);
+            Assert.AreEqual("other", evt.Payload[2] as string, "Third payload element should be the stable exception category.");
         }
 
         [TestMethod]
@@ -95,6 +102,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             Assert.IsNotNull(evt, "Expected DistributedCacheReadFailed event to be raised on the EventSource.");
             Assert.AreEqual(EventLevel.Warning, evt.Level);
             AssertPayloadContains(evt, "dek1", typeof(InvalidOperationException).FullName);
+            Assert.AreEqual("other", evt.Payload[2] as string, "Third payload element should be the stable exception category.");
         }
 
         [TestMethod]
@@ -118,6 +126,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             Assert.IsNotNull(evt, "Expected DistributedCacheRemoveFailed event to be raised on the EventSource.");
             Assert.AreEqual(EventLevel.Warning, evt.Level);
             AssertPayloadContains(evt, "dek1", typeof(InvalidOperationException).FullName);
+            Assert.AreEqual("other", evt.Payload[2] as string, "Third payload element should be the stable exception category.");
         }
 
         [TestMethod]
@@ -153,12 +162,62 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             Assert.AreEqual("imposterId", evt.Payload[1] as string, "Second payload element should be the observed payload Id.");
         }
 
+        [TestMethod]
+        // REQ: Exception-bearing EventSource payloads must never include exception.Message text, only the stable category.
+        // SOURCE: PR #5428 review comment 3255385238.
+        public void EventPayload_DoesNotContainExceptionMessage_AcrossAllFailureChannels()
+        {
+            using CapturingEventListener listener = new (EventSourceName, EventLevel.Warning);
+
+            EncryptionCustomEventSource.DistributedCacheReadFailed("readDek", new InvalidOperationException("READ REDIS-ENDPOINT-12345.cache.windows.net"));
+            EncryptionCustomEventSource.DistributedCacheWriteFailed("writeDek", new InvalidOperationException("WRITE REDIS-ENDPOINT-12345.cache.windows.net"));
+            EncryptionCustomEventSource.DistributedCacheBackgroundWriteFailed("backgroundDek", new InvalidOperationException("BACKGROUND REDIS-ENDPOINT-12345.cache.windows.net"));
+            EncryptionCustomEventSource.DistributedCacheRemoveFailed("removeDek", new InvalidOperationException("REMOVE REDIS-ENDPOINT-12345.cache.windows.net"));
+
+            this.AssertPayloadDoesNotContainSentinel(listener.WaitForEvent(DistributedCacheReadFailedEventId));
+            this.AssertPayloadDoesNotContainSentinel(listener.WaitForEvent(DistributedCacheWriteFailedEventId));
+            this.AssertPayloadDoesNotContainSentinel(listener.WaitForEvent(DistributedCacheBackgroundWriteFailedEventId));
+            this.AssertPayloadDoesNotContainSentinel(listener.WaitForEvent(DistributedCacheRemoveFailedEventId));
+        }
+
+        [TestMethod]
+        // REQ: Exception categorization must map known exception families to stable payload categories.
+        // SOURCE: PR #5428 review comment 3255385238.
+        public void CategorizeException_ReturnsExpectedCategory_ForKnownTypes()
+        {
+            MethodInfo categorize = typeof(EncryptionCustomEventSource).GetMethod("CategorizeException", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.IsNotNull(categorize, "EncryptionCustomEventSource must keep a private static CategorizeException helper.");
+
+            Assert.AreEqual("timeout", this.InvokeCategorizeException(categorize, new OperationCanceledException()));
+            Assert.AreEqual("timeout", this.InvokeCategorizeException(categorize, new TimeoutException()));
+            Assert.AreEqual("connection", this.InvokeCategorizeException(categorize, new SocketException((int)SocketError.ConnectionReset)));
+            Assert.AreEqual("connection", this.InvokeCategorizeException(categorize, new HttpRequestException("synthetic")));
+            Assert.AreEqual("deserialize", this.InvokeCategorizeException(categorize, new JsonReaderException("synthetic")));
+            Assert.AreEqual("deserialize", this.InvokeCategorizeException(categorize, new InvalidDataException("synthetic")));
+            Assert.AreEqual("other", this.InvokeCategorizeException(categorize, new Exception("synthetic")));
+        }
+
         private static void AssertPayloadContains(EventWrittenEventArgs evt, string expectedDekId, string expectedExceptionType)
         {
             Assert.IsNotNull(evt.Payload, "Event payload must not be null.");
-            Assert.IsTrue(evt.Payload.Count >= 3, $"Event payload should contain at least 3 elements (dekId, exceptionType, message). Got {evt.Payload.Count}.");
+            // Event payload contract: (dekId, exceptionType, category).
+            Assert.IsTrue(evt.Payload.Count >= 3, $"Event payload should contain at least 3 elements (dekId, exceptionType, category). Got {evt.Payload.Count}.");
             Assert.AreEqual(expectedDekId, evt.Payload[0] as string, "First payload element should be dekId.");
             Assert.AreEqual(expectedExceptionType, evt.Payload[1] as string, "Second payload element should be exception type.");
+        }
+
+        private void AssertPayloadDoesNotContainSentinel(EventWrittenEventArgs evt)
+        {
+            Assert.IsNotNull(evt, "Expected the EventSource warning to be emitted.");
+            Assert.IsNotNull(evt.Payload, "Event payload must not be null.");
+            Assert.IsFalse(
+                evt.Payload.OfType<string>().Any(s => s.Contains("REDIS-ENDPOINT", StringComparison.Ordinal)),
+                "EventSource payload must NEVER include exception.Message — would leak Redis endpoints / SQL params / HTTP credentials.");
+        }
+
+        private string InvokeCategorizeException(MethodInfo categorizeMethod, Exception exception)
+        {
+            return (string)categorizeMethod.Invoke(null, new object[] { exception });
         }
 
         /// <summary>

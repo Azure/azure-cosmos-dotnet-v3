@@ -6,6 +6,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     using System;
     using System.Diagnostics.Tracing;
+    using System.IO;
+    using System.Net.Http;
+    using System.Net.Sockets;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// EventSource for the Microsoft.Azure.Cosmos.Encryption.Custom package. Source name
@@ -13,15 +17,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// convention, so it is auto-discovered by <c>AzureEventSourceListener</c> and
     /// <c>dotnet-trace --providers Azure-Cosmos-Encryption-Custom</c>.
     /// </summary>
-    /// <remarks>
-    /// Used for Release-visible best-effort diagnostics on the optional
-    /// <see cref="Microsoft.Extensions.Caching.Distributed.IDistributedCache"/> integration
-    /// (read / write / background write / remove). Activity tags on the surrounding cache
-    /// scopes remain the primary correlation channel; this EventSource exists so the same
-    /// failures are observable when no <see cref="System.Diagnostics.ActivityListener"/> is
-    /// attached. Payloads must not contain key material, wrapped key bytes, or full exception
-    /// strings.
-    /// </remarks>
+        /// <remarks>
+        /// Used for Release-visible best-effort diagnostics on the optional
+        /// <see cref="Microsoft.Extensions.Caching.Distributed.IDistributedCache"/> integration
+        /// (read / write / background write / remove / Id mismatch). Activity tags on the
+        /// surrounding cache scopes remain the primary correlation channel; this EventSource
+        /// exists so the same failures are observable when no
+        /// <see cref="System.Diagnostics.ActivityListener"/> is attached. Payload contract:
+        /// payloads MUST NOT contain key material, wrapped key bytes, or unstructured exception
+        /// messages (which could leak Redis endpoints, SQL parameter values, or HTTP URLs with
+        /// embedded credentials). Exception detail is reduced to a stable category string
+        /// ('timeout' / 'connection' / 'deserialize' / 'other'); exception type FullName is
+        /// included for diagnostic narrowing. The dekId IS emitted verbatim — treat dekId as
+        /// customer-correlatable, not as a secret.
+        /// </remarks>
     [EventSource(Name = EventSourceName)]
     internal sealed class EncryptionCustomEventSource : EventSource
     {
@@ -47,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             if (Singleton.IsEnabled(EventLevel.Warning, EventKeywords.None))
             {
-                Singleton.DistributedCacheReadFailedCore(dekId ?? string.Empty, exception.GetType().FullName, exception.Message);
+                Singleton.DistributedCacheReadFailedCore(dekId ?? string.Empty, exception.GetType().FullName, CategorizeException(exception));
             }
         }
 
@@ -64,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             if (Singleton.IsEnabled(EventLevel.Warning, EventKeywords.None))
             {
-                Singleton.DistributedCacheWriteFailedCore(dekId ?? string.Empty, exception.GetType().FullName, exception.Message);
+                Singleton.DistributedCacheWriteFailedCore(dekId ?? string.Empty, exception.GetType().FullName, CategorizeException(exception));
             }
         }
 
@@ -81,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             if (Singleton.IsEnabled(EventLevel.Warning, EventKeywords.None))
             {
-                Singleton.DistributedCacheBackgroundWriteFailedCore(dekId ?? string.Empty, exception.GetType().FullName, exception.Message);
+                Singleton.DistributedCacheBackgroundWriteFailedCore(dekId ?? string.Empty, exception.GetType().FullName, CategorizeException(exception));
             }
         }
 
@@ -98,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             if (Singleton.IsEnabled(EventLevel.Warning, EventKeywords.None))
             {
-                Singleton.DistributedCacheRemoveFailedCore(dekId ?? string.Empty, exception.GetType().FullName, exception.Message);
+                Singleton.DistributedCacheRemoveFailedCore(dekId ?? string.Empty, exception.GetType().FullName, CategorizeException(exception));
             }
         }
 
@@ -114,21 +123,41 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
         }
 
-        [Event(1, Level = EventLevel.Warning, Message = "DekCache distributed cache read failed for DEK '{0}': {1}: {2}")]
-        private void DistributedCacheReadFailedCore(string dekId, string exceptionType, string message)
-            => this.WriteEvent(1, dekId, exceptionType, message);
+        private static string CategorizeException(Exception ex)
+        {
+            if (ex is OperationCanceledException || ex is TimeoutException)
+            {
+                return "timeout";
+            }
 
-        [Event(2, Level = EventLevel.Warning, Message = "DekCache distributed cache write failed for DEK '{0}': {1}: {2}")]
-        private void DistributedCacheWriteFailedCore(string dekId, string exceptionType, string message)
-            => this.WriteEvent(2, dekId, exceptionType, message);
+            if (ex is SocketException || ex is HttpRequestException)
+            {
+                return "connection";
+            }
 
-        [Event(3, Level = EventLevel.Warning, Message = "DekCache background distributed cache write failed for DEK '{0}': {1}: {2}")]
-        private void DistributedCacheBackgroundWriteFailedCore(string dekId, string exceptionType, string message)
-            => this.WriteEvent(3, dekId, exceptionType, message);
+            if (ex is JsonException || ex is InvalidDataException)
+            {
+                return "deserialize";
+            }
 
-        [Event(4, Level = EventLevel.Warning, Message = "DekCache distributed cache remove failed for DEK '{0}': {1}: {2}")]
-        private void DistributedCacheRemoveFailedCore(string dekId, string exceptionType, string message)
-            => this.WriteEvent(4, dekId, exceptionType, message);
+            return "other";
+        }
+
+        [Event(1, Level = EventLevel.Warning, Message = "DekCache distributed cache read failed for DEK '{0}': {1} category: {2}")]
+        private void DistributedCacheReadFailedCore(string dekId, string exceptionType, string category)
+            => this.WriteEvent(1, dekId, exceptionType, category);
+
+        [Event(2, Level = EventLevel.Warning, Message = "DekCache distributed cache write failed for DEK '{0}': {1} category: {2}")]
+        private void DistributedCacheWriteFailedCore(string dekId, string exceptionType, string category)
+            => this.WriteEvent(2, dekId, exceptionType, category);
+
+        [Event(3, Level = EventLevel.Warning, Message = "DekCache background distributed cache write failed for DEK '{0}': {1} category: {2}")]
+        private void DistributedCacheBackgroundWriteFailedCore(string dekId, string exceptionType, string category)
+            => this.WriteEvent(3, dekId, exceptionType, category);
+
+        [Event(4, Level = EventLevel.Warning, Message = "DekCache distributed cache remove failed for DEK '{0}': {1} category: {2}")]
+        private void DistributedCacheRemoveFailedCore(string dekId, string exceptionType, string category)
+            => this.WriteEvent(4, dekId, exceptionType, category);
 
         [Event(5, Level = EventLevel.Warning, Message = "DekCache distributed cache entry Id mismatch: requested '{0}', payload Id was '{1}'.")]
         private void DistributedCacheIdMismatchCore(string requestedDekId, string observedDekId)
