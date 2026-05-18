@@ -805,7 +805,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "ClientEncryptionPolicy",
                 "PartitionKeyPaths",
                 "VectorEmbeddingPolicy",
-                "FullTextPolicy");
+                "FullTextPolicy",
+                "ChangeFeedPolicy");
 #endif
 
             // Two equivalent definitions 
