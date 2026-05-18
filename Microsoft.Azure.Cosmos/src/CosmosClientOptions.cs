@@ -604,7 +604,7 @@ namespace Microsoft.Azure.Cosmos
         /// </item>
         /// <item>
         /// Values greater than or equal to 1 second are rounded up to the nearest whole second
-        /// (for example, 2.5 seconds becomes 3 seconds).
+        /// (for example, 2.3 seconds becomes 3 seconds).
         /// </item>
         /// </list>
         /// </remarks>

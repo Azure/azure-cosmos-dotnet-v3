@@ -437,7 +437,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// When the time elapses, the attempt is cancelled and an error is returned. Longer timeouts will delay retries and failures.
         /// At the transport boundary, values in [<see cref="TimeSpan.Zero"/>, 1 second) are treated as 0
         /// (use the configured request timeout). Values greater than or equal to 1 second are rounded up to
-        /// the nearest whole second (for example, 2.5 seconds becomes 3 seconds).
+        /// the nearest whole second (for example, 2.3 seconds becomes 3 seconds).
         /// Negative values throw <see cref="ArgumentOutOfRangeException"/>.
         /// </param>
         /// <param name="maxRequestsPerTcpConnection">
