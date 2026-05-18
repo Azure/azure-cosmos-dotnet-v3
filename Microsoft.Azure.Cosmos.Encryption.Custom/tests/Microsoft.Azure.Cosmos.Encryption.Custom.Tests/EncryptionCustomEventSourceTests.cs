@@ -163,6 +163,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         }
 
         [TestMethod]
+        // REQ: Id-mismatch telemetry must bound untrusted observedDekId values before emission.
+        // SOURCE: Adversarial review finding F-R1-002.
+        public void IdMismatch_TruncatesObservedDekIdPayload()
+        {
+            using CapturingEventListener listener = new (EventSourceName, EventLevel.Warning);
+
+            EncryptionCustomEventSource.DistributedCacheIdMismatch("dek1", new string('A', 5000));
+
+            EventWrittenEventArgs evt = listener.WaitForEvent(DistributedCacheIdMismatchEventId);
+            Assert.IsNotNull(evt, "Expected DistributedCacheIdMismatch event to be raised on the EventSource.");
+            Assert.IsNotNull(evt.Payload, "Event payload must not be null.");
+
+            string observedDekId = evt.Payload[1] as string;
+            Assert.IsNotNull(observedDekId, "Observed DEK id payload should be present.");
+            Assert.IsTrue(observedDekId.Length <= 160, $"Observed DEK id payload should be truncated to a bounded telemetry size, got {observedDekId.Length} chars.");
+            Assert.IsTrue(observedDekId.StartsWith(new string('A', 128), StringComparison.Ordinal), "Observed DEK id should keep the leading 128 chars when truncated.");
+            StringAssert.Contains(observedDekId, "truncated, 5000 chars");
+        }
+
+        [TestMethod]
         // REQ: Exception-bearing EventSource payloads must never include exception.Message text, only the stable category.
         // SOURCE: PR #5428 review comment 3255385238.
         public void EventPayload_DoesNotContainExceptionMessage_AcrossAllFailureChannels()

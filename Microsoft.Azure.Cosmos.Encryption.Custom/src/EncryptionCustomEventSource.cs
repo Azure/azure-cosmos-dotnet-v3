@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     using System;
     using System.Diagnostics.Tracing;
+    using System.Globalization;
     using System.IO;
     using System.Net.Http;
     using System.Net.Sockets;
@@ -17,20 +18,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// convention, so it is auto-discovered by <c>AzureEventSourceListener</c> and
     /// <c>dotnet-trace --providers Azure-Cosmos-Encryption-Custom</c>.
     /// </summary>
-        /// <remarks>
-        /// Used for Release-visible best-effort diagnostics on the optional
-        /// <see cref="Microsoft.Extensions.Caching.Distributed.IDistributedCache"/> integration
-        /// (read / write / background write / remove / Id mismatch). Activity tags on the
-        /// surrounding cache scopes remain the primary correlation channel; this EventSource
-        /// exists so the same failures are observable when no
-        /// <see cref="System.Diagnostics.ActivityListener"/> is attached. Payload contract:
-        /// payloads MUST NOT contain key material, wrapped key bytes, or unstructured exception
-        /// messages (which could leak Redis endpoints, SQL parameter values, or HTTP URLs with
-        /// embedded credentials). Exception detail is reduced to a stable category string
-        /// ('timeout' / 'connection' / 'deserialize' / 'other'); exception type FullName is
-        /// included for diagnostic narrowing. The dekId IS emitted verbatim — treat dekId as
-        /// customer-correlatable, not as a secret.
-        /// </remarks>
+    /// <remarks>
+    /// Used for Release-visible best-effort diagnostics on the optional
+    /// <see cref="Microsoft.Extensions.Caching.Distributed.IDistributedCache"/> integration
+    /// (read / write / background write / remove / Id mismatch). Activity tags on the
+    /// surrounding cache scopes remain the primary correlation channel; this EventSource
+    /// exists so the same failures are observable when no
+    /// <see cref="System.Diagnostics.ActivityListener"/> is attached. Payload contract:
+    /// payloads MUST NOT contain key material, wrapped key bytes, or unstructured exception
+    /// messages (which could leak Redis endpoints, SQL parameter values, or HTTP URLs with
+    /// embedded credentials). Exception detail is reduced to a stable category string
+    /// ('timeout' / 'connection' / 'deserialize' / 'other'); exception type FullName is
+    /// included for diagnostic narrowing. The dekId IS emitted verbatim — treat dekId as
+    /// customer-correlatable, not as a secret. The <c>observedDekId</c> payload of the
+    /// Id-mismatch event originates from an untrusted distributed-cache peer; it is truncated
+    /// to 128 characters and otherwise emitted verbatim. EventSource subscribers must not
+    /// assume any structure or bound beyond that.
+    /// </remarks>
     [EventSource(Name = EventSourceName)]
     internal sealed class EncryptionCustomEventSource : EventSource
     {
@@ -119,10 +123,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             if (Singleton.IsEnabled(EventLevel.Warning, EventKeywords.None))
             {
-                Singleton.DistributedCacheIdMismatchCore(requestedDekId ?? string.Empty, observedDekId ?? string.Empty);
+                Singleton.DistributedCacheIdMismatchCore(requestedDekId ?? string.Empty, TruncateForTelemetry(observedDekId));
             }
         }
 
+        // StackExchange.Redis-specific exceptions (for example RedisConnectionException and
+        // RedisTimeoutException) intentionally fall through to "other" because this package does
+        // not take a direct dependency on StackExchange.Redis. Operators still get the concrete
+        // exception type via the payload's exceptionType FullName field.
         private static string CategorizeException(Exception ex)
         {
             if (ex is OperationCanceledException || ex is TimeoutException)
@@ -141,6 +149,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             return "other";
+        }
+
+        internal static string TruncateForTelemetry(string value, int maxLength = 128)
+        {
+            if (string.IsNullOrEmpty(value) || value.Length <= maxLength)
+            {
+                return value ?? string.Empty;
+            }
+
+            return string.Concat(
+                value.Substring(0, maxLength),
+                "…(truncated, ",
+                value.Length.ToString(CultureInfo.InvariantCulture),
+                " chars)");
         }
 
         [Event(1, Level = EventLevel.Warning, Message = "DekCache distributed cache read failed for DEK '{0}': {1} category: {2}")]

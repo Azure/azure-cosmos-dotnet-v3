@@ -405,9 +405,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         CachedDekProperties cachedProps = DeserializeCachedDekProperties(cachedBytes);
                         if (!string.Equals(cachedProps.ServerProperties.Id, dekId, StringComparison.Ordinal))
                         {
+                            string observedDekId = EncryptionCustomEventSource.TruncateForTelemetry(cachedProps.ServerProperties.Id);
                             activity?.SetTag("cache.result", "id-mismatch");
-                            activity?.SetTag("cache.entry.actual_id", cachedProps.ServerProperties.Id);
-                            EncryptionCustomEventSource.DistributedCacheIdMismatch(dekId, cachedProps.ServerProperties.Id);
+                            activity?.SetTag("cache.entry.actual_id", observedDekId);
+                            EncryptionCustomEventSource.DistributedCacheIdMismatch(dekId, observedDekId);
                             return null;
                         }
 
