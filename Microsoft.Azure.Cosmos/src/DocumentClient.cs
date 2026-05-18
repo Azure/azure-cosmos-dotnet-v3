@@ -7168,7 +7168,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Atomic read of the cached Gateway <c>disableCrossRegionalHedging</c> flag, taken under
-        /// <see cref="hedgingStrategyLock"/>. Used by <see cref="RequestInvokerHandler.AvailabilityStrategy"/>
+        /// <see cref="hedgingStrategyLock"/>. Used by <see cref="Handlers.RequestInvokerHandler.AvailabilityStrategy(RequestMessage)"/>
         /// to enforce the operator-override precedence over per-request and client-level strategy:
         /// when the Gateway flag is <c>true</c>, hedging is OFF for every request on this client,
         /// regardless of where the strategy was configured.
