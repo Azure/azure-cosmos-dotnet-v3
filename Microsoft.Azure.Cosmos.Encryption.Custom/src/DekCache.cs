@@ -588,7 +588,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         private sealed class CachedDekPropertiesDto
         {
             [JsonProperty("v")]
-            public int Version { get; set; } = CurrentCacheFormatVersion;
+
+            // Missing "v" on legacy payloads must always deserialize as v1 during rolling
+            // upgrades. Keep this a literal 1 forever; do NOT replace it with
+            // "= CurrentCacheFormatVersion" or old payloads without "v" will be
+            // misclassified as whatever newer format version the process happens to ship.
+            public int Version { get; set; } = 1;
 
             [JsonProperty("serverProperties")]
             public DataEncryptionKeyProperties ServerProperties { get; set; }

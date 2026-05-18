@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 {
     using System;
     using System.Collections.Concurrent;
+    using System.Reflection;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -250,6 +251,48 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         // ---------------------------------------------------------------
         // D. Version handling: missing "v" field -> treated as v1
         // ---------------------------------------------------------------
+
+        [TestMethod]
+        // REQ: Default CachedDekPropertiesDto.Version must stay a literal 1 even if CurrentCacheFormatVersion changes.
+        // SOURCE: PR #5428 review comment 3255385235.
+        public void CachedDekPropertiesDto_DefaultVersion_IsLiteral1()
+        {
+            Type dtoType = typeof(DekCache).GetNestedType("CachedDekPropertiesDto", BindingFlags.NonPublic);
+            Assert.IsNotNull(dtoType, "Test contract requires the private nested DekCache.CachedDekPropertiesDto type to exist.");
+
+            object dto = Activator.CreateInstance(dtoType, nonPublic: true);
+            PropertyInfo versionProperty = dtoType.GetProperty("Version", BindingFlags.Instance | BindingFlags.Public);
+            Assert.IsNotNull(versionProperty, "CachedDekPropertiesDto must expose a Version property for the serialized contract.");
+
+            int defaultVersion = (int)versionProperty.GetValue(dto);
+            Assert.AreEqual(
+                1,
+                defaultVersion,
+                "CachedDekPropertiesDto.Version default MUST stay literally 1. Bumping CurrentCacheFormatVersion MUST NOT silently change this default; otherwise old missing-'v' payloads would be misclassified during a rolling upgrade.");
+        }
+
+        [TestMethod]
+        // REQ: Missing-'v' raw fixtures planted directly into L2 must be treated as v1 and served without a Cosmos fetch.
+        // SOURCE: PR #5428 review comment 3255385235.
+        public async Task L2RawFixtureMissingVersionField_IsServedAsV1_WithoutCosmosFetch()
+        {
+            DateTime now = NewClock();
+            ClockControlledDistributedCache l2 = new ClockControlledDistributedCache(() => now);
+            DekCache peerB = NewCache(l2, () => now);
+
+            string fixture = "{\"serverProperties\":{\"id\":\"interopDek\",\"encryptionAlgorithm\":\"AEAD_AES_256_CBC_HMAC_SHA256\",\"wrappedDataEncryptionKey\":\"AQID\",\"keyWrapMetadata\":{\"type\":\"test\",\"name\":\"test\",\"algorithm\":\"RSA-OAEP\",\"value\":\"test\"},\"_ts\":1704067200},\"serverPropertiesExpiryUtc\":\"2026-01-01T00:30:00Z\"}";
+            l2.SetRawForTest(DefaultCacheKey, Encoding.UTF8.GetBytes(fixture));
+
+            int cosmosCalls = 0;
+            DataEncryptionKeyProperties read = await peerB.GetOrAddDekPropertiesAsync(
+                DekId,
+                (id, ctx, ct) => { cosmosCalls++; return Task.FromResult(MakeDekProperties(id)); },
+                CosmosDiagnosticsContext.Create(null),
+                CancellationToken.None);
+
+            Assert.AreEqual(DekId, read.Id, "Hard-coded missing-'v' fixture must deserialize as cache format v1.");
+            Assert.AreEqual(0, cosmosCalls, "Missing-'v' fixture must be served from L2 without a Cosmos round-trip.");
+        }
 
         [TestMethod]
         public async Task L2PayloadMissingVersionField_IsTreatedAsV1_AndServed()
