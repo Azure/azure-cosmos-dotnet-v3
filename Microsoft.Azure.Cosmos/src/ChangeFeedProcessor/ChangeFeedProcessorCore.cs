@@ -58,15 +58,40 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
             if (!this.initialized)
             {
-                // LatestVersion-only mitigation for the cold-start first-change-skip race in #5268.
-                // AVAD must be excluded — the AVAD endpoint rejects an explicit StartTime on a
-                // null-continuation lease (#5846) and instead anchors to "now" server-side via the
-                // generic StartFromNow path. Do not drop the mode guard without re-validating both
-                // #5268 and #5846.
-                if (this.changeFeedProcessorOptions.Mode != ChangeFeedMode.AllVersionsAndDeletes
-                    && !this.changeFeedProcessorOptions.StartFromBeginning
+                // Guard: AVAD mode does not support StartFromBeginning or explicit StartTime.
+                // The builder already throws for these combinations, but validate here
+                // in case options are set directly (e.g., internal tests, subclasses).
+                if (this.changeFeedProcessorOptions.Mode == ChangeFeedMode.AllVersionsAndDeletes)
+                {
+                    if (this.changeFeedProcessorOptions.StartFromBeginning)
+                    {
+                        throw new InvalidOperationException(
+                            $"'{nameof(ChangeFeedProcessorOptions.StartFromBeginning)}' is not supported with {ChangeFeedMode.AllVersionsAndDeletes} mode.");
+                    }
+
+                    if (this.changeFeedProcessorOptions.StartTime.HasValue)
+                    {
+                        throw new InvalidOperationException(
+                            $"'{nameof(ChangeFeedProcessorOptions.StartTime)}' is not supported with {ChangeFeedMode.AllVersionsAndDeletes} mode.");
+                    }
+                }
+
+                // Determine whether we need to apply the StartTime back-off compensation
+                // introduced by PR #5617 to avoid missing writes during async lease acquisition.
+                // AllVersionsAndDeletes (AVAD) is exempt for two related reasons:
+                //   1. AVAD uses LSN-based continuation (IfNoneMatch: *) rather than RFC1123
+                //      IfModifiedSince, so the seconds-precision rounding issue does not apply.
+                //   2. The AVAD endpoint rejects an explicit StartTime on a null-continuation
+                //      lease with HTTP 400 (#5846), which was the regression introduced by #5617.
+                // See PRs #5825 and #5852 for details. Do not drop the mode guard without
+                // re-validating both #5268 and #5846.
+                bool shouldAnchorStartTime =
+                    !this.changeFeedProcessorOptions.StartFromBeginning
                     && this.changeFeedProcessorOptions.StartTime == null
-                    && string.IsNullOrEmpty(this.changeFeedProcessorOptions.StartContinuation))
+                    && string.IsNullOrEmpty(this.changeFeedProcessorOptions.StartContinuation)
+                    && this.changeFeedProcessorOptions.Mode != ChangeFeedMode.AllVersionsAndDeletes;
+
+                if (shouldAnchorStartTime)
                 {
                     // StartTime is serialized as RFC1123 (seconds precision) and interpreted as exclusive.
                     // Back off by one second so writes occurring immediately after StartAsync are not missed.
