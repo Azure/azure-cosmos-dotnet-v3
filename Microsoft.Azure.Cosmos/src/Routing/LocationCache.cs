@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly int connectionLimit;
         private readonly ConcurrentDictionary<Uri, LocationUnavailabilityInfo> locationUnavailablityInfoByEndpoint;
         private readonly RegionNameMapper regionNameMapper;
+        private readonly Func<bool> isPartitionLevelFailoverEnabled;
 
         private DatabaseAccountLocationsInfo locationInfo;
         private DateTime lastCacheUpdateTimestamp;
@@ -39,13 +40,15 @@ namespace Microsoft.Azure.Cosmos.Routing
             Uri defaultEndpoint,
             bool enableEndpointDiscovery,
             int connectionLimit,
-            bool useMultipleWriteLocations)
+            bool useMultipleWriteLocations,
+            Func<bool> isPartitionLevelFailoverEnabled = null)
         {
             this.locationInfo = new DatabaseAccountLocationsInfo(preferredLocations, defaultEndpoint);
             this.defaultEndpoint = defaultEndpoint;
             this.enableEndpointDiscovery = enableEndpointDiscovery;
             this.useMultipleWriteLocations = useMultipleWriteLocations;
             this.connectionLimit = connectionLimit;
+            this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
 
             this.lockObject = new object();
             this.locationUnavailablityInfoByEndpoint = new ConcurrentDictionary<Uri, LocationUnavailabilityInfo>();
@@ -164,24 +167,24 @@ namespace Microsoft.Azure.Cosmos.Routing
         public ReadOnlyCollection<string> EffectivePreferredLocations => this.locationInfo.EffectivePreferredLocations;
 
         /// <summary>
-        /// Returns the location corresponding to the endpoint if location specific endpoint is provided.
-        /// For the defaultEndPoint, we will return the first available write location.
-        /// Returns null, in other cases.
+        /// Returns the region name corresponding to the given endpoint.
+        /// - If the endpoint matches a known write or read regional endpoint, returns that region name.
+        /// - If the endpoint is the account's default (global) endpoint and at least one write
+        ///   location is known, returns the first entry of the available write locations list.
+        ///   This applies to both single-master and multi-master accounts. Note that for multi-master
+        ///   accounts the first write location is simply the first region in the configured list,
+        ///   not necessarily the hub/primary write region.
+        /// - Otherwise, returns null.
         /// </summary>
-        /// <remarks>
-        /// Today we return null for defaultEndPoint if multiple write locations can be used.
-        /// This needs to be modifed to figure out proper location in such case.
-        /// </remarks>
         public string GetLocation(Uri endpoint)
         {
             string location = this.locationInfo.AvailableWriteEndpointByLocation.FirstOrDefault(uri => uri.Value == endpoint).Key ?? this.locationInfo.AvailableReadEndpointByLocation.FirstOrDefault(uri => uri.Value == endpoint).Key;
 
-            if (location == null && endpoint == this.defaultEndpoint && !this.CanUseMultipleWriteLocations())
+            if (location == null
+                && endpoint == this.defaultEndpoint
+                && this.locationInfo.AvailableWriteLocations.Count > 0)
             {
-                if (this.locationInfo.AvailableWriteEndpointByLocation.Any())
-                {
-                    return this.locationInfo.AvailableWriteEndpointByLocation.First().Key;
-                }
+                return this.locationInfo.AvailableWriteLocations[0];
             }
 
             return location;
@@ -189,7 +192,8 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         /// <summary>
         /// Set region name for a location if present in the locationcache otherwise set region name as null.
-        /// If endpoint's hostname is same as default endpoint hostname, set regionName as null.
+        /// For multi-master accounts, if endpoint's hostname is same as default endpoint hostname,
+        /// set regionName to the first available write region.
         /// </summary>
         /// <param name="endpoint"></param>
         /// <param name="regionName"></param>
@@ -203,12 +207,17 @@ namespace Microsoft.Azure.Cosmos.Routing
                     UriFormat.SafeUnescaped, 
                     StringComparison.OrdinalIgnoreCase) == 0)
             {
-                regionName = null;
-                return false;
+                // Use account-level enableMultipleWriteLocations (not CanUseMultipleWriteLocations which also
+                // requires client opt-in) because diagnostics should resolve the region regardless of whether
+                // the client uses multi-write. The default endpoint routes to the first write region server-side.
+                regionName = this.enableMultipleWriteLocations
+                    ? this.GetLocation(this.defaultEndpoint)
+                    : null;
+                return regionName != null;
             }
 
             regionName = this.GetLocation(endpoint);
-            return true;
+            return regionName != null;
         }
 
         /// <summary>
@@ -380,10 +389,18 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             ReadOnlyCollection<string> effectivePreferredLocations = databaseAccountLocationsInfoSnapshot.EffectivePreferredLocations;
 
+            // For reads when PPAF is enabled, use WriteEndpoints[0] as fallback (dynamic,
+            // tracks current write region) instead of this.defaultEndpoint (static, region-agnostic,
+            // never updated after init). This aligns with UpdateLocationCache which already uses
+            // WriteEndpoints[0] as the ReadEndpoints fallback, and matches Java/Python SDK behavior.
+            Uri fallbackEndpoint = (isReadRequest && this.isPartitionLevelFailoverEnabled?.Invoke() == true)
+                ? databaseAccountLocationsInfoSnapshot.WriteEndpoints[0]
+                : this.defaultEndpoint;
+
             return GetApplicableEndpoints(
-                isReadRequest ? this.locationInfo.AvailableReadEndpointByLocation : this.locationInfo.AvailableWriteEndpointByLocation,
+                isReadRequest ? databaseAccountLocationsInfoSnapshot.AvailableReadEndpointByLocation : databaseAccountLocationsInfoSnapshot.AvailableWriteEndpointByLocation,
                 effectivePreferredLocations,
-                this.defaultEndpoint,
+                fallbackEndpoint,
                 request.RequestContext.ExcludeRegions);
         }
 

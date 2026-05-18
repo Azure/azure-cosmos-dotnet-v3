@@ -6,6 +6,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
     using System;
     using System.Collections.Concurrent;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Threading.Tasks;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// Lease manager that is using In-Memory as lease storage.
@@ -15,15 +19,33 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         private readonly DocumentServiceLeaseStore leaseStore;
         private readonly DocumentServiceLeaseManager leaseManager;
         private readonly DocumentServiceLeaseCheckpointer leaseCheckpointer;
-        private readonly DocumentServiceLeaseContainer leaseContainer;
+        private readonly DocumentServiceLeaseContainerInMemory leaseContainer;
 
         public DocumentServiceLeaseStoreManagerInMemory()
             : this(new ConcurrentDictionary<string, DocumentServiceLease>())
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance from a <see cref="MemoryStream"/> containing
+        /// previously persisted lease state. Deserialization is co-located here so
+        /// that the manager owns the lease JSON format for both read (restore) and
+        /// write (ShutdownAsync → persist).
+        /// </summary>
+        internal DocumentServiceLeaseStoreManagerInMemory(MemoryStream leaseStateStream)
+            : this(DocumentServiceLeaseStoreManagerInMemory.DeserializeLeaseState(leaseStateStream), leaseStateStream)
+        {
+        }
+
         internal DocumentServiceLeaseStoreManagerInMemory(ConcurrentDictionary<string, DocumentServiceLease> container)
-            : this(new DocumentServiceLeaseUpdaterInMemory(container), container)
+            : this(new DocumentServiceLeaseUpdaterInMemory(container), container, leaseStateStream: null)
+        {
+        }
+
+        internal DocumentServiceLeaseStoreManagerInMemory(
+            ConcurrentDictionary<string, DocumentServiceLease> container,
+            MemoryStream leaseStateStream)
+            : this(new DocumentServiceLeaseUpdaterInMemory(container), container, leaseStateStream)
         {
         }
 
@@ -35,7 +57,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         /// </remarks>
         internal DocumentServiceLeaseStoreManagerInMemory(
             DocumentServiceLeaseUpdater leaseUpdater,
-            ConcurrentDictionary<string, DocumentServiceLease> container) // For testing purposes only.
+            ConcurrentDictionary<string, DocumentServiceLease> container,
+            MemoryStream leaseStateStream = null)
         {
             if (leaseUpdater == null) throw new ArgumentException(nameof(leaseUpdater));
 
@@ -47,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 leaseUpdater,
                 new PartitionedByIdCollectionRequestOptionsFactory());
 
-            this.leaseContainer = new DocumentServiceLeaseContainerInMemory(container);
+            this.leaseContainer = new DocumentServiceLeaseContainerInMemory(container, leaseStateStream);
         }
 
         public override DocumentServiceLeaseStore LeaseStore => this.leaseStore;
@@ -57,5 +80,61 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         public override DocumentServiceLeaseCheckpointer LeaseCheckpointer => this.leaseCheckpointer;
 
         public override DocumentServiceLeaseContainer LeaseContainer => this.leaseContainer;
+
+        public override Task ShutdownAsync()
+        {
+            return this.leaseContainer.ShutdownAsync();
+        }
+
+        /// <summary>
+        /// Deserializes lease state from a <see cref="MemoryStream"/> into a dictionary.
+        /// This is the counterpart of the serialization in
+        /// <see cref="DocumentServiceLeaseContainerInMemory.ShutdownAsync"/>.
+        /// </summary>
+        private static ConcurrentDictionary<string, DocumentServiceLease> DeserializeLeaseState(
+            MemoryStream leaseStateStream)
+        {
+            ConcurrentDictionary<string, DocumentServiceLease> container =
+                new ConcurrentDictionary<string, DocumentServiceLease>();
+
+            if (leaseStateStream == null || leaseStateStream.Length == 0)
+            {
+                return container;
+            }
+
+            List<DocumentServiceLease> leases;
+            try
+            {
+                leases = InMemoryLeaseJsonFormat.Deserialize(leaseStateStream);
+            }
+            catch (JsonException ex)
+            {
+                throw new InvalidOperationException(
+                    "Failed to deserialize lease state from the provided MemoryStream. "
+                    + "Ensure the stream contains valid lease state JSON previously persisted by the ChangeFeedProcessor.",
+                    ex);
+            }
+
+            foreach (DocumentServiceLease lease in leases)
+            {
+                if (string.IsNullOrEmpty(lease?.Id))
+                {
+                    throw new InvalidOperationException("Lease state contains a null or invalid lease entry.");
+                }
+
+                if (!container.TryAdd(lease.Id, lease))
+                {
+                    throw new InvalidOperationException(
+                        $"Lease state contains duplicate lease id '{lease.Id}'. The persisted stream is corrupt.");
+                }
+            }
+
+            // Leave the caller's stream positioned at the start so it is symmetric with
+            // the state produced by ShutdownAsync and the stream remains immediately
+            // re-readable by the caller (e.g., to persist it elsewhere).
+            leaseStateStream.Position = 0;
+
+            return container;
+        }
     }
 }

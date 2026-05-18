@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class AuthorizationTokenProviderTokenCredential : AuthorizationTokenProvider
     {
-        private const string InferenceTokenPrefix = "Bearer ";
         internal readonly TokenCredentialCache tokenCredentialCache;
         private bool isDisposed = false;
        
@@ -25,13 +24,15 @@ namespace Microsoft.Azure.Cosmos
         public AuthorizationTokenProviderTokenCredential(
             TokenCredential tokenCredential,
             Uri accountEndpoint,
-            TimeSpan? backgroundTokenCredentialRefreshInterval)
+            TimeSpan? backgroundTokenCredentialRefreshInterval,
+            Func<string, string> tokenToAuthorizationHeader)
         {
             this.tokenCredential = tokenCredential ?? throw new ArgumentNullException(nameof(tokenCredential));
             this.tokenCredentialCache = new TokenCredentialCache(
                 tokenCredential: tokenCredential,
                 accountEndpoint: accountEndpoint,
-                backgroundTokenCredentialRefreshInterval: backgroundTokenCredentialRefreshInterval);
+                backgroundTokenCredentialRefreshInterval: backgroundTokenCredentialRefreshInterval,
+                tokenToAuthorizationHeader: tokenToAuthorizationHeader ?? throw new ArgumentNullException(nameof(tokenToAuthorizationHeader)));
         }
 
         public override async ValueTask<(string token, string payload)> GetUserAuthorizationAsync(
@@ -43,8 +44,7 @@ namespace Microsoft.Azure.Cosmos
         {
             using (Trace trace = Trace.GetRootTrace(nameof(GetUserAuthorizationTokenAsync), TraceComponent.Authorization, TraceLevel.Info))
             {
-                string token = AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(
-                    await this.tokenCredentialCache.GetTokenAsync(trace));
+                string token = await this.tokenCredentialCache.GetTokenAuthorizationHeaderAsync(trace);
                 return (token, default);
             }
         }
@@ -57,8 +57,7 @@ namespace Microsoft.Azure.Cosmos
             AuthorizationTokenType tokenType,
             ITrace trace)
         {
-            return AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(
-                    await this.tokenCredentialCache.GetTokenAsync(trace));
+            return await this.tokenCredentialCache.GetTokenAuthorizationHeaderAsync(trace);
         }
 
         public override async ValueTask AddAuthorizationHeaderAsync(
@@ -69,25 +68,9 @@ namespace Microsoft.Azure.Cosmos
         {
             using (Trace trace = Trace.GetRootTrace(nameof(GetUserAuthorizationTokenAsync), TraceComponent.Authorization, TraceLevel.Info))
             {
-                string token = AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(
-                    await this.tokenCredentialCache.GetTokenAsync(trace));
+                string token = await this.tokenCredentialCache.GetTokenAuthorizationHeaderAsync(trace);
 
                 headersCollection.Add(HttpConstants.HttpHeaders.Authorization, token);
-            }
-        }
-
-        public override async ValueTask AddInferenceAuthorizationHeaderAsync(
-            INameValueCollection headersCollection,
-            Uri requestAddress,
-            string verb,
-            AuthorizationTokenType tokenType)
-        {
-            using (Trace trace = Trace.GetRootTrace(nameof(GetUserAuthorizationTokenAsync), TraceComponent.Authorization, TraceLevel.Info))
-            {
-                string token = await this.tokenCredentialCache.GetTokenAsync(trace);
-
-                string inferenceToken = $"{InferenceTokenPrefix}{token}";
-                headersCollection.Add(HttpConstants.HttpHeaders.Authorization, inferenceToken);
             }
         }
 
