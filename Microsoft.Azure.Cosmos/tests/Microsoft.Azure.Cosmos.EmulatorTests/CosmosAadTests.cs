@@ -494,7 +494,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
                 {
-                    ResponseIntercepter = (response, request) =>
+                    RequestCallBack = (request, cancellationToken) =>
                     {
                         bool isDocumentCreate = request.Method == HttpMethod.Post
                             && request.RequestUri.PathAndQuery.Contains("/docs");
@@ -503,12 +503,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         {
                             hasReturnedUnauthorized = true;
 
-                            // Simulate 401 with WWW-Authenticate matching server's AadTokenRevocationHelper format
+                            // Return fake 401/5013 with WWW-Authenticate WITHOUT forwarding to the server
                             HttpResponseMessage unauthorizedResponse = new HttpResponseMessage(HttpStatusCode.Unauthorized)
                             {
                                 RequestMessage = request,
                                 Content = new StringContent("{\"code\":\"Unauthorized\",\"message\":\"Provided AAD token has been revoked.\"}")
                             };
+                            unauthorizedResponse.Headers.Add("x-ms-substatus", "5013");
                             unauthorizedResponse.Headers.Add(
                                 "WWW-Authenticate",
                                 CosmosAadTests.GenerateWwwAuthenticateHeaderValue());
@@ -516,7 +517,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             return Task.FromResult(unauthorizedResponse);
                         }
 
-                        return Task.FromResult(response);
+                        // All other requests pass through to the real server
+                        return null;
                     }
                 };
 
@@ -533,22 +535,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
 
-                    try
-                    {
-                        await aadContainer.CreateItemAsync(item, new PartitionKey(item.id));
-                        Assert.Fail("Expected operation to fail");
-                    }
-                    catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized)
-                    {
-                        // Expected - 401 should be returned
-                    }
+                    // First attempt: SDK uses cached token → handler returns fake 401/5013 (request never reaches server)
+                    // SDK detects revocation → extracts claims → resets cache → gets fresh token → retries
+                    // Second attempt: real request reaches server → document created → 201
+                    ItemResponse<ToDoActivity> response = await aadContainer.CreateItemAsync(item, new PartitionKey(item.id));
+                    Assert.AreEqual(HttpStatusCode.Created, response.StatusCode, "Retry with fresh token should succeed.");
 
-                    // Validate that 401 was returned
+                    // Validate that 401 was simulated
                     Assert.IsTrue(hasReturnedUnauthorized, "Test should have returned 401 Unauthorized");
 
-                    // The SDK now correctly reads WWW-Authenticate from response headers,
-                    // extracts the claims challenge, and passes it to the token credential cache.
-                    // The token credential will be called again with the merged claims.
+                    // Validate that the SDK requested a fresh token with claims challenge
+                    Assert.IsTrue(tokenRequests.Count >= 1, "SDK should have requested a fresh token after revocation.");
+                    Assert.IsTrue(
+                        tokenRequests.Any(r => !string.IsNullOrEmpty(r.Claims) && r.Claims.Contains("nbf")),
+                        "Retry token request should contain nbf claims from the server's claims challenge.");
                 }
             }
             finally
@@ -582,7 +582,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
                 {
-                    ResponseIntercepter = (response, request) =>
+                    RequestCallBack = (request, cancellationToken) =>
                     {
                         bool isDocumentCreate = request.Method == HttpMethod.Post
                             && request.RequestUri.PathAndQuery.Contains("/docs");
@@ -591,12 +591,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         {
                             caeResponseCount++;
 
-                            // Always return CAE challenge matching server's AadTokenRevocationHelper format
+                            // Always return 401/5013 with claims challenge — never pass through
                             HttpResponseMessage caeResponse = new HttpResponseMessage(HttpStatusCode.Unauthorized)
                             {
                                 RequestMessage = request,
                                 Content = new StringContent("{\"code\":\"Unauthorized\",\"message\":\"Provided AAD token has been revoked.\"}")
                             };
+                            caeResponse.Headers.Add("x-ms-substatus", "5013");
                             caeResponse.Headers.Add(
                                 "WWW-Authenticate",
                                 CosmosAadTests.GenerateWwwAuthenticateHeaderValue());
@@ -604,7 +605,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             return Task.FromResult(caeResponse);
                         }
 
-                        return Task.FromResult(response);
+                        return null;
                     }
                 };
 

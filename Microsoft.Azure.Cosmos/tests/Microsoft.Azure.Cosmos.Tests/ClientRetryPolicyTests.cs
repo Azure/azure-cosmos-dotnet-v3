@@ -9,6 +9,7 @@
     using System.Net;
     using System.Net.Http;
     using System.Reflection;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure.Core;
@@ -642,6 +643,143 @@
             Assert.IsNotNull(result, "Should get a result from the throttling retry policy");
             Assert.IsFalse(result.ShouldRetry,
                 "401 without CAE indicators should NOT trigger a retry");
+        }
+
+        [TestMethod]
+        public async Task ClientRetryPolicy_TokenRevocation_ClaimsExtractedAndPassedToEntra()
+        {
+            // Validates the full claims flow:
+            // 1. Server returns 401 with WWW-Authenticate containing claims challenge
+            // 2. SDK extracts claims from WWW-Authenticate header
+            // 3. Claims are stored in TokenCredentialCache (via ResetCachedToken)
+            // 4. On retry, claims are merged with cp1 and passed to TokenCredential.GetTokenAsync
+            // 5. Fresh token is obtained and used for retry
+
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false);
+
+            // Track all token request contexts to verify claims were passed
+            List<TokenRequestContext> capturedTokenRequests = new List<TokenRequestContext>();
+
+            Mock<TokenCredential> mockTokenCredential = new Mock<TokenCredential>();
+            mockTokenCredential
+                .Setup(x => x.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
+                .Callback<TokenRequestContext, CancellationToken>((ctx, ct) => capturedTokenRequests.Add(ctx))
+                .ReturnsAsync(new AccessToken("fresh-token", DateTimeOffset.UtcNow.AddHours(1)));
+
+            using AuthorizationTokenProviderTokenCredential tokenProvider = new AuthorizationTokenProviderTokenCredential(
+                mockTokenCredential.Object,
+                new Uri("https://test-account.documents.azure.com"),
+                backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(5));
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new Cosmos.RetryOptions(),
+                enableEndpointDiscovery,
+                isThinClientEnabled: false,
+                authorizationTokenProvider: tokenProvider);
+
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false);
+            retryPolicy.OnBeforeSendRequest(request);
+
+            // Simulate server returning 401 with claims challenge in WWW-Authenticate
+            string claimsBase64 = Convert.ToBase64String(
+                System.Text.Encoding.UTF8.GetBytes("{\"access_token\":{\"acrs\":{\"essential\":true,\"value\":\"c1\"}}}"));
+
+            StoreResponseNameValueCollection responseHeaders = new StoreResponseNameValueCollection();
+            responseHeaders.Set(HttpConstants.HttpHeaders.WwwAuthenticate,
+                $"Bearer error=\"insufficient_claims\", claims=\"{claimsBase64}\"");
+
+            DocumentClientException revocationException = new DocumentClientException(
+                message: "AAD token revocation",
+                innerException: null,
+                statusCode: HttpStatusCode.Unauthorized,
+                substatusCode: SubStatusCodes.Unknown,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: responseHeaders);
+
+            // Act - First 401 should trigger retry
+            ShouldRetryResult firstResult = await retryPolicy.ShouldRetryAsync(revocationException, CancellationToken.None);
+
+            // Assert - SDK decided to retry
+            Assert.IsTrue(firstResult.ShouldRetry, "First 401 with claims challenge should trigger a retry.");
+
+            // Assert - Claims were extracted from WWW-Authenticate and stored in token cache.
+            // On the next token fetch, they will be merged with cp1 and passed to GetTokenAsync.
+            // Trigger a token refresh to verify claims flow through to Entra.
+            capturedTokenRequests.Clear();
+            INameValueCollection headers = new StoreResponseNameValueCollection();
+            await tokenProvider.AddAuthorizationHeaderAsync(
+                headers,
+                new Uri("https://test-account.documents.azure.com"),
+                "GET",
+                AuthorizationTokenType.PrimaryMasterKey);
+
+            Assert.IsTrue(capturedTokenRequests.Count > 0, "GetTokenAsync should have been called.");
+            string claimsPassedToEntra = capturedTokenRequests[0].Claims;
+            Assert.IsNotNull(claimsPassedToEntra, "Claims must be passed to Entra in the token request.");
+            Assert.IsTrue(claimsPassedToEntra.Contains("acrs"), "Claims must contain the server's claims challenge (acrs).");
+            Assert.IsTrue(claimsPassedToEntra.Contains("xms_cc"), "Claims must also contain cp1 client capability (xms_cc).");
+        }
+
+        [TestMethod]
+        public async Task ClientRetryPolicy_TokenRevocation_SecondFailure_DoesNotRetryAndThrows()
+        {
+            // Validates that if the retry request also fails with 401/claims,
+            // the SDK does NOT retry again (max 1 retry) and the caller gets the failure.
+
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false);
+
+            Mock<TokenCredential> mockTokenCredential = new Mock<TokenCredential>();
+            mockTokenCredential
+                .Setup(x => x.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new AccessToken("test-token", DateTimeOffset.UtcNow.AddHours(1)));
+
+            using AuthorizationTokenProviderTokenCredential tokenProvider = new AuthorizationTokenProviderTokenCredential(
+                mockTokenCredential.Object,
+                new Uri("https://test-account.documents.azure.com"),
+                backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(5));
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new Cosmos.RetryOptions(),
+                enableEndpointDiscovery,
+                isThinClientEnabled: false,
+                authorizationTokenProvider: tokenProvider);
+
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false);
+            retryPolicy.OnBeforeSendRequest(request);
+
+            StoreResponseNameValueCollection responseHeaders = new StoreResponseNameValueCollection();
+            responseHeaders.Set(HttpConstants.HttpHeaders.WwwAuthenticate,
+                "Bearer error=\"insufficient_claims\", claims=\"eyJhY2Nlc3NfdG9rZW4iOnt9fQ==\"");
+
+            DocumentClientException revocationException = new DocumentClientException(
+                message: "AAD token revocation",
+                innerException: null,
+                statusCode: HttpStatusCode.Unauthorized,
+                substatusCode: SubStatusCodes.Unknown,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: responseHeaders);
+
+            // First 401 → should retry
+            ShouldRetryResult firstResult = await retryPolicy.ShouldRetryAsync(revocationException, CancellationToken.None);
+            Assert.IsTrue(firstResult.ShouldRetry, "First 401 with claims challenge should retry.");
+            Assert.AreEqual(TimeSpan.Zero, firstResult.BackoffTime, "Retry should be immediate (no backoff).");
+
+            // Second 401 (retry failed) → should NOT retry
+            ShouldRetryResult secondResult = await retryPolicy.ShouldRetryAsync(revocationException, CancellationToken.None);
+            Assert.IsFalse(secondResult.ShouldRetry,
+                "Second 401 must NOT retry. MaxCaeRevocationRetryCount=1 means only one retry is allowed.");
         }
 
         private async Task ValidateConnectTimeoutTriggersClientRetryPolicyAsync(
