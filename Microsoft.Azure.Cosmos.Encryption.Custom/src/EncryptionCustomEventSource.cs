@@ -102,6 +102,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
         }
 
+        /// <summary>
+        /// Distributed cache payload Id did not match the requested DEK.
+        /// </summary>
+        [NonEvent]
+        public static void DistributedCacheIdMismatch(string requestedDekId, string observedDekId)
+        {
+            if (Singleton.IsEnabled(EventLevel.Warning, EventKeywords.None))
+            {
+                Singleton.DistributedCacheIdMismatchCore(requestedDekId ?? string.Empty, observedDekId ?? string.Empty);
+            }
+        }
+
         [Event(1, Level = EventLevel.Warning, Message = "DekCache distributed cache read failed for DEK '{0}': {1}: {2}")]
         private void DistributedCacheReadFailedCore(string dekId, string exceptionType, string message)
             => this.WriteEvent(1, dekId, exceptionType, message);
@@ -117,5 +129,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         [Event(4, Level = EventLevel.Warning, Message = "DekCache distributed cache remove failed for DEK '{0}': {1}: {2}")]
         private void DistributedCacheRemoveFailedCore(string dekId, string exceptionType, string message)
             => this.WriteEvent(4, dekId, exceptionType, message);
+
+        [Event(5, Level = EventLevel.Warning, Message = "DekCache distributed cache entry Id mismatch: requested '{0}', payload Id was '{1}'.")]
+        private void DistributedCacheIdMismatchCore(string requestedDekId, string observedDekId)
+            => this.WriteEvent(5, requestedDekId, observedDekId);
     }
 }

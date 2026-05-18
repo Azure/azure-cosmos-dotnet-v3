@@ -309,6 +309,41 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             Assert.AreEqual(1, provider2CosmosCalls, "Provider 2 must have fetched its own data rather than reading provider 1's L2 slot.");
         }
 
+        [TestMethod]
+        // REQ: L2 hydration must reject payloads whose embedded ServerProperties.Id differs from the requested dekId and fall through to Cosmos.
+        // SOURCE: PR #5428 review comment 3255385237.
+        public async Task L2PayloadIdMismatch_FallsThroughToLegitimateFetcher()
+        {
+            DateTime now = NewClock();
+            ClockControlledDistributedCache sharedL2 = new ClockControlledDistributedCache(() => now);
+            DekCache cache = NewCache(DefaultTtl, sharedL2, () => now);
+
+            string payload = JsonConvert.SerializeObject(new
+            {
+                v = 1,
+                serverProperties = MakeDekProperties("imposterId", wrappedKey: new byte[] { 0x99 }),
+                serverPropertiesExpiryUtc = now.AddMinutes(30),
+            });
+            sharedL2.SetRawForTest(DefaultCacheKey, Encoding.UTF8.GetBytes(payload));
+
+            int cosmosCalls = 0;
+            DataEncryptionKeyProperties result = await cache.GetOrAddDekPropertiesAsync(
+                DekId,
+                (id, ctx, ct) =>
+                {
+                    cosmosCalls++;
+                    return Task.FromResult(MakeDekProperties(id, wrappedKey: new byte[] { 0x22 }));
+                },
+                CosmosDiagnosticsContext.Create(null),
+                CancellationToken.None);
+
+            Assert.AreEqual(1, cosmosCalls, "Id-mismatched L2 payloads must be treated as misses so Cosmos is queried for the authoritative DEK.");
+            CollectionAssert.AreEqual(
+                new byte[] { 0x22 },
+                result.WrappedDataEncryptionKey,
+                "Result must come from the legitimate fetcher, not from the mismatched L2 payload.");
+        }
+
         // ---------------------------------------------------------------
         // E. L2 read error does not leak data
         // ---------------------------------------------------------------

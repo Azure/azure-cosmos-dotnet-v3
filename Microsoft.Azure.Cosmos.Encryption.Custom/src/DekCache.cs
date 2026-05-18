@@ -403,6 +403,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     if (cachedBytes != null)
                     {
                         CachedDekProperties cachedProps = DeserializeCachedDekProperties(cachedBytes);
+                        if (!string.Equals(cachedProps.ServerProperties.Id, dekId, StringComparison.Ordinal))
+                        {
+                            activity?.SetTag("cache.result", "id-mismatch");
+                            activity?.SetTag("cache.entry.actual_id", cachedProps.ServerProperties.Id);
+                            EncryptionCustomEventSource.DistributedCacheIdMismatch(dekId, cachedProps.ServerProperties.Id);
+                            return null;
+                        }
 
                         // Restamp with a fresh L1 freshness horizon so the L1-expiry branch does
                         // not re-trigger on the very next call. The IDistributedCache's own

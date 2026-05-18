@@ -30,6 +30,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         private const int DistributedCacheWriteFailedEventId = 2;
         private const int DistributedCacheBackgroundWriteFailedEventId = 3;
         private const int DistributedCacheRemoveFailedEventId = 4;
+        private const int DistributedCacheIdMismatchEventId = 5;
 
         private static DataEncryptionKeyProperties NewDek(string id)
         {
@@ -132,6 +133,24 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             EncryptionCustomEventSource.DistributedCacheRemoveFailed("dek1", null);
 
             Assert.AreEqual(0, listener.EventCount, "No events should fire when exception is null.");
+        }
+
+        [TestMethod]
+        // REQ: Distributed cache Id-mismatch warnings must emit the requested dekId and observed payload Id verbatim.
+        // SOURCE: PR #5428 review comment 3255385237.
+        public void IdMismatch_EmitsWarningWithRequestedAndObservedIds()
+        {
+            using CapturingEventListener listener = new (EventSourceName, EventLevel.Warning);
+
+            EncryptionCustomEventSource.DistributedCacheIdMismatch("requestedDek", "imposterId");
+
+            EventWrittenEventArgs evt = listener.WaitForEvent(DistributedCacheIdMismatchEventId);
+            Assert.IsNotNull(evt, "Expected DistributedCacheIdMismatch event to be raised on the EventSource.");
+            Assert.AreEqual(EventLevel.Warning, evt.Level);
+            Assert.IsNotNull(evt.Payload, "Event payload must not be null.");
+            Assert.AreEqual(2, evt.Payload.Count, "Id-mismatch payload should contain exactly the requested and observed DEK ids.");
+            Assert.AreEqual("requestedDek", evt.Payload[0] as string, "First payload element should be the requested dekId.");
+            Assert.AreEqual("imposterId", evt.Payload[1] as string, "Second payload element should be the observed payload Id.");
         }
 
         private static void AssertPayloadContains(EventWrittenEventArgs evt, string expectedDekId, string expectedExceptionType)
