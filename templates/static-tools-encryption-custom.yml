@@ -61,6 +61,12 @@ jobs:
       arguments: '-p:Optimize=true -p:IsPreview=true -p:SdkProjectRef=true -p:DefineSdkProjectRefSymbol=false --configuration Release'
       versioningScheme: OFF
 
+  # Note: no GA NuGet-surface parity step for Encryption.Custom. The Custom
+  # csproj package-references Microsoft.Azure.Cosmos 3.41.0-preview.0
+  # unconditionally (no IsPreview-gated alternative reference), so the
+  # shipped Custom NuGet is always built against a preview SDK surface and
+  # has no GA NuGet surface to validate.
+
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@4
     displayName: 'BinSkim'
     condition: eq(1,2) #disablng as nuget repo failing

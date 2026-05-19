@@ -805,7 +805,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "ClientEncryptionPolicy",
                 "PartitionKeyPaths",
                 "VectorEmbeddingPolicy",
-                "FullTextPolicy");
+                "FullTextPolicy",
+                "ChangeFeedPolicy");
 #endif
 
             // Two equivalent definitions 
@@ -1152,6 +1153,80 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(JTokenType.Array, vectorEmbeddings.Type, "Vector Embedding Policy serialized vectorEmbeddings should be an array.");
             Assert.IsTrue(embedding1.Equals(vectorEmbeddings.Value<JArray>()[0].ToObject<Cosmos.Embedding>()));
             Assert.IsTrue(embedding2.Equals(vectorEmbeddings.Value<JArray>()[1].ToObject<Cosmos.Embedding>()));
+        }
+
+        [TestMethod]
+        public void EmbeddingSourceRoundTripSerialization()
+        {
+            const string embeddingPolicyJson = "{\"vectorEmbeddings\":[{\"path\":\"/embedding\",\"dataType\":\"float32\",\"dimensions\":1536,\"distanceFunction\":\"cosine\",\"embeddingSource\":{\"sourcePaths\":[\"/journal_title\",\"/title\",\"/toc_abstract\",\"/abstract\",\"/full_text\"],\"deploymentName\":\"text-embedding-3-small\",\"modelName\":\"text-embedding-3-small\",\"endpoint\":\"https://embedding-south-central.cognitiveservices.azure.com/\",\"authType\":\"ApiKey\"}},{\"path\":\"/embedding2\",\"dataType\":\"float32\",\"dimensions\":1536,\"distanceFunction\":\"cosine\",\"embeddingSource\":{\"sourcePaths\":[\"/title\"],\"deploymentName\":\"text-embedding-3-small\",\"modelName\":\"text-embedding-3-small\",\"endpoint\":\"https://embedding-south-central.cognitiveservices.azure.com/\",\"authType\":\"Entra\"}}]}";
+
+            Cosmos.VectorEmbeddingPolicy policy = JsonConvert.DeserializeObject<Cosmos.VectorEmbeddingPolicy>(embeddingPolicyJson);
+            Cosmos.EmbeddingSource source = policy.Embeddings[0].EmbeddingSource;
+            CollectionAssert.AreEqual(
+                new[] { "/journal_title", "/title", "/toc_abstract", "/abstract", "/full_text" },
+                source.SourcePaths.ToArray());
+            Assert.AreEqual("text-embedding-3-small", source.DeploymentName);
+            Assert.AreEqual("text-embedding-3-small", source.ModelName);
+            Assert.AreEqual("https://embedding-south-central.cognitiveservices.azure.com/", source.Endpoint);
+            Assert.AreEqual(Cosmos.EmbeddingAuthType.ApiKey, source.AuthType);
+            Assert.AreEqual(Cosmos.EmbeddingAuthType.Entra, policy.Embeddings[1].EmbeddingSource.AuthType);
+
+            string roundTripped = JsonConvert.SerializeObject(policy);
+            Assert.IsTrue(
+                JToken.DeepEquals(JObject.Parse(embeddingPolicyJson), JObject.Parse(roundTripped)),
+                $"Round-tripped JSON differs.\nExpected: {embeddingPolicyJson}\nActual:   {roundTripped}");
+        }
+
+        [TestMethod]
+        public void EmbeddingSourceValueEquality()
+        {
+            static Cosmos.EmbeddingSource Build(string deployment, Cosmos.EmbeddingAuthType auth)
+            {
+                return new()
+                {
+                    SourcePaths = new Collection<string> { "/title", "/abstract" },
+                    DeploymentName = deployment,
+                    ModelName = "text-embedding-3-small",
+                    Endpoint = "https://embedding.example.com/",
+                    AuthType = auth,
+                };
+            }
+
+            Cosmos.EmbeddingSource a = Build("text-embedding-3-small", Cosmos.EmbeddingAuthType.ApiKey);
+            Cosmos.EmbeddingSource b = Build("text-embedding-3-small", Cosmos.EmbeddingAuthType.ApiKey);
+
+            Assert.AreNotSame(a, b);
+            Assert.IsTrue(a.Equals(b));
+            Assert.IsTrue(a.Equals((object)b));
+            Assert.AreEqual(a.GetHashCode(), b.GetHashCode());
+
+            Cosmos.EmbeddingSource differentAuth = Build("text-embedding-3-small", Cosmos.EmbeddingAuthType.Entra);
+            Assert.IsFalse(a.Equals(differentAuth));
+
+            Cosmos.EmbeddingSource reorderedPaths = Build("text-embedding-3-small", Cosmos.EmbeddingAuthType.ApiKey);
+            reorderedPaths.SourcePaths = new Collection<string> { "/abstract", "/title" };
+            Assert.IsFalse(a.Equals(reorderedPaths));
+
+            Assert.IsFalse(a.Equals((Cosmos.EmbeddingSource)null));
+            Assert.IsFalse(a.Equals((object)null));
+
+            Cosmos.Embedding e1 = new Cosmos.Embedding()
+            {
+                Path = "/embedding",
+                DataType = Cosmos.VectorDataType.Float32,
+                DistanceFunction = Cosmos.DistanceFunction.Cosine,
+                Dimensions = 1536,
+                EmbeddingSource = a,
+            };
+            Cosmos.Embedding e2 = new Cosmos.Embedding()
+            {
+                Path = "/embedding",
+                DataType = Cosmos.VectorDataType.Float32,
+                DistanceFunction = Cosmos.DistanceFunction.Cosine,
+                Dimensions = 1536,
+                EmbeddingSource = b,
+            };
+            Assert.IsTrue(e1.Equals(e2));
         }
 
         [TestMethod]
