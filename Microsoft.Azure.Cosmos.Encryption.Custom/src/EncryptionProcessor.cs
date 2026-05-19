@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 input,
                 encryptor,
                 requestOptions.EncryptionOptions,
-                requestOptions.GetJsonProcessor(),
+                requestOptions.GetJsonProcessor(requestOptions.EncryptionOptions?.JsonProcessor ?? JsonProcessor.Newtonsoft),
                 diagnosticsContext,
                 cancellationToken);
         }
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 input,
                 encryptor,
                 requestOptions.EncryptionOptions,
-                requestOptions.GetJsonProcessor(),
+                requestOptions.GetJsonProcessor(requestOptions.EncryptionOptions?.JsonProcessor ?? JsonProcessor.Newtonsoft),
                 diagnosticsContext,
                 cancellationToken);
         }

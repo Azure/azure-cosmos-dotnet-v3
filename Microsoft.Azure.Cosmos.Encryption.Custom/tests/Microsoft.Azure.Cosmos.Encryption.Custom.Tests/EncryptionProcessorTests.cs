@@ -224,6 +224,95 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 Assert.IsTrue(ex.Message.IndexOf("not supported", StringComparison.OrdinalIgnoreCase) >= 0, $"Unexpected message: {ex.Message}");
             }
         }
+
+        [DataTestMethod]
+        [DataRow(JsonProcessor.Newtonsoft)]
+        [DataRow(JsonProcessor.Stream)]
+        public async Task EncryptDecryptRoundtrip_EncryptionOptionsJsonProcessor(JsonProcessor processor)
+        {
+            TestDoc doc = TestDoc.Create();
+            EncryptionOptions opts = new()
+            {
+                DataEncryptionKeyId = DekId,
+#pragma warning disable CS0618
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+#pragma warning restore CS0618
+                PathsToEncrypt = TestDoc.PathsToEncrypt,
+                JsonProcessor = processor,
+            };
+
+            EncryptionItemRequestOptions requestOptions = new() { EncryptionOptions = opts };
+
+            CosmosDiagnosticsContext diagEncrypt = CosmosDiagnosticsContext.Create(null);
+            Stream encrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, requestOptions, diagEncrypt, CancellationToken.None);
+            encrypted.Position = 0;
+
+            CosmosDiagnosticsContext diagDecrypt = CosmosDiagnosticsContext.Create(null);
+            (Stream decrypted, DecryptionContext ctx) = await EncryptionProcessor.DecryptAsync(encrypted, mockEncryptor.Object, diagDecrypt, CancellationToken.None);
+
+            decrypted.Position = 0;
+            JObject decryptedObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(decrypted);
+            Assert.AreEqual(doc.SensitiveStr, decryptedObj.Property(nameof(TestDoc.SensitiveStr)).Value.Value<string>());
+            Assert.IsNull(decryptedObj.Property(Constants.EncryptedInfo));
+            Assert.IsNotNull(ctx);
+        }
+
+        [TestMethod]
+        public async Task RequestOptionsOverride_WinsOver_EncryptionOptionsJsonProcessor()
+        {
+            TestDoc doc = TestDoc.Create();
+            EncryptionOptions opts = new()
+            {
+                DataEncryptionKeyId = DekId,
+#pragma warning disable CS0618
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+#pragma warning restore CS0618
+                PathsToEncrypt = TestDoc.PathsToEncrypt,
+                JsonProcessor = JsonProcessor.Newtonsoft, // override below should win
+            };
+
+            EncryptionItemRequestOptions requestOptions = new()
+            {
+                EncryptionOptions = opts,
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Stream }
+                }
+            };
+
+            List<Activity> capturedActivities = new List<Activity>();
+            using ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = (activitySource) => activitySource.Name == "Microsoft.Azure.Cosmos.Encryption.Custom",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStarted = activity => { lock (capturedActivities) { capturedActivities.Add(activity); } }
+            };
+            ActivitySource.AddActivityListener(listener);
+
+            CosmosDiagnosticsContext diagEncrypt = CosmosDiagnosticsContext.Create(null);
+            Stream encrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, requestOptions, diagEncrypt, CancellationToken.None);
+            encrypted.Position = 0;
+
+            // Activity assertion: override (Stream) should have been used for encrypt
+            string expectedScope = CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + JsonProcessor.Stream;
+            lock (capturedActivities)
+            {
+                Assert.IsTrue(capturedActivities.Any(a => a.DisplayName == expectedScope),
+                    $"Expected Stream encrypt scope '{expectedScope}' to be used (override should win). Activities: {string.Join(", ", capturedActivities.Select(a => a.DisplayName))}");
+            }
+
+            // Full roundtrip: decrypt using the same requestOptions override and verify payload
+            CosmosDiagnosticsContext diagDecrypt = CosmosDiagnosticsContext.Create(null);
+            (Stream decrypted, DecryptionContext ctx) = await EncryptionProcessor.DecryptAsync(encrypted, mockEncryptor.Object, diagDecrypt, requestOptions, CancellationToken.None);
+
+            decrypted.Position = 0;
+            JObject decryptedObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(decrypted);
+
+            Assert.AreEqual(doc.SensitiveStr, decryptedObj.Property(nameof(TestDoc.SensitiveStr)).Value.Value<string>());
+            Assert.AreEqual(doc.SensitiveInt, decryptedObj.Property(nameof(TestDoc.SensitiveInt)).Value.Value<int>());
+            Assert.IsNull(decryptedObj.Property(Constants.EncryptedInfo), "_ei should be absent after decryption");
+            Assert.IsNotNull(ctx, "DecryptionContext should be non-null");
+        }
 #endif
     }
 }

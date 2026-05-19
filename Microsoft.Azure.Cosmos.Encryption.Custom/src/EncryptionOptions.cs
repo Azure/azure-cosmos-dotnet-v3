@@ -35,5 +35,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// Example of a path specification: /sensitive
         /// </summary>
         public IEnumerable<string> PathsToEncrypt { get; set; }
+
+        /// <summary>
+        /// Gets or sets the JSON processor to use for encryption of this operation.
+        /// </summary>
+        /// <remarks>
+        /// This controls the encrypt-side processor for the operation.
+        /// If <see cref="global::Microsoft.Azure.Cosmos.RequestOptions.Properties"/> contains the key "encryption-json-processor",
+        /// that value takes precedence over this setting.
+        /// Defaults to <see cref="JsonProcessor.Newtonsoft"/>.
+        /// <c>JsonProcessor.Stream</c> is available only in the .NET 8 package (net8.0 target framework).
+        /// </remarks>
+        public JsonProcessor JsonProcessor { get; set; } = JsonProcessor.Newtonsoft;
     }
 }

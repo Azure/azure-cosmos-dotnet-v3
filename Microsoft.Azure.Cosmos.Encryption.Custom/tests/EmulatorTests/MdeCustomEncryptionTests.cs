@@ -650,21 +650,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
 
         private static EncryptionItemRequestOptions CreateEncryptionItemRequestOptions(string dekId, string encryptionAlgorithm, JsonProcessor jsonProcessor)
         {
-            EncryptionItemRequestOptions options = new ()
+            EncryptionOptions encryptionOptions = new EncryptionOptions
             {
-                EncryptionOptions = new EncryptionOptions
-                {
-                    DataEncryptionKeyId = dekId,
-                    EncryptionAlgorithm = encryptionAlgorithm,
-                    PathsToEncrypt = new List<string> { "/Sensitive" },
-                },
-                Properties = new Dictionary<string, object>
-                {
-                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, jsonProcessor.ToString() }
-                }
+                DataEncryptionKeyId = dekId,
+                EncryptionAlgorithm = encryptionAlgorithm,
+                PathsToEncrypt = new List<string> { "/Sensitive" },
+#if NET8_0_OR_GREATER
+                JsonProcessor = jsonProcessor,
+#endif
             };
 
-            return options;
+            return new EncryptionItemRequestOptions
+            {
+                EncryptionOptions = encryptionOptions,
+            };
         }
 
         [TestMethod]
@@ -850,14 +849,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             }
         }
 
-        [TestMethod]
-        public async Task EncryptionCreateItem()
+        [DataTestMethod]
+        [DataRow(JsonProcessor.Newtonsoft)]
+#if NET8_0_OR_GREATER
+        [DataRow(JsonProcessor.Stream)]
+#endif
+        public async Task EncryptionCreateItem(JsonProcessor processor = JsonProcessor.Newtonsoft)
         {
-            TestDoc testDoc = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
+            TestDoc testDoc = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt, processor: processor);
 
-            await VerifyItemByReadAsync(encryptionContainer, testDoc);
+            ItemRequestOptions readOptions = GetReadItemRequestOptions(processor);
+            await VerifyItemByReadAsync(encryptionContainer, testDoc, requestOptions: readOptions);
 
-            await VerifyItemByReadStreamAsync(encryptionContainer, testDoc);
+            await VerifyItemByReadStreamAsync(encryptionContainer, testDoc, requestOptions: readOptions);
 
             TestDoc expectedDoc = new(testDoc);
 
@@ -867,13 +871,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             await MdeCustomEncryptionTests.ValidateQueryResultsAsync(
                 MdeCustomEncryptionTests.encryptionContainer,
                 query: null,
-                expectedDoc);
+                expectedDoc,
+                processor: processor);
 #endif
 
             await ValidateQueryResultsAsync(
                 encryptionContainer,
                 "SELECT * FROM c",
-                expectedDoc);
+                expectedDoc,
+                processor: processor);
 
             await ValidateQueryResultsAsync(
                 encryptionContainer,
@@ -882,12 +888,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                     expectedDoc.PK,
                     expectedDoc.Id,
                     expectedDoc.NonSensitive),
-                expectedDoc);
+                expectedDoc,
+                processor: processor);
 
             await ValidateQueryResultsAsync(
                 encryptionContainer,
                 string.Format("SELECT * FROM c where c.Sensitive_IntFormat = '{0}'", testDoc.Sensitive_IntFormat),
-                expectedDoc: null);
+                expectedDoc: null,
+                processor: processor);
 
             await ValidateQueryResultsAsync(
                 encryptionContainer,
@@ -895,7 +903,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                     "select * from c where c.id = @theId and c.PK = @thePK")
                          .WithParameter("@theId", expectedDoc.Id)
                          .WithParameter("@thePK", expectedDoc.PK),
-                expectedDoc: expectedDoc);
+                expectedDoc: expectedDoc,
+                processor: processor);
 
             expectedDoc.Sensitive_NestedObjectFormatL1 = null;
             expectedDoc.Sensitive_ArrayFormat = null;
@@ -909,7 +918,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             await ValidateQueryResultsAsync(
                 encryptionContainer,
                 "SELECT c.id, c.PK, c.NonSensitive FROM c",
-                expectedDoc);
+                expectedDoc,
+                processor: processor);
         }
 
         [TestMethod]
@@ -921,14 +931,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             encryptableItem.DecryptableItem.GetItemAsync<TestDoc>();
         }
 
-        [TestMethod]
-        public async Task EncryptionCreateItemWithLazyDecryption()
+        [DataTestMethod]
+        [DataRow(JsonProcessor.Newtonsoft)]
+#if NET8_0_OR_GREATER
+        [DataRow(JsonProcessor.Stream)]
+#endif
+        public async Task EncryptionCreateItemWithLazyDecryption(JsonProcessor processor = JsonProcessor.Newtonsoft)
         {
             TestDoc testDoc = TestDoc.Create();
             ItemResponse<EncryptableItem<TestDoc>> createResponse = await encryptionContainer.CreateItemAsync(
                 new EncryptableItem<TestDoc>(testDoc),
                 new PartitionKey(testDoc.PK),
-                GetRequestOptions(dekId, TestDoc.PathsToEncrypt));
+                GetRequestOptions(dekId, TestDoc.PathsToEncrypt, processor: processor));
 
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
             Assert.IsNotNull(createResponse.Resource);
@@ -940,7 +954,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             ItemResponse<EncryptableItemStream> createResponseStream = await encryptionContainer.CreateItemAsync(
                 new EncryptableItemStream(TestCommon.ToStream(testDoc1)),
                 new PartitionKey(testDoc1.PK),
-                GetRequestOptions(dekId, TestDoc.PathsToEncrypt));
+                GetRequestOptions(dekId, TestDoc.PathsToEncrypt, processor: processor));
 
             Assert.AreEqual(HttpStatusCode.Created, createResponseStream.StatusCode);
             Assert.IsNotNull(createResponseStream.Resource);
@@ -1113,17 +1127,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             await ValidateQueryResponseAsync(encryptionContainer);
         }
 
-        [TestMethod]
-        public async Task EncryptionRudItem()
+        [DataTestMethod]
+        [DataRow(JsonProcessor.Newtonsoft)]
+#if NET8_0_OR_GREATER
+        [DataRow(JsonProcessor.Stream)]
+#endif
+        public async Task EncryptionRudItem(JsonProcessor processor = JsonProcessor.Newtonsoft)
         {
             TestDoc testDoc = await UpsertItemAsync(
                 encryptionContainer,
                 TestDoc.Create(),
                 dekId,
                 TestDoc.PathsToEncrypt,
-                HttpStatusCode.Created);
+                HttpStatusCode.Created,
+                processor);
 
-            await VerifyItemByReadAsync(encryptionContainer, testDoc);
+            ItemRequestOptions readOptions = GetReadItemRequestOptions(processor);
+            await VerifyItemByReadAsync(encryptionContainer, testDoc, requestOptions: readOptions);
 
             testDoc.NonSensitive = Guid.NewGuid().ToString();
             testDoc.Sensitive_StringFormat = Guid.NewGuid().ToString();
@@ -1133,10 +1153,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 testDoc,
                 dekId,
                 TestDoc.PathsToEncrypt,
-                HttpStatusCode.OK);
+                HttpStatusCode.OK,
+                processor);
             TestDoc updatedDoc = upsertResponse.Resource;
 
-            await VerifyItemByReadAsync(encryptionContainer, updatedDoc);
+            await VerifyItemByReadAsync(encryptionContainer, updatedDoc, requestOptions: readOptions);
 
             updatedDoc.NonSensitive = Guid.NewGuid().ToString();
             updatedDoc.Sensitive_StringFormat = Guid.NewGuid().ToString();
@@ -1146,28 +1167,35 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 updatedDoc,
                 dekId,
                 TestDoc.PathsToEncrypt,
-                upsertResponse.ETag);
+                upsertResponse.ETag,
+                processor);
 
-            await VerifyItemByReadAsync(encryptionContainer, replacedDoc);
+            await VerifyItemByReadAsync(encryptionContainer, replacedDoc, requestOptions: readOptions);
 
             await DeleteItemAsync(encryptionContainer, replacedDoc);
         }
 
-        [TestMethod]
-        public async Task EncryptionRudItemLazyDecryption()
+        [DataTestMethod]
+        [DataRow(JsonProcessor.Newtonsoft)]
+#if NET8_0_OR_GREATER
+        [DataRow(JsonProcessor.Stream)]
+#endif
+        public async Task EncryptionRudItemLazyDecryption(JsonProcessor processor = JsonProcessor.Newtonsoft)
         {
             TestDoc testDoc = TestDoc.Create();
             // Upsert (item doesn't exist)
             ItemResponse<EncryptableItem<TestDoc>> upsertResponse = await encryptionContainer.UpsertItemAsync(
                 new EncryptableItem<TestDoc>(testDoc),
                 new PartitionKey(testDoc.PK),
-                GetRequestOptions(dekId, TestDoc.PathsToEncrypt));
+                GetRequestOptions(dekId, TestDoc.PathsToEncrypt, processor: processor));
 
             Assert.AreEqual(HttpStatusCode.Created, upsertResponse.StatusCode);
             Assert.IsNotNull(upsertResponse.Resource);
 
             await ValidateDecryptableItem(upsertResponse.Resource.DecryptableItem, testDoc);
-            await VerifyItemByReadAsync(encryptionContainer, testDoc);
+
+            ItemRequestOptions readOptions = GetReadItemRequestOptions(processor);
+            await VerifyItemByReadAsync(encryptionContainer, testDoc, requestOptions: readOptions);
 
             // Upsert with stream (item exists)
             testDoc.NonSensitive = Guid.NewGuid().ToString();
@@ -1176,13 +1204,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             ItemResponse<EncryptableItemStream> upsertResponseStream = await encryptionContainer.UpsertItemAsync(
                 new EncryptableItemStream(TestCommon.ToStream(testDoc)),
                 new PartitionKey(testDoc.PK),
-                GetRequestOptions(dekId, TestDoc.PathsToEncrypt));
+                GetRequestOptions(dekId, TestDoc.PathsToEncrypt, processor: processor));
 
             Assert.AreEqual(HttpStatusCode.OK, upsertResponseStream.StatusCode);
             Assert.IsNotNull(upsertResponseStream.Resource);
 
             await ValidateDecryptableItem(upsertResponseStream.Resource.DecryptableItem, testDoc);
-            await VerifyItemByReadAsync(encryptionContainer, testDoc);
+            await VerifyItemByReadAsync(encryptionContainer, testDoc, requestOptions: readOptions);
 
             // replace
             testDoc.NonSensitive = Guid.NewGuid().ToString();
@@ -1192,13 +1220,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 new EncryptableItemStream(TestCommon.ToStream(testDoc)),
                 testDoc.Id,
                 new PartitionKey(testDoc.PK),
-                GetRequestOptions(dekId, TestDoc.PathsToEncrypt, upsertResponseStream.ETag));
+                GetRequestOptions(dekId, TestDoc.PathsToEncrypt, upsertResponseStream.ETag, processor: processor));
 
             Assert.AreEqual(HttpStatusCode.OK, replaceResponseStream.StatusCode);
             Assert.IsNotNull(replaceResponseStream.Resource);
 
             await ValidateDecryptableItem(replaceResponseStream.Resource.DecryptableItem, testDoc);
-            await VerifyItemByReadAsync(encryptionContainer, testDoc);
+            await VerifyItemByReadAsync(encryptionContainer, testDoc, requestOptions: readOptions);
 
             await DeleteItemAsync(encryptionContainer, testDoc);
         }
@@ -1328,8 +1356,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             await Task.WhenAll(tasks);
         }
 
-        [TestMethod]
-        public async Task EncryptionTransactionBatchCrud()
+        [DataTestMethod]
+        [DataRow(JsonProcessor.Newtonsoft)]
+#if NET8_0_OR_GREATER
+        [DataRow(JsonProcessor.Stream)]
+#endif
+        public async Task EncryptionTransactionBatchCrud(JsonProcessor processor = JsonProcessor.Newtonsoft)
         {
             string partitionKey = "thePK";
             string dek1 = dekId;
@@ -1341,35 +1373,35 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             TestDoc doc3ToCreate = TestDoc.Create(partitionKey);
             TestDoc doc4ToCreate = TestDoc.Create(partitionKey);
 
-            ItemResponse<TestDoc> doc1ToReplaceCreateResponse = await CreateItemAsync(encryptionContainer, dek1, TestDoc.PathsToEncrypt, partitionKey);
+            ItemResponse<TestDoc> doc1ToReplaceCreateResponse = await CreateItemAsync(encryptionContainer, dek1, TestDoc.PathsToEncrypt, partitionKey, processor: processor);
             TestDoc doc1ToReplace = doc1ToReplaceCreateResponse.Resource;
             doc1ToReplace.NonSensitive = Guid.NewGuid().ToString();
             doc1ToReplace.Sensitive_StringFormat = Guid.NewGuid().ToString();
 
-            TestDoc doc2ToReplace = await CreateItemAsync(encryptionContainer, dek2, TestDoc.PathsToEncrypt, partitionKey);
+            TestDoc doc2ToReplace = await CreateItemAsync(encryptionContainer, dek2, TestDoc.PathsToEncrypt, partitionKey, processor: processor);
             doc2ToReplace.NonSensitive = Guid.NewGuid().ToString();
             doc2ToReplace.Sensitive_StringFormat = Guid.NewGuid().ToString();
 
-            TestDoc doc1ToUpsert = await CreateItemAsync(encryptionContainer, dek2, TestDoc.PathsToEncrypt, partitionKey);
+            TestDoc doc1ToUpsert = await CreateItemAsync(encryptionContainer, dek2, TestDoc.PathsToEncrypt, partitionKey, processor: processor);
             doc1ToUpsert.NonSensitive = Guid.NewGuid().ToString();
             doc1ToUpsert.Sensitive_StringFormat = Guid.NewGuid().ToString();
 
-            TestDoc doc2ToUpsert = await CreateItemAsync(encryptionContainer, dek1, TestDoc.PathsToEncrypt, partitionKey);
+            TestDoc doc2ToUpsert = await CreateItemAsync(encryptionContainer, dek1, TestDoc.PathsToEncrypt, partitionKey, processor: processor);
             doc2ToUpsert.NonSensitive = Guid.NewGuid().ToString();
             doc2ToUpsert.Sensitive_StringFormat = Guid.NewGuid().ToString();
 
-            TestDoc docToDelete = await CreateItemAsync(encryptionContainer, dek1, TestDoc.PathsToEncrypt, partitionKey);
+            TestDoc docToDelete = await CreateItemAsync(encryptionContainer, dek1, TestDoc.PathsToEncrypt, partitionKey, processor: processor);
 
             TransactionalBatchResponse batchResponse = await encryptionContainer.CreateTransactionalBatch(new PartitionKey(partitionKey))
-                .CreateItem(doc1ToCreate, GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt))
-                .CreateItemStream(doc2ToCreate.ToStream(), GetBatchItemRequestOptions(dek2, TestDoc.PathsToEncrypt))
-                .ReplaceItem(doc1ToReplace.Id, doc1ToReplace, GetBatchItemRequestOptions(dek2, TestDoc.PathsToEncrypt, doc1ToReplaceCreateResponse.ETag))
+                .CreateItem(doc1ToCreate, GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt, processor: processor))
+                .CreateItemStream(doc2ToCreate.ToStream(), GetBatchItemRequestOptions(dek2, TestDoc.PathsToEncrypt, processor: processor))
+                .ReplaceItem(doc1ToReplace.Id, doc1ToReplace, GetBatchItemRequestOptions(dek2, TestDoc.PathsToEncrypt, doc1ToReplaceCreateResponse.ETag, processor))
                 .CreateItem(doc3ToCreate)
-                .CreateItem(doc4ToCreate, GetBatchItemRequestOptions(dek1, new List<string>())) // empty PathsToEncrypt list
-                .ReplaceItemStream(doc2ToReplace.Id, doc2ToReplace.ToStream(), GetBatchItemRequestOptions(dek2, TestDoc.PathsToEncrypt))
-                .UpsertItem(doc1ToUpsert, GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt))
+                .CreateItem(doc4ToCreate, GetBatchItemRequestOptions(dek1, new List<string>(), processor: processor)) // empty PathsToEncrypt list
+                .ReplaceItemStream(doc2ToReplace.Id, doc2ToReplace.ToStream(), GetBatchItemRequestOptions(dek2, TestDoc.PathsToEncrypt, processor: processor))
+                .UpsertItem(doc1ToUpsert, GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt, processor: processor))
                 .DeleteItem(docToDelete.Id)
-                .UpsertItemStream(doc2ToUpsert.ToStream(), GetBatchItemRequestOptions(dek2, TestDoc.PathsToEncrypt))
+                .UpsertItemStream(doc2ToUpsert.ToStream(), GetBatchItemRequestOptions(dek2, TestDoc.PathsToEncrypt, processor: processor))
                 .ExecuteAsync();
 
             Assert.AreEqual(HttpStatusCode.OK, batchResponse.StatusCode);
@@ -1398,14 +1430,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             TransactionalBatchOperationResult<TestDoc> doc8 = batchResponse.GetOperationResultAtIndex<TestDoc>(8);
             VerifyExpectedDocResponse(doc2ToUpsert, doc8.Resource);
 
-            await VerifyItemByReadAsync(encryptionContainer, doc1ToCreate);
-            await VerifyItemByReadAsync(encryptionContainer, doc2ToCreate, dekId: dek2);
-            await VerifyItemByReadAsync(encryptionContainer, doc3ToCreate, isDocDecrypted: false);
-            await VerifyItemByReadAsync(encryptionContainer, doc4ToCreate, isDocDecrypted: false);
-            await VerifyItemByReadAsync(encryptionContainer, doc1ToReplace, dekId: dek2);
-            await VerifyItemByReadAsync(encryptionContainer, doc2ToReplace, dekId: dek2);
-            await VerifyItemByReadAsync(encryptionContainer, doc1ToUpsert);
-            await VerifyItemByReadAsync(encryptionContainer, doc2ToUpsert, dekId: dek2);
+            ItemRequestOptions readOptions = GetReadItemRequestOptions(processor);
+            await VerifyItemByReadAsync(encryptionContainer, doc1ToCreate, requestOptions: readOptions);
+            await VerifyItemByReadAsync(encryptionContainer, doc2ToCreate, requestOptions: readOptions, dekId: dek2);
+            await VerifyItemByReadAsync(encryptionContainer, doc3ToCreate, requestOptions: readOptions, isDocDecrypted: false);
+            await VerifyItemByReadAsync(encryptionContainer, doc4ToCreate, requestOptions: readOptions, isDocDecrypted: false);
+            await VerifyItemByReadAsync(encryptionContainer, doc1ToReplace, requestOptions: readOptions, dekId: dek2);
+            await VerifyItemByReadAsync(encryptionContainer, doc2ToReplace, requestOptions: readOptions, dekId: dek2);
+            await VerifyItemByReadAsync(encryptionContainer, doc1ToUpsert, requestOptions: readOptions);
+            await VerifyItemByReadAsync(encryptionContainer, doc2ToUpsert, requestOptions: readOptions, dekId: dek2);
 
             ResponseMessage readResponseMessage = await encryptionContainer.ReadItemStreamAsync(docToDelete.Id, new PartitionKey(docToDelete.PK));
             Assert.AreEqual(HttpStatusCode.NotFound, readResponseMessage.StatusCode);
@@ -1617,7 +1650,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             TestDoc expectedDoc = null,
             QueryDefinition queryDefinition = null,
             List<string> pathsEncrypted = null,
-            bool legacyAlgo = false)
+            bool legacyAlgo = false,
+            JsonProcessor processor = JsonProcessor.Newtonsoft)
         {
             QueryRequestOptions requestOptions = expectedDoc != null
                 ? new QueryRequestOptions()
@@ -1625,6 +1659,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                     PartitionKey = new PartitionKey(expectedDoc.PK),
                 }
                 : null;
+
+#if NET8_0_OR_GREATER
+            if (processor == JsonProcessor.Stream)
+            {
+                requestOptions ??= new QueryRequestOptions();
+                requestOptions.Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Stream" }
+                };
+            }
+#endif
 
             FeedIterator<TestDoc> queryResponseIterator;
             FeedIterator<DecryptableItem> queryResponseIteratorForLazyDecryption;
@@ -2179,12 +2224,13 @@ cancellationToken) =>
             TestDoc testDoc,
             string dekId,
             List<string> pathsToEncrypt,
-            HttpStatusCode expectedStatusCode)
+            HttpStatusCode expectedStatusCode,
+            JsonProcessor processor = JsonProcessor.Newtonsoft)
         {
             ItemResponse<TestDoc> upsertResponse = await container.UpsertItemAsync(
                 testDoc,
                 new PartitionKey(testDoc.PK),
-                GetRequestOptions(dekId, pathsToEncrypt));
+                GetRequestOptions(dekId, pathsToEncrypt, processor: processor));
             Assert.AreEqual(expectedStatusCode, upsertResponse.StatusCode);
             VerifyExpectedDocResponse(testDoc, upsertResponse.Resource);
             return upsertResponse;
@@ -2195,13 +2241,14 @@ cancellationToken) =>
             string dekId,
             List<string> pathsToEncrypt,
             string partitionKey = null,
-            bool legacyAlgo = false)
+            bool legacyAlgo = false,
+            JsonProcessor processor = JsonProcessor.Newtonsoft)
         {
             TestDoc testDoc = TestDoc.Create(partitionKey);
             ItemResponse<TestDoc> createResponse = await container.CreateItemAsync(
                 testDoc,
                 new PartitionKey(testDoc.PK),
-                GetRequestOptions(dekId, pathsToEncrypt, legacyAlgo: legacyAlgo));
+                GetRequestOptions(dekId, pathsToEncrypt, legacyAlgo: legacyAlgo, processor: processor));
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
             VerifyExpectedDocResponse(testDoc, createResponse.Resource);
             return createResponse;
@@ -2212,13 +2259,14 @@ cancellationToken) =>
             TestDoc testDoc,
             string dekId,
             List<string> pathsToEncrypt,
-            string etag = null)
+            string etag = null,
+            JsonProcessor processor = JsonProcessor.Newtonsoft)
         {
             ItemResponse<TestDoc> replaceResponse = await encryptedContainer.ReplaceItemAsync(
                 testDoc,
                 testDoc.Id,
                 new PartitionKey(testDoc.PK),
-                GetRequestOptions(dekId, pathsToEncrypt, etag));
+                GetRequestOptions(dekId, pathsToEncrypt, etag, processor: processor));
 
             Assert.AreEqual(HttpStatusCode.OK, replaceResponse.StatusCode);
 
@@ -2244,36 +2292,52 @@ cancellationToken) =>
             string dekId,
             List<string> pathsToEncrypt,
             string ifMatchEtag = null,
-            bool legacyAlgo = false)
+            bool legacyAlgo = false,
+            JsonProcessor processor = JsonProcessor.Newtonsoft)
         {
-            if (!legacyAlgo)
+            EncryptionOptions encryptionOptions = legacyAlgo ? GetLegacyEncryptionOptions(dekId, pathsToEncrypt) : GetEncryptionOptions(dekId, pathsToEncrypt);
+#if NET8_0_OR_GREATER
+            encryptionOptions.JsonProcessor = processor;
+#endif
+            return new EncryptionItemRequestOptions
             {
-                return new EncryptionItemRequestOptions
-                {
-                    EncryptionOptions = GetEncryptionOptions(dekId, pathsToEncrypt),
-                    IfMatchEtag = ifMatchEtag
-                };
-            }
-            else
-            {
-                return new EncryptionItemRequestOptions
-                {
-                    EncryptionOptions = GetLegacyEncryptionOptions(dekId, pathsToEncrypt),
-                    IfMatchEtag = ifMatchEtag
-                };
-            }
+                EncryptionOptions = encryptionOptions,
+                IfMatchEtag = ifMatchEtag
+            };
         }
 
         private static EncryptionTransactionalBatchItemRequestOptions GetBatchItemRequestOptions(
             string dekId,
             List<string> pathsToEncrypt,
-            string ifMatchEtag = null)
+            string ifMatchEtag = null,
+            JsonProcessor processor = JsonProcessor.Newtonsoft)
         {
+            EncryptionOptions encryptionOptions = GetEncryptionOptions(dekId, pathsToEncrypt);
+#if NET8_0_OR_GREATER
+            encryptionOptions.JsonProcessor = processor;
+#endif
             return new EncryptionTransactionalBatchItemRequestOptions
             {
-                EncryptionOptions = GetEncryptionOptions(dekId, pathsToEncrypt),
+                EncryptionOptions = encryptionOptions,
                 IfMatchEtag = ifMatchEtag
             };
+        }
+
+        private static ItemRequestOptions GetReadItemRequestOptions(JsonProcessor processor)
+        {
+#if NET8_0_OR_GREATER
+            if (processor == JsonProcessor.Stream)
+            {
+                return new ItemRequestOptions
+                {
+                    Properties = new Dictionary<string, object>
+                    {
+                        { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Stream" }
+                    }
+                };
+            }
+#endif
+            return null;
         }
 
         private static EncryptionOptions GetEncryptionOptions(
@@ -2984,7 +3048,7 @@ cancellationToken) =>
                 expectedDoc);
 
             // create Items with New Algorithm
-            await this.EncryptionCreateItem();
+            await this.EncryptionCreateItem(JsonProcessor.Newtonsoft);
 
             // read back Data Items encrypted with Old Algorithm
             await VerifyItemByReadAsync(encryptionContainer, testDoc, dekId: legacydekId);
@@ -2999,7 +3063,7 @@ cancellationToken) =>
             await VerifyItemByReadStreamAsync(encryptionContainer, testDoc2);
 
             // create Items with New Algorithm
-            await this.EncryptionCreateItem();
+            await this.EncryptionCreateItem(JsonProcessor.Newtonsoft);
 
             // read back Data Items encrypted with Old Algorithm
             await VerifyItemByReadAsync(encryptionContainer, testDoc2, dekId: legacydekId);

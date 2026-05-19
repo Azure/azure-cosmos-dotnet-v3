@@ -38,10 +38,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             LegacyEncryptionProcessorTests.mockEncryptor = TestEncryptorFactory.CreateLegacy(dekId);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(JsonProcessors))]
-
-        internal async Task InvalidPathToEncrypt(JsonProcessor jsonProcessor)
+        // Legacy encryption (AEAes256CbcHmacSha256Randomized) is Newtonsoft-only by design;
+        // JsonProcessor.Stream is not exercised in these roundtrip tests intentionally.
+        [DataTestMethod]
+        [DataRow(JsonProcessor.Newtonsoft)]
+        public async Task InvalidPathToEncrypt(JsonProcessor processor)
         {
             TestDoc testDoc = TestDoc.Create();
             EncryptionOptions encryptionOptionsWithInvalidPathToEncrypt = new ()
@@ -55,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                     testDoc.ToStream(),
                     LegacyEncryptionProcessorTests.mockEncryptor.Object,
                     encryptionOptionsWithInvalidPathToEncrypt,
-                    jsonProcessor,
+                    processor,
                     new CosmosDiagnosticsContext(),
                     CancellationToken.None);
 
@@ -75,14 +76,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 invalidPathsConfigured: true);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(JsonProcessors))]
-        internal async Task EncryptDecryptPropertyWithNullValue(JsonProcessor jsonProcessor)
+        [DataTestMethod]
+        [DataRow(JsonProcessor.Newtonsoft)]
+        public async Task EncryptDecryptPropertyWithNullValue(JsonProcessor processor)
         {
             TestDoc testDoc = TestDoc.Create();
             testDoc.SensitiveStr = null;
 
-            JObject encryptedDoc = await LegacyEncryptionProcessorTests.VerifyEncryptionSucceeded(testDoc, jsonProcessor);
+            JObject encryptedDoc = await LegacyEncryptionProcessorTests.VerifyEncryptionSucceeded(testDoc, processor);
 
             (JObject decryptedDoc, DecryptionContext decryptionContext) = await EncryptionProcessor.DecryptAsync(
                 encryptedDoc,
@@ -97,13 +98,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 decryptionContext);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(JsonProcessors))]
-        internal async Task ValidateEncryptDecryptDocument(JsonProcessor jsonProcessor)
+        [DataTestMethod]
+        [DataRow(JsonProcessor.Newtonsoft)]
+        public async Task ValidateEncryptDecryptDocument(JsonProcessor processor)
         {
             TestDoc testDoc = TestDoc.Create();
 
-            JObject encryptedDoc = await LegacyEncryptionProcessorTests.VerifyEncryptionSucceeded(testDoc, jsonProcessor);
+            JObject encryptedDoc = await LegacyEncryptionProcessorTests.VerifyEncryptionSucceeded(testDoc, processor);
 
             (JObject decryptedDoc, DecryptionContext decryptionContext) = await EncryptionProcessor.DecryptAsync(
                 encryptedDoc,
@@ -118,9 +119,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 decryptionContext);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(JsonProcessors))]
-        internal async Task ValidateDecryptStream(JsonProcessor jsonProcessor)
+        [DataTestMethod]
+        [DataRow(JsonProcessor.Newtonsoft)]
+        public async Task ValidateDecryptStream(JsonProcessor processor)
         {
             TestDoc testDoc = TestDoc.Create();
 
@@ -128,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 testDoc.ToStream(),
                 LegacyEncryptionProcessorTests.mockEncryptor.Object,
                 LegacyEncryptionProcessorTests.encryptionOptions,
-                jsonProcessor,
+                processor,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
@@ -164,13 +165,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsNull(decryptionContext);
         }
 
-        private static async Task<JObject> VerifyEncryptionSucceeded(TestDoc testDoc, JsonProcessor jsonProcessor)
+        private static async Task<JObject> VerifyEncryptionSucceeded(TestDoc testDoc, JsonProcessor processor)
         {
             Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
                 testDoc.ToStream(),
                 LegacyEncryptionProcessorTests.mockEncryptor.Object,
                 LegacyEncryptionProcessorTests.encryptionOptions,
-                jsonProcessor,
+                processor,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
@@ -223,16 +224,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
         }
 
-        public static IEnumerable<object[]> JsonProcessors
-        {
-            get
-            {
-                    yield return new object[] { JsonProcessor.Newtonsoft };
-#if NET8_0_OR_GREATER
-                    yield return new object[] { JsonProcessor.Stream };
-#endif
-            }
-        }
     }
 
 #pragma warning restore CS0618 // Type or member is obsolete
