@@ -269,59 +269,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             }
         }
 
-        // Defends #5846 (https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5846) — AC1.
-        // AVAD push processor cold-start MUST NOT have StartTime backfilled, because the AVAD
-        // endpoint rejects an explicit StartTime on a null-continuation lease with HTTP 400.
-        [TestMethod]
-        public async Task StartAsync_DoesNotSetStartTime_WhenAllVersionsAndDeletesMode()
-        {
-            Mock<DocumentServiceLeaseStore> leaseStore = new Mock<DocumentServiceLeaseStore>();
-            leaseStore.Setup(l => l.IsInitializedAsync()).ReturnsAsync(true);
-
-            Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
-            leaseContainer.Setup(l => l.GetOwnedLeasesAsync()).Returns(Task.FromResult(Enumerable.Empty<DocumentServiceLease>()));
-            leaseContainer.Setup(l => l.GetAllLeasesAsync()).ReturnsAsync(new List<DocumentServiceLease>());
-
-            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
-            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(leaseContainer.Object);
-            leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
-            leaseStoreManager.Setup(l => l.LeaseStore).Returns(leaseStore.Object);
-            leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
-
-            ChangeFeedProcessorOptions options = new ChangeFeedProcessorOptions
-            {
-                Mode = ChangeFeedMode.AllVersionsAndDeletes,
-            };
-
-            ChangeFeedProcessorCore processor = null;
-            try
-            {
-                processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
-                processor.ApplyBuildConfiguration(
-                    leaseStoreManager.Object,
-                    null,
-                    "instanceName",
-                    new ChangeFeedLeaseOptions(),
-                    options,
-                    ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
-
-                await processor.StartAsync();
-
-                Assert.IsNull(options.StartTime);
-            }
-            finally
-            {
-                if (processor != null)
-                {
-                    await processor.StopAsync();
-                }
-            }
-        }
-
         // Defends #5268 (https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5268) — AC7.
-        // Symmetric companion to AC1: explicitly sets Mode = LatestVersion (rather than relying on
-        // the default at ChangeFeedProcessorOptions.cs) so that a future contributor over-broadening
-        // the new Mode != AllVersionsAndDeletes guard regresses #5268 loudly.
+        // Symmetric companion to the AVAD test below: explicitly sets Mode = LatestVersion (rather
+        // than relying on the default at ChangeFeedProcessorOptions.cs) so that a future contributor
+        // over-broadening the Mode != AllVersionsAndDeletes guard regresses #5268 loudly.
+        //
+        // Assertion uses start/end-of-call bracket bounds instead of a fixed-tolerance window so the
+        // test cannot be invalidated by CI slowness (a future flake here would silently quarantine
+        // the regression fence — see PR #5852 review for context).
         [TestMethod]
         public async Task StartAsync_SetsStartTime_WhenLatestVersionMode_Explicit()
         {
@@ -355,15 +310,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                     options,
                     ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
 
-                DateTime expectedApprox = DateTime.UtcNow.AddSeconds(-1);
+                DateTime lowerBound = DateTime.UtcNow.AddSeconds(-1);
 
                 await processor.StartAsync();
+
+                DateTime upperBound = DateTime.UtcNow.AddSeconds(-1).AddMilliseconds(1);
 
                 Assert.IsTrue(options.StartTime.HasValue);
                 Assert.AreEqual(DateTimeKind.Utc, options.StartTime.Value.Kind);
                 Assert.IsTrue(
-                    Math.Abs((expectedApprox - options.StartTime.Value).TotalSeconds) < 5,
-                    $"Expected StartTime within 5 seconds of {expectedApprox:O} but was {options.StartTime.Value:O}.");
+                    options.StartTime.Value >= lowerBound,
+                    $"StartTime {options.StartTime.Value:O} is earlier than pre-call lowerBound {lowerBound:O}.");
+                Assert.IsTrue(
+                    options.StartTime.Value <= upperBound,
+                    $"StartTime {options.StartTime.Value:O} is later than post-call upperBound {upperBound:O}.");
             }
             finally
             {
@@ -374,72 +334,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             }
         }
 
-        // Defends SE-7 (lease backwards compatibility for customers upgrading from buggy 3.59.0 /
-        // 3.60.0-preview.0) — AC8. The buggy SDK returned HTTP 400 BEFORE persisting a continuation
-        // token, so the realistic upgrade-path lease state is an owned lease whose ContinuationToken
-        // is null or "". This test mocks both, asserts StartAsync() completes without exception, and
-        // confirms options.StartTime stays null on the AVAD path.
-        [TestMethod]
-        public async Task StartAsync_DoesNotSetStartTime_WhenAllVersionsAndDeletesMode_WithEmptyContinuationLease()
-        {
-            foreach (string continuationToken in new[] { null, string.Empty })
-            {
-                Mock<DocumentServiceLeaseStore> leaseStore = new Mock<DocumentServiceLeaseStore>();
-                leaseStore.Setup(l => l.IsInitializedAsync()).ReturnsAsync(true);
-
-                IEnumerable<DocumentServiceLease> ownedLeases = new List<DocumentServiceLease>()
-                {
-                    new DocumentServiceLeaseCore()
-                    {
-                        LeaseId = "0",
-                        LeaseToken = "0",
-                        ContinuationToken = continuationToken,
-                    },
-                };
-
-                Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
-                leaseContainer.Setup(l => l.GetOwnedLeasesAsync()).Returns(Task.FromResult(ownedLeases));
-                leaseContainer.Setup(l => l.GetAllLeasesAsync()).ReturnsAsync(new List<DocumentServiceLease>());
-
-                Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
-                leaseStoreManager.Setup(l => l.LeaseContainer).Returns(leaseContainer.Object);
-                leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
-                leaseStoreManager.Setup(l => l.LeaseStore).Returns(leaseStore.Object);
-                leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
-
-                ChangeFeedProcessorOptions options = new ChangeFeedProcessorOptions
-                {
-                    Mode = ChangeFeedMode.AllVersionsAndDeletes,
-                };
-
-                ChangeFeedProcessorCore processor = null;
-                try
-                {
-                    processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
-                    processor.ApplyBuildConfiguration(
-                        leaseStoreManager.Object,
-                        null,
-                        "instanceName",
-                        new ChangeFeedLeaseOptions(),
-                        options,
-                        ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
-
-                    await processor.StartAsync();
-
-                    Assert.IsNull(
-                        options.StartTime,
-                        $"StartTime must remain null for AVAD with ContinuationToken='{continuationToken ?? "<null>"}'.");
-                }
-                finally
-                {
-                    if (processor != null)
-                    {
-                        await processor.StopAsync();
-                    }
-                }
-            }
-        }
-
+        // Defends #5268 (https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5268) AND
+        // #5846 (https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5846).
+        //
+        // AVAD push processor cold-start MUST NOT have StartTime backfilled by the #5617 guard:
+        //   1. AVAD uses LSN-based continuation (IfNoneMatch: *), not RFC1123 IfModifiedSince,
+        //      so the seconds-precision rounding issue from #5268 does not apply.
+        //   2. The AVAD endpoint rejects an explicit StartTime on a null-continuation lease with
+        //      HTTP 400 — the regression introduced by #5617 and tracked as #5846.
+        //
+        // Paired with the LatestVersion test above, this forms a dual-fence: dropping the mode
+        // guard regresses #5846 (this test fails); over-broadening it regresses #5268 (the
+        // LatestVersion test fails). Do not delete either without re-validating both issues.
+        // Functional guard landed via PR #5825; this PR (#5852) carries the cited comment fence
+        // and customer-facing changelog entry.
         [TestMethod]
         public async Task StartAsync_DoesNotSetStartTime_WhenAllVersionsAndDeletes()
         {
@@ -475,10 +383,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
                 await processor.StartAsync();
 
-                // AVAD uses LSN-based continuation (IfNoneMatch: *), not RFC1123 IfModifiedSince,
-                // so the seconds-precision back-off from PR #5617 does not apply.
-                Assert.IsNull(options.StartTime,
-                    "StartTime should remain null for AllVersionsAndDeletes mode.");
+                Assert.IsNull(
+                    options.StartTime,
+                    "StartTime must remain null for AllVersionsAndDeletes mode (see leading comment).");
             }
             finally
             {

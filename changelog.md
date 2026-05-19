@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
-- [5852](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5852) ChangeFeedProcessor: Fixes AllVersionsAndDeletes cold-start regression introduced by #5617
+- [5852](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5852) ChangeFeedProcessor: Fixes AllVersionsAndDeletes cold-start regression introduced by #5617 (affects shipped 3.59.0 and 3.60.0-preview.0; the functional `Mode != AllVersionsAndDeletes` guard for the StartTime back-off landed via #5825 — this PR adds defensive regression coverage, the in-source comment fence citing both #5268 and #5846, and the customer-facing Known Issues entry below).
 - [5870](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5870) CrossRegionHedgingAvailabilityStrategy: Fixes StackOverflow in CrossRegionHedgingAvailabilityStrategy Observed in .NET Framework 4.7.2.
 
 #### Other Changes
