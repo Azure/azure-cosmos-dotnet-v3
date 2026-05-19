@@ -410,6 +410,18 @@ namespace Microsoft.Azure.Cosmos
         ReadConsistencyStrategy? ReadConsistencyStrategy { get; set; }
 
         /// <summary>
+        /// Gets or sets the client-wide default <see cref="ICosmosEmbeddingGenerator"/> used to generate
+        /// query-time vector embeddings for hybrid and vector-search queries.
+        /// </summary>
+        [JsonIgnore]
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        ICosmosEmbeddingGenerator EmbeddingGenerator { get; set; }
+
+        /// <summary>
         /// Sets the priority level for requests created using cosmos client.
         /// </summary>
         /// <remarks>
