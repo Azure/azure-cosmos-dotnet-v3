@@ -12,8 +12,14 @@ namespace Microsoft.Azure.Cosmos
 
     internal class DistributedReadTransactionCore : DistributedReadTransaction
     {
+        internal const string CommitAlreadyCalledMessage =
+            "CommitTransactionAsync has already been called on this transaction instance. " +
+            "A DistributedReadTransaction is single-use; to retry, construct a new " +
+            "DistributedReadTransaction with the same items.";
+
         private readonly CosmosClientContext clientContext;
         private readonly List<DistributedTransactionOperation> operations;
+        private int isCommitInvoked;
 
         internal DistributedReadTransactionCore(CosmosClientContext clientContext)
         {
@@ -44,9 +50,16 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
+        /// <inheritdoc/>
+        /// <exception cref="OperationCanceledException">Thrown if <paramref name="cancellationToken"/> is cancelled before or during the commit.</exception>
         public override async Task<DistributedTransactionResponse> CommitTransactionAsync(
             CancellationToken cancellationToken = default)
         {
+            if (Interlocked.CompareExchange(ref this.isCommitInvoked, DistributedTransactionConstants.CommitStarted, DistributedTransactionConstants.CommitNotStarted) != DistributedTransactionConstants.CommitNotStarted)
+            {
+                throw new InvalidOperationException(CommitAlreadyCalledMessage);
+            }
+
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 operations: this.operations,
                 clientContext: this.clientContext);

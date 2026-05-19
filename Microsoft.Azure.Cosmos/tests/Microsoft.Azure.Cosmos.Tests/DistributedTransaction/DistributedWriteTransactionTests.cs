@@ -418,9 +418,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Second commit must throw
             InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
                 () => tx.CommitTransactionAsync(CancellationToken.None));
-            Assert.IsTrue(ex.Message.Contains("already been called"));
-            Assert.IsTrue(ex.Message.Contains("construct a new DistributedWriteTransaction"),
-                "Error message should direct callers to the correct retry pattern.");
+            Assert.AreEqual(DistributedWriteTransactionCore.CommitAlreadyCalledMessage, ex.Message);
         }
 
         [TestMethod]
@@ -452,7 +450,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Second commit must still throw — the token was already issued
             InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
                 () => tx.CommitTransactionAsync(CancellationToken.None));
-            Assert.IsTrue(ex.Message.Contains("already been called"));
+            Assert.AreEqual(DistributedWriteTransactionCore.CommitAlreadyCalledMessage, ex.Message);
         }
 
         [TestMethod]
@@ -496,7 +494,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             // so a retry with a new idempotency token would risk a double-commit.
             InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
                 () => tx.CommitTransactionAsync(CancellationToken.None));
-            Assert.IsTrue(ex.Message.Contains("already been called"));
+            Assert.AreEqual(DistributedWriteTransactionCore.CommitAlreadyCalledMessage, ex.Message);
             Assert.AreEqual(1, invocationCount, "Second call must not re-attempt the network operation.");
         }
 
@@ -539,11 +537,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Retry with a fresh CancellationToken should still be rejected.
             InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
                 () => tx.CommitTransactionAsync(CancellationToken.None));
-            Assert.IsTrue(ex.Message.Contains("already been called"));
+            Assert.AreEqual(DistributedWriteTransactionCore.CommitAlreadyCalledMessage, ex.Message);
             Assert.AreEqual(1, invocationCount, "Second call must not re-attempt the network operation.");
         }
 
         [TestMethod]
+        [Description("Verifies that only one of N concurrent callers wins the Interlocked.CompareExchange gate. " +
+                     "Uses Task.Run + ManualResetEventSlim so that all racers hit CommitTransactionAsync from " +
+                     "separate thread-pool threads simultaneously, providing genuine concurrency coverage.")]
         public async Task CommitAsync_ConcurrentCalls_OnlyOneSucceeds()
         {
             int invocationCount = 0;
@@ -573,21 +574,43 @@ namespace Microsoft.Azure.Cosmos.Tests
             DistributedWriteTransaction tx = new DistributedWriteTransactionCore(contextMock.Object)
                 .CreateItem(Database, Container, new PartitionKey("pk"), "item-id", new TestItem());
 
-            Task<DistributedTransactionResponse> task1 = tx.CommitTransactionAsync(CancellationToken.None);
-            Task<DistributedTransactionResponse> task2 = tx.CommitTransactionAsync(CancellationToken.None);
+            const int RacerCount = 16;
+            using ManualResetEventSlim gate = new ManualResetEventSlim(initialState: false);
 
-            Exception caughtException = null;
-            try
+            // Spawn all racers on separate thread-pool threads, each blocked on the gate.
+            Task<DistributedTransactionResponse>[] tasks = new Task<DistributedTransactionResponse>[RacerCount];
+            for (int i = 0; i < RacerCount; i++)
             {
-                await Task.WhenAll(task1, task2);
-            }
-            catch (InvalidOperationException ex)
-            {
-                caughtException = ex;
+                tasks[i] = Task.Run(async () =>
+                {
+                    gate.Wait();
+                    return await tx.CommitTransactionAsync(CancellationToken.None);
+                });
             }
 
-            Assert.IsNotNull(caughtException, "One of the concurrent calls must throw InvalidOperationException.");
-            Assert.AreEqual(1, invocationCount, "Only one commit request should reach the network.");
+            gate.Set(); // release all racers simultaneously
+
+            int successCount = 0;
+            int rejectedCount = 0;
+            foreach (Task<DistributedTransactionResponse> t in tasks)
+            {
+                try
+                {
+                    await t;
+                    successCount++;
+                }
+                catch (InvalidOperationException)
+                {
+                    rejectedCount++;
+                }
+            }
+
+            Assert.AreEqual(1, successCount, "Exactly one racer should win the CompareExchange.");
+            Assert.AreEqual(RacerCount - 1, rejectedCount, "All other racers should be rejected by the guard.");
+            // This assertion is the key atomicity proof: without Interlocked, two threads could
+            // both read isCommitInvoked==CommitNotStarted before either writes CommitStarted,
+            // and invocationCount would be >1.
+            Assert.AreEqual(1, invocationCount, "The underlying commit pipeline must only fire once.");
         }
 
         // Helpers

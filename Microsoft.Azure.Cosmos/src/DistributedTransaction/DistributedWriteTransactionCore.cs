@@ -14,9 +14,17 @@ namespace Microsoft.Azure.Cosmos
 
     internal class DistributedWriteTransactionCore : DistributedWriteTransaction
     {
+        internal const string CommitAlreadyCalledMessage =
+            "CommitTransactionAsync has already been called on this transaction instance. " +
+            "A DistributedWriteTransaction is single-use because each commit generates a new " +
+            "idempotency token; a second call would bypass server-side duplicate detection and " +
+            "risk a double-commit. To retry, construct a new DistributedWriteTransaction with " +
+            "the same operations. If the previous commit's outcome is unknown (e.g., cancellation " +
+            "or network failure), verify the resulting state before retrying to avoid duplicate writes.";
+
         private readonly CosmosClientContext clientContext;
         private readonly List<DistributedTransactionOperation> operations;
-        private int commitCalled;
+        private int isCommitInvoked;
 
         internal DistributedWriteTransactionCore(CosmosClientContext clientContext)
         {
@@ -272,17 +280,22 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
+        /// <inheritdoc/>
+        /// <remarks>
+        /// Each call to <see cref="DistributedTransaction.CommitTransactionAsync"/> generates a unique
+        /// idempotency token that the server uses for duplicate detection during the SDK's internal
+        /// retries. A second call would generate a new token and bypass that server-side duplicate
+        /// detection, risking a double-commit. When the previous commit's outcome is unknown
+        /// (e.g., cancellation or network failure), verify the resulting state before retrying
+        /// to avoid duplicate writes.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">Thrown if <see cref="DistributedTransaction.CommitTransactionAsync"/> has already been called on this instance.</exception>
+        /// <exception cref="OperationCanceledException">Thrown if <paramref name="cancellationToken"/> is cancelled before or during the commit.</exception>
         public override async Task<DistributedTransactionResponse> CommitTransactionAsync(CancellationToken cancellationToken)
         {
-            if (Interlocked.CompareExchange(ref this.commitCalled, 1, 0) != 0)
+            if (Interlocked.CompareExchange(ref this.isCommitInvoked, DistributedTransactionConstants.CommitStarted, DistributedTransactionConstants.CommitNotStarted) != DistributedTransactionConstants.CommitNotStarted)
             {
-                throw new InvalidOperationException(
-                    "CommitTransactionAsync has already been called on this transaction instance. " +
-                    "A DistributedWriteTransaction is single-use because each commit generates a new " +
-                    "idempotency token; a second call would bypass server-side duplicate detection and " +
-                    "risk a double-commit. To retry, construct a new DistributedWriteTransaction with " +
-                    "the same operations. If the previous commit's outcome is unknown (e.g., cancellation " +
-                    "or network failure), verify the resulting state before retrying to avoid duplicate writes.");
+                throw new InvalidOperationException(CommitAlreadyCalledMessage);
             }
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
