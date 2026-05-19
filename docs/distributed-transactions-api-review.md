@@ -4,9 +4,10 @@
 **Document status:** Pre-announcement review draft  
 **Namespace:** `Microsoft.Azure.Cosmos`
 
-> **Changes since last draft** — two in-flight PRs address gaps identified in this review:
+> **Changes since last draft** — three in-flight PRs address gaps identified in this review:
 > - **PR #5884** (`users/Meghana-Palaparthi/dtx_double_commit_guardrail`): Adds single-use commit guardrail — `CommitTransactionAsync` throws `InvalidOperationException` on any second call.
 > - **PR #5885** (`users/Meghana-Palaparthi/dtx_gap_fixes`): Adds `GetOperationResultAtIndex<T>()` typed deserialization, per-operation `SessionToken` on request options, snapshot-isolation doc on read transactions, and `ResourceStream` ownership remarks.
+> - **PR #5869** (`users/Meghana-Palaparthi/dtx_consume_server_diagnostics`): Adds `Diagnostics` (`CosmosDiagnostics`) and `DiagnosticString` (coordinator-side) on `DistributedTransactionResponse`; integrates OpenTelemetry tracing for commits.
 
 ---
 
@@ -197,14 +198,23 @@ public class DistributedTransactionResponse
     // Zero-based indexer — matches the order operations were added to the transaction.
     public virtual DistributedTransactionOperationResult this[int index] { get; }
 
-    public virtual Headers      Headers            { get; }
-    public virtual string       ActivityId         { get; }
-    public virtual double       RequestCharge      { get; }  // see note below
-    public virtual HttpStatusCode StatusCode        { get; }  // promoted from failing op on 207
-    public virtual bool         IsSuccessStatusCode { get; }  // 200–299
-    public virtual string       ErrorMessage       { get; }
-    public virtual int          Count              { get; }
-    public virtual Guid         IdempotencyToken   { get; }  // auto-generated; reused across retries
+    public virtual Headers          Headers             { get; }
+    public virtual string           ActivityId          { get; }
+    public virtual double           RequestCharge       { get; }
+    public virtual HttpStatusCode   StatusCode          { get; }  // promoted from failing op on 207
+    public virtual bool             IsSuccessStatusCode { get; }  // 200–299
+    public virtual string           ErrorMessage        { get; }
+    public virtual int              Count               { get; }
+    public virtual Guid             IdempotencyToken    { get; }  // auto-generated; reused across internal retries
+    public virtual bool             IsRetriable         { get; }
+
+    // Client-side diagnostics across the full retry loop (address resolution,
+    // network, retries, latency). Non-null when returned from CommitTransactionAsync. (PR #5869)
+    public virtual CosmosDiagnostics Diagnostics        { get; }
+
+    // Coordinator-side diagnostic string describing the transaction outcome.
+    // Surfaced inside ErrorMessage on failed responses. (PR #5869)
+    public virtual string           DiagnosticString    { get; }
 
     public virtual IEnumerator<DistributedTransactionOperationResult> GetEnumerator();
     public void Dispose();
@@ -213,7 +223,9 @@ public class DistributedTransactionResponse
 
 #### Behavior
 - **Status code promotion.** For `207 Multi-Status` responses, the status code of the first failing operation (excluding `424 Failed Dependency`) is promoted to `response.StatusCode`. Operations that were aborted due to another operation's failure report `424`.
-- **`IdempotencyToken`.** A `Guid` auto-generated at commit time. The same token is reused for any internal retries, so callers can capture it for application-level deduplication across process boundaries.
+- **`IdempotencyToken`.** A `Guid` auto-generated at commit time and reused across any internal retries within the call. The token is returned for observability and correlation only — the API does not accept a caller-supplied token, so this cannot be used for exactly-once semantics across process restarts.
+- **`Diagnostics`** *(PR #5869)*. Client-side `CosmosDiagnostics` covering the full retry loop and per-attempt spans. Non-null in normal usage.
+- **`DiagnosticString`** *(PR #5869)*. Coordinator-side diagnostic from the server. On failed responses, it is also appended to `ErrorMessage` so customers see it in surfaced exceptions and logs without an extra accessor.
 - **`Dispose()`.** Disposes the `ResourceStream` on every operation result. Do not access `ResourceStream` after the response has been disposed.
 
 ---
@@ -263,7 +275,7 @@ Account accountA = response.GetOperationResultAtIndex<Account>(0).Resource;
 ### Auto-generated idempotency token
 The SDK auto-generates a `Guid` idempotency token for each `CommitTransactionAsync` call and reuses it across any internal retries. The committed token is returned in `DistributedTransactionResponse.IdempotencyToken`.
 
-**Customer implication:** Idempotency within a single `CommitTransactionAsync` call is handled automatically. For exactly-once semantics across process restarts (e.g., a crash after the server committed but before the client received the response), customers must persist the `IdempotencyToken` before calling commit and present it on retry. The current API does not accept a caller-supplied token.
+**Customer implication:** Idempotency within a single `CommitTransactionAsync` call is handled automatically. The returned token is for observability and correlation only — it lets callers correlate retries and log lines with server-side state. The API does **not** accept a caller-supplied idempotency token, so there is no built-in exactly-once guarantee across process restarts. If a process crashes after the server commits but before the SDK receives the response, the application is responsible for detecting and reconciling that state (e.g., by querying expected post-commit invariants before retrying).
 
 ### Single-use commit guardrail *(PR #5884)*
 `CommitTransactionAsync` may be called **exactly once** per transaction instance. A second call — even after a failure or cancellation — throws `InvalidOperationException`. This is intentional: each call would generate a new `Guid` idempotency token, bypassing the server-side duplicate detection that the auto-generated token provides.
@@ -493,15 +505,14 @@ if (!response.IsSuccessStatusCode)
 1. **No abort / rollback API.** By design — transactions can only be committed. Abandoning a transaction means simply not calling `CommitTransactionAsync`; the server will time out any uncommitted state.
 2. **No read-within-write.** `DistributedWriteTransaction` has no `ReadItem`. Atomic read-modify-write requires separate transactions.
 3. **Transaction instance is single-use** *(PR #5884)*. A second call to `CommitTransactionAsync` always throws `InvalidOperationException`. Build a new transaction for each retry.
-4. **No `Diagnostics` property.** Unlike all other SDK response types, `DistributedTransactionResponse` does not expose `CosmosDiagnostics`.
-5. **Operation count limit not documented.** The maximum number of operations per transaction is not stated.
-6. **Gateway-mode only.** Direct-mode connectivity is not supported.
-7. **Same-account only.** Cross-account transactions are not supported.
-8. **Limited `DistributedTransactionRequestOptions`.** No operation-level priority, TTL override, or throughput control group.
-9. **No operation count guard.** `TransactionalBatch` enforces a cap of 100 operations; DTX has no documented or enforced cap.
-10. **JSON-only wire protocol.** No HybridRow / binary encoding; `TransactionalBatch` uses binary encoding for both directions.
-11. **Custom `CosmosSerializer` not applied to `XxxStream` write variants.** `GetOperationResultAtIndex<T>()` honours the serializer *(resolved in PR #5885)*; however for stream-based write variants the caller is responsible for serialization.
-12. **Caller-supplied streams are not disposed by the SDK.** The stream lifecycle contract differs from `Container.CreateItemStreamAsync` and must be documented in XML comments.
+4. **Operation count limit not documented.** The maximum number of operations per transaction is not stated.
+5. **Gateway-mode only.** Direct-mode connectivity is not supported.
+6. **Same-account only.** Cross-account transactions are not supported.
+7. **Limited `DistributedTransactionRequestOptions`.** No operation-level priority, TTL override, or throughput control group.
+8. **No operation count guard.** `TransactionalBatch` enforces a cap of 100 operations; DTX has no documented or enforced cap.
+9. **JSON-only wire protocol.** No HybridRow / binary encoding; `TransactionalBatch` uses binary encoding for both directions.
+10. **Custom `CosmosSerializer` not applied to `XxxStream` write variants.** `GetOperationResultAtIndex<T>()` honours the serializer *(resolved in PR #5885)*; however for stream-based write variants the caller is responsible for serialization.
+11. **Caller-supplied streams are not disposed by the SDK.** The stream lifecycle contract differs from `Container.CreateItemStreamAsync` and must be documented in XML comments.
 
 ---
 
@@ -513,15 +524,11 @@ if (!response.IsSuccessStatusCode)
 
 3. **Operation count cap.** Should there be a documented and enforced maximum? What is the server-side limit?
 
-4. **`Diagnostics` property.** Should `DistributedTransactionResponse` expose `CosmosDiagnostics` before GA?
+4. **`SubStatusCodes` enum visibility.** Should the `SubStatusCodes` enum be made public so customers can match known values without magic numbers?
 
-5. **`SubStatusCodes` enum visibility.** Should the `SubStatusCodes` enum be made public so customers can match known values without magic numbers?
+5. **Mixed read/write transaction.** Is this on the roadmap? Combining `ReadItem` and write operations in one transaction is required for atomic read-modify-write.
 
-6. **`RequestCharge` semantics.** Is the top-level `RequestCharge` a sum of all per-operation charges or only the coordinator charge?
-
-7. **Mixed read/write transaction.** Is this on the roadmap? Combining `ReadItem` and write operations in one transaction is required for atomic read-modify-write.
-
-8. **Stream disposal contract.** Should the SDK dispose `streamPayload` after consuming it (matching `Container.CreateItemStreamAsync`), or explicitly document that it does not?
+6. **Stream disposal contract.** Should the SDK dispose `streamPayload` after consuming it (matching `Container.CreateItemStreamAsync`), or explicitly document that it does not?
 
 ---
 
