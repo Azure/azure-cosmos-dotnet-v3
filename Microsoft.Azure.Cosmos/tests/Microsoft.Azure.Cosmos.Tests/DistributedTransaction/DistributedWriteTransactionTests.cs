@@ -387,6 +387,209 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsFalse(response.IsSuccessStatusCode);
         }
 
+        // Double-commit guard
+
+        [TestMethod]
+        public async Task CommitAsync_CalledTwice_ThrowsInvalidOperationException()
+        {
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
+            contextMock
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<PartitionKey?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(BuildSuccessResponse(1));
+
+            DistributedWriteTransaction tx = new DistributedWriteTransactionCore(contextMock.Object)
+                .CreateItem(Database, Container, new PartitionKey("pk"), "item-id", new TestItem());
+
+            // First commit should succeed
+            DistributedTransactionResponse response = await tx.CommitTransactionAsync(CancellationToken.None);
+            Assert.IsTrue(response.IsSuccessStatusCode);
+
+            // Second commit must throw
+            InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => tx.CommitTransactionAsync(CancellationToken.None));
+            Assert.IsTrue(ex.Message.Contains("already been called"));
+            Assert.IsTrue(ex.Message.Contains("construct a new DistributedWriteTransaction"),
+                "Error message should direct callers to the correct retry pattern.");
+        }
+
+        [TestMethod]
+        public async Task CommitAsync_CalledAfterFailedCommit_ThrowsInvalidOperationException()
+        {
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
+            contextMock
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<PartitionKey?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(BuildErrorResponse(HttpStatusCode.Conflict));
+
+            DistributedWriteTransaction tx = new DistributedWriteTransactionCore(contextMock.Object)
+                .CreateItem(Database, Container, new PartitionKey("pk"), "item-id", new TestItem());
+
+            // First commit returns an error (but the call was made — idempotency token was consumed)
+            DistributedTransactionResponse response = await tx.CommitTransactionAsync(CancellationToken.None);
+            Assert.IsFalse(response.IsSuccessStatusCode);
+
+            // Second commit must still throw — the token was already issued
+            InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => tx.CommitTransactionAsync(CancellationToken.None));
+            Assert.IsTrue(ex.Message.Contains("already been called"));
+        }
+
+        [TestMethod]
+        [Description("Verifies that a transient network exception during commit still consumes the transaction instance. " +
+                     "Callers cannot distinguish 'request never sent' from 'request reached server, response lost', " +
+                     "so retrying with a fresh token would risk a double-commit.")]
+        public async Task CommitAsync_TransientExceptionFromNetwork_StillConsumesTransaction()
+        {
+            int invocationCount = 0;
+
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
+            contextMock
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<PartitionKey?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns<string, ResourceType, OperationType, RequestOptions, ContainerInternal, PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
+                    (uri, resType, opType, opts, container, pk, itemId, stream, enricher, trace, ct) =>
+                    {
+                        Interlocked.Increment(ref invocationCount);
+                        throw new HttpRequestException("Simulated transient network failure");
+                    });
+
+            DistributedWriteTransaction tx = new DistributedWriteTransactionCore(contextMock.Object)
+                .CreateItem(Database, Container, new PartitionKey("pk"), "item-id", new TestItem());
+
+            // First commit attempt: a transient network exception escapes to the caller.
+            await Assert.ThrowsExceptionAsync<HttpRequestException>(
+                () => tx.CommitTransactionAsync(CancellationToken.None));
+
+            // Second commit attempt: must throw InvalidOperationException, NOT re-attempt the network call.
+            // The SDK has no way to know whether the first attempt's request reached the server,
+            // so a retry with a new idempotency token would risk a double-commit.
+            InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => tx.CommitTransactionAsync(CancellationToken.None));
+            Assert.IsTrue(ex.Message.Contains("already been called"));
+            Assert.AreEqual(1, invocationCount, "Second call must not re-attempt the network operation.");
+        }
+
+        [TestMethod]
+        [Description("Verifies that user-initiated cancellation during commit still consumes the transaction instance.")]
+        public async Task CommitAsync_CancelledDuringCommit_StillConsumesTransaction()
+        {
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            int invocationCount = 0;
+
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
+            contextMock
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<PartitionKey?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns<string, ResourceType, OperationType, RequestOptions, ContainerInternal, PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
+                    (uri, resType, opType, opts, container, pk, itemId, stream, enricher, trace, ct) =>
+                    {
+                        Interlocked.Increment(ref invocationCount);
+                        cts.Cancel();
+                        ct.ThrowIfCancellationRequested();
+                        return Task.FromResult(BuildSuccessResponse(1));
+                    });
+
+            DistributedWriteTransaction tx = new DistributedWriteTransactionCore(contextMock.Object)
+                .CreateItem(Database, Container, new PartitionKey("pk"), "item-id", new TestItem());
+
+            await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+                () => tx.CommitTransactionAsync(cts.Token));
+
+            // Retry with a fresh CancellationToken should still be rejected.
+            InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => tx.CommitTransactionAsync(CancellationToken.None));
+            Assert.IsTrue(ex.Message.Contains("already been called"));
+            Assert.AreEqual(1, invocationCount, "Second call must not re-attempt the network operation.");
+        }
+
+        [TestMethod]
+        public async Task CommitAsync_ConcurrentCalls_OnlyOneSucceeds()
+        {
+            int invocationCount = 0;
+
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
+            contextMock
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<PartitionKey?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns<string, ResourceType, OperationType, RequestOptions, ContainerInternal, PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
+                    async (uri, resType, opType, opts, container, pk, itemId, stream, enricher, trace, ct) =>
+                    {
+                        Interlocked.Increment(ref invocationCount);
+                        await Task.Delay(50, ct);
+                        return BuildSuccessResponse(1);
+                    });
+
+            DistributedWriteTransaction tx = new DistributedWriteTransactionCore(contextMock.Object)
+                .CreateItem(Database, Container, new PartitionKey("pk"), "item-id", new TestItem());
+
+            Task<DistributedTransactionResponse> task1 = tx.CommitTransactionAsync(CancellationToken.None);
+            Task<DistributedTransactionResponse> task2 = tx.CommitTransactionAsync(CancellationToken.None);
+
+            Exception caughtException = null;
+            try
+            {
+                await Task.WhenAll(task1, task2);
+            }
+            catch (InvalidOperationException ex)
+            {
+                caughtException = ex;
+            }
+
+            Assert.IsNotNull(caughtException, "One of the concurrent calls must throw InvalidOperationException.");
+            Assert.AreEqual(1, invocationCount, "Only one commit request should reach the network.");
+        }
+
         // Helpers
 
         /// <summary>

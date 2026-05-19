@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly CosmosClientContext clientContext;
         private readonly List<DistributedTransactionOperation> operations;
+        private int commitCalled;
 
         internal DistributedWriteTransactionCore(CosmosClientContext clientContext)
         {
@@ -273,6 +274,17 @@ namespace Microsoft.Azure.Cosmos
 
         public override async Task<DistributedTransactionResponse> CommitTransactionAsync(CancellationToken cancellationToken)
         {
+            if (Interlocked.CompareExchange(ref this.commitCalled, 1, 0) != 0)
+            {
+                throw new InvalidOperationException(
+                    "CommitTransactionAsync has already been called on this transaction instance. " +
+                    "A DistributedWriteTransaction is single-use because each commit generates a new " +
+                    "idempotency token; a second call would bypass server-side duplicate detection and " +
+                    "risk a double-commit. To retry, construct a new DistributedWriteTransaction with " +
+                    "the same operations. If the previous commit's outcome is unknown (e.g., cancellation " +
+                    "or network failure), verify the resulting state before retrying to avoid duplicate writes.");
+            }
+
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 operations: this.operations,
                 clientContext: this.clientContext);
