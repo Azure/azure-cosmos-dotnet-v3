@@ -1002,7 +1002,7 @@
             policy.OnBeforeSendRequest(request);
 
             ResponseMessage response = new ResponseMessage((HttpStatusCode)StatusCodes.RetryWith);
-            response.Headers.SubStatusCodeLiteral = DistributedTransactionConstants.DtcCoordinatorRaceConflict.ToString();
+            response.Headers.SubStatusCodeLiteral = ((int)SubStatusCodes.DtcCoordinatorRaceConflict).ToString();
 
             ShouldRetryResult result = await policy.ShouldRetryAsync(response, CancellationToken.None);
 
@@ -1027,7 +1027,7 @@
             policy.OnBeforeSendRequest(request);
 
             ResponseMessage response = new ResponseMessage((HttpStatusCode)StatusCodes.RetryWith);
-            response.Headers.SubStatusCodeLiteral = DistributedTransactionConstants.DtcCoordinatorRaceConflict.ToString();
+            response.Headers.SubStatusCodeLiteral = ((int)SubStatusCodes.DtcCoordinatorRaceConflict).ToString();
             response.Headers.RetryAfterLiteral = ((long)serverRetryAfter.TotalMilliseconds).ToString();
 
             ShouldRetryResult result = await policy.ShouldRetryAsync(response, CancellationToken.None);
@@ -1037,9 +1037,9 @@
         }
 
         [DataTestMethod]
-        [DataRow(DistributedTransactionConstants.DtcLedgerFailure, DisplayName = "500/5411 LedgerFailure")]
-        [DataRow(DistributedTransactionConstants.DtcAccountConfigFailure, DisplayName = "500/5412 AccountConfigFailure")]
-        [DataRow(DistributedTransactionConstants.DtcDispatchFailure, DisplayName = "500/5413 DispatchFailure")]
+        [DataRow((int)SubStatusCodes.DtcLedgerFailure, DisplayName = "500/5411 LedgerFailure")]
+        [DataRow((int)SubStatusCodes.DtcAccountConfigFailure, DisplayName = "500/5412 AccountConfigFailure")]
+        [DataRow((int)SubStatusCodes.DtcDispatchFailure, DisplayName = "500/5413 DispatchFailure")]
         public async Task DtxRequest_500_InfraFailure_ShouldRetry(int subStatusCode)
         {
             const bool enableEndpointDiscovery = true;
@@ -1083,9 +1083,9 @@
         }
 
         [DataTestMethod]
-        [DataRow(DistributedTransactionConstants.DtcLedgerFailure, DisplayName = "500/5411 LedgerFailure")]
-        [DataRow(DistributedTransactionConstants.DtcAccountConfigFailure, DisplayName = "500/5412 AccountConfigFailure")]
-        [DataRow(DistributedTransactionConstants.DtcDispatchFailure, DisplayName = "500/5413 DispatchFailure")]
+        [DataRow((int)SubStatusCodes.DtcLedgerFailure, DisplayName = "500/5411 LedgerFailure")]
+        [DataRow((int)SubStatusCodes.DtcAccountConfigFailure, DisplayName = "500/5412 AccountConfigFailure")]
+        [DataRow((int)SubStatusCodes.DtcDispatchFailure, DisplayName = "500/5413 DispatchFailure")]
         public async Task NonDtxWriteRequest_500_DtcSubStatus_ShouldNotRetry(int subStatusCode)
         {
             const bool enableEndpointDiscovery = true;
@@ -1141,7 +1141,7 @@
         [DataTestMethod]
         [Description("CRP must defer body-bearing envelope responses (408 and 449/5352) to the outer DistributedTransactionCommitter loop so the two retry budgets do not amplify each other.")]
         [DataRow((int)HttpStatusCode.RequestTimeout, 0, DisplayName = "408 with body deferred to outer loop")]
-        [DataRow((int)StatusCodes.RetryWith, DistributedTransactionConstants.DtcCoordinatorRaceConflict, DisplayName = "449/5352 with body deferred to outer loop")]
+        [DataRow((int)StatusCodes.RetryWith, (int)SubStatusCodes.DtcCoordinatorRaceConflict, DisplayName = "449/5352 with body deferred to outer loop")]
         public async Task DtxRequest_WithBody_DeferredToOuterLoop(int statusCode, int subStatusCode)
         {
             const bool enableEndpointDiscovery = true;
