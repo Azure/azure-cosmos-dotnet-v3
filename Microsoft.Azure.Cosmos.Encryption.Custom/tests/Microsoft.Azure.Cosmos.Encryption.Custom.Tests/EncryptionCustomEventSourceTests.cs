@@ -183,6 +183,30 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         }
 
         [TestMethod]
+        // REQ: TruncateForTelemetry boundary contract is exactly 128 chars — value at length 128 is verbatim, 129 is truncated.
+        // SOURCE: Adversarial review finding F-ADVT-002.
+        public void IdMismatch_TruncatesObservedDekIdPayload_BoundaryAt128()
+        {
+            using CapturingEventListener listener = new (EventSourceName, EventLevel.Warning);
+
+            EncryptionCustomEventSource.DistributedCacheIdMismatch("dek-127", new string('B', 127));
+            EncryptionCustomEventSource.DistributedCacheIdMismatch("dek-128", new string('B', 128));
+            EncryptionCustomEventSource.DistributedCacheIdMismatch("dek-129", new string('B', 129));
+
+            // The listener captures events in arrival order; filter by the requested dekId we set above.
+            List<EventWrittenEventArgs> events = listener.WaitForAllEvents(DistributedCacheIdMismatchEventId, expectedCount: 3);
+            Assert.AreEqual(3, events.Count, "Expected three Id-mismatch events for the three boundary cases.");
+
+            string observed127 = (string)events.First(e => (string)e.Payload[0] == "dek-127").Payload[1];
+            string observed128 = (string)events.First(e => (string)e.Payload[0] == "dek-128").Payload[1];
+            string observed129 = (string)events.First(e => (string)e.Payload[0] == "dek-129").Payload[1];
+
+            Assert.AreEqual(new string('B', 127), observed127, "Length 127 must be verbatim (below cap).");
+            Assert.AreEqual(new string('B', 128), observed128, "Length 128 must be verbatim (at cap).");
+            Assert.AreEqual(new string('B', 128) + "…(truncated, 129 chars)", observed129, "Length 129 must be truncated to exactly 128 leading chars + suffix.");
+        }
+
+        [TestMethod]
         // REQ: Exception-bearing EventSource payloads must never include exception.Message text, only the stable category.
         // SOURCE: PR #5428 review comment 3255385238.
         public void EventPayload_DoesNotContainExceptionMessage_AcrossAllFailureChannels()
@@ -309,6 +333,36 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 }
 
                 return null;
+            }
+
+            /// <summary>
+            /// Waits up to the given timeout for at least <paramref name="expectedCount"/> events
+            /// with the requested ID and returns all matching events captured so far.
+            /// </summary>
+            public List<EventWrittenEventArgs> WaitForAllEvents(int eventId, int expectedCount, int timeoutMs = 5000)
+            {
+                int waited = 0;
+                const int step = 50;
+                while (waited <= timeoutMs)
+                {
+                    lock (this.sync)
+                    {
+                        List<EventWrittenEventArgs> matched = this.events.Where(e => e.EventId == eventId).ToList();
+                        if (matched.Count >= expectedCount)
+                        {
+                            return matched;
+                        }
+                    }
+
+                    this.eventReceived.Wait(step);
+                    this.eventReceived.Reset();
+                    waited += step;
+                }
+
+                lock (this.sync)
+                {
+                    return this.events.Where(e => e.EventId == eventId).ToList();
+                }
             }
 
             protected override void OnEventSourceCreated(EventSource eventSource)

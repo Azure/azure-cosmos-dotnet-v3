@@ -63,14 +63,19 @@
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.ValueTask DisposeAsync();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:True;"
         },
-        "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])[System.ObsoleteAttribute(\"Please use the constructor with EncryptionKeyStoreProvider only.\")]": {
+        "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, Microsoft.Azure.Cosmos.Encryption.Custom.DekCacheOptions)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, Microsoft.Azure.Cosmos.Encryption.Custom.DekCacheOptions)"
+        },
+        "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])[System.ObsoleteAttribute(\"Please use the constructor that accepts a DekCacheOptions parameter.\")]": {
           "Type": "Constructor",
           "Attributes": [
             "ObsoleteAttribute"
           ],
           "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])"
         },
-        "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan])[System.ObsoleteAttribute(\"Please use the constructor with EncryptionKeyStoreProvider only.\")]": {
+        "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan])[System.ObsoleteAttribute(\"Please use a constructor that accepts EncryptionKeyStoreProvider (with DekCacheOptions to enable distributed-cache support).\")]": {
           "Type": "Constructor",
           "Attributes": [
             "ObsoleteAttribute"
@@ -464,14 +469,19 @@
               "Attributes": [],
               "MethodInfo": "System.Threading.Tasks.ValueTask DisposeAsync();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:True;"
             },
-            "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])[System.ObsoleteAttribute(\"Please use the constructor with EncryptionKeyStoreProvider only.\")]": {
+            "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, Microsoft.Azure.Cosmos.Encryption.Custom.DekCacheOptions)": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, Microsoft.Azure.Cosmos.Encryption.Custom.DekCacheOptions)"
+            },
+            "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])[System.ObsoleteAttribute(\"Please use the constructor that accepts a DekCacheOptions parameter.\")]": {
               "Type": "Constructor",
               "Attributes": [
                 "ObsoleteAttribute"
               ],
               "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])"
             },
-            "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan])[System.ObsoleteAttribute(\"Please use the constructor with EncryptionKeyStoreProvider only.\")]": {
+            "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan])[System.ObsoleteAttribute(\"Please use a constructor that accepts EncryptionKeyStoreProvider (with DekCacheOptions to enable distributed-cache support).\")]": {
               "Type": "Constructor",
               "Attributes": [
                 "ObsoleteAttribute"

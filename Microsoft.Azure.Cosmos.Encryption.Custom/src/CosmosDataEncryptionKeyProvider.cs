@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// </summary>
         /// <param name="encryptionKeyWrapProvider">A provider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption</param>
         /// <param name="dekPropertiesTimeToLive">Time to live for DEK properties before having to refresh.</param>
-        [Obsolete("Please use the constructor with EncryptionKeyStoreProvider only.")]
+        [Obsolete("Please use a constructor that accepts EncryptionKeyStoreProvider (with DekCacheOptions to enable distributed-cache support).")]
         public CosmosDataEncryptionKeyProvider(
             EncryptionKeyWrapProvider encryptionKeyWrapProvider,
             TimeSpan? dekPropertiesTimeToLive = null)
@@ -126,17 +126,37 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="encryptionKeyWrapProvider">A provider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption</param>
         /// <param name="encryptionKeyStoreProvider"> MDE EncryptionKeyStoreProvider for Wrapping/UnWrapping services. </param>
         /// <param name="dekPropertiesTimeToLive">Time to live for DEK properties before having to refresh.</param>
-        [Obsolete("Please use the constructor with EncryptionKeyStoreProvider only.")]
+        [Obsolete("Please use the constructor that accepts a DekCacheOptions parameter.")]
         public CosmosDataEncryptionKeyProvider(
             EncryptionKeyWrapProvider encryptionKeyWrapProvider,
             EncryptionKeyStoreProvider encryptionKeyStoreProvider,
             TimeSpan? dekPropertiesTimeToLive = null)
+            : this(encryptionKeyWrapProvider, encryptionKeyStoreProvider, dekPropertiesTimeToLive == null ? null : new DekCacheOptions { DekPropertiesTimeToLive = dekPropertiesTimeToLive })
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CosmosDataEncryptionKeyProvider"/> class with both an
+        /// <see cref="EncryptionKeyWrapProvider"/> (legacy algorithm path) and an
+        /// <see cref="EncryptionKeyStoreProvider"/> (MDE path), plus optional distributed-cache support via
+        /// <see cref="DekCacheOptions"/>. Preserves backwards compatibility for hybrid consumers (e.g. ALE) that
+        /// must support both algorithm paths during migration.
+        /// </summary>
+        /// <param name="encryptionKeyWrapProvider">Legacy wrap provider; only used for documents written with the legacy algorithm.</param>
+        /// <param name="encryptionKeyStoreProvider">MDE <see cref="EncryptionKeyStoreProvider"/> for wrapping / unwrapping.</param>
+        /// <param name="dekCacheOptions">Optional cache configuration; pass <see langword="null"/> to use defaults.</param>
+#pragma warning disable CS0618 // EncryptionKeyWrapProvider is obsolete; surfaced here only for hybrid back-compat callers (e.g. ALE).
+        public CosmosDataEncryptionKeyProvider(
+            EncryptionKeyWrapProvider encryptionKeyWrapProvider,
+            EncryptionKeyStoreProvider encryptionKeyStoreProvider,
+            DekCacheOptions dekCacheOptions)
+#pragma warning restore CS0618
         {
             this.EncryptionKeyWrapProvider = encryptionKeyWrapProvider ?? throw new ArgumentNullException(nameof(encryptionKeyWrapProvider));
             this.EncryptionKeyStoreProvider = encryptionKeyStoreProvider ?? throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
             this.MdeKeyWrapProvider = new MdeKeyWrapProvider(encryptionKeyStoreProvider);
             this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
-            this.DekCache = NewDekCache(dekPropertiesTimeToLive == null ? null : new DekCacheOptions { DekPropertiesTimeToLive = dekPropertiesTimeToLive });
+            this.DekCache = NewDekCache(dekCacheOptions);
             this.InitializeProtectedDataEncryptionKeyTimeToLive();
         }
 
