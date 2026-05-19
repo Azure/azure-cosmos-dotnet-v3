@@ -828,6 +828,61 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void VerifyCosmosClientOptionsDirectTcpConnectionLimitsValidateMinimumValues()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct
+            };
+
+            cosmosClientOptions.MaxTcpConnectionsPerEndpoint = null;
+            Assert.IsNull(cosmosClientOptions.MaxTcpConnectionsPerEndpoint);
+
+            cosmosClientOptions.MaxTcpConnectionsPerEndpoint = 16;
+            Assert.AreEqual(16, cosmosClientOptions.MaxTcpConnectionsPerEndpoint);
+
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => cosmosClientOptions.MaxTcpConnectionsPerEndpoint = 15);
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => cosmosClientOptions.MaxTcpConnectionsPerEndpoint = 0);
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => cosmosClientOptions.MaxTcpConnectionsPerEndpoint = -1);
+
+            cosmosClientOptions.MaxRequestsPerTcpConnection = null;
+            Assert.IsNull(cosmosClientOptions.MaxRequestsPerTcpConnection);
+
+            cosmosClientOptions.MaxRequestsPerTcpConnection = 4;
+            Assert.AreEqual(4, cosmosClientOptions.MaxRequestsPerTcpConnection);
+
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => cosmosClientOptions.MaxRequestsPerTcpConnection = 3);
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => cosmosClientOptions.MaxRequestsPerTcpConnection = 0);
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => cosmosClientOptions.MaxRequestsPerTcpConnection = -1);
+        }
+
+        [TestMethod]
+        public void VerifyConnectionPolicyDirectTcpConnectionLimitsValidateMinimumValues()
+        {
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy();
+
+            connectionPolicy.MaxTcpConnectionsPerEndpoint = null;
+            Assert.IsNull(connectionPolicy.MaxTcpConnectionsPerEndpoint);
+
+            connectionPolicy.MaxTcpConnectionsPerEndpoint = 16;
+            Assert.AreEqual(16, connectionPolicy.MaxTcpConnectionsPerEndpoint);
+
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => connectionPolicy.MaxTcpConnectionsPerEndpoint = 15);
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => connectionPolicy.MaxTcpConnectionsPerEndpoint = 0);
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => connectionPolicy.MaxTcpConnectionsPerEndpoint = -1);
+
+            connectionPolicy.MaxRequestsPerTcpConnection = null;
+            Assert.IsNull(connectionPolicy.MaxRequestsPerTcpConnection);
+
+            connectionPolicy.MaxRequestsPerTcpConnection = 4;
+            Assert.AreEqual(4, connectionPolicy.MaxRequestsPerTcpConnection);
+
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => connectionPolicy.MaxRequestsPerTcpConnection = 3);
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => connectionPolicy.MaxRequestsPerTcpConnection = 0);
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => connectionPolicy.MaxRequestsPerTcpConnection = -1);
+        }
+
+        [TestMethod]
         public void VerifyHttpClientFactoryBlockedWithConnectionLimit()
         {
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()

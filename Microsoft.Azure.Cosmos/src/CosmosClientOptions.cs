@@ -49,6 +49,8 @@ namespace Microsoft.Azure.Cosmos
         /// Default Protocol mode
         /// </summary>
         private const Protocol DefaultProtocol = Protocol.Tcp;
+        private const int MinimumMaxRequestsPerTcpConnection = 4;
+        private const int MinimumMaxTcpConnectionsPerEndpoint = 16;
 
         private const string ConnectionStringAccountEndpoint = "AccountEndpoint";
         private const string ConnectionStringAccountKey = "AccountKey";
@@ -621,6 +623,14 @@ namespace Microsoft.Azure.Cosmos
             get => this.maxRequestsPerTcpConnection;
             set
             {
+                if (this.ConnectionMode == ConnectionMode.Direct)
+                {
+                    CosmosClientOptions.ValidateDirectTcpConnectionLimit(
+                        value,
+                        CosmosClientOptions.MinimumMaxRequestsPerTcpConnection,
+                        nameof(this.MaxRequestsPerTcpConnection));
+                }
+
                 this.maxRequestsPerTcpConnection = value;
                 this.ValidateDirectTCPSettings();
             }
@@ -638,6 +648,14 @@ namespace Microsoft.Azure.Cosmos
             get => this.maxTcpConnectionsPerEndpoint;
             set
             {
+                if (this.ConnectionMode == ConnectionMode.Direct)
+                {
+                    CosmosClientOptions.ValidateDirectTcpConnectionLimit(
+                        value,
+                        CosmosClientOptions.MinimumMaxTcpConnectionsPerEndpoint,
+                        nameof(this.MaxTcpConnectionsPerEndpoint));
+                }
+
                 this.maxTcpConnectionsPerEndpoint = value;
                 this.ValidateDirectTCPSettings();
             }
@@ -1328,6 +1346,29 @@ namespace Microsoft.Azure.Cosmos
             if (!string.IsNullOrEmpty(settingName))
             {
                 throw new ArgumentException($"{settingName} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Direct)}");
+            }
+
+            CosmosClientOptions.ValidateDirectTcpConnectionLimit(
+                this.MaxRequestsPerTcpConnection,
+                CosmosClientOptions.MinimumMaxRequestsPerTcpConnection,
+                nameof(this.MaxRequestsPerTcpConnection));
+            CosmosClientOptions.ValidateDirectTcpConnectionLimit(
+                this.MaxTcpConnectionsPerEndpoint,
+                CosmosClientOptions.MinimumMaxTcpConnectionsPerEndpoint,
+                nameof(this.MaxTcpConnectionsPerEndpoint));
+        }
+
+        private static void ValidateDirectTcpConnectionLimit(
+            int? value,
+            int minimumValue,
+            string settingName)
+        {
+            if (value.HasValue && value.Value < minimumValue)
+            {
+                throw new ArgumentOutOfRangeException(
+                    settingName,
+                    value.Value,
+                    $"{settingName} must be greater than or equal to {minimumValue}.");
             }
         }
 

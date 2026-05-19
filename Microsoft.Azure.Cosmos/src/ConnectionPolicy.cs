@@ -23,6 +23,8 @@ namespace Microsoft.Azure.Cosmos
         private const int defaultMediaRequestTimeout = 300;
         private const int defaultMaxConcurrentFanoutRequests = 32;
         private const int defaultMaxConcurrentConnectionLimit = 50;
+        private const int minimumMaxRequestsPerTcpConnection = 4;
+        private const int minimumMaxTcpConnectionsPerEndpoint = 16;
 
         internal UserAgentContainer UserAgentContainer;
         private static ConnectionPolicy defaultPolicy;
@@ -30,6 +32,8 @@ namespace Microsoft.Azure.Cosmos
         private Protocol connectionProtocol;
         private ObservableCollection<string> preferredLocations;
         private ObservableCollection<Uri> accountInitializationCustomEndpoints;
+        private int? maxRequestsPerTcpConnection;
+        private int? maxTcpConnectionsPerEndpoint;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConnectionPolicy"/> class to connect to the Azure Cosmos DB service.
@@ -468,8 +472,20 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public int? MaxRequestsPerTcpConnection
         {
-            get;
-            set;
+            get
+            {
+                return this.maxRequestsPerTcpConnection;
+            }
+
+            set
+            {
+                ConnectionPolicy.ValidateDirectTcpConnectionLimit(
+                    value,
+                    ConnectionPolicy.minimumMaxRequestsPerTcpConnection,
+                    nameof(this.MaxRequestsPerTcpConnection));
+
+                this.maxRequestsPerTcpConnection = value;
+            }
         }
 
         /// <summary>
@@ -481,8 +497,20 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         public int? MaxTcpConnectionsPerEndpoint
         {
-            get;
-            set;
+            get
+            {
+                return this.maxTcpConnectionsPerEndpoint;
+            }
+
+            set
+            {
+                ConnectionPolicy.ValidateDirectTcpConnectionLimit(
+                    value,
+                    ConnectionPolicy.minimumMaxTcpConnectionsPerEndpoint,
+                    nameof(this.MaxTcpConnectionsPerEndpoint));
+
+                this.maxTcpConnectionsPerEndpoint = value;
+            }
         }
 
         /// <summary>
@@ -606,6 +634,20 @@ namespace Microsoft.Azure.Cosmos
         internal RetryWithConfiguration GetRetryWithConfiguration()
         {
             return this.RetryOptions?.GetRetryWithConfiguration();
+        }
+
+        private static void ValidateDirectTcpConnectionLimit(
+            int? value,
+            int minimumValue,
+            string settingName)
+        {
+            if (value.HasValue && value.Value < minimumValue)
+            {
+                throw new ArgumentOutOfRangeException(
+                    settingName,
+                    value.Value,
+                    $"{settingName} must be greater than or equal to {minimumValue}.");
+            }
         }
     }
 }
