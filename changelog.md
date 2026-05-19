@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Fixed
 
 - [5783](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5783) Container: Fixes SemanticRerankAsync TypeLoadException in derived classes
+- [5827](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5827) Change Feed Estimator: Fixes `ArgumentNullException` when using an in-memory lease container
 
 ### <a name="3.59.0"/> [3.59.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.59.0) - 2026-4-24
 
