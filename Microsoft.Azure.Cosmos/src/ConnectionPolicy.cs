@@ -30,6 +30,7 @@ namespace Microsoft.Azure.Cosmos
         private Protocol connectionProtocol;
         private ObservableCollection<string> preferredLocations;
         private ObservableCollection<Uri> accountInitializationCustomEndpoints;
+        private int? maxTcpConnectionsPerEndpoint;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConnectionPolicy"/> class to connect to the Azure Cosmos DB service.
@@ -481,8 +482,19 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         public int? MaxTcpConnectionsPerEndpoint
         {
-            get;
-            set;
+            get => this.maxTcpConnectionsPerEndpoint;
+            set
+            {
+                if (value.HasValue && value.Value < 16)
+                {
+                    throw new ArgumentOutOfRangeException(
+                        nameof(this.MaxTcpConnectionsPerEndpoint),
+                        value.Value,
+                        $"{nameof(this.MaxTcpConnectionsPerEndpoint)} must be greater than or equal to 16.");
+                }
+
+                this.maxTcpConnectionsPerEndpoint = value;
+            }
         }
 
         /// <summary>

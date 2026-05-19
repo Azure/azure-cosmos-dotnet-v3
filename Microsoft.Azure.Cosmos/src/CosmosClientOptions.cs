@@ -1329,6 +1329,14 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ArgumentException($"{settingName} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Direct)}");
             }
+
+            if (this.maxTcpConnectionsPerEndpoint.HasValue && this.maxTcpConnectionsPerEndpoint.Value < 16)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(this.MaxTcpConnectionsPerEndpoint),
+                    this.maxTcpConnectionsPerEndpoint.Value,
+                    $"{nameof(this.MaxTcpConnectionsPerEndpoint)} must be greater than or equal to 16.");
+            }
         }
 
         internal UserAgentContainer CreateUserAgentContainerWithFeatures(int clientId)

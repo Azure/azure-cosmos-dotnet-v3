@@ -828,6 +828,40 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void MaxTcpConnectionsPerEndpointBelowMinimumThrows()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+            };
+
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => options.MaxTcpConnectionsPerEndpoint = 15);
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => options.MaxTcpConnectionsPerEndpoint = 0);
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => options.MaxTcpConnectionsPerEndpoint = -1);
+        }
+
+        [TestMethod]
+        public void MaxTcpConnectionsPerEndpointAtOrAboveMinimumSucceeds()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+            };
+
+            // Exact minimum is accepted.
+            options.MaxTcpConnectionsPerEndpoint = 16;
+            Assert.AreEqual(16, options.MaxTcpConnectionsPerEndpoint);
+
+            // Above minimum is accepted.
+            options.MaxTcpConnectionsPerEndpoint = 65535;
+            Assert.AreEqual(65535, options.MaxTcpConnectionsPerEndpoint);
+
+            // Null is accepted (means default).
+            options.MaxTcpConnectionsPerEndpoint = null;
+            Assert.IsNull(options.MaxTcpConnectionsPerEndpoint);
+        }
+
+        [TestMethod]
         public void VerifyHttpClientFactoryBlockedWithConnectionLimit()
         {
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
