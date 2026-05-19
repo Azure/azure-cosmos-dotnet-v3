@@ -4,6 +4,10 @@
 **Document status:** Pre-announcement review draft  
 **Namespace:** `Microsoft.Azure.Cosmos`
 
+> **Changes since last draft** — two in-flight PRs address gaps identified in this review:
+> - **PR #5884** (`users/Meghana-Palaparthi/dtx_double_commit_guardrail`): Adds single-use commit guardrail — `CommitTransactionAsync` throws `InvalidOperationException` on any second call.
+> - **PR #5885** (`users/Meghana-Palaparthi/dtx_gap_fixes`): Adds `GetOperationResultAtIndex<T>()` typed deserialization, per-operation `SessionToken` on request options, snapshot-isolation doc on read transactions, and `ResourceStream` ownership remarks.
+
 ---
 
 ## 1. Executive Summary
@@ -23,7 +27,7 @@ The Distributed Transaction (DTX) API extends Azure Cosmos DB's atomicity guaran
 | Max operations | 100 | Not documented |
 | Commit | `ExecuteAsync()` | `CommitTransactionAsync()` |
 | Idempotency token | Not exposed | Auto-generated `Guid`, exposed on response |
-| Custom `CosmosSerializer` on results | Yes — `GetOperationResultAtIndex<T>()` | **No** — raw `ResourceStream` only |
+| Custom `CosmosSerializer` on results | Yes — `GetOperationResultAtIndex<T>()` | Yes — `GetOperationResultAtIndex<T>()` added in PR #5885 |
 | Response type | `TransactionalBatchResponse` | `DistributedTransactionResponse` |
 
 ---
@@ -77,6 +81,12 @@ public virtual DistributedReadTransaction CreateDistributedReadTransaction();
 ```csharp
 public abstract class DistributedTransaction
 {
+    /// <summary>Commits all buffered operations as a single atomic transaction.</summary>
+    /// <exception cref="InvalidOperationException">
+    ///   Thrown if CommitTransactionAsync has already been called on this instance.
+    ///   Even a failed or cancelled call permanently consumes the instance — construct
+    ///   a new transaction for each retry attempt. (PR #5884)
+    /// </exception>
     public abstract Task<DistributedTransactionResponse> CommitTransactionAsync(
         CancellationToken cancellationToken = default);
 }
@@ -147,7 +157,9 @@ public abstract class DistributedWriteTransaction : DistributedTransaction
 ```csharp
 public abstract class DistributedReadTransaction : DistributedTransaction
 {
-    // Adds a point-read to the transaction. All reads execute as a consistent snapshot.
+    // Adds a point-read to the transaction.
+    // All reads execute under snapshot isolation — results reflect a consistent
+    // point in time across all participating partitions. (PR #5885)
     public abstract DistributedReadTransaction ReadItem(
         string database, string collection,
         PartitionKey partitionKey, string id,
@@ -159,11 +171,20 @@ public abstract class DistributedReadTransaction : DistributedTransaction
 ### 4.5 `DistributedTransactionRequestOptions`
 
 ```csharp
-// Inherits: IfMatchEtag, IfNoneMatchEtag, SessionToken, Properties
-public class DistributedTransactionRequestOptions : RequestOptions { }
+public class DistributedTransactionRequestOptions : RequestOptions
+{
+    // Inherited: IfMatchEtag, IfNoneMatchEtag, Properties
+
+    // Per-operation session token in {partitionKeyRangeId}:{lsn} format. (PR #5885)
+    // Because a distributed transaction spans multiple partitions, each operation
+    // supplies its own token rather than a single commit-level token.
+    // Obtain from a prior DistributedTransactionOperationResult.SessionToken or from
+    // another SDK response that targeted the same partition.
+    public string SessionToken { get; set; }
+}
 ```
 
-`IfMatchEtag` is wired through to the server envelope and triggers `412 Precondition Failed` if the ETag does not match. The class is otherwise empty.
+`IfMatchEtag` is wired through to the server envelope and triggers `412 Precondition Failed` if the ETag does not match.
 
 ---
 
@@ -202,24 +223,72 @@ public class DistributedTransactionResponse
 ```csharp
 public class DistributedTransactionOperationResult
 {
-    public virtual int           Index              { get; }  // zero-based
-    public virtual HttpStatusCode StatusCode        { get; }
-    public virtual bool          IsSuccessStatusCode { get; }
-    public virtual string        ETag               { get; }
-    public virtual string        SessionToken       { get; }
-    public virtual string        PartitionKeyRangeId { get; }
-    public virtual Stream        ResourceStream     { get; }  // populated for Read ops; null for writes
-    public virtual double        RequestCharge      { get; }
-    public virtual uint          SubStatusCodeValue { get; }
+    public virtual int            Index               { get; }  // zero-based
+    public virtual HttpStatusCode StatusCode          { get; }
+    public virtual bool           IsSuccessStatusCode { get; }
+    public virtual string         ETag                { get; }
+    public virtual string         SessionToken        { get; }
+    public virtual string         PartitionKeyRangeId { get; }
+
+    // Populated for Read ops; null for writes.
+    // Owned by the parent DistributedTransactionResponse — do not access after Dispose(). (PR #5885)
+    public virtual Stream         ResourceStream      { get; }
+
+    public virtual double         RequestCharge       { get; }
+    public virtual uint           SubStatusCodeValue  { get; }
 }
+```
+
+### 4.8 `DistributedTransactionOperationResult<T>` *(PR #5885)*
+
+```csharp
+public class DistributedTransactionOperationResult<T> : DistributedTransactionOperationResult
+{
+    // The deserialized resource. Uses the CosmosSerializer registered in CosmosClientOptions.
+    // Reading this property does NOT advance or consume ResourceStream — a snapshot is used internally.
+    public virtual T Resource { get; }
+}
+```
+
+Call `response.GetOperationResultAtIndex<T>(index)` to get a typed result:
+
+```csharp
+// Uses the registered CosmosSerializer — custom property mappings are honoured.
+Account accountA = response.GetOperationResultAtIndex<Account>(0).Resource;
 ```
 ---
 
-## 5. Idempotency
+## 5. Idempotency & Single-Use Contract
 
+### Auto-generated idempotency token
 The SDK auto-generates a `Guid` idempotency token for each `CommitTransactionAsync` call and reuses it across any internal retries. The committed token is returned in `DistributedTransactionResponse.IdempotencyToken`.
 
-**Customer implication:** Idempotency within a single `CommitTransactionAsync` call is handled automatically. For exactly-once semantics across process restarts (e.g., a crash after the server committed but before the client received the response), customers must persist the `IdempotencyToken` before calling commit and present it on retry. The current API does not accept a caller-supplied token — the only way to supply one is to re-call `CommitTransactionAsync`, which always generates a new token.
+**Customer implication:** Idempotency within a single `CommitTransactionAsync` call is handled automatically. For exactly-once semantics across process restarts (e.g., a crash after the server committed but before the client received the response), customers must persist the `IdempotencyToken` before calling commit and present it on retry. The current API does not accept a caller-supplied token.
+
+### Single-use commit guardrail *(PR #5884)*
+`CommitTransactionAsync` may be called **exactly once** per transaction instance. A second call — even after a failure or cancellation — throws `InvalidOperationException`. This is intentional: each call would generate a new `Guid` idempotency token, bypassing the server-side duplicate detection that the auto-generated token provides.
+
+**Retry pattern:** construct a new transaction instance for each attempt.
+
+```csharp
+// ❌ Wrong — second call throws InvalidOperationException
+DistributedTransactionResponse r1 = await tx.CommitTransactionAsync();
+DistributedTransactionResponse r2 = await tx.CommitTransactionAsync();  // throws!
+
+// ✅ Correct — new instance per attempt
+DistributedWriteTransaction BuildTx(CosmosClient client) =>
+    client.CreateDistributedWriteTransaction()
+          .ReplaceItem("db", "col", new PartitionKey("pk"), "id", updatedItem);
+
+DistributedTransactionResponse response = await BuildTx(client).CommitTransactionAsync();
+if (!response.IsSuccessStatusCode)
+{
+    // When the outcome is unknown (cancellation / network timeout),
+    // verify committed state before retrying to avoid duplicate writes.
+    await VerifyStateAsync(client);
+    response = await BuildTx(client).CommitTransactionAsync();
+}
+```
 
 ---
 
@@ -228,6 +297,20 @@ The SDK auto-generates a `Guid` idempotency token for each `CommitTransactionAsy
 After a successful commit the SDK automatically updates its internal session container with the post-transaction session tokens for every affected collection. This ensures subsequent **Session-consistency reads** against any touched container see the committed state without receiving `ReadSessionNotAvailable`.
 
 This bookkeeping is best-effort: a failure to update session tokens is traced and swallowed so that a server-committed transaction is never surfaced as an error.
+
+### Per-operation session tokens *(PR #5885)*
+`DistributedTransactionRequestOptions.SessionToken` accepts a per-operation token in `{partitionKeyRangeId}:{lsn}` format. Because a distributed transaction spans multiple partitions, a single commit-level token is insufficient — supply a token per operation to enforce read-your-own-writes for a specific partition:
+
+```csharp
+tx.ReplaceItem(
+    database: "db", collection: "col",
+    partitionKey: new PartitionKey("pk"), id: "id",
+    resource: updatedItem,
+    requestOptions: new DistributedTransactionRequestOptions
+    {
+        SessionToken = previousResult.SessionToken  // e.g. "0:1234"
+    });
+```
 
 ---
 
@@ -249,23 +332,19 @@ This bookkeeping is best-effort: a failure to update session tokens is traced an
 ### What works today
 For **typed (`<T>`) write operations**, the `CosmosSerializer` registered in `CosmosClientOptions` is honoured: `CreateItem<T>`, `ReplaceItem<T>`, etc. serialize the resource using the customer's serializer before sending.
 
-### The gap — response deserialization
-**Response results are not deserialized through the registered `CosmosSerializer`.** `ResourceStream` on each operation result contains raw JSON bytes produced by `System.Text.Json` with fixed case-insensitive options. This means:
-
-- Camelcase / snake_case / custom property mappings configured via `CosmosSerializerOptions` are **not applied** when reading results.
-- Customers using `Newtonsoft.Json` via a custom `CosmosSerializer` must wrap it manually for result deserialization.
-
-This also means there is **no typed result accessor** equivalent to `TransactionalBatchResponse.GetOperationResultAtIndex<T>()`. Callers must deserialize manually:
+### Typed result deserialization *(PR #5885)*
+`GetOperationResultAtIndex<T>()` on `DistributedTransactionResponse` now returns a `DistributedTransactionOperationResult<T>` with a `Resource` property deserialized via the registered `CosmosSerializer`. The method uses an internal stream snapshot so `ResourceStream` remains fully readable afterward:
 
 ```csharp
-// Today — custom serializer options are NOT automatically applied
-var account = JsonSerializer.Deserialize<Account>(response[0].ResourceStream);
+// Custom serializer settings (e.g. camelCase, Newtonsoft) are applied automatically
+Account account = response.GetOperationResultAtIndex<Account>(0).Resource;
 
-// What is needed
-var account = response.GetOperationResultAtIndex<Account>(0).Resource;
+// ResourceStream is still readable after the above call
+Stream raw = response[0].ResourceStream;
 ```
 
-The internal plumbing to add `GetOperationResultAtIndex<T>()` using the stored serializer reference already exists on the response object. This method should be added before GA.
+### Remaining gap — `XxxStream` write variants
+For stream-based write methods (`CreateItemStream`, `ReplaceItemStream`, etc.) the caller is responsible for serialization — the SDK passes bytes through unchanged. This must be documented in XML comments.
 
 ---
 
@@ -354,11 +433,12 @@ tx.ReplaceItem(
 using DistributedTransactionResponse response = await tx.CommitTransactionAsync();
 ```
 
-### 11.3 Read transaction — consistent cross-partition snapshot
+### 11.3 Read transaction — consistent snapshot across partitions
 
 ```csharp
 DistributedReadTransaction tx = client.CreateDistributedReadTransaction();
 
+// All reads execute under snapshot isolation (PR #5885)
 tx.ReadItem("banking", "accounts", new PartitionKey("account-A"), "account-A")
   .ReadItem("banking", "accounts", new PartitionKey("account-B"), "account-B");
 
@@ -366,13 +446,29 @@ using DistributedTransactionResponse response = await tx.CommitTransactionAsync(
 
 if (response.IsSuccessStatusCode)
 {
-    // No GetOperationResultAtIndex<T>() today — manual deserialization required
-    var accountA = JsonSerializer.Deserialize<Account>(response[0].ResourceStream);
-    var accountB = JsonSerializer.Deserialize<Account>(response[1].ResourceStream);
+    // GetOperationResultAtIndex<T>() uses the registered CosmosSerializer (PR #5885)
+    Account accountA = response.GetOperationResultAtIndex<Account>(0).Resource;
+    Account accountB = response.GetOperationResultAtIndex<Account>(1).Resource;
 }
 ```
 
-### 11.4 Per-operation error inspection
+### 11.4 Per-operation session token *(PR #5885)*
+
+```csharp
+DistributedWriteTransaction tx = client.CreateDistributedWriteTransaction();
+tx.ReplaceItem(
+    database: "inventory", collection: "items",
+    partitionKey: new PartitionKey("sku-999"), id: "sku-999",
+    resource: updatedItem,
+    requestOptions: new DistributedTransactionRequestOptions
+    {
+        SessionToken = previousResult.SessionToken  // "{pkRangeId}:{lsn}"
+    });
+
+using DistributedTransactionResponse response = await tx.CommitTransactionAsync();
+```
+
+### 11.5 Per-operation error inspection
 
 ```csharp
 using DistributedTransactionResponse response = await tx.CommitTransactionAsync();
@@ -394,21 +490,42 @@ if (!response.IsSuccessStatusCode)
 
 ## 12. Known Limitations
 
-1. **No abort / rollback API.** (TBD)
+1. **No abort / rollback API.** By design — transactions can only be committed. Abandoning a transaction means simply not calling `CommitTransactionAsync`; the server will time out any uncommitted state.
 2. **No read-within-write.** `DistributedWriteTransaction` has no `ReadItem`. Atomic read-modify-write requires separate transactions.
-3. **No typed result accessor.** `GetOperationResultAtIndex<T>()` is absent; customers must deserialize `ResourceStream` manually. Custom `CosmosSerializer` settings are not applied to result bodies.
-4. **Operation count limit not documented.** The maximum number of operations per transaction is not stated.
-5. **Gateway-mode only.** Direct-mode connectivity is not supported.
-6. **Same-account only.** Cross-account transactions are not supported.
-7. **`DistributedTransactionRequestOptions` is empty.** No operation-level priority level, TTL override, or throughput control group.
-8. **No operation count guard.** `TransactionalBatch` enforces a cap of 100 operations; DTX has no documented or enforced cap.
-9. **JSON-only wire protocol.** No HybridRow / binary encoding; `TransactionalBatch` uses binary encoding for both directions.
-10. **Custom `CosmosSerializer` not applied to response deserialization.** Results always contain raw JSON; serializer settings are honoured only for write request payloads.
-11. **Caller-supplied streams are not disposed by the SDK.** The stream lifecycle contract differs from `Container.CreateItemStreamAsync` and must be documented.
+3. **Transaction instance is single-use** *(PR #5884)*. A second call to `CommitTransactionAsync` always throws `InvalidOperationException`. Build a new transaction for each retry.
+4. **No `Diagnostics` property.** Unlike all other SDK response types, `DistributedTransactionResponse` does not expose `CosmosDiagnostics`.
+5. **Operation count limit not documented.** The maximum number of operations per transaction is not stated.
+6. **Gateway-mode only.** Direct-mode connectivity is not supported.
+7. **Same-account only.** Cross-account transactions are not supported.
+8. **Limited `DistributedTransactionRequestOptions`.** No operation-level priority, TTL override, or throughput control group.
+9. **No operation count guard.** `TransactionalBatch` enforces a cap of 100 operations; DTX has no documented or enforced cap.
+10. **JSON-only wire protocol.** No HybridRow / binary encoding; `TransactionalBatch` uses binary encoding for both directions.
+11. **Custom `CosmosSerializer` not applied to `XxxStream` write variants.** `GetOperationResultAtIndex<T>()` honours the serializer *(resolved in PR #5885)*; however for stream-based write variants the caller is responsible for serialization.
+12. **Caller-supplied streams are not disposed by the SDK.** The stream lifecycle contract differs from `Container.CreateItemStreamAsync` and must be documented in XML comments.
 
 ---
 
-## 13. Changelog Readiness
+## 13. Open Questions for API Review
+
+1. **`database` + `collection` strings vs `Container` object.** Should operations accept a `Container` reference instead of loose strings for type safety and metadata reuse?
+
+2. **Caller-supplied idempotency token.** Should `CommitTransactionAsync` accept an optional `Guid idempotencyToken` for exactly-once semantics across process restarts?
+
+3. **Operation count cap.** Should there be a documented and enforced maximum? What is the server-side limit?
+
+4. **`Diagnostics` property.** Should `DistributedTransactionResponse` expose `CosmosDiagnostics` before GA?
+
+5. **`SubStatusCodes` enum visibility.** Should the `SubStatusCodes` enum be made public so customers can match known values without magic numbers?
+
+6. **`RequestCharge` semantics.** Is the top-level `RequestCharge` a sum of all per-operation charges or only the coordinator charge?
+
+7. **Mixed read/write transaction.** Is this on the roadmap? Combining `ReadItem` and write operations in one transaction is required for atomic read-modify-write.
+
+8. **Stream disposal contract.** Should the SDK dispose `streamPayload` after consuming it (matching `Container.CreateItemStreamAsync`), or explicitly document that it does not?
+
+---
+
+## 14. Changelog Readiness
 
 - Touches `Microsoft.Azure.Cosmos/src/**` ✅
 - Customer-observable new API surface ✅
