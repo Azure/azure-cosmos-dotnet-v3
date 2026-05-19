@@ -19,17 +19,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
-- [5815](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5815) Read Consistency Strategy: Adds hub region header for LastCommittedSingleWriteRegion strategy.
 - [5829](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5829) Routing: Adds Gateway Account Property Flag for Dynamic Hedging Control. Introduces a Gateway-controlled `disableCrossRegionalHedging` account property that lets operators dynamically disable PPAF cross-region hedging (and any customer-configured `AvailabilityStrategy`) without rolling back PPAF entirely. The SDK reconciles `ConnectionPolicy.AvailabilityStrategy` against the Gateway-supplied flag on each account-properties refresh; toggling the flag back to `false` restores the customer-configured strategy or rebuilds the SDK default.
-- [5848](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5848) VectorEmbeddingPolicy: Adds EmbeddingSource block to Embedding model
 
 #### Breaking Changes
 
 #### Bugs Fixed
 
-- [5870](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5870) CrossRegionHedgingAvailabilityStrategy: Fixes StackOverflow in CrossRegionHedgingAvailabilityStrategy Observed in .NET Framework 4.7.2.
-
 #### Other Changes
+
+### <a name="3.61.0-preview.0"/> [3.61.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.61.0-preview.0) - 2026-5-18
+
+#### Features Added
+
+- [5815](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5815) Read Consistency Strategy: Adds hub region header for LastCommittedSingleWriteRegion strategy.
+- [5848](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5848) VectorEmbeddingPolicy: Adds EmbeddingSource block to Embedding model
+- [5804](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5804) SemanticReranking: Adds Configurable Request Timeout
+
+#### Bugs Fixed
+
+- [5783](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5783) Container: Fixes SemanticRerankAsync TypeLoadException in derived classes
+
+### <a name="3.60.0"/> [3.60.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.60.0) - 2026-5-18
+
+#### Features Added
+
+- [5825](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5825) ChangeFeed: Promotes Full Fidelity Change Feed (AllVersionsAndDeletes) APIs to GA
+- [5839](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5839) Direct: Adds Direct package version bump to 3.43.0
+
+#### Bugs Fixed
+
+- [5618](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5618) Diagnostics: Fixes null contacted region name for multimaster hub fallback (410/21005)
+- [5816](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5816) HttpTimeoutPolicy: Fixes aggressive 500ms first-attempt timeout in HttpTimeoutPolicyControlPlaneRetriableHotPath
+- [5819](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5819) LINQ: Fixes .NET 10 MemoryExtensions.Contains breaking change in LINQ queries
+- [5823](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5823) LocationCache: Fixes read fallback to use WriteEndpoints[0] when PPAF enabled and all regions excluded
+- [5825](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5825) ChangeFeedProcessor: Exempts AllVersionsAndDeletes from implicit StartTime back-off (not applicable to LSN-based continuation)
+- [5870](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5870) CrossRegionHedgingAvailabilityStrategy: Fixes StackOverflow in CrossRegionHedgingAvailabilityStrategy Observed in .NET Framework 4.7.2
 
 ### <a name="3.60.0-preview.0"/> [3.60.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.60.0-preview.0) - 2026-4-24
 
