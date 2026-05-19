@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http;
     using System.Net.Security;
     using System.Security.Cryptography.X509Certificates;
-    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
@@ -608,7 +607,7 @@ namespace Microsoft.Azure.Cosmos
         /// (for example, 2.3 seconds becomes 3 seconds).
         /// </item>
         /// </list>
-        /// Negative values are invalid and will be reset to the default with a warning log.
+        /// Negative values are invalid and throw an <see cref="ArgumentOutOfRangeException"/>.
         /// </remarks>
         public TimeSpan? OpenTcpConnectionTimeout
         {
@@ -1348,11 +1347,10 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.OpenTcpConnectionTimeout.HasValue && this.OpenTcpConnectionTimeout.Value < TimeSpan.Zero)
             {
-                DefaultTrace.TraceWarning(
-                    "{0} is set to a negative value ({1}). Negative values are invalid; resetting to default.",
+                throw new ArgumentOutOfRangeException(
                     nameof(this.OpenTcpConnectionTimeout),
-                    this.OpenTcpConnectionTimeout.Value);
-                this.openTcpConnectionTimeout = null;
+                    this.OpenTcpConnectionTimeout.Value,
+                    $"{nameof(this.OpenTcpConnectionTimeout)} must not be negative.");
             }
         }
 

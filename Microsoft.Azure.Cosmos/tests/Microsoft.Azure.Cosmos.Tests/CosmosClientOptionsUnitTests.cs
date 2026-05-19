@@ -828,23 +828,23 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void OpenTcpConnectionTimeout_NegativeTimeSpan_ResetsToDefault()
+        public void OpenTcpConnectionTimeoutNegativeTimeSpanThrowsArgumentOutOfRangeException()
         {
             CosmosClientOptions options = new CosmosClientOptions
             {
                 ConnectionMode = ConnectionMode.Direct,
             };
 
-            // Negative values are reset to null (default) with a warning log.
-            options.OpenTcpConnectionTimeout = TimeSpan.FromMilliseconds(-1);
-            Assert.IsNull(options.OpenTcpConnectionTimeout);
+            // Negative values throw ArgumentOutOfRangeException.
+            Assert.ThrowsException<ArgumentOutOfRangeException>(
+                () => options.OpenTcpConnectionTimeout = TimeSpan.FromMilliseconds(-1));
 
-            options.OpenTcpConnectionTimeout = TimeSpan.FromSeconds(-30);
-            Assert.IsNull(options.OpenTcpConnectionTimeout);
+            Assert.ThrowsException<ArgumentOutOfRangeException>(
+                () => options.OpenTcpConnectionTimeout = TimeSpan.FromSeconds(-30));
         }
 
         [TestMethod]
-        public void OpenTcpConnectionTimeout_Zero_IsAllowed_AndRoundTripsThroughConnectionPolicy()
+        public void OpenTcpConnectionTimeoutZeroIsAllowedAndRoundTripsThroughConnectionPolicy()
         {
             CosmosClientOptions options = new CosmosClientOptions
             {
@@ -857,7 +857,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void OpenTcpConnectionTimeout_SubSecond_NormalizesToZero_InRntbdConfig()
+        public void OpenTcpConnectionTimeoutSubSecondNormalizesToZeroInRntbdConfig()
         {
             CosmosClientOptions options = new CosmosClientOptions
             {
@@ -881,7 +881,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void OpenTcpConnectionTimeout_ExactlyOneSecond_PreservedInRntbdConfig()
+        public void OpenTcpConnectionTimeoutExactlyOneSecondPreservedInRntbdConfig()
         {
             CosmosClientOptions options = new CosmosClientOptions
             {
@@ -902,7 +902,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void OpenTcpConnectionTimeout_WholeSeconds_PreservedInRntbdConfig()
+        public void OpenTcpConnectionTimeoutWholeSecondsPreservedInRntbdConfig()
         {
             CosmosClientOptions options = new CosmosClientOptions
             {
@@ -923,7 +923,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void OpenTcpConnectionTimeout_Fractional_RoundsUpInRntbdConfig()
+        public void OpenTcpConnectionTimeoutFractionalRoundsUpInRntbdConfig()
         {
             CosmosClientOptions options = new CosmosClientOptions
             {
@@ -947,7 +947,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void OpenTcpConnectionTimeout_JustOverOneSecond_RoundsUpInRntbdConfig()
+        public void OpenTcpConnectionTimeoutJustOverOneSecondRoundsUpInRntbdConfig()
         {
             CosmosClientOptions options = new CosmosClientOptions
             {
@@ -971,7 +971,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void OpenTcpConnectionTimeout_Fractional_PreservedOnConnectionPolicyTimeSpan()
+        public void OpenTcpConnectionTimeoutFractionalPreservedOnConnectionPolicyTimeSpan()
         {
             TimeSpan customerSupplied = TimeSpan.FromSeconds(2.5);
             CosmosClientOptions options = new CosmosClientOptions
@@ -993,15 +993,16 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void WithConnectionModeDirect_NegativeOpenTcpTimeout_DoesNotThrow()
+        public void WithConnectionModeDirectNegativeOpenTcpTimeoutThrowsArgumentOutOfRangeException()
         {
             CosmosClientBuilder builder = new CosmosClientBuilder(
                 accountEndpoint: AccountEndpoint,
                 authKeyOrResourceToken: MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
 
-            // Negative values are accepted (no throw) but produce a warning log.
-            builder.WithConnectionModeDirect(
-                openTcpConnectionTimeout: TimeSpan.FromSeconds(-1));
+            // Negative values throw ArgumentOutOfRangeException.
+            Assert.ThrowsException<ArgumentOutOfRangeException>(
+                () => builder.WithConnectionModeDirect(
+                    openTcpConnectionTimeout: TimeSpan.FromSeconds(-1)));
         }
 
         [TestMethod]
