@@ -19,17 +19,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
-- [5815](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5815) Read Consistency Strategy: Adds hub region header for LastCommittedSingleWriteRegion strategy.
-- [5848](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5848) VectorEmbeddingPolicy: Adds EmbeddingSource block to Embedding model
-
 #### Breaking Changes
 
 #### Bugs Fixed
 
-- [5852](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5852) ChangeFeedProcessor: Fixes AllVersionsAndDeletes cold-start regression introduced by #5617 (affects shipped 3.59.0 and 3.60.0-preview.0; the functional `Mode != AllVersionsAndDeletes` guard for the StartTime back-off landed via #5825 — this PR adds defensive regression coverage, the in-source comment fence citing both #5268 and #5846, and the customer-facing Known Issues entry below).
-- [5870](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5870) CrossRegionHedgingAvailabilityStrategy: Fixes StackOverflow in CrossRegionHedgingAvailabilityStrategy Observed in .NET Framework 4.7.2.
+- [5852](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5852) ChangeFeedProcessor: Adds defensive regression coverage and Known Issues entry for the AllVersionsAndDeletes cold-start regression ([#5846](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5846)). The functional fix shipped in [3.60.0](#3.60.0) via [#5825](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5825); this PR adds unit + emulator regression tests and an in-source comment fence to keep the AVAD guard from being dropped.
 
 #### Other Changes
+
+### <a name="3.61.0-preview.0"/> [3.61.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.61.0-preview.0) - 2026-5-18
+
+#### Features Added
+
+- [5815](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5815) Read Consistency Strategy: Adds hub region header for LastCommittedSingleWriteRegion strategy.
+- [5848](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5848) VectorEmbeddingPolicy: Adds EmbeddingSource block to Embedding model
+- [5804](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5804) SemanticReranking: Adds Configurable Request Timeout
+
+#### Bugs Fixed
+
+- [5783](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5783) Container: Fixes SemanticRerankAsync TypeLoadException in derived classes
+
+### <a name="3.60.0"/> [3.60.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.60.0) - 2026-5-18
+
+#### Features Added
+
+- [5825](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5825) ChangeFeed: Promotes Full Fidelity Change Feed (AllVersionsAndDeletes) APIs to GA
+- [5839](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5839) Direct: Adds Direct package version bump to 3.43.0
+
+#### Bugs Fixed
+
+- [5618](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5618) Diagnostics: Fixes null contacted region name for multimaster hub fallback (410/21005)
+- [5816](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5816) HttpTimeoutPolicy: Fixes aggressive 500ms first-attempt timeout in HttpTimeoutPolicyControlPlaneRetriableHotPath
+- [5819](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5819) LINQ: Fixes .NET 10 MemoryExtensions.Contains breaking change in LINQ queries
+- [5823](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5823) LocationCache: Fixes read fallback to use WriteEndpoints[0] when PPAF enabled and all regions excluded
+- [5825](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5825) ChangeFeedProcessor: Exempts AllVersionsAndDeletes from implicit StartTime back-off (not applicable to LSN-based continuation)
+- [5870](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5870) CrossRegionHedgingAvailabilityStrategy: Fixes StackOverflow in CrossRegionHedgingAvailabilityStrategy Observed in .NET Framework 4.7.2
 
 ### <a name="3.60.0-preview.0"/> [3.60.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.60.0-preview.0) - 2026-4-24
 
@@ -1946,7 +1970,7 @@ Below is a list of any know issues affecting the [recommended minimum version](#
 | `FeedIterator` enters an infinite loop after a physical partition split occurs in a container using hierarchical partition keys. | Queries using prefix partition keys.  | Rather than having the PK included in the query request options, filtering on top level hierarchical Pks should be done through where clauses. **NOTE:** This issue has been fixed in version 3.39.0 | [#4326](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4326) | 
 | Single partition queries (queries explicitly targetted to single partition or any queries on collection that had single physical partition) that resume using continuation token after partition split can observe failure on SDK v3.38 and beyond.  | Explicit query exeuction using continuation token will fail query execution if these conditions are met. | Turn off Optimistic Direct Execution during query execution either by setting EnableOptimisticDirectExecution to false in query request options or by setting environment variable AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED to false. | [#4432](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4432) | 
 | An [Azure API](https://learn.microsoft.com/en-us/azure/virtual-machines/instance-metadata-service?tabs=linux) call is made to get the VM information. This call fails if cutomer is on non-Azure VM. | Although this call is made only once, during client initialization but this failure would come up into monitoring tool (e.g AppInsights, Datadog etc.) which leads to a confusion for a developer.| Turn off this call by setting environment variable COSMOS_DISABLE_IMDS_ACCESS to true. |[#4187](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4187) | 
-| ChangeFeedProcessor in `ChangeFeedMode.AllVersionsAndDeletes` fails to start with HTTP 400 on cold start (no persisted lease continuation token). Affects versions [3.59.0](#3.59.0) and [3.60.0-preview.0](#3.60.0-preview.0). | New AVAD ChangeFeedProcessor deployments cannot start. Existing processors that already have a persisted lease continuation token are not affected; LatestVersion-mode processors are not affected. | Upgrade to the next release containing PR [#5852](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5852), or downgrade to [3.57.0-preview.1](#3.57.0-preview.1) (only available as a preview release). Regression was introduced by [#5617](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5617). | [#5846](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5846) | 
+| ChangeFeedProcessor in `ChangeFeedMode.AllVersionsAndDeletes` fails to start with HTTP 400 on cold start (no persisted lease continuation token). Affects versions [3.59.0](#3.59.0) and [3.60.0-preview.0](#3.60.0-preview.0). | New AVAD ChangeFeedProcessor deployments cannot start. Existing processors that already have a persisted lease continuation token are not affected; LatestVersion-mode processors are not affected. | Upgrade to [3.60.0](#3.60.0) (or later), which contains the functional fix via [#5825](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5825), or downgrade to [3.57.0-preview.1](#3.57.0-preview.1) (only available as a preview release). Regression was introduced by [#5617](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5617). | [#5846](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5846) | 
 
 ## Release & Retirement dates
 
