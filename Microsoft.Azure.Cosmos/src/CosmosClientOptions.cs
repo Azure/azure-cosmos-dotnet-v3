@@ -395,6 +395,10 @@ namespace Microsoft.Azure.Cosmos
         /// If also set at request level (e.g., in <see cref="ItemRequestOptions.ReadConsistencyStrategy"/>),
         /// the request-level value is used.
         /// <para>
+        /// The strategy is honored in Direct connectivity mode and in Gateway connectivity mode when the
+        /// request is routed via the Thin Client proxy.
+        /// </para>
+        /// <para>
         /// <see cref="ReadConsistencyStrategy.GlobalStrong"/> is only valid for accounts configured with Strong consistency.
         /// </para>
         /// </remarks>

@@ -11,7 +11,8 @@ namespace Microsoft.Azure.Cosmos
     /// <remarks>
     /// <para>
     /// When set, <see cref="ReadConsistencyStrategy"/> takes precedence over <see cref="ConsistencyLevel"/>
-    /// for read and query operations. The strategy is honored in Direct connectivity mode.
+    /// for read and query operations. The strategy is honored in Direct connectivity mode and in
+    /// Gateway connectivity mode when the request is routed via the Thin Client proxy.
     /// </para>
     /// <para>
     /// <see cref="GlobalStrong"/> is only valid for accounts configured with Strong consistency.
