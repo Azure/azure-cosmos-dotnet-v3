@@ -1,0 +1,12 @@
+# Auto-resolve changelog merge conflicts by taking both sides' bullets.
+# Background: PR #5864 moved the SDK to a per-PR `### Unreleased` model where
+# every shipped-source PR appends a bullet to the same anchor, and each release
+# PR (e.g. #5876) moves those bullets into a versioned section. Both shapes
+# produce textbook merge conflicts. The `union` driver takes lines from both
+# sides on conflict, which is exactly the "take both bullets" rule already
+# documented in CONTRIBUTING.md (## Changelog entry > Merge conflicts).
+# Caveat: if two PRs edit the SAME line (rare for append-only bullet lists),
+# union loses information silently. For the Unreleased + versioned-section
+# pattern this is acceptable; reviewers should still eyeball changelog diffs.
+changelog.md merge=union
+Microsoft.Azure.Cosmos/FaultInjection/changelog.md merge=union
