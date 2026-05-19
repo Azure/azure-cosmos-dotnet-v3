@@ -271,7 +271,7 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
-        public override async Task<DistributedTransactionResponse> CommitTransactionAsync(CancellationToken cancellationToken)
+        public override async Task<DistributedTransactionResponse> CommitTransactionAsync(CancellationToken cancellationToken = default)
         {
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 operations: this.operations,

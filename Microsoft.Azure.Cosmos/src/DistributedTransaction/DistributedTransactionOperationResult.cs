@@ -40,6 +40,7 @@ namespace Microsoft.Azure.Cosmos
             this.RequestCharge = other.RequestCharge;
             this.ActivityId = other.ActivityId;
             this.Trace = other.Trace;
+            this.SerializerCore = other.SerializerCore;
         }
 
         /// <summary>
@@ -102,6 +103,12 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the resource stream associated with the operation result.
         /// The stream contains the raw response payload returned by the operation.
         /// </summary>
+        /// <remarks>
+        /// <b>Lifetime / ownership:</b> This stream is owned by the enclosing
+        /// <see cref="DistributedTransactionResponse"/> and will be disposed when that response is disposed.
+        /// Do not dispose it directly. To deserialize to a typed object, use
+        /// <see cref="DistributedTransactionResponse.GetOperationResultAtIndex{T}"/>.
+        /// </remarks>
         [JsonIgnore]
         public virtual Stream ResourceStream { get; internal set; }
 
@@ -135,10 +142,53 @@ namespace Microsoft.Azure.Cosmos
         [JsonIgnore]
         internal ITrace Trace { get; set; }
 
+        [JsonIgnore]
+        internal CosmosSerializerCore SerializerCore { get; set; }
+
         private static readonly JsonSerializerOptions CaseInsensitiveOptions = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true,
         };
+
+        /// <summary>
+        /// Returns a fresh <see cref="Stream"/> that exposes the same bytes as <paramref name="source"/>
+        /// without affecting the source stream's position or lifetime.
+        /// </summary>
+        internal static Stream CreateSnapshot(Stream source)
+        {
+            // Fast path for standard MemoryStream.
+            if (source is MemoryStream ms
+                && ms.GetType() == typeof(MemoryStream)
+                && ms.TryGetBuffer(out ArraySegment<byte> buffer))
+            {
+                return new MemoryStream(
+                    buffer: buffer.Array,
+                    index: buffer.Offset,
+                    count: buffer.Count,
+                    writable: false,
+                    publiclyVisible: true);
+            }
+
+            // Fallback for other stream types. For seekable streams the position is reset
+            // before and after copying. Non-seekable streams are copied from their current
+            // position, which is acceptable here because the only producer of ResourceStream
+            // is a freshly-created MemoryStream at position 0 (see FromJson).
+            if (source.CanSeek)
+            {
+                source.Position = 0;
+            }
+
+            MemoryStream copy = new MemoryStream();
+            source.CopyTo(copy);
+            copy.Position = 0;
+
+            if (source.CanSeek)
+            {
+                source.Position = 0;
+            }
+
+            return copy;
+        }
 
         /// <summary>
         /// Creates a <see cref="DistributedTransactionOperationResult"/> from a JSON element.
@@ -192,5 +242,39 @@ namespace Microsoft.Azure.Cosmos
 
             return result;
         }
+    }
+
+    /// <summary>
+    /// Represents a typed result for a specific operation that was part of a <see cref="DistributedTransaction"/> request.
+    /// </summary>
+    /// <typeparam name="T">The type to which the resource body was deserialized.</typeparam>
+#pragma warning disable SA1402 // File may only contain a single type
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+    class DistributedTransactionOperationResult<T> : DistributedTransactionOperationResult
+#pragma warning restore SA1402 // File may only contain a single type
+    {
+        internal DistributedTransactionOperationResult(DistributedTransactionOperationResult result, T resource)
+            : base(result)
+        {
+            this.Resource = resource;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DistributedTransactionOperationResult{T}"/> class.
+        /// </summary>
+        protected DistributedTransactionOperationResult()
+        {
+        }
+
+        /// <summary>
+        /// Gets the resource deserialized from the operation response body.
+        /// Returns <c>default</c> when the server did not return a resource body for the operation
+        /// (for example, a delete operation or a failed operation).
+        /// </summary>
+        public virtual T Resource { get; set; }
     }
 }
