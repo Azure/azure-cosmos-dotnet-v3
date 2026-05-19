@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
+- [#5878](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5878) Direct: Fixes missing validation for `MaxTcpConnectionsPerEndpoint`. Values below the documented minimum (16) now emit a warning and reset to the default (null).
 - [#5873](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5873) Direct: Fixes silent truncation of `OpenTcpConnectionTimeout`. Sub-second values normalize to `TimeSpan.Zero` (request-timeout fallback). Fractional values greater than or equal to 1 second round up to the nearest whole second at the transport boundary (for example, 2.3 seconds becomes 3 seconds). Negative values are reset to the default with a warning log.
 
 #### Other Changes

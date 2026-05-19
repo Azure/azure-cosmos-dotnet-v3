@@ -1354,6 +1354,15 @@ namespace Microsoft.Azure.Cosmos
                     this.OpenTcpConnectionTimeout.Value);
                 this.openTcpConnectionTimeout = null;
             }
+
+            if (this.maxTcpConnectionsPerEndpoint.HasValue && this.maxTcpConnectionsPerEndpoint.Value < 16)
+            {
+                DefaultTrace.TraceWarning(
+                    "{0} is set to a value less than the minimum ({1}). Values below 16 are invalid; resetting to default (null).",
+                    nameof(this.MaxTcpConnectionsPerEndpoint),
+                    this.maxTcpConnectionsPerEndpoint.Value);
+                this.maxTcpConnectionsPerEndpoint = null;
+            }
         }
 
         internal UserAgentContainer CreateUserAgentContainerWithFeatures(int clientId)

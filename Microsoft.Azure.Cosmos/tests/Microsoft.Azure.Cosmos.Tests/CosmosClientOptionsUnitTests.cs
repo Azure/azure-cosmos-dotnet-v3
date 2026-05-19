@@ -844,6 +844,48 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void MaxTcpConnectionsPerEndpoint_BelowMinimum_ResetsToDefault()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+            };
+
+            // Value below minimum (15) is reset to null with a warning.
+            options.MaxTcpConnectionsPerEndpoint = 15;
+            Assert.IsNull(options.MaxTcpConnectionsPerEndpoint);
+
+            // Zero is reset to null with a warning.
+            options.MaxTcpConnectionsPerEndpoint = 0;
+            Assert.IsNull(options.MaxTcpConnectionsPerEndpoint);
+
+            // Negative value is reset to null with a warning.
+            options.MaxTcpConnectionsPerEndpoint = -1;
+            Assert.IsNull(options.MaxTcpConnectionsPerEndpoint);
+        }
+
+        [TestMethod]
+        public void MaxTcpConnectionsPerEndpoint_AtOrAboveMinimum_Succeeds()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+            };
+
+            // Exact minimum is accepted.
+            options.MaxTcpConnectionsPerEndpoint = 16;
+            Assert.AreEqual(16, options.MaxTcpConnectionsPerEndpoint);
+
+            // Above minimum is accepted.
+            options.MaxTcpConnectionsPerEndpoint = 65535;
+            Assert.AreEqual(65535, options.MaxTcpConnectionsPerEndpoint);
+
+            // Null is accepted (means default).
+            options.MaxTcpConnectionsPerEndpoint = null;
+            Assert.IsNull(options.MaxTcpConnectionsPerEndpoint);
+        }
+
+        [TestMethod]
         public void OpenTcpConnectionTimeout_Zero_IsAllowed_AndRoundTripsThroughConnectionPolicy()
         {
             CosmosClientOptions options = new CosmosClientOptions
