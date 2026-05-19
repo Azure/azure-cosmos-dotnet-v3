@@ -283,7 +283,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 case FaultInjectionServerErrorType.AadTokenRevoked:
                     INameValueCollection aadTokenRevokedHeaders = args.RequestHeaders;
                     aadTokenRevokedHeaders.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
-                    aadTokenRevokedHeaders.Set(WFConstants.BackendHeaders.SubStatus, "5013");
+                    aadTokenRevokedHeaders.Set(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.AadTokenRevoked).ToString());
                     aadTokenRevokedHeaders.Set(
                         HttpConstants.HttpHeaders.WwwAuthenticate,
                         this.GenerateWwwAuthenticateForRevocation());
@@ -595,13 +595,13 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                             new MemoryStream(
                                 isProxyCall
                                     ? FaultInjectionResponseEncoding.GetBytes(
-                                        GetProxyResponseMessageString((int)StatusCodes.Unauthorized, 5013, "AadTokenRevoked", ruleId))
+                                        GetProxyResponseMessageString((int)StatusCodes.Unauthorized, (int)SubStatusCodes.AadTokenRevoked, "AadTokenRevoked", ruleId))
                                     : FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: AadTokenRevoked, rule: {ruleId}"))),
                     };
                     this.SetHttpHeaders(httpResponse, headers, isProxyCall);
                     httpResponse.Headers.Add(
                         WFConstants.BackendHeaders.SubStatus,
-                        "5013");
+                        ((int)SubStatusCodes.AadTokenRevoked).ToString());
                     httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
                     httpResponse.Headers.TryAddWithoutValidation(
                         "WWW-Authenticate",

@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos
                 return false;
             }
 
-            if (exception.GetSubStatus() != (SubStatusCodes)5013)
+            if (exception.GetSubStatus() != SubStatusCodes.AadTokenRevoked)
             {
                 return false;
             }

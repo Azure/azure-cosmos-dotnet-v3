@@ -894,7 +894,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 message: "AAD token revocation",
                 innerException: null,
                 statusCode: HttpStatusCode.Unauthorized,
-                substatusCode: (SubStatusCodes)5013,
+                substatusCode: SubStatusCodes.AadTokenRevoked,
                 requestUri: request.RequestContext.LocationEndpointToRoute,
                 responseHeaders: responseHeaders);
 

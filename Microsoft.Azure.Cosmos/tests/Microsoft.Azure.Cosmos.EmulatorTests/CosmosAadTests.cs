@@ -509,7 +509,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 RequestMessage = request,
                                 Content = new StringContent("{\"code\":\"Unauthorized\",\"message\":\"Provided AAD token has been revoked.\"}")
                             };
-                            unauthorizedResponse.Headers.Add("x-ms-substatus", "5013");
+                            unauthorizedResponse.Headers.Add("x-ms-substatus", ((int)Documents.SubStatusCodes.AadTokenRevoked).ToString());
                             unauthorizedResponse.Headers.Add(
                                 "WWW-Authenticate",
                                 CosmosAadTests.GenerateWwwAuthenticateHeaderValue());
@@ -597,7 +597,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 RequestMessage = request,
                                 Content = new StringContent("{\"code\":\"Unauthorized\",\"message\":\"Provided AAD token has been revoked.\"}")
                             };
-                            caeResponse.Headers.Add("x-ms-substatus", "5013");
+                            caeResponse.Headers.Add("x-ms-substatus", ((int)Documents.SubStatusCodes.AadTokenRevoked).ToString());
                             caeResponse.Headers.Add(
                                 "WWW-Authenticate",
                                 CosmosAadTests.GenerateWwwAuthenticateHeaderValue());

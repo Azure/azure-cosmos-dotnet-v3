@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.isThinClientEnabled)
                 {
-                    headers.Add(
+                    headers.Set(
                         ThinClientConstants.EnableThinClientEndpointDiscoveryHeaderName,
                         this.isThinClientEnabled.ToString());
                 }

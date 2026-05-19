@@ -434,7 +434,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             if (statusCode == HttpStatusCode.Unauthorized
-                && subStatusCode == (SubStatusCodes)5013
+                && subStatusCode == SubStatusCodes.AadTokenRevoked
                 && !string.IsNullOrEmpty(wwwAuthenticateHeaderValue))
             {
                 return this.HandleUnauthorizedResponse(wwwAuthenticateHeaderValue);

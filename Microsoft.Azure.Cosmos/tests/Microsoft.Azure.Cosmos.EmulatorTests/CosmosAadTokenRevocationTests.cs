@@ -389,7 +389,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string wwwAuth = "Bearer realm=\"\", authorization_uri=\"\", error=\"insufficient_claims\", claims=\"" + base64Claims + "\"";
 
             HttpResponseMessage response = new HttpResponseMessage(HttpStatusCode.Unauthorized);
-            response.Headers.TryAddWithoutValidation("x-ms-substatus", "5013");
+            response.Headers.TryAddWithoutValidation("x-ms-substatus", ((int)Documents.SubStatusCodes.AadTokenRevoked).ToString());
             response.Headers.TryAddWithoutValidation("x-ms-activity-id", Guid.NewGuid().ToString());
             response.Content = new StringContent("{\"code\":\"Unauthorized\",\"message\":\"Provided AAD token has been revoked.\"}");
             response.Headers.TryAddWithoutValidation("WWW-Authenticate", wwwAuth);
