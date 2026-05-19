@@ -8,5 +8,11 @@
 # Caveat: if two PRs edit the SAME line (rare for append-only bullet lists),
 # union loses information silently. For the Unreleased + versioned-section
 # pattern this is acceptable; reviewers should still eyeball changelog diffs.
-changelog.md merge=union
-Microsoft.Azure.Cosmos/FaultInjection/changelog.md merge=union
+# Patterns are anchored with a leading `/` so they apply only to the two
+# changelogs in scope (main SDK + FaultInjection). Without anchoring, git
+# matches gitignore-style at any depth and would also catch
+# Microsoft.Azure.Cosmos.Encryption/changelog.md and
+# Microsoft.Azure.Cosmos.Encryption.Custom/changelog.md, which #5864
+# explicitly deferred.
+/changelog.md merge=union
+/Microsoft.Azure.Cosmos/FaultInjection/changelog.md merge=union
