@@ -312,6 +312,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 new ChangeFeedProcessorOptions(),
                 ChangeFeedEstimatorRunnerTests.GetMockedContainer("monitored"));
 
+            Assert.IsNotNull(estimator);
+
             try
             {
                 await estimator.StartAsync();
@@ -319,6 +321,70 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             finally
             {
                 await estimator.StopAsync();
+            }
+        }
+
+        [TestMethod]
+        public async Task StartAsync_TriggersDelegate_WithInMemoryLeaseContainer()
+        {
+            const long remainingWork = 15;
+            long estimationDelegateValue = 0;
+            bool receivedEstimation = false;
+            Task estimationDelegate(long estimation, CancellationToken token)
+            {
+                estimationDelegateValue = estimation;
+                receivedEstimation = true;
+                return Task.CompletedTask;
+            }
+
+            Mock<DocumentServiceLeaseContainer> mockLeaseContainer = new Mock<DocumentServiceLeaseContainer>();
+            mockLeaseContainer
+                .Setup(c => c.GetAllLeasesAsync())
+                .ReturnsAsync(new List<DocumentServiceLease>());
+
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(mockLeaseContainer.Object);
+            leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
+            leaseStoreManager.Setup(l => l.LeaseStore).Returns(Mock.Of<DocumentServiceLeaseStore>);
+            leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
+
+            ChangeFeedEstimatorRunner estimator = null;
+            try
+            {
+                estimator = ChangeFeedEstimatorRunnerTests.CreateEstimator(estimationDelegate, out Mock<ChangeFeedEstimator> remainingWorkEstimator);
+                estimator.ApplyBuildConfiguration(
+                    leaseStoreManager.Object,
+                    null, // No physical lease container (in-memory scenario)
+                    "instanceName",
+                    new ChangeFeedLeaseOptions() { LeasePrefix = "estimatorTest" },
+                    new ChangeFeedProcessorOptions(),
+                    ChangeFeedEstimatorRunnerTests.GetMockedContainer("monitored"));
+
+                Mock<FeedResponse<ChangeFeedProcessorState>> mockedResponse = new Mock<FeedResponse<ChangeFeedProcessorState>>();
+                mockedResponse.Setup(r => r.Count).Returns(1);
+                mockedResponse.Setup(r => r.GetEnumerator()).Returns(new List<ChangeFeedProcessorState>() { new ChangeFeedProcessorState(string.Empty, remainingWork, string.Empty) }.GetEnumerator());
+
+                Mock<FeedIterator<ChangeFeedProcessorState>> mockedIterator = new Mock<FeedIterator<ChangeFeedProcessorState>>();
+                mockedIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(mockedResponse.Object);
+
+                remainingWorkEstimator.Setup(e => e.GetCurrentStateIterator(It.IsAny<ChangeFeedEstimatorRequestOptions>())).Returns(mockedIterator.Object);
+
+                await estimator.StartAsync();
+
+                int waitIterations = 0; // Failsafe in case someone breaks the estimator so this does not run forever
+                while (!receivedEstimation && waitIterations++ < 3)
+                {
+                    Thread.Sleep(TimeSpan.FromSeconds(10));
+                }
+
+                Assert.AreEqual(remainingWork, estimationDelegateValue);
+            }
+            finally
+            {
+                if (estimator != null)
+                {
+                    await estimator.StopAsync();
+                }
             }
         }
 

@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+- [5827](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5827) ChangeFeedEstimator: Adds support for in-memory lease container.
+
 #### Breaking Changes
 
 #### Bugs Fixed
@@ -36,7 +38,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Bugs Fixed
 
 - [5783](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5783) Container: Fixes SemanticRerankAsync TypeLoadException in derived classes
-- [5827](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5827) Change Feed Estimator: Fixes `ArgumentNullException` when using an in-memory lease container
 
 ### <a name="3.60.0"/> [3.60.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.60.0) - 2026-5-18
 
