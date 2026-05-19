@@ -93,6 +93,59 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        /// <summary>
+        /// Regression test for the init-path race called out on PR #5829: in production,
+        /// <see cref="DocumentClient.InitializePartitionLevelFailoverWithDefaultHedging"/> is invoked
+        /// from <c>DocumentClient.cs</c> line 1108 — i.e. <em>after</em>
+        /// <c>InitializeGatewayConfigurationReaderAsync</c> subscribes the
+        /// <see cref="Routing.GlobalEndpointManager.OnEnablePartitionLevelFailoverConfigChanged"/>
+        /// handler and starts the background account-properties refresh loop. A refresh that fires in
+        /// that narrow window can flip <c>disableCrossRegionalHedging</c> via
+        /// <see cref="DocumentClient.UpdatePartitionLevelFailoverConfigWithAccountRefresh(bool, bool)"/>
+        /// before the init thread reaches the default-hedging block. Without acquire/release semantics
+        /// on the flag field, the init-path read could observe a stale value and silently install the
+        /// SDK default hedging strategy <em>after</em> the operator just disabled hedging.
+        ///
+        /// Companion to <see cref="InitializePartitionLevelFailoverWithDefaultHedging_FlagTrue_SkipsApplyingDefaultStrategy"/>:
+        /// that test pins the flag through the synthetic test setter; this one exercises the actual
+        /// refresh code path that the race scenario depends on.
+        /// </summary>
+        [TestMethod]
+        public void InitializePartitionLevelFailoverWithDefaultHedging_AfterRefreshDrivenFlagFlip_SkipsApplyingDefaultStrategy()
+        {
+            DocumentClient client = CreateClient(new ConnectionPolicy { EnablePartitionLevelFailover = true });
+            try
+            {
+                Assert.IsNull(client.ConnectionPolicy.AvailabilityStrategy, "Pre-condition: no strategy configured");
+                Assert.IsFalse(client.DisableCrossRegionalHedgingForTests, "Pre-condition: flag starts at default false");
+
+                // Simulate a refresh-driven flag flip — this is exactly what GEM's background-refresh
+                // loop calls when AccountProperties.DisableCrossRegionalHedging transitions, and it is
+                // the write that the init-path read at DocumentClient.cs:6963 races against.
+                client.UpdatePartitionLevelFailoverConfigWithAccountRefresh(
+                    latestIsEnabled: true,
+                    latestDisableCrossRegionalHedging: true);
+
+                Assert.IsTrue(
+                    client.DisableCrossRegionalHedgingForTests,
+                    "Refresh callback must have published the flag transition");
+
+                // Now exercise the init-path read. With volatile semantics on the field, the read here
+                // has acquire semantics and is guaranteed to observe the published value above — and
+                // therefore must skip applying the SDK default hedging strategy.
+                client.InitializePartitionLevelFailoverWithDefaultHedging();
+
+                Assert.IsNull(
+                    client.ConnectionPolicy.AvailabilityStrategy,
+                    "Init-path read of disableCrossRegionalHedging must observe the post-refresh value " +
+                    "and skip applying the SDK default hedging strategy");
+            }
+            finally
+            {
+                client.Dispose();
+            }
+        }
+
         [TestMethod]
         public void UpdateConfig_FlagToggleOn_StashesCustomerStrategyAndClearsAvailabilityStrategy()
         {

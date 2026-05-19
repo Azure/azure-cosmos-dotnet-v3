@@ -157,9 +157,14 @@ namespace Microsoft.Azure.Cosmos
         //      caller that wires them up. If a future change ever invokes them off the GEM-serialized
         //      path, the stash/clear/restore sequence stays atomic instead of regressing silently.
         //
-        // Per-request reads of ConnectionPolicy.AvailabilityStrategy from RequestInvokerHandler continue
-        // to rely on atomic reference assignment; they observe either the pre- or post-transition strategy,
-        // never a half-applied state, and intentionally do not take this lock.
+        // Per-request reads from RequestInvokerHandler intentionally do NOT take this lock:
+        //   • disableCrossRegionalHedging is declared volatile (acquire semantics on read, release on
+        //     write), which is sufficient for the per-request "is the gateway kill-switch on?" check.
+        //   • ConnectionPolicy.AvailabilityStrategy is a reference field; reference assignment is atomic
+        //     on the CLR, so a request observes either the pre- or post-transition strategy, never a
+        //     half-applied state.
+        // Skipping the lock keeps the hot path on RequestInvokerHandler.AvailabilityStrategy(...)
+        // monitor-free.
         private readonly object hedgingStrategyLock = new object();
 
         internal bool isThinClientEnabled;
@@ -202,9 +207,14 @@ namespace Microsoft.Azure.Cosmos
 
         // Gateway-controlled override that disables all cross-regional hedging for PPAF accounts.
         // Mirrors AccountProperties.DisableCrossRegionalHedging from the most recent account-properties refresh.
-        // Always read/written under hedgingStrategyLock from the refresh path; per-request reads of the
-        // mirrored ConnectionPolicy.AvailabilityStrategy rely on atomic reference assignment.
-        private bool disableCrossRegionalHedging;
+        //
+        // Declared volatile so per-request reads from RequestInvokerHandler (via IsHedgingDisabledByGateway)
+        // and the init-time read in InitializePartitionLevelFailoverWithDefaultHedging do not need to take
+        // hedgingStrategyLock — volatile gives acquire semantics on the read and release semantics on the
+        // write, which is exactly what the "atomic kill-switch" contract requires. The lock continues to
+        // serialize the multi-field (flag + stashed strategy + ConnectionPolicy.AvailabilityStrategy)
+        // mutation sequence on the refresh / init-stash paths.
+        private volatile bool disableCrossRegionalHedging;
 
         // When the gateway disable flag is true, the customer's explicit AvailabilityStrategy
         // (if any) is stashed here so it can be restored verbatim if the flag is later toggled back to false.
@@ -7167,22 +7177,20 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Atomic read of the cached Gateway <c>disableCrossRegionalHedging</c> flag, taken under
-        /// <see cref="hedgingStrategyLock"/>. Used by <see cref="Handlers.RequestInvokerHandler.AvailabilityStrategy(RequestMessage)"/>
-        /// to enforce the operator-override precedence over per-request and client-level strategy:
+        /// Lock-free atomic read of the cached Gateway <c>disableCrossRegionalHedging</c> flag. Used by
+        /// <see cref="Handlers.RequestInvokerHandler.AvailabilityStrategy(RequestMessage)"/> on every
+        /// request to enforce the operator-override precedence over per-request and client-level strategy:
         /// when the Gateway flag is <c>true</c>, hedging is OFF for every request on this client,
         /// regardless of where the strategy was configured.
         /// </summary>
-        internal bool IsHedgingDisabledByGateway
-        {
-            get
-            {
-                lock (this.hedgingStrategyLock)
-                {
-                    return this.disableCrossRegionalHedging;
-                }
-            }
-        }
+        /// <remarks>
+        /// Safe to read without <see cref="hedgingStrategyLock"/> because the backing field is declared
+        /// <c>volatile</c> — the read has acquire semantics, so any write that completed on the refresh
+        /// path before its lock release is visible here. Taking a monitor on every request would impose
+        /// uncontended-but-non-zero cost on the SDK hot path (steady-state benchmarks would not surface
+        /// the regression).
+        /// </remarks>
+        internal bool IsHedgingDisabledByGateway => this.disableCrossRegionalHedging;
 
         // Test-only accessors. Visible to the unit-test assembly via [InternalsVisibleTo] in
         // Microsoft.Azure.Cosmos.csproj.
@@ -7205,13 +7213,11 @@ namespace Microsoft.Azure.Cosmos
         // introduced these accessors should be removed in favor of mocking the account snapshot.
         internal bool DisableCrossRegionalHedgingForTests
         {
-            get
-            {
-                lock (this.hedgingStrategyLock)
-                {
-                    return this.disableCrossRegionalHedging;
-                }
-            }
+            // Read is lock-free because disableCrossRegionalHedging is volatile (see field declaration).
+            // The setter retains the lock so a test write happens-before any subsequent observation on the
+            // reconcile path that mutates the companion fields (customerConfiguredAvailabilityStrategy,
+            // ConnectionPolicy.AvailabilityStrategy) under the same lock.
+            get => this.disableCrossRegionalHedging;
             set
             {
                 lock (this.hedgingStrategyLock)
