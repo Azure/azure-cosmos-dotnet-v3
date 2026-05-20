@@ -510,10 +510,10 @@
 
         /// <summary>
         /// End-to-end test for the hub region discovery flow on a single-master account (Direct mode):
-        /// 1st request ΓåÆ 404/1002 (no hub header) ΓåÆ retry to write region
-        /// 2nd request ΓåÆ 404/1002 (no hub header) ΓåÆ hub header flag set, retry
-        /// 3rd request ΓåÆ assert hub header present ΓåÆ 403/3 from non-hub ΓåÆ retry
-        /// 4th request ΓåÆ assert hub header present ΓåÆ 200 success
+        /// 1st request → 404/1002 (no hub header) → retry to write region
+        /// 2nd request → 404/1002 (no hub header) → hub header flag set, retry
+        /// 3rd request → assert hub header present → 403/3 from non-hub → retry
+        /// 4th request → assert hub header present → 200 success
         /// </summary>
         [TestMethod]
         public async Task ClientRetryPolicy_HubRegionDiscovery_EndToEnd_DirectMode()
@@ -574,7 +574,7 @@
 
             Assert.IsTrue(shouldRetry.ShouldRetry, "Should retry after second 404/1002 (hub header flag now set).");
 
-            // ---- Step 3: Retry with hub region header ΓåÆ gets 403/3 ----
+            // ---- Step 3: Retry with hub region header → gets 403/3 ----
             retryPolicy.OnBeforeSendRequest(request);
             string[] headerValues = request.Headers.GetValues(HubRegionHeader);
             Assert.IsNotNull(headerValues, "Hub region header MUST be present on the retry after two consecutive 404/1002 errors.");
@@ -594,7 +594,7 @@
 
             Assert.IsTrue(shouldRetry.ShouldRetry, "Should retry after 403/3 to continue hub region discovery.");
 
-            // ---- Step 4: Retry still carries hub header ΓåÆ 200 success ----
+            // ---- Step 4: Retry still carries hub header → 200 success ----
             retryPolicy.OnBeforeSendRequest(request);
             headerValues = request.Headers.GetValues(HubRegionHeader);
             Assert.IsNotNull(headerValues, "Hub region header MUST persist through 403/3 retries.");
@@ -640,7 +640,7 @@
                 CancellationToken.None);
             Assert.IsTrue(shouldRetry.ShouldRetry);
 
-            // ---- 2nd 404/1002 ΓåÆ hub header flag gets set ----
+            // ---- 2nd 404/1002 → hub header flag gets set ----
             retryPolicy.OnBeforeSendRequest(request);
             shouldRetry = await retryPolicy.ShouldRetryAsync(
                 new DocumentClientException(
@@ -1073,7 +1073,7 @@
             }
         }
 
-        // ΓöÇΓöÇΓöÇ DTX (Distributed Transaction) retry tests ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+        // ─── DTX (Distributed Transaction) retry tests ───────────────────────────────
 
         [TestMethod]
         public async Task DtxRequest_408_ShouldRetry()
