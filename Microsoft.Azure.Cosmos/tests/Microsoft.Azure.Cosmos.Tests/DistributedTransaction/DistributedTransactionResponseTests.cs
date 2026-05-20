@@ -166,6 +166,29 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [Description("When a count-mismatch synthetic 500 is built, the sub-status code from the wire header must be preserved rather than discarded as Unknown.")]
+        public async Task FromResponseMessage_CountMismatch_SuccessStatus_PreservesWireSubStatusCode()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 2);
+
+            // 2 operations submitted but server returns only 1 result — triggers the synthetic 500 path.
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+            responseMessage.Headers.SubStatusCode = (SubStatusCodes)1009; // a non-Unknown sub-status code
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.InternalServerError, response.StatusCode);
+            Assert.AreEqual((SubStatusCodes)1009, response.SubStatusCode,
+                "The wire sub-status code must be preserved in the synthetic 500 response rather than replaced with Unknown.");
+        }
+
+        [TestMethod]
         [Description("When the server returns fewer results than submitted operations and the HTTP status is an error, results are padded.")]
         public async Task FromResponseMessage_CountMismatch_FewerResults_ErrorStatus_PadsResults()
         {

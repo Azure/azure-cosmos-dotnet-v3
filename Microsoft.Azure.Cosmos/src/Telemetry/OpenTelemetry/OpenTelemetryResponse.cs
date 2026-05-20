@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal OpenTelemetryResponse(DistributedTransactionResponse response)
            : this(
-                  statusCode: response.StatusCode,
+                  statusCode: (response ?? throw new ArgumentNullException(nameof(response))).StatusCode,
                   requestCharge: OpenTelemetryResponse.GetHeader(response)?.RequestCharge,
                   responseContentLength: null,
                   diagnostics: response.Diagnostics,

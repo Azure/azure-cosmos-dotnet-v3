@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -385,6 +386,48 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.AreEqual(HttpStatusCode.Conflict, response.StatusCode);
             Assert.IsFalse(response.IsSuccessStatusCode);
+        }
+
+        [TestMethod]
+        [Description("CommitTransactionAsync must route through OperationHelperAsync with the correct operation name, OperationType, TraceComponent, and OTel operation name for the write path — ensuring the write path is distinct from the read path.")]
+        public async Task CommitTransactionAsync_RoutesThroughOperationHelper_WithExpectedWiring()
+        {
+            string capturedOperationName = null;
+            OperationType capturedOperationType = default;
+            TraceComponent capturedTraceComponent = default;
+            string capturedOTelOperationName = null;
+
+            Mock<CosmosClientContext> contextMock = new Mock<CosmosClientContext>();
+            contextMock
+                .Setup(c => c.OperationHelperAsync<DistributedTransactionResponse>(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<Func<ITrace, Task<DistributedTransactionResponse>>>(),
+                    It.IsAny<(string OperationName, Func<DistributedTransactionResponse, Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryAttributes> GetAttributes)?>(),
+                    It.IsAny<ResourceType?>(),
+                    It.IsAny<TraceComponent>(),
+                    It.IsAny<TraceLevel>()))
+                .Returns<string, string, string, OperationType, RequestOptions, Func<ITrace, Task<DistributedTransactionResponse>>, (string, Func<DistributedTransactionResponse, Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryAttributes>)?, ResourceType?, TraceComponent, TraceLevel>(
+                    (operationName, containerName, databaseName, operationType, requestOptions, func, oTelTuple, resourceType, comp, level) =>
+                    {
+                        capturedOperationName = operationName;
+                        capturedOperationType = operationType;
+                        capturedTraceComponent = comp;
+                        capturedOTelOperationName = oTelTuple?.Item1;
+                        return Task.FromResult<DistributedTransactionResponse>(null);
+                    });
+
+            await new DistributedWriteTransactionCore(contextMock.Object)
+                .CreateItem(Database, Container, new PartitionKey("pk"), "id", new TestItem())
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.AreEqual($"{nameof(DistributedWriteTransaction)}.{nameof(DistributedWriteTransaction.CommitTransactionAsync)}", capturedOperationName);
+            Assert.AreEqual(OperationType.CommitDistributedTransaction, capturedOperationType);
+            Assert.AreEqual(TraceComponent.Batch, capturedTraceComponent);
+            Assert.AreEqual(OpenTelemetryConstants.Operations.CommitDistributedWriteTransaction, capturedOTelOperationName);
         }
 
         // Helpers
