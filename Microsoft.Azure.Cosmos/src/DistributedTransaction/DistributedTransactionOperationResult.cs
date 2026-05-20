@@ -119,12 +119,19 @@ namespace Microsoft.Azure.Cosmos
         [JsonPropertyName("requestCharge")]
         public virtual double RequestCharge { get; internal set; }
 
+        [JsonIgnore]
+        internal virtual SubStatusCodes SubStatusCode { get; set; }
+
         /// <summary>
-        /// Gets the sub-status code for the operation.
+        /// Gets the sub-status code value as an unsigned integer.
         /// </summary>
         [JsonInclude]
         [JsonPropertyName("subStatusCode")]
-        public virtual SubStatusCodes SubStatusCode { get; internal set; }
+        public virtual uint SubStatusCodeValue
+        {
+            get => (uint)this.SubStatusCode;
+            internal set => this.SubStatusCode = (SubStatusCodes)value;
+        }
 
         /// <summary>
         /// ActivityId related to the operation.
