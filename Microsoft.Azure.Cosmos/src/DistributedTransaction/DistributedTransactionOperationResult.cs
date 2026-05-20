@@ -113,6 +113,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual Stream ResourceStream { get; internal set; }
 
         /// <summary>
+        /// Gets the number of request units consumed by this operation.
         /// </summary>
         [JsonInclude]
         [JsonPropertyName("requestCharge")]
