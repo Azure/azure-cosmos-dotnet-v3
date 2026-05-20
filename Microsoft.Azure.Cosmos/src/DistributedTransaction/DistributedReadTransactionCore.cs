@@ -22,21 +22,20 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override DistributedReadTransaction ReadItem(
-            string database,
-            string collection,
+            Container container,
             PartitionKey partitionKey,
             string id,
             DistributedTransactionRequestOptions requestOptions = null)
         {
-            DistributedReadTransactionCore.ValidateContainerReference(database, collection);
+            DistributedReadTransactionCore.ValidateContainerReference(container);
             DistributedReadTransactionCore.ValidateItemId(id);
 
             this.operations.Add(
                 new DistributedTransactionOperation(
                     operationType: OperationType.Read,
                     operationIndex: this.operations.Count,
-                    database: database,
-                    container: collection,
+                    database: container.Database.Id,
+                    container: container.Id,
                     partitionKey: partitionKey,
                     id: id,
                     requestOptions: requestOptions));
@@ -54,16 +53,32 @@ namespace Microsoft.Azure.Cosmos
             return await committer.CommitTransactionAsync(cancellationToken);
         }
 
-        private static void ValidateContainerReference(string database, string collection)
+        private static void ValidateContainerReference(Container container)
         {
-            if (string.IsNullOrWhiteSpace(database))
+            if (container == null)
             {
-                throw new ArgumentNullException(nameof(database));
+                throw new ArgumentNullException(nameof(container));
             }
 
-            if (string.IsNullOrWhiteSpace(collection))
+            if (string.IsNullOrWhiteSpace(container.Id))
             {
-                throw new ArgumentNullException(nameof(collection));
+                throw new ArgumentException(
+                    "Container reference must have a non-empty Id.",
+                    nameof(container));
+            }
+
+            if (container.Database == null)
+            {
+                throw new ArgumentException(
+                    "Container reference must expose a non-null Database.",
+                    nameof(container));
+            }
+
+            if (string.IsNullOrWhiteSpace(container.Database.Id))
+            {
+                throw new ArgumentException(
+                    "Container reference must have a non-empty Database.Id.",
+                    nameof(container));
             }
         }
 
