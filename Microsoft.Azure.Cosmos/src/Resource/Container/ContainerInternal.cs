@@ -55,6 +55,24 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace,
             CancellationToken cancellationToken);
 
+        /// <summary>
+        /// Attempts to retrieve container properties from in-memory cache only.
+        /// Does not trigger client initialization or make HTTP calls.
+        /// Returns false if the cache is not populated.
+        /// </summary>
+        internal virtual bool TryGetCachedContainerPropertiesFromMemory(out ContainerProperties containerProperties)
+        {
+            containerProperties = null;
+            return false;
+        }
+
+        /// <summary>
+        /// True if the owning client has completed initialization.
+        /// Used by pre-pipeline optimizations (HPK /id auto-append) to avoid re-entering
+        /// the init coalescing path before the first request has completed init.
+        /// </summary>
+        internal virtual bool IsClientInitialized => false;
+
         public abstract Task<IReadOnlyList<IReadOnlyList<string>>> GetPartitionKeyPathTokensAsync(
             ITrace trace,
             CancellationToken cancellationToken = default);
@@ -142,10 +160,6 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
             CancellationToken cancellationToken = default);
-
-        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
-            string processorName,
-            ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate);
 
         public abstract Task<bool> IsFeedRangePartOfAsync(
             Cosmos.FeedRange x,
