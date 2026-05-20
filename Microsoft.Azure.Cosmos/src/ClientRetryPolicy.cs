@@ -377,6 +377,18 @@ namespace Microsoft.Azure.Cosmos
                     return ShouldRetryResult.NoRetry();
                 }
 
+                // On single-master accounts, writes always resolve to the single write
+                // endpoint regardless of region marking. Cross-region retry is only
+                // meaningful for reads or multi-write accounts.
+                if (!this.isReadRequest
+                    && !this.canUseMultipleWriteLocations
+                    && !this.partitionKeyRangeLocationCache.IsPartitionLevelAutomaticFailoverEnabled())
+                {
+                    DefaultTrace.TraceInformation(
+                        "ClientRetryPolicy: Not retrying write on single-master. Write endpoint cannot fail over.");
+                    return ShouldRetryResult.NoRetry();
+                }
+
                 return await this.ShouldRetryOnEndpointFailureAsync(
                     isReadRequest: this.isReadRequest,
                     markBothReadAndWriteAsUnavailable: false,

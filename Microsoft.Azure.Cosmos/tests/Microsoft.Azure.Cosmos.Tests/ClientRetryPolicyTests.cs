@@ -276,6 +276,42 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         /// <summary>
+        /// Tests that 410/LeaseNotFound for a write request on a single-master account
+        /// returns NoRetry because the write endpoint cannot fail over.
+        /// </summary>
+        [TestMethod]
+        public async Task Http410LeaseNotFoundWriteNoRetryOnSingleMaster()
+        {
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+               useMultipleWriteLocations: false,
+               enableEndpointDiscovery: enableEndpointDiscovery,
+               isPreferredLocationsListEmpty: false);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+
+            // Write request on single-master account
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false);
+            retryPolicy.OnBeforeSendRequest(request);
+
+            Mock<INameValueCollection> nameValueCollection = new Mock<INameValueCollection>();
+
+            DocumentClientException documentClientException = new DocumentClientException(
+               message: "LeaseNotFound",
+               innerException: new Exception(),
+               responseHeaders: nameValueCollection.Object,
+               statusCode: HttpStatusCode.Gone,
+               substatusCode: SubStatusCodes.LeaseNotFound,
+               requestUri: null
+               );
+
+            ShouldRetryResult retryResult = await retryPolicy.ShouldRetryAsync(documentClientException, CancellationToken.None);
+
+            Assert.IsFalse(retryResult.ShouldRetry,
+                "410/LeaseNotFound for write on single-master should not retry — the write endpoint cannot fail over.");
+        }
+
+        /// <summary>
         /// Tests that 500/InternalServerError for a read request triggers cross-region retry
         /// via ShouldRetryOnEndpointFailureAsync when multiple regions are configured.
         /// </summary>
