@@ -66,10 +66,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         /// <summary>
         /// Gets or sets the optional absolute lifetime for entries written to
-        /// <see cref="DistributedCache"/>. Must be strictly greater than
-        /// <see cref="DekPropertiesTimeToLive"/> so that L2 entries can outlive a peer's L1
-        /// expiry and rescue requests when the source of truth is momentarily unavailable.
-        /// Defaults to twice <see cref="DekPropertiesTimeToLive"/> when <see langword="null"/>.
+        /// <see cref="DistributedCache"/>. When <see cref="DistributedCache"/> is non-<see langword="null"/>,
+        /// must be strictly greater than <see cref="DekPropertiesTimeToLive"/> so that L2 entries
+        /// can outlive a peer's L1 expiry and rescue requests when the source of truth is
+        /// momentarily unavailable; defaults to twice <see cref="DekPropertiesTimeToLive"/> when
+        /// <see langword="null"/>. Inert when <see cref="DistributedCache"/> is <see langword="null"/> —
+        /// neither defaulted nor validated.
         /// </summary>
         public TimeSpan? DistributedCacheEntryLifetime { get; set; }
     }
