@@ -284,7 +284,11 @@ namespace Microsoft.Azure.Cosmos
 
                     if (lastException != null)
                     {
-                        throw lastException;
+                        // Use ExceptionDispatchInfo to preserve the original throwing-frame stack
+                        // trace. `throw lastException;` would reset the StackTrace property to the
+                        // current frame, which defeats the throw-vs-throw-ex preservation work in
+                        // CloneAndSendAsync / RequestSenderAndResultCheckAsync.
+                        System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(lastException).Throw();
                     }
 
                     if (hedgeResponse == null)
@@ -327,12 +331,29 @@ namespace Microsoft.Azure.Cosmos
                     clonedRequest.RequestOptions.ExcludeRegions = excludeRegions;
                 }
 
-                return await this.RequestSenderAndResultCheckAsync(
-                    sender,
-                    clonedRequest,
-                    hedgeRegions.ElementAt(requestNumber),
-                    hedgeRequestsCancellationTokenSource, 
-                    trace);
+                try
+                {
+                    return await this.RequestSenderAndResultCheckAsync(
+                        sender,
+                        clonedRequest,
+                        hedgeRegions.ElementAt(requestNumber),
+                        hedgeRequestsCancellationTokenSource,
+                        trace);
+                }
+                catch
+                {
+                    // .NET Framework workaround: when an exception is thrown deep in the request
+                    // pipeline (e.g. CosmosOperationCanceledException raised after the hedge CTS is
+                    // signalled), it propagates synchronously back through every awaiting async
+                    // method. On .NET Framework 4.7.2 each awaiter consumes ~10KB of stack on the
+                    // exception path, which can blow the managed stack when the request pipeline
+                    // is deep. Yielding here forces the rethrow to resume on a fresh stack via the
+                    // threadpool, breaking the synchronous propagation chain. This is a no-op on
+                    // .NET Core / .NET 5+ (which already optimize this) beyond a single threadpool
+                    // dispatch. See https://github.com/dotnet/runtime for the underlying issue.
+                    await Task.Yield();
+                    throw;
+                }
             }
         }
 
@@ -369,7 +390,7 @@ namespace Microsoft.Azure.Cosmos
             catch (Exception ex)
             {
                 DefaultTrace.TraceError("Exception thrown while executing cross region hedging availability strategy: {0}", ex.Message);
-                throw ex;
+                throw;
             }
         }
 
