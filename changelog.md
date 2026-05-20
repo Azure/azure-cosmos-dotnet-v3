@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Features Added
 
 - [5829](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5829) Routing: Adds Gateway Account Property Flag for Dynamic Hedging Control. Introduces a Gateway-controlled `disableCrossRegionalHedging` account property that lets operators dynamically disable PPAF cross-region hedging (and any customer-configured `AvailabilityStrategy`) without rolling back PPAF entirely. The SDK reconciles `ConnectionPolicy.AvailabilityStrategy` against the Gateway-supplied flag on each account-properties refresh; toggling the flag back to `false` restores the customer-configured strategy or rebuilds the SDK default.
+- [5894](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5894) Diagnostics: Adds a CosmosDiagnostics marker for gateway-driven hedging suppression so the first suppressed request reports `db.cosmosdb.hedging_disabled_by_gateway` as a JSON boolean.
 
 #### Breaking Changes
 

@@ -443,4 +443,64 @@
 }]]></Json>
     </Output>
   </Result>
+  <Result>
+    <Input>
+      <Description>Typed Boolean Datum</Description>
+      <Setup><![CDATA[
+    TraceForBaselineTesting rootTrace;
+    using (rootTrace = TraceForBaselineTesting.GetRootTrace())
+    {
+        rootTrace.AddDatum(TraceDatumKeys.HedgingDisabledByGateway, new BooleanTraceDatum(true));
+    }
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds
+        (
+            [db.cosmosdb.hedging_disabled_by_gateway]
+            True
+        )
+]]></Text>
+      <Json><![CDATA[{
+  "Summary": {},
+  "name": "Trace For Baseline Testing",
+  "start datetime": "0544-01-01T00:00:00Z",
+  "duration in milliseconds": 0,
+  "data": {
+    "db.cosmosdb.hedging_disabled_by_gateway": true
+  }
+}]]></Json>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Generic Boolean Datum</Description>
+      <Setup><![CDATA[
+    TraceForBaselineTesting rootTrace;
+    using (rootTrace = TraceForBaselineTesting.GetRootTrace())
+    {
+        rootTrace.AddDatum("Generic bool compatibility", true);
+    }
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds
+        (
+            [Generic bool compatibility]
+            True
+        )
+]]></Text>
+      <Json><![CDATA[{
+  "Summary": {},
+  "name": "Trace For Baseline Testing",
+  "start datetime": "0544-01-01T00:00:00Z",
+  "duration in milliseconds": 0,
+  "data": {
+    "Generic bool compatibility": "True"
+  }
+}]]></Json>
+    </Output>
+  </Result>
 </Results>

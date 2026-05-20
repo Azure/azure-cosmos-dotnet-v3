@@ -154,5 +154,10 @@
         {
             Debug.Fail("QueryStatisticsDatumVisitor Assert", "PartitionKeyRangeCacheTraceDatum is not supported");
         }
+
+        public void Visit(BooleanTraceDatum booleanTraceDatum)
+        {
+            Debug.Fail("QueryStatisticsDatumVisitor Assert", "BooleanTraceDatum is not supported");
+        }
     }
 }

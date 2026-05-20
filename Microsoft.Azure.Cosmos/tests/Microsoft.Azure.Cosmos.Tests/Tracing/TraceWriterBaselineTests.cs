@@ -239,6 +239,38 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             }
             //----------------------------------------------------------------
 
+            //----------------------------------------------------------------
+            //  Typed Boolean Datum
+            //----------------------------------------------------------------
+            {
+                startLineNumber = GetLineNumber();
+                TraceForBaselineTesting rootTrace;
+                using (rootTrace = TraceForBaselineTesting.GetRootTrace())
+                {
+                    rootTrace.AddDatum(TraceDatumKeys.HedgingDisabledByGateway, new BooleanTraceDatum(true));
+                }
+                endLineNumber = GetLineNumber();
+
+                inputs.Add(new Input("Typed Boolean Datum", rootTrace, startLineNumber, endLineNumber));
+            }
+            //----------------------------------------------------------------
+
+            //----------------------------------------------------------------
+            //  Generic Boolean Datum
+            //----------------------------------------------------------------
+            {
+                startLineNumber = GetLineNumber();
+                TraceForBaselineTesting rootTrace;
+                using (rootTrace = TraceForBaselineTesting.GetRootTrace())
+                {
+                    rootTrace.AddDatum("Generic bool compatibility", true);
+                }
+                endLineNumber = GetLineNumber();
+
+                inputs.Add(new Input("Generic Boolean Datum", rootTrace, startLineNumber, endLineNumber));
+            }
+            //----------------------------------------------------------------
+
             this.ExecuteTestSuite(inputs);
         }
 

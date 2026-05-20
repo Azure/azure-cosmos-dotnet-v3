@@ -13,5 +13,6 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         public const string QueryResponseSerialization = "Query Response Serialization";
         public const string FeedResponseSerialization = "Feed Response Serialization";
         public const string ChangeFeedResponseSerialization = "ChangeFeed Response Serialization";
+        public const string HedgingDisabledByGateway = "db.cosmosdb.hedging_disabled_by_gateway";
     }
 }

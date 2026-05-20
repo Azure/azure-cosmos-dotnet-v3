@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
 
@@ -134,16 +135,24 @@ namespace Microsoft.Azure.Cosmos.Handlers
         /// <returns>whether the request should be a parallel hedging request.</returns>
         public AvailabilityStrategyInternal AvailabilityStrategy(RequestMessage request)
         {
+            AvailabilityStrategy requestAvailabilityStrategy = request.RequestOptions?.AvailabilityStrategy;
+            AvailabilityStrategy strategy = requestAvailabilityStrategy
+                    ?? this.client.DocumentClient.ConnectionPolicy.AvailabilityStrategy;
+
             // Gateway-driven operator override has absolute precedence over any request-level or
-            // client-level AvailabilityStrategy. See spec.md → "Gateway flag disables all hedging
-            // when true" and tasks.md item 4.1.
-            if (this.client.DocumentClient.IsHedgingDisabledByGateway)
+            // client-level AvailabilityStrategy while the gateway flag is active.
+            if (this.client.DocumentClient.TryGetHedgingDisabledByGatewayDiagnosticGeneration(out long diagnosticGeneration))
             {
+                if (this.ShouldEmitHedgingDisabledByGatewayDiagnostic(request, requestAvailabilityStrategy)
+                    && this.client.DocumentClient.TryConsumeHedgingDisabledByGatewayDiagnosticForSuppressedRequest(diagnosticGeneration))
+                {
+                    request.Trace.AddOrUpdateDatum(
+                        TraceDatumKeys.HedgingDisabledByGateway,
+                        new BooleanTraceDatum(true));
+                }
+
                 return null;
             }
-
-            AvailabilityStrategy strategy = request.RequestOptions?.AvailabilityStrategy
-                    ?? this.client.DocumentClient.ConnectionPolicy.AvailabilityStrategy;
 
             if (strategy == null)
             {
@@ -151,6 +160,51 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             return strategy as AvailabilityStrategyInternal;
+        }
+
+        private bool ShouldEmitHedgingDisabledByGatewayDiagnostic(
+            RequestMessage request,
+            AvailabilityStrategy requestAvailabilityStrategy)
+        {
+            if (requestAvailabilityStrategy != null)
+            {
+                return this.ShouldAvailabilityStrategyHedgeRequest(requestAvailabilityStrategy, request);
+            }
+
+            AvailabilityStrategy clientAvailabilityStrategy = this.client.DocumentClient.ConnectionPolicy.AvailabilityStrategy;
+            if (clientAvailabilityStrategy != null)
+            {
+                return this.ShouldAvailabilityStrategyHedgeRequest(clientAvailabilityStrategy, request);
+            }
+
+            AvailabilityStrategy stashedAvailabilityStrategy =
+                this.client.DocumentClient.CustomerConfiguredAvailabilityStrategyForGatewaySuppression;
+            if (stashedAvailabilityStrategy != null)
+            {
+                return this.ShouldAvailabilityStrategyHedgeRequest(stashedAvailabilityStrategy, request);
+            }
+
+            return this.client.DocumentClient.ConnectionPolicy.EnablePartitionLevelFailover
+                && request.ResourceType == ResourceType.Document
+                && OperationTypeExtensions.IsReadOperation(request.OperationType);
+        }
+
+        private bool ShouldAvailabilityStrategyHedgeRequest(
+            AvailabilityStrategy availabilityStrategy,
+            RequestMessage request)
+        {
+            if (availabilityStrategy is not AvailabilityStrategyInternal availabilityStrategyInternal
+                || !availabilityStrategyInternal.Enabled())
+            {
+                return false;
+            }
+
+            if (availabilityStrategyInternal is CrossRegionHedgingAvailabilityStrategy crossRegionHedgingAvailabilityStrategy)
+            {
+                return crossRegionHedgingAvailabilityStrategy.ShouldHedge(request, this.client);
+            }
+
+            return true;
         }
 
         public virtual async Task<ResponseMessage> BaseSendAsync(

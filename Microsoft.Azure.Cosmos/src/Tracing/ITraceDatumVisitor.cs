@@ -17,5 +17,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
         void Visit(CpuHistoryTraceDatum cpuHistoryTraceDatum);
         void Visit(ClientConfigurationTraceDatum clientConfigurationTraceDatum);
         void Visit(PartitionKeyRangeCacheTraceDatum partitionKeyRangeCacheTraceDatum);
+        void Visit(BooleanTraceDatum booleanTraceDatum);
     }
 }
