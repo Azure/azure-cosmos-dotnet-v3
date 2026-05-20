@@ -492,7 +492,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         // Operation result property deserialization
 
         [TestMethod]
-        [Description("SubStatusCodeValue deserializes from the 'subStatusCode' JSON property and is accessible as both uint and SubStatusCodes enum.")]
+        [Description("SubStatusCode deserializes from the 'subStatusCode' JSON property.")]
         public async Task FromResponseMessage_OperationResult_SubStatusCode_DeserializesCorrectly()
         {
             const uint expectedSubStatusCode = 449; // RetryWith
@@ -508,10 +508,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
-            Assert.AreEqual(expectedSubStatusCode, response[0].SubStatusCodeValue,
-                "SubStatusCodeValue must equal the uint value from the JSON 'subStatusCode' field.");
             Assert.AreEqual((SubStatusCodes)expectedSubStatusCode, response[0].SubStatusCode,
-                "SubStatusCode enum must be the cast of the uint value.");
+                "SubStatusCode must equal the cast of the uint value from the JSON 'subStatusCode' field.");
         }
 
         [TestMethod]
