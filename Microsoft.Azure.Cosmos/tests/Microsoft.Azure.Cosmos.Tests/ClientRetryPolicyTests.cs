@@ -8,8 +8,10 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Globalization;
+    using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents.Collections;
@@ -649,43 +651,16 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             if (isSingleMaster)
             {
-                // For single master, after one retry fails with 404/1002, it won't retry further
-                // But the header flag should be set for any potential future retries due to other errors
-                Assert.IsFalse(shouldRetry.ShouldRetry, "Single master should not retry again after first 404/1002 retry fails.");
+                // For single master, after the second 404/1002, the hub region header flag has been set
+                // and the retry policy should allow one more retry so the request can be sent with the header.
+                Assert.IsTrue(shouldRetry.ShouldRetry, "Single master should retry once more after second 404/1002 so the hub region header is sent.");
 
-                // The header flag should be set even though no more 404/1002 retries will happen
-                // This ensures if the request is retried for a different reason (e.g., 503), it will have the header
-            }
-            else
-            {
-                // Multi-master can retry across multiple regions
-                Assert.IsTrue(shouldRetry.ShouldRetry, "Multi-master should continue retrying on 404/1002.");
-            }
-
-            // For single master: Verify header would be added if request is retried for other reasons (e.g., 503)
-            // For multi-master: Verify header is NOT added even on subsequent retries
-            if (isSingleMaster)
-            {
-                // Simulate a 503 error to trigger another retry
-                DocumentClientException serviceUnavailableException = new DocumentClientException(
-                    message: "Simulated 503 ServiceUnavailable",
-                    innerException: null,
-                    statusCode: HttpStatusCode.ServiceUnavailable,
-                    substatusCode: SubStatusCodes.Unknown,
-                    requestUri: request.RequestContext.LocationEndpointToRoute,
-                    responseHeaders: new DictionaryNameValueCollection());
-
-                shouldRetry = await retryPolicy.ShouldRetryAsync(serviceUnavailableException, CancellationToken.None);
-
-                if (shouldRetry.ShouldRetry)
-                {
-                    // Now verify the header is present on this retry triggered by 503
-                    retryPolicy.OnBeforeSendRequest(request);
-                    headerValues = request.Headers.GetValues(HubRegionHeader);
-                    Assert.IsNotNull(headerValues, "Header should be present on retry after 404/1002 flag was set.");
-                    Assert.AreEqual(1, headerValues.Length, "Header should have exactly one value.");
-                    Assert.AreEqual(bool.TrueString, headerValues[0], "Header value should be 'True'.");
-                }
+                // Verify the header is now present on the retry
+                retryPolicy.OnBeforeSendRequest(request);
+                headerValues = request.Headers.GetValues(HubRegionHeader);
+                Assert.IsNotNull(headerValues, "Hub region header should be present on retry after second 404/1002.");
+                Assert.AreEqual(1, headerValues.Length, "Header should have exactly one value.");
+                Assert.AreEqual(bool.TrueString, headerValues[0], "Header value should be 'True'.");
             }
             else
             {
@@ -711,6 +686,352 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// End-to-end test for the hub region discovery flow on a single-master account (Direct mode):
+        /// 1st request → 404/1002 (no hub header) → retry to write region
+        /// 2nd request → 404/1002 (no hub header) → hub header flag set, retry
+        /// 3rd request → assert hub header present → 403/3 from non-hub → retry
+        /// 4th request → assert hub header present → 200 success
+        /// </summary>
+        [TestMethod]
+        public async Task ClientRetryPolicy_HubRegionDiscovery_EndToEnd_DirectMode()
+        {
+            // Arrange: single-master, endpoint discovery enabled
+            const bool enableEndpointDiscovery = true;
+
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery,
+                isThinClientEnabled: false);
+
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+
+            // ---- Step 1: First request attempt ----
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.IsNull(
+                request.Headers.GetValues(HubRegionHeader),
+                "Hub region header should NOT be present on the initial request.");
+
+            // Simulate 1st 404/1002
+            ShouldRetryResult shouldRetry = await retryPolicy.ShouldRetryAsync(
+                new DocumentClientException(
+                    message: "1st 404/1002",
+                    innerException: null,
+                    statusCode: HttpStatusCode.NotFound,
+                    substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                    requestUri: request.RequestContext.LocationEndpointToRoute,
+                    responseHeaders: new DictionaryNameValueCollection()),
+                CancellationToken.None);
+
+            Assert.IsTrue(shouldRetry.ShouldRetry, "Should retry after first 404/1002.");
+
+            // ---- Step 2: Retry routed to write region ----
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.IsNull(
+                request.Headers.GetValues(HubRegionHeader),
+                "Hub region header should NOT be present on the first retry (routed to write region).");
+
+            // Simulate 2nd 404/1002
+            shouldRetry = await retryPolicy.ShouldRetryAsync(
+                new DocumentClientException(
+                    message: "2nd 404/1002",
+                    innerException: null,
+                    statusCode: HttpStatusCode.NotFound,
+                    substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                    requestUri: request.RequestContext.LocationEndpointToRoute,
+                    responseHeaders: new DictionaryNameValueCollection()),
+                CancellationToken.None);
+
+            Assert.IsTrue(shouldRetry.ShouldRetry, "Should retry after second 404/1002 (hub header flag now set).");
+
+            // ---- Step 3: Retry with hub region header → gets 403/3 ----
+            retryPolicy.OnBeforeSendRequest(request);
+            string[] headerValues = request.Headers.GetValues(HubRegionHeader);
+            Assert.IsNotNull(headerValues, "Hub region header MUST be present on the retry after two consecutive 404/1002 errors.");
+            Assert.AreEqual(1, headerValues.Length, "Hub region header should have exactly one value.");
+            Assert.AreEqual(bool.TrueString, headerValues[0], "Hub region header value should be 'True'.");
+
+            // Simulate 403/3 (WriteForbidden) — this happens when the request reaches a non-hub region
+            shouldRetry = await retryPolicy.ShouldRetryAsync(
+                new DocumentClientException(
+                    message: "403/3 WriteForbidden from non-hub region",
+                    innerException: null,
+                    statusCode: HttpStatusCode.Forbidden,
+                    substatusCode: SubStatusCodes.WriteForbidden,
+                    requestUri: request.RequestContext.LocationEndpointToRoute,
+                    responseHeaders: new DictionaryNameValueCollection()),
+                CancellationToken.None);
+
+            Assert.IsTrue(shouldRetry.ShouldRetry, "Should retry after 403/3 to continue hub region discovery.");
+
+            // ---- Step 4: Retry still carries hub header → 200 success ----
+            retryPolicy.OnBeforeSendRequest(request);
+            headerValues = request.Headers.GetValues(HubRegionHeader);
+            Assert.IsNotNull(headerValues, "Hub region header MUST persist through 403/3 retries.");
+            Assert.AreEqual(bool.TrueString, headerValues[0], "Hub region header value should remain 'True'.");
+        }
+
+        /// <summary>
+        /// Verifies that once the hub region header is set (after two consecutive 404/1002),
+        /// it persists through subsequent retries triggered by other retriable errors
+        /// (503 ServiceUnavailable, 408 RequestTimeout) and that the normal preferred-region
+        /// cycling continues with the header attached.
+        /// </summary>
+        [TestMethod]
+        public async Task ClientRetryPolicy_HubRegionHeader_PersistsThroughRetriableErrors()
+        {
+            const bool enableEndpointDiscovery = true;
+
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery,
+                isThinClientEnabled: false);
+
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+
+            // ---- 1st 404/1002 ----
+            retryPolicy.OnBeforeSendRequest(request);
+            ShouldRetryResult shouldRetry = await retryPolicy.ShouldRetryAsync(
+                new DocumentClientException(
+                    message: "1st 404/1002",
+                    innerException: null,
+                    statusCode: HttpStatusCode.NotFound,
+                    substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                    requestUri: request.RequestContext.LocationEndpointToRoute,
+                    responseHeaders: new DictionaryNameValueCollection()),
+                CancellationToken.None);
+            Assert.IsTrue(shouldRetry.ShouldRetry);
+
+            // ---- 2nd 404/1002 → hub header flag gets set ----
+            retryPolicy.OnBeforeSendRequest(request);
+            shouldRetry = await retryPolicy.ShouldRetryAsync(
+                new DocumentClientException(
+                    message: "2nd 404/1002",
+                    innerException: null,
+                    statusCode: HttpStatusCode.NotFound,
+                    substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                    requestUri: request.RequestContext.LocationEndpointToRoute,
+                    responseHeaders: new DictionaryNameValueCollection()),
+                CancellationToken.None);
+            Assert.IsTrue(shouldRetry.ShouldRetry, "Should retry so the hub header can be sent.");
+
+            // ---- 3rd request: hub header should be present ----
+            retryPolicy.OnBeforeSendRequest(request);
+            string[] headerValues = request.Headers.GetValues(HubRegionHeader);
+            Assert.IsNotNull(headerValues, "Hub region header must be present after two 404/1002 failures.");
+            Assert.AreEqual(bool.TrueString, headerValues[0]);
+
+            // ---- Now simulate a retriable 503 ServiceUnavailable error ----
+            shouldRetry = await retryPolicy.ShouldRetryAsync(
+                new DocumentClientException(
+                    message: "503 ServiceUnavailable after hub header set",
+                    innerException: null,
+                    statusCode: HttpStatusCode.ServiceUnavailable,
+                    substatusCode: SubStatusCodes.Unknown,
+                    requestUri: request.RequestContext.LocationEndpointToRoute,
+                    responseHeaders: new DictionaryNameValueCollection()),
+                CancellationToken.None);
+            Assert.IsTrue(shouldRetry.ShouldRetry, "Should retry on 503 ServiceUnavailable.");
+
+            // ---- 4th request: hub header must STILL be present after 503 retry ----
+            retryPolicy.OnBeforeSendRequest(request);
+            headerValues = request.Headers.GetValues(HubRegionHeader);
+            Assert.IsNotNull(headerValues, "Hub region header must persist through 503 retry.");
+            Assert.AreEqual(bool.TrueString, headerValues[0], "Hub region header value should remain 'True'.");
+        }
+
+        /// <summary>
+        /// When a hedge request's Properties contains a CrossRegionAvailabilityContext with
+        /// ShouldAddHubRegionProcessingOnlyHeader = true, OnBeforeSendRequest should set
+        /// the hub region header immediately (simulates hedge picking up primary's flag).
+        /// </summary>
+        [TestMethod]
+        public void ClientRetryPolicy_SharedContext_HedgePicksUpHubHeaderFromSharedFlag()
+        {
+            // Arrange: single-master account
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery,
+                isThinClientEnabled: false);
+
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+
+            // Simulate the shared context that was injected by CrossRegionHedgingAvailabilityStrategy
+            // and has already been flagged by the primary's ClientRetryPolicy after 2x 404/1002.
+            CrossRegionAvailabilityContext sharedContext = new CrossRegionAvailabilityContext();
+            sharedContext.ShouldAddHubRegionProcessingOnlyHeader = true;
+
+            request.Properties = new Dictionary<string, object>
+            {
+                { CrossRegionAvailabilityContext.PropertyKey, sharedContext }
+            };
+
+            // Act: first call to OnBeforeSendRequest (hedge's very first attempt)
+            retryPolicy.OnBeforeSendRequest(request);
+
+            // Assert: hub region header should be set immediately
+            string[] headerValues = request.Headers.GetValues(HubRegionHeader);
+            Assert.IsNotNull(headerValues, "Hedge request should get hub header on first attempt when shared context flag is true.");
+            Assert.AreEqual(bool.TrueString, headerValues[0]);
+        }
+
+        /// <summary>
+        /// After 2× 404/1002 on a single-master account, the ClientRetryPolicy should
+        /// set the shared CrossRegionAvailabilityContext flag to true (propagating to hedges).
+        /// </summary>
+        [TestMethod]
+        public async Task ClientRetryPolicy_SharedContext_FlagSetAfterTwoSessionNotAvailable()
+        {
+            // Arrange: single-master account
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery,
+                isThinClientEnabled: false);
+
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+
+            // Simulate the shared context injected by CrossRegionHedgingAvailabilityStrategy
+            CrossRegionAvailabilityContext sharedContext = new CrossRegionAvailabilityContext();
+            Assert.IsFalse(sharedContext.ShouldAddHubRegionProcessingOnlyHeader, "Flag should start as false.");
+
+            request.Properties = new Dictionary<string, object>
+            {
+                { CrossRegionAvailabilityContext.PropertyKey, sharedContext }
+            };
+
+            // First attempt
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.IsFalse(sharedContext.ShouldAddHubRegionProcessingOnlyHeader, "Flag should still be false after first attempt.");
+
+            // Simulate first 404/1002
+            DocumentClientException ex1 = new DocumentClientException(
+                message: "ReadSessionNotAvailable",
+                innerException: null,
+                statusCode: HttpStatusCode.NotFound,
+                substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: new DictionaryNameValueCollection());
+
+            ShouldRetryResult result1 = await retryPolicy.ShouldRetryAsync(ex1, CancellationToken.None);
+            Assert.IsTrue(result1.ShouldRetry, "Should retry after first 404/1002.");
+            Assert.IsFalse(sharedContext.ShouldAddHubRegionProcessingOnlyHeader, "Flag should still be false after first 404/1002.");
+
+            // Second attempt
+            retryPolicy.OnBeforeSendRequest(request);
+
+            // Simulate second 404/1002
+            DocumentClientException ex2 = new DocumentClientException(
+                message: "ReadSessionNotAvailable",
+                innerException: null,
+                statusCode: HttpStatusCode.NotFound,
+                substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: new DictionaryNameValueCollection());
+
+            ShouldRetryResult result2 = await retryPolicy.ShouldRetryAsync(ex2, CancellationToken.None);
+            Assert.IsTrue(result2.ShouldRetry, "Should retry once more after second 404/1002 (hub header retry).");
+
+            // Assert: shared context flag should now be true
+            Assert.IsTrue(sharedContext.ShouldAddHubRegionProcessingOnlyHeader,
+                "After 2× 404/1002 on single-master, shared context flag must be set to true for hedge propagation.");
+        }
+
+        /// <summary>
+        /// When CrossRegionAvailabilityContext is null (non-hedging path), the existing
+        /// local addHubRegionProcessingOnlyHeader behavior should be preserved unchanged.
+        /// </summary>
+        [TestMethod]
+        public async Task ClientRetryPolicy_NullSharedContext_LocalFlagStillWorks()
+        {
+            // Arrange: single-master, no shared context (Properties is null)
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery,
+                isThinClientEnabled: false);
+
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            // Properties is NOT set (non-hedging scenario)
+
+            // First attempt - no header
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.IsNull(request.Headers.GetValues(HubRegionHeader), "No header on initial attempt.");
+
+            // Simulate first 404/1002
+            DocumentClientException ex1 = new DocumentClientException(
+                message: "ReadSessionNotAvailable",
+                innerException: null,
+                statusCode: HttpStatusCode.NotFound,
+                substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: new DictionaryNameValueCollection());
+
+            await retryPolicy.ShouldRetryAsync(ex1, CancellationToken.None);
+
+            // Second attempt - still no header
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.IsNull(request.Headers.GetValues(HubRegionHeader), "No header on first retry (before second 404/1002).");
+
+            // Simulate second 404/1002
+            DocumentClientException ex2 = new DocumentClientException(
+                message: "ReadSessionNotAvailable",
+                innerException: null,
+                statusCode: HttpStatusCode.NotFound,
+                substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: new DictionaryNameValueCollection());
+
+            await retryPolicy.ShouldRetryAsync(ex2, CancellationToken.None);
+
+            // Third attempt - header should be set via local flag (not shared context)
+            retryPolicy.OnBeforeSendRequest(request);
+            string[] headerValues = request.Headers.GetValues(HubRegionHeader);
+            Assert.IsNotNull(headerValues, "Hub region header should be set via local flag on non-hedging path.");
+            Assert.AreEqual(bool.TrueString, headerValues[0]);
         }
 
         private async Task ValidateConnectTimeoutTriggersClientRetryPolicyAsync(
@@ -825,6 +1146,235 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                     }
                 }
             }
+        }
+
+        // ─── DTX (Distributed Transaction) retry tests ───────────────────────────────
+
+        [TestMethod]
+        public async Task DtxRequest_408_ShouldRetry()
+        {
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            ClientRetryPolicy policy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+            DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
+            policy.OnBeforeSendRequest(request);
+
+            ResponseMessage response = new ResponseMessage(HttpStatusCode.RequestTimeout);
+            ShouldRetryResult result = await policy.ShouldRetryAsync(response, CancellationToken.None);
+
+            Assert.IsTrue(result.ShouldRetry, "DTX 408 must be retried — idempotency token guarantees safety.");
+        }
+
+        [TestMethod]
+        public async Task DtxRequest_449_5352_ShouldRetry_WithDefaultRetryInterval()
+        {
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            ClientRetryPolicy policy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+            DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
+            policy.OnBeforeSendRequest(request);
+
+            ResponseMessage response = new ResponseMessage((HttpStatusCode)StatusCodes.RetryWith);
+            response.Headers.SubStatusCodeLiteral = DistributedTransactionConstants.DtcCoordinatorRaceConflict.ToString();
+
+            ShouldRetryResult result = await policy.ShouldRetryAsync(response, CancellationToken.None);
+
+            Assert.IsTrue(result.ShouldRetry, "DTX 449/5352 coordinator race conflict must be retried.");
+            Assert.AreEqual(TimeSpan.FromSeconds(1), result.BackoffTime,
+                "Without a Retry-After header, CRP should fall back to the standard retry interval (1s) instead of hammering the coordinator with zero-delay retries.");
+        }
+
+        [TestMethod]
+        public async Task DtxRequest_449_5352_ShouldRetry_HonorsRetryAfterHeader()
+        {
+            const bool enableEndpointDiscovery = true;
+            TimeSpan serverRetryAfter = TimeSpan.FromMilliseconds(250);
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            ClientRetryPolicy policy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+            DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
+            policy.OnBeforeSendRequest(request);
+
+            ResponseMessage response = new ResponseMessage((HttpStatusCode)StatusCodes.RetryWith);
+            response.Headers.SubStatusCodeLiteral = DistributedTransactionConstants.DtcCoordinatorRaceConflict.ToString();
+            response.Headers.RetryAfterLiteral = ((long)serverRetryAfter.TotalMilliseconds).ToString();
+
+            ShouldRetryResult result = await policy.ShouldRetryAsync(response, CancellationToken.None);
+
+            Assert.IsTrue(result.ShouldRetry, "DTX 449/5352 must be retried.");
+            Assert.AreEqual(serverRetryAfter, result.BackoffTime, "Retry delay must honor the server's Retry-After header.");
+        }
+
+        [DataTestMethod]
+        [DataRow(DistributedTransactionConstants.DtcLedgerFailure, DisplayName = "500/5411 LedgerFailure")]
+        [DataRow(DistributedTransactionConstants.DtcAccountConfigFailure, DisplayName = "500/5412 AccountConfigFailure")]
+        [DataRow(DistributedTransactionConstants.DtcDispatchFailure, DisplayName = "500/5413 DispatchFailure")]
+        public async Task DtxRequest_500_InfraFailure_ShouldRetry(int subStatusCode)
+        {
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            ClientRetryPolicy policy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+            DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
+            policy.OnBeforeSendRequest(request);
+
+            ResponseMessage response = new ResponseMessage(HttpStatusCode.InternalServerError);
+            response.Headers.SubStatusCodeLiteral = subStatusCode.ToString();
+
+            ShouldRetryResult result = await policy.ShouldRetryAsync(response, CancellationToken.None);
+
+            Assert.IsTrue(result.ShouldRetry, $"DTX 500/{subStatusCode} transient infra failure must be retried.");
+        }
+
+        [TestMethod]
+        public async Task NonDtxWriteRequest_408_ShouldNotRetry()
+        {
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            ClientRetryPolicy policy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+            // Non-DTX write (e.g., a point Create)
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false);
+            policy.OnBeforeSendRequest(request);
+
+            ResponseMessage response = new ResponseMessage(HttpStatusCode.RequestTimeout);
+            ShouldRetryResult result = await policy.ShouldRetryAsync(response, CancellationToken.None);
+
+            Assert.IsFalse(result.ShouldRetry, "Non-DTX 408 must NOT be retried by ClientRetryPolicy (only marks endpoint unavailable).");
+        }
+
+        [DataTestMethod]
+        [DataRow(DistributedTransactionConstants.DtcLedgerFailure, DisplayName = "500/5411 LedgerFailure")]
+        [DataRow(DistributedTransactionConstants.DtcAccountConfigFailure, DisplayName = "500/5412 AccountConfigFailure")]
+        [DataRow(DistributedTransactionConstants.DtcDispatchFailure, DisplayName = "500/5413 DispatchFailure")]
+        public async Task NonDtxWriteRequest_500_DtcSubStatus_ShouldNotRetry(int subStatusCode)
+        {
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            ClientRetryPolicy policy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+            // Non-DTX write — same sub-status codes must NOT trigger a retry.
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false);
+            policy.OnBeforeSendRequest(request);
+
+            ResponseMessage response = new ResponseMessage(HttpStatusCode.InternalServerError);
+            response.Headers.SubStatusCodeLiteral = subStatusCode.ToString();
+
+            ShouldRetryResult result = await policy.ShouldRetryAsync(response, CancellationToken.None);
+
+            Assert.IsFalse(result.ShouldRetry, $"Non-DTX write 500/{subStatusCode} must NOT be retried — only DTX writes with idempotency tokens are safe.");
+        }
+
+        [TestMethod]
+        public async Task DtxRequest_ExhaustsRetryBudget_ReturnsNoRetry()
+        {
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            ClientRetryPolicy policy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+            DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
+            policy.OnBeforeSendRequest(request);
+
+            // 408 with no body — the inner CRP loop owns this code (the body-bearing case is
+            // deferred to the outer DistributedTransactionCommitter loop).
+            ResponseMessage response = new ResponseMessage(HttpStatusCode.RequestTimeout);
+
+            const int budget = 10; // matches ClientRetryPolicy.MaxDtxRetryCount
+            for (int i = 0; i < budget; i++)
+            {
+                ShouldRetryResult retryResult = await policy.ShouldRetryAsync(response, CancellationToken.None);
+                Assert.IsTrue(retryResult.ShouldRetry, $"DTX 408 retry {i + 1} of {budget} should be allowed.");
+            }
+
+            // The (budget + 1)th call must be denied.
+            ShouldRetryResult finalResult = await policy.ShouldRetryAsync(response, CancellationToken.None);
+            Assert.IsFalse(finalResult.ShouldRetry, $"DTX retry budget is exhausted after {budget} retries; the next call must be denied.");
+        }
+
+        [DataTestMethod]
+        [Description("CRP must defer body-bearing envelope responses (408 and 449/5352) to the outer DistributedTransactionCommitter loop so the two retry budgets do not amplify each other.")]
+        [DataRow((int)HttpStatusCode.RequestTimeout, 0, DisplayName = "408 with body deferred to outer loop")]
+        [DataRow((int)StatusCodes.RetryWith, DistributedTransactionConstants.DtcCoordinatorRaceConflict, DisplayName = "449/5352 with body deferred to outer loop")]
+        public async Task DtxRequest_WithBody_DeferredToOuterLoop(int statusCode, int subStatusCode)
+        {
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            ClientRetryPolicy policy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+            DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
+            policy.OnBeforeSendRequest(request);
+
+            ResponseMessage response = new ResponseMessage((HttpStatusCode)statusCode)
+            {
+                Content = new MemoryStream(Encoding.UTF8.GetBytes("{\"isRetriable\":true}"))
+            };
+            if (subStatusCode != 0)
+            {
+                response.Headers.SubStatusCodeLiteral = subStatusCode.ToString();
+            }
+
+            // Replay the same body-bearing response well past CRP's inner retry budget: every call must
+            // return NoRetry without consuming the inner counter, so a follow-up empty-body response still
+            // gets the full inner budget.
+            for (int i = 0; i < 25; i++)
+            {
+                response.Content.Position = 0; // ResponseMessage.Content may be re-read by callers
+                ShouldRetryResult retryResult = await policy.ShouldRetryAsync(response, CancellationToken.None);
+                Assert.IsFalse(retryResult.ShouldRetry,
+                    $"CRP must defer body-bearing response to the outer loop on call {i + 1} (no inner retry).");
+            }
+
+            ResponseMessage emptyBodyResponse = new ResponseMessage((HttpStatusCode)statusCode);
+            if (subStatusCode != 0)
+            {
+                emptyBodyResponse.Headers.SubStatusCodeLiteral = subStatusCode.ToString();
+            }
+
+            ShouldRetryResult innerResult = await policy.ShouldRetryAsync(emptyBodyResponse, CancellationToken.None);
+            Assert.IsTrue(innerResult.ShouldRetry,
+                "CRP's inner retry budget must NOT have been consumed by the deferred body-bearing calls; an empty-body response should still trigger an inner retry.");
+        }
+
+        private static DocumentServiceRequest CreateDtxRequest()
+        {
+            return DocumentServiceRequest.Create(
+                OperationType.CommitDistributedTransaction,
+                ResourceType.DistributedTransactionBatch,
+                AuthorizationTokenType.PrimaryMasterKey);
         }
 
         private static GlobalPartitionEndpointManagerCore.PartitionKeyRangeFailoverInfo GetPartitionKeyRangeFailoverInfoUsingReflection(
