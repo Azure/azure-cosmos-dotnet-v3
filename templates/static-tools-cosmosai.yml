@@ -51,9 +51,35 @@ jobs:
       arguments: '-p:Optimize=true -p:IsPreview=true -p:SdkProjectRef=true -p:DefineSdkProjectRefSymbol=false --configuration Release'
       versioningScheme: OFF
 
+  # GA-surface parity check: same as above but with IsPreview unset, so
+  # neither PREVIEW nor COSMOSAIPREVIEW is defined. This matches the
+  # exact preprocessor surface the shipped GA NuGet is built with. The
+  # preview-only parity step above does NOT cover this surface because
+  # IsPreview=true defines COSMOSAIPREVIEW (Directory.Build.props), which
+  # pulls in #if COSMOSAIPREVIEW-gated members that do not ship in the
+  # GA NuGet. See PR #5825 (FFCF GA promotion) for a miss the preview-only
+  # parity build let through; static-tools-encryption.yml added the
+  # equivalent step for the same reason.
+  - task: DotNetCoreCLI@2
+    displayName: Build Microsoft.Azure.Cosmos.AI (GA NuGet-surface parity vs main SDK source)
+    inputs:
+      command: build
+      nugetConfigPath: NuGet.config
+      projects: Microsoft.Azure.Cosmos.AI/src/Microsoft.Azure.Cosmos.AI.csproj
+      arguments: '-p:Optimize=true -p:SdkProjectRef=true -p:DefineSdkProjectRefSymbol=false --configuration Release'
+      versioningScheme: OFF
+
+  # TODO(#5845): The Guardian tasks below (BinSkim, CredScan, PoliCheck,
+  # PostAnalysis) inherit a years-old "condition: eq(1,2) #disabling as nuget
+  # repo failing" gate from static-tools-encryption.yml. Re-enable on this
+  # brand-new package once the OneES NuGet feed access for these tasks is
+  # confirmed green; CredScan in particular has real value here because AI
+  # scenarios commonly handle endpoint URIs and token credentials. Tracking
+  # work consolidated under PR #5845 follow-up; remove the eq(1,2) gates and
+  # this comment once validated.
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@4
     displayName: 'BinSkim'
-    condition: eq(1,2) #disabling as nuget repo failing
+    condition: eq(1,2) # TODO(#5845): re-enable once OneES nuget feed access verified
     inputs:
         AnalyzeTargetGlob:  $(Build.SourcesDirectory)\Microsoft.Azure.Cosmos.AI\src\bin\Release\netstandard2.0\Microsoft.Azure.Cosmos.AI.dll
         AnalyzeRecurse:     true
@@ -65,7 +91,7 @@ jobs:
   # Analyze source and build output text files for credentials
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@3
     displayName: 'CredScan'
-    condition: eq(1,2) #disabling as nuget repo failing
+    condition: eq(1,2) # TODO(#5845): re-enable; CredScan matters for AI endpoint URIs / tokens
     inputs:
       toolMajorVersion: V2
       scanFolder: $(Build.SourcesDirectory)
@@ -76,7 +102,7 @@ jobs:
   # Scan text elements including code, code comments, and content/web pages, for sensitive terms based on legal, cultural, or geopolitical reasons
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-policheck.PoliCheck@2
     displayName: 'PoliCheck'
-    condition: eq(1,2) #disabling as nuget repo failing
+    condition: eq(1,2) # TODO(#5845): re-enable once OneES nuget feed access verified
     inputs:
       targetType: F
       optionsFC: 0
@@ -101,7 +127,7 @@ jobs:
   # The Post-Analysis build task will analyze the log files produced by the tools, and introduce a build break
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-postanalysis.PostAnalysis@2
     displayName: 'Post Analysis'
-    condition: eq(1,2) #disabling as nuget repo failing
+    condition: eq(1,2) # TODO(#5845): re-enable alongside BinSkim / CredScan / PoliCheck
     inputs:
       GdnBreakFast: true
       GdnBreakAllTools: false

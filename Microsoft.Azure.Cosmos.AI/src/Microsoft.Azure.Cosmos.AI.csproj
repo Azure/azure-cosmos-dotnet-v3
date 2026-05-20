@@ -14,11 +14,13 @@
     <Authors>Microsoft</Authors>
     <Description>AI extensions library for Azure Cosmos DB for NoSQL. Provides an Azure OpenAI / Foundry-backed embedding provider for automatic vector embedding generation in hybrid and vector search queries. Designed to be extensible for broader AI scenarios including semantic re-ranking, OCR, and model integrations. For more information, refer to https://aka.ms/CosmosDB</Description>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
-    <Title>Microsoft Azure Cosmos DB AI extensions library</Title>
+    <Title>Microsoft Azure Cosmos DB AI extension library</Title>
     <PackageId>Microsoft.Azure.Cosmos.AI</PackageId>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/Azure/azure-cosmos-dotnet-v3</PackageProjectUrl>
+    <PackageReleaseNotes>The change log for this SDK is made available at https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos.AI/changelog.md at the time of release.</PackageReleaseNotes>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -27,6 +29,7 @@
 
   <ItemGroup>
     <AdditionalFiles Include="..\..\Microsoft.Azure.Cosmos\src\stylecop.json" Link="stylecop.json" />
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <!-- Core SDK reference: project ref when building from source, otherwise NuGet pin -->
