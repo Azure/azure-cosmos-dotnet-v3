@@ -604,7 +604,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         ((int)SubStatusCodes.AadTokenRevoked).ToString());
                     httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
                     httpResponse.Headers.TryAddWithoutValidation(
-                        "WWW-Authenticate",
+                        HttpConstants.HttpHeaders.WwwAuthenticate,
                         this.GenerateWwwAuthenticateForRevocation());
                     return httpResponse;
                 default:

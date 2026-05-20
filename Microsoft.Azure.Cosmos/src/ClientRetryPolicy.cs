@@ -1,4 +1,4 @@
-//------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -272,7 +272,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // If previous attempt failed with 404/1002, add the hub-region-processing-only header to all subsequent retry attempts.
-            // Also check the shared context ΓÇö another hedged request may have already set the flag.
+            // Also check the shared context — another hedged request may have already set the flag.
             if (this.addHubRegionProcessingOnlyHeader
                 || this.crossRegionAvailabilityContext?.ShouldAddHubRegionProcessingOnlyHeader == true)
             {
@@ -340,7 +340,7 @@ namespace Microsoft.Azure.Cosmos
                     this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
                     this.documentServiceRequest?.ResourceAddress ?? string.Empty);
 
-                // For DTX commits, a 408 from the coordinator means "transaction in-progress" ΓÇö NOT
+                // For DTX commits, a 408 from the coordinator means "transaction in-progress" — NOT
                 // an endpoint reachability problem. Marking the endpoint unavailable here would poison
                 // routing for non-DTX traffic sharing the same partition-key-range cache.
                 if (!this.isDtxRequest)
@@ -434,8 +434,8 @@ namespace Microsoft.Azure.Cosmos
             }
 
             if (statusCode == HttpStatusCode.Unauthorized
-                && subStatusCode == SubStatusCodes.AadTokenRevoked
-                && !string.IsNullOrEmpty(wwwAuthenticateHeaderValue))
+                && (subStatusCode == SubStatusCodes.AadTokenRevoked
+                    || !string.IsNullOrEmpty(wwwAuthenticateHeaderValue)))
             {
                 return this.HandleUnauthorizedResponse(wwwAuthenticateHeaderValue);
             }
@@ -577,7 +577,7 @@ namespace Microsoft.Azure.Cosmos
                 {
 #if !INTERNAL
                     // Hub region discovery: only for single-master accounts.
-                    // In single-master, after 2├ù 404/1002 (ReadSessionNotAvailable), attach the
+                    // In single-master, after 2× 404/1002 (ReadSessionNotAvailable), attach the
                     // x-ms-cosmos-hub-region-processing-only header so the backend routes the
                     // next retry to the partition-set level hub (primary) replica in the write region.
                     if (this.sessionTokenRetryCount >= MaxSessionTokenRetryCount)
@@ -780,7 +780,7 @@ namespace Microsoft.Azure.Cosmos
                     || subStatusCodeValue == DistributedTransactionConstants.DtcDispatchFailure);
 
             // Body-bearing response carries per-op isRetriable in JSON. The outer DistributedTransactionCommitter
-            // loop owns retry; defer to avoid inner├ùouter amplification.
+            // loop owns retry; defer to avoid inner×outer amplification.
             if (hasResponseBody && isCoordinatorRetriable)
             {
                 DefaultTrace.TraceInformation("ClientRetryPolicy: DTX response body present (Status={0}, SubStatus={1}). Deferring to outer loop.", statusCodeValue, subStatusCodeValue);
@@ -789,7 +789,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (isCoordinatorRetriable)
             {
-                // 429/3200 without body ΓÇö ResourceThrottleRetryPolicy handles it via Retry-After.
+                // 429/3200 without body — ResourceThrottleRetryPolicy handles it via Retry-After.
                 if (statusCodeValue == (int)StatusCodes.TooManyRequests)
                 {
                     return null;

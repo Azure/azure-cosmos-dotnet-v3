@@ -187,17 +187,20 @@ namespace Microsoft.Azure.Cosmos
                 return false;
             }
 
-            if (exception.GetSubStatus() != SubStatusCodes.AadTokenRevoked)
-            {
-                return false;
-            }
-
             if (!(authorizationTokenProvider is AuthorizationTokenProviderTokenCredential tokenProvider))
             {
                 return false;
             }
 
             string wwwAuthenticate = exception.Headers?.Get(HttpConstants.HttpHeaders.WwwAuthenticate);
+
+            // Proceed if either substatus is AadTokenRevoked (emergency) or WWW-Authenticate is present (CAE)
+            if (exception.GetSubStatus() != SubStatusCodes.AadTokenRevoked
+                && string.IsNullOrEmpty(wwwAuthenticate))
+            {
+                return false;
+            }
+
             return tokenProvider.TryHandleTokenRevocation(
                 HttpStatusCode.Unauthorized,
                 wwwAuthenticate);

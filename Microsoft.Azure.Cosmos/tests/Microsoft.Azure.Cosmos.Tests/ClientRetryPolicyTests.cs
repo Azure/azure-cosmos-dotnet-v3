@@ -1,4 +1,4 @@
-namespace Microsoft.Azure.Cosmos.Client.Tests
+﻿namespace Microsoft.Azure.Cosmos.Client.Tests
 {
     using System;
     using Microsoft.Azure.Cosmos.Routing;
@@ -581,7 +581,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             Assert.AreEqual(1, headerValues.Length, "Hub region header should have exactly one value.");
             Assert.AreEqual(bool.TrueString, headerValues[0], "Hub region header value should be 'True'.");
 
-            // Simulate 403/3 (WriteForbidden) ΓÇö this happens when the request reaches a non-hub region
+            // Simulate 403/3 (WriteForbidden) — this happens when the request reaches a non-hub region
             shouldRetry = await retryPolicy.ShouldRetryAsync(
                 new DocumentClientException(
                     message: "403/3 WriteForbidden from non-hub region",
@@ -723,7 +723,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         /// <summary>
-        /// After 2├ù 404/1002 on a single-master account, the ClientRetryPolicy should
+        /// After 2× 404/1002 on a single-master account, the ClientRetryPolicy should
         /// set the shared CrossRegionAvailabilityContext flag to true (propagating to hedges).
         /// </summary>
         [TestMethod]
@@ -789,7 +789,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             // Assert: shared context flag should now be true
             Assert.IsTrue(sharedContext.ShouldAddHubRegionProcessingOnlyHeader,
-                "After 2├ù 404/1002 on single-master, shared context flag must be set to true for hedge propagation.");
+                "After 2× 404/1002 on single-master, shared context flag must be set to true for hedge propagation.");
         }
 
         /// <summary>
@@ -1092,7 +1092,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             ResponseMessage response = new ResponseMessage(HttpStatusCode.RequestTimeout);
             ShouldRetryResult result = await policy.ShouldRetryAsync(response, CancellationToken.None);
 
-            Assert.IsTrue(result.ShouldRetry, "DTX 408 must be retried ΓÇö idempotency token guarantees safety.");
+            Assert.IsTrue(result.ShouldRetry, "DTX 408 must be retried — idempotency token guarantees safety.");
         }
 
         [TestMethod]
@@ -1204,7 +1204,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 enforceSingleMasterSingleWriteLocation: true);
 
             ClientRetryPolicy policy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
-            // Non-DTX write ΓÇö same sub-status codes must NOT trigger a retry.
+            // Non-DTX write — same sub-status codes must NOT trigger a retry.
             DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false);
             policy.OnBeforeSendRequest(request);
 
@@ -1213,7 +1213,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             ShouldRetryResult result = await policy.ShouldRetryAsync(response, CancellationToken.None);
 
-            Assert.IsFalse(result.ShouldRetry, $"Non-DTX write 500/{subStatusCode} must NOT be retried ΓÇö only DTX writes with idempotency tokens are safe.");
+            Assert.IsFalse(result.ShouldRetry, $"Non-DTX write 500/{subStatusCode} must NOT be retried — only DTX writes with idempotency tokens are safe.");
         }
 
         [TestMethod]
@@ -1230,7 +1230,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
             policy.OnBeforeSendRequest(request);
 
-            // 408 with no body ΓÇö the inner CRP loop owns this code (the body-bearing case is
+            // 408 with no body — the inner CRP loop owns this code (the body-bearing case is
             // deferred to the outer DistributedTransactionCommitter loop).
             ResponseMessage response = new ResponseMessage(HttpStatusCode.RequestTimeout);
 
