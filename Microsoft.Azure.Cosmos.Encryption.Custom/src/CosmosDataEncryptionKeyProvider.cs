@@ -31,8 +31,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         private readonly DataEncryptionKeyContainerCore dataEncryptionKeyContainerCore;
 
-        private int isDisposed;
-
         private Container container;
 
         internal DekCache DekCache { get; }
@@ -349,27 +347,24 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// owns those lifetimes. <see cref="DekCache.RemoveAsync(string,System.Threading.CancellationToken)"/>
         /// invalidations in flight are not interrupted by disposal.
         /// </summary>
+        /// <remarks>
+        /// Callers must invoke exactly one of <see cref="Dispose"/> or <see cref="DisposeAsync"/>,
+        /// not both. Concurrent interleaving across the two methods is unsupported — the second
+        /// call may return before the first call's drain completes.
+        /// </remarks>
         public void Dispose()
         {
-            if (Interlocked.Exchange(ref this.isDisposed, 1) != 0)
-            {
-                return;
-            }
-
             this.DekCache?.Dispose();
         }
 
         /// <summary>
-        /// Async counterpart of <see cref="Dispose"/>. Idempotent.
+        /// Async counterpart of <see cref="Dispose"/>. Idempotent (forwards to
+        /// <see cref="DekCache.DisposeAsync"/> whose own CAS makes repeated calls a no-op).
+        /// See <see cref="Dispose"/> remarks for concurrent-disposal constraints.
         /// </summary>
         /// <returns>A <see cref="ValueTask"/> that completes when the bounded drain finishes.</returns>
         public ValueTask DisposeAsync()
         {
-            if (Interlocked.Exchange(ref this.isDisposed, 1) != 0)
-            {
-                return default;
-            }
-
             return this.DekCache?.DisposeAsync() ?? default;
         }
     }

@@ -58,8 +58,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <see cref="DistributedCache"/> is non-<see langword="null"/>: must be unique per
         /// DEK container scope (for example, derived from account/database/container identifiers)
         /// so that multiple providers sharing the same cache instance do not collide on
-        /// identical DEK ids. Ignored when <see cref="DistributedCache"/> is
-        /// <see langword="null"/>.
+        /// identical DEK ids. Must be <see langword="null"/> when <see cref="DistributedCache"/>
+        /// is <see langword="null"/>; supplying a prefix without a distributed cache is treated
+        /// as misconfiguration and rejected by the constructor.
         /// </summary>
         public string DistributedCacheKeyPrefix { get; set; }
 

@@ -65,29 +65,38 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             this.dekPropertiesTimeToLive = dekPropertiesTimeToLive.HasValue == true ? dekPropertiesTimeToLive.Value : TimeSpan.FromMinutes(Constants.DekPropertiesDefaultTTLInMinutes);
 
-            // Distributed cache entries live longer than L1 so a peer-populated entry can rescue
-            // a request after L1 expiry. Default = 2x the L1 TTL.
-            this.distributedCacheEntryLifetime = distributedCacheEntryLifetime
-                ?? TimeSpan.FromTicks(this.dekPropertiesTimeToLive.Ticks * 2);
-            if (this.distributedCacheEntryLifetime <= this.dekPropertiesTimeToLive)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(distributedCacheEntryLifetime),
-                    "distributedCacheEntryLifetime must be strictly greater than dekPropertiesTimeToLive so that L2 entries outlive L1 expiry.");
-            }
-
-            // Prefix is required when distributed caching is enabled (so providers sharing one
-            // cache cannot collide) and rejected when it is not (the prefix would be dead state
-            // and silently accepting it would hide misconfiguration).
+            // L2-only validation is gated on distributedCache != null so disabled-L2
+            // consumers (feature flag off, non-prod) don't crash on harmless config
+            // values that template the same options bag across environments.
             if (distributedCache != null)
             {
                 ArgumentValidation.ThrowIfNullOrWhiteSpace(cacheKeyPrefix, nameof(cacheKeyPrefix));
+
+                // L2 entries must outlive L1 so a peer-populated entry can rescue a request
+                // after L1 expiry. Default = 2x the L1 TTL.
+                this.distributedCacheEntryLifetime = distributedCacheEntryLifetime
+                    ?? TimeSpan.FromTicks(this.dekPropertiesTimeToLive.Ticks * 2);
+                if (this.distributedCacheEntryLifetime <= this.dekPropertiesTimeToLive)
+                {
+                    throw new ArgumentOutOfRangeException(
+                        nameof(distributedCacheEntryLifetime),
+                        "distributedCacheEntryLifetime must be strictly greater than dekPropertiesTimeToLive so that L2 entries outlive L1 expiry.");
+                }
             }
-            else if (cacheKeyPrefix != null)
+            else
             {
-                throw new ArgumentException(
-                    $"'{nameof(cacheKeyPrefix)}' can only be specified when '{nameof(distributedCache)}' is provided.",
-                    nameof(cacheKeyPrefix));
+                // Reject non-null prefix without L2 — otherwise the prefix would be dead
+                // state and silently accepting it would hide misconfiguration.
+                if (cacheKeyPrefix != null)
+                {
+                    throw new ArgumentException(
+                        $"'{nameof(cacheKeyPrefix)}' can only be specified when '{nameof(distributedCache)}' is provided.",
+                        nameof(cacheKeyPrefix));
+                }
+
+                // Field stays initialised but is never read when L2 is disabled.
+                this.distributedCacheEntryLifetime = distributedCacheEntryLifetime
+                    ?? TimeSpan.FromTicks(this.dekPropertiesTimeToLive.Ticks * 2);
             }
 
             if (refreshBeforeExpiry.HasValue)
@@ -650,6 +659,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     // Dispose itself never throws.
                 }
             }
+
+            this.disposalCts.Dispose();
         }
 
         /// <summary>
@@ -687,6 +698,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     }
                 }
             }
+
+            this.disposalCts.Dispose();
         }
     }
 }

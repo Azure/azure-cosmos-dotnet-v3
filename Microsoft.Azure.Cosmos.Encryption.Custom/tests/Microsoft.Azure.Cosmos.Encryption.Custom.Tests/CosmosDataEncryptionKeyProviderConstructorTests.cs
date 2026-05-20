@@ -267,6 +267,49 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             Assert.AreEqual("cacheKeyPrefix", ex.ParamName);
         }
 
+        [TestMethod]
+        // REQ: L2-only validation (entry lifetime) must not fire when DistributedCache is null.
+        // SOURCE: PR #5428 review comment 3271415007.
+        public void StoreProviderWithOptions_NoDistributedCache_IgnoresEntryLifetimeShorterThanTtl()
+        {
+            TestEncryptionKeyStoreProvider storeProvider = new TestEncryptionKeyStoreProvider();
+
+            // Templating the same options bag across L2-on and L2-off environments should not
+            // crash on the lifetime sanity check when L2 itself is disabled.
+            CosmosDataEncryptionKeyProvider provider = new CosmosDataEncryptionKeyProvider(
+                storeProvider,
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = TimeSpan.FromHours(1),
+                    DistributedCacheEntryLifetime = TimeSpan.FromMinutes(30),
+                    DistributedCache = null,
+                });
+
+            Assert.IsNotNull(provider.DekCache);
+        }
+
+        [TestMethod]
+        // REQ: L2-on path still validates entry lifetime > TTL.
+        // SOURCE: PR #5428 review comment 3271415007.
+        public void StoreProviderWithOptions_WithDistributedCache_RejectsEntryLifetimeShorterThanTtl()
+        {
+            TestEncryptionKeyStoreProvider storeProvider = new TestEncryptionKeyStoreProvider();
+            InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
+
+            ArgumentOutOfRangeException ex = Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+                new CosmosDataEncryptionKeyProvider(
+                    storeProvider,
+                    new DekCacheOptions
+                    {
+                        DekPropertiesTimeToLive = TimeSpan.FromHours(1),
+                        DistributedCacheEntryLifetime = TimeSpan.FromMinutes(30),
+                        DistributedCache = distributedCache,
+                        DistributedCacheKeyPrefix = "tenant",
+                    }));
+
+            Assert.AreEqual("distributedCacheEntryLifetime", ex.ParamName);
+        }
+
         #endregion
 
         #region DekCache integration — distributed cache is actually wired through
