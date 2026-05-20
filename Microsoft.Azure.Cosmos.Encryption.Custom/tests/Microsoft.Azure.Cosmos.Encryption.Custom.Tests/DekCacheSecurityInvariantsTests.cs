@@ -1,4 +1,4 @@
-//------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -272,17 +272,31 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             // Provider 1: prefix "tenantA:dek", dekId "id"  -> expected key "tenantA:dek:id"
             DekCache provider1 = new DekCache(
-                dekPropertiesTimeToLive: DefaultTtl,
-                distributedCache: sharedL2,
-                cacheKeyPrefix: "tenantA:dek",
-                utcNow: () => now);
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = DefaultTtl,
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = sharedL2,
+                        KeyPrefix = "tenantA:dek",
+                    },
+                },
+                utcNow: () => now
+            );
 
             // Provider 2: prefix "tenantA",     dekId "dek:id" -> expected key "tenantA:dek:id"
             DekCache provider2 = new DekCache(
-                dekPropertiesTimeToLive: DefaultTtl,
-                distributedCache: sharedL2,
-                cacheKeyPrefix: "tenantA",
-                utcNow: () => now);
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = DefaultTtl,
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = sharedL2,
+                        KeyPrefix = "tenantA",
+                    },
+                },
+                utcNow: () => now
+            );
 
             await provider1.GetOrAddDekPropertiesAsync(
                 "id",
@@ -562,10 +576,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         private static DekCache NewCache(TimeSpan ttl, IDistributedCache l2, Func<DateTime> utcNow)
         {
             return new DekCache(
-                dekPropertiesTimeToLive: ttl,
-                distributedCache: l2,
-                utcNow: utcNow,
-                cacheKeyPrefix: DefaultCachePrefix);
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = ttl,
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = l2,
+                        KeyPrefix = DefaultCachePrefix,
+                    },
+                },
+                utcNow: utcNow
+            );
         }
 
         private static DataEncryptionKeyProperties MakeDekProperties(string id, byte[] wrappedKey = null, string kekName = "test")

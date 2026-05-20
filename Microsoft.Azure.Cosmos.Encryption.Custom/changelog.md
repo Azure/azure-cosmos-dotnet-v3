@@ -19,6 +19,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#5428](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5428) `RemoveAsync` now forwards the caller's `CancellationToken` to `IDistributedCache.RemoveAsync`.
 - [#5428](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5428) Adds `ConfigureAwait(false)` on all asynchronous awaits inside `DekCache` to reduce sync-context-capture deadlock risk for callers that bridge sync-over-async.
 
+#### Breaking changes
+- `DekCacheOptions` restructured: the three flat distributed-cache properties (`DistributedCache`, `DistributedCacheKeyPrefix`, `DistributedCacheEntryLifetime`) are replaced by a single nested `DistributedCacheOptions` instance on `DekCacheOptions.DistributedCache`. The nested type carries `Cache`, `KeyPrefix`, and `EntryLifetime`. A non-null nested instance enables L2; `null` disables it. Migration:
+  ```csharp
+  // before
+  new DekCacheOptions { DistributedCache = cache, DistributedCacheKeyPrefix = "x", DistributedCacheEntryLifetime = TimeSpan.FromHours(2) }
+  // after
+  new DekCacheOptions { DistributedCache = new DistributedCacheOptions { Cache = cache, KeyPrefix = "x", EntryLifetime = TimeSpan.FromHours(2) } }
+  ```
+
 #### Updates
 - Replaces the package's `Microsoft.Extensions.Caching.Memory` reference (previously `3.1.7` on `netstandard2.0` / `1.1.2` on `net46`) with `Microsoft.Extensions.Caching.Abstractions` `3.1.7`, unified across TFMs. The library consumes only `IDistributedCache`; the `MemoryCache` reference was dead. Consumers transitively depending on `Microsoft.Extensions.Caching.Memory` types **through this package** must add a direct reference. Consumers using only `IDistributedCache` are unaffected. The `Abstractions` floor stays at the lowest version the new API surface compiles against, so consumers remain free to unify upward to any LTS.
 

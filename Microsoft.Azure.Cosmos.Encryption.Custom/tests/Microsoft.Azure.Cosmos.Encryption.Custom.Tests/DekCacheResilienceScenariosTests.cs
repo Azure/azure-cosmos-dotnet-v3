@@ -1,4 +1,4 @@
-//------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -78,9 +78,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             DateTime now = NewClock();
             DekCache cache = new DekCache(
-                dekPropertiesTimeToLive: DefaultTtl,
-                distributedCache: null,
-                utcNow: () => now);
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = DefaultTtl,
+                },
+                utcNow: () => now
+            );
 
             // Warm L1 (fetcher #1).
             await cache.GetOrAddDekPropertiesAsync(
@@ -218,9 +221,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         {
             DateTime now = NewClock();
             DekCache cache = new DekCache(
-                dekPropertiesTimeToLive: DefaultTtl,
-                distributedCache: null,
-                utcNow: () => now);
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = DefaultTtl,
+                },
+                utcNow: () => now
+            );
 
             int cosmosCalls = 0;
             Func<string, CosmosDiagnosticsContext, CancellationToken, Task<DataEncryptionKeyProperties>> fetcher =
@@ -275,11 +281,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             DateTime now = NewClock();
             ClockControlledDistributedCache l2 = new ClockControlledDistributedCache(() => now);
             DekCache cache = new DekCache(
-                dekPropertiesTimeToLive: DefaultTtl,
-                distributedCache: l2,
-                refreshBeforeExpiry: TimeSpan.FromMinutes(5),
-                utcNow: () => now,
-                cacheKeyPrefix: DefaultCachePrefix);
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = DefaultTtl,
+                    RefreshBeforeExpiry = TimeSpan.FromMinutes(5),
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = l2,
+                        KeyPrefix = DefaultCachePrefix,
+                    },
+                },
+                utcNow: () => now
+            );
 
             // Warm.
             await cache.GetOrAddDekPropertiesAsync(
@@ -314,11 +327,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             DateTime now = NewClock();
             ClockControlledDistributedCache l2 = new ClockControlledDistributedCache(() => now);
             DekCache cache = new DekCache(
-                dekPropertiesTimeToLive: DefaultTtl,
-                distributedCache: l2,
-                refreshBeforeExpiry: TimeSpan.FromMinutes(5),
-                utcNow: () => now,
-                cacheKeyPrefix: DefaultCachePrefix);
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = DefaultTtl,
+                    RefreshBeforeExpiry = TimeSpan.FromMinutes(5),
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = l2,
+                        KeyPrefix = DefaultCachePrefix,
+                    },
+                },
+                utcNow: () => now
+            );
 
             await cache.GetOrAddDekPropertiesAsync(
                 DekId, HealthyFetcher, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
@@ -364,11 +384,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             DateTime now = NewClock();
             ClockControlledDistributedCache l2 = new ClockControlledDistributedCache(() => now);
             DekCache cache = new DekCache(
-                dekPropertiesTimeToLive: DefaultTtl,
-                distributedCache: l2,
-                refreshBeforeExpiry: TimeSpan.FromMinutes(5),
-                utcNow: () => now,
-                cacheKeyPrefix: DefaultCachePrefix);
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = DefaultTtl,
+                    RefreshBeforeExpiry = TimeSpan.FromMinutes(5),
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = l2,
+                        KeyPrefix = DefaultCachePrefix,
+                    },
+                },
+                utcNow: () => now
+            );
 
             // Warm with wrappedKey v1.
             await cache.GetOrAddDekPropertiesAsync(
@@ -514,10 +541,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         private static DekCache NewCache(TimeSpan ttl, IDistributedCache l2, Func<DateTime> utcNow)
         {
             return new DekCache(
-                dekPropertiesTimeToLive: ttl,
-                distributedCache: l2,
-                utcNow: utcNow,
-                cacheKeyPrefix: DefaultCachePrefix);
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = ttl,
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = l2,
+                        KeyPrefix = DefaultCachePrefix,
+                    },
+                },
+                utcNow: utcNow
+            );
         }
 
         private static DataEncryptionKeyProperties MakeDekProperties(string id, byte[] wrappedKey = null)

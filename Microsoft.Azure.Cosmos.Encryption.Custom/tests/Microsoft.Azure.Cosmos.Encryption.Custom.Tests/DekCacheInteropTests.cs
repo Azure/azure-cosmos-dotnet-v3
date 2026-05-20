@@ -1,4 +1,4 @@
-//------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -402,10 +402,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         private static DekCache NewCache(IDistributedCache l2, Func<DateTime> utcNow)
         {
             return new DekCache(
-                dekPropertiesTimeToLive: DefaultTtl,
-                distributedCache: l2,
-                utcNow: utcNow,
-                cacheKeyPrefix: DefaultCachePrefix);
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = DefaultTtl,
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = l2,
+                        KeyPrefix = DefaultCachePrefix,
+                    },
+                },
+                utcNow: utcNow
+            );
         }
 
         private static DataEncryptionKeyProperties MakeDekProperties(

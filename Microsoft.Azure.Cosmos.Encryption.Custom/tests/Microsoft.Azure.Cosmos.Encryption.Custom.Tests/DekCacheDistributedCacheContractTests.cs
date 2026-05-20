@@ -1,4 +1,4 @@
-//------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -189,9 +189,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         {
             DateTime now = NewClock();
             DekCache cache = new DekCache(
-                dekPropertiesTimeToLive: DefaultTtl,
-                distributedCache: null,
-                utcNow: () => now);
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = DefaultTtl,
+                },
+                utcNow: () => now
+            );
 
             int cosmosCalls = 0;
 
@@ -359,10 +362,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         private static DekCache NewCache(TimeSpan ttl, IDistributedCache l2, Func<DateTime> utcNow)
         {
             return new DekCache(
-                dekPropertiesTimeToLive: ttl,
-                distributedCache: l2,
-                utcNow: utcNow,
-                cacheKeyPrefix: DefaultCachePrefix);
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = ttl,
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = l2,
+                        KeyPrefix = DefaultCachePrefix,
+                    },
+                },
+                utcNow: utcNow
+            );
         }
 
         private static DataEncryptionKeyProperties MakeDekProperties(string id)

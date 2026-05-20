@@ -55,59 +55,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return pending.Length == 0 ? Task.CompletedTask : Task.WhenAll(pending);
         }
 
-        public DekCache(
-            TimeSpan? dekPropertiesTimeToLive = null,
-            IDistributedCache distributedCache = null,
-            TimeSpan? refreshBeforeExpiry = null,
-            string cacheKeyPrefix = null,
-            Func<DateTime> utcNow = null,
-            TimeSpan? distributedCacheEntryLifetime = null)
+        public DekCache(DekCacheOptions options = null, Func<DateTime> utcNow = null)
         {
-            this.dekPropertiesTimeToLive = dekPropertiesTimeToLive.HasValue == true ? dekPropertiesTimeToLive.Value : TimeSpan.FromMinutes(Constants.DekPropertiesDefaultTTLInMinutes);
+            DekCacheOptionsValidator.Validate(options);
 
-            // L2-only validation is gated on distributedCache != null so disabled-L2
-            // consumers (feature flag off, non-prod) don't crash on harmless config
-            // values that template the same options bag across environments.
-            if (distributedCache != null)
-            {
-                ArgumentValidation.ThrowIfNullOrWhiteSpace(cacheKeyPrefix, nameof(cacheKeyPrefix));
+            options ??= new DekCacheOptions();
+            DistributedCacheOptions distributed = options.DistributedCache;
 
-                // L2 entries must outlive L1 so a peer-populated entry can rescue a request
-                // after L1 expiry. Default = 2x the L1 TTL.
-                this.distributedCacheEntryLifetime = distributedCacheEntryLifetime
-                    ?? TimeSpan.FromTicks(this.dekPropertiesTimeToLive.Ticks * 2);
-                if (this.distributedCacheEntryLifetime <= this.dekPropertiesTimeToLive)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(distributedCacheEntryLifetime),
-                        "distributedCacheEntryLifetime must be strictly greater than dekPropertiesTimeToLive so that L2 entries outlive L1 expiry.");
-                }
-            }
-            else
-            {
-                // Reject non-null prefix without L2 — otherwise the prefix would be dead
-                // state and silently accepting it would hide misconfiguration.
-                if (cacheKeyPrefix != null)
-                {
-                    throw new ArgumentException(
-                        $"'{nameof(cacheKeyPrefix)}' can only be specified when '{nameof(distributedCache)}' is provided.",
-                        nameof(cacheKeyPrefix));
-                }
-
-                // Field stays initialised but is never read when L2 is disabled.
-                this.distributedCacheEntryLifetime = distributedCacheEntryLifetime
-                    ?? TimeSpan.FromTicks(this.dekPropertiesTimeToLive.Ticks * 2);
-            }
-
-            if (refreshBeforeExpiry.HasValue)
-            {
-                ArgumentValidation.ThrowIfNegative(refreshBeforeExpiry.Value, nameof(refreshBeforeExpiry));
-                ArgumentValidation.ThrowIfGreaterThanOrEqual(refreshBeforeExpiry.Value, this.dekPropertiesTimeToLive, nameof(refreshBeforeExpiry));
-            }
-
-            this.distributedCache = distributedCache;
-            this.refreshBeforeExpiry = refreshBeforeExpiry;
-            this.cacheKeyPrefix = cacheKeyPrefix;
+            this.dekPropertiesTimeToLive = options.DekPropertiesTimeToLive
+                ?? TimeSpan.FromMinutes(Constants.DekPropertiesDefaultTTLInMinutes);
+            this.refreshBeforeExpiry = options.RefreshBeforeExpiry;
+            this.distributedCache = distributed?.Cache;
+            this.cacheKeyPrefix = distributed?.KeyPrefix;
+            this.distributedCacheEntryLifetime = distributed != null
+                ? (distributed.EntryLifetime ?? TimeSpan.FromTicks(this.dekPropertiesTimeToLive.Ticks * 2))
+                : default;
             this.utcNow = utcNow ?? (() => DateTime.UtcNow);
         }
 

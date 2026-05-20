@@ -58,10 +58,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 .Setup(x => x.SetAsync(It.IsAny<string>(), It.IsAny<byte[]>(), It.IsAny<DistributedCacheEntryOptions>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new InvalidOperationException("synthetic L2 SetAsync failure"));
 
-            DekCache cache = new (
-                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: mockCache.Object,
-                cacheKeyPrefix: "evtest");
+            DekCache cache = new(new DekCacheOptions
+            {
+                DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
+                DistributedCache = new DistributedCacheOptions
+                {
+                    Cache = mockCache.Object,
+                    KeyPrefix = "evtest",
+                },
+            });
 
             cache.SetDekProperties("dek1", NewDek("dek1"));
             await cache.WhenAllPendingWritesAsync();
@@ -86,10 +91,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 .Setup(x => x.SetAsync(It.IsAny<string>(), It.IsAny<byte[]>(), It.IsAny<DistributedCacheEntryOptions>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
 
-            DekCache cache = new (
-                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: mockCache.Object,
-                cacheKeyPrefix: "evtest");
+            DekCache cache = new(new DekCacheOptions
+            {
+                DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
+                DistributedCache = new DistributedCacheOptions
+                {
+                    Cache = mockCache.Object,
+                    KeyPrefix = "evtest",
+                },
+            });
 
             // Cold-miss path forces a TryGetFromDistributedCacheAsync call which throws the synthetic exception.
             await cache.GetOrAddDekPropertiesAsync(
@@ -115,10 +125,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 .Setup(x => x.RemoveAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new InvalidOperationException("synthetic L2 RemoveAsync failure"));
 
-            DekCache cache = new (
-                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: mockCache.Object,
-                cacheKeyPrefix: "evtest");
+            DekCache cache = new(new DekCacheOptions
+            {
+                DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
+                DistributedCache = new DistributedCacheOptions
+                {
+                    Cache = mockCache.Object,
+                    KeyPrefix = "evtest",
+                },
+            });
 
             await cache.RemoveAsync("dek1");
 

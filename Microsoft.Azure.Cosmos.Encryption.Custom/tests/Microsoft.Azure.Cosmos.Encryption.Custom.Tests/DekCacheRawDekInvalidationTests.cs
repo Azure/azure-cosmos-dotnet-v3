@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [TestMethod]
         public async Task RemoveAsync_EvictsRawDekCachedUnderDekId()
         {
-            using DekCache cache = new (dekPropertiesTimeToLive: TimeSpan.FromMinutes(30));
+            using DekCache cache = new(new DekCacheOptions { DekPropertiesTimeToLive = TimeSpan.FromMinutes(30) });
 
             // Seed properties + raw under dekId via SetDekProperties + SetRawDek.
             DataEncryptionKeyProperties props = MakeDekPropertiesWithSelfLink(DekId, SelfLink, new byte[] { 1 });
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [TestMethod]
         public async Task RemoveAsync_EvictsRawDekCachedUnderSelfLink()
         {
-            using DekCache cache = new (dekPropertiesTimeToLive: TimeSpan.FromMinutes(30));
+            using DekCache cache = new(new DekCacheOptions { DekPropertiesTimeToLive = TimeSpan.FromMinutes(30) });
 
             // Seed properties first so RemoveAsync's local lookup yields the SelfLink for eviction.
             DataEncryptionKeyProperties props = MakeDekPropertiesWithSelfLink(DekId, SelfLink, new byte[] { 1 });
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [TestMethod]
         public async Task RemoveAsync_EvictsRawDek_EvenWhenLocalPropertiesAreAbsent()
         {
-            using DekCache cache = new (dekPropertiesTimeToLive: TimeSpan.FromMinutes(30));
+            using DekCache cache = new(new DekCacheOptions { DekPropertiesTimeToLive = TimeSpan.FromMinutes(30) });
 
             // Raw keyed by dekId only; properties cache is empty (covers the "RemoveAsync called
             // by a peer where local L1 was never populated" scenario the prior implementation
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             // Simulates rewrap: same DekId + SelfLink, different wrapped bytes. After the source
             // refresh the raw entry should be re-derived from the new wrapped bytes rather than
             // returning the previously-cached raw key.
-            using DekCache cache = new (dekPropertiesTimeToLive: TimeSpan.FromMinutes(30));
+            using DekCache cache = new(new DekCacheOptions { DekPropertiesTimeToLive = TimeSpan.FromMinutes(30) });
 
             DataEncryptionKeyProperties v1 = MakeDekPropertiesWithSelfLink(DekId, SelfLink, new byte[] { 1, 1 });
             DataEncryptionKeyProperties v2 = MakeDekPropertiesWithSelfLink(DekId, SelfLink, new byte[] { 2, 2 });

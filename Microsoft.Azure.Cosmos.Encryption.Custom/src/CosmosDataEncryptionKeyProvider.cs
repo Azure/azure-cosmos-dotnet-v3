@@ -199,14 +199,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// </summary>
         private static DekCache NewDekCache(DekCacheOptions dekCacheOptions)
         {
-            DekCacheOptions opts = dekCacheOptions ?? new DekCacheOptions();
-            return new DekCache(
-                dekPropertiesTimeToLive: opts.DekPropertiesTimeToLive,
-                distributedCache: opts.DistributedCache,
-                refreshBeforeExpiry: opts.RefreshBeforeExpiry,
-                cacheKeyPrefix: opts.DistributedCacheKeyPrefix,
-                utcNow: null,
-                distributedCacheEntryLifetime: opts.DistributedCacheEntryLifetime);
+            return new DekCache(dekCacheOptions ?? new DekCacheOptions(), utcNow: null);
         }
 
         /// <summary>

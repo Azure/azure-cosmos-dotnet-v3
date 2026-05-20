@@ -1,4 +1,4 @@
-//------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -190,10 +190,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 new DekCacheOptions
                 {
                     DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
-                    DistributedCache = distributedCache,
                     RefreshBeforeExpiry = TimeSpan.FromMinutes(5),
-                    DistributedCacheKeyPrefix = "options-bag-test",
-                    DistributedCacheEntryLifetime = TimeSpan.FromMinutes(120),
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = distributedCache,
+                        KeyPrefix = "options-bag-test",
+                        EntryLifetime = TimeSpan.FromMinutes(120),
+                    },
                 });
 
             Assert.AreSame(storeProvider, provider.EncryptionKeyStoreProvider);
@@ -224,65 +227,66 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                     storeProvider,
                     new DekCacheOptions
                     {
-                        DistributedCache = distributedCache,
-                        DistributedCacheKeyPrefix = null,
+                        DistributedCache = new DistributedCacheOptions
+                        {
+                            Cache = distributedCache,
+                            KeyPrefix = null,
+                        },
                     }));
 
-            Assert.AreEqual("cacheKeyPrefix", ex.ParamName);
+            Assert.AreEqual("DistributedCache.KeyPrefix", ex.ParamName);
         }
 
         [TestMethod]
-        public void StoreProviderWithOptions_NoDistributedCache_AcceptsNullPrefix()
+        public void StoreProviderWithOptions_NoDistributedCache_UsesL1Only()
         {
             TestEncryptionKeyStoreProvider storeProvider = new TestEncryptionKeyStoreProvider();
 
-            // Without a distributed cache the prefix is ignored; passing null must be accepted.
+            // Leaving DistributedCache null disables L2 and uses only the in-memory cache.
             CosmosDataEncryptionKeyProvider provider = new CosmosDataEncryptionKeyProvider(
                 storeProvider,
                 new DekCacheOptions
                 {
-                    DistributedCache = null,
-                    DistributedCacheKeyPrefix = null,
                 });
 
             Assert.IsNotNull(provider.DekCache);
         }
 
         [TestMethod]
-        public void StoreProviderWithOptions_NoDistributedCache_RejectsNonNullPrefix()
+        public void StoreProviderWithOptions_DistributedCacheOptionsWithoutCache_RejectsConfiguration()
         {
             TestEncryptionKeyStoreProvider storeProvider = new TestEncryptionKeyStoreProvider();
 
-            // Supplying a prefix without a distributed cache is misconfiguration: the prefix
-            // would be dead state. DekCache rejects with a clear error.
-            ArgumentException ex = Assert.ThrowsException<ArgumentException>(() =>
+            // A non-null DistributedCache options bag enables L2, so Cache becomes required.
+            ArgumentNullException ex = Assert.ThrowsException<ArgumentNullException>(() =>
                 new CosmosDataEncryptionKeyProvider(
                     storeProvider,
                     new DekCacheOptions
                     {
-                        DistributedCache = null,
-                        DistributedCacheKeyPrefix = "tenant",
+                        DistributedCache = new DistributedCacheOptions
+                        {
+                            Cache = null,
+                            KeyPrefix = "tenant",
+                        },
                     }));
 
-            Assert.AreEqual("cacheKeyPrefix", ex.ParamName);
+            Assert.AreEqual("DistributedCache.Cache", ex.ParamName);
         }
 
         [TestMethod]
-        // REQ: L2-only validation (entry lifetime) must not fire when DistributedCache is null.
+        // REQ: with the nested DistributedCacheOptions shape, omitting DistributedCache cleanly disables L2.
         // SOURCE: PR #5428 review comment 3271415007.
-        public void StoreProviderWithOptions_NoDistributedCache_IgnoresEntryLifetimeShorterThanTtl()
+        public void StoreProviderWithOptions_NoDistributedCache_IgnoresL2EntryLifetimeValidation()
         {
             TestEncryptionKeyStoreProvider storeProvider = new TestEncryptionKeyStoreProvider();
 
-            // Templating the same options bag across L2-on and L2-off environments should not
-            // crash on the lifetime sanity check when L2 itself is disabled.
+            // EntryLifetime is now nested under DistributedCacheOptions, so leaving DistributedCache
+            // null means there is no L2 configuration to validate.
             CosmosDataEncryptionKeyProvider provider = new CosmosDataEncryptionKeyProvider(
                 storeProvider,
                 new DekCacheOptions
                 {
                     DekPropertiesTimeToLive = TimeSpan.FromHours(1),
-                    DistributedCacheEntryLifetime = TimeSpan.FromMinutes(30),
-                    DistributedCache = null,
                 });
 
             Assert.IsNotNull(provider.DekCache);
@@ -302,12 +306,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                     new DekCacheOptions
                     {
                         DekPropertiesTimeToLive = TimeSpan.FromHours(1),
-                        DistributedCacheEntryLifetime = TimeSpan.FromMinutes(30),
-                        DistributedCache = distributedCache,
-                        DistributedCacheKeyPrefix = "tenant",
+                        DistributedCache = new DistributedCacheOptions
+                        {
+                            Cache = distributedCache,
+                            KeyPrefix = "tenant",
+                            EntryLifetime = TimeSpan.FromMinutes(30),
+                        },
                     }));
 
-            Assert.AreEqual("distributedCacheEntryLifetime", ex.ParamName);
+            Assert.AreEqual("DistributedCache.EntryLifetime", ex.ParamName);
         }
 
         #endregion
@@ -325,8 +332,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 new DekCacheOptions
                 {
                     DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
-                    DistributedCache = distributedCache,
-                    DistributedCacheKeyPrefix = "test-dek",
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = distributedCache,
+                        KeyPrefix = "test-dek",
+                    },
                 });
 
             int fetchCount = 0;
@@ -346,9 +356,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             // A peer DekCache sharing the same L2 (simulating a second process / cold L1) must
             // read the populated entry without invoking its fetcher.
             DekCache peerCache = new DekCache(
-                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: distributedCache,
-                cacheKeyPrefix: "test-dek");
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = distributedCache,
+                        KeyPrefix = "test-dek",
+                    },
+                }
+            );
             int peerFetchCount = 0;
             DataEncryptionKeyProperties peerProps = await peerCache.GetOrAddDekPropertiesAsync(
                 "dek1",
@@ -384,8 +401,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 new DekCacheOptions
                 {
                     DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
-                    DistributedCache = mockCache.Object,
-                    DistributedCacheKeyPrefix = "test-dek",
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = mockCache.Object,
+                        KeyPrefix = "test-dek",
+                    },
                 });
 
             // Should not throw even though distributed cache fails.

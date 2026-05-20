@@ -628,27 +628,22 @@
     "Microsoft.Azure.Cosmos.Encryption.Custom.DekCacheOptions;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Extensions.Caching.Distributed.IDistributedCache DistributedCache": {
+        "Microsoft.Azure.Cosmos.Encryption.Custom.DistributedCacheOptions DistributedCache": {
           "Type": "Property",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Extensions.Caching.Distributed.IDistributedCache DistributedCache;CanRead:True;CanWrite:True;Microsoft.Extensions.Caching.Distributed.IDistributedCache get_DistributedCache();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DistributedCache(Microsoft.Extensions.Caching.Distributed.IDistributedCache);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.Custom.DistributedCacheOptions DistributedCache;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.Encryption.Custom.DistributedCacheOptions get_DistributedCache();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DistributedCache(Microsoft.Azure.Cosmos.Encryption.Custom.DistributedCacheOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Extensions.Caching.Distributed.IDistributedCache get_DistributedCache()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Microsoft.Azure.Cosmos.Encryption.Custom.DistributedCacheOptions get_DistributedCache()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Microsoft.Extensions.Caching.Distributed.IDistributedCache get_DistributedCache();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.Custom.DistributedCacheOptions get_DistributedCache();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Nullable`1[System.TimeSpan] DekPropertiesTimeToLive": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": "System.Nullable`1[System.TimeSpan] DekPropertiesTimeToLive;CanRead:True;CanWrite:True;System.Nullable`1[System.TimeSpan] get_DekPropertiesTimeToLive();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DekPropertiesTimeToLive(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.Nullable`1[System.TimeSpan] DistributedCacheEntryLifetime": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": "System.Nullable`1[System.TimeSpan] DistributedCacheEntryLifetime;CanRead:True;CanWrite:True;System.Nullable`1[System.TimeSpan] get_DistributedCacheEntryLifetime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DistributedCacheEntryLifetime(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Nullable`1[System.TimeSpan] get_DekPropertiesTimeToLive()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -656,13 +651,6 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "System.Nullable`1[System.TimeSpan] get_DekPropertiesTimeToLive();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.Nullable`1[System.TimeSpan] get_DistributedCacheEntryLifetime()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.Nullable`1[System.TimeSpan] get_DistributedCacheEntryLifetime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Nullable`1[System.TimeSpan] get_RefreshBeforeExpiry()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -676,18 +664,6 @@
           "Attributes": [],
           "MethodInfo": "System.Nullable`1[System.TimeSpan] RefreshBeforeExpiry;CanRead:True;CanWrite:True;System.Nullable`1[System.TimeSpan] get_RefreshBeforeExpiry();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_RefreshBeforeExpiry(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String DistributedCacheKeyPrefix": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": "System.String DistributedCacheKeyPrefix;CanRead:True;CanWrite:True;System.String get_DistributedCacheKeyPrefix();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DistributedCacheKeyPrefix(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.String get_DistributedCacheKeyPrefix()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.String get_DistributedCacheKeyPrefix();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
         "Void .ctor()": {
           "Type": "Constructor",
           "Attributes": [],
@@ -700,26 +676,12 @@
           ],
           "MethodInfo": "Void set_DekPropertiesTimeToLive(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void set_DistributedCache(Microsoft.Extensions.Caching.Distributed.IDistributedCache)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_DistributedCache(Microsoft.Azure.Cosmos.Encryption.Custom.DistributedCacheOptions)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Void set_DistributedCache(Microsoft.Extensions.Caching.Distributed.IDistributedCache);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void set_DistributedCacheEntryLifetime(System.Nullable`1[System.TimeSpan])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_DistributedCacheEntryLifetime(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void set_DistributedCacheKeyPrefix(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_DistributedCacheKeyPrefix(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Void set_DistributedCache(Microsoft.Azure.Cosmos.Encryption.Custom.DistributedCacheOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_RefreshBeforeExpiry(System.Nullable`1[System.TimeSpan])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -727,6 +689,74 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_RefreshBeforeExpiry(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.Encryption.Custom.DistributedCacheOptions;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "Microsoft.Extensions.Caching.Distributed.IDistributedCache Cache": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Extensions.Caching.Distributed.IDistributedCache Cache;CanRead:True;CanWrite:True;Microsoft.Extensions.Caching.Distributed.IDistributedCache get_Cache();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Cache(Microsoft.Extensions.Caching.Distributed.IDistributedCache);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Extensions.Caching.Distributed.IDistributedCache get_Cache()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Extensions.Caching.Distributed.IDistributedCache get_Cache();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.TimeSpan] EntryLifetime": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[System.TimeSpan] EntryLifetime;CanRead:True;CanWrite:True;System.Nullable`1[System.TimeSpan] get_EntryLifetime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_EntryLifetime(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.TimeSpan] get_EntryLifetime()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.TimeSpan] get_EntryLifetime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_KeyPrefix()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_KeyPrefix();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String KeyPrefix": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.String KeyPrefix;CanRead:True;CanWrite:True;System.String get_KeyPrefix();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_KeyPrefix(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor()": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor()"
+        },
+        "Void set_Cache(Microsoft.Extensions.Caching.Distributed.IDistributedCache)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_Cache(Microsoft.Extensions.Caching.Distributed.IDistributedCache);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_EntryLifetime(System.Nullable`1[System.TimeSpan])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_EntryLifetime(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_KeyPrefix(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_KeyPrefix(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}

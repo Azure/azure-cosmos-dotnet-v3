@@ -1,4 +1,4 @@
-//------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -18,7 +18,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         public async Task DekCache_WithoutDistributedCache_UsesOnlyMemoryCache()
         {
             // Arrange
-            DekCache cache = new DekCache(dekPropertiesTimeToLive: TimeSpan.FromMinutes(30));
+            DekCache cache = new DekCache(
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
+                }
+            );
             int fetchCount = 0;
 
             DataEncryptionKeyProperties CreateDekProperties(string id)
@@ -59,9 +64,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             // DekCacheResilienceTests.ExpiredL1_L2HasFreshEntry_CosmosFails_ServesFromL2.
             InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
             DekCache peerA = new DekCache(
-                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: distributedCache,
-                cacheKeyPrefix: "test-dek");
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = distributedCache,
+                        KeyPrefix = "test-dek",
+                    },
+                }
+            );
 
             int peerAFetchCount = 0;
 
@@ -88,9 +100,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             // Peer B is a brand-new DekCache instance sharing the same L2 (simulates a
             // different process / a process that just restarted and has an empty L1).
             DekCache peerB = new DekCache(
-                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: distributedCache,
-                cacheKeyPrefix: "test-dek");
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = distributedCache,
+                        KeyPrefix = "test-dek",
+                    },
+                }
+            );
 
             int peerBFetchCount = 0;
             DataEncryptionKeyProperties peerBResult = await peerB.GetOrAddDekPropertiesAsync(
@@ -114,11 +133,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             DateTime fakeNow = DateTime.UtcNow;
             InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
             DekCache cache = new DekCache(
-                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: distributedCache,
-                refreshBeforeExpiry: TimeSpan.FromMinutes(25), // Refresh when 5 minutes left
-                utcNow: () => fakeNow,
-                cacheKeyPrefix: "test-dek");
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
+                    RefreshBeforeExpiry = TimeSpan.FromMinutes(25), // Refresh when 5 minutes left
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = distributedCache,
+                        KeyPrefix = "test-dek",
+                    },
+                },
+                utcNow: () => fakeNow);
 
             int fetchCount = 0;
             SemaphoreSlim fetchSignal = new SemaphoreSlim(0, 10);
@@ -180,9 +205,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 .ThrowsAsync(new InvalidOperationException("Cache unavailable"));
 
             DekCache cache = new DekCache(
-                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: mockCache.Object,
-                cacheKeyPrefix: "test-dek");
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = mockCache.Object,
+                        KeyPrefix = "test-dek",
+                    },
+                }
+            );
 
             DataEncryptionKeyProperties CreateDekProperties(string id)
             {
@@ -212,12 +244,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             ArgumentOutOfRangeException ex = Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
             {
                 DekCache cache = new DekCache(
-                    dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                    distributedCache: null,
-                    refreshBeforeExpiry: TimeSpan.FromMinutes(-5));
+                    new DekCacheOptions
+                    {
+                        DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
+                        RefreshBeforeExpiry = TimeSpan.FromMinutes(-5),
+                    }
+                );
             });
 
-            Assert.AreEqual("refreshBeforeExpiry", ex.ParamName);
+            Assert.AreEqual("RefreshBeforeExpiry", ex.ParamName);
         }
 
         [TestMethod]
@@ -227,12 +262,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             ArgumentOutOfRangeException ex = Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
             {
                 DekCache cache = new DekCache(
-                    dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                    distributedCache: null,
-                    refreshBeforeExpiry: TimeSpan.FromMinutes(30));
+                    new DekCacheOptions
+                    {
+                        DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
+                        RefreshBeforeExpiry = TimeSpan.FromMinutes(30),
+                    }
+                );
             });
 
-            Assert.AreEqual("refreshBeforeExpiry", ex.ParamName);
+            Assert.AreEqual("RefreshBeforeExpiry", ex.ParamName);
         }
 
         [TestMethod]
@@ -242,12 +280,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             ArgumentOutOfRangeException ex = Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
             {
                 DekCache cache = new DekCache(
-                    dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                    distributedCache: null,
-                    refreshBeforeExpiry: TimeSpan.FromMinutes(60));
+                    new DekCacheOptions
+                    {
+                        DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
+                        RefreshBeforeExpiry = TimeSpan.FromMinutes(60),
+                    }
+                );
             });
 
-            Assert.AreEqual("refreshBeforeExpiry", ex.ParamName);
+            Assert.AreEqual("RefreshBeforeExpiry", ex.ParamName);
         }
 
         [TestMethod]
@@ -255,9 +296,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         {
             // Act & Assert - Should not throw
             DekCache cache = new DekCache(
-                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: null,
-                refreshBeforeExpiry: TimeSpan.FromMinutes(25));
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
+                    RefreshBeforeExpiry = TimeSpan.FromMinutes(25),
+                }
+            );
 
             Assert.IsNotNull(cache);
         }
@@ -267,9 +311,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         {
             // Act & Assert - Should not throw
             DekCache cache = new DekCache(
-                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: null,
-                refreshBeforeExpiry: null);
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
+                    RefreshBeforeExpiry = null,
+                }
+            );
 
             Assert.IsNotNull(cache);
         }
@@ -281,9 +328,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             // Valid case
             DekCache validCache = new DekCache(
-                dekPropertiesTimeToLive: null, // Uses default 120 minutes
-                distributedCache: null,
-                refreshBeforeExpiry: TimeSpan.FromMinutes(119));
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = null, // Uses default 120 minutes
+                    RefreshBeforeExpiry = TimeSpan.FromMinutes(119),
+                });
 
             Assert.IsNotNull(validCache);
 
@@ -291,12 +340,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             ArgumentOutOfRangeException ex = Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
             {
                 DekCache cache = new DekCache(
-                    dekPropertiesTimeToLive: null, // Uses default 120 minutes
-                    distributedCache: null,
-                    refreshBeforeExpiry: TimeSpan.FromMinutes(120));
+                    new DekCacheOptions
+                    {
+                        DekPropertiesTimeToLive = null, // Uses default 120 minutes
+                        RefreshBeforeExpiry = TimeSpan.FromMinutes(120),
+                    });
             });
 
-            Assert.AreEqual("refreshBeforeExpiry", ex.ParamName);
+            Assert.AreEqual("RefreshBeforeExpiry", ex.ParamName);
         }
 
         // NOTE: The former DekCache_DefaultCacheKeyPrefix_UsesDekPrefix test has been deleted.
@@ -312,9 +363,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             //       continues to hold if the cache-key format evolves (e.g., container-scoping).
             InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
             DekCache customPrefixCache = new DekCache(
-                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: distributedCache,
-                cacheKeyPrefix: "tenant1-dek");
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = distributedCache,
+                        KeyPrefix = "tenant1-dek",
+                    },
+                }
+            );
 
             static DataEncryptionKeyProperties CreateDekProperties(string id)
             {
@@ -335,9 +393,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             // A cache sharing the same L2 but using the DEFAULT prefix must not see the entry.
             DekCache defaultPrefixCache = new DekCache(
-                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: distributedCache,
-                cacheKeyPrefix: "test-dek");
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = distributedCache,
+                        KeyPrefix = "test-dek",
+                    },
+                }
+            );
 
             int defaultFetchCount = 0;
             await defaultPrefixCache.GetOrAddDekPropertiesAsync(
@@ -363,14 +428,28 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             InMemoryDistributedCache sharedDistributedCache = new InMemoryDistributedCache();
 
             DekCache tenant1Cache = new DekCache(
-                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: sharedDistributedCache,
-                cacheKeyPrefix: "tenant1");
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = sharedDistributedCache,
+                        KeyPrefix = "tenant1",
+                    },
+                }
+            );
 
             DekCache tenant2Cache = new DekCache(
-                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: sharedDistributedCache,
-                cacheKeyPrefix: "tenant2");
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = sharedDistributedCache,
+                        KeyPrefix = "tenant2",
+                    },
+                }
+            );
 
             int tenant1FetchCount = 0;
             int tenant2FetchCount = 0;
@@ -437,9 +516,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             // A third fresh provider with the same "tenant1" prefix must see tenant1's entry,
             // proving the keyspace is genuinely partitioned per prefix.
             DekCache tenant1Peer = new DekCache(
-                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: sharedDistributedCache,
-                cacheKeyPrefix: "tenant1");
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = sharedDistributedCache,
+                        KeyPrefix = "tenant1",
+                    },
+                }
+            );
             int peerFetchCount = 0;
             DataEncryptionKeyProperties peerResult = await tenant1Peer.GetOrAddDekPropertiesAsync(
                 "shared-dek-id",
@@ -455,12 +541,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         }
 
         [TestMethod]
-        public void DekCache_NullCacheKeyPrefix_WithoutDistributedCache_IsAccepted()
+        public void DekCache_NoDistributedCache_UsesDefaults()
         {
-            // A null prefix is meaningless when no distributed cache is configured; the ctor
-            // accepts it without error. The prefix is only REQUIRED when a distributed cache
-            // is provided (see DekCache_NullCacheKeyPrefix_WithDistributedCache_Throws).
-            _ = new DekCache(cacheKeyPrefix: null);
+            _ = new DekCache(new DekCacheOptions());
         }
 
         [TestMethod]
@@ -468,17 +551,32 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         {
             ArgumentException ex = Assert.ThrowsException<ArgumentNullException>(
                 () => new DekCache(
-                    distributedCache: new InMemoryDistributedCache(),
-                    cacheKeyPrefix: null));
-            Assert.AreEqual("cacheKeyPrefix", ex.ParamName);
+                    new DekCacheOptions
+                    {
+                        DistributedCache = new DistributedCacheOptions
+                        {
+                            Cache = new InMemoryDistributedCache(),
+                            KeyPrefix = null,
+                        },
+                    }
+                ));
+            Assert.AreEqual("DistributedCache.KeyPrefix", ex.ParamName);
         }
 
         [TestMethod]
         public void DekCache_EmptyCacheKeyPrefix_Throws()
         {
-            // Empty / whitespace is rejected regardless of distributed-cache presence so the
-            // argument shape remains predictable.
-            Assert.ThrowsException<ArgumentException>(() => new DekCache(cacheKeyPrefix: string.Empty));
+            // Empty is rejected when L2 is enabled.
+            Assert.ThrowsException<ArgumentException>(() => new DekCache(
+                new DekCacheOptions
+                {
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = new InMemoryDistributedCache(),
+                        KeyPrefix = string.Empty,
+                    },
+                }
+            ));
         }
 
         [TestMethod]
@@ -487,9 +585,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             // Arrange
             InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
             DekCache cache = new DekCache(
-                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: distributedCache,
-                cacheKeyPrefix: "test-dek");
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = distributedCache,
+                        KeyPrefix = "test-dek",
+                    },
+                }
+            );
 
             DataEncryptionKeyProperties dekProps = new DataEncryptionKeyProperties(
                 "dek1",
@@ -521,9 +626,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 .ThrowsAsync(new InvalidOperationException("Cache unavailable"));
 
             DekCache cache = new DekCache(
-                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: mockCache.Object,
-                cacheKeyPrefix: "test-dek");
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = mockCache.Object,
+                        KeyPrefix = "test-dek",
+                    },
+                }
+            );
 
             DataEncryptionKeyProperties dekProps = new DataEncryptionKeyProperties(
                 "dek1",
@@ -553,9 +665,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             // Arrange
             InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
             DekCache cache = new DekCache(
-                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: distributedCache,
-                cacheKeyPrefix: "test-dek");
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = distributedCache,
+                        KeyPrefix = "test-dek",
+                    },
+                }
+            );
 
             int fetchCount = 0;
             await cache.GetOrAddDekPropertiesAsync(
@@ -591,9 +710,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             // Arrange - populate distributed cache via one DekCache instance
             InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
             DekCache cache1 = new DekCache(
-                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: distributedCache,
-                cacheKeyPrefix: "test-dek");
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = distributedCache,
+                        KeyPrefix = "test-dek",
+                    },
+                }
+            );
 
             await cache1.GetOrAddDekPropertiesAsync(
                 "dek1",
@@ -613,9 +739,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             // Create a fresh instance (simulates process restart) - memory cache is empty
             DekCache cache2 = new DekCache(
-                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: distributedCache,
-                cacheKeyPrefix: "test-dek");
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = distributedCache,
+                        KeyPrefix = "test-dek",
+                    },
+                }
+            );
 
             // Act - RemoveAsync from a fresh instance with empty memory cache
             await cache2.RemoveAsync("dek1");
@@ -636,9 +769,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 .ThrowsAsync(new InvalidOperationException("Cache unavailable"));
 
             DekCache cache = new DekCache(
-                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: mockCache.Object,
-                cacheKeyPrefix: "test-dek");
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = mockCache.Object,
+                        KeyPrefix = "test-dek",
+                    },
+                }
+            );
 
             // Act & Assert - should not throw even though distributed cache fails
             await cache.RemoveAsync("dek1");
@@ -659,9 +799,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 .Returns(Task.CompletedTask);
 
             DekCache cache = new DekCache(
-                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: mockCache.Object,
-                cacheKeyPrefix: "test-dek");
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = mockCache.Object,
+                        KeyPrefix = "test-dek",
+                    },
+                }
+            );
 
             int fetchCount = 0;
 
@@ -690,9 +837,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [TestMethod]
         public void DekCache_WhitespaceCacheKeyPrefix_Throws()
         {
-            // A whitespace-only prefix is treated as not provided and rejected; this prevents
-            // a caller from believing they supplied a discriminator when they effectively did not.
-            Assert.ThrowsException<ArgumentException>(() => new DekCache(cacheKeyPrefix: "   "));
+            // A whitespace-only prefix is treated as not provided and rejected when L2 is enabled.
+            Assert.ThrowsException<ArgumentException>(() => new DekCache(
+                new DekCacheOptions
+                {
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = new InMemoryDistributedCache(),
+                        KeyPrefix = "   ",
+                    },
+                }
+            ));
         }
 
         // NOTE: DekCache_DistributedCacheEntry_WithMismatchedVersion_FallsBackToSource has been

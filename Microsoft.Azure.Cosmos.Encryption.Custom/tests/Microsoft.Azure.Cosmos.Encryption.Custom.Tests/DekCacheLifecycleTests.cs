@@ -48,10 +48,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                     }
                 });
 
-            DekCache cache = new (
-                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: mock.Object,
-                cacheKeyPrefix: "lifecycle-test");
+            DekCache cache = new(new DekCacheOptions
+            {
+                DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
+                DistributedCache = new DistributedCacheOptions
+                {
+                    Cache = mock.Object,
+                    KeyPrefix = "lifecycle-test",
+                },
+            });
 
             cache.SetDekProperties("dek1", NewDek("dek1"));
             Task pending = cache.WhenAllPendingWritesAsync();
@@ -83,10 +88,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                     }
                 });
 
-            DekCache cache = new (
-                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: mock.Object,
-                cacheKeyPrefix: "lifecycle-test");
+            DekCache cache = new(new DekCacheOptions
+            {
+                DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
+                DistributedCache = new DistributedCacheOptions
+                {
+                    Cache = mock.Object,
+                    KeyPrefix = "lifecycle-test",
+                },
+            });
 
             cache.SetDekProperties("dek1", NewDek("dek1"));
             Task pending = cache.WhenAllPendingWritesAsync();
@@ -100,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [TestMethod]
         public void Dispose_IsIdempotent()
         {
-            DekCache cache = new (dekPropertiesTimeToLive: TimeSpan.FromMinutes(30));
+            DekCache cache = new(new DekCacheOptions { DekPropertiesTimeToLive = TimeSpan.FromMinutes(30) });
 
             cache.Dispose();
             cache.Dispose(); // should not throw
@@ -110,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [TestMethod]
         public async Task DisposeAsync_IsIdempotent()
         {
-            DekCache cache = new (dekPropertiesTimeToLive: TimeSpan.FromMinutes(30));
+            DekCache cache = new(new DekCacheOptions { DekPropertiesTimeToLive = TimeSpan.FromMinutes(30) });
 
             await cache.DisposeAsync();
             await cache.DisposeAsync();
@@ -119,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [TestMethod]
         public async Task PostDispose_PublicMethodsThrowObjectDisposedException()
         {
-            DekCache cache = new (dekPropertiesTimeToLive: TimeSpan.FromMinutes(30));
+            DekCache cache = new(new DekCacheOptions { DekPropertiesTimeToLive = TimeSpan.FromMinutes(30) });
             cache.Dispose();
 
             Assert.ThrowsException<ObjectDisposedException>(
@@ -157,10 +167,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 mock.Setup(x => x.SetAsync(It.IsAny<string>(), It.IsAny<byte[]>(), It.IsAny<DistributedCacheEntryOptions>(), It.IsAny<CancellationToken>()))
                     .ThrowsAsync(new InvalidOperationException("synthetic L2 failure"));
 
-                DekCache cache = new (
-                    dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                    distributedCache: mock.Object,
-                    cacheKeyPrefix: "no-unobserved");
+                DekCache cache = new(new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = mock.Object,
+                        KeyPrefix = "no-unobserved",
+                    },
+                });
 
                 cache.SetDekProperties("dek1", NewDek("dek1"));
                 await cache.WhenAllPendingWritesAsync();
