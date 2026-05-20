@@ -19,7 +19,8 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the session token for this individual operation.
         /// </summary>
         /// <value>
-        /// The session token, in <c>{partitionKeyRangeId}:{lsn}</c> format, for the partition targeted by this operation.
+        /// An opaque session token previously returned by the SDK (for example, from
+        /// <see cref="DistributedTransactionOperationResult.SessionToken"/>); do not parse or construct manually.
         /// </value>
         /// <remarks>
         /// Because a distributed transaction spans multiple partitions, each operation must supply its own session token

@@ -113,25 +113,17 @@ namespace Microsoft.Azure.Cosmos
         public virtual Stream ResourceStream { get; internal set; }
 
         /// <summary>
-        /// Request charge in request units for the operation.
         /// </summary>
         [JsonInclude]
         [JsonPropertyName("requestCharge")]
         public virtual double RequestCharge { get; internal set; }
 
-        [JsonIgnore]
-        internal virtual SubStatusCodes SubStatusCode { get; set; }
-
         /// <summary>
-        /// Gets the sub-status code value as an unsigned integer.
+        /// Gets the sub-status code for the operation.
         /// </summary>
         [JsonInclude]
         [JsonPropertyName("subStatusCode")]
-        public virtual uint SubStatusCodeValue
-        {
-            get => (uint)this.SubStatusCode;
-            internal set => this.SubStatusCode = (SubStatusCodes)value;
-        }
+        public virtual SubStatusCodes SubStatusCode { get; internal set; }
 
         /// <summary>
         /// ActivityId related to the operation.
@@ -219,7 +211,7 @@ namespace Microsoft.Azure.Cosmos
                 int colonIndex = result.SessionToken.IndexOf(':');
                 if (colonIndex > 0 && colonIndex < result.SessionToken.Length - 1)
                 {
-                    // Already in canonical {pkRangeId}:{lsn} form — leave as-is.
+                    // Already in canonical SDK session-token format — leave as-is.
                 }
                 else if (!string.IsNullOrWhiteSpace(result.PartitionKeyRangeId))
                 {

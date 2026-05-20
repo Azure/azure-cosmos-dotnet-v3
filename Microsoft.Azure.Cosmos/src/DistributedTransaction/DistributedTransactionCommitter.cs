@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos
             // without getting ReadSessionNotAvailable.
             //
             // DTC spans multiple collections so the server embeds per-operation session tokens in the JSON body.
-            // DistributedTransactionOperationResult.FromJson assembles each token into canonical {pkRangeId}:{lsn} form.
+            // DistributedTransactionOperationResult.FromJson assembles each token into canonical SDK session-token
             if (response == null || response.Count == 0 || serverRequest == null || sessionContainer == null)
             {
                 return;
@@ -204,7 +204,7 @@ namespace Microsoft.Azure.Cosmos
                         continue;
                     }
 
-                    // SessionToken is already in canonical {pkRangeId}:{lsn} format, assembled by FromJson.
+                    // SessionToken is already in canonical SDK session-token format, assembled by FromJson.
                     // Note: each SetSessionToken call acquires a write lock on the SessionContainer.
                     // For a future optimization, consider a batch-update API on ISessionContainer to
                     // reduce lock acquisitions when multiple operations target the same collection.
