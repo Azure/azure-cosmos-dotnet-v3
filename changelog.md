@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+- [5838](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5838) EmbeddingGenerator: Adds ICosmosEmbeddingGenerator client-wide configuration (preview)
 - [5827](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5827) ChangeFeedEstimator: Adds support for in-memory lease container.
 
 #### Breaking Changes

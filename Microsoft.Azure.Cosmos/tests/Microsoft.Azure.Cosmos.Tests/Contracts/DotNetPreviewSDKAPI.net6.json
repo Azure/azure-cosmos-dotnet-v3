@@ -42,6 +42,22 @@
       },
       "NestedTypes": {}
     },
+    "Microsoft.Azure.Cosmos.CosmosClient;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "Microsoft.Azure.Cosmos.ICosmosEmbeddingGenerator EmbeddingGenerator": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ICosmosEmbeddingGenerator EmbeddingGenerator;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.ICosmosEmbeddingGenerator get_EmbeddingGenerator();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.ICosmosEmbeddingGenerator get_EmbeddingGenerator()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ICosmosEmbeddingGenerator get_EmbeddingGenerator();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
     "Microsoft.Azure.Cosmos.CosmosClientOptions;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
@@ -54,6 +70,20 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Boolean get_EnableRemoteRegionPreferredForSessionRetry();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.ICosmosEmbeddingGenerator EmbeddingGenerator[Newtonsoft.Json.JsonIgnoreAttribute()]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonIgnoreAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ICosmosEmbeddingGenerator EmbeddingGenerator;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.ICosmosEmbeddingGenerator get_EmbeddingGenerator();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_EmbeddingGenerator(Microsoft.Azure.Cosmos.ICosmosEmbeddingGenerator);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.ICosmosEmbeddingGenerator get_EmbeddingGenerator()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ICosmosEmbeddingGenerator get_EmbeddingGenerator();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Nullable`1[Microsoft.Azure.Cosmos.ReadConsistencyStrategy] get_ReadConsistencyStrategy()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -90,6 +120,13 @@
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": "System.TimeSpan InferenceRequestTimeout;CanRead:True;CanWrite:True;System.TimeSpan get_InferenceRequestTimeout();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_InferenceRequestTimeout(System.TimeSpan);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_EmbeddingGenerator(Microsoft.Azure.Cosmos.ICosmosEmbeddingGenerator)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_EmbeddingGenerator(Microsoft.Azure.Cosmos.ICosmosEmbeddingGenerator);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_EnableRemoteRegionPreferredForSessionRetry(Boolean)": {
           "Type": "Method",
@@ -908,6 +945,53 @@
       },
       "NestedTypes": {}
     },
+    "Microsoft.Azure.Cosmos.CosmosEmbeddingResult;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "System.Collections.Generic.IReadOnlyList`1[System.ReadOnlyMemory`1[System.Single]] get_Vectors()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.IReadOnlyList`1[System.ReadOnlyMemory`1[System.Single]] get_Vectors();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.IReadOnlyList`1[System.ReadOnlyMemory`1[System.Single]] Vectors": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Collections.Generic.IReadOnlyList`1[System.ReadOnlyMemory`1[System.Single]] Vectors;CanRead:True;CanWrite:False;System.Collections.Generic.IReadOnlyList`1[System.ReadOnlyMemory`1[System.Single]] get_Vectors();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.Int32] get_TotalTokens()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Int32] get_TotalTokens();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.Int32] TotalTokens": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[System.Int32] TotalTokens;CanRead:True;CanWrite:False;System.Nullable`1[System.Int32] get_TotalTokens();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.TimeSpan] get_Latency()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.TimeSpan] get_Latency();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.TimeSpan] Latency": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[System.TimeSpan] Latency;CanRead:True;CanWrite:False;System.Nullable`1[System.TimeSpan] get_Latency();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor(System.Collections.Generic.IReadOnlyList`1[System.ReadOnlyMemory`1[System.Single]], System.Nullable`1[System.Int32], System.Nullable`1[System.TimeSpan])": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor(System.Collections.Generic.IReadOnlyList`1[System.ReadOnlyMemory`1[System.Single]], System.Nullable`1[System.Int32], System.Nullable`1[System.TimeSpan])"
+        }
+      },
+      "NestedTypes": {}
+    },
     "Microsoft.Azure.Cosmos.Embedding;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
@@ -1102,6 +1186,11 @@
     "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithEmbeddingGenerator(Microsoft.Azure.Cosmos.ICosmosEmbeddingGenerator)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithEmbeddingGenerator(Microsoft.Azure.Cosmos.ICosmosEmbeddingGenerator);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithEnableRemoteRegionPreferredForSessionRetry(Boolean)": {
           "Type": "Method",
           "Attributes": [],
@@ -1147,6 +1236,17 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.VectorIndexDefinition`1[T] WithVectorIndexShardKey(System.String[]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.ICosmosEmbeddingGenerator;;IsAbstract:True;IsSealed:False;IsInterface:True;IsEnum:False;IsClass:False;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.CosmosEmbeddingResult] GenerateEmbeddingsAsync(System.Collections.Generic.IReadOnlyList`1[System.String], System.String, System.String, Int32, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.CosmosEmbeddingResult] GenerateEmbeddingsAsync(System.Collections.Generic.IReadOnlyList`1[System.String], System.String, System.String, Int32, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
