@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly bool isThinClientFeatureFlagEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: false);
 
-        // Serializes the (disableCrossRegionalHedging, customerConfiguredAvailabilityStrategy,
+        // Serializes the (disableCrossRegionalHedgingGeneration, customerConfiguredAvailabilityStrategy,
         // ConnectionPolicy.AvailabilityStrategy) mutation sequence performed by the gateway-driven
         // hedging-override reconcile path.
         //
@@ -158,8 +158,9 @@ namespace Microsoft.Azure.Cosmos
         //      path, the stash/clear/restore sequence stays atomic instead of regressing silently.
         //
         // Per-request reads from RequestInvokerHandler intentionally do NOT take this lock:
-        //   • disableCrossRegionalHedging is declared volatile (acquire semantics on read, release on
-        //     write), which is sufficient for the per-request "is the gateway kill-switch on?" check.
+        //   • disableCrossRegionalHedgingGeneration is read/written with Volatile (acquire semantics on
+        //     read, release on write), which is sufficient for the per-request "is the gateway kill-switch
+        //     on?" check.
         //   • ConnectionPolicy.AvailabilityStrategy is a reference field; reference assignment is atomic
         //     on the CLR, so a request observes either the pre- or post-transition strategy, never a
         //     half-applied state.
@@ -206,21 +207,28 @@ namespace Microsoft.Azure.Cosmos
         private bool isDisposed;
 
         // Gateway-controlled override that disables all cross-regional hedging for PPAF accounts.
-        // Mirrors AccountProperties.DisableCrossRegionalHedging from the most recent account-properties refresh.
+        // Zero means AccountProperties.DisableCrossRegionalHedging is false. Positive values identify
+        // the true-cycle generation from the most recent account-properties refresh.
         //
-        // Declared volatile so per-request reads from RequestInvokerHandler (via IsHedgingDisabledByGateway)
-        // and the init-time read in InitializePartitionLevelFailoverWithDefaultHedging do not need to take
-        // hedgingStrategyLock — volatile gives acquire semantics on the read and release semantics on the
-        // write, which is exactly what the "atomic kill-switch" contract requires. The lock continues to
-        // serialize the multi-field (flag + stashed strategy + ConnectionPolicy.AvailabilityStrategy)
-        // mutation sequence on the refresh / init-stash paths.
-        private volatile bool disableCrossRegionalHedging;
+        // Read and written through Volatile so per-request reads from RequestInvokerHandler and the init-time
+        // read in InitializePartitionLevelFailoverWithDefaultHedging do not need to take hedgingStrategyLock.
+        // This gives acquire semantics on the read and release semantics on the write, which is exactly what
+        // the "atomic kill-switch" contract requires. The lock continues to serialize the multi-field
+        // (flag generation + stashed strategy + ConnectionPolicy.AvailabilityStrategy) mutation sequence on
+        // the refresh / init-stash paths.
+        private long disableCrossRegionalHedgingGeneration;
 
         // When the gateway disable flag is true, the customer's explicit AvailabilityStrategy
         // (if any) is stashed here so it can be restored verbatim if the flag is later toggled back to false.
         // Null when the customer never configured a strategy or when no stash is currently held.
         // Mutated only under hedgingStrategyLock.
         private AvailabilityStrategy customerConfiguredAvailabilityStrategy;
+
+        // One-shot marker consumed by RequestInvokerHandler to surface gateway-driven hedging suppression
+        // on the customer-visible CosmosDiagnostics surface. The emitted generation is monotonic, so a
+        // stale request from an older true-cycle cannot consume the marker for a newer true-cycle.
+        private long nextHedgingDisabledByGatewayDiagnosticGeneration;
+        private long emittedHedgingDisabledByGatewayDiagnosticGeneration;
 
         // creator of TransportClient is responsible for disposing it.
         private IStoreClientFactory storeClientFactory;
@@ -6927,8 +6935,9 @@ namespace Microsoft.Azure.Cosmos
             {
                 lock (this.hedgingStrategyLock)
                 {
-                    this.disableCrossRegionalHedging = accountProperties.DisableCrossRegionalHedging ?? false;
-                    if (this.disableCrossRegionalHedging && this.ConnectionPolicy.AvailabilityStrategy != null)
+                    this.SetDisableCrossRegionalHedgingState(accountProperties.DisableCrossRegionalHedging ?? false);
+
+                    if (this.IsHedgingDisabledByGateway && this.ConnectionPolicy.AvailabilityStrategy != null)
                     {
                         this.customerConfiguredAvailabilityStrategy = this.ConnectionPolicy.AvailabilityStrategy;
                         this.ConnectionPolicy.AvailabilityStrategy = null;
@@ -6970,7 +6979,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal void InitializePartitionLevelFailoverWithDefaultHedging()
         {
-            if (this.disableCrossRegionalHedging)
+            if (this.IsHedgingDisabledByGateway)
             {
                 DefaultTrace.TraceInformation(
                     "DocumentClient: Skipping default PPAF hedging because Gateway property disableCrossRegionalHedging=true");
@@ -7017,7 +7026,7 @@ namespace Microsoft.Azure.Cosmos
             lock (this.hedgingStrategyLock)
             {
                 bool ppafEnablementChanged = this.ConnectionPolicy.EnablePartitionLevelFailover != latestIsEnabled;
-                bool hedgingFlagChanged = this.disableCrossRegionalHedging != latestDisableCrossRegionalHedging;
+                bool hedgingFlagChanged = this.IsHedgingDisabledByGateway != latestDisableCrossRegionalHedging;
 
                 // No-op when nothing has actually changed.
                 //
@@ -7056,7 +7065,7 @@ namespace Microsoft.Azure.Cosmos
                     DefaultTrace.TraceInformation(
                         "DocumentClient: Gateway disableCrossRegionalHedging flag changed to {0}",
                         latestDisableCrossRegionalHedging);
-                    this.disableCrossRegionalHedging = latestDisableCrossRegionalHedging;
+                    this.SetDisableCrossRegionalHedgingState(latestDisableCrossRegionalHedging);
                 }
 
                 // Step 3: Reconcile the AvailabilityStrategy with the latest account state.
@@ -7092,7 +7101,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Reconciles <see cref="ConnectionPolicy.AvailabilityStrategy"/> with the current values of
-        /// <see cref="disableCrossRegionalHedging"/> and <see cref="ConnectionPolicy.EnablePartitionLevelFailover"/>.
+        /// <see cref="IsHedgingDisabledByGateway"/> and <see cref="ConnectionPolicy.EnablePartitionLevelFailover"/>.
         /// </summary>
         /// <remarks>
         /// Precedence (highest first):
@@ -7107,7 +7116,7 @@ namespace Microsoft.Azure.Cosmos
         {
             lock (this.hedgingStrategyLock)
             {
-                if (this.disableCrossRegionalHedging)
+                if (this.IsHedgingDisabledByGateway)
                 {
                     AvailabilityStrategy currentStrategy = this.ConnectionPolicy.AvailabilityStrategy;
                     if (currentStrategy != null)
@@ -7184,13 +7193,73 @@ namespace Microsoft.Azure.Cosmos
         /// regardless of where the strategy was configured.
         /// </summary>
         /// <remarks>
-        /// Safe to read without <see cref="hedgingStrategyLock"/> because the backing field is declared
-        /// <c>volatile</c> — the read has acquire semantics, so any write that completed on the refresh
-        /// path before its lock release is visible here. Taking a monitor on every request would impose
-        /// uncontended-but-non-zero cost on the SDK hot path (steady-state benchmarks would not surface
-        /// the regression).
+        /// Safe to read without <see cref="hedgingStrategyLock"/> because the backing generation is read
+        /// with acquire semantics and written with release semantics. Taking a monitor on every request
+        /// would impose uncontended-but-non-zero cost on the SDK hot path (steady-state benchmarks would
+        /// not surface the regression).
         /// </remarks>
-        internal bool IsHedgingDisabledByGateway => this.disableCrossRegionalHedging;
+        internal bool IsHedgingDisabledByGateway => Volatile.Read(ref this.disableCrossRegionalHedgingGeneration) != 0;
+
+        internal bool TryGetHedgingDisabledByGatewayDiagnosticGeneration(out long generation)
+        {
+            generation = Volatile.Read(ref this.disableCrossRegionalHedgingGeneration);
+            return generation != 0;
+        }
+
+        private void SetDisableCrossRegionalHedgingState(bool value)
+        {
+            if (value)
+            {
+                // Allocate the next true-cycle generation before publishing it so the first request that
+                // observes suppression also observes the matching diagnostics generation.
+                long generation = Interlocked.Increment(ref this.nextHedgingDisabledByGatewayDiagnosticGeneration);
+                Volatile.Write(ref this.disableCrossRegionalHedgingGeneration, generation);
+            }
+            else
+            {
+                // Unpublish suppression without changing the emitted generation. A racing request may already
+                // have observed a positive generation and can still legitimately suppress and emit for it.
+                Volatile.Write(ref this.disableCrossRegionalHedgingGeneration, 0);
+            }
+        }
+
+        internal AvailabilityStrategy CustomerConfiguredAvailabilityStrategyForGatewaySuppression
+        {
+            get
+            {
+                lock (this.hedgingStrategyLock)
+                {
+                    return this.customerConfiguredAvailabilityStrategy;
+                }
+            }
+        }
+
+        internal bool TryConsumeHedgingDisabledByGatewayDiagnosticForSuppressedRequest(long generation)
+        {
+            // The caller already observed this positive generation and is returning null to suppress
+            // an enabled availability strategy. Do not re-read the active generation here: a concurrent
+            // false or false -> true transition must not let this request consume another cycle's marker.
+            if (generation <= 0)
+            {
+                return false;
+            }
+
+            long emittedGeneration = Volatile.Read(ref this.emittedHedgingDisabledByGatewayDiagnosticGeneration);
+            while (emittedGeneration < generation)
+            {
+                if (Interlocked.CompareExchange(
+                    ref this.emittedHedgingDisabledByGatewayDiagnosticGeneration,
+                    generation,
+                    emittedGeneration) == emittedGeneration)
+                {
+                    return true;
+                }
+
+                emittedGeneration = Volatile.Read(ref this.emittedHedgingDisabledByGatewayDiagnosticGeneration);
+            }
+
+            return false;
+        }
 
         // Test-only accessors. Visible to the unit-test assembly via [InternalsVisibleTo] in
         // Microsoft.Azure.Cosmos.csproj.
@@ -7213,29 +7282,24 @@ namespace Microsoft.Azure.Cosmos
         // introduced these accessors should be removed in favor of mocking the account snapshot.
         internal bool DisableCrossRegionalHedgingForTests
         {
-            // Read is lock-free because disableCrossRegionalHedging is volatile (see field declaration).
+            // Read is lock-free because disableCrossRegionalHedgingGeneration is read with Volatile
+            // (see field declaration).
             // The setter retains the lock so a test write happens-before any subsequent observation on the
             // reconcile path that mutates the companion fields (customerConfiguredAvailabilityStrategy,
             // ConnectionPolicy.AvailabilityStrategy) under the same lock.
-            get => this.disableCrossRegionalHedging;
+            get => this.IsHedgingDisabledByGateway;
             set
             {
                 lock (this.hedgingStrategyLock)
                 {
-                    this.disableCrossRegionalHedging = value;
+                    this.SetDisableCrossRegionalHedgingState(value);
                 }
             }
         }
 
         internal AvailabilityStrategy CustomerConfiguredAvailabilityStrategyForTests
         {
-            get
-            {
-                lock (this.hedgingStrategyLock)
-                {
-                    return this.customerConfiguredAvailabilityStrategy;
-                }
-            }
+            get => this.CustomerConfiguredAvailabilityStrategyForGatewaySuppression;
         }
 
         internal void CaptureSessionToken(DocumentServiceRequest request, DocumentServiceResponse response)

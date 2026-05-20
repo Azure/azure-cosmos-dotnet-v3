@@ -154,6 +154,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteStringValue(queryMetricsTraceDatum.QueryMetrics.ToString());
             }
 
+            public void Visit(BooleanTraceDatum booleanTraceDatum)
+            {
+                this.jsonWriter.WriteBoolValue(booleanTraceDatum.Value);
+            }
+
             public void Visit(PointOperationStatisticsTraceDatum pointOperationStatisticsTraceDatum)
             {
                 this.jsonWriter.WriteObjectStart();

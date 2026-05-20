@@ -314,6 +314,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     this.toStringValue = queryMetricsTraceDatum.QueryMetrics.ToString();
                 }
 
+                public void Visit(BooleanTraceDatum booleanTraceDatum)
+                {
+                    this.toStringValue = booleanTraceDatum.Value.ToString();
+                }
+
                 public void Visit(PointOperationStatisticsTraceDatum pointOperationStatisticsTraceDatum)
                 {
                     StringBuilder stringBuilder = new StringBuilder();
