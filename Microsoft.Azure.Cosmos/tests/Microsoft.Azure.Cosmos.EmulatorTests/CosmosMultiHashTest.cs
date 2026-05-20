@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
@@ -748,6 +749,53 @@
 
             ItemResponse<Document> read3 = await this.container.ReadItemAsync<Document>("pkdel3", pk3);
             Assert.AreEqual(HttpStatusCode.OK, read3.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task CreateItemStreamAsync_WithMultiHashIdPath_NullItemId_AppendsIdFromPartitionKey()
+        {
+            // Create a container with /pk and /id as hierarchical partition key paths
+            ContainerProperties hpkContainerProperties = new ContainerProperties(
+                "hpkstream_" + Guid.NewGuid().ToString("N"),
+                new List<string> { "/pk", "/id" });
+            Container hpkContainer = await this.database.CreateContainerAsync(hpkContainerProperties);
+
+            try
+            {
+                // CreateItemStreamAsync passes itemId: null to ProcessItemStreamAsync,
+                // which calls EnsureIdGetsAppendedToPartitionKeyIfNeededAsync with null itemId.
+                // With a partial partition key (only /pk), the method should still succeed
+                // because the full partition key (/pk + /id) is provided by the caller.
+                string itemId = Guid.NewGuid().ToString();
+                string pkValue = "testPartition";
+                Document doc = new Document { Id = itemId };
+                doc.SetValue("pk", pkValue);
+
+                Cosmos.PartitionKey fullPk = new PartitionKeyBuilder()
+                    .Add(pkValue)
+                    .Build();
+
+                using (Stream stream = TestCommon.SerializerCore.ToStream(doc))
+                {
+                    using (ResponseMessage response = await hpkContainer.CreateItemStreamAsync(
+                        streamPayload: stream,
+                        partitionKey: fullPk))
+                    {
+                        Assert.IsNotNull(response);
+                        Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                    }
+                }
+
+                // Verify the item was created successfully
+                Document readDoc = await hpkContainer.ReadItemAsync<Document>(itemId, fullPk);
+                Assert.IsNotNull(readDoc);
+                Assert.AreEqual(itemId, readDoc.Id);
+                Assert.AreEqual(pkValue, readDoc.GetPropertyValue<string>("pk"));
+            }
+            finally
+            {
+                await hpkContainer.DeleteContainerAsync();
+            }
         }
     }
 }
