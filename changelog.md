@@ -19,11 +19,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+- [5838](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5838) EmbeddingGenerator: Adds ICosmosEmbeddingGenerator client-wide configuration (preview)
+
 - [#5549](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5549) Adds AAD token revocation (CAE / Emergency) transparent retry handling
 
 #### Breaking Changes
 
 #### Bugs Fixed
+
+- [5827](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5827) ChangeFeedEstimator: Change feed estimator threw `ArgumentNullException` when an inmemory lease container was being used. Update validations so in-memory lease containers work with change feed estimator
 
 #### Other Changes
 
