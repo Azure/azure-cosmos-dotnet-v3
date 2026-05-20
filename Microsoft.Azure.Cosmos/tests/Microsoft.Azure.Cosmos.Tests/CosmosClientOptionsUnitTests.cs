@@ -828,16 +828,21 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void MaxTcpConnectionsPerEndpointBelowMinimumThrows()
+        public void VerifyMaxTcpConnectionsPerEndpointBelowMinimumClampsToMinimum()
         {
             CosmosClientOptions options = new CosmosClientOptions
             {
                 ConnectionMode = ConnectionMode.Direct,
             };
 
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => options.MaxTcpConnectionsPerEndpoint = 15);
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => options.MaxTcpConnectionsPerEndpoint = 0);
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => options.MaxTcpConnectionsPerEndpoint = -1);
+            options.MaxTcpConnectionsPerEndpoint = 15;
+            Assert.AreEqual(ConnectionPolicy.MinimumMaxTcpConnectionsPerEndpoint, options.MaxTcpConnectionsPerEndpoint);
+
+            options.MaxTcpConnectionsPerEndpoint = 0;
+            Assert.AreEqual(ConnectionPolicy.MinimumMaxTcpConnectionsPerEndpoint, options.MaxTcpConnectionsPerEndpoint);
+
+            options.MaxTcpConnectionsPerEndpoint = -1;
+            Assert.AreEqual(ConnectionPolicy.MinimumMaxTcpConnectionsPerEndpoint, options.MaxTcpConnectionsPerEndpoint);
         }
 
         [TestMethod]
@@ -859,6 +864,41 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Null is accepted (means default).
             options.MaxTcpConnectionsPerEndpoint = null;
             Assert.IsNull(options.MaxTcpConnectionsPerEndpoint);
+        }
+
+        [TestMethod]
+        public void VerifyConnectionPolicyMaxTcpConnectionsPerEndpointBelowMinimumClampsToMinimum()
+        {
+            ConnectionPolicy policy = new ConnectionPolicy();
+
+            policy.MaxTcpConnectionsPerEndpoint = 5;
+            Assert.AreEqual(ConnectionPolicy.MinimumMaxTcpConnectionsPerEndpoint, policy.MaxTcpConnectionsPerEndpoint);
+
+            policy.MaxTcpConnectionsPerEndpoint = 0;
+            Assert.AreEqual(ConnectionPolicy.MinimumMaxTcpConnectionsPerEndpoint, policy.MaxTcpConnectionsPerEndpoint);
+
+            policy.MaxTcpConnectionsPerEndpoint = -1;
+            Assert.AreEqual(ConnectionPolicy.MinimumMaxTcpConnectionsPerEndpoint, policy.MaxTcpConnectionsPerEndpoint);
+
+            // Valid values are not clamped
+            policy.MaxTcpConnectionsPerEndpoint = 16;
+            Assert.AreEqual(16, policy.MaxTcpConnectionsPerEndpoint);
+
+            policy.MaxTcpConnectionsPerEndpoint = null;
+            Assert.IsNull(policy.MaxTcpConnectionsPerEndpoint);
+        }
+
+        [TestMethod]
+        public void VerifyValidateDirectTcpSettingsBelowMinimumClampsValues()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                MaxTcpConnectionsPerEndpoint = 1,
+            };
+
+            ConnectionPolicy policy = options.GetConnectionPolicy(clientId: 0);
+            Assert.AreEqual(ConnectionPolicy.MinimumMaxTcpConnectionsPerEndpoint, policy.MaxTcpConnectionsPerEndpoint);
         }
 
         [TestMethod]

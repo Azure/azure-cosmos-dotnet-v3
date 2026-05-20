@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http;
     using System.Net.Security;
     using System.Security.Cryptography.X509Certificates;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
@@ -23,6 +24,8 @@ namespace Microsoft.Azure.Cosmos
         private const int defaultMediaRequestTimeout = 300;
         private const int defaultMaxConcurrentFanoutRequests = 32;
         private const int defaultMaxConcurrentConnectionLimit = 50;
+
+        internal const int MinimumMaxTcpConnectionsPerEndpoint = 16;
 
         internal UserAgentContainer UserAgentContainer;
         private static ConnectionPolicy defaultPolicy;
@@ -485,12 +488,14 @@ namespace Microsoft.Azure.Cosmos
             get => this.maxTcpConnectionsPerEndpoint;
             set
             {
-                if (value.HasValue && value.Value < 16)
+                if (value.HasValue && value.Value < MinimumMaxTcpConnectionsPerEndpoint)
                 {
-                    throw new ArgumentOutOfRangeException(
+                    DefaultTrace.TraceWarning(
+                        "{0} value {1} is below the supported minimum of {2}; clamping to {2}.",
                         nameof(this.MaxTcpConnectionsPerEndpoint),
                         value.Value,
-                        $"{nameof(this.MaxTcpConnectionsPerEndpoint)} must be greater than or equal to 16.");
+                        MinimumMaxTcpConnectionsPerEndpoint);
+                    value = MinimumMaxTcpConnectionsPerEndpoint;
                 }
 
                 this.maxTcpConnectionsPerEndpoint = value;

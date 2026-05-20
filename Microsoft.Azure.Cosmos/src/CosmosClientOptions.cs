@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http;
     using System.Net.Security;
     using System.Security.Cryptography.X509Certificates;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
@@ -1330,12 +1331,14 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException($"{settingName} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Direct)}");
             }
 
-            if (this.maxTcpConnectionsPerEndpoint.HasValue && this.maxTcpConnectionsPerEndpoint.Value < 16)
+            if (this.maxTcpConnectionsPerEndpoint.HasValue && this.maxTcpConnectionsPerEndpoint.Value < ConnectionPolicy.MinimumMaxTcpConnectionsPerEndpoint)
             {
-                throw new ArgumentOutOfRangeException(
+                DefaultTrace.TraceWarning(
+                    "{0} value {1} is below the supported minimum of {2}; clamping to {2}.",
                     nameof(this.MaxTcpConnectionsPerEndpoint),
                     this.maxTcpConnectionsPerEndpoint.Value,
-                    $"{nameof(this.MaxTcpConnectionsPerEndpoint)} must be greater than or equal to 16.");
+                    ConnectionPolicy.MinimumMaxTcpConnectionsPerEndpoint);
+                this.maxTcpConnectionsPerEndpoint = ConnectionPolicy.MinimumMaxTcpConnectionsPerEndpoint;
             }
         }
 
