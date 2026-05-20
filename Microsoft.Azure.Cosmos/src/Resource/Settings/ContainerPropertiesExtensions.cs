@@ -31,33 +31,20 @@ namespace Microsoft.Azure.Cosmos
                 return (partitionKey, streamPayload);
             }
 
-            // Fast path: try in-memory cache only. This avoids triggering client initialization
-            // (EnsureValidClientAsync) or making HTTP calls (ResolveByNameAsync) before the handler
-            // pipeline has had a chance to initialize the client. Required to keep
-            // InitTaskThreadSafe's single-ReadDatabaseAccount-call invariant.
             ContainerProperties containerProperties;
-            if (!container.TryGetCachedContainerPropertiesFromMemory(out containerProperties))
+            try
             {
-                // Cache miss. Only fall through to a cache-warming fetch once the client has
-                // completed initialization. Before that, skip the auto-append; the normal
-                // request pipeline will populate the cache for subsequent requests.
-                if (!container.IsClientInitialized)
-                {
-                    return (partitionKey, streamPayload);
-                }
-
-                try
-                {
-                    containerProperties = await container.GetCachedContainerPropertiesAsync(
-                        forceRefresh: false,
-                        trace: NoOpTrace.Singleton,
-                        cancellationToken: cancellationToken);
-                }
-                catch (Exception ex) when (ex is not OperationCanceledException)
-                {
-                    DefaultTrace.TraceWarning("HPK id-append cache fetch failed: {0}", ex.Message);
-                    return (partitionKey, streamPayload);
-                }
+                containerProperties = await container.GetCachedContainerPropertiesAsync(
+                    forceRefresh: false,
+                    trace: NoOpTrace.Singleton,
+                    cancellationToken: cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                DefaultTrace.TraceWarning(
+                    "EnsureIdGetAppendedToPartitionKeyIfNeededAsync: failed to resolve container properties; this is expected if the container does not exist yet. Exception: {0}",
+                    ex.Message);
+                return (partitionKey, streamPayload);
             }
 
             if (containerProperties == null || !containerProperties.IsLastPartitionKeyPathId)
