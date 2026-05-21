@@ -119,11 +119,27 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 {
                     activity?.SetTag("cache.proactive_refresh", true);
 
-                    // Background refresh; pass the disposal token so a stale BackgroundRefresh
-                    // task surviving the owning provider can be cancelled on shutdown.
-                    this.DekPropertiesCache.BackgroundRefreshNonBlocking(
-                        dekId,
-                        () => this.FetchFromSourceAndUpdateCachesAsync(dekId, fetcher, diagnosticsContext, this.disposalCts.Token));
+                    // Capture the disposal token eagerly: BackgroundRefreshNonBlocking invokes
+                    // the lambda asynchronously, and reading this.disposalCts.Token at that
+                    // future point would throw ObjectDisposedException if Dispose has run in
+                    // the meantime. A clean post-dispose skip preserves the caller's already-
+                    // returned ServerProperties without surfacing a swallowed ODE.
+                    CancellationToken refreshToken;
+                    try
+                    {
+                        refreshToken = this.disposalCts.Token;
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        return cachedDekProperties.ServerProperties;
+                    }
+
+                    if (!refreshToken.IsCancellationRequested)
+                    {
+                        this.DekPropertiesCache.BackgroundRefreshNonBlocking(
+                            dekId,
+                            () => this.FetchFromSourceAndUpdateCachesAsync(dekId, fetcher, diagnosticsContext, refreshToken));
+                    }
                 }
 
                 return cachedDekProperties.ServerProperties;
@@ -204,9 +220,28 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// </summary>
         private void UpdateDistributedCacheInBackground(string dekId, CachedDekProperties cachedDekProperties)
         {
+            // Capture the disposal token eagerly so a race against Dispose() does not throw
+            // ObjectDisposedException from inside the Task.Run lambda — that throw would
+            // bypass the failure-telemetry catch below and surface as a silently-faulted
+            // task. A clean post-dispose skip avoids scheduling unobserved work.
+            CancellationToken token;
+            try
+            {
+                token = this.disposalCts.Token;
+            }
+            catch (ObjectDisposedException)
+            {
+                return;
+            }
+
+            if (token.IsCancellationRequested)
+            {
+                return;
+            }
+
             // Task.Run intentionally does NOT receive the disposal token: the lambda checks the
-            // token explicitly and treats post-disposal cancellation as a clean no-op so the
-            // tracked Task always finishes RanToCompletion (never Canceled / Faulted).
+            // captured token explicitly and treats post-disposal cancellation as a clean no-op
+            // so the tracked Task always finishes RanToCompletion (never Canceled / Faulted).
             Task write = Task.Run(async () =>
             {
                 using (Activity dcActivity = ActivitySource.StartActivity("DekCache.UpdateDistributedCache"))
@@ -215,7 +250,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     dcActivity?.SetTag("cache.key", dekId);
                     dcActivity?.SetTag("cache.operation", "write");
 
-                    CancellationToken token = this.disposalCts.Token;
                     if (token.IsCancellationRequested)
                     {
                         dcActivity?.SetTag("cache.result", "skipped-disposed");
