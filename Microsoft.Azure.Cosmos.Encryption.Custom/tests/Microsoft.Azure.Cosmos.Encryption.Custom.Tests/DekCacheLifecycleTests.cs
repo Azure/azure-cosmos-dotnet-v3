@@ -75,6 +75,60 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         }
 
         [TestMethod]
+        // REQ: Dispose must wait for an already-entered SetAsync to complete, not just cancel it.
+        // SOURCE: Adversarial review R4 (deterministic drain-vs-cancel-skip distinction).
+        public async Task Dispose_WaitsForInFlightSetAsync_ThatIgnoresCancellation()
+        {
+            using SemaphoreSlim setEntered = new (0, 1);
+            using ManualResetEventSlim setRelease = new (false);
+
+            Mock<IDistributedCache> mock = new ();
+            mock.Setup(x => x.SetAsync(It.IsAny<string>(), It.IsAny<byte[]>(), It.IsAny<DistributedCacheEntryOptions>(), It.IsAny<CancellationToken>()))
+                .Returns<string, byte[], DistributedCacheEntryOptions, CancellationToken>(async (k, v, o, ct) =>
+                {
+                    setEntered.Release();
+
+                    // Intentionally ignore ct: we want to prove Dispose waits for the
+                    // in-flight write to finish, not that cancellation lets Dispose race ahead.
+                    await Task.Run(() => setRelease.Wait(), CancellationToken.None);
+                });
+
+            DekCache cache = new (new DekCacheOptions
+            {
+                DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
+                DistributedCache = new DistributedCacheOptions
+                {
+                    Cache = mock.Object,
+                    KeyPrefix = "lifecycle-test",
+                },
+            });
+
+            cache.SetDekProperties("dek1", NewDek("dek1"));
+
+            // Wait until the background SetAsync is actually parked on the gate so the
+            // drain has real in-flight work to wait for.
+            Assert.IsTrue(
+                await setEntered.WaitAsync(TimeSpan.FromSeconds(5)),
+                "Background SetAsync should have been entered before Dispose was called.");
+
+            Task disposeTask = Task.Run(() => cache.Dispose());
+
+            // Dispose must NOT return while the SetAsync gate is still held — otherwise the
+            // drain has degraded into a cancel-skip. Allow a small window for scheduling
+            // before sampling.
+            await Task.Delay(TimeSpan.FromMilliseconds(200));
+            Assert.IsFalse(disposeTask.IsCompleted, "Dispose returned before the in-flight SetAsync completed; drain has degraded to cancel-skip.");
+
+            // Release the gate and assert Dispose now completes promptly (well under the
+            // 5-second bounded-drain timeout).
+            setRelease.Set();
+
+            Task finished = await Task.WhenAny(disposeTask, Task.Delay(TimeSpan.FromSeconds(4)));
+            Assert.AreSame(disposeTask, finished, "Dispose should complete promptly once the in-flight SetAsync releases.");
+            Assert.IsFalse(disposeTask.IsFaulted, $"Dispose should not throw: {disposeTask.Exception}");
+        }
+
+        [TestMethod]
         public async Task DisposeAsync_DrainsAndCompletesGracefully()
         {
             TaskCompletionSource<byte[]> setBlock = new ();

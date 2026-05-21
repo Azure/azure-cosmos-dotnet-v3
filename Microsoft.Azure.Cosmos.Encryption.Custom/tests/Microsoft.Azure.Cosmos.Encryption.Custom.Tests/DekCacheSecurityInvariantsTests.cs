@@ -6,6 +6,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 {
     using System;
     using System.Collections.Concurrent;
+    using System.Collections.Generic;
+    using System.Diagnostics.Tracing;
+    using System.Linq;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -391,6 +394,43 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 new byte[] { 0x22 },
                 result.WrappedDataEncryptionKey,
                 "Result must come from the legitimate fetcher, not from the oversized mismatched L2 payload.");
+        }
+
+        [TestMethod]
+        // REQ: A mismatched L2 payload must trigger the EncryptionCustomEventSource id-mismatch
+        // event when reached through the real DekCache code path (not only via direct
+        // EventSource unit tests).
+        // SOURCE: Adversarial review R4 (integrated-emission coverage gap).
+        public async Task L2PayloadIdMismatch_EmitsEventThroughDekCache()
+        {
+            DateTime now = NewClock();
+            ClockControlledDistributedCache sharedL2 = new ClockControlledDistributedCache(() => now);
+            DekCache cache = NewCache(DefaultTtl, sharedL2, () => now);
+
+            const string observedImposterId = "imposterId-via-dekcache";
+            string payload = JsonConvert.SerializeObject(new
+            {
+                v = 1,
+                serverProperties = MakeDekProperties(observedImposterId, wrappedKey: new byte[] { 0x99 }),
+                serverPropertiesExpiryUtc = now.AddMinutes(30),
+            });
+            sharedL2.SetRawForTest(DefaultCacheKey, Encoding.UTF8.GetBytes(payload));
+
+            using SimpleEventSourceListener listener = new ("Azure-Cosmos-Encryption-Custom", EventLevel.Warning);
+
+            await cache.GetOrAddDekPropertiesAsync(
+                DekId,
+                (id, ctx, ct) => Task.FromResult(MakeDekProperties(id, wrappedKey: new byte[] { 0x22 })),
+                CosmosDiagnosticsContext.Create(null),
+                CancellationToken.None);
+
+            EventWrittenEventArgs evt = listener.WaitForEvent(eventId: 5, timeoutMs: 5000);
+            Assert.IsNotNull(evt, "DekCache must emit DistributedCacheIdMismatch (event id 5) via EncryptionCustomEventSource when an L2 payload's Id does not match the requested dekId.");
+            Assert.AreEqual(EventLevel.Warning, evt.Level);
+            Assert.IsNotNull(evt.Payload);
+            Assert.AreEqual(2, evt.Payload.Count);
+            Assert.AreEqual(DekId, evt.Payload[0] as string, "Requested dekId should be the first payload field.");
+            Assert.AreEqual(observedImposterId, evt.Payload[1] as string, "Observed Id (truncated if needed) should be the second payload field.");
         }
 
         // ---------------------------------------------------------------
@@ -840,6 +880,98 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             public void Refresh(string key) { }
 
             public Task RefreshAsync(string key, CancellationToken token = default) => Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Minimal EventSource listener that captures events from a named source for
+        /// integrated tests that need to assert the production code path actually fires
+        /// an event (not just that the EventSource is well-formed in isolation).
+        /// </summary>
+        private sealed class SimpleEventSourceListener : EventListener
+        {
+            private readonly object sync = new ();
+            private readonly List<EventWrittenEventArgs> events = new ();
+            private readonly ManualResetEventSlim eventReceived = new (false);
+            private readonly string sourceName;
+            private readonly EventLevel level;
+            private EventSource subscribedSource;
+
+            public SimpleEventSourceListener(string sourceName, EventLevel level)
+            {
+                this.sourceName = sourceName;
+                this.level = level;
+
+                // EventListener's base ctor iterated and called OnEventSourceCreated for every
+                // pre-existing EventSource — at that point `sourceName` was still null because
+                // parameter assignment happens AFTER base(). Re-scan and enable matching sources.
+                foreach (EventSource existing in EventSource.GetSources())
+                {
+                    if (string.Equals(existing.Name, this.sourceName, StringComparison.Ordinal))
+                    {
+                        this.subscribedSource = existing;
+                        this.EnableEvents(existing, this.level, EventKeywords.None);
+                        break;
+                    }
+                }
+            }
+
+            public EventWrittenEventArgs WaitForEvent(int eventId, int timeoutMs)
+            {
+                int waited = 0;
+                const int step = 50;
+                while (waited <= timeoutMs)
+                {
+                    lock (this.sync)
+                    {
+                        for (int i = 0; i < this.events.Count; i++)
+                        {
+                            if (this.events[i].EventId == eventId)
+                            {
+                                return this.events[i];
+                            }
+                        }
+                    }
+
+                    this.eventReceived.Wait(step);
+                    this.eventReceived.Reset();
+                    waited += step;
+                }
+
+                return null;
+            }
+
+            protected override void OnEventSourceCreated(EventSource eventSource)
+            {
+                if (this.sourceName != null
+                    && string.Equals(eventSource.Name, this.sourceName, StringComparison.Ordinal))
+                {
+                    this.subscribedSource = eventSource;
+                    this.EnableEvents(eventSource, this.level, EventKeywords.None);
+                }
+
+                base.OnEventSourceCreated(eventSource);
+            }
+
+            protected override void OnEventWritten(EventWrittenEventArgs eventData)
+            {
+                if (this.subscribedSource != null && eventData.EventSource == this.subscribedSource)
+                {
+                    lock (this.sync)
+                    {
+                        this.events.Add(eventData);
+                    }
+
+                    this.eventReceived.Set();
+                }
+
+                base.OnEventWritten(eventData);
+            }
+
+            public override void Dispose()
+            {
+                this.eventReceived.Dispose();
+                base.Dispose();
+            }
         }
     }
 }

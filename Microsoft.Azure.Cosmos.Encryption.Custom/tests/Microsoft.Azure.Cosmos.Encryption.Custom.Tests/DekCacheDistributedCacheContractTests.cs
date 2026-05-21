@@ -319,6 +319,45 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         }
 
         [TestMethod]
+        // REQ: Cold-miss L2 hydration must not block GetOrAddDekPropertiesAsync on the hot path.
+        // SOURCE: Adversarial review R4 (test-coverage gap on non-blocking contract).
+        public async Task ColdMiss_FireAndForgetWrite_DoesNotBlockGetOrAdd()
+        {
+            DateTime now = NewClock();
+            using SemaphoreSlim setEntered = new (0, 1);
+            using ManualResetEventSlim setRelease = new (false);
+
+            GatedSetDistributedCache l2 = new (() => now, setEntered, setRelease);
+            DekCache cache = NewCache(DefaultTtl, l2, () => now);
+
+            // Hot-path call: the cold-miss path schedules an L2 SetAsync via
+            // UpdateDistributedCacheInBackground. The Task returned to the caller must
+            // complete from the Cosmos fetch alone — not wait for the L2 write.
+            DataEncryptionKeyProperties result = await cache.GetOrAddDekPropertiesAsync(
+                DekId,
+                (id, ctx, ct) => Task.FromResult(MakeDekProperties(id)),
+                CosmosDiagnosticsContext.Create(null),
+                CancellationToken.None);
+
+            Assert.IsNotNull(result, "Caller should observe a result without waiting on L2.");
+
+            // The background write should have started even though we did not await it.
+            Assert.IsTrue(
+                await setEntered.WaitAsync(TimeSpan.FromSeconds(5)),
+                "Background L2 SetAsync should have been entered shortly after the cold-miss returned.");
+
+            // At this point the GetOrAdd call has long since returned but the background
+            // write is still parked on the release gate — proving the hot path was non-blocking.
+            Assert.AreEqual(0, l2.CompletedSetCount, "Background write must still be in flight (gate not released).");
+
+            setRelease.Set();
+
+            await cache.WhenAllPendingWritesAsync();
+
+            Assert.AreEqual(1, l2.CompletedSetCount, "Background write must complete exactly once after gate release.");
+        }
+
+        [TestMethod]
         public async Task WarmL1Hit_DoesNotWriteToL2()
         {
             DateTime now = NewClock();
@@ -628,6 +667,58 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             {
                 Interlocked.Decrement(ref this.depth);
             }
+        }
+
+        /// <summary>
+        /// Distributed-cache test double that signals when SetAsync is entered and parks the
+        /// call on an external release gate. Used by tests that need to prove non-blocking
+        /// fire-and-forget semantics without depending on wall-clock sleeps.
+        /// </summary>
+        private sealed class GatedSetDistributedCache : IDistributedCache
+        {
+            private readonly Func<DateTime> nowProvider;
+            private readonly SemaphoreSlim setEntered;
+            private readonly ManualResetEventSlim setRelease;
+            private int completedSetCount;
+
+            public GatedSetDistributedCache(Func<DateTime> nowProvider, SemaphoreSlim setEntered, ManualResetEventSlim setRelease)
+            {
+                this.nowProvider = nowProvider ?? throw new ArgumentNullException(nameof(nowProvider));
+                this.setEntered = setEntered ?? throw new ArgumentNullException(nameof(setEntered));
+                this.setRelease = setRelease ?? throw new ArgumentNullException(nameof(setRelease));
+            }
+
+            public int CompletedSetCount => Volatile.Read(ref this.completedSetCount);
+
+            public byte[] Get(string key) => null;
+
+            public Task<byte[]> GetAsync(string key, CancellationToken token = default) => Task.FromResult<byte[]>(null);
+
+            public void Set(string key, byte[] value, DistributedCacheEntryOptions options) { }
+
+            public Task SetAsync(string key, byte[] value, DistributedCacheEntryOptions options, CancellationToken token = default)
+            {
+                return Task.Run(
+                    () =>
+                    {
+                        this.setEntered.Release();
+
+                        // Ignore the token: we want to prove the disposal drain waits for
+                        // the gate, not that cancellation short-circuits the write.
+                        this.setRelease.Wait();
+
+                        Interlocked.Increment(ref this.completedSetCount);
+                    },
+                    CancellationToken.None);
+            }
+
+            public void Remove(string key) { }
+
+            public Task RemoveAsync(string key, CancellationToken token = default) => Task.CompletedTask;
+
+            public void Refresh(string key) { }
+
+            public Task RefreshAsync(string key, CancellationToken token = default) => Task.CompletedTask;
         }
     }
 }
