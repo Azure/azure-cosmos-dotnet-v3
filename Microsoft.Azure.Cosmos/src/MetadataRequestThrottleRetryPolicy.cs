@@ -290,6 +290,11 @@ namespace Microsoft.Azure.Cosmos
         /// </returns>
         private ShouldRetryResult HandleRegionalFailure()
         {
+            // Note: RefreshLocationAsync is intentionally omitted. The metadata retry
+            // loop cycles through known-good regions quickly. If all regions are
+            // exhausted, the exception propagates to ClientRetryPolicy which triggers
+            // a full location refresh via ShouldRetryOnEndpointFailureAsync.
+
             this.MarkEndpointUnavailable();
 
             if (this.IncrementRetryIndexOnUnavailableEndpointForMetadataRead())
