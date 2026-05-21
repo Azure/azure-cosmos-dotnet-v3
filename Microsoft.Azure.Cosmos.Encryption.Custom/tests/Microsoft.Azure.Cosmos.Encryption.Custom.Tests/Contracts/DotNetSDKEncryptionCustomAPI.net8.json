@@ -68,14 +68,14 @@
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.ValueTask DisposeAsync();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:True;"
         },
-        "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])[System.ObsoleteAttribute(\"Please use the Create factory accepting DekCacheOptions.\")]": {
+        "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])[System.ObsoleteAttribute(\"Use CosmosDataEncryptionKeyProvider.Create(EncryptionKeyWrapProvider, EncryptionKeyStoreProvider, DekCacheOptions) - pass null for DekCacheOptions to preserve current behavior, or supply DekCacheOptions to enable distributed-cache support.\")]": {
           "Type": "Constructor",
           "Attributes": [
             "ObsoleteAttribute"
           ],
           "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])"
         },
-        "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan])[System.ObsoleteAttribute(\"Please use a constructor that accepts EncryptionKeyStoreProvider (with DekCacheOptions to enable distributed-cache support).\")]": {
+        "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan])[System.ObsoleteAttribute(\"EncryptionKeyWrapProvider is obsolete; migrate to CosmosDataEncryptionKeyProvider(EncryptionKeyStoreProvider, DekCacheOptions). To keep both providers during migration, use CosmosDataEncryptionKeyProvider.Create(EncryptionKeyWrapProvider, EncryptionKeyStoreProvider, DekCacheOptions).\")]": {
           "Type": "Constructor",
           "Attributes": [
             "ObsoleteAttribute"
@@ -474,14 +474,14 @@
               "Attributes": [],
               "MethodInfo": "System.Threading.Tasks.ValueTask DisposeAsync();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:True;"
             },
-            "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])[System.ObsoleteAttribute(\"Please use the Create factory accepting DekCacheOptions.\")]": {
+            "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])[System.ObsoleteAttribute(\"Use CosmosDataEncryptionKeyProvider.Create(EncryptionKeyWrapProvider, EncryptionKeyStoreProvider, DekCacheOptions) - pass null for DekCacheOptions to preserve current behavior, or supply DekCacheOptions to enable distributed-cache support.\")]": {
               "Type": "Constructor",
               "Attributes": [
                 "ObsoleteAttribute"
               ],
               "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])"
             },
-            "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan])[System.ObsoleteAttribute(\"Please use a constructor that accepts EncryptionKeyStoreProvider (with DekCacheOptions to enable distributed-cache support).\")]": {
+            "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan])[System.ObsoleteAttribute(\"EncryptionKeyWrapProvider is obsolete; migrate to CosmosDataEncryptionKeyProvider(EncryptionKeyStoreProvider, DekCacheOptions). To keep both providers during migration, use CosmosDataEncryptionKeyProvider.Create(EncryptionKeyWrapProvider, EncryptionKeyStoreProvider, DekCacheOptions).\")]": {
               "Type": "Constructor",
               "Attributes": [
                 "ObsoleteAttribute"

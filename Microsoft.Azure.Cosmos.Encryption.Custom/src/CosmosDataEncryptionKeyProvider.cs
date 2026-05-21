@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// </summary>
         /// <param name="encryptionKeyWrapProvider">A provider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption</param>
         /// <param name="dekPropertiesTimeToLive">Time to live for DEK properties before having to refresh.</param>
-        [Obsolete("Please use a constructor that accepts EncryptionKeyStoreProvider (with DekCacheOptions to enable distributed-cache support).")]
+        [Obsolete("EncryptionKeyWrapProvider is obsolete; migrate to CosmosDataEncryptionKeyProvider(EncryptionKeyStoreProvider, DekCacheOptions). To keep both providers during migration, use CosmosDataEncryptionKeyProvider.Create(EncryptionKeyWrapProvider, EncryptionKeyStoreProvider, DekCacheOptions).")]
         public CosmosDataEncryptionKeyProvider(
             EncryptionKeyWrapProvider encryptionKeyWrapProvider,
             TimeSpan? dekPropertiesTimeToLive = null)
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="encryptionKeyWrapProvider">A provider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption</param>
         /// <param name="encryptionKeyStoreProvider"> MDE EncryptionKeyStoreProvider for Wrapping/UnWrapping services. </param>
         /// <param name="dekPropertiesTimeToLive">Time to live for DEK properties before having to refresh.</param>
-        [Obsolete("Please use the Create factory accepting DekCacheOptions.")]
+        [Obsolete("Use CosmosDataEncryptionKeyProvider.Create(EncryptionKeyWrapProvider, EncryptionKeyStoreProvider, DekCacheOptions) - pass null for DekCacheOptions to preserve current behavior, or supply DekCacheOptions to enable distributed-cache support.")]
         public CosmosDataEncryptionKeyProvider(
             EncryptionKeyWrapProvider encryptionKeyWrapProvider,
             EncryptionKeyStoreProvider encryptionKeyStoreProvider,
