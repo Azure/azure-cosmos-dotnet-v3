@@ -14,11 +14,28 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
 
     internal static class ContainerPropertiesExtensions
     {
         private const int DefaultStreamBufferSize = 4096;
-       
+
+        internal static bool ShouldValidatePartitionKeyHasId(ResourceType resourceType, OperationType operationType)
+        {
+            if (resourceType == ResourceType.PartitionKey &&
+                operationType == OperationType.Delete)
+            {
+                return false;
+            }
+
+            if (operationType == OperationType.ReadFeed || operationType == OperationType.Query)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
         internal static async Task<(PartitionKey?, Stream)> EnsureIdGetsAppendedToPartitionKeyIfNeededAsync(
             this ContainerInternal container,
             PartitionKey? partitionKey,

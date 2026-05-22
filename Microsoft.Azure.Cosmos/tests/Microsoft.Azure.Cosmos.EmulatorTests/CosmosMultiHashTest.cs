@@ -6,8 +6,9 @@
     using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Documents;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Serialization.HybridRow.Schemas;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -247,9 +248,6 @@
 
             await TestBulkOperationsWithDefaultPKAsync(idPkContainer);
 
-            ArgumentException deleteException = await Assert.ThrowsExceptionAsync<ArgumentException>(() =>
-                idPkContainer.DeleteAllItemsByPartitionKeyStreamAsync(default));
-            Assert.IsTrue(deleteException.Message.Contains("itemId needs to be specified"));
         }
 
         private static async Task VerifyTransactionalBatchThrowsExceptionForDefaultPKAsync(Container idPkContainer)
@@ -736,9 +734,8 @@
                 .Add("10001")
                 .Build();
 
-            ArgumentException deleteException = await Assert.ThrowsExceptionAsync<ArgumentException>(() =>
-                this.container.DeleteAllItemsByPartitionKeyStreamAsync(firstLevelPk));
-            Assert.IsTrue(deleteException.Message.Contains("itemId needs to be specified"));
+            //Delete fails silently in backend
+            await this.container.DeleteAllItemsByPartitionKeyStreamAsync(firstLevelPk);
 
             // Verify all documents still exist since the delete failed
             ItemResponse<Document> read1 = await this.container.ReadItemAsync<Document>("pkdel1", pk1);
@@ -749,6 +746,21 @@
 
             ItemResponse<Document> read3 = await this.container.ReadItemAsync<Document>("pkdel3", pk3);
             Assert.AreEqual(HttpStatusCode.OK, read3.StatusCode);
+
+            Cosmos.PartitionKey fullyspecifiedPartitionKey = new PartitionKeyBuilder()
+                .Add("10001")
+                .Add("NewYork")
+                .Add("pkdel1")
+                .Build();
+
+            read1 = await this.container.ReadItemAsync<Document>("pkdel1", pk1);
+            Assert.AreEqual(HttpStatusCode.OK, read1.StatusCode);
+
+            await this.container.DeleteAllItemsByPartitionKeyStreamAsync(fullyspecifiedPartitionKey);
+
+            CosmosException ex = await Assert.ThrowsExceptionAsync<CosmosException>(
+                () => this.container.ReadItemAsync<Document>("pkdel1", pk1));
+            Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
         }
 
         [TestMethod]
@@ -797,5 +809,6 @@
                 await hpkContainer.DeleteContainerAsync();
             }
         }
+
     }
 }

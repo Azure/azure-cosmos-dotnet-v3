@@ -927,7 +927,10 @@ namespace Microsoft.Azure.Cosmos
 
             ContainerInternal.ValidatePartitionKey(partitionKey, requestOptions);
             string resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
-            (partitionKey, streamPayload) = await ContainerPropertiesExtensions.EnsureIdGetsAppendedToPartitionKeyIfNeededAsync(this, partitionKey, itemId, streamPayload, cancellationToken);
+            if (ContainerPropertiesExtensions.ShouldValidatePartitionKeyHasId(resourceType: ResourceType.Document, operationType))
+            {
+                (partitionKey, streamPayload) = await ContainerPropertiesExtensions.EnsureIdGetsAppendedToPartitionKeyIfNeededAsync(this, partitionKey, itemId, streamPayload, cancellationToken);
+            }
 
             // Convert Text to Binary Stream.
             // Exception: Serializing a text stream to a binary stream should be avoided when triggers are present in the item request options.
