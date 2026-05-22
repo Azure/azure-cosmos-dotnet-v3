@@ -431,6 +431,35 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         [TestMethod]
+        public async Task ShouldWorkWithNullLeaseContainer_WhenDocumentServiceLeaseContainerProvided()
+        {
+            List<DocumentServiceLeaseCore> leases = new List<DocumentServiceLeaseCore>()
+            {
+                new DocumentServiceLeaseCore() { LeaseToken = "0" }
+            };
+
+            Mock<FeedIteratorInternal> mockIterator = new Mock<FeedIteratorInternal>();
+            mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<ITrace>(), It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.NotModified, "0:1"));
+            Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
+            mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
+
+            FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
+            {
+                return mockIterator.Object;
+            }
+
+            ChangeFeedEstimatorIterator remainingWorkEstimator = new ChangeFeedEstimatorIterator(
+                ChangeFeedEstimatorIteratorTests.GetMockedContainer(),
+                null, // No physical lease container (in-memory scenario)
+                mockContainer.Object,
+                feedCreator,
+                null);
+
+            FeedResponse<ChangeFeedProcessorState> response = await remainingWorkEstimator.ReadNextAsync(default);
+            Assert.AreEqual(1, response.Count);
+        }
+
+        [TestMethod]
         public void ExtractLsnFromSessionToken_ShouldParseOldSessionToken()
         {
             string oldToken = "0:12345";
