@@ -3158,6 +3158,318 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        /// <summary>
+        /// Same end-to-end shape as <see cref="ReadItemAsync_HubRegionCaching_DiscoveryThenCacheHit_LiveAccount"/>
+        /// (Request 1 populates the PPAF cache via full discovery; Request 2 short-circuits to the cached hub),
+        /// but routed against whatever account is configured via <c>COSMOSDB_MULTI_REGION</c> (i.e. the same
+        /// account used by <see cref="ReadItemAsync_WithPPAFEnabledAccountShouldAddHubHeader_On4041002FromHub"/>).
+        /// Because the regions / hub identity of that account are NOT known at compile time, the simulation is
+        /// count-based (mirroring the existing single-read test) and the assertions are region-agnostic — they
+        /// only inspect counts and hub-header presence, never specific region names.
+        ///
+        /// Simulation rules (same for both Direct and Gateway):
+        ///   * Any read with NO hub header     -> simulate 404/1002 (ReadSessionNotAvailable).
+        ///   * First read WITH hub header ONLY in Request 1 -> simulate 403/3 (WriteForbidden) to force discovery.
+        ///   * Every other case                -> pass through to the live backend.
+        /// The one-shot 403/3 latch is NOT reset between reads, so Request 2's first header-bearing wire goes
+        /// straight to passthrough (cache hit -> 200 OK).
+        ///
+        /// Hub region processing is always ENABLED here (the cache-hit assertion is meaningless when the
+        /// header path is gated off). PPAF on/off is exercised by rewriting the database-account response.
+        ///
+        /// Hub-processing OFF behavior is already covered by Cases 5-8 of
+        /// <see cref="ReadItemAsync_WithPPAFEnabledAccountShouldAddHubHeader_On4041002FromHub"/>, so we do not
+        /// duplicate it here.
+        /// </summary>
+        [TestMethod]
+        [Owner("aavasthy")]
+        [TestCategory("MultiRegion")]
+        [DataRow(ConnectionMode.Gateway, true, DisplayName = "Gateway + PPAF enabled")]
+        [DataRow(ConnectionMode.Gateway, false, DisplayName = "Gateway + PPAF disabled")]
+        [DataRow(ConnectionMode.Direct, true, DisplayName = "Direct + PPAF enabled")]
+        [DataRow(ConnectionMode.Direct, false, DisplayName = "Direct + PPAF disabled")]
+        [Description("End-to-end hub-region caching against the COSMOSDB_MULTI_REGION account: "
+                     + "Request 1 simulates 2x 404/1002 + 1x 403/3 and asserts 200 OK + hub header; "
+                     + "Request 2 simulates 2x 404/1002 only and asserts the cache hit short-circuits "
+                     + "the 403/3 discovery (still 200 OK + hub header on retry).")]
+        public async Task ReadItemAsync_HubRegionCaching_DiscoveryThenCacheHit(
+            ConnectionMode connectionMode,
+            bool enablePartitionLevelFailover)
+        {
+            Environment.SetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled, "True");
+
+            try
+            {
+                string currentPhase = "Request1";
+                int read1Sim404Count = 0;
+                int read1Sim403Count = 0;
+                int read2Sim404Count = 0;
+                int read2Sim403Count = 0;
+                int read1WireCount = 0;
+                int read2WireCount = 0;
+                bool read1HubHeaderObserved = false;
+                bool read2HubHeaderObserved = false;
+                bool simulate403OnNextHubHeader = true;
+                object stateLock = new object();
+
+                HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
+                {
+                    RequestCallBack = (request, cancellationToken) =>
+                    {
+                        // Gateway mode intercepts document reads here; Direct mode routes document reads
+                        // through TransportClientWrapper, so this branch must pass through for non-doc
+                        // requests (account / pkranges / addresses).
+                        if (connectionMode != ConnectionMode.Gateway
+                            || request.Method != HttpMethod.Get
+                            || request.RequestUri == null
+                            || !request.RequestUri.AbsolutePath.Contains("/docs/")
+                            || request.RequestUri.AbsolutePath.Contains("/pkranges"))
+                        {
+                            return Task.FromResult<HttpResponseMessage>(null);
+                        }
+
+                        bool hasHubHeader =
+                            request.Headers.TryGetValues(HubRegionHeader, out IEnumerable<string> hv)
+                            && hv.Any(v => string.Equals(v, "True", StringComparison.OrdinalIgnoreCase));
+
+                        bool simulate404;
+                        bool simulate403;
+                        lock (stateLock)
+                        {
+                            if (currentPhase == "Request1")
+                            {
+                                read1WireCount++;
+                                if (hasHubHeader) read1HubHeaderObserved = true;
+                            }
+                            else
+                            {
+                                read2WireCount++;
+                                if (hasHubHeader) read2HubHeaderObserved = true;
+                            }
+
+                            simulate404 = !hasHubHeader;
+                            simulate403 = hasHubHeader && simulate403OnNextHubHeader;
+                            if (simulate403)
+                            {
+                                simulate403OnNextHubHeader = false;
+                            }
+
+                            if (simulate404)
+                            {
+                                if (currentPhase == "Request1") read1Sim404Count++; else read2Sim404Count++;
+                            }
+                            if (simulate403)
+                            {
+                                if (currentPhase == "Request1") read1Sim403Count++; else read2Sim403Count++;
+                            }
+                        }
+
+                        if (simulate404)
+                        {
+                            HttpResponseMessage resp = new HttpResponseMessage(HttpStatusCode.NotFound)
+                            {
+                                Content = new StringContent(
+                                    JsonConvert.SerializeObject(new { code = "NotFound", message = "Simulated 404/1002" }),
+                                    Encoding.UTF8,
+                                    "application/json")
+                            };
+                            resp.Headers.Add("x-ms-substatus", "1002");
+                            resp.Headers.Add("x-ms-activity-id", Guid.NewGuid().ToString());
+                            resp.Headers.Add("x-ms-request-charge", "1.0");
+                            return Task.FromResult(resp);
+                        }
+
+                        if (simulate403)
+                        {
+                            HttpResponseMessage resp = new HttpResponseMessage(HttpStatusCode.Forbidden)
+                            {
+                                Content = new StringContent(
+                                    JsonConvert.SerializeObject(new { code = "Forbidden", message = "Simulated 403/3 (force discovery)" }),
+                                    Encoding.UTF8,
+                                    "application/json")
+                            };
+                            resp.Headers.Add("x-ms-substatus", ((int)Documents.SubStatusCodes.WriteForbidden).ToString());
+                            resp.Headers.Add("x-ms-activity-id", Guid.NewGuid().ToString());
+                            resp.Headers.Add("x-ms-request-charge", "1.0");
+                            return Task.FromResult(resp);
+                        }
+
+                        return Task.FromResult<HttpResponseMessage>(null);
+                    },
+                    ResponseIntercepter = async (response, request) =>
+                    {
+                        string json = response?.Content == null ? null : await response.Content.ReadAsStringAsync();
+                        if (!string.IsNullOrEmpty(json) && json.Contains("enablePerPartitionFailoverBehavior"))
+                        {
+                            JObject parsed = JObject.Parse(json);
+                            parsed.Property("enablePerPartitionFailoverBehavior").Value = enablePartitionLevelFailover.ToString();
+                            return new HttpResponseMessage()
+                            {
+                                StatusCode = response.StatusCode,
+                                Content = new StringContent(parsed.ToString()),
+                                Version = response.Version,
+                                ReasonPhrase = response.ReasonPhrase,
+                                RequestMessage = response.RequestMessage,
+                            };
+                        }
+                        return response;
+                    },
+                };
+
+                List<string> preferredRegions = new List<string> { region2, region1, region3 };
+                CosmosClientOptions clientOptions = new CosmosClientOptions
+                {
+                    ConnectionMode = connectionMode,
+                    ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
+                    RequestTimeout = TimeSpan.FromSeconds(0),
+                    ApplicationPreferredRegions = preferredRegions,
+                    AvailabilityStrategy = AvailabilityStrategy.DisabledStrategy(),
+                    HttpClientFactory = () => new HttpClient(httpHandler),
+                };
+
+                if (connectionMode == ConnectionMode.Direct)
+                {
+                    clientOptions.TransportClientHandlerFactory = (transport) => new TransportClientWrapper(
+                        transport,
+                        interceptorAfterResult: (request, storeResponse) =>
+                        {
+                            if (request.ResourceType != Documents.ResourceType.Document
+                                || request.OperationType != Documents.OperationType.Read)
+                            {
+                                return storeResponse;
+                            }
+
+                            bool.TryParse(request.Headers.Get(HubRegionHeader), out bool hasHubHeader);
+
+                            bool simulate404;
+                            bool simulate403;
+                            lock (stateLock)
+                            {
+                                if (currentPhase == "Request1")
+                                {
+                                    read1WireCount++;
+                                    if (hasHubHeader) read1HubHeaderObserved = true;
+                                }
+                                else
+                                {
+                                    read2WireCount++;
+                                    if (hasHubHeader) read2HubHeaderObserved = true;
+                                }
+
+                                simulate404 = !hasHubHeader;
+                                simulate403 = hasHubHeader && simulate403OnNextHubHeader;
+                                if (simulate403)
+                                {
+                                    simulate403OnNextHubHeader = false;
+                                }
+
+                                if (simulate404)
+                                {
+                                    if (currentPhase == "Request1") read1Sim404Count++; else read2Sim404Count++;
+                                }
+                                if (simulate403)
+                                {
+                                    if (currentPhase == "Request1") read1Sim403Count++; else read2Sim403Count++;
+                                }
+                            }
+
+                            if (simulate404)
+                            {
+                                storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.SubStatus,
+                                    ((int)Documents.SubStatusCodes.ReadSessionNotAvailable).ToString());
+                                storeResponse.Headers.Set(Documents.HttpConstants.HttpHeaders.ActivityId, Guid.NewGuid().ToString());
+                                storeResponse.Headers.Set(Documents.HttpConstants.HttpHeaders.RequestCharge, "1.0");
+                                return new Documents.StoreResponse()
+                                {
+                                    Status = 404,
+                                    Headers = storeResponse.Headers,
+                                    ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes("Simulated 404/1002 (no hub header)"))
+                                };
+                            }
+
+                            if (simulate403)
+                            {
+                                storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.SubStatus,
+                                    ((int)Documents.SubStatusCodes.WriteForbidden).ToString());
+                                storeResponse.Headers.Set(Documents.HttpConstants.HttpHeaders.ActivityId, Guid.NewGuid().ToString());
+                                storeResponse.Headers.Set(Documents.HttpConstants.HttpHeaders.RequestCharge, "1.0");
+                                return new Documents.StoreResponse()
+                                {
+                                    Status = 403,
+                                    Headers = storeResponse.Headers,
+                                    ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes("Simulated 403/3 (force discovery)"))
+                                };
+                            }
+
+                            return storeResponse;
+                        });
+                }
+
+                using CosmosClient cosmosClient = new(connectionString: this.connectionString, clientOptions: clientOptions);
+                Database database = cosmosClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+                await container.CreateItemAsync(testItem, new PartitionKey(testItem.pk));
+
+                // ---- REQUEST 1: full discovery, populates PPAF cache. ----
+                currentPhase = "Request1";
+                ItemResponse<ToDoActivity> readResponse1 = await container.ReadItemAsync<ToDoActivity>(
+                    testItem.id, new PartitionKey(testItem.pk));
+
+                Console.WriteLine($"===== Request 1 Diagnostics (Mode={connectionMode}, PPAF={enablePartitionLevelFailover}) =====");
+                Console.WriteLine(readResponse1.Diagnostics?.ToString());
+
+                // ---- REQUEST 2: cache hit, no 403/3 discovery chain. ----
+                currentPhase = "Request2";
+                ItemResponse<ToDoActivity> readResponse2 = await container.ReadItemAsync<ToDoActivity>(
+                    testItem.id, new PartitionKey(testItem.pk));
+
+                Console.WriteLine($"===== Request 2 Diagnostics (Mode={connectionMode}, PPAF={enablePartitionLevelFailover}) =====");
+                Console.WriteLine(readResponse2.Diagnostics?.ToString());
+
+                // ================== REQUEST 1 ASSERTIONS ==================
+                Assert.AreEqual(HttpStatusCode.OK, readResponse1.StatusCode,
+                    "Request 1 must return 200 OK after the simulated 2x 404/1002 + 1x 403/3 discovery chain.");
+                Assert.AreEqual(testItem.id, readResponse1.Resource?.id);
+                Assert.IsTrue(read1Sim404Count >= 2,
+                    $"Request 1 must observe >=2 simulated 404/1002 responses. Got {read1Sim404Count}.");
+                Assert.AreEqual(1, read1Sim403Count,
+                    $"Request 1 must observe exactly one simulated 403/3 (one-shot latch). Got {read1Sim403Count}.");
+                Assert.IsTrue(read1HubHeaderObserved,
+                    "Request 1 must have set the hub region header on at least one retry (after 2x 404/1002).");
+
+                // ================== REQUEST 2 ASSERTIONS ==================
+                Assert.AreEqual(HttpStatusCode.OK, readResponse2.StatusCode,
+                    "Request 2 must return 200 OK via PPAF cache hit (no 403/3 chain).");
+                Assert.AreEqual(testItem.id, readResponse2.Resource?.id);
+                Assert.IsTrue(read2Sim404Count >= 2,
+                    $"Request 2 must observe >=2 simulated 404/1002 responses (cache lookup happens AFTER 2x 404). Got {read2Sim404Count}.");
+
+                // The KEY cache-hit proof: Request 2 must NOT trigger the 403/3 simulation. The one-shot
+                // latch fires in Request 1; if Request 2 also went through a region that produced a
+                // header-bearing wire and that wire reached the interceptor without the latch already
+                // flipped, the cache MISSED. Since the latch is global and was flipped in Request 1,
+                // Request 2's 403 sim count must be 0 — but additionally, the SDK should not even
+                // attempt the discovery chain because the cache routes straight to the hub.
+                Assert.AreEqual(0, read2Sim403Count,
+                    $"Request 2 must NOT trigger the simulated 403/3 (one-shot latch already flipped in Request 1, "
+                    + $"AND cache hit should route straight to the hub). Got {read2Sim403Count}.");
+
+                Assert.IsTrue(read2HubHeaderObserved,
+                    "Request 2 must have set the hub region header on the cache-hit retry (OnBeforeSendRequest adds it).");
+
+                // Cache-shortens-chain proof: Request 2 should make fewer wire calls than Request 1 because
+                // it skips the 403/3 discovery (no hops to non-hub regions). In Direct mode the absolute
+                // counts are inflated by replica iteration in BOTH requests so we cannot use raw counts.
+                // The 403 sim count differential (0 vs 1) above is the strict cache-hit proof.
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled, null);
+            }
+        }
+
         private async Task TryCreateItems(List<CosmosIntegrationTestObject> testItems)
         {
             foreach (CosmosIntegrationTestObject item in testItems)

@@ -23,7 +23,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         internal override GlobalPartitionEndpointManager GetGlobalPartitionEndpointManager()
         {
-            return null;
+            // The named-cache retry handler is only responsible for refreshing the name cache on
+            // InvalidPartitionException; it does not participate in hub region discovery. Returning
+            // the NoOp instance keeps the on-success caching path in AbstractRetryHandler null-safe
+            // and a guaranteed no-op for this handler.
+            return GlobalPartitionEndpointManagerNoOp.Instance;
         }
     }
 }
