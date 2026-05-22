@@ -451,7 +451,10 @@ namespace Microsoft.Azure.Cosmos
         /// values in [<see cref="TimeSpan.Zero"/>, 1 second) are treated as 0 (use <see cref="RequestTimeout"/>)
         /// and values greater than or equal to 1 second are rounded up to the nearest whole second
         /// (for example, 2.3 seconds becomes 3 seconds).
-        /// Negative values are invalid and throw an <see cref="ArgumentOutOfRangeException"/>.
+        /// Negative values are not recommended and will emit a warning trace. They are preserved
+        /// on this property for backward compatibility; at the transport boundary they are truncated
+        /// to whole seconds and the <c>TransportClient.Options.OpenTimeout</c> getter returns
+        /// <see cref="RequestTimeout"/> for any stored value that is not greater than <see cref="TimeSpan.Zero"/>.
         /// </remarks>
         public TimeSpan? OpenTcpConnectionTimeout
         {

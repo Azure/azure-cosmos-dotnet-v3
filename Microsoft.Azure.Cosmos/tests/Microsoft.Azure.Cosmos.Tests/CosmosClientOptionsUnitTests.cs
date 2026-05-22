@@ -828,19 +828,21 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void OpenTcpConnectionTimeoutNegativeTimeSpanThrowsArgumentOutOfRangeException()
+        public void OpenTcpConnectionTimeoutNegativeTimeSpanPassesThroughWithWarning()
         {
             CosmosClientOptions options = new CosmosClientOptions
             {
                 ConnectionMode = ConnectionMode.Direct,
             };
 
-            // Negative values throw ArgumentOutOfRangeException.
-            Assert.ThrowsException<ArgumentOutOfRangeException>(
-                () => options.OpenTcpConnectionTimeout = TimeSpan.FromMilliseconds(-1));
+            // Negative values are passed through unchanged (warning is logged but value is preserved).
+            options.OpenTcpConnectionTimeout = TimeSpan.FromMilliseconds(-1);
+            Assert.AreEqual(TimeSpan.FromMilliseconds(-1), options.OpenTcpConnectionTimeout,
+                "Negative value should be preserved unchanged on the property.");
 
-            Assert.ThrowsException<ArgumentOutOfRangeException>(
-                () => options.OpenTcpConnectionTimeout = TimeSpan.FromSeconds(-30));
+            options.OpenTcpConnectionTimeout = TimeSpan.FromSeconds(-30);
+            Assert.AreEqual(TimeSpan.FromSeconds(-30), options.OpenTcpConnectionTimeout,
+                "Negative value should be preserved unchanged on the property.");
         }
 
         [TestMethod]
@@ -993,16 +995,21 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void WithConnectionModeDirectNegativeOpenTcpTimeoutThrowsArgumentOutOfRangeException()
+        public void WithConnectionModeDirectNegativeOpenTcpTimeoutPassesThroughUnchanged()
         {
-            CosmosClientBuilder builder = new CosmosClientBuilder(
-                accountEndpoint: AccountEndpoint,
-                authKeyOrResourceToken: MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+            };
 
-            // Negative values throw ArgumentOutOfRangeException.
-            Assert.ThrowsException<ArgumentOutOfRangeException>(
-                () => builder.WithConnectionModeDirect(
-                    openTcpConnectionTimeout: TimeSpan.FromSeconds(-1)));
+            // Negative values are preserved on the property and round-trip through ConnectionPolicy.
+            options.OpenTcpConnectionTimeout = TimeSpan.FromSeconds(-1);
+            Assert.AreEqual(TimeSpan.FromSeconds(-1), options.OpenTcpConnectionTimeout,
+                "Negative openTcpConnectionTimeout should be preserved unchanged.");
+
+            ConnectionPolicy policy = options.GetConnectionPolicy(clientId: 0);
+            Assert.AreEqual(TimeSpan.FromSeconds(-1), policy.OpenTcpConnectionTimeout,
+                "Negative value should round-trip through ConnectionPolicy unchanged.");
         }
 
         [TestMethod]
