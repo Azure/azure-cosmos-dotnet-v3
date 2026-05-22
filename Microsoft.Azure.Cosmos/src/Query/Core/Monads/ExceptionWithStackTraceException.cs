@@ -31,17 +31,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
                   message: message,
                   innerException: innerException)
         {
-            if (stackTrace == null)
-            {
-#pragma warning disable IDE0016 // Use 'throw' expression
-                throw new ArgumentNullException(nameof(stackTrace));
-#pragma warning restore IDE0016 // Use 'throw' expression
-            }
-
             this.stackTrace = stackTrace;
         }
 
-        public override string StackTrace => this.stackTrace.ToString();
+        public override string StackTrace
+        {
+            get
+            {
+                if (this.stackTrace != null)
+                {
+                    return this.stackTrace.ToString();
+                }
+
+#pragma warning disable CDX1002 // DontUseExceptionStackTrace
+                return base.StackTrace ?? this.InnerException?.StackTrace;
+#pragma warning restore CDX1002 // DontUseExceptionStackTrace
+            }
+        }
 
         public override string ToString()
         {
