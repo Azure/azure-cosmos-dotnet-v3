@@ -94,8 +94,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ItemResponse<ToDoActivity> response = await container.ReadItemAsync<ToDoActivity>(item.id, new PartitionKey(item.pk));
                 ClientSideRequestStatisticsTraceDatum datum = this.GetClientSideRequestStatsFromTrace(((CosmosTraceDiagnostics)response.Diagnostics).Value, "Transport Request");
                 Assert.IsNotNull(datum.HttpResponseStatisticsList);
-                // One call for collection cache, 2 calls for PK range cache and 1 call for Address Resolution
-                Assert.AreEqual(datum.HttpResponseStatisticsList.Count, 4);
+                // 2 calls for PK range cache and 1 call for Address Resolution
+                Assert.AreEqual(datum.HttpResponseStatisticsList.Count, 3);
             }
 
         }
