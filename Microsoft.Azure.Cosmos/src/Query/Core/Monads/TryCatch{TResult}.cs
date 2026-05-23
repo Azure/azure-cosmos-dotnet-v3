@@ -242,11 +242,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
 
         public static TryCatch<TResult> FromException(Exception exception)
         {
-            // Option B: read the inner exception's already-captured stack frames instead of
-            // walking the live thread stack. `new StackTrace(Exception)` does NOT walk the
-            // thread; it parses the exception's existing _stackTrace data set at throw time.
-            // The dominant CPU cost of the original `new StackTrace(skipFrames: 1)` is the
-            // native thread-stack walk - that cost is eliminated.
+            // Read the inner exception's already-captured stack frames instead of walking the
+            // live thread stack. `new StackTrace(Exception)` does NOT walk the thread; it parses
+            // the exception's existing _stackTrace data set at throw time. The dominant CPU cost
+            // of the original `new StackTrace(skipFrames: 1)` is the native thread-stack walk -
+            // that cost is eliminated.
 #pragma warning disable CDX1000 // DontConvertExceptionToObject
             return new TryCatch<TResult>(
                 new ExceptionWithStackTraceException(
