@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
     /// ]]>
     /// </code>
     /// </example>
-    public class CosmosClientOptions
+    public class CosmosClientOptions : IEquatable<CosmosClientOptions>
     {
         /// <summary>
         /// Default connection mode
@@ -1114,12 +1114,139 @@ namespace Microsoft.Azure.Cosmos
 
         internal IChaosInterceptorFactory ChaosInterceptorFactory { get; set; }
 
+        /// <summary>
+        /// Compares this <see cref="CosmosClientOptions"/> instance with another for equality based on publicly settable properties.
+        /// </summary>
+        /// <remarks>
+        /// Only properties with a public setter (including properties whose setter is public in preview builds) are compared.
+        /// Internal state, derived state and properties without a public setter are excluded from the comparison.
+        /// Reference-type properties (delegates, factories, custom callbacks, etc.) are compared using reference equality.
+        /// </remarks>
+        /// <param name="other">The other <see cref="CosmosClientOptions"/> instance to compare against.</param>
+        /// <returns><c>true</c> if all publicly settable properties are equal; otherwise, <c>false</c>.</returns>
+        public bool Equals(CosmosClientOptions other)
+        {
+            if (other is null)
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
+            return this.ApplicationName == other.ApplicationName
+                && this.ApplicationRegion == other.ApplicationRegion
+                && CosmosClientOptions.SequenceEqual(this.ApplicationPreferredRegions, other.ApplicationPreferredRegions)
+                && CosmosClientOptions.SequenceEqual(this.AccountInitializationCustomEndpoints, other.AccountInitializationCustomEndpoints)
+                && this.gatewayModeMaxConnectionLimit == other.gatewayModeMaxConnectionLimit
+                && this.RequestTimeout == other.RequestTimeout
+                && this.InferenceRequestTimeout == other.InferenceRequestTimeout
+                && this.TokenCredentialBackgroundRefreshInterval == other.TokenCredentialBackgroundRefreshInterval
+                && this.CustomHandlers.SequenceEqual(other.CustomHandlers)
+                && this.connectionMode == other.connectionMode
+                && this.ConsistencyLevel == other.ConsistencyLevel
+                && this.ReadConsistencyStrategy == other.ReadConsistencyStrategy
+                && this.EmbeddingGenerator == other.EmbeddingGenerator
+                && this.PriorityLevel == other.PriorityLevel
+                && this.MaxRetryAttemptsOnRateLimitedRequests == other.MaxRetryAttemptsOnRateLimitedRequests
+                && this.MaxRetryWaitTimeOnRateLimitedRequests == other.MaxRetryWaitTimeOnRateLimitedRequests
+                && this.EnableContentResponseOnWrite == other.EnableContentResponseOnWrite
+                && this.idleTcpConnectionTimeout == other.idleTcpConnectionTimeout
+                && this.openTcpConnectionTimeout == other.openTcpConnectionTimeout
+                && this.maxRequestsPerTcpConnection == other.maxRequestsPerTcpConnection
+                && this.maxTcpConnectionsPerEndpoint == other.maxTcpConnectionsPerEndpoint
+                && this.portReuseMode == other.portReuseMode
+                && this.webProxy == other.webProxy
+                && this.httpClientFactory == other.httpClientFactory
+                && Equals(this.serializerOptions, other.serializerOptions)
+                && this.serializerInternal == other.serializerInternal
+                && this.stjSerializerOptions == other.stjSerializerOptions
+                && this.LimitToEndpoint == other.LimitToEndpoint
+                && this.AllowBulkExecution == other.AllowBulkExecution
+                && this.EnableTcpConnectionEndpointRediscovery == other.EnableTcpConnectionEndpointRediscovery
+                && this.AvailabilityStrategy == other.AvailabilityStrategy
+                && Equals(this.SessionRetryOptions, other.SessionRetryOptions)
+                && this.ServerCertificateCustomValidationCallback == other.ServerCertificateCustomValidationCallback
+                && Equals(this.CosmosClientTelemetryOptions, other.CosmosClientTelemetryOptions)
+                && this.faultInjector == other.faultInjector
+                && this.ThroughputBucket == other.ThroughputBucket;
+        }
+
+        /// <inheritdoc />
+        public override bool Equals(object obj)
+        {
+            return this.Equals(obj as CosmosClientOptions);
+        }
+
+        /// <inheritdoc />
+        public override int GetHashCode()
+        {
+            HashCode hash = default;
+            hash.Add(this.ApplicationName);
+            hash.Add(this.ApplicationRegion);
+            hash.Add(this.gatewayModeMaxConnectionLimit);
+            hash.Add(this.RequestTimeout);
+            hash.Add(this.InferenceRequestTimeout);
+            hash.Add(this.TokenCredentialBackgroundRefreshInterval);
+            hash.Add(this.connectionMode);
+            hash.Add(this.ConsistencyLevel);
+            hash.Add(this.ReadConsistencyStrategy);
+            hash.Add(this.PriorityLevel);
+            hash.Add(this.MaxRetryAttemptsOnRateLimitedRequests);
+            hash.Add(this.MaxRetryWaitTimeOnRateLimitedRequests);
+            hash.Add(this.EnableContentResponseOnWrite);
+            hash.Add(this.idleTcpConnectionTimeout);
+            hash.Add(this.openTcpConnectionTimeout);
+            hash.Add(this.maxRequestsPerTcpConnection);
+            hash.Add(this.maxTcpConnectionsPerEndpoint);
+            hash.Add(this.portReuseMode);
+            hash.Add(this.LimitToEndpoint);
+            hash.Add(this.AllowBulkExecution);
+            hash.Add(this.EnableTcpConnectionEndpointRediscovery);
+            hash.Add(this.ThroughputBucket);
+            hash.Add(this.SessionRetryOptions);
+            hash.Add(this.serializerOptions);
+            hash.Add(this.CosmosClientTelemetryOptions);
+            CosmosClientOptions.AddSequenceHashCode(ref hash, this.ApplicationPreferredRegions);
+            CosmosClientOptions.AddSequenceHashCode(ref hash, this.AccountInitializationCustomEndpoints);
+            CosmosClientOptions.AddSequenceHashCode(ref hash, this.CustomHandlers);
+            return hash.ToHashCode();
+        }
+
+        private static bool SequenceEqual<T>(IEnumerable<T> first, IEnumerable<T> second)
+        {
+            if (ReferenceEquals(first, second))
+            {
+                return true;
+            }
+
+            if (first is null || second is null)
+            {
+                return false;
+            }
+
+            return first.SequenceEqual(second);
+        }
+
+        private static void AddSequenceHashCode<T>(ref HashCode hash, IEnumerable<T> sequence)
+        {
+            if (sequence is null)
+            {
+                hash.Add(0);
+                return;
+            }
+
+            foreach (T item in sequence)
+            {
+                hash.Add(item);
+            }
+        }
+
         internal void SetSerializerIfNotConfigured(CosmosSerializer serializer)
         {
-            if (this.serializerInternal == null)
-            {
-                this.serializerInternal = serializer ?? throw new ArgumentNullException(nameof(serializer));
-            }
+            this.serializerInternal ??= serializer ?? throw new ArgumentNullException(nameof(serializer));
         }
 
         internal CosmosClientOptions Clone()
