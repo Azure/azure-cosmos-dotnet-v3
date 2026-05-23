@@ -259,7 +259,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
             StackTrace stackTrace;
             if (exception is ExceptionWithStackTraceException existingWrapper)
             {
-                stackTrace = existingWrapper.GetCapturedStackTrace();
+                // Reuse the stack already captured at the first wrap; no walk, no allocation,
+                // and preserves the diagnostic content accumulated up to that point.
+                stackTrace = existingWrapper.stackTrace;
             }
             else if (exception is CosmosException || exception is Microsoft.Azure.Documents.DocumentClientException)
             {

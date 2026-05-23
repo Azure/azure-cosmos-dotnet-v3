@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
     internal sealed class ExceptionWithStackTraceException : Exception
     {
         private static readonly string EndOfInnerExceptionString = "--- End of inner exception stack trace ---";
-        private readonly StackTrace stackTrace;
+        internal readonly StackTrace stackTrace;
 
         public ExceptionWithStackTraceException(StackTrace stackTrace)
             : this(message: null, innerException: null, stackTrace: stackTrace)
@@ -42,14 +42,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
         }
 
         public override string StackTrace => this.stackTrace.ToString();
-
-        /// <summary>
-        /// Returns the captured StackTrace object directly (without formatting). Used by
-        /// TryCatch.FromException to reuse the existing captured stack when rewrapping an
-        /// already-wrapped exception, avoiding both a redundant live thread-stack walk
-        /// and the loss of diagnostic content captured at the first wrap.
-        /// </summary>
-        internal StackTrace GetCapturedStackTrace() => this.stackTrace;
 
         public override string ToString()
         {
