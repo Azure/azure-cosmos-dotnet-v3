@@ -182,6 +182,30 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Debug.Assert(encryptor != null);
             Debug.Assert(diagnosticsContext != null);
 
+            // Fast path: when the caller explicitly opts into JsonProcessor.Stream via the property-bag
+            // override, skip the Newtonsoft JObject peek that exists only to detect legacy AE-AES documents.
+            // The Stream/MDE path will throw NotSupportedException if the document turns out to be legacy
+            // AE-AES; fall back to the JObject peek path in that case to preserve the documented
+            // "Stream is a hint; legacy documents transparently fall back to Newtonsoft" contract
+            // (covered by EncryptionProcessorTests.Decrypt_StreamSelection_LegacyAlgorithm_FallsBackToNewtonsoft).
+#if NET8_0_OR_GREATER
+            if (requestOptions != null
+                && requestOptions.TryReadJsonProcessorOverride(out JsonProcessor overrideProcessor)
+                && overrideProcessor == JsonProcessor.Stream)
+            {
+                try
+                {
+                    return await MdeEncryptionProcessor.DecryptAsync(input, encryptor, diagnosticsContext, requestOptions, cancellationToken);
+                }
+                catch (NotSupportedException)
+                {
+                    // Document is legacy AE-AES (or otherwise unsupported by the Stream processor).
+                    // Rewind and fall through to the JObject peek path below.
+                    input.Position = 0;
+                }
+            }
+#endif
+
             // Try to peek at the content to check if it's legacy encryption algorithm
             // Some streams (e.g., those that only support async reads or contain malformed JSON) may throw exceptions
             // during synchronous peeking. In such cases, delegate directly to MdeEncryptionProcessor.
