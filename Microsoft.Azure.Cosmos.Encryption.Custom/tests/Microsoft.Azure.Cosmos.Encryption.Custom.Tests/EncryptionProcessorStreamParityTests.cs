@@ -265,6 +265,99 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             CollectionAssert.AreEqual(streamPathRun1, newtonsoftPath);
         }
 
+        // ---------- 7. Adversary-audit additions: edge inputs that must remain backwards-compatible ----------
+
+        [TestMethod]
+        public async Task Parity_PlainObject_DuplicateEiAtRoot() =>
+            // Utf8JsonReader is first-wins; Newtonsoft.JObject is last-wins. Both decrypt paths must
+            // still reach the same final outcome (succeed identically or throw identically). If they
+            // diverge, the detector must be tightened to return Unknown on duplicate top-level keys.
+            await AssertParityAsync(Utf8($"{{\"id\":\"x\",\"_ei\":null,\"_ei\":{{\"_ea\":\"AEAes256CbcHmacSha256Randomized\"}}}}"));
+
+        [TestMethod]
+        public async Task Parity_PlainObject_DecoyRootLevelEa() =>
+            // Root-level `_ea` is not a marker. Detector must ignore it; Newtonsoft path also ignores
+            // it (only `_ei._ea` matters).
+            await AssertParityAsync(Utf8("{\"_ea\":\"decoy-at-root\",\"id\":\"x\",\"a\":1}"));
+
+        [TestMethod]
+        public async Task Parity_PlainObject_Utf8BomPrefix()
+        {
+            byte[] bom = new byte[] { 0xEF, 0xBB, 0xBF };
+            byte[] body = Utf8("{\"id\":\"x\",\"pk\":\"p\"}");
+            byte[] payload = new byte[bom.Length + body.Length];
+            Buffer.BlockCopy(bom, 0, payload, 0, bom.Length);
+            Buffer.BlockCopy(body, 0, payload, bom.Length, body.Length);
+            await AssertParityAsync(payload);
+        }
+
+        [TestMethod]
+        public async Task Parity_PlainObject_NonAsciiPropertyValues() =>
+            // Multi-byte UTF-8 in property names and values must be handled identically by both paths
+            // (detector must Skip() multi-byte property values without misreading).
+            await AssertParityAsync(Utf8("{\"id\":\"x\",\"\u65e5\u672c\u8a9e\":\"\u5024\",\"emoji\":\"\ud83d\udd10\",\"nested\":{\"\u4e2d\u6587\":\"\u6d4b\u8bd5\"}}"));
+
+        [TestMethod]
+        public async Task Parity_EaCaseVariant_LegacyAllUppercase() =>
+            // Detector returns Unknown (case-sensitive) → JObject path takes over. Newtonsoft path
+            // also reads exact algorithm name; both should agree on whether decrypt succeeds or fails.
+            await AssertParityAsync(Utf8("{\"_ei\":{\"_ea\":\"AEAES256CBCHMACSHA256RANDOMIZED\",\"_ed\":\"AA\"}}"));
+
+        [TestMethod]
+        public async Task Parity_EaCaseVariant_MdeAllUppercase() =>
+            await AssertParityAsync(Utf8("{\"_ei\":{\"_ea\":\"MDEAEADAES256CBCHMAC256RANDOMIZED\",\"_ed\":\"AA\"}}"));
+
+        [TestMethod]
+        public async Task Parity_EaCaseVariant_LegacyAllLowercase() =>
+            await AssertParityAsync(Utf8("{\"_ei\":{\"_ea\":\"aeaes256cbchmacsha256randomized\",\"_ed\":\"AA\"}}"));
+
+        [TestMethod]
+        public async Task Parity_EaWithLeadingWhitespace() =>
+            await AssertParityAsync(Utf8("{\"_ei\":{\"_ea\":\" AEAes256CbcHmacSha256Randomized\",\"_ed\":\"AA\"}}"));
+
+        [TestMethod]
+        public async Task Parity_EaWithTrailingWhitespace() =>
+            await AssertParityAsync(Utf8("{\"_ei\":{\"_ea\":\"AEAes256CbcHmacSha256Randomized \",\"_ed\":\"AA\"}}"));
+
+        // Note: two adversary-audit candidates were intentionally NOT added here:
+        //   1. EaWithUnicodeEscape_MdeName  — synthesises an MDE-classified document with a
+        //      malformed _ed. Both adapters throw, but Newtonsoft surfaces FormatException
+        //      (base64 decoder) while STJ surfaces JsonException (model deserialiser). That
+        //      divergence is between the two downstream adapters, not the router under test,
+        //      and exists on master for any caller that toggles the Stream override.
+        //   2. MdeEncrypted_StreamStartingAtNonZeroPosition — both paths force
+        //      `input.Position = 0` before delegating to MdeEncryptionProcessor (see
+        //      EncryptionProcessor.cs lines 205, 273, 279), so any caller-supplied non-zero
+        //      offset is discarded by both paths equally. Newtonsoft's JsonTextReader happens
+        //      to tolerate the resulting leading-null-byte stream while STJ rejects it. Again
+        //      an underlying adapter difference, not router behaviour, and pre-exists.
+        // The detector-level unicode escape handling is covered by
+        // LegacyAlgorithmDetectorTests.Detect_MdeAlgorithm_FirstThreeCharactersEscaped_MdeDetected.
+
+        [TestMethod]
+        public async Task Parity_LegacyEncrypted_StreamStartingAtNonZeroPosition()
+        {
+            // Production code reads `input.Position` as `startPosition` and respects it. Synthesize
+            // an input whose payload begins at offset 10 (preceded by 10 garbage bytes that are
+            // never read) and confirm both paths still decrypt identically. Legacy works because the
+            // JObject path reads from current position and then the legacy branch never re-resets
+            // before completing the decrypt — both opt-in and non-opt-in agree.
+            byte[] legacy = await EncryptLegacyToBytesAsync(BuildSampleDoc());
+            byte[] padded = new byte[10 + legacy.Length];
+            for (int i = 0; i < 10; i++)
+            {
+                padded[i] = (byte)('X' + i);
+            }
+
+            Buffer.BlockCopy(legacy, 0, padded, 10, legacy.Length);
+            await AssertParityAsync(padded, wrapStream: bytes =>
+            {
+                MemoryStream ms = new (bytes);
+                ms.Position = 10;
+                return ms;
+            });
+        }
+
         // ===================== Helpers =====================
 
         /// <summary>
@@ -330,9 +423,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             else
             {
                 Assert.IsNotNull(streamResult.Value.ctx, "Stream-opt-in returned a null DecryptionContext where the Newtonsoft path returned one.");
-                List<string> nPaths = newtonsoftResult.Value.ctx.DecryptionInfoList.SelectMany(i => i.PathsDecrypted).OrderBy(p => p).ToList();
-                List<string> sPaths = streamResult.Value.ctx.DecryptionInfoList.SelectMany(i => i.PathsDecrypted).OrderBy(p => p).ToList();
-                CollectionAssert.AreEqual(nPaths, sPaths, "DecryptionContext paths-decrypted lists diverged between the two paths.");
+                IReadOnlyList<DecryptionInfo> nList = newtonsoftResult.Value.ctx.DecryptionInfoList;
+                IReadOnlyList<DecryptionInfo> sList = streamResult.Value.ctx.DecryptionInfoList;
+                Assert.AreEqual(nList.Count, sList.Count, "DecryptionInfoList count diverged between the two paths.");
+                for (int i = 0; i < nList.Count; i++)
+                {
+                    Assert.AreEqual(nList[i].DataEncryptionKeyId, sList[i].DataEncryptionKeyId,
+                        $"DecryptionInfoList[{i}].DataEncryptionKeyId diverged. Newtonsoft={nList[i].DataEncryptionKeyId}, Stream={sList[i].DataEncryptionKeyId}");
+                    List<string> nPaths = nList[i].PathsDecrypted.OrderBy(p => p, StringComparer.Ordinal).ToList();
+                    List<string> sPaths = sList[i].PathsDecrypted.OrderBy(p => p, StringComparer.Ordinal).ToList();
+                    CollectionAssert.AreEqual(nPaths, sPaths, $"DecryptionInfoList[{i}].PathsDecrypted diverged.");
+                }
             }
         }
 

@@ -579,6 +579,212 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             };
         }
 
+        private static async Task<byte[]> EncryptWithMdeToBytes(TestDoc doc)
+        {
+            Stream encrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, CreateMdeOptions(), JsonProcessor.Newtonsoft, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
+            encrypted.Position = 0;
+            byte[] bytes = new byte[encrypted.Length];
+            int read = encrypted.Read(bytes, 0, bytes.Length);
+            Assert.AreEqual(bytes.Length, read);
+            return bytes;
+        }
+
+        // ============================================================================
+        // Adversary-audit additions: opt-in branch RequestOptions edge cases and
+        // strip-restore / concurrency invariants for the
+        // stripStreamOverrideOnSuccessFallthrough path in EncryptionProcessor.cs.
+        // ============================================================================
+
+        [TestMethod]
+        public async Task Decrypt_StreamOptIn_RequestOptionsPropertiesNull_FallsBackToNonOptIn()
+        {
+            // Properties == null → TryReadJsonProcessorOverride returns false → opt-in branch is skipped
+            // entirely and the call routes through the original JObject peek path. The decrypt must still
+            // succeed and produce the same output as a non-opt-in caller.
+            TestDoc doc = TestDoc.Create();
+            Stream legacyEncrypted = await EncryptWithLegacy(doc);
+
+            ItemRequestOptions ro = new () { Properties = null };
+            (Stream decrypted, DecryptionContext ctx) = await EncryptionProcessor.DecryptAsync(legacyEncrypted, mockEncryptor.Object, CosmosDiagnosticsContext.Create(null), ro, CancellationToken.None);
+
+            Assert.IsNotNull(ctx);
+            decrypted.Position = 0;
+            Assert.AreEqual(doc, TestCommon.FromStream<TestDoc>(decrypted));
+        }
+
+        [TestMethod]
+        public async Task Decrypt_StreamOptIn_NonStreamJsonProcessorOverride_FallsBackToNonOptIn()
+        {
+            // Override present but value != JsonProcessor.Stream → opt-in branch must NOT activate.
+            TestDoc doc = TestDoc.Create();
+            Stream legacyEncrypted = await EncryptWithLegacy(doc);
+
+            ItemRequestOptions ro = new ()
+            {
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Newtonsoft },
+                },
+            };
+            (Stream decrypted, DecryptionContext ctx) = await EncryptionProcessor.DecryptAsync(legacyEncrypted, mockEncryptor.Object, CosmosDiagnosticsContext.Create(null), ro, CancellationToken.None);
+
+            Assert.IsNotNull(ctx);
+            decrypted.Position = 0;
+            Assert.AreEqual(doc, TestCommon.FromStream<TestDoc>(decrypted));
+        }
+
+        [TestMethod]
+        public async Task Decrypt_StreamOptIn_MdePath_DoesNotMutateRequestOptionsProperties()
+        {
+            // MDE fast path skips the strip-restore branch entirely (it calls MdeEncryptionProcessor
+            // directly without modifying requestOptions). After the call the original Properties
+            // instance and every key/value must still be intact.
+            TestDoc doc = TestDoc.Create();
+            byte[] mde = await EncryptWithMdeToBytes(doc);
+
+            Dictionary<string, object> originalProperties = new ()
+            {
+                { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Stream },
+                { "caller-supplied-key", "caller-supplied-value" },
+            };
+            ItemRequestOptions ro = new () { Properties = originalProperties };
+            IReadOnlyDictionary<string, object> propsBefore = ro.Properties;
+
+            await EncryptionProcessor.DecryptAsync(new MemoryStream(mde), mockEncryptor.Object, CosmosDiagnosticsContext.Create(null), ro, CancellationToken.None);
+
+            Assert.AreSame(propsBefore, ro.Properties, "RequestOptions.Properties reference must be unchanged after MDE fast path.");
+            Assert.AreEqual(JsonProcessor.Stream, ro.Properties[JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey]);
+            Assert.AreEqual("caller-supplied-value", ro.Properties["caller-supplied-key"]);
+        }
+
+        [TestMethod]
+        public async Task Decrypt_StreamOptIn_StripRestoreFallthrough_RestoresPropertiesAfterCall()
+        {
+            // Forces the success-branch strip-restore path: a payload the detector classifies as
+            // Unknown (empty `_ea`) → JObject peek succeeds (no legacy alg) → fallthrough strips the
+            // Stream override before calling MdeEncryptionProcessor → finally restores the original
+            // Properties instance. After the call the caller's Properties must be byte-for-byte
+            // identical to what it passed in.
+            byte[] payload = System.Text.Encoding.UTF8.GetBytes("{\"id\":\"x\",\"_ei\":{\"_ea\":\"\",\"_ed\":\"AA\"}}");
+
+            Dictionary<string, object> originalProperties = new ()
+            {
+                { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Stream },
+                { "preserved-key", "preserved-value" },
+            };
+            ItemRequestOptions ro = new () { Properties = originalProperties };
+            IReadOnlyDictionary<string, object> propsBefore = ro.Properties;
+
+            try
+            {
+                await EncryptionProcessor.DecryptAsync(new MemoryStream(payload), mockEncryptor.Object, CosmosDiagnosticsContext.Create(null), ro, CancellationToken.None);
+            }
+            catch
+            {
+                // The fallthrough MDE call may throw on this synthetic payload — irrelevant; what we
+                // care about is whether Properties was correctly restored either way.
+            }
+
+            Assert.AreSame(propsBefore, ro.Properties, "RequestOptions.Properties reference must be restored after strip-restore fallthrough.");
+            Assert.IsTrue(ro.Properties.ContainsKey(JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey));
+            Assert.AreEqual(JsonProcessor.Stream, ro.Properties[JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey]);
+            Assert.AreEqual("preserved-value", ro.Properties["preserved-key"]);
+        }
+
+        [TestMethod]
+        public async Task Decrypt_StreamOptIn_ConcurrentDecrypts_SharedRequestOptions_AllRoundTripCorrectly()
+        {
+            // The MDE fast path does not mutate Properties, so even under heavy concurrency
+            // (many parallel decrypts sharing one ItemRequestOptions instance) every caller must
+            // see the Stream override and round-trip its document correctly.
+            TestDoc doc1 = TestDoc.Create();
+            TestDoc doc2 = TestDoc.Create();
+            byte[] mde1 = await EncryptWithMdeToBytes(doc1);
+            byte[] mde2 = await EncryptWithMdeToBytes(doc2);
+
+            ItemRequestOptions shared = StreamOptIn();
+            const int iterations = 32;
+
+            List<Task<TestDoc>> tasks = new (iterations);
+            for (int i = 0; i < iterations; i++)
+            {
+                byte[] bytes = (i % 2 == 0) ? mde1 : mde2;
+                tasks.Add(Task.Run(async () =>
+                {
+                    (Stream decrypted, _) = await EncryptionProcessor.DecryptAsync(new MemoryStream(bytes), mockEncryptor.Object, CosmosDiagnosticsContext.Create(null), shared, CancellationToken.None);
+                    decrypted.Position = 0;
+                    return TestCommon.FromStream<TestDoc>(decrypted);
+                }));
+            }
+
+            TestDoc[] results = await Task.WhenAll(tasks);
+            for (int i = 0; i < iterations; i++)
+            {
+                TestDoc expected = (i % 2 == 0) ? doc1 : doc2;
+                Assert.AreEqual(expected, results[i], $"Concurrent decrypt #{i} returned wrong document — race in strip-restore?");
+            }
+
+            // The shared RequestOptions instance must still carry the Stream override.
+            Assert.IsTrue(shared.Properties.ContainsKey(JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey));
+            Assert.AreEqual(JsonProcessor.Stream, shared.Properties[JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey]);
+        }
+
+        [TestMethod]
+        public async Task Decrypt_StreamOptIn_NoEiProperty_DetectorFastPaths_StreamPositionAtZero()
+        {
+            // Unencrypted document → detector → NotEncrypted → straight to MdeEncryptionProcessor,
+            // which short-circuits and returns the input stream untouched. Confirm Position == 0 and
+            // Length matches input. (Existing test covers the routing; this one specifically asserts
+            // the Position contract for callers that re-read the returned stream.)
+            string json = "{\"id\":\"42\",\"pk\":\"p1\",\"NonSensitive\":\"v\",\"nested\":{\"a\":1}}";
+            MemoryStream input = new (System.Text.Encoding.UTF8.GetBytes(json));
+            (Stream result, DecryptionContext ctx) = await EncryptionProcessor.DecryptAsync(input, mockEncryptor.Object, CosmosDiagnosticsContext.Create(null), StreamOptIn(), CancellationToken.None);
+            Assert.IsNull(ctx);
+            Assert.AreEqual(0, result.Position);
+            Assert.AreEqual(input.Length, result.Length);
+        }
+
+        [TestMethod]
+        public async Task Decrypt_StreamOptIn_PreCancelledToken_BothPathsAgree()
+        {
+            // Pre-cancelled token: opt-in path must reach the same conclusion (succeed/throw) as
+            // the non-opt-in baseline. Today neither path proactively checks the token before any
+            // await-point, so both succeed; this test will catch any divergence if that changes.
+            TestDoc doc = TestDoc.Create();
+            byte[] mde = await EncryptWithMdeToBytes(doc);
+            using CancellationTokenSource cts = new ();
+            cts.Cancel();
+
+            bool baselineThrew = false;
+            try
+            {
+                (Stream output, _) = await EncryptionProcessor.DecryptAsync(new MemoryStream(mde), mockEncryptor.Object, CosmosDiagnosticsContext.Create(null), requestOptions: null, cts.Token);
+                using MemoryStream sink = new ();
+                output.Position = 0;
+                await output.CopyToAsync(sink, cts.Token);
+            }
+            catch
+            {
+                baselineThrew = true;
+            }
+
+            bool optInThrew = false;
+            try
+            {
+                (Stream output, _) = await EncryptionProcessor.DecryptAsync(new MemoryStream(mde), mockEncryptor.Object, CosmosDiagnosticsContext.Create(null), StreamOptIn(), cts.Token);
+                using MemoryStream sink = new ();
+                output.Position = 0;
+                await output.CopyToAsync(sink, cts.Token);
+            }
+            catch
+            {
+                optInThrew = true;
+            }
+
+            Assert.AreEqual(baselineThrew, optInThrew,
+                "Cancellation parity broken: opt-in and non-opt-in disagreed on whether the pre-cancelled token caused a throw.");
+        }
+
         // Seekable Stream that is *not* a MemoryStream — forces TryDetectAlgorithm onto the
         // ArrayPool<byte> fallback path instead of TryGetBuffer.
         internal sealed class NonMemoryStreamWrapper : Stream

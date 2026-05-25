@@ -330,6 +330,185 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             string json = $"{{\"\\u005fei\":{{\"_ea\":\"{LegacyAlgorithm}\"}}}}";
             Assert.AreEqual(LegacyAlgorithmDetector.DetectionResult.LegacyAlgorithm, Detect(json));
         }
+
+        // ============================================================================
+        // Adversary-audit additions: edge cases that must remain backwards-compatible.
+        // Each test documents what input the detector accepts/rejects, with the
+        // invariant that any Unknown/non-positive classification falls through to
+        // the JObject path (which existed pre-PR), preserving the pre-PR contract.
+        // ============================================================================
+
+        [TestMethod]
+        public void Detect_TopLevelNullLiteral_ReturnsUnknown()
+        {
+            Assert.AreEqual(LegacyAlgorithmDetector.DetectionResult.Unknown, Detect("null"));
+        }
+
+        [TestMethod]
+        public void Detect_TopLevelTrueLiteral_ReturnsUnknown()
+        {
+            Assert.AreEqual(LegacyAlgorithmDetector.DetectionResult.Unknown, Detect("true"));
+        }
+
+        [TestMethod]
+        public void Detect_TopLevelFalseLiteral_ReturnsUnknown()
+        {
+            Assert.AreEqual(LegacyAlgorithmDetector.DetectionResult.Unknown, Detect("false"));
+        }
+
+        [TestMethod]
+        public void Detect_DuplicateEiAtRoot_FirstWins_MdeDetected()
+        {
+            // JSON spec is ambiguous on duplicate top-level keys. Utf8JsonReader is forward-only,
+            // so the detector consumes the FIRST `_ei` and ignores the rest. Newtonsoft.Linq.JObject
+            // by default LAST-wins. This test documents the detector's first-wins behaviour and
+            // pairs with Parity_PlainObject_DuplicateEiAtRoot which asserts both paths agree on
+            // the resulting decrypt outcome (both must throw or both must succeed identically).
+            string json = $"{{\"_ei\":{{\"_ea\":\"{MdeAlgorithm}\"}},\"_ei\":{{\"_ea\":\"{LegacyAlgorithm}\"}}}}";
+            Assert.AreEqual(LegacyAlgorithmDetector.DetectionResult.MdeAlgorithm, Detect(json));
+        }
+
+        [TestMethod]
+        public void Detect_DuplicateEaInsideEi_FirstWins_MdeDetected()
+        {
+            // Same first-wins semantics inside `_ei`. Paired with parity test.
+            string json = $"{{\"_ei\":{{\"_ea\":\"{MdeAlgorithm}\",\"_ea\":\"{LegacyAlgorithm}\"}}}}";
+            Assert.AreEqual(LegacyAlgorithmDetector.DetectionResult.MdeAlgorithm, Detect(json));
+        }
+
+        [TestMethod]
+        public void Detect_Utf8BomPrefix_ReturnsUnknown()
+        {
+            // Utf8JsonReader does NOT auto-skip BOM (it's only stripped by JsonDocument/Utf8JsonWriter helpers).
+            // BOM-prefixed payloads must classify as Unknown so the JObject path (which is tolerant) handles them.
+            byte[] bom = new byte[] { 0xEF, 0xBB, 0xBF };
+            string json = $"{{\"_ei\":{{\"_ea\":\"{LegacyAlgorithm}\"}}}}";
+            byte[] payload = new byte[bom.Length + json.Length];
+            System.Buffer.BlockCopy(bom, 0, payload, 0, bom.Length);
+            byte[] jsonBytes = Encoding.UTF8.GetBytes(json);
+            System.Buffer.BlockCopy(jsonBytes, 0, payload, bom.Length, jsonBytes.Length);
+            Assert.AreEqual(LegacyAlgorithmDetector.DetectionResult.Unknown, LegacyAlgorithmDetector.Detect(payload));
+        }
+
+        [TestMethod]
+        public void Detect_DecoyRootLevelEa_BeforeRealEi_LegacyDetected()
+        {
+            // A root-level `_ea` (decoy) must be ignored — only `_ea` INSIDE the top-level `_ei` counts.
+            string json = $"{{\"_ea\":\"decoy-at-root\",\"_ei\":{{\"_ea\":\"{LegacyAlgorithm}\"}}}}";
+            Assert.AreEqual(LegacyAlgorithmDetector.DetectionResult.LegacyAlgorithm, Detect(json));
+        }
+
+        [TestMethod]
+        public void Detect_EaWithLeadingWhitespace_NotMatched_ReturnsUnknown()
+        {
+            string json = $"{{\"_ei\":{{\"_ea\":\" {LegacyAlgorithm}\"}}}}";
+            Assert.AreEqual(LegacyAlgorithmDetector.DetectionResult.Unknown, Detect(json));
+        }
+
+        [TestMethod]
+        public void Detect_EaWithTrailingWhitespace_NotMatched_ReturnsUnknown()
+        {
+            string json = $"{{\"_ei\":{{\"_ea\":\"{LegacyAlgorithm} \"}}}}";
+            Assert.AreEqual(LegacyAlgorithmDetector.DetectionResult.Unknown, Detect(json));
+        }
+
+        [TestMethod]
+        public void Detect_EaWithInternalSpace_NotMatched_ReturnsUnknown()
+        {
+            string json = "{\"_ei\":{\"_ea\":\"AEAes256Cbc HmacSha256Randomized\"}}";
+            Assert.AreEqual(LegacyAlgorithmDetector.DetectionResult.Unknown, Detect(json));
+        }
+
+        [TestMethod]
+        public void Detect_EaWithLeadingTab_NotMatched_ReturnsUnknown()
+        {
+            string json = $"{{\"_ei\":{{\"_ea\":\"\\t{LegacyAlgorithm}\"}}}}";
+            Assert.AreEqual(LegacyAlgorithmDetector.DetectionResult.Unknown, Detect(json));
+        }
+
+        [TestMethod]
+        public void Detect_NearMissPropertyInEi_Eaa_ReturnsUnknown()
+        {
+            string json = $"{{\"_ei\":{{\"_eaa\":\"{LegacyAlgorithm}\"}}}}";
+            Assert.AreEqual(LegacyAlgorithmDetector.DetectionResult.Unknown, Detect(json));
+        }
+
+        [TestMethod]
+        public void Detect_NearMissPropertyInEi_DoubleUnderscoreEa_ReturnsUnknown()
+        {
+            string json = $"{{\"_ei\":{{\"__ea\":\"{LegacyAlgorithm}\"}}}}";
+            Assert.AreEqual(LegacyAlgorithmDetector.DetectionResult.Unknown, Detect(json));
+        }
+
+        [TestMethod]
+        public void Detect_InvalidUtf8Bytes_ReturnsUnknown()
+        {
+            byte[] invalid = new byte[] { 0xFF, 0xFE, 0xFD, 0xFC };
+            Assert.AreEqual(LegacyAlgorithmDetector.DetectionResult.Unknown, LegacyAlgorithmDetector.Detect(invalid));
+        }
+
+        [TestMethod]
+        public void Detect_MdeAlgorithmAllUppercase_NotMatched_ReturnsUnknown()
+        {
+            // ValueTextEquals is ordinal/case-sensitive; the wire constant is mixed-case.
+            string json = "{\"_ei\":{\"_ea\":\"MDEAEADAES256CBCHMAC256RANDOMIZED\"}}";
+            Assert.AreEqual(LegacyAlgorithmDetector.DetectionResult.Unknown, Detect(json));
+        }
+
+        [TestMethod]
+        public void Detect_MdeAlgorithm_FirstThreeCharactersEscaped_MdeDetected()
+        {
+            // "Mde" each character as a unicode escape resolves to the same UTF-8 bytes;
+            // ValueTextEquals normalises escapes per the STJ spec, so the match must hold.
+            string json = "{\"_ei\":{\"_ea\":\"\\u004d\\u0064\\u0065AeadAes256CbcHmac256Randomized\"}}";
+            Assert.AreEqual(LegacyAlgorithmDetector.DetectionResult.MdeAlgorithm, Detect(json));
+        }
+
+        [TestMethod]
+        public void Detect_ManyPropertiesBeforeEi_LegacyDetected()
+        {
+            // Stress: 1000 trivial properties before `_ei`. Detector must skip them in O(N) time
+            // without hitting Utf8JsonReader depth limits or O(N^2) behaviour.
+            System.Text.StringBuilder sb = new ("{");
+            for (int i = 0; i < 1000; i++)
+            {
+                sb.Append("\"k").Append(i).Append("\":\"v").Append(i).Append("\",");
+            }
+
+            sb.Append("\"_ei\":{\"_ea\":\"").Append(LegacyAlgorithm).Append("\"}}");
+            Assert.AreEqual(LegacyAlgorithmDetector.DetectionResult.LegacyAlgorithm, Detect(sb.ToString()));
+        }
+
+        [TestMethod]
+        public void Detect_VeryLargeEdValueBeforeEa_LegacyDetected()
+        {
+            // A large `_ed` (sibling of `_ea` inside `_ei`) must be efficiently skipped by reader.Skip()
+            // without allocating an intermediate buffer that scales with the value length.
+            string bulk = new ('A', 1_000_000);
+            string json = $"{{\"_ei\":{{\"_ed\":\"{bulk}\",\"_ea\":\"{LegacyAlgorithm}\"}}}}";
+            Assert.AreEqual(LegacyAlgorithmDetector.DetectionResult.LegacyAlgorithm, Detect(json));
+        }
+
+        [TestMethod]
+        public void Detect_RepeatedCalls_AreIdempotent()
+        {
+            string json = $"{{\"_ei\":{{\"_ea\":\"{MdeAlgorithm}\"}}}}";
+            LegacyAlgorithmDetector.DetectionResult r1 = Detect(json);
+            LegacyAlgorithmDetector.DetectionResult r2 = Detect(json);
+            LegacyAlgorithmDetector.DetectionResult r3 = Detect(json);
+            Assert.AreEqual(LegacyAlgorithmDetector.DetectionResult.MdeAlgorithm, r1);
+            Assert.AreEqual(r1, r2);
+            Assert.AreEqual(r1, r3);
+        }
+
+        [TestMethod]
+        public void Detect_NestedEiInsideEd_OuterEaWins()
+        {
+            // `_ei._ed` happens to be a nested object that itself contains an `_ei._ea` looking like MDE.
+            // The detector must classify based on the OUTER `_ea` (the real algorithm), not the decoy.
+            string json = $"{{\"_ei\":{{\"_ea\":\"{LegacyAlgorithm}\",\"_ed\":{{\"_ei\":{{\"_ea\":\"{MdeAlgorithm}\"}}}}}}}}";
+            Assert.AreEqual(LegacyAlgorithmDetector.DetectionResult.LegacyAlgorithm, Detect(json));
+        }
     }
 #pragma warning restore CS0618 // Type or member is obsolete
 }
