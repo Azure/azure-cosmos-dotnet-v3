@@ -22,8 +22,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static bool ShouldValidatePartitionKeyHasId(ResourceType resourceType, OperationType operationType)
         {
-            if (resourceType == ResourceType.PartitionKey &&
-                operationType == OperationType.Delete)
+            if (resourceType != ResourceType.Document)
             {
                 return false;
             }
