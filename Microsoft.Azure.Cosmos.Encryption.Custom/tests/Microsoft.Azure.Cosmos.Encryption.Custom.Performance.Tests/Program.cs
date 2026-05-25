@@ -15,7 +15,13 @@
                 .AddJob(Job.MediumRun.WithToolchain(InProcessEmitToolchain.Instance))
                 .AddDiagnoser(MemoryDiagnoser.Default);
 
-            BenchmarkRunner.Run<EncryptionBenchmark>(dontRequireSlnToRunBenchmarks, args);
+            BenchmarkSwitcher.FromTypes(new[]
+            {
+                typeof(EncryptionBenchmark),
+#if NET8_0_OR_GREATER
+                typeof(LegacyDetectionBenchmark),
+#endif
+            }).Run(args, dontRequireSlnToRunBenchmarks);
         }
     }
 }

@@ -54,11 +54,22 @@
         public int DocumentSizeInKb { get; set; }
 
 #if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-        [Params(JsonProcessor.Newtonsoft, JsonProcessor.Stream)]
+        [Params(JsonProcessorOption.Newtonsoft, JsonProcessorOption.Stream)]
 #else
-        [Params(JsonProcessor.Newtonsoft)]
+        [Params(JsonProcessorOption.Newtonsoft)]
 #endif
-        internal JsonProcessor JsonProcessor { get; set; }
+        public JsonProcessorOption JsonProcessorOption { get; set; }
+
+        // Internal accessor maps the public BDN parameter back to the internal enum the SDK exposes.
+        // Required because BenchmarkDotNet's reflection refuses [Params] on non-public members, and
+        // JsonProcessor itself is internal — so we can't expose it directly on a public benchmark.
+        internal JsonProcessor JsonProcessor => this.JsonProcessorOption switch
+        {
+#if NET8_0_OR_GREATER
+            JsonProcessorOption.Stream => JsonProcessor.Stream,
+#endif
+            _ => JsonProcessor.Newtonsoft,
+        };
 
         [GlobalSetup]
         public async Task Setup()
