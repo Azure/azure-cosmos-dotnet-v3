@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -48,7 +49,9 @@ namespace Microsoft.Azure.Cosmos
             this.delayProvider = delayProvider ?? Task.Delay;
         }
 
-        public async Task<DistributedTransactionResponse> CommitTransactionAsync(CancellationToken cancellationToken)
+        public async Task<DistributedTransactionResponse> CommitTransactionAsync(
+            ITrace trace,
+            CancellationToken cancellationToken)
         {
             try
             {
@@ -63,7 +66,7 @@ namespace Microsoft.Azure.Cosmos
                     this.clientContext.SerializerCore,
                     cancellationToken);
 
-                return await this.ExecuteCommitWithRetryAsync(serverRequest, cancellationToken);
+                return await this.ExecuteCommitWithRetryAsync(serverRequest, trace, cancellationToken);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
@@ -74,50 +77,68 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<DistributedTransactionResponse> ExecuteCommitWithRetryAsync(
             DistributedTransactionServerRequest serverRequest,
+            ITrace parentTrace,
             CancellationToken cancellationToken)
         {
+            // Allocate once; the underlying parentTrace tree continues to accumulate per-attempt children.
+            CosmosTraceDiagnostics diagnostics = new CosmosTraceDiagnostics(parentTrace);
+
             int attempt = 0;
-            using (ITrace retryTrace = Trace.GetRootTrace("Distributed Transaction Commit", TraceComponent.Batch, TraceLevel.Info))
+            while (true)
             {
-                while (true)
+                cancellationToken.ThrowIfCancellationRequested();
+
+                DistributedTransactionResponse response = await this.ExecuteCommitAsync(serverRequest, parentTrace, cancellationToken);
+
+                if (response.IsSuccessStatusCode || !response.IsRetriable)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    DistributedTransactionResponse response = await this.ExecuteCommitAsync(serverRequest, retryTrace, cancellationToken);
-
-                    if (response.IsSuccessStatusCode || !response.IsRetriable)
-                    {
-                        return response;
-                    }
-
-                    if (attempt >= DistributedTransactionCommitter.MaxIsRetriableRetryCount)
-                    {
-                        DefaultTrace.TraceWarning(
-                            $"Distributed transaction isRetriable retry budget exhausted after {attempt} attempts " +
-                            $"(StatusCode={response.StatusCode}). Returning last response.");
-                        return response;
-                    }
-
-                    // Use the maximum of the server hint and the locally-computed exponential backoff
-                    // to avoid retrying sooner than the server requested.
-                    TimeSpan computedDelay = DistributedTransactionRetryHelpers.ComputeBackoff(
-                        attempt,
-                        this.retryBaseDelay,
-                        TimeSpan.MaxValue,
-                        DistributedTransactionCommitter.RetryMaxExponent);
-
-                    TimeSpan delay = response.Headers?.RetryAfter is TimeSpan serverHint && serverHint > computedDelay
-                        ? serverHint
-                        : computedDelay;
-
-                    DefaultTrace.TraceWarning(
-                        $"Distributed transaction commit retriable (StatusCode={response.StatusCode}, IsRetriable={response.IsRetriable}, attempt {attempt + 1}, delayMs={(int)delay.TotalMilliseconds}). Retrying with idempotency token {serverRequest.IdempotencyToken}.");
-
-                    response.Dispose();
-                    attempt++;
-                    await this.delayProvider(delay, cancellationToken);
+                    response.Diagnostics = diagnostics;
+                    return response;
                 }
+
+                if (attempt >= DistributedTransactionCommitter.MaxIsRetriableRetryCount)
+                {
+                    DefaultTrace.TraceWarning(
+                        $"Distributed transaction isRetriable retry budget exhausted after {attempt} attempts " +
+                            $"(StatusCode={response.StatusCode}, DiagnosticString={TruncateForLog(response.DiagnosticString)}). Returning last response.");
+                    response.Diagnostics = diagnostics;
+                    return response;
+                }
+
+                // Use the maximum of the server hint and the locally-computed exponential backoff
+                // to avoid retrying sooner than the server requested.
+                TimeSpan computedDelay = DistributedTransactionRetryHelpers.ComputeBackoff(
+                    attempt,
+                    this.retryBaseDelay,
+                    TimeSpan.MaxValue,
+                    DistributedTransactionCommitter.RetryMaxExponent);
+
+                TimeSpan delay = response.Headers?.RetryAfter is TimeSpan serverHint && serverHint > computedDelay
+                    ? serverHint
+                    : computedDelay;
+
+                DefaultTrace.TraceWarning(
+                    $"Distributed transaction commit retriable (StatusCode={response.StatusCode}, IsRetriable={response.IsRetriable}, DiagnosticString={TruncateForLog(response.DiagnosticString)}, attempt {attempt + 1}, delayMs={(int)delay.TotalMilliseconds}). Retrying with idempotency token {serverRequest.IdempotencyToken}.");
+
+                response.Dispose();
+                attempt++;
+                await this.delayProvider(delay, cancellationToken);
             }
+        }
+
+        // Caps server-controlled diagnostic strings before they enter SDK trace logs to prevent
+        // log bloat and avoid newline-driven log-line interleaving.
+        private static string TruncateForLog(string value)
+        {
+            const int MaxLogLength = 256;
+            if (string.IsNullOrEmpty(value))
+            {
+                return value;
+            }
+
+            return value.Length <= MaxLogLength
+                ? value
+                : value.Substring(0, MaxLogLength) + "...[truncated]";
         }
 
         private async Task<DistributedTransactionResponse> ExecuteCommitAsync(

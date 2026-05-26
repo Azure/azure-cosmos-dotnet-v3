@@ -166,6 +166,29 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [Description("When a count-mismatch synthetic 500 is built, the sub-status code from the wire header must be preserved rather than discarded as Unknown.")]
+        public async Task FromResponseMessage_CountMismatch_SuccessStatus_PreservesWireSubStatusCode()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 2);
+
+            // 2 operations submitted but server returns only 1 result — triggers the synthetic 500 path.
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+            responseMessage.Headers.SubStatusCode = (SubStatusCodes)1009; // a non-Unknown sub-status code
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.InternalServerError, response.StatusCode);
+            Assert.AreEqual((SubStatusCodes)1009, response.SubStatusCode,
+                "The wire sub-status code must be preserved in the synthetic 500 response rather than replaced with Unknown.");
+        }
+
+        [TestMethod]
         [Description("When the server returns fewer results than submitted operations and the HTTP status is an error, results are padded.")]
         public async Task FromResponseMessage_CountMismatch_FewerResults_ErrorStatus_PadsResults()
         {
@@ -737,7 +760,252 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(expected, response.IsRetriable);
         }
 
-        // ThrowIfDisposed guards on Count and GetEnumerator
+        // DiagnosticString parsing
+
+        [TestMethod]
+        [Description("DiagnosticString deserializes from the 'diagnosticString' JSON property.")]
+        public async Task FromResponseMessage_DiagnosticString_DeserializesCorrectly()
+        {
+            const string expectedDiagnosticString = "TransactionCommitted";
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = $@"{{""diagnosticString"":""{expectedDiagnosticString}"",""operationResponses"":[{{""index"":0,""statusCode"":200}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(expectedDiagnosticString, response.DiagnosticString,
+                "DiagnosticString must equal the value from the JSON 'diagnosticString' field.");
+            Assert.IsNull(response.ErrorMessage,
+                "ErrorMessage must be null on a 200 OK response, even when diagnosticString is present.");
+        }
+
+        [TestMethod]
+        [Description("DiagnosticString is null when the field is absent from the JSON body.")]
+        public async Task FromResponseMessage_DiagnosticString_AbsentInJson_IsNull()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.IsNull(response.DiagnosticString,
+                "DiagnosticString must be null when absent from the JSON body.");
+        }
+
+        [TestMethod]
+        [Description("Diagnostics is null after FromResponseMessageAsync — the committer is responsible for setting it with the full retry-tree trace.")]
+        public async Task FromResponseMessage_Diagnostics_IsNull_BeforeCommitterSetsIt()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":200}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.IsNull(response.Diagnostics,
+                "Diagnostics should be null before the committer sets it with the full retry-tree trace.");
+        }
+
+        [TestMethod]
+        [Description("ErrorMessage appends DiagnosticString in parentheses when the HTTP error message is also present.")]
+        public async Task FromResponseMessage_DiagnosticString_AppendedToErrorMessage()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            string json = @"{""diagnosticString"":""TransactionAborted"",""operationResponses"":[{""index"":0,""statusCode"":409}]}";
+
+            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Conflict, errorMessage: "Transaction was aborted by coordinator")
+            {
+                Content = new MemoryStream(Encoding.UTF8.GetBytes(json))
+            };
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.IsTrue(response.ErrorMessage.Contains("Transaction was aborted by coordinator"),
+                "ErrorMessage must contain the original HTTP error message.");
+            Assert.IsTrue(response.ErrorMessage.Contains("TransactionAborted"),
+                "ErrorMessage must contain the coordinator's diagnosticString.");
+        }
+
+        [TestMethod]
+        [Description("ErrorMessage is set to DiagnosticString alone when the HTTP error message is absent.")]
+        public async Task FromResponseMessage_DiagnosticString_UsedAsFallbackErrorMessage()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            string json = @"{""diagnosticString"":""LedgerForbidden"",""operationResponses"":[{""index"":0,""statusCode"":403}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.Forbidden, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual("LedgerForbidden", response.ErrorMessage,
+                "ErrorMessage must equal DiagnosticString when no HTTP error message is present.");
+        }
+
+        [TestMethod]
+        [Description("Empty diagnosticString must not produce malformed parentheses in ErrorMessage — treated same as absent.")]
+        public async Task FromResponseMessage_DiagnosticString_Empty_DoesNotAppendEmptyParens()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            string json = @"{""diagnosticString"":"""",""operationResponses"":[{""index"":0,""statusCode"":409}]}";
+
+            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Conflict, errorMessage: "Transaction aborted")
+            {
+                Content = new MemoryStream(Encoding.UTF8.GetBytes(json))
+            };
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.IsFalse(response.ErrorMessage.Contains("()"),
+                "Empty diagnosticString must not produce malformed '()' in ErrorMessage.");
+        }
+
+        [DataTestMethod]
+        [DataRow("   ", "(   )", DisplayName = "spaces only")]
+        [DataRow("\\t", "(\t)", DisplayName = "tab only")]
+        [DataRow("\\n", "(\n)", DisplayName = "newline only")]
+        [DataRow(" \\t\\r\\n ", "( \t\r\n )", DisplayName = "mixed whitespace")]
+        [Description("Whitespace-only diagnosticString must not produce malformed ErrorMessage — treated same as absent.")]
+        public async Task FromResponseMessage_DiagnosticString_WhitespaceOnly_DoesNotPollutErrorMessage(
+            string jsonEscapedWhitespace,
+            string forbiddenAppendix)
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            string json = $@"{{""diagnosticString"":""{jsonEscapedWhitespace}"",""operationResponses"":[{{""index"":0,""statusCode"":409}}]}}";
+
+            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Conflict, errorMessage: "Transaction aborted")
+            {
+                Content = new MemoryStream(Encoding.UTF8.GetBytes(json))
+            };
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.IsTrue(response.ErrorMessage.Contains("Transaction aborted"),
+                $"Original HTTP error message must be preserved. Actual: {response.ErrorMessage}");
+            Assert.IsFalse(response.ErrorMessage.Contains(forbiddenAppendix),
+                $"Whitespace-only diagnosticString must not produce malformed '{forbiddenAppendix}' appendix in ErrorMessage. Actual: {response.ErrorMessage}");
+        }
+
+        [TestMethod]
+        [Description("Diagnostic strings containing internal whitespace (but non-whitespace characters) must still be merged into ErrorMessage.")]
+        public async Task FromResponseMessage_DiagnosticString_WithInternalWhitespace_IsMerged()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            const string diagnostic = "Transaction aborted by coordinator";
+            string json = $@"{{""diagnosticString"":""{diagnostic}"",""operationResponses"":[{{""index"":0,""statusCode"":409}}]}}";
+
+            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Conflict, errorMessage: "HttpFailure")
+            {
+                Content = new MemoryStream(Encoding.UTF8.GetBytes(json))
+            };
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.IsTrue(response.ErrorMessage.Contains("HttpFailure"),
+                $"Original HTTP error message must be preserved. Actual: {response.ErrorMessage}");
+            Assert.IsTrue(response.ErrorMessage.Contains($"({diagnostic})"),
+                $"Diagnostic strings with internal whitespace must be merged as '({diagnostic})' into ErrorMessage. Actual: {response.ErrorMessage}");
+        }
+
+        [TestMethod]
+        [Description("When a 207 MultiStatus (success-range wire status) is promoted to a per-operation error code, the ErrorMessage merge must honor the post-promotion status — i.e. diagnosticString MUST be merged because finalStatusCode is now an error.")]
+        public async Task FromResponseMessage_DiagnosticString_MergedAfterMultiStatusPromotion()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 2);
+            const string diagnostic = "OperationConflict";
+
+            // Wire status is 207 (success range), but op #1 is 409 — finalStatusCode promotes to 409.
+            string json = $@"{{""diagnosticString"":""{diagnostic}"",""operationResponses"":[{{""index"":0,""statusCode"":201}},{{""index"":1,""statusCode"":409}}]}}";
+
+            // Wire ResponseMessage with a 207 MultiStatus and no errorMessage on the wire (success-range responses
+            // typically don't carry one). The merge must still kick in based on the *promoted* finalStatusCode (409).
+            ResponseMessage responseMessage = new ResponseMessage((HttpStatusCode)StatusCodes.MultiStatus)
+            {
+                Content = new MemoryStream(Encoding.UTF8.GetBytes(json))
+            };
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.Conflict, response.StatusCode,
+                "Promotion must move finalStatusCode to 409 (the first failing op).");
+            Assert.AreEqual(diagnostic, response.ErrorMessage,
+                "Because finalStatusCode is now an error (post-promotion), the diagnosticString must be merged into ErrorMessage.");
+        }
+
+        [TestMethod]
+        [Description("When a 207 MultiStatus has only successful per-operation results (no promotion), finalStatusCode remains in success range and diagnosticString must NOT pollute ErrorMessage.")]
+        public async Task FromResponseMessage_DiagnosticString_NotMerged_WhenMultiStatusHasNoPromotion()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 2);
+            const string diagnostic = "TransactionCommitted";
+
+            // Both ops succeed; no promotion — finalStatusCode stays at 207 (success).
+            string json = $@"{{""diagnosticString"":""{diagnostic}"",""operationResponses"":[{{""index"":0,""statusCode"":201}},{{""index"":1,""statusCode"":200}}]}}";
+
+            ResponseMessage responseMessage = new ResponseMessage((HttpStatusCode)StatusCodes.MultiStatus)
+            {
+                Content = new MemoryStream(Encoding.UTF8.GetBytes(json))
+            };
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual((HttpStatusCode)StatusCodes.MultiStatus, response.StatusCode,
+                "No promotion expected — finalStatusCode must remain 207.");
+            Assert.IsNull(response.ErrorMessage,
+                "ErrorMessage must remain null on success-range finalStatusCode, even when diagnosticString is present.");
+        }
+
+
 
         [TestMethod]
         [Description("Count after Dispose() must not throw — pre-existing safer behavior on main. Returns 0 because Dispose nulls the underlying list.")]
