@@ -278,6 +278,100 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        [TestMethod]
+        public void VerifyEmbeddingGeneratorBuilderProperties()
+        {
+            string endpoint = AccountEndpoint;
+            string key = MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey;
+
+            // Verify default is null
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+                accountEndpoint: endpoint,
+                authKeyOrResourceToken: key);
+
+            CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
+            CosmosClientOptions clientOptions = cosmosClient.ClientOptions;
+
+            Assert.IsNull(clientOptions.EmbeddingGenerator);
+
+            // Verify WithEmbeddingGenerator sets the property
+            ICosmosEmbeddingGenerator generator = new MockEmbeddingGenerator();
+            cosmosClientBuilder = new CosmosClientBuilder(
+                accountEndpoint: endpoint,
+                authKeyOrResourceToken: key);
+
+            cosmosClientBuilder.WithEmbeddingGenerator(generator);
+
+            cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
+            clientOptions = cosmosClient.ClientOptions;
+
+            Assert.AreSame(generator, clientOptions.EmbeddingGenerator,
+                "EmbeddingGenerator instance did not round-trip through the builder");
+
+            // Verify null throws ArgumentNullException
+            Assert.ThrowsException<ArgumentNullException>(
+                () => new CosmosClientBuilder(accountEndpoint: endpoint, authKeyOrResourceToken: key)
+                          .WithEmbeddingGenerator(null),
+                "WithEmbeddingGenerator should throw ArgumentNullException for null input");
+        }
+
+#if PREVIEW
+        [TestMethod]
+        public void CosmosClient_EmbeddingGenerator_ReturnsConfiguredInstance()
+        {
+            string endpoint = AccountEndpoint;
+            string key = MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey;
+
+            // Default: CosmosClient.EmbeddingGenerator is null when nothing was configured.
+            CosmosClient defaultClient = new CosmosClientBuilder(endpoint, key)
+                .Build(new MockDocumentClient());
+            Assert.IsNull(defaultClient.EmbeddingGenerator,
+                "CosmosClient.EmbeddingGenerator must be null when no generator was configured");
+
+            // Configured via builder: CosmosClient.EmbeddingGenerator returns the same instance.
+            ICosmosEmbeddingGenerator builderGenerator = new MockEmbeddingGenerator();
+            CosmosClient builderClient = new CosmosClientBuilder(endpoint, key)
+                .WithEmbeddingGenerator(builderGenerator)
+                .Build(new MockDocumentClient());
+            Assert.AreSame(builderGenerator, builderClient.EmbeddingGenerator,
+                "CosmosClient.EmbeddingGenerator must return the instance set via CosmosClientBuilder.WithEmbeddingGenerator");
+
+            // Configured via CosmosClientOptions directly: same accessor surfaces it.
+            ICosmosEmbeddingGenerator optionsGenerator = new MockEmbeddingGenerator();
+            CosmosClient optionsClient = new CosmosClientBuilder(endpoint, key)
+                .WithCustomSerializer(new CosmosJsonDotNetSerializer())  // ensures non-default options path
+                .Build(new MockDocumentClient());
+            optionsClient.ClientOptions.EmbeddingGenerator = optionsGenerator;
+            Assert.AreSame(optionsGenerator, optionsClient.EmbeddingGenerator,
+                "CosmosClient.EmbeddingGenerator must return the instance set on CosmosClientOptions.EmbeddingGenerator");
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_Clone_PreservesEmbeddingGenerator()
+        {
+            ICosmosEmbeddingGenerator generator = new MockEmbeddingGenerator();
+
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                EmbeddingGenerator = generator,
+            };
+
+            CosmosClientOptions clone = options.Clone();
+
+            Assert.AreSame(generator, clone.EmbeddingGenerator,
+                "CosmosClientOptions.Clone() must preserve the EmbeddingGenerator reference on the clone");
+
+            // The clone must be a distinct instance so subsequent mutations are isolated.
+            Assert.AreNotSame(options, clone, "Clone() must return a distinct instance");
+
+            // Mutating the clone must not affect the source.
+            ICosmosEmbeddingGenerator otherGenerator = new MockEmbeddingGenerator();
+            clone.EmbeddingGenerator = otherGenerator;
+            Assert.AreSame(generator, options.EmbeddingGenerator,
+                "Mutating EmbeddingGenerator on a clone must not affect the original options instance");
+        }
+#endif
+
         /// <summary>
         /// Test to validate that when the partition level failover is enabled with the preferred regions list is missing, then the client
         /// initialization should succeed. This should hold true for both environment variable and CosmosClientOptions.
@@ -1518,6 +1612,19 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
 
                 return 1;
+            }
+        }
+
+        private sealed class MockEmbeddingGenerator : ICosmosEmbeddingGenerator
+        {
+            public System.Threading.Tasks.Task<CosmosEmbeddingResult> GenerateEmbeddingsAsync(
+                System.Collections.Generic.IReadOnlyList<string> texts,
+                string endpoint,
+                string deploymentName,
+                int dimensions,
+                System.Threading.CancellationToken cancellationToken = default)
+            {
+                throw new NotImplementedException();
             }
         }
     }
