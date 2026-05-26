@@ -11,6 +11,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+#if NET8_0_OR_GREATER
+    using System.Buffers;
+#endif
     using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -182,12 +185,72 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Debug.Assert(encryptor != null);
             Debug.Assert(diagnosticsContext != null);
 
+#if NET8_0_OR_GREATER
+            // When the caller has opted into JsonProcessor.Stream, replace the Newtonsoft JObject peek
+            // (which exists solely to detect legacy AE-AES documents) with a Utf8JsonReader-based
+            // detector. The detector classifies the document without allocating either a JObject or
+            // an EncryptionPropertiesWrapper, and routes Mde / unencrypted documents directly to
+            // MdeEncryptionProcessor while preserving the documented contract that legacy AE-AES
+            // documents transparently fall back to the Newtonsoft path
+            // (regression: EncryptionProcessorTests.Decrypt_StreamSelection_LegacyAlgorithm_FallsBackToNewtonsoft).
+            if (requestOptions != null
+                && requestOptions.TryReadJsonProcessorOverride(out JsonProcessor overrideProcessor)
+                && overrideProcessor == JsonProcessor.Stream)
+            {
+                LegacyAlgorithmDetector.DetectionResult detection = TryDetectAlgorithm(input);
+                switch (detection)
+                {
+                    case LegacyAlgorithmDetector.DetectionResult.MdeAlgorithm:
+                    case LegacyAlgorithmDetector.DetectionResult.NotEncrypted:
+                        input.Position = 0;
+                        return await MdeEncryptionProcessor.DecryptAsync(input, encryptor, diagnosticsContext, requestOptions, cancellationToken);
+
+                    case LegacyAlgorithmDetector.DetectionResult.LegacyAlgorithm:
+                    case LegacyAlgorithmDetector.DetectionResult.Unknown:
+                    default:
+                        // Fall through to the legacy JObject peek path below. Ask it to strip the
+                        // Stream override before its post-peek MDE fallthrough call — but only when
+                        // that fallthrough is reached via the success branch (i.e. JObject parsing
+                        // worked). If JObject parsing throws (async-only stream, malformed payload),
+                        // the catch branch needs to keep the original requestOptions so MDE can use
+                        // its async-capable Stream adapter to read the stream and honor cancellation.
+                        return await DecryptViaJObjectPeekAsync(input, encryptor, diagnosticsContext, requestOptions, cancellationToken, stripStreamOverrideOnSuccessFallthrough: true);
+                }
+            }
+#endif
+
+            return await DecryptViaJObjectPeekAsync(input, encryptor, diagnosticsContext, requestOptions, cancellationToken);
+        }
+
+#if NET8_0_OR_GREATER
+        private static async Task<(Stream, DecryptionContext)> DecryptViaJObjectPeekAsync(
+            Stream input,
+            Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
+            RequestOptions requestOptions,
+            CancellationToken cancellationToken,
+            bool stripStreamOverrideOnSuccessFallthrough = false)
+#else
+        private static async Task<(Stream, DecryptionContext)> DecryptViaJObjectPeekAsync(
+            Stream input,
+            Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
+            RequestOptions requestOptions,
+            CancellationToken cancellationToken)
+#endif
+        {
             // Try to peek at the content to check if it's legacy encryption algorithm
             // Some streams (e.g., those that only support async reads or contain malformed JSON) may throw exceptions
             // during synchronous peeking. In such cases, delegate directly to MdeEncryptionProcessor.
+#if NET8_0_OR_GREATER
+            bool jobjectParseSucceeded = false;
+#endif
             try
             {
                 JObject itemJObj = RetrieveItem(input);
+#if NET8_0_OR_GREATER
+                jobjectParseSucceeded = true;
+#endif
                 JObject encryptionPropertiesJObj = RetrieveEncryptionProperties(itemJObj);
 
                 if (encryptionPropertiesJObj != null)
@@ -216,8 +279,90 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 input.Position = 0;
             }
 
+#if NET8_0_OR_GREATER
+            // For Stream-opt-in callers: when the JObject peek successfully read the document synchronously,
+            // force the Newtonsoft adapter for the fallthrough MDE call so it produces byte-for-byte parity
+            // with non-opt-in callers on shapes the streaming MDE adapter would otherwise reject
+            // (e.g. {"_ei":{"_ea":""}}, missing _ea, empty _ei).
+            //
+            // If the peek FAILED (catch branch), keep the caller-requested processor: the input is likely an
+            // async-only stream and the MDE Stream adapter is needed to read it / honor cancellation.
+            //
+            // IMPORTANT: do not strip JsonProcessor by mutating requestOptions.Properties. RequestOptions is
+            // caller-owned and may be shared across concurrent decrypt calls; mutating it under an await is a
+            // thread-safety bug that can race with another decrypt and silently route it to the wrong adapter.
+            // Instead, call the overload that takes JsonProcessor explicitly.
+            if (jobjectParseSucceeded && stripStreamOverrideOnSuccessFallthrough)
+            {
+                return await MdeEncryptionProcessor.DecryptAsync(input, encryptor, diagnosticsContext, JsonProcessor.Newtonsoft, cancellationToken);
+            }
+#endif
+
             return await MdeEncryptionProcessor.DecryptAsync(input, encryptor, diagnosticsContext, requestOptions, cancellationToken);
         }
+
+#if NET8_0_OR_GREATER
+        /// <summary>
+        /// Reads <paramref name="input"/> into a span backed either by the MemoryStream's underlying buffer
+        /// (zero-copy fast path) or a pooled rented array, runs <see cref="LegacyAlgorithmDetector.Detect"/>,
+        /// and always restores <c>input.Position</c> to the value it had on entry. Any I/O error collapses
+        /// to <see cref="LegacyAlgorithmDetector.DetectionResult.Unknown"/> so the caller falls back to the
+        /// robust JObject path.
+        /// </summary>
+        private static LegacyAlgorithmDetector.DetectionResult TryDetectAlgorithm(Stream input)
+        {
+            long startPosition = input.Position;
+            try
+            {
+                if (input is MemoryStream memoryStream && memoryStream.TryGetBuffer(out ArraySegment<byte> segment))
+                {
+                    ReadOnlySpan<byte> documentBytes = segment.AsSpan((int)startPosition, segment.Count - (int)startPosition);
+                    return LegacyAlgorithmDetector.Detect(documentBytes);
+                }
+
+                long remainingLong = input.Length - startPosition;
+                if (remainingLong <= 0 || remainingLong > int.MaxValue)
+                {
+                    return LegacyAlgorithmDetector.DetectionResult.Unknown;
+                }
+
+                int remaining = (int)remainingLong;
+                byte[] rented = ArrayPool<byte>.Shared.Rent(remaining);
+                try
+                {
+                    int read = 0;
+                    while (read < remaining)
+                    {
+                        int n = input.Read(rented, read, remaining - read);
+                        if (n == 0)
+                        {
+                            break;
+                        }
+
+                        read += n;
+                    }
+
+                    return LegacyAlgorithmDetector.Detect(new ReadOnlySpan<byte>(rented, 0, read));
+                }
+                finally
+                {
+                    // Clear plaintext document bytes before returning the buffer to the shared pool.
+                    // Matches the package-wide convention used by ArrayPoolManager, RentArrayBufferWriter,
+                    // and JsonArrayPool: rented buffers that touched encryption payload bytes are cleared
+                    // on return to prevent residual data leaking to other tenants of ArrayPool<byte>.Shared.
+                    ArrayPool<byte>.Shared.Return(rented, clearArray: true);
+                }
+            }
+            catch
+            {
+                return LegacyAlgorithmDetector.DetectionResult.Unknown;
+            }
+            finally
+            {
+                input.Position = startPosition;
+            }
+        }
+#endif
 
         public static async Task<DecryptionContext> DecryptAsync(
             Stream input,

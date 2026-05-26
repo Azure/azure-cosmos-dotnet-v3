@@ -64,6 +64,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
+            JsonProcessor jsonProcessor = this.GetRequestedJsonProcessor(requestOptions);
+            return await this.DecryptAsync(input, encryptor, diagnosticsContext, jsonProcessor, cancellationToken);
+        }
+
+        /// <summary>
+        /// Overload that takes the JsonProcessor explicitly. Used by callers that have already inspected the
+        /// request options and need to force a specific adapter without mutating caller-owned RequestOptions
+        /// (which is not safe under concurrency when a single RequestOptions instance is shared across calls).
+        /// </summary>
+        internal async Task<(Stream, DecryptionContext)> DecryptAsync(
+            Stream input,
+            Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
+            JsonProcessor jsonProcessor,
+            CancellationToken cancellationToken)
+        {
             if (input == null)
             {
                 return (input, null);
@@ -71,7 +87,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             ArgumentValidation.ThrowIfNull(diagnosticsContext);
 
-            JsonProcessor jsonProcessor = this.GetRequestedJsonProcessor(requestOptions);
             using IDisposable selectionScope = diagnosticsContext.CreateScope(CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + jsonProcessor);
 
             IMdeJsonProcessorAdapter adapter = this.GetAdapter(jsonProcessor);
