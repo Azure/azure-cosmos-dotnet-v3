@@ -16,6 +16,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <summary>
         /// The property bag key used to store the JsonProcessor override in RequestOptions.Properties.
         /// </summary>
+        /// <remarks>
+        /// When callers set this key to <c>JsonProcessor.Stream</c> (NET8+ only) or the string
+        /// <c>"Stream"</c> they route decrypt operations through the <c>SystemTextJsonStreamAdapter</c>.
+        ///
+        /// <para><b>Documented observable difference</b>: for malformed inputs the streaming adapter
+        /// throws <see cref="System.Text.Json.JsonException"/> where the default
+        /// <see cref="JsonProcessor.Newtonsoft"/> adapter would have thrown
+        /// <c>Newtonsoft.Json.JsonException</c> or <see cref="System.FormatException"/>. Both paths
+        /// reject the same set of inputs; only the exception type differs because the two adapters
+        /// fail at different layers. See <c>JsonProcessor.Stream</c> remarks for the full
+        /// rationale.</para>
+        /// </remarks>
         internal const string JsonProcessorPropertyBagKey = "encryption-json-processor";
 
         /// <summary>

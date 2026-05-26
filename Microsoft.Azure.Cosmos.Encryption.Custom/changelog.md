@@ -3,6 +3,13 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### Unreleased
+
+#### Updates
+- [#5903](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5903) Optimizes legacy-algorithm detection on the `JsonProcessor.Stream` decrypt opt-in path. Replaces the `Newtonsoft.Json.Linq.JObject` peek (which allocated a full DOM and an `EncryptionPropertiesWrapper` on every call) with a `System.Text.Json.Utf8JsonReader`-based detector that classifies the document without allocating. Documents that classify as MDE or unencrypted route directly to the streaming MDE processor; documents that classify as legacy AE-AES, malformed, or come from async-only streams continue to fall through to the original `JObject` peek path so backwards compatibility is byte-for-byte preserved. 37 parity tests assert identical observable behaviour vs the non-opt-in path on valid inputs.
+
+  **Documented observable difference for `JsonProcessor.Stream` opt-in callers**: when an input is *malformed* (e.g. a corrupt `_ed` ciphertext, leading garbage bytes before the JSON document, or a document that the strict `System.Text.Json` parser rejects), the streaming MDE adapter surfaces a `System.Text.Json.JsonException` where the default Newtonsoft adapter would have surfaced a `Newtonsoft.Json.JsonException` or `System.FormatException`. **Both paths reject the same set of inputs** — only the exception **type** differs because the two adapters fail at different layers (STJ model deserializer vs Newtonsoft base64 decoder). This is a property of the underlying `JsonProcessor.Stream` adapter selection, not of this PR, and exists on every release that includes the `JsonProcessor.Stream` opt-in. Callers that wrap decryption in `catch` blocks should match on `JsonException` broadly or catch `Exception` and inspect the message.
+
 ### <a name="1.0.0-preview08"/> [1.0.0-preview08](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption.Custom/1.0.0-preview08) - 2024-09-11
 
 #### Updates
