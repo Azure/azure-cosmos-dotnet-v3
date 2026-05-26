@@ -123,6 +123,19 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual bool IsRetriable { get; }
 
+        /// <summary>
+        /// Gets the diagnostic string from the coordinator describing the transaction outcome
+        /// </summary>
+        public virtual string DiagnosticString { get; private set; }
+
+        /// <summary>
+        /// Gets the client-side diagnostics for the distributed transaction, covering the full
+        /// retry loop and per-attempt spans (address resolution, network, retries, latency).
+        /// </summary>
+        /// <remarks>Non-null when the response is returned from <c>CommitTransactionAsync</c>. The SDK sets this property
+        /// before returning; callers should treat it as non-null in normal usage but guard defensively in edge cases.</remarks>
+        public virtual CosmosDiagnostics Diagnostics { get; internal set; }
+
         internal virtual SubStatusCodes SubStatusCode { get; }
 
         internal virtual CosmosSerializerCore SerializerCore { get; }
@@ -224,17 +237,22 @@ namespace Microsoft.Azure.Cosmos
 
                         if (responseMessage.IsSuccessStatusCode)
                         {
+                            string preservedDiagnosticString = response.DiagnosticString;
+                            SubStatusCodes wireSubStatusCode = responseMessage.Headers.SubStatusCode;
                             response.Dispose();
 
                             return new DistributedTransactionResponse(
                                 HttpStatusCode.InternalServerError,
-                                SubStatusCodes.Unknown,
+                                wireSubStatusCode,
                                 ClientResources.InvalidServerResponse,
                                 responseMessage.Headers,
                                 serverRequest.Operations,
                                 serializer,
                                 createResponseTrace,
-                                idempotencyToken);
+                                idempotencyToken)
+                            {
+                                DiagnosticString = preservedDiagnosticString,
+                            };
                         }
 
                         response.CreateAndPopulateResults(serverRequest.Operations, createResponseTrace);
@@ -303,6 +321,7 @@ namespace Microsoft.Azure.Cosmos
         {
             List<DistributedTransactionOperationResult> results = new List<DistributedTransactionOperationResult>();
             bool isRetriable = false;
+            string diagnosticString = null;
 
             JsonDocument responseJson;
             try
@@ -325,6 +344,12 @@ namespace Microsoft.Azure.Cosmos
                     isRetriableElement.ValueKind == JsonValueKind.True)
                 {
                     isRetriable = true;
+                }
+
+                if (root.TryGetProperty(DistributedTransactionSerializer.DiagnosticString, out JsonElement diagnosticStringElement) &&
+                    diagnosticStringElement.ValueKind == JsonValueKind.String)
+                {
+                    diagnosticString = diagnosticStringElement.GetString();
                 }
 
                 // Parse operation results from "operationResponses" array.
@@ -372,10 +397,22 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
+            // Incorporate the coordinator's diagnosticString into the error message so it
+            // surfaces in response.ErrorMessage and any exception message the caller builds.
+            // Only merge on error responses — success responses must keep ErrorMessage null.
+            string effectiveErrorMessage = responseMessage.ErrorMessage;
+            bool isSuccessStatus = (int)finalStatusCode >= 200 && (int)finalStatusCode <= 299;
+            if (!isSuccessStatus && !string.IsNullOrWhiteSpace(diagnosticString))
+            {
+                effectiveErrorMessage = string.IsNullOrWhiteSpace(effectiveErrorMessage)
+                    ? diagnosticString
+                    : $"{effectiveErrorMessage} ({diagnosticString})";
+            }
+
             return new DistributedTransactionResponse(
                 finalStatusCode,
                 finalSubStatusCode,
-                responseMessage.ErrorMessage,
+                effectiveErrorMessage,
                 responseMessage.Headers,
                 serverRequest.Operations,
                 serializer,
@@ -383,7 +420,8 @@ namespace Microsoft.Azure.Cosmos
                 idempotencyToken,
                 isRetriable)
             {
-                results = results
+                results = results,
+                DiagnosticString = diagnosticString
             };
         }
 
