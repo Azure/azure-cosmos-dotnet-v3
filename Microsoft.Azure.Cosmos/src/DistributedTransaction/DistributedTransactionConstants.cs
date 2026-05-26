@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using Microsoft.Azure.Documents;
 
     internal static class DistributedTransactionConstants
@@ -25,6 +26,44 @@ namespace Microsoft.Azure.Cosmos
         internal static string GetCollectionFullName(string database, string container)
         {
             return $"dbs/{database}/colls/{container}";
+        }
+
+        internal static (string databaseId, string containerId) ValidateAndUnpackContainer(
+            Container container,
+            CosmosClient expectedClient)
+        {
+            if (container == null)
+            {
+                throw new ArgumentNullException(nameof(container));
+            }
+            Database database = container.Database;
+            if (database == null)
+            {
+                throw new ArgumentException("Container reference must expose a non-null Database.", nameof(container));
+            }
+
+            string containerId = container.Id;
+            string databaseId = database.Id;
+
+            if (string.IsNullOrWhiteSpace(containerId))
+            {
+                throw new ArgumentException("Container reference must have a non-empty Id.", nameof(container));
+            }
+
+            if (string.IsNullOrWhiteSpace(databaseId))
+            {
+                throw new ArgumentException("Container reference must have a non-empty Database.Id.", nameof(container));
+            }
+
+            CosmosClient owner = database.Client;
+            if (!object.ReferenceEquals(owner, expectedClient))
+            {
+                throw new ArgumentException(
+                    "Container must belong to the same CosmosClient instance that created this distributed transaction.",
+                    nameof(container));
+            }
+
+            return (databaseId, containerId);
         }
     }
 }

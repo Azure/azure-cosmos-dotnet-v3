@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
             T resource,
             DistributedTransactionRequestOptions requestOptions = null)
         {
-            DistributedWriteTransactionCore.ValidateContainerReference(container);
+            (string databaseId, string containerId) = DistributedTransactionConstants.ValidateAndUnpackContainer(container, this.clientContext.Client);
             DistributedWriteTransactionCore.ValidateItemId(id);
             DistributedWriteTransactionCore.ValidateResource(resource);
 
@@ -38,8 +38,8 @@ namespace Microsoft.Azure.Cosmos
                 new DistributedTransactionOperation<T>(
                     operationType: OperationType.Create,
                     operationIndex: this.operations.Count,
-                    container.Database.Id,
-                    container.Id,
+                    databaseId,
+                    containerId,
                     partitionKey,
                     id,
                     resource,
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             DistributedTransactionRequestOptions requestOptions = null)
         {
-            DistributedWriteTransactionCore.ValidateContainerReference(container);
+            (string databaseId, string containerId) = DistributedTransactionConstants.ValidateAndUnpackContainer(container, this.clientContext.Client);
             DistributedWriteTransactionCore.ValidateItemId(id);
             if (streamPayload == null)
             {
@@ -65,8 +65,8 @@ namespace Microsoft.Azure.Cosmos
                 new DistributedTransactionOperation(
                     operationType: OperationType.Create,
                     operationIndex: this.operations.Count,
-                    database: container.Database.Id,
-                    container: container.Id,
+                    database: databaseId,
+                    container: containerId,
                     partitionKey: partitionKey,
                     id: id,
                     requestOptions: requestOptions)
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos
             T resource,
             DistributedTransactionRequestOptions requestOptions = null)
         {
-            DistributedWriteTransactionCore.ValidateContainerReference(container);
+            (string databaseId, string containerId) = DistributedTransactionConstants.ValidateAndUnpackContainer(container, this.clientContext.Client);
             DistributedWriteTransactionCore.ValidateItemId(id);
             DistributedWriteTransactionCore.ValidateResource(resource);
 
@@ -91,8 +91,8 @@ namespace Microsoft.Azure.Cosmos
                 new DistributedTransactionOperation<T>(
                     operationType: OperationType.Replace,
                     operationIndex: this.operations.Count,
-                    container.Database.Id,
-                    container.Id,
+                    databaseId,
+                    containerId,
                     partitionKey,
                     id,
                     resource,
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             DistributedTransactionRequestOptions requestOptions = null)
         {
-            DistributedWriteTransactionCore.ValidateContainerReference(container);
+            (string databaseId, string containerId) = DistributedTransactionConstants.ValidateAndUnpackContainer(container, this.clientContext.Client);
             DistributedWriteTransactionCore.ValidateItemId(id);
             if (streamPayload == null)
             {
@@ -118,8 +118,8 @@ namespace Microsoft.Azure.Cosmos
                 new DistributedTransactionOperation(
                     operationType: OperationType.Replace,
                     operationIndex: this.operations.Count,
-                    database: container.Database.Id,
-                    container: container.Id,
+                    database: databaseId,
+                    container: containerId,
                     partitionKey: partitionKey,
                     id: id,
                     requestOptions: requestOptions)
@@ -135,15 +135,15 @@ namespace Microsoft.Azure.Cosmos
             string id,
             DistributedTransactionRequestOptions requestOptions = null)
         {
-            DistributedWriteTransactionCore.ValidateContainerReference(container);
+            (string databaseId, string containerId) = DistributedTransactionConstants.ValidateAndUnpackContainer(container, this.clientContext.Client);
             DistributedWriteTransactionCore.ValidateItemId(id);
 
             this.operations.Add(
                 new DistributedTransactionOperation(
                     operationType: OperationType.Delete,
                     operationIndex: this.operations.Count,
-                    container.Database.Id,
-                    container.Id,
+                    databaseId,
+                    containerId,
                     partitionKey,
                     id: id,
                     requestOptions));
@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Cosmos
             IReadOnlyList<PatchOperation> patchOperations,
             DistributedTransactionRequestOptions requestOptions = null)
         {
-            DistributedWriteTransactionCore.ValidateContainerReference(container);
+            (string databaseId, string containerId) = DistributedTransactionConstants.ValidateAndUnpackContainer(container, this.clientContext.Client);
             DistributedWriteTransactionCore.ValidateItemId(id);
 
             if (patchOperations == null || !patchOperations.Any())
@@ -171,8 +171,8 @@ namespace Microsoft.Azure.Cosmos
                 new DistributedTransactionOperation<PatchSpec>(
                     operationType: OperationType.Patch,
                     operationIndex: this.operations.Count,
-                    container.Database.Id,
-                    container.Id,
+                    databaseId,
+                    containerId,
                     partitionKey,
                     id,
                     resource: patchSpec,
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             DistributedTransactionRequestOptions requestOptions = null)
         {
-            DistributedWriteTransactionCore.ValidateContainerReference(container);
+            (string databaseId, string containerId) = DistributedTransactionConstants.ValidateAndUnpackContainer(container, this.clientContext.Client);
             DistributedWriteTransactionCore.ValidateItemId(id);
             if (streamPayload == null)
             {
@@ -198,8 +198,8 @@ namespace Microsoft.Azure.Cosmos
                 new DistributedTransactionOperation(
                     operationType: OperationType.Patch,
                     operationIndex: this.operations.Count,
-                    database: container.Database.Id,
-                    container: container.Id,
+                    database: databaseId,
+                    container: containerId,
                     partitionKey: partitionKey,
                     id: id,
                     requestOptions: requestOptions)
@@ -216,7 +216,7 @@ namespace Microsoft.Azure.Cosmos
             T resource,
             DistributedTransactionRequestOptions requestOptions = null)
         {
-            DistributedWriteTransactionCore.ValidateContainerReference(container);
+            (string databaseId, string containerId) = DistributedTransactionConstants.ValidateAndUnpackContainer(container, this.clientContext.Client);
             DistributedWriteTransactionCore.ValidateItemId(id);
             DistributedWriteTransactionCore.ValidateResource(resource);
 
@@ -224,8 +224,8 @@ namespace Microsoft.Azure.Cosmos
                 new DistributedTransactionOperation<T>(
                     operationType: OperationType.Upsert,
                     operationIndex: this.operations.Count,
-                    container.Database.Id,
-                    container.Id,
+                    databaseId,
+                    containerId,
                     partitionKey,
                     id,
                     resource,
@@ -240,7 +240,7 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             DistributedTransactionRequestOptions requestOptions = null)
         {
-            DistributedWriteTransactionCore.ValidateContainerReference(container);
+            (string databaseId, string containerId) = DistributedTransactionConstants.ValidateAndUnpackContainer(container, this.clientContext.Client);
             DistributedWriteTransactionCore.ValidateItemId(id);
             if (streamPayload == null)
             {
@@ -251,8 +251,8 @@ namespace Microsoft.Azure.Cosmos
                 new DistributedTransactionOperation(
                     operationType: OperationType.Upsert,
                     operationIndex: this.operations.Count,
-                    database: container.Database.Id,
-                    container: container.Id,
+                    database: databaseId,
+                    container: containerId,
                     partitionKey: partitionKey,
                     id: id,
                     requestOptions: requestOptions)
@@ -269,35 +269,6 @@ namespace Microsoft.Azure.Cosmos
                 clientContext: this.clientContext);
 
             return await committer.CommitTransactionAsync(cancellationToken);
-        }
-
-        private static void ValidateContainerReference(Container container)
-        {
-            if (container == null)
-            {
-                throw new ArgumentNullException(nameof(container));
-            }
-
-            if (string.IsNullOrWhiteSpace(container.Id))
-            {
-                throw new ArgumentException(
-                    "Container reference must have a non-empty Id.",
-                    nameof(container));
-            }
-
-            if (container.Database == null)
-            {
-                throw new ArgumentException(
-                    "Container reference must expose a non-null Database.",
-                    nameof(container));
-            }
-
-            if (string.IsNullOrWhiteSpace(container.Database.Id))
-            {
-                throw new ArgumentException(
-                    "Container reference must have a non-empty Database.Id.",
-                    nameof(container));
-            }
         }
 
         private static void ValidateItemId(string id)

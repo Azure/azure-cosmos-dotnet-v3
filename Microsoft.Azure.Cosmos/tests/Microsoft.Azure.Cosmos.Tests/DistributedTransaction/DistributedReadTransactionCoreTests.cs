@@ -18,19 +18,23 @@ namespace Microsoft.Azure.Cosmos.Tests
         private const string ContainerName = "testColl";
         private static readonly CosmosPK TestPartitionKey = new CosmosPK("pk1");
         private static readonly string ItemId = "item-1";
+        private static readonly CosmosClient SharedMockClient = new Mock<CosmosClient>().Object;
 
         private DistributedReadTransactionCore CreateTransaction()
         {
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+            mockContext.Setup(c => c.Client).Returns(DistributedReadTransactionCoreTests.SharedMockClient);
             return new DistributedReadTransactionCore(mockContext.Object);
         }
 
         private static Cosmos.Container BuildMockContainer(
             string databaseId = DatabaseName,
-            string containerId = ContainerName)
+            string containerId = ContainerName,
+            CosmosClient client = null)
         {
             Mock<Cosmos.Database> databaseMock = new Mock<Cosmos.Database>();
             databaseMock.Setup(d => d.Id).Returns(databaseId);
+            databaseMock.Setup(d => d.Client).Returns(client ?? DistributedReadTransactionCoreTests.SharedMockClient);
 
             Mock<Cosmos.Container> containerMock = new Mock<Cosmos.Container>();
             containerMock.Setup(c => c.Id).Returns(containerId);
@@ -117,6 +121,22 @@ namespace Microsoft.Azure.Cosmos.Tests
             DistributedReadTransactionCore txn = this.CreateTransaction();
             Assert.ThrowsException<ArgumentException>(() =>
                 txn.ReadItem(BuildMockContainer(databaseId: "   "), TestPartitionKey, ItemId));
+        }
+
+        [TestMethod]
+        public void ReadItem_DifferentCosmosClient_ThrowsArgumentException()
+        {
+            DistributedReadTransactionCore txn = this.CreateTransaction();
+            CosmosClient differentClient = new Mock<CosmosClient>().Object;
+            Assert.ThrowsException<ArgumentException>(() =>
+                txn.ReadItem(BuildMockContainer(client: differentClient), TestPartitionKey, ItemId));
+        }
+
+        [TestMethod]
+        public void ReadItem_SameCosmosClient_Succeeds()
+        {
+            DistributedReadTransactionCore txn = this.CreateTransaction();
+            txn.ReadItem(BuildMockContainer(), TestPartitionKey, ItemId);
         }
 
         [TestMethod]

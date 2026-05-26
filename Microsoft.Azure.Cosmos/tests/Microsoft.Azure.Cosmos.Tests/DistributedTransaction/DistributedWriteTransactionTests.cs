@@ -101,6 +101,22 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void CreateItem_DifferentCosmosClient_ThrowsArgumentException()
+        {
+            DistributedWriteTransaction tx = this.NewTransaction();
+            CosmosClient differentClient = new Mock<CosmosClient>().Object;
+            Assert.ThrowsException<ArgumentException>(
+                () => tx.CreateItem(BuildMockContainer(client: differentClient), new PartitionKey("pk"), "item-id", new TestItem()));
+        }
+
+        [TestMethod]
+        public void CreateItem_SameCosmosClient_Succeeds()
+        {
+            DistributedWriteTransaction tx = this.NewTransaction();
+            tx.CreateItem(BuildMockContainer(), new PartitionKey("pk"), "item-id", new TestItem());
+        }
+
+        [TestMethod]
         public void CreateItem_NullResource_ThrowsArgumentException()
         {
             DistributedWriteTransaction tx = this.NewTransaction();
@@ -467,6 +483,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<CosmosClientContext> contextMock = new Mock<CosmosClientContext>();
 
             contextMock
+                .Setup(c => c.Client)
+                .Returns(DistributedWriteTransactionTests.SharedMockClient);
+
+            contextMock
                 .Setup(c => c.DocumentClient)
                 .Returns(documentClient);
 
@@ -484,6 +504,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             return contextMock;
         }
 
+        private static readonly CosmosClient SharedMockClient = new Mock<CosmosClient>().Object;
+
         /// <summary>
         /// Builds a mock <see cref="Cosmos.Container"/> that returns <see cref="DatabaseName"/>
         /// and <see cref="ContainerName"/> from its <see cref="Cosmos.Container.Database"/>/<see cref="Cosmos.Container.Id"/>
@@ -491,10 +513,12 @@ namespace Microsoft.Azure.Cosmos.Tests
         /// </summary>
         private static Cosmos.Container BuildMockContainer(
             string databaseId = DatabaseName,
-            string containerId = ContainerName)
+            string containerId = ContainerName,
+            CosmosClient client = null)
         {
             Mock<Cosmos.Database> databaseMock = new Mock<Cosmos.Database>();
             databaseMock.Setup(d => d.Id).Returns(databaseId);
+            databaseMock.Setup(d => d.Client).Returns(client ?? DistributedWriteTransactionTests.SharedMockClient);
 
             Mock<Cosmos.Container> containerMock = new Mock<Cosmos.Container>();
             containerMock.Setup(c => c.Id).Returns(containerId);
