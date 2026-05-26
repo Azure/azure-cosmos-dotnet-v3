@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   **Documented observable difference for `JsonProcessor.Stream` opt-in callers**: when an input is *malformed* (e.g. a corrupt `_ed` ciphertext, leading garbage bytes before the JSON document, or a document that the strict `System.Text.Json` parser rejects), the streaming MDE adapter surfaces a `System.Text.Json.JsonException` where the default Newtonsoft adapter would have surfaced a `Newtonsoft.Json.JsonException` or `System.FormatException`. **Both paths reject the same set of inputs** — only the exception **type** differs because the two adapters fail at different layers (STJ model deserializer vs Newtonsoft base64 decoder). This is a property of the underlying `JsonProcessor.Stream` adapter selection, not of this PR, and exists on every release that includes the `JsonProcessor.Stream` opt-in. Callers that wrap decryption in `catch` blocks should match on `JsonException` broadly or catch `Exception` and inspect the message.
 
+  **Known pre-existing `JsonProcessor.Stream` *encrypt* limitations surfaced by this PR's cross-adapter parity testing (NOT introduced by this PR):** the Stream encrypter copies source bytes verbatim for whole-property encryption targets that are arrays or dictionaries, rather than normalising through a canonical JSON writer. Two observable consequences for the `JsonProcessor.Stream` *encrypt* path only (the Newtonsoft encrypter handles both cases correctly, and either decrypt path can read the resulting documents):
+    1. Dictionary keys or values containing JSON metacharacters (`"`, `\`) round-trip with an extra leading backslash.
+    2. String values inside arrays or dictionaries that are written using `\uXXXX` escape sequences are recovered as the literal escape text (e.g. `"\u0041"` round-trips as the 6-character string `\u0041` instead of `"A"`).
+  Top-level string fields are unaffected. Both limitations are captured as `[Ignore]`-flagged regression-tracker tests in `CrossAdapterEncryptDecryptParityTests` and `CrossAdapterAdversarialParityTests`; remove the `[Ignore]` once the Stream encrypter is fixed to normalise nested-container values.
+
 ### <a name="1.0.0-preview08"/> [1.0.0-preview08](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption.Custom/1.0.0-preview08) - 2024-09-11
 
 #### Updates
