@@ -138,7 +138,13 @@ namespace Microsoft.Azure.Cosmos
                     // For DTC responses, preserve the response body (operationResponses JSON) so the caller can parse per-op statuses.
                     // If there is no response body, fall back to throwing to preserve detailed error context.
                     if (responseMessage.Content == null
-                        || responseMessage.Content.Headers.ContentLength.GetValueOrDefault() == 0)
+                    INameValueCollection headers = GatewayStoreClient.ExtractResponseHeaders(responseMessage);
+                    Stream contentStream = await GatewayStoreClient.BufferContentIfAvailableAsync(responseMessage);
+
+                    if (contentStream == null || contentStream.Length == 0)
+                    {
+                        throw await GatewayStoreClient.CreateDocumentClientExceptionAsync(responseMessage, requestStatistics);
+                    }
                     {
                         throw await GatewayStoreClient.CreateDocumentClientExceptionAsync(responseMessage, requestStatistics);
                     }
