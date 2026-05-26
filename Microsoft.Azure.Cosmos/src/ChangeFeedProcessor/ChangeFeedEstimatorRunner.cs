@@ -72,10 +72,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
             if (leaseContainer == null && customDocumentServiceLeaseStoreManager == null) throw new ArgumentNullException(nameof(leaseContainer));
 
+            DocumentServiceLeaseContainer documentServiceLeaseContainer = customDocumentServiceLeaseStoreManager?.LeaseContainer;
+            if (leaseContainer == null && documentServiceLeaseContainer == null)
+            {
+                throw new ArgumentNullException(nameof(customDocumentServiceLeaseStoreManager), "The provided DocumentServiceLeaseStoreManager has a null LeaseContainer.");
+            }
+
             this.leaseContainer = leaseContainer;
             this.monitoredContainer = monitoredContainer ?? throw new ArgumentNullException(nameof(monitoredContainer));
             this.changeFeedLeaseOptions = changeFeedLeaseOptions;
-            this.documentServiceLeaseContainer = customDocumentServiceLeaseStoreManager?.LeaseContainer;
+            this.documentServiceLeaseContainer = documentServiceLeaseContainer;
             this.healthMonitor = changeFeedProcessorOptions.HealthMonitor;
         }
 
@@ -90,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             
             if (this.running)
             {
-                throw new InvalidOperationException($"Change Feed Estimator for container {this.monitoredContainer.Id} with lease container {this.leaseContainer.Id} already started.");
+                throw new InvalidOperationException($"Change Feed Estimator for container {this.monitoredContainer.Id} with lease container {this.leaseContainer?.Id ?? "InMemory"} already started.");
             }
 
             this.shutdownCts = new CancellationTokenSource();

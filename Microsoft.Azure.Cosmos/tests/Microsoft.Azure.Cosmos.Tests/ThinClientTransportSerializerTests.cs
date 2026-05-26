@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
@@ -192,6 +193,126 @@ namespace Microsoft.Azure.Cosmos.Tests
                 ?.SetValue(containerProperties, "-Jlvm9pqHGk=");
 
             return containerProperties;
+        }
+
+        /// <summary>
+        /// Verifies that when the <c>x-ms-cosmos-read-consistency-strategy</c> header is set on the
+        /// outbound <see cref="HttpRequestMessage"/>, the RNTBD payload built by
+        /// <see cref="ThinClientTransportSerializer.SerializeProxyRequestAsync"/> contains the
+        /// corresponding RNTBD token. Token layout for byte-typed RNTBD identifiers is
+        /// <c>[identifier (uint16 LE)][type (1 byte)][value (1 byte)]</c>. ReadConsistencyStrategy
+        /// has identifier <c>254</c> (<c>0x00FE</c>) and type <c>Byte</c> (<c>0x00</c>).
+        /// </summary>
+        [TestMethod]
+        [DataRow("Eventual", (byte)1, DisplayName = "Eventual -> 1")]
+        [DataRow("Session", (byte)2, DisplayName = "Session -> 2")]
+        [DataRow("LatestCommitted", (byte)3, DisplayName = "LatestCommitted -> 3")]
+        [DataRow("GlobalStrong", (byte)4, DisplayName = "GlobalStrong -> 4")]
+        public async Task SerializeProxyRequestAsync_ShouldEncodeReadConsistencyStrategy(string strategyName, byte expectedRntbdValue)
+        {
+            byte[] payload = await this.SerializeWithExtraHeadersAsync(
+                new Dictionary<string, string>
+                {
+                    { HttpConstants.HttpHeaders.ReadConsistencyStrategy, strategyName }
+                });
+
+            byte[] expectedToken = { 0xFE, 0x00, 0x00, expectedRntbdValue };
+
+            Assert.IsTrue(
+                ContainsSequence(payload, expectedToken),
+                $"Expected to find ReadConsistencyStrategy RNTBD token bytes [FE 00 00 {expectedRntbdValue:X2}] for strategy '{strategyName}' in the serialized proxy request payload.");
+        }
+
+        private async Task<byte[]> SerializeWithExtraHeadersAsync(IDictionary<string, string> extraHeaders)
+        {
+            HttpRequestMessage message = new HttpRequestMessage
+            {
+                Content = new StringContent("{\"id\":\"item\"}"),
+                RequestUri = new Uri("https://localhost/dbs/TestDb/colls/TestColl/docs/TestDoc")
+            };
+            message.Headers.Add(ThinClientConstants.ProxyOperationType, OperationType.Read.ToString());
+            message.Headers.Add(ThinClientConstants.ProxyResourceType, ResourceType.Document.ToString());
+            message.Headers.TryAddWithoutValidation(HttpConstants.HttpHeaders.PartitionKey, "[\"SamplePk\"]");
+            message.Headers.Add(HttpConstants.HttpHeaders.ActivityId, Guid.NewGuid().ToString());
+
+            foreach (KeyValuePair<string, string> header in extraHeaders)
+            {
+                message.Headers.TryAddWithoutValidation(header.Key, header.Value);
+            }
+
+            Mock<ClientCollectionCache> clientCollectionCacheMock = this.CreateClientCollectionCacheMock();
+
+            ThinClientTransportSerializer.BufferProviderWrapper bufferProvider = new();
+
+            using Stream resultStream = await ThinClientTransportSerializer.SerializeProxyRequestAsync(
+                bufferProvider,
+                "MockAccount",
+                clientCollectionCacheMock.Object,
+                message);
+
+            Assert.IsTrue(resultStream.CanSeek, "Expected a seekable stream.");
+            resultStream.Position = 0;
+
+            using MemoryStream copy = new MemoryStream();
+            await resultStream.CopyToAsync(copy);
+            return copy.ToArray();
+        }
+
+        private Mock<ClientCollectionCache> CreateClientCollectionCacheMock()
+        {
+            Mock<ISessionContainer> sessionContainerMock = new Mock<ISessionContainer>();
+            Mock<IStoreModel> storeModelMock = new Mock<IStoreModel>();
+            Mock<ICosmosAuthorizationTokenProvider> tokenProviderMock = new Mock<ICosmosAuthorizationTokenProvider>();
+            Mock<IRetryPolicyFactory> retryPolicyFactoryMock = new Mock<IRetryPolicyFactory>();
+            TelemetryToServiceHelper telemetry = null;
+
+            Mock<ClientCollectionCache> clientCollectionCacheMock = new Mock<ClientCollectionCache>(
+                sessionContainerMock.Object,
+                storeModelMock.Object,
+                tokenProviderMock.Object,
+                retryPolicyFactoryMock.Object,
+                telemetry,
+                true)
+            {
+                CallBase = true
+            };
+
+            clientCollectionCacheMock
+                .Setup(c => c.ResolveCollectionAsync(
+                    It.IsAny<DocumentServiceRequest>(),
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<ITrace>()))
+                .ReturnsAsync(this.GetMockContainerProperties());
+
+            return clientCollectionCacheMock;
+        }
+
+        private static bool ContainsSequence(byte[] haystack, byte[] needle)
+        {
+            if (haystack == null || needle == null || needle.Length == 0 || haystack.Length < needle.Length)
+            {
+                return false;
+            }
+
+            for (int i = 0; i <= haystack.Length - needle.Length; i++)
+            {
+                bool match = true;
+                for (int j = 0; j < needle.Length; j++)
+                {
+                    if (haystack[i + j] != needle[j])
+                    {
+                        match = false;
+                        break;
+                    }
+                }
+
+                if (match)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
     }
