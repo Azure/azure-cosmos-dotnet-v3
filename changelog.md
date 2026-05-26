@@ -23,8 +23,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
-- [#5887](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5887) Direct: Fixes missing validation for `MaxTcpConnectionsPerEndpoint`. Values below the documented minimum (16) are now clamped to 16 with a trace warning.
-
 #### Other Changes
 
 ### <a name="3.61.0-preview.0"/> [3.61.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.61.0-preview.0) - 2026-5-18
