@@ -122,6 +122,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
 
         private static TryCatch<QueryPage> CreatePage(DocumentServiceResponse response, Tracing.ITrace trace)
         {
+            // Attach QueryMetricsTraceDatum for the thin-client / distributed-gateway path
+            // (this path bypasses Handler/TransportHandler.cs which writes the same datum
+            // for the REST/RNTBD path). Keep both call sites in sync — see issue #5117.
             string queryMetricsText = response.Headers[HttpConstants.HttpHeaders.QueryMetrics];
             if (queryMetricsText != null)
             {

@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Bugs Fixed
 
 - [5827](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5827) ChangeFeedEstimator: Change feed estimator threw `ArgumentNullException` when an inmemory lease container was being used. Update validations so in-memory lease containers work with change feed estimator
+- [5879](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5879) Diagnostics: Fixes `response.Diagnostics.GetQueryMetrics()` returning `null` when called inside a custom `RequestHandler.SendAsync` for query operations. Query metrics for the REST/RNTBD path are now attached at the transport layer, so they are visible to handlers as the response unwinds through the pipeline. `response.Diagnostics` continues to expose the full operation context (handlers see metrics from any sibling partition responses that have already completed). `FeedResponse.Diagnostics.GetQueryMetrics()` at the iterator level is unchanged.
 
 #### Other Changes
 
