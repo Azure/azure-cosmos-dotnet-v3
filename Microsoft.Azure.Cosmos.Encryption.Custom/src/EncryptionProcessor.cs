@@ -281,36 +281,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
 #if NET8_0_OR_GREATER
             // For Stream-opt-in callers: when the JObject peek successfully read the document synchronously,
-            // strip the JsonProcessor.Stream override for the fallthrough MDE call so it uses the Newtonsoft
-            // adapter. That guarantees byte-for-byte parity with non-opt-in callers on shapes the streaming
-            // MDE adapter would otherwise reject (e.g. {"_ei":{"_ea":""}}, missing _ea, empty _ei).
-            // If the peek FAILED (catch branch), keep the original override: the input is likely an
-            // async-only stream and MDE needs its streaming adapter to read it / honor cancellation.
-            if (jobjectParseSucceeded
-                && stripStreamOverrideOnSuccessFallthrough
-                && requestOptions != null
-                && requestOptions.Properties != null
-                && requestOptions.Properties.ContainsKey(JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey))
+            // force the Newtonsoft adapter for the fallthrough MDE call so it produces byte-for-byte parity
+            // with non-opt-in callers on shapes the streaming MDE adapter would otherwise reject
+            // (e.g. {"_ei":{"_ea":""}}, missing _ea, empty _ei).
+            //
+            // If the peek FAILED (catch branch), keep the caller-requested processor: the input is likely an
+            // async-only stream and the MDE Stream adapter is needed to read it / honor cancellation.
+            //
+            // IMPORTANT: do not strip JsonProcessor by mutating requestOptions.Properties. RequestOptions is
+            // caller-owned and may be shared across concurrent decrypt calls; mutating it under an await is a
+            // thread-safety bug that can race with another decrypt and silently route it to the wrong adapter.
+            // Instead, call the overload that takes JsonProcessor explicitly.
+            if (jobjectParseSucceeded && stripStreamOverrideOnSuccessFallthrough)
             {
-                IReadOnlyDictionary<string, object> originalProperties = requestOptions.Properties;
-                Dictionary<string, object> stripped = new (originalProperties.Count);
-                foreach (KeyValuePair<string, object> kvp in originalProperties)
-                {
-                    if (kvp.Key != JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey)
-                    {
-                        stripped[kvp.Key] = kvp.Value;
-                    }
-                }
-
-                requestOptions.Properties = stripped;
-                try
-                {
-                    return await MdeEncryptionProcessor.DecryptAsync(input, encryptor, diagnosticsContext, requestOptions, cancellationToken);
-                }
-                finally
-                {
-                    requestOptions.Properties = originalProperties;
-                }
+                return await MdeEncryptionProcessor.DecryptAsync(input, encryptor, diagnosticsContext, JsonProcessor.Newtonsoft, cancellationToken);
             }
 #endif
 
@@ -362,7 +346,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 }
                 finally
                 {
-                    ArrayPool<byte>.Shared.Return(rented);
+                    // Clear plaintext document bytes before returning the buffer to the shared pool.
+                    // Matches the package-wide convention used by ArrayPoolManager, RentArrayBufferWriter,
+                    // and JsonArrayPool: rented buffers that touched encryption payload bytes are cleared
+                    // on return to prevent residual data leaking to other tenants of ArrayPool<byte>.Shared.
+                    ArrayPool<byte>.Shared.Return(rented, clearArray: true);
                 }
             }
             catch
