@@ -75,44 +75,49 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The deserialized operation result with a canonical session token.</returns>
         internal static DistributedTransactionOperationResult FromJson(JsonElement json)
         {
+            if (json.ValueKind != JsonValueKind.Object)
+            {
+                throw new JsonException($"DTC operation result must be a JSON object, but was '{json.ValueKind}'.");
+            }
+
             DistributedTransactionOperationResult result = new DistributedTransactionOperationResult();
 
-            if (TryGetProperty(json, "index", out JsonElement indexEl) && indexEl.TryGetInt32(out int index))
+            if (TryGetInt32Property(json, DistributedTransactionSerializer.Index, out int index))
             {
                 result.Index = index;
             }
 
-            if (TryGetProperty(json, "statusCode", out JsonElement statusCodeEl) && statusCodeEl.TryGetInt32(out int statusCode))
+            if (TryGetInt32Property(json, DistributedTransactionSerializer.StatusCode, out int statusCode))
             {
                 result.StatusCode = (HttpStatusCode)statusCode;
             }
 
-            if (TryGetProperty(json, "subStatusCode", out JsonElement subStatusEl) && subStatusEl.TryGetUInt32(out uint subStatus))
+            if (TryGetUInt32Property(json, DistributedTransactionSerializer.SubStatusCode, out uint subStatus))
             {
                 result.SubStatusCode = (SubStatusCodes)subStatus;
             }
 
-            if (TryGetProperty(json, "etag", out JsonElement etagEl) && etagEl.ValueKind == JsonValueKind.String)
+            if (TryGetProperty(json, DistributedTransactionSerializer.ResponseETag, out JsonElement etagEl) && etagEl.ValueKind == JsonValueKind.String)
             {
                 result.ETag = etagEl.GetString();
             }
 
-            if (TryGetProperty(json, "sessionToken", out JsonElement sessionTokenEl) && sessionTokenEl.ValueKind == JsonValueKind.String)
+            if (TryGetProperty(json, DistributedTransactionSerializer.SessionToken, out JsonElement sessionTokenEl) && sessionTokenEl.ValueKind == JsonValueKind.String)
             {
                 result.SessionToken = sessionTokenEl.GetString();
             }
 
-            if (TryGetProperty(json, "partitionKeyRangeId", out JsonElement pkRangeIdEl) && pkRangeIdEl.ValueKind == JsonValueKind.String)
+            if (TryGetProperty(json, DistributedTransactionSerializer.PartitionKeyRangeId, out JsonElement pkRangeIdEl) && pkRangeIdEl.ValueKind == JsonValueKind.String)
             {
                 result.PartitionKeyRangeId = pkRangeIdEl.GetString();
             }
 
-            if (TryGetProperty(json, "requestCharge", out JsonElement requestChargeEl) && requestChargeEl.TryGetDouble(out double requestCharge))
+            if (TryGetDoubleProperty(json, DistributedTransactionSerializer.RequestCharge, out double requestCharge))
             {
                 result.RequestCharge = requestCharge;
             }
 
-            if (TryGetProperty(json, DistributedTransactionSerializer.ResourceBody, out JsonElement resourceBody)
+            if (TryGetPropertyOrdinal(json, DistributedTransactionSerializer.ResourceBody, out JsonElement resourceBody)
                 && resourceBody.ValueKind != JsonValueKind.Undefined
                 && resourceBody.ValueKind != JsonValueKind.Null)
             {
@@ -157,6 +162,12 @@ namespace Microsoft.Azure.Cosmos
 
         internal static bool TryGetProperty(JsonElement element, string propertyName, out JsonElement value)
         {
+            if (element.ValueKind != JsonValueKind.Object)
+            {
+                value = default;
+                return false;
+            }
+
             foreach (JsonProperty prop in element.EnumerateObject())
             {
                 if (string.Equals(prop.Name, propertyName, StringComparison.OrdinalIgnoreCase))
@@ -164,6 +175,80 @@ namespace Microsoft.Azure.Cosmos
                     value = prop.Value;
                     return true;
                 }
+            }
+
+            value = default;
+            return false;
+        }
+
+        internal static bool TryGetPropertyOrdinal(JsonElement element, string propertyName, out JsonElement value)
+        {
+            if (element.ValueKind != JsonValueKind.Object)
+            {
+                value = default;
+                return false;
+            }
+
+            return element.TryGetProperty(propertyName, out value);
+        }
+
+        private static bool TryGetInt32Property(JsonElement element, string propertyName, out int value)
+        {
+            if (TryGetProperty(element, propertyName, out JsonElement propertyElement))
+            {
+                if (propertyElement.ValueKind != JsonValueKind.Number)
+                {
+                    throw new JsonException($"'{propertyName}' must be a JSON number, but was '{propertyElement.ValueKind}'.");
+                }
+
+                if (!propertyElement.TryGetInt32(out value))
+                {
+                    throw new JsonException($"'{propertyName}' must be a 32-bit integer JSON number.");
+                }
+
+                return true;
+            }
+
+            value = default;
+            return false;
+        }
+
+        private static bool TryGetUInt32Property(JsonElement element, string propertyName, out uint value)
+        {
+            if (TryGetProperty(element, propertyName, out JsonElement propertyElement))
+            {
+                if (propertyElement.ValueKind != JsonValueKind.Number)
+                {
+                    throw new JsonException($"'{propertyName}' must be a JSON number, but was '{propertyElement.ValueKind}'.");
+                }
+
+                if (!propertyElement.TryGetUInt32(out value))
+                {
+                    throw new JsonException($"'{propertyName}' must be a 32-bit unsigned integer JSON number.");
+                }
+
+                return true;
+            }
+
+            value = default;
+            return false;
+        }
+
+        private static bool TryGetDoubleProperty(JsonElement element, string propertyName, out double value)
+        {
+            if (TryGetProperty(element, propertyName, out JsonElement propertyElement))
+            {
+                if (propertyElement.ValueKind != JsonValueKind.Number)
+                {
+                    throw new JsonException($"'{propertyName}' must be a JSON number, but was '{propertyElement.ValueKind}'.");
+                }
+
+                if (!propertyElement.TryGetDouble(out value))
+                {
+                    throw new JsonException($"'{propertyName}' must be a double-precision JSON number.");
+                }
+
+                return true;
             }
 
             value = default;
