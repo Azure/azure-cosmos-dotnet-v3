@@ -1169,7 +1169,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             };
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(operations, mockContext.Object);
-            await committer.CommitTransactionAsync(CancellationToken.None);
+            await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
 
             Assert.IsNotNull(capturedBody, "Request body must have been captured.");
             string bodyJson = Encoding.UTF8.GetString(capturedBody);
@@ -1207,7 +1207,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 .ReturnsAsync(CreateSuccessResponseMessage(operationCount: 1));
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object);
-            await committer.CommitTransactionAsync(CancellationToken.None);
+            await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
 
             Assert.IsNotNull(capturedBody);
             string bodyJson = Encoding.UTF8.GetString(capturedBody);
@@ -1260,7 +1260,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             };
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(operations, mockContext.Object);
-            await committer.CommitTransactionAsync(CancellationToken.None);
+            await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
 
             Assert.IsNotNull(capturedBody);
             string bodyJson = Encoding.UTF8.GetString(capturedBody);
@@ -1313,7 +1313,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             };
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(operations, mockContext.Object);
-            await committer.CommitTransactionAsync(CancellationToken.None);
+            await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
 
             Assert.IsNotNull(capturedBody);
             string bodyJson = Encoding.UTF8.GetString(capturedBody);
