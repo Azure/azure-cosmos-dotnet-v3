@@ -4432,7 +4432,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(hubHeaderPresentOnThirdRequest, "Hub region header must be present on the third request (after two consecutive 404/1002 failures).");
         }
 
-
         private async Task<T> AutoGenerateIdPatternTest<T>(Cosmos.PartitionKey pk, T itemWithoutId)
         {
             string autoId = Guid.NewGuid().ToString();
