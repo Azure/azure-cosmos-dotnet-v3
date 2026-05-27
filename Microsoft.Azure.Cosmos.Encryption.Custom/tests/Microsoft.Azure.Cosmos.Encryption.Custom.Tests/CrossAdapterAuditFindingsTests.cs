@@ -475,6 +475,159 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         // ============================================================
+        // 6. Deserialization-strictness divergences (audit subagent #5)
+        //    Pre-existing master limitations the audit surfaced.
+        //    Documented inline; tracked as [Ignore] regression-trackers.
+        // ============================================================
+
+        /// <summary>
+        /// Audit finding #1 (residual). After the <c>JsonNumberHandling.AllowReadingFromString</c>
+        /// attribute applied to <see cref="EncryptionProperties.EncryptionFormatVersion"/>,
+        /// the Stream decrypt path now accepts <c>_ef = "3"</c> and <c>"+3"</c>. It still
+        /// does not accept whitespace-padded numeric strings (<c>"3 "</c>, <c>" 3 "</c>)
+        /// because <c>JsonNumberHandling</c> uses the strict <c>NumberStyles.Float</c>
+        /// parser, while Newtonsoft's <c>JsonSerializer</c> trims whitespace before parsing.
+        ///
+        /// This gap is intentionally not fixed in this PR: closing it fully would require
+        /// replacing the attribute with a custom <c>JsonConverter&lt;int&gt;</c> that calls
+        /// <c>int.TryParse(span.Trim(), ...)</c>, which is more invasive than the cost of
+        /// the unusual edge case. Newtonsoft's whitespace-tolerant numeric-string parsing
+        /// is non-standard (RFC 8259 does not permit whitespace inside string tokens to
+        /// affect numeric coercion), so the Stream path's strict behaviour is the
+        /// JSON-spec-correct one. Encrypters never write whitespace-padded <c>_ef</c>
+        /// strings (they write the canonical integer <c>3</c>), so this asymmetry is only
+        /// reachable for hand-crafted or tampered documents and never blocks a real
+        /// Newtonsoft-encrypt &times; Stream-decrypt round-trip.
+        ///
+        /// This test is kept as a regression-tracker that DOCUMENTS the residual gap.
+        /// Remove the <see cref="IgnoreAttribute"/> if the project later switches
+        /// <c>_ef</c> deserialization to a custom converter.
+        /// </summary>
+        [TestMethod]
+        [DataRow("\"3 \"")]
+        [DataRow("\" 3 \"")]
+        [Ignore("Residual after PR JsonNumberHandling fix: Newtonsoft trims whitespace before numeric-string parsing; STJ JsonNumberHandling.AllowReadingFromString does not. Reachable only on tampered/hand-crafted documents; no encrypter writes whitespace-padded _ef. Closing this requires a custom JsonConverter<int>; out of scope for this PR.")]
+        public async Task WireFormat_EfAsNumericStringWithWhitespace_StrictnessDivergence_KnownLimitation(string efJson)
+        {
+            byte[] encrypted = await EncryptAsync(BuildSampleDoc(), EncryptVia.Newtonsoft);
+            JObject doc = JObject.Parse(System.Text.Encoding.UTF8.GetString(encrypted));
+            doc["_ei"]["_ef"] = JToken.Parse(efJson);
+            byte[] tampered = System.Text.Encoding.UTF8.GetBytes(doc.ToString(Formatting.None));
+
+            (bool nThrew, _) = await TryDecryptAsync(tampered, DecryptVia.NewtonsoftDefault);
+            (bool sThrew, _) = await TryDecryptAsync(tampered, DecryptVia.StreamOptIn);
+
+            Assert.AreEqual(nThrew, sThrew,
+                $"Both adapters should agree on whether to reject whitespace-padded _ef={efJson} but Newtonsoft={nThrew}, Stream={sThrew}.");
+        }
+
+        /// <summary>
+        /// Audit finding #2. <see cref="EncryptionProperties.DataEncryptionKeyId"/> is a
+        /// <see cref="string"/>. Newtonsoft's <see cref="Newtonsoft.Json.JsonSerializer"/>
+        /// coerces JSON numbers and booleans to their string representation (<c>_en = 123</c>
+        /// becomes <c>"123"</c>; <c>_en = true</c> becomes <c>"True"</c>). The STJ
+        /// deserializer rejects the type mismatch.
+        ///
+        /// Reachable on the Stream-opt-in path because <c>_ea</c> is still a valid MDE
+        /// algorithm string, so <see cref="LegacyAlgorithmDetector.Detect"/> routes
+        /// directly to <c>SystemTextJsonStreamAdapter</c> without going through the
+        /// JObject fallback that would otherwise mask the divergence.
+        ///
+        /// Not fixed in this PR: real encrypters always write <c>_en</c> as a string
+        /// matching the configured DEK ID, so this only fires on tampered/hand-crafted
+        /// inputs. Fixing it would require a custom <c>JsonConverter&lt;string&gt;</c>
+        /// on the property — out of scope.
+        /// </summary>
+        [TestMethod]
+        [DataRow("123")]
+        [DataRow("true")]
+        [Ignore("Pre-existing on master: Newtonsoft coerces non-string _en to string; STJ rejects. Reachable on Stream opt-in via fast detector. Encrypters always write string _en, so unreachable from real round-trips. Fix would require a custom JsonConverter<string>; out of scope.")]
+        public async Task WireFormat_EnAsNonString_StrictnessDivergence_KnownLimitation(string enJson)
+        {
+            byte[] encrypted = await EncryptAsync(BuildSampleDoc(), EncryptVia.Newtonsoft);
+            JObject doc = JObject.Parse(System.Text.Encoding.UTF8.GetString(encrypted));
+            doc["_ei"]["_en"] = JToken.Parse(enJson);
+            byte[] tampered = System.Text.Encoding.UTF8.GetBytes(doc.ToString(Formatting.None));
+
+            (bool nThrew, _) = await TryDecryptAsync(tampered, DecryptVia.NewtonsoftDefault);
+            (bool sThrew, _) = await TryDecryptAsync(tampered, DecryptVia.StreamOptIn);
+
+            Assert.AreEqual(nThrew, sThrew,
+                $"Both adapters should agree on whether to reject non-string _en={enJson} but Newtonsoft={nThrew}, Stream={sThrew}.");
+        }
+
+        /// <summary>
+        /// Audit finding #3. <see cref="EncryptionProperties.EncryptedPaths"/> is
+        /// <see cref="IEnumerable{T}"/> of <see cref="string"/>. Newtonsoft coerces JSON
+        /// numbers inside the array to strings (<c>_ep = [123]</c> becomes
+        /// <c>["123"]</c>); STJ rejects the type mismatch on the first non-string element.
+        ///
+        /// Reachable on the Stream-opt-in path for the same reason as Finding #2.
+        ///
+        /// Not fixed in this PR: real encrypters always write <c>_ep</c> as an array of
+        /// JSON paths (always strings starting with <c>/</c>), so this is only triggered
+        /// by tampered/hand-crafted inputs.
+        /// </summary>
+        [TestMethod]
+        [DataRow("[123]")]
+        [DataRow("[\"/SensitiveStr\",123]")]
+        [Ignore("Pre-existing on master: Newtonsoft coerces numeric _ep entries to strings; STJ rejects. Reachable on Stream opt-in via fast detector. Encrypters always write string paths, so unreachable from real round-trips.")]
+        public async Task WireFormat_EpContainsNumericEntry_StrictnessDivergence_KnownLimitation(string epJson)
+        {
+            byte[] encrypted = await EncryptAsync(BuildSampleDoc(), EncryptVia.Newtonsoft);
+            JObject doc = JObject.Parse(System.Text.Encoding.UTF8.GetString(encrypted));
+            doc["_ei"]["_ep"] = JToken.Parse(epJson);
+            byte[] tampered = System.Text.Encoding.UTF8.GetBytes(doc.ToString(Formatting.None));
+
+            (bool nThrew, _) = await TryDecryptAsync(tampered, DecryptVia.NewtonsoftDefault);
+            (bool sThrew, _) = await TryDecryptAsync(tampered, DecryptVia.StreamOptIn);
+
+            Assert.AreEqual(nThrew, sThrew,
+                $"Both adapters should agree on whether to reject numeric _ep entries={epJson} but Newtonsoft={nThrew}, Stream={sThrew}.");
+        }
+
+        /// <summary>
+        /// Audit finding #6. JSON allows duplicate keys; both parsers handle them
+        /// differently:
+        ///   - Newtonsoft's <c>JObject.Load</c> is effectively last-wins: it applies each
+        ///     duplicate in document order and keeps the last value.
+        ///   - STJ's <c>Utf8JsonReader</c>-driven deserializer processes properties as it
+        ///     sees them and surfaces parse-time errors on the FIRST invalid duplicate
+        ///     before a later valid duplicate could shadow it.
+        ///
+        /// Example: <c>{"_ef":"3 ","_ef":3}</c> — Newtonsoft sees both and uses the second
+        /// (valid integer); STJ throws on the first (whitespace-padded numeric string).
+        /// Reachable on Stream opt-in via the fast detector.
+        ///
+        /// Not fixed in this PR: real encrypters never write duplicate keys, so this is
+        /// only triggered by tampered/hand-crafted inputs. Closing it would require
+        /// either materialising the whole <c>_ei</c> object first to apply last-wins
+        /// semantics (defeating the streaming optimisation), or tightening Newtonsoft to
+        /// reject duplicates (breaking change).
+        /// </summary>
+        [TestMethod]
+        [Ignore("Pre-existing on master: Newtonsoft is last-wins for duplicate JSON keys; STJ throws on first invalid duplicate. Reachable on Stream opt-in via fast detector. Encrypters never write duplicate keys, so unreachable from real round-trips.")]
+        public async Task WireFormat_DuplicateEfKeysLastWins_StrictnessDivergence_KnownLimitation()
+        {
+            byte[] encrypted = await EncryptAsync(BuildSampleDoc(), EncryptVia.Newtonsoft);
+            string json = System.Text.Encoding.UTF8.GetString(encrypted);
+
+            JObject doc = JObject.Parse(json);
+            string eiJson = doc["_ei"].ToString(Formatting.None);
+            // Insert an invalid _ef BEFORE the valid one so the order is: invalid then valid.
+            // Newtonsoft last-wins keeps the valid 3; STJ throws on the invalid "3 " first.
+            string tamperedEi = "{\"_ef\":\"3 \"," + eiJson.Substring(1);
+            string tamperedJson = json.Replace(eiJson, tamperedEi);
+            byte[] tampered = System.Text.Encoding.UTF8.GetBytes(tamperedJson);
+
+            (bool nThrew, _) = await TryDecryptAsync(tampered, DecryptVia.NewtonsoftDefault);
+            (bool sThrew, _) = await TryDecryptAsync(tampered, DecryptVia.StreamOptIn);
+
+            Assert.AreEqual(nThrew, sThrew,
+                $"Both adapters should agree on duplicate-key semantics but Newtonsoft={nThrew}, Stream={sThrew}.");
+        }
+
+        // ============================================================
         // Helpers
         // ============================================================
 
