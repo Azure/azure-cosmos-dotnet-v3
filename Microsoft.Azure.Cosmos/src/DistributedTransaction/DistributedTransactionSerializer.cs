@@ -30,6 +30,7 @@ namespace Microsoft.Azure.Cosmos
         internal const string ETag = "ifMatch";
         internal const string OperationType = "operationType";
         internal const string ResourceType = "resourceType";
+        internal const string DiagnosticString = "diagnosticString";
 
         /// <summary>
         /// Serializes a distributed transaction request body to a JSON stream.

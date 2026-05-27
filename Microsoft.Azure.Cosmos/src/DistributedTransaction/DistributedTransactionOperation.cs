@@ -33,6 +33,7 @@ namespace Microsoft.Azure.Cosmos
             this.Container = container;
             this.Id = id;
             this.RequestOptions = requestOptions;
+            this.SessionToken = string.IsNullOrWhiteSpace(requestOptions?.SessionToken) ? null : requestOptions.SessionToken;
         }
 
         public PartitionKey PartitionKey { get; internal set; }
