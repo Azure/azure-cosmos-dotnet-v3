@@ -309,18 +309,39 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// to <see cref="LegacyAlgorithmDetector.DetectionResult.Unknown"/> so the caller falls back to the
         /// robust JObject path.
         /// </summary>
+        /// <remarks>
+        /// The detector is only invoked when <paramref name="input"/> is a <see cref="MemoryStream"/>. This is
+        /// intentional: the optimisation exists to eliminate the <see cref="Newtonsoft.Json.Linq.JObject"/>
+        /// allocation on the common-case decrypt path where Cosmos hands the encryption layer a
+        /// <see cref="MemoryStream"/> backed by pool-rented bytes. For any other stream shape
+        /// (e.g. <see cref="System.Net.Sockets.NetworkStream"/>, <see cref="System.IO.FileStream"/>, async-only
+        /// browser streams, non-seekable streams) the detector returns <c>Unknown</c> immediately so the
+        /// caller falls through to the original JObject-peek path, which already handles those stream
+        /// shapes via incremental <c>JsonTextReader</c>/<c>StreamReader</c> reads. This avoids three
+        /// regressions the audit flagged on master:
+        ///   1. Synchronously pre-buffering the entire payload for large <see cref="System.IO.FileStream"/>
+        ///      inputs, defeating the streaming property and risking OOM on multi-MB documents.
+        ///   2. Calling <see cref="Stream.Length"/> on streams that do not support it (e.g. live network streams).
+        ///   3. Calling <see cref="Stream.Position"/> on non-seekable streams, which throws before any
+        ///      try/catch can swallow the error.
+        /// </remarks>
         private static LegacyAlgorithmDetector.DetectionResult TryDetectAlgorithm(Stream input)
         {
-            long startPosition = input.Position;
+            if (input is not MemoryStream memoryStream)
+            {
+                return LegacyAlgorithmDetector.DetectionResult.Unknown;
+            }
+
+            long startPosition = memoryStream.Position;
             try
             {
-                if (input is MemoryStream memoryStream && memoryStream.TryGetBuffer(out ArraySegment<byte> segment))
+                if (memoryStream.TryGetBuffer(out ArraySegment<byte> segment))
                 {
                     ReadOnlySpan<byte> documentBytes = segment.AsSpan((int)startPosition, segment.Count - (int)startPosition);
                     return LegacyAlgorithmDetector.Detect(documentBytes);
                 }
 
-                long remainingLong = input.Length - startPosition;
+                long remainingLong = memoryStream.Length - startPosition;
                 if (remainingLong <= 0 || remainingLong > int.MaxValue)
                 {
                     return LegacyAlgorithmDetector.DetectionResult.Unknown;
@@ -333,7 +354,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     int read = 0;
                     while (read < remaining)
                     {
-                        int n = input.Read(rented, read, remaining - read);
+                        int n = memoryStream.Read(rented, read, remaining - read);
                         if (n == 0)
                         {
                             break;
@@ -359,7 +380,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
             finally
             {
-                input.Position = startPosition;
+                memoryStream.Position = startPosition;
             }
         }
 #endif

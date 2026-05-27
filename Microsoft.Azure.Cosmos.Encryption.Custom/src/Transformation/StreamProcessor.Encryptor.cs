@@ -192,7 +192,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 encryptPropertyName = propertyName;
                             }
 
-                            currentWriter.WritePropertyName(reader.ValueSpan);
+                            // Utf8JsonReader.ValueSpan holds the raw bytes between the quotes
+                            // with JSON escape sequences still encoded (e.g. \" \\ \uXXXX).
+                            // Passing those bytes into Utf8JsonWriter.WritePropertyName would
+                            // re-escape the backslashes, producing a double-escaped name on the
+                            // wire. Decode through GetString() when the source contained any
+                            // escapes so the writer re-encodes them canonically and matches
+                            // the Newtonsoft encrypter's output.
+                            if (reader.ValueIsEscaped)
+                            {
+                                currentWriter.WritePropertyName(reader.GetString());
+                            }
+                            else
+                            {
+                                currentWriter.WritePropertyName(reader.ValueSpan);
+                            }
+
                             break;
                         case JsonTokenType.Comment: // Skipped via reader options
                             currentWriter.WriteCommentValue(reader.ValueSpan);
@@ -205,6 +220,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, TypeMarker.String);
                                 currentWriter.WriteBase64StringValue(encryptedBytes);
                                 encryptPropertyName = null;
+                            }
+                            else if (reader.ValueIsEscaped)
+                            {
+                                // Source string contains JSON escape sequences (\uXXXX, \", \\, \n, ...).
+                                // Passing reader.ValueSpan would copy the escapes verbatim and then
+                                // the writer would re-escape the backslashes, corrupting the round-trip.
+                                // Decode through GetString() so the writer re-encodes the value
+                                // canonically and matches the Newtonsoft encrypter's output.
+                                currentWriter.WriteStringValue(reader.GetString());
                             }
                             else
                             {

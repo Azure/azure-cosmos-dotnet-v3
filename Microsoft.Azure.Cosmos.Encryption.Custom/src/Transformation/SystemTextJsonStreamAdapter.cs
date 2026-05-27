@@ -52,6 +52,11 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
             return (input, null);
         }
 
+        // Match NewtonsoftAdapter's stream-ownership contract: the input stream is
+        // consumed by this adapter on a successful MDE decrypt and is disposed before
+        // returning, so callers do not leak the input handle. The returned MemoryStream
+        // is fully owned by the caller.
+        await input.DisposeAsync();
         return (ms, context);
     }
 

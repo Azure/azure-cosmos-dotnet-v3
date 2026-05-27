@@ -340,9 +340,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         //    from when the encrypt-path bug is actually fixed.
         // ============================================================
 
+        /// <summary>
+        /// The Stream encrypter must produce a JSON document where dict keys and values
+        /// containing JSON metacharacters (<c>"</c>, <c>\</c>) survive an encrypt+decrypt
+        /// round-trip exactly. On master before commit <c>211491e9a</c> the Stream encrypter
+        /// passed <c>Utf8JsonReader.ValueSpan</c> (which still contains the raw JSON escapes)
+        /// directly into <c>Utf8JsonWriter.WritePropertyName</c> / <c>WriteStringValue</c>,
+        /// which then re-escaped the backslashes — recovered values gained an extra <c>\</c>.
+        /// The fix decodes through <c>reader.GetString()</c> when <c>reader.ValueIsEscaped</c>
+        /// so the writer re-encodes the value canonically.
+        /// </summary>
         [TestMethod]
-        [Ignore("Pre-existing master bug (verified on commit 79d18b732): JsonProcessor.Stream encrypter double-escapes JSON metacharacters (`\"`, `\\`) when they appear inside a dictionary that is a whole-property encryption target. The recovered key/value gains an extra `\\`. Not introduced by PR #5903 (which only touches the decrypt-routing layer). Remove [Ignore] when the StreamProcessor encrypt-side serialization is fixed.")]
-        public async Task Mde_StreamEncrypt_DictWithJsonEscapedChars_KnownLimitation()
+        public async Task Mde_StreamEncrypt_DictWithJsonEscapedChars_RoundTrips()
         {
             TestDoc original = BuildSampleDoc();
             original.SensitiveDict = new Dictionary<string, string>
@@ -357,7 +366,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.AreEqual(
                 original,
                 recovered,
-                "Stream-encrypter dict-escape bug: keys/values containing `\"` or `\\` round-trip with an extra backslash. Fix the encrypt-side serialization in SystemTextJsonStreamAdapter / StreamProcessor.");
+                "Stream encrypter must round-trip dict keys/values containing JSON metacharacters (`\"`, `\\`) without adding extra backslashes.");
         }
 
         // ===================== Helpers =====================

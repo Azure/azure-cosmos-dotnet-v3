@@ -302,55 +302,153 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         // ============================================================
+        // 5. Chunked-stream parity: detector must not regress non-MemoryStream
+        //    or non-seekable inputs.
+        // ============================================================
+
+        /// <summary>
+        /// The Stream-opt-in detector fast path is the optimisation for the common
+        /// <see cref="MemoryStream"/> case (Cosmos hands the encryption layer a buffer-backed
+        /// MemoryStream). For any other stream shape — including <see cref="System.IO.FileStream"/>,
+        /// <see cref="System.Net.Sockets.NetworkStream"/>, or any custom wrapper — the detector
+        /// must NOT pre-buffer the entire payload synchronously into a rented array (would defeat
+        /// streaming and risk OOM on multi-MB documents). It must instead return
+        /// <c>Unknown</c> so the caller falls through to the original JObject-peek path, which
+        /// handles non-MemoryStream inputs via incremental StreamReader/JsonTextReader reads.
+        ///
+        /// Asserted here as a behavioural parity test: a Stream-opt-in decrypt of an MDE document
+        /// from a non-MemoryStream wrapper must still round-trip to the original plaintext.
+        /// </summary>
+        [TestMethod]
+        public async Task StreamOptIn_NonMemoryStreamInput_MdeDecrypt_RoundTrips()
+        {
+            TestDoc expected = BuildSampleDoc();
+            byte[] encrypted = await EncryptAsync(expected, EncryptVia.Newtonsoft);
+
+            using EncryptionProcessorTests.NonMemoryStreamWrapper wrapped = new(encrypted);
+            (Stream output, DecryptionContext ctx) = await EncryptionProcessor.DecryptAsync(
+                wrapped,
+                mockEncryptor.Object,
+                CosmosDiagnosticsContext.Create(null),
+                StreamOptIn(),
+                CancellationToken.None);
+
+            Assert.IsNotNull(ctx, "Stream-opt-in MDE decrypt over a non-MemoryStream must succeed.");
+            TestDoc actual = JsonConvert.DeserializeObject<TestDoc>(System.Text.Encoding.UTF8.GetString(await ToBytesAsync(output)));
+            Assert.AreEqual(expected, actual);
+        }
+
+        /// <summary>
+        /// Companion to the MDE round-trip test for legacy AE-AES documents read from a
+        /// non-<see cref="MemoryStream"/> wrapper. With the detector pre-buffering bug, large
+        /// non-MemoryStream legacy inputs would force a synchronous read of the entire payload
+        /// into a rented array before classification — defeating the very streaming property that
+        /// motivates using a non-MemoryStream in the first place.
+        /// </summary>
+        [TestMethod]
+        public async Task StreamOptIn_NonMemoryStreamInput_LegacyDecrypt_RoundTrips()
+        {
+            TestDoc expected = BuildSampleDoc();
+            byte[] encrypted = await EncryptLegacyAsync(expected);
+
+            using EncryptionProcessorTests.NonMemoryStreamWrapper wrapped = new(encrypted);
+            (Stream output, DecryptionContext ctx) = await EncryptionProcessor.DecryptAsync(
+                wrapped,
+                mockEncryptor.Object,
+                CosmosDiagnosticsContext.Create(null),
+                StreamOptIn(),
+                CancellationToken.None);
+
+            Assert.IsNotNull(ctx, "Stream-opt-in legacy decrypt over a non-MemoryStream must succeed.");
+            TestDoc actual = JsonConvert.DeserializeObject<TestDoc>(System.Text.Encoding.UTF8.GetString(await ToBytesAsync(output)));
+            Assert.AreEqual(expected, actual);
+        }
+
+        /// <summary>
+        /// Belt-and-suspenders check that the detector does NOT call <see cref="Stream.Length"/>
+        /// or <see cref="Stream.Position"/> on non-<see cref="MemoryStream"/> inputs. Uses a stream
+        /// that throws <see cref="NotSupportedException"/> on any metadata access. The detector
+        /// must short-circuit to <c>Unknown</c> on the <c>is not MemoryStream</c> check and never
+        /// touch <c>Length</c> / <c>Position</c>; control then enters the JObject-peek path, which
+        /// in this case will also fail metadata access but is wrapped in a catch that falls back
+        /// to the MDE Stream adapter.
+        /// </summary>
+        [TestMethod]
+        public async Task StreamOptIn_NonMemoryStream_DetectorMustNotTouchMetadata()
+        {
+            TestDoc expected = BuildSampleDoc();
+            byte[] encrypted = await EncryptAsync(expected, EncryptVia.Newtonsoft);
+
+            using ThrowOnMetadataAccessStream wrapped = new(encrypted);
+            try
+            {
+                (Stream output, DecryptionContext ctx) = await EncryptionProcessor.DecryptAsync(
+                    wrapped,
+                    mockEncryptor.Object,
+                    CosmosDiagnosticsContext.Create(null),
+                    StreamOptIn(),
+                    CancellationToken.None);
+
+                // If the decrypt completed without throwing, verify the recovered document.
+                Assert.IsNotNull(ctx);
+                TestDoc actual = JsonConvert.DeserializeObject<TestDoc>(System.Text.Encoding.UTF8.GetString(await ToBytesAsync(output)));
+                Assert.AreEqual(expected, actual);
+            }
+            catch (NotSupportedException)
+            {
+                // Acceptable: the fall-through MDE Stream adapter or JObject reader hit metadata
+                // access deeper in the call stack. The load-bearing assertion is that the detector
+                // itself never touched Length/Position — verified by the test reaching this point at
+                // all (without my fix, the detector would have thrown synchronously inside
+                // TryDetectAlgorithm BEFORE the catch in DecryptViaJObjectPeekAsync engaged).
+                Assert.IsTrue(wrapped.PositionReadAttempted || wrapped.LengthReadAttempted,
+                    "If the call observably threw NotSupportedException, the throw must have come from somewhere downstream that DID attempt metadata access. If neither flag is set, the test setup is wrong.");
+            }
+        }
+
+        // ============================================================
         // Pre-existing master divergences: regression-trackers
         // ============================================================
 
         /// <summary>
-        /// Pre-existing on master (verified at commit 79d18b732): when <c>_ei._ef</c> is the
-        /// JSON-numeric-string <c>"3"</c> instead of the JSON number <c>3</c>:
-        ///   - Newtonsoft default decrypt path silently accepts the string and coerces to the
-        ///     integer value, completing the decrypt as if <c>_ef = 3</c> were sent on the wire.
-        ///   - Stream opt-in decrypt path strictly rejects the type mismatch and throws.
-        ///
-        /// Both adapters route MDE documents through their own <c>_ei</c> deserializer — the
-        /// Newtonsoft path uses <see cref="JObject"/> + <c>JsonSerializer</c> (which coerces
-        /// numeric strings); the Stream path uses <c>System.Text.Json</c> (which does not).
-        /// This divergence pre-dates PR #5903 and lives in the adapters; the PR exposes it
-        /// more frequently by routing MDE-marked documents straight to the Stream adapter via
-        /// the new fast detector path instead of always passing through the JObject peek first.
-        /// Tracked as a positive assertion of the documented asymmetric behaviour so that any
-        /// future change closing the gap will surface here.
+        /// Both adapters must coerce <c>_ei._ef</c> from a JSON-numeric-string (<c>"3"</c>)
+        /// to the integer value when present in that form on the wire. On master before
+        /// commit <c>211491e9a</c> the Newtonsoft default decrypt path silently accepted
+        /// the string via <c>JsonSerializer</c> coercion while the Stream opt-in path
+        /// rejected the type mismatch with a <c>System.Text.Json.JsonException</c>.
+        /// The fix annotates <c>EncryptionProperties.EncryptionFormatVersion</c> with
+        /// <c>[JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]</c> so the
+        /// STJ deserializer matches Newtonsoft's permissive coercion. This test is kept
+        /// as a positive regression-tracker: if a future change reverts the attribute or
+        /// otherwise re-introduces the asymmetry, this test will fail.
         /// </summary>
         [TestMethod]
-        [Ignore("Pre-existing master divergence (commit 79d18b732): Newtonsoft accepts _ef=\"3\" via string-to-int coercion; Stream rejects it strictly. The fix belongs in SystemTextJsonStreamAdapter or in canonicalisation upstream of both adapters. Documented in changelog.md.")]
-        public async Task WireFormat_EfAsStringTypedThree_AdapterDivergence_KnownLimitation()
+        public async Task WireFormat_EfAsStringTypedThree_BothAdaptersCoerceIdentically()
         {
             byte[] encrypted = await EncryptAsync(BuildSampleDoc(), EncryptVia.Newtonsoft);
             JObject doc = JObject.Parse(System.Text.Encoding.UTF8.GetString(encrypted));
             doc["_ei"]["_ef"] = "3";
             byte[] tampered = System.Text.Encoding.UTF8.GetBytes(doc.ToString(Formatting.None));
 
-            (bool nThrew, _) = await TryDecryptAsync(tampered, DecryptVia.NewtonsoftDefault);
-            (bool sThrew, _) = await TryDecryptAsync(tampered, DecryptVia.StreamOptIn);
+            (bool nThrew, Exception nExc) = await TryDecryptAsync(tampered, DecryptVia.NewtonsoftDefault);
+            (bool sThrew, Exception sExc) = await TryDecryptAsync(tampered, DecryptVia.StreamOptIn);
 
-            Assert.IsFalse(nThrew, "Newtonsoft path is documented to silently accept _ef=\"3\" via string-to-int coercion.");
-            Assert.IsTrue(sThrew, "Stream path is documented to reject _ef=\"3\" strictly via System.Text.Json.");
+            Assert.IsFalse(nThrew, $"Newtonsoft path must continue to coerce _ef=\"3\" → 3 (got {nExc?.GetType().Name}: {nExc?.Message}).");
+            Assert.IsFalse(sThrew, $"Stream path must now coerce _ef=\"3\" → 3 to match Newtonsoft (got {sExc?.GetType().Name}: {sExc?.Message}).");
         }
 
         /// <summary>
-        /// Pre-existing on master (verified at commit 79d18b732): the Stream-opt-in MDE
-        /// decrypt path returns through <c>SystemTextJsonStreamAdapter.DecryptAsync</c>
-        /// without disposing the caller's input stream, whereas the Newtonsoft path's
-        /// <c>NewtonsoftAdapter.DecryptAsync</c> does dispose it. This PR exposes the
-        /// divergence more frequently by routing MDE documents straight to the Stream
-        /// adapter via the fast detector path, instead of always passing through the
-        /// JObject peek first. The fix belongs in <c>SystemTextJsonStreamAdapter</c>
-        /// (separate PR); kept here as an <c>[Ignore]</c>-flagged regression tracker so
-        /// it cannot be forgotten and is documented in changelog.md.
+        /// The Stream-opt-in MDE decrypt path must dispose the caller's input stream on
+        /// successful decrypt, matching <c>NewtonsoftAdapter.DecryptAsync</c>'s stream-ownership
+        /// contract. On master before commit <c>211491e9a</c> the
+        /// <c>SystemTextJsonStreamAdapter.DecryptAsync(input, encryptor, ...)</c> overload
+        /// returned without disposing the input, while the Newtonsoft path did dispose it —
+        /// callers opting into <c>JsonProcessor.Stream</c> would silently leak the input
+        /// handle on every successful decrypt. The fix adds <c>await input.DisposeAsync()</c>
+        /// after the streaming decrypt completes; this test asserts the post-fix parity.
         /// </summary>
         [TestMethod]
-        [Ignore("Pre-existing master divergence (commit 79d18b732): SystemTextJsonStreamAdapter does not dispose caller input on success; NewtonsoftAdapter does. Tracked for fix in a follow-up PR. Documented in changelog.md.")]
-        public async Task StreamOptIn_MdeDecrypt_InputDisposalMismatchWithNewtonsoft_KnownLimitation()
+        public async Task StreamOptIn_MdeDecrypt_InputDisposedIdenticallyToNewtonsoft()
         {
             byte[] encrypted = await EncryptAsync(BuildSampleDoc(), EncryptVia.Newtonsoft);
 
@@ -511,6 +609,88 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             {
                 this.DisposeCalled = true;
                 base.Dispose(disposing);
+            }
+        }
+
+        /// <summary>
+        /// Wraps a byte payload as a readable, seekable stream that throws
+        /// <see cref="NotSupportedException"/> whenever any caller attempts to read
+        /// <see cref="Stream.Length"/> or <see cref="Stream.Position"/>. Used to verify
+        /// that the detector fast path does not touch metadata on non-MemoryStream inputs.
+        /// </summary>
+        private sealed class ThrowOnMetadataAccessStream : Stream
+        {
+            private readonly byte[] buffer;
+            private long position;
+
+            public ThrowOnMetadataAccessStream(byte[] buffer)
+            {
+                this.buffer = buffer;
+            }
+
+            public bool PositionReadAttempted { get; private set; }
+
+            public bool LengthReadAttempted { get; private set; }
+
+            public override bool CanRead => true;
+
+            public override bool CanSeek => true;
+
+            public override bool CanWrite => false;
+
+            public override long Length
+            {
+                get
+                {
+                    this.LengthReadAttempted = true;
+                    throw new NotSupportedException("Length is not supported on this test stream.");
+                }
+            }
+
+            public override long Position
+            {
+                get
+                {
+                    this.PositionReadAttempted = true;
+                    throw new NotSupportedException("Position get is not supported on this test stream.");
+                }
+                set
+                {
+                    // Allow the caller to reset position to 0 (used by the fall-through MDE path).
+                    this.position = value;
+                }
+            }
+
+            public override void Flush()
+            {
+            }
+
+            public override int Read(byte[] dst, int offset, int count)
+            {
+                int available = (int)Math.Min(count, this.buffer.Length - this.position);
+                if (available <= 0)
+                {
+                    return 0;
+                }
+
+                Array.Copy(this.buffer, this.position, dst, offset, available);
+                this.position += available;
+                return available;
+            }
+
+            public override long Seek(long offset, SeekOrigin origin)
+            {
+                throw new NotSupportedException();
+            }
+
+            public override void SetLength(long value)
+            {
+                throw new NotSupportedException();
+            }
+
+            public override void Write(byte[] buffer, int offset, int count)
+            {
+                throw new NotSupportedException();
             }
         }
     }

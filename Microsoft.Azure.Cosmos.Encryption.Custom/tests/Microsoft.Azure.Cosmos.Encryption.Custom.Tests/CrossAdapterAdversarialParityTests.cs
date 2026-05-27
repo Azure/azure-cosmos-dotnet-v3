@@ -122,8 +122,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [TestMethod]
         [DataRow(DecryptVia.NewtonsoftDefault)]
         [DataRow(DecryptVia.StreamOptIn)]
-        [Ignore("Pre-existing master bug (verified on commit 79d18b732): JsonProcessor.Stream encrypter does NOT decode JSON \\uXXXX escapes when serialising values inside an array or dictionary that is a whole-property encryption target. The recovered string contains the literal source bytes (e.g. \\u0041 round-trips as the 6-char string '\\u0041' instead of 'A'). Top-level string fields are handled correctly; the bug is specific to nested container elements. Not introduced by PR #5903 (which only touches the decrypt-routing layer). Remove [Ignore] when the StreamProcessor encrypt-side serialisation normalises JSON escapes consistently.")]
-        public async Task StreamEncrypt_UnicodeEscapesInArrayOrDict_KnownLimitation(DecryptVia decryptVia)
+        public async Task StreamEncrypt_UnicodeEscapesInArrayOrDict_NormalisesToDecodedValue(DecryptVia decryptVia)
         {
             string idValue = Guid.NewGuid().ToString();
             string literal = "{\"Id\":\"" + idValue + "\",\"PK\":\"pk\",\"NonSensitive\":\"ns\","
@@ -135,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             JObject b = await RoundTripToJObjectAsync(escaped, EncryptVia.Stream, decryptVia);
 
             Assert.IsTrue(JToken.DeepEquals(a, b),
-                $"Stream-encrypter escape-normalisation bug: encrypting via Stream then decrypting via {decryptVia} recovers different plaintext for two source documents that are semantically equal but differ only in their use of \\uXXXX escapes.\n A={a}\n B={b}");
+                $"Stream encrypter must decode \\uXXXX escapes inside array/dict encryption targets so that two semantically equal source documents recover identically via {decryptVia}.\n A={a}\n B={b}");
         }
 
         // ============================================================

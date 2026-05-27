@@ -10,8 +10,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
     internal class EncryptionProperties
     {
+        // System.Text.Json is strict about type coercion by default whereas Newtonsoft.Json
+        // happily coerces JSON-numeric-strings (e.g. "3") to int via JsonSerializer. To keep
+        // the two adapters byte-for-byte equivalent on the wire formats they accept, the STJ
+        // deserializer is asked to allow the same numeric-string coercion the Newtonsoft
+        // deserializer already does. This attribute has no effect on Newtonsoft. It is only
+        // emitted on net8.0 where the underlying System.Text.Json version exposes it; on
+        // netstandard2.0 the streaming MDE adapter is not compiled, so the only consumer of
+        // the STJ deserializer there is internal and never observes the divergence.
         [JsonProperty(PropertyName = Constants.EncryptionFormatVersion)]
         [JsonPropertyName(Constants.EncryptionFormatVersion)]
+#if NET8_0_OR_GREATER
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+#endif
         public int EncryptionFormatVersion { get; }
 
         [JsonProperty(PropertyName = Constants.EncryptionDekId)]
