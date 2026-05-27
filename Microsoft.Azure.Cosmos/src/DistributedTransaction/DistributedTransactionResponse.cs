@@ -79,6 +79,47 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Gets the result of the operation at the provided index in the transaction — the returned result
+        /// has a <see cref="DistributedTransactionOperationResult{T}.Resource"/> of type <typeparamref name="T"/>.
+        /// </summary>
+        /// <typeparam name="T">The type to which the resource body should be deserialized.</typeparam>
+        /// <param name="index">Zero-based index of the operation in the transaction whose result is returned.</param>
+        /// <returns>
+        /// A <see cref="DistributedTransactionOperationResult{T}"/> whose <c>Resource</c> is the deserialized item,
+        /// or <c>default(<typeparamref name="T"/>)</c> when the server did not return a body for that operation.
+        /// </returns>
+        /// <remarks>
+        /// The underlying <see cref="DistributedTransactionOperationResult.ResourceStream"/> is left intact and
+        /// remains readable after this call, so this method may be invoked multiple times (with the same or
+        /// different <typeparamref name="T"/>) for the same index, and direct access via the indexer continues
+        /// to work afterwards.
+        /// </remarks>
+        public virtual DistributedTransactionOperationResult<T> GetOperationResultAtIndex<T>(int index)
+        {
+            this.ThrowIfDisposed();
+
+            DistributedTransactionOperationResult result = this[index];
+
+            T resource = default;
+            if (result.ResourceStream != null)
+            {
+                if (this.SerializerCore == null)
+                {
+                    throw new InvalidOperationException(
+                        "A serializer is required to deserialize the operation resource but none was set on this response.");
+                }
+
+                // CosmosSerializer.FromStream<T> takes ownership of (and disposes) its input stream.
+                // Create an independent snapshot so this method is safe to call multiple times and
+                // the caller can still access ResourceStream directly.
+                using Stream snapshot = DistributedTransactionOperationResult.CreateSnapshot(result.ResourceStream);
+                resource = this.SerializerCore.FromStream<T>(snapshot);
+            }
+
+            return new DistributedTransactionOperationResult<T>(result, resource);
+        }
+
+        /// <summary>
         /// Gets the headers associated with the distributed transaction response.
         /// </summary>
         public virtual Headers Headers { get; }
@@ -365,6 +406,7 @@ namespace Microsoft.Azure.Cosmos
                             DistributedTransactionOperationResult operationResult = DistributedTransactionOperationResult.FromJson(operationElement);
                             operationResult.Trace = trace;
                             operationResult.ActivityId = responseMessage.Headers.ActivityId;
+                            operationResult.SerializerCore = serializer;
                             results.Add(operationResult);
                         }
                     }
@@ -437,7 +479,8 @@ namespace Microsoft.Azure.Cosmos
                 {
                     SubStatusCode = this.SubStatusCode,
                     ActivityId = this.ActivityId,
-                    Trace = trace
+                    Trace = trace,
+                    SerializerCore = this.SerializerCore,
                 });
             }
         }
