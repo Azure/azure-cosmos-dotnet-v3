@@ -36,17 +36,15 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     cancellationToken: cancellationToken);
 
 #if !INTERNAL
-                // After a successful response, if hub region routing was active (i.e., the request
-                // was a read-only request that carried the x-ms-cosmos-hub-region-processing-only
-                // header), cache the successful endpoint as the confirmed hub region for this
-                // partition. This enables subsequent requests for the same partition to route
-                // directly to the cached hub, avoiding the 403/3 discovery chain.
+                // After a successful response, if this was a read-only request, attempt to cache the
+                // successful endpoint as the confirmed hub region for this partition. The cache call
+                // itself (TryCacheHubRegionLocationForPartition) gates on the hub-region-processing-only
+                // header internally via IsHubRegionRoutingActive.
                 DocumentServiceRequest documentServiceRequest = request.DocumentServiceRequest;
                 if (responseMessage.IsSuccessStatusCode
-                    && documentServiceRequest != null
-                    && GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(documentServiceRequest))
+                    && documentServiceRequest?.IsReadOnlyRequest == true)
                 {
-                    globalPartitionEndpointManager.TryCacheHubRegionLocationForPartition(
+                    globalPartitionEndpointManager?.TryCacheHubRegionLocationForPartition(
                         documentServiceRequest);
                 }
 #endif

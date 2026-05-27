@@ -23,7 +23,11 @@ namespace Microsoft.Azure.Cosmos
         private const int RetryIntervalInMS = 1000; // Once we detect failover wait for 1 second before retrying request.
         private const int MaxRetryCount = 120;
         private const int MaxServiceUnavailableRetryCount = 1;
+#if !INTERNAL
         private const int MaxSessionTokenRetryCount = 2;
+#else
+        private const int MaxSessionTokenRetryCount = 1;
+#endif
 
         // ----- DTX (Distributed Transaction) inner-loop retry constants -----
         // The outer loop (DistributedTransactionCommitter) handles body-bearing isRetriable failures.
@@ -521,9 +525,6 @@ namespace Microsoft.Azure.Cosmos
                     if (this.isHubRegionProcessingEnabled
                         && this.sessionTokenRetryCount >= MaxSessionTokenRetryCount)
                     {
-                        // In single-master, after 2× 404/1002 (ReadSessionNotAvailable), attach the
-                        // x-ms-cosmos-hub-region-processing-only header so the backend routes the
-                        // next retry to the partition-set level hub (primary) replica in the write region.
                         this.addHubRegionProcessingOnlyHeader = true;
 
                         // Propagate to shared context so hedged requests
@@ -534,45 +535,23 @@ namespace Microsoft.Azure.Cosmos
                             this.crossRegionAvailabilityContext.ShouldAddHubRegionProcessingOnlyHeader = true;
                         }
                     }
+#endif
 
                     if (this.sessionTokenRetryCount > MaxSessionTokenRetryCount)
                     {
-                        // After MaxSessionTokenRetryCount attempts (including the hub-region attempt when
-                        // enabled), stop. In production this surfaces the 404/1002 to the caller; when hub
-                        // region processing is enabled, the hub-region attempt fired at count == MaxSessionTokenRetryCount.
                         return ShouldRetryResult.NoRetry();
                     }
-#else
-                    if (this.sessionTokenRetryCount > 1)
-                    {
-                        // When cannot use multiple write locations, then don't retry the request if
-                        // we have already tried this request on the write location.
-                        return ShouldRetryResult.NoRetry();
-                    }
-#endif
                     else
                     {
-                        // Check the per partition automatic failover cache for hub region overrides first. If the override is present,
-                        // it means we have already discovered the hub region for this partition and can route directly there (skipping the 403/3 discovery chain).
-                        // If no override is present, this means we have not yet discovered the hub region for this partition. In that case, route to the account
-                        // hub region first.
-#if !INTERNAL
-                        if (!this.addHubRegionProcessingOnlyHeader
-                            || !this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(request, checkHubRegionOverrideInCache: true))
-                        {
-                            this.retryContext = new RetryContext
-                            {
-                                RetryLocationIndex = 0,
-                                RetryRequestOnPreferredLocations = false
-                            };
-                        }
-#else
+                        // Single-master 404/1002 retry routes to the write region. The hub-region cache
+                        // lookup is performed and if a previous request
+                        // discovered the hub for this partition, that lookup overrides the routing to
+                        // the cached hub via RouteToLocation(Uri).
                         this.retryContext = new RetryContext
                         {
                             RetryLocationIndex = 0,
                             RetryRequestOnPreferredLocations = false
                         };
-#endif
 
                         return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
                     }
