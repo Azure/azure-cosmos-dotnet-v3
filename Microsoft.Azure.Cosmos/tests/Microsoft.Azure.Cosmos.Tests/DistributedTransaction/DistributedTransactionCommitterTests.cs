@@ -1124,6 +1124,205 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 "Delay beyond maxExponent must still use the capped exponent, producing a similar magnitude.");
         }
 
+        // ─── Per-operation session token tests ────────────────────────────────
+
+        [TestMethod]
+        [Description("A SessionToken set on DistributedTransactionRequestOptions is propagated to the operation's SessionToken field and serialized in the request body JSON.")]
+        public async Task CommitTransactionAsync_PerOperationSessionToken_IsSerializedInRequestBody()
+        {
+            const string expectedToken = "0:1#9#4=8#5=7";
+            byte[] capturedBody = null;
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            mockContext
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<Cosmos.PartitionKey?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .Callback<string, ResourceType, OperationType, RequestOptions, ContainerInternal, Cosmos.PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
+                    (_, _, _, _, _, _, _, stream, _, _, _) =>
+                    {
+                        using MemoryStream copy = new MemoryStream();
+                        stream.CopyTo(copy);
+                        capturedBody = copy.ToArray();
+                    })
+                .ReturnsAsync(CreateSuccessResponseMessage(operationCount: 1));
+
+            List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Create,
+                    operationIndex: 0,
+                    DatabaseName,
+                    ContainerName,
+                    new PartitionKey("pk1"),
+                    id: "doc1",
+                    requestOptions: new DistributedTransactionRequestOptions { SessionToken = expectedToken })
+            };
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(operations, mockContext.Object);
+            await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+
+            Assert.IsNotNull(capturedBody, "Request body must have been captured.");
+            string bodyJson = Encoding.UTF8.GetString(capturedBody);
+            Assert.IsTrue(bodyJson.Contains($"\"sessionToken\":\"{expectedToken}\""),
+                $"Per-operation session token '{expectedToken}' must appear in the serialized request body. Body was: {bodyJson}");
+        }
+
+        [TestMethod]
+        [Description("When no SessionToken is set on the per-operation options, no sessionToken field appears in the serialized request body.")]
+        public async Task CommitTransactionAsync_NoPerOperationSessionToken_OmitsFieldFromRequestBody()
+        {
+            byte[] capturedBody = null;
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            mockContext
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<Cosmos.PartitionKey?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .Callback<string, ResourceType, OperationType, RequestOptions, ContainerInternal, Cosmos.PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
+                    (_, _, _, _, _, _, _, stream, _, _, _) =>
+                    {
+                        using MemoryStream copy = new MemoryStream();
+                        stream.CopyTo(copy);
+                        capturedBody = copy.ToArray();
+                    })
+                .ReturnsAsync(CreateSuccessResponseMessage(operationCount: 1));
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object);
+            await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+
+            Assert.IsNotNull(capturedBody);
+            string bodyJson = Encoding.UTF8.GetString(capturedBody);
+            Assert.IsFalse(bodyJson.Contains("\"sessionToken\""),
+                $"sessionToken field must be absent when no per-operation session token is set. Body was: {bodyJson}");
+        }
+
+        [DataTestMethod]
+        [DataRow("", DisplayName = "Empty string session token")]
+        [DataRow(" ", DisplayName = "Single space session token")]
+        [DataRow("   ", DisplayName = "Multi-space session token")]
+        [Description("A whitespace-only or empty SessionToken on DistributedTransactionRequestOptions must be treated as absent and must not appear in the serialized request body.")]
+        public async Task CommitTransactionAsync_WhitespaceOrEmptyPerOperationSessionToken_OmitsFieldFromRequestBody(string sessionToken)
+        {
+            byte[] capturedBody = null;
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            mockContext
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<Cosmos.PartitionKey?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .Callback<string, ResourceType, OperationType, RequestOptions, ContainerInternal, Cosmos.PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
+                    (_, _, _, _, _, _, _, stream, _, _, _) =>
+                    {
+                        using MemoryStream copy = new MemoryStream();
+                        stream.CopyTo(copy);
+                        capturedBody = copy.ToArray();
+                    })
+                .ReturnsAsync(CreateSuccessResponseMessage(operationCount: 1));
+
+            List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Create,
+                    operationIndex: 0,
+                    DatabaseName,
+                    ContainerName,
+                    new PartitionKey("pk1"),
+                    id: "doc1",
+                    requestOptions: new DistributedTransactionRequestOptions { SessionToken = sessionToken })
+            };
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(operations, mockContext.Object);
+            await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+
+            Assert.IsNotNull(capturedBody);
+            string bodyJson = Encoding.UTF8.GetString(capturedBody);
+            Assert.IsFalse(bodyJson.Contains("\"sessionToken\""),
+                $"sessionToken field must be absent for whitespace/empty token '{sessionToken}'. Body was: {bodyJson}");
+        }
+
+        [TestMethod]
+        [Description("Each operation independently carries its own session token in the request body.")]
+        public async Task CommitTransactionAsync_MultipleOperations_EachCarriesOwnSessionToken()
+        {
+            const string token1 = "0:1#5";
+            const string token2 = "1:2#8";
+
+            byte[] capturedBody = null;
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            mockContext
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<Cosmos.PartitionKey?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .Callback<string, ResourceType, OperationType, RequestOptions, ContainerInternal, Cosmos.PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
+                    (_, _, _, _, _, _, _, stream, _, _, _) =>
+                    {
+                        using MemoryStream copy = new MemoryStream();
+                        stream.CopyTo(copy);
+                        capturedBody = copy.ToArray();
+                    })
+                .ReturnsAsync(CreateSuccessResponseMessage(operationCount: 2));
+
+            List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Create, 0, DatabaseName, ContainerName,
+                    new PartitionKey("pk1"), id: "doc1",
+                    requestOptions: new DistributedTransactionRequestOptions { SessionToken = token1 }),
+                new DistributedTransactionOperation(
+                    OperationType.Create, 1, DatabaseName, "container2",
+                    new PartitionKey("pk2"), id: "doc2",
+                    requestOptions: new DistributedTransactionRequestOptions { SessionToken = token2 }),
+            };
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(operations, mockContext.Object);
+            await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+
+            Assert.IsNotNull(capturedBody);
+            string bodyJson = Encoding.UTF8.GetString(capturedBody);
+            Assert.IsTrue(bodyJson.Contains($"\"sessionToken\":\"{token1}\""),
+                $"token1 must appear in request body. Body: {bodyJson}");
+            Assert.IsTrue(bodyJson.Contains($"\"sessionToken\":\"{token2}\""),
+                $"token2 must appear in request body. Body: {bodyJson}");
+        }
+
         // ─── Diagnostics ──────────────────────────────────────────────────────────
 
         [TestMethod]
