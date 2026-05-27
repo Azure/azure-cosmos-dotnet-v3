@@ -11,6 +11,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -314,6 +316,53 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         #endregion
 
+        #region OperationHelperAsync wiring
+
+        [TestMethod]
+        [Description("Verifies CommitTransactionAsync routes through OperationHelperAsync with the qualified operationName, the read-specific OTel constant, the CommitDistributedTransaction operation type, and TraceComponent.Batch.")]
+        public async Task CommitTransactionAsync_RoutesThroughOperationHelper_WithExpectedWiring()
+        {
+            string capturedOperationName = null;
+            OperationType capturedOperationType = default;
+            TraceComponent capturedTraceComponent = default;
+            string capturedOTelOperationName = null;
+
+            Mock<CosmosClientContext> contextMock = new Mock<CosmosClientContext>();
+            contextMock
+                .Setup(c => c.OperationHelperAsync<DistributedTransactionResponse>(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<Func<ITrace, Task<DistributedTransactionResponse>>>(),
+                    It.IsAny<(string OperationName, Func<DistributedTransactionResponse, OpenTelemetryAttributes> GetAttributes)?>(),
+                    It.IsAny<ResourceType?>(),
+                    It.IsAny<TraceComponent>(),
+                    It.IsAny<TraceLevel>()))
+                .Returns<string, string, string, OperationType, RequestOptions, Func<ITrace, Task<DistributedTransactionResponse>>, (string, Func<DistributedTransactionResponse, OpenTelemetryAttributes>)?, ResourceType?, TraceComponent, TraceLevel>(
+                    (operationName, containerName, databaseName, operationType, requestOptions, func, oTelTuple, resourceType, comp, level) =>
+                    {
+                        capturedOperationName = operationName;
+                        capturedOperationType = operationType;
+                        capturedTraceComponent = comp;
+                        capturedOTelOperationName = oTelTuple?.Item1;
+                        return Task.FromResult<DistributedTransactionResponse>(null);
+                    });
+
+            DistributedReadTransactionCore txn = new DistributedReadTransactionCore(contextMock.Object);
+            txn.ReadItem(Database, Collection, TestPartitionKey, ItemId);
+
+            await txn.CommitTransactionAsync(CancellationToken.None);
+
+            Assert.AreEqual($"{nameof(DistributedReadTransaction)}.{nameof(DistributedReadTransaction.CommitTransactionAsync)}", capturedOperationName);
+            Assert.AreEqual(OperationType.CommitDistributedTransaction, capturedOperationType);
+            Assert.AreEqual(TraceComponent.Batch, capturedTraceComponent);
+            Assert.AreEqual(OpenTelemetryConstants.Operations.CommitDistributedReadTransaction, capturedOTelOperationName);
+        }
+
+        #endregion
+
         /// <summary>
         /// Reflective helper to access the private operations list for assertion purposes.
         /// </summary>
@@ -345,6 +394,21 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<ITrace>(),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(containerProps);
+
+            contextMock
+                .Setup(c => c.OperationHelperAsync<DistributedTransactionResponse>(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<Func<ITrace, Task<DistributedTransactionResponse>>>(),
+                    It.IsAny<(string OperationName, Func<DistributedTransactionResponse, OpenTelemetryAttributes> GetAttributes)?>(),
+                    It.IsAny<ResourceType?>(),
+                    It.IsAny<TraceComponent>(),
+                    It.IsAny<TraceLevel>()))
+                .Returns<string, string, string, OperationType, RequestOptions, Func<ITrace, Task<DistributedTransactionResponse>>, (string, Func<DistributedTransactionResponse, OpenTelemetryAttributes>)?, ResourceType?, TraceComponent, TraceLevel>(
+                    (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, resourceType, comp, level) => func(NoOpTrace.Singleton));
 
             return contextMock;
         }
