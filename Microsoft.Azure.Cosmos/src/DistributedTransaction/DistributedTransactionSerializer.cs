@@ -26,9 +26,11 @@ namespace Microsoft.Azure.Cosmos
         internal const string Index = "index";
         internal const string ResourceBody = "resourceBody";
         internal const string SessionToken = "sessionToken";
+        internal const string PartitionKeyRangeId = "partitionKeyRangeId";
         internal const string ETag = "ifMatch";
         internal const string OperationType = "operationType";
         internal const string ResourceType = "resourceType";
+        internal const string DiagnosticString = "diagnosticString";
 
         /// <summary>
         /// Serializes a distributed transaction request body to a JSON stream.

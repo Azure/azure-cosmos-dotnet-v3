@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     internal class DistributedReadTransactionCore : DistributedReadTransaction
@@ -44,14 +46,26 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
-        public override async Task<DistributedTransactionResponse> CommitTransactionAsync(
+        public override Task<DistributedTransactionResponse> CommitTransactionAsync(
             CancellationToken cancellationToken = default)
         {
-            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                operations: this.operations,
-                clientContext: this.clientContext);
+            return this.clientContext.OperationHelperAsync(
+                operationName: $"{nameof(DistributedReadTransaction)}.{nameof(CommitTransactionAsync)}",
+                containerName: null,
+                databaseName: null,
+                operationType: OperationType.CommitDistributedTransaction,
+                requestOptions: null,
+                task: (trace) =>
+                {
+                    DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                        operations: this.operations,
+                        clientContext: this.clientContext);
 
-            return await committer.CommitTransactionAsync(cancellationToken);
+                    return committer.CommitTransactionAsync(trace, cancellationToken);
+                },
+                openTelemetry: new (OpenTelemetryConstants.Operations.CommitDistributedReadTransaction,
+                                    (response) => new OpenTelemetryResponse(response)),
+                traceComponent: TraceComponent.Batch);
         }
 
         private static void ValidateContainerReference(string database, string collection)
