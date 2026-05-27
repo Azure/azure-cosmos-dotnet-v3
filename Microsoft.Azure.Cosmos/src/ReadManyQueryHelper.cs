@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.IO;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -87,6 +88,37 @@ namespace Microsoft.Azure.Cosmos
 
             foreach (KeyValuePair<PartitionKeyRange, List<(string, PartitionKey)>> entry in partitionKeyRangeItemMap)
             {
+                // Per-partition optimization: when a physical partition has exactly one
+                // requested (id, partitionKey) tuple, issue a point read instead of a query.
+                // A point read on a small (<32 KB) document is ~1 RU, while any query pays
+                // a fixed cover charge (~2.82 RU). Matches the existing Java and Python
+                // SDK behavior.
+                if (entry.Value.Count == 1)
+                {
+                    await semaphore.WaitAsync();
+
+                    ITrace childTrace = trace.StartChild("Point read for a partitionkeyrange", TraceComponent.Query, TraceLevel.Info);
+                    (string itemId, PartitionKey itemPartitionKey) = entry.Value[0];
+                    tasks.Add(Task.Run(async () =>
+                    {
+                        try
+                        {
+                            return await this.GeneratePointReadResponseForPartitionAsync(itemId,
+                                                                                         itemPartitionKey,
+                                                                                         readManyRequestOptions,
+                                                                                         childTrace,
+                                                                                         cancellationToken);
+                        }
+                        finally
+                        {
+                            semaphore.Release();
+                            childTrace.Dispose();
+                        }
+                    }));
+
+                    continue;
+                }
+
                 // Fit MaxItemsPerQuery items in a single query to BE
                 for (int startIndex = 0; startIndex < entry.Value.Count; startIndex += this.maxItemsPerQuery)
                 {
@@ -395,6 +427,145 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return pages;
+        }
+
+        /// <summary>
+        /// Issues a point read for a single (id, partitionKey) tuple and wraps the result
+        /// as a <see cref="QueryResponse"/> so the existing aggregation logic in
+        /// <see cref="CombineStreamsFromQueryResponses"/> / <see cref="CombineFeedResponseFromQueryResponses{T}"/>
+        /// can consume it unchanged.
+        ///
+        /// 404/Unknown is treated as "item is not present" — the request charge is still
+        /// aggregated, but no element contributes to the result set. This mirrors the
+        /// behavior of the Java and Python SDKs' readMany point-read branch.
+        /// </summary>
+        private async Task<List<ResponseMessage>> GeneratePointReadResponseForPartitionAsync(
+            string itemId,
+            PartitionKey partitionKey,
+            ReadManyRequestOptions readManyRequestOptions,
+            ITrace trace,
+            CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return null;
+            }
+
+            ItemRequestOptions itemRequestOptions = readManyRequestOptions?.ConvertToItemRequestOptions();
+            ResponseMessage pointReadResponse;
+            try
+            {
+                pointReadResponse = await this.container.ReadItemStreamAsync(
+                    id: itemId,
+                    partitionKey: partitionKey,
+                    trace: trace,
+                    requestOptions: itemRequestOptions,
+                    cancellationToken: cancellationToken);
+            }
+            catch
+            {
+                this.CancelCancellationToken(cancellationToken);
+                throw;
+            }
+
+            using (pointReadResponse)
+            {
+                string containerRid = await this.container.GetCachedRIDAsync(forceRefresh: false, trace, cancellationToken);
+                CosmosQueryResponseMessageHeaders responseHeaders = new CosmosQueryResponseMessageHeaders(
+                    continauationToken: null,
+                    disallowContinuationTokenMessage: null,
+                    resourceType: Documents.ResourceType.Document,
+                    containerRid: containerRid)
+                {
+                    RequestCharge = pointReadResponse.Headers?.RequestCharge ?? 0,
+                    ActivityId = pointReadResponse.Headers?.ActivityId,
+                    SubStatusCode = Documents.SubStatusCodes.Unknown
+                };
+
+                // Treat 404/Unknown as "missing item" — do not fail the overall ReadMany.
+                // This matches the Java SDK behavior (see pointReadsForReadMany in
+                // RxDocumentClientImpl.java) and parallels its bug fixes (azure-sdk-for-java
+                // PRs 34966, 35513) for swallowing missing-item 404s in the point-read
+                // fast path.
+                if (pointReadResponse.StatusCode == System.Net.HttpStatusCode.NotFound
+                    && pointReadResponse.Headers?.SubStatusCode == Documents.SubStatusCodes.Unknown)
+                {
+                    return new List<ResponseMessage>
+                    {
+                        QueryResponse.CreateSuccess(
+                            result: Array.Empty<CosmosElement>(),
+                            count: 0,
+                            responseHeaders: responseHeaders,
+                            serializationOptions: null,
+                            trace: trace)
+                    };
+                }
+
+                // Any other non-success status — propagate via QueryResponse.CreateFailure
+                // so CombineStreamsFromQueryResponses short-circuits and surfaces the error
+                // exactly as the query path does today.
+                if (!pointReadResponse.IsSuccessStatusCode)
+                {
+                    this.CancelCancellationToken(cancellationToken);
+                    return new List<ResponseMessage>
+                    {
+                        QueryResponse.CreateFailure(
+                            responseHeaders: responseHeaders,
+                            statusCode: pointReadResponse.StatusCode,
+                            requestMessage: null,
+                            cosmosException: pointReadResponse.CosmosException,
+                            trace: trace)
+                    };
+                }
+
+                // Success: parse the single-document body into a CosmosElement and wrap
+                // as a one-element QueryResponse.
+                CosmosElement element = await ReadManyQueryHelper.ReadStreamAsCosmosElementAsync(
+                    pointReadResponse.Content,
+                    cancellationToken);
+                IReadOnlyList<CosmosElement> elements = element != null
+                    ? (IReadOnlyList<CosmosElement>)new[] { element }
+                    : Array.Empty<CosmosElement>();
+
+                return new List<ResponseMessage>
+                {
+                    QueryResponse.CreateSuccess(
+                        result: elements,
+                        count: elements.Count,
+                        responseHeaders: responseHeaders,
+                        serializationOptions: null,
+                        trace: trace)
+                };
+            }
+        }
+
+        private static async Task<CosmosElement> ReadStreamAsCosmosElementAsync(
+            Stream stream,
+            CancellationToken cancellationToken)
+        {
+            if (stream == null)
+            {
+                return null;
+            }
+
+            using (MemoryStream memoryStream = stream as MemoryStream ?? new MemoryStream())
+            {
+                if (!(stream is MemoryStream))
+                {
+                    await stream.CopyToAsync(memoryStream, bufferSize: 81920, cancellationToken);
+                }
+
+                if (memoryStream.Length == 0)
+                {
+                    return null;
+                }
+
+                ReadOnlyMemory<byte> buffer = memoryStream.TryGetBuffer(out ArraySegment<byte> segment)
+                    ? new ReadOnlyMemory<byte>(segment.Array, segment.Offset, segment.Count)
+                    : memoryStream.ToArray();
+
+                return CosmosElement.CreateFromBuffer(buffer);
+            }
         }
 
         private void CancelCancellationToken(CancellationToken cancellationToken)

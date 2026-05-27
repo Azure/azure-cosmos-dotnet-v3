@@ -94,5 +94,20 @@ namespace Microsoft.Azure.Cosmos
                 ExcludeRegions = this.ExcludeRegions
             };
         }
+
+        internal ItemRequestOptions ConvertToItemRequestOptions()
+        {
+            return new ItemRequestOptions
+            {
+                ConsistencyLevel = this.ConsistencyLevel,
+                ReadConsistencyStrategy = this.ReadConsistencyStrategy,
+                SessionToken = this.SessionToken,
+                IfMatchEtag = this.IfMatchEtag,
+                IfNoneMatchEtag = this.IfNoneMatchEtag,
+                Properties = this.Properties,
+                AddRequestHeaders = this.AddRequestHeaders,
+                ExcludeRegions = this.ExcludeRegions
+            };
+        }
     }
 }
