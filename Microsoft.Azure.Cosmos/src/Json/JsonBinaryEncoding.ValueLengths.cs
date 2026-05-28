@@ -184,6 +184,22 @@ namespace Microsoft.Azure.Cosmos.Json
 
             public static long GetValueLength(ReadOnlySpan<byte> buffer)
             {
+                return GetValueLength(buffer, depth: 0);
+            }
+
+            private static long GetValueLength(ReadOnlySpan<byte> buffer, int depth)
+            {
+                // Guard against malicious payloads that nest Arr1 (0xE1) / Obj1 (0xE9)
+                // type markers deeply enough to exhaust the CLR stack. The cap matches
+                // the streaming reader's JsonObjectState.JsonMaxNestingDepth so the
+                // binary navigator path enforces the same nesting policy as the rest
+                // of the JSON stack. Both paths allow exactly N = 256 levels before
+                // throwing JsonMaxNestingExceededException.
+                if (depth >= JsonObjectState.JsonMaxNestingDepth)
+                {
+                    throw new JsonMaxNestingExceededException();
+                }
+
                 long length = ValueLengths.Lookup[buffer[0]];
                 if (length < 0)
                 {
@@ -211,19 +227,19 @@ namespace Microsoft.Azure.Cosmos.Json
                             break;
 
                         case Arr1:
-                            long arrayOneItemLength = ValueLengths.GetValueLength(buffer.Slice(1));
+                            long arrayOneItemLength = ValueLengths.GetValueLength(buffer.Slice(1), depth + 1);
                             length = arrayOneItemLength == 0 ? 0 : 1 + arrayOneItemLength;
                             break;
 
                         case Obj1:
-                            long nameLength = ValueLengths.GetValueLength(buffer.Slice(1));
+                            long nameLength = ValueLengths.GetValueLength(buffer.Slice(1), depth + 1);
                             if (nameLength == 0)
                             {
                                 length = 0;
                             }
                             else
                             {
-                                long valueLength = ValueLengths.GetValueLength(buffer.Slice(1 + (int)nameLength));
+                                long valueLength = ValueLengths.GetValueLength(buffer.Slice(1 + (int)nameLength), depth + 1);
                                 length = TypeMarkerLength + nameLength + valueLength;
                             }
                             break;

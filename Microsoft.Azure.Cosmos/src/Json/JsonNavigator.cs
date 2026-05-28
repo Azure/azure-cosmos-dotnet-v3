@@ -33,6 +33,11 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         /// <param name="buffer">The buffer to navigate</param>
         /// <returns>A concrete JsonNavigator that can navigate the supplied buffer.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="buffer"/> is empty.</exception>
+        /// <exception cref="JsonMaxNestingExceededException">
+        /// Thrown when a binary-format buffer nests array/object type markers more deeply than the parser allows.
+        /// This guards against crafted payloads that would otherwise exhaust the call stack.
+        /// </exception>
         public static IJsonNavigator Create(
             ReadOnlyMemory<byte> buffer)
         {
