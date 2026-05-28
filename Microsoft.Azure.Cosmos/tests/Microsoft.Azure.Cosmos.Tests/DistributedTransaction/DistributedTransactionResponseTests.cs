@@ -515,7 +515,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         // Operation result property deserialization
 
         [TestMethod]
-        [Description("SubStatusCodeValue deserializes from the 'subStatusCode' JSON property and is accessible as both uint and SubStatusCodes enum.")]
+        [Description("SubStatusCode deserializes from the 'subStatusCode' JSON property as a SubStatusCodes enum value.")]
         public async Task FromResponseMessage_OperationResult_SubStatusCode_DeserializesCorrectly()
         {
             const uint expectedSubStatusCode = 449; // RetryWith
@@ -531,10 +531,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
-            Assert.AreEqual(expectedSubStatusCode, response[0].SubStatusCodeValue,
-                "SubStatusCodeValue must equal the uint value from the JSON 'subStatusCode' field.");
             Assert.AreEqual((SubStatusCodes)expectedSubStatusCode, response[0].SubStatusCode,
-                "SubStatusCode enum must be the cast of the uint value.");
+                "SubStatusCode must equal the enum cast of the uint value from the JSON 'subStatusCode' field.");
         }
 
         [TestMethod]
@@ -1056,7 +1054,243 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(0, enumerated, "Enumeration after disposal must yield no items without throwing.");
         }
 
+        // GetOperationResultAtIndex<T>
+
+        [TestMethod]
+        [Description("GetOperationResultAtIndex<T> deserializes the resource body into the requested type.")]
+        public async Task GetOperationResultAtIndex_WithResourceBody_DeserializesResource()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            // JSON with a resourceBody field that contains a simple document
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":200,""resourceBody"":{""id"":""item1"",""value"":42}}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            DistributedTransactionOperationResult<TestDocument> typed = response.GetOperationResultAtIndex<TestDocument>(0);
+
+            Assert.IsNotNull(typed.Resource, "Resource must be deserialized when a resourceBody is present.");
+            Assert.AreEqual("item1", typed.Resource.Id);
+            Assert.AreEqual(42, typed.Resource.Value);
+        }
+
+        [TestMethod]
+        [Description("GetOperationResultAtIndex<T> returns default(T) when the operation has no resource body.")]
+        public async Task GetOperationResultAtIndex_WithoutResourceBody_ResourceIsDefault()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":204}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            DistributedTransactionOperationResult<TestDocument> typed = response.GetOperationResultAtIndex<TestDocument>(0);
+
+            Assert.IsNull(typed.Resource, "Resource must be null/default when no resourceBody was returned.");
+            Assert.AreEqual(HttpStatusCode.NoContent, typed.StatusCode);
+        }
+
+        [TestMethod]
+        [Description("GetOperationResultAtIndex<T> preserves all base DistributedTransactionOperationResult fields on the typed wrapper.")]
+        public async Task GetOperationResultAtIndex_PreservesBaseFields()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":200,""etag"":""\""abc\"""",""requestCharge"":1.5,""resourceBody"":{""id"":""x"",""value"":1}}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            DistributedTransactionOperationResult<TestDocument> typed = response.GetOperationResultAtIndex<TestDocument>(0);
+
+            Assert.AreEqual(HttpStatusCode.OK, typed.StatusCode);
+            Assert.AreEqual("\"abc\"", typed.ETag);
+            Assert.AreEqual(1.5, typed.RequestCharge);
+        }
+
+        [TestMethod]
+        [Description("GetOperationResultAtIndex<T> after Dispose throws ObjectDisposedException.")]
+        public async Task GetOperationResultAtIndex_AfterDispose_ThrowsObjectDisposedException()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":200}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            response.Dispose();
+
+            Assert.ThrowsException<ObjectDisposedException>(() => response.GetOperationResultAtIndex<TestDocument>(0));
+        }
+
+        [TestMethod]
+        [Description("GetOperationResultAtIndex<T> with an out-of-range index throws ArgumentOutOfRangeException.")]
+        public async Task GetOperationResultAtIndex_OutOfRangeIndex_ThrowsArgumentOutOfRangeException()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":200}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => response.GetOperationResultAtIndex<TestDocument>(99));
+        }
+
+        [TestMethod]
+        [Description("GetOperationResultAtIndex<T> can be invoked repeatedly on the same index and must yield the same deserialized resource each time without disposing the underlying ResourceStream.")]
+        public async Task GetOperationResultAtIndex_CalledTwice_BothCallsSucceedAndStreamRemainsReadable()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":200,""resourceBody"":{""id"":""dup"",""value"":7}}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            DistributedTransactionOperationResult<TestDocument> first = response.GetOperationResultAtIndex<TestDocument>(0);
+            DistributedTransactionOperationResult<TestDocument> second = response.GetOperationResultAtIndex<TestDocument>(0);
+
+            Assert.IsNotNull(first.Resource);
+            Assert.IsNotNull(second.Resource);
+            Assert.AreEqual("dup", first.Resource.Id);
+            Assert.AreEqual("dup", second.Resource.Id);
+            Assert.AreEqual(7, first.Resource.Value);
+            Assert.AreEqual(7, second.Resource.Value);
+
+            // After two typed reads, the original ResourceStream must still be readable.
+            using StreamReader reader = new StreamReader(response[0].ResourceStream);
+            string raw = reader.ReadToEnd();
+            StringAssert.Contains(raw, "\"id\":\"dup\"", "Underlying ResourceStream must remain readable after GetOperationResultAtIndex<T>.");
+        }
+
+        [TestMethod]
+        [Description("Reading response[index].ResourceStream directly after GetOperationResultAtIndex<T> must still return the original bytes.")]
+        public async Task GetOperationResultAtIndex_FollowedByDirectStreamRead_StreamIsIntact()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":200,""resourceBody"":{""id"":""x"",""value"":99}}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            _ = response.GetOperationResultAtIndex<TestDocument>(0);
+
+            Stream stream = response[0].ResourceStream;
+            Assert.IsNotNull(stream);
+            stream.Position = 0;
+            using StreamReader reader = new StreamReader(stream);
+            string raw = reader.ReadToEnd();
+            Assert.AreEqual(@"{""id"":""x"",""value"":99}", raw);
+        }
+
+        [TestMethod]
+        [Description("Calling Dispose() after GetOperationResultAtIndex<T> must still successfully release the ResourceStream and must be safe to call multiple times.")]
+        public async Task GetOperationResultAtIndex_FollowedByDispose_DoesNotThrow()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":200,""resourceBody"":{""id"":""z"",""value"":1}}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            _ = response.GetOperationResultAtIndex<TestDocument>(0);
+
+            response.Dispose();
+            response.Dispose(); // must remain idempotent
+
+            Assert.ThrowsException<ObjectDisposedException>(() => response.GetOperationResultAtIndex<TestDocument>(0));
+        }
+
+        [TestMethod]
+        [Description("GetOperationResultAtIndex<T> throws InvalidOperationException when no serializer is available but a resource body is present.")]
+        public async Task GetOperationResultAtIndex_NullSerializer_WithResourceBody_ThrowsInvalidOperationException()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":200,""resourceBody"":{""id"":""x"",""value"":1}}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                serializer: null,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.ThrowsException<InvalidOperationException>(
+                () => response.GetOperationResultAtIndex<TestDocument>(0));
+        }
+
+        [TestMethod]
+        [Description("GetOperationResultAtIndex<T> with a null serializer returns default(T) when there is no resource body to deserialize.")]
+        public async Task GetOperationResultAtIndex_NullSerializer_WithoutResourceBody_ReturnsDefault()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":204}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                serializer: null,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            DistributedTransactionOperationResult<TestDocument> typed = response.GetOperationResultAtIndex<TestDocument>(0);
+
+            Assert.IsNull(typed.Resource);
+        }
+
         // Helpers
+
+        private sealed class TestDocument
+        {
+            [System.Text.Json.Serialization.JsonPropertyName("id")]
+            public string Id { get; set; }
+
+            [System.Text.Json.Serialization.JsonPropertyName("value")]
+            public int Value { get; set; }
+        }
 
         /// <summary>
         /// Builds a <see cref="DistributedTransactionServerRequest"/> with <paramref name="operationCount"/>

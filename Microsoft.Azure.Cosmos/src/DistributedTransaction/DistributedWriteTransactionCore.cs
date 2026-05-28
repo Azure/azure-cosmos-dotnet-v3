@@ -273,7 +273,7 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
-        public override Task<DistributedTransactionResponse> CommitTransactionAsync(CancellationToken cancellationToken)
+        public override Task<DistributedTransactionResponse> CommitTransactionAsync(CancellationToken cancellationToken = default)
         {
             return this.clientContext.OperationHelperAsync(
                 operationName: $"{nameof(DistributedWriteTransaction)}.{nameof(CommitTransactionAsync)}",
