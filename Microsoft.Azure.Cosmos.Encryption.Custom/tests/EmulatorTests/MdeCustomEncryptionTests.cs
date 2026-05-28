@@ -648,6 +648,189 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         }
 #endif
 
+#if NET8_0_OR_GREATER
+        // These companion tests cover the request-options-based processor override on item CRUD
+        // and transactional batch item operations. Query/feed/change-feed, read-many, and lazy
+        // decryption are intentionally not parameterized here because those paths do not honor
+        // RequestOptions.Properties["encryption-json-processor"].
+
+        private static ItemRequestOptions GetReadItemOptionsForProcessor(JsonProcessor processor)
+        {
+            return processor == JsonProcessor.Newtonsoft
+                ? null
+                : new ItemRequestOptions
+                {
+                    Properties = new Dictionary<string, object>
+                    {
+                        { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, processor.ToString() }
+                    }
+                };
+        }
+
+        private static EncryptionItemRequestOptions GetEncryptionItemRequestOptionsForProcessor(
+            string dekId,
+            List<string> pathsToEncrypt,
+            JsonProcessor processor,
+            string ifMatchEtag = null)
+        {
+            return new EncryptionItemRequestOptions
+            {
+                EncryptionOptions = GetEncryptionOptions(dekId, pathsToEncrypt),
+                IfMatchEtag = ifMatchEtag,
+                Properties = processor == JsonProcessor.Newtonsoft
+                    ? null
+                    : new Dictionary<string, object>
+                    {
+                        { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, processor.ToString() }
+                    }
+            };
+        }
+
+        private static EncryptionTransactionalBatchItemRequestOptions GetBatchItemRequestOptionsForProcessor(
+            string dekId,
+            List<string> pathsToEncrypt,
+            JsonProcessor processor,
+            string ifMatchEtag = null)
+        {
+            return new EncryptionTransactionalBatchItemRequestOptions
+            {
+                EncryptionOptions = GetEncryptionOptions(dekId, pathsToEncrypt),
+                IfMatchEtag = ifMatchEtag,
+                Properties = processor == JsonProcessor.Newtonsoft
+                    ? null
+                    : new Dictionary<string, object>
+                    {
+                        { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, processor.ToString() }
+                    }
+            };
+        }
+
+        [DataTestMethod]
+        [DataRow(nameof(JsonProcessor.Newtonsoft), DisplayName = nameof(JsonProcessor.Newtonsoft))]
+        [DataRow(nameof(JsonProcessor.Stream), DisplayName = nameof(JsonProcessor.Stream))]
+        public async Task EncryptionCreateItem_StreamRoundtrip(string jsonProcessorName)
+        {
+            JsonProcessor processor = Enum.Parse<JsonProcessor>(jsonProcessorName);
+            TestDoc testDoc = TestDoc.Create();
+            ItemRequestOptions readOptions = GetReadItemOptionsForProcessor(processor);
+
+            // Create with the chosen processor
+            ItemResponse<TestDoc> createResponse = await encryptionContainer.CreateItemAsync(
+                testDoc,
+                new PartitionKey(testDoc.PK),
+                GetEncryptionItemRequestOptionsForProcessor(dekId, TestDoc.PathsToEncrypt, processor));
+            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+            VerifyExpectedDocResponse(testDoc, createResponse.Resource);
+
+            // Typed read via processor-specific request options
+            ItemResponse<TestDoc> readResponse = await encryptionContainer.ReadItemAsync<TestDoc>(
+                testDoc.Id,
+                new PartitionKey(testDoc.PK),
+                readOptions);
+            Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
+            VerifyExpectedDocResponse(testDoc, readResponse.Resource);
+
+            // Stream read via processor-specific request options
+            ResponseMessage readStream = await encryptionContainer.ReadItemStreamAsync(
+                testDoc.Id,
+                new PartitionKey(testDoc.PK),
+                readOptions);
+            Assert.AreEqual(HttpStatusCode.OK, readStream.StatusCode);
+            TestDoc readStreamDoc = TestCommon.FromStream<TestDoc>(readStream.Content);
+            VerifyExpectedDocResponse(testDoc, readStreamDoc);
+
+            await encryptionContainer.DeleteItemAsync<TestDoc>(testDoc.Id, new PartitionKey(testDoc.PK));
+        }
+
+        [DataTestMethod]
+        [DataRow(nameof(JsonProcessor.Newtonsoft), DisplayName = nameof(JsonProcessor.Newtonsoft))]
+        [DataRow(nameof(JsonProcessor.Stream), DisplayName = nameof(JsonProcessor.Stream))]
+        public async Task EncryptionRudItem_StreamRoundtrip(string jsonProcessorName)
+        {
+            JsonProcessor processor = Enum.Parse<JsonProcessor>(jsonProcessorName);
+            TestDoc testDoc = TestDoc.Create();
+            ItemRequestOptions readOptions = GetReadItemOptionsForProcessor(processor);
+
+            // Upsert (create path)
+            ItemResponse<TestDoc> upsertCreate = await encryptionContainer.UpsertItemAsync(
+                testDoc,
+                new PartitionKey(testDoc.PK),
+                GetEncryptionItemRequestOptionsForProcessor(dekId, TestDoc.PathsToEncrypt, processor));
+            Assert.AreEqual(HttpStatusCode.Created, upsertCreate.StatusCode);
+            VerifyExpectedDocResponse(testDoc, upsertCreate.Resource);
+
+            // Upsert (update path)
+            testDoc.NonSensitive = Guid.NewGuid().ToString();
+            testDoc.Sensitive_StringFormat = Guid.NewGuid().ToString();
+            ItemResponse<TestDoc> upsertUpdate = await encryptionContainer.UpsertItemAsync(
+                testDoc,
+                new PartitionKey(testDoc.PK),
+                GetEncryptionItemRequestOptionsForProcessor(dekId, TestDoc.PathsToEncrypt, processor));
+            Assert.AreEqual(HttpStatusCode.OK, upsertUpdate.StatusCode);
+            VerifyExpectedDocResponse(testDoc, upsertUpdate.Resource);
+
+            // Replace
+            testDoc.NonSensitive = Guid.NewGuid().ToString();
+            testDoc.Sensitive_StringFormat = Guid.NewGuid().ToString();
+            ItemResponse<TestDoc> replaceResponse = await encryptionContainer.ReplaceItemAsync(
+                testDoc,
+                testDoc.Id,
+                new PartitionKey(testDoc.PK),
+                GetEncryptionItemRequestOptionsForProcessor(dekId, TestDoc.PathsToEncrypt, processor, upsertUpdate.ETag));
+            Assert.AreEqual(HttpStatusCode.OK, replaceResponse.StatusCode);
+            VerifyExpectedDocResponse(testDoc, replaceResponse.Resource);
+
+            // Read back to confirm decryption end-to-end
+            ItemResponse<TestDoc> finalRead = await encryptionContainer.ReadItemAsync<TestDoc>(
+                testDoc.Id,
+                new PartitionKey(testDoc.PK),
+                readOptions);
+            Assert.AreEqual(HttpStatusCode.OK, finalRead.StatusCode);
+            VerifyExpectedDocResponse(testDoc, finalRead.Resource);
+
+            // Delete
+            ItemResponse<TestDoc> deleteResponse = await encryptionContainer.DeleteItemAsync<TestDoc>(
+                testDoc.Id,
+                new PartitionKey(testDoc.PK));
+            Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+        }
+
+        [DataTestMethod]
+        [DataRow(nameof(JsonProcessor.Newtonsoft), DisplayName = nameof(JsonProcessor.Newtonsoft))]
+        [DataRow(nameof(JsonProcessor.Stream), DisplayName = nameof(JsonProcessor.Stream))]
+        public async Task EncryptionTransactionBatchCrud_StreamRoundtrip(string jsonProcessorName)
+        {
+            JsonProcessor processor = Enum.Parse<JsonProcessor>(jsonProcessorName);
+            string partitionKey = Guid.NewGuid().ToString();
+            TestDoc docToCreate1 = TestDoc.Create(partitionKey);
+            TestDoc docToCreate2 = TestDoc.Create(partitionKey);
+
+            TransactionalBatchResponse batchResponse = await encryptionContainer
+                .CreateTransactionalBatch(new PartitionKey(partitionKey))
+                .CreateItem(docToCreate1, GetBatchItemRequestOptionsForProcessor(dekId, TestDoc.PathsToEncrypt, processor))
+                .CreateItemStream(docToCreate2.ToStream(), GetBatchItemRequestOptionsForProcessor(dekId, TestDoc.PathsToEncrypt, processor))
+                .ExecuteAsync();
+
+            Assert.AreEqual(HttpStatusCode.OK, batchResponse.StatusCode);
+
+            TransactionalBatchOperationResult<TestDoc> result1 = batchResponse.GetOperationResultAtIndex<TestDoc>(0);
+            VerifyExpectedDocResponse(docToCreate1, result1.Resource);
+
+            TransactionalBatchOperationResult<TestDoc> result2 = batchResponse.GetOperationResultAtIndex<TestDoc>(1);
+            VerifyExpectedDocResponse(docToCreate2, result2.Resource);
+
+            // Read back via the same processor to confirm the stored ciphertext is correct
+            ItemRequestOptions readOptions = GetReadItemOptionsForProcessor(processor);
+            ItemResponse<TestDoc> readDoc1 = await encryptionContainer.ReadItemAsync<TestDoc>(
+                docToCreate1.Id, new PartitionKey(partitionKey), readOptions);
+            VerifyExpectedDocResponse(docToCreate1, readDoc1.Resource);
+
+            ItemResponse<TestDoc> readDoc2 = await encryptionContainer.ReadItemAsync<TestDoc>(
+                docToCreate2.Id, new PartitionKey(partitionKey), readOptions);
+            VerifyExpectedDocResponse(docToCreate2, readDoc2.Resource);
+        }
+#endif
+
         private static EncryptionItemRequestOptions CreateEncryptionItemRequestOptions(string dekId, string encryptionAlgorithm, JsonProcessor jsonProcessor)
         {
             EncryptionItemRequestOptions options = new ()
