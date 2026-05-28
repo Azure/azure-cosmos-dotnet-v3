@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Other Changes
 
+- [#5908](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5908) Performance: Avoid full-document `string` allocation in `CosmosSystemTextJsonSerializer` read paths (binary and text). UTF-8 bytes are now fed directly into `Utf8JsonReader` via `JsonSerializer.Deserialize<T>(Stream, ...)` and `Deserialize<T>(ReadOnlySpan<byte>, ...)`, eliminating LOH pressure from per-read full-document string materialization.
+
 ### <a name="3.62.0-preview.0"/> [3.62.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.62.0-preview.0) - 2026-6-1
 
 #### Features Added
