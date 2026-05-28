@@ -41,9 +41,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [ExpectedException(typeof(ArgumentNullException))]
         public void ApplyBuildConfiguration_ValidatesNullInstance()
         {
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(Mock.Of<DocumentServiceLeaseContainer>);
+
             ChangeFeedProcessorCore processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
             processor.ApplyBuildConfiguration(
-                Mock.Of<DocumentServiceLeaseStoreManager>(),
+                leaseStoreManager.Object,
                 null,
                 null,
                 new ChangeFeedLeaseOptions(),
@@ -55,9 +58,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [ExpectedException(typeof(ArgumentNullException))]
         public void ApplyBuildConfiguration_ValidatesNullMonitoredContainer()
         {
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(Mock.Of<DocumentServiceLeaseContainer>);
+
             ChangeFeedProcessorCore processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
             processor.ApplyBuildConfiguration(
-                Mock.Of<DocumentServiceLeaseStoreManager>(),
+                leaseStoreManager.Object,
                 null,
                 "instanceName",
                 new ChangeFeedLeaseOptions(),
@@ -66,11 +72,31 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         [TestMethod]
-        public void ApplyBuildConfiguration_ValidCustomStore()
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void ApplyBuildConfiguration_ValidatesCustomStoreWithNullLeaseContainer()
         {
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns((DocumentServiceLeaseContainer)null);
+
             ChangeFeedProcessorCore processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
             processor.ApplyBuildConfiguration(
-                Mock.Of<DocumentServiceLeaseStoreManager>(),
+                leaseStoreManager.Object,
+                null,
+                "instanceName",
+                new ChangeFeedLeaseOptions(),
+                new ChangeFeedProcessorOptions(),
+                ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
+        }
+
+        [TestMethod]
+        public void ApplyBuildConfiguration_ValidCustomStore()
+        {
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(Mock.Of<DocumentServiceLeaseContainer>);
+
+            ChangeFeedProcessorCore processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
+            processor.ApplyBuildConfiguration(
+                leaseStoreManager.Object,
                 null,
                 "instanceName",
                 new ChangeFeedLeaseOptions(),
@@ -267,6 +293,111 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                     await processor.StopAsync();
                 }
             }
+        }
+
+        [TestMethod]
+        public async Task StartAsync_DoesNotSetStartTime_WhenAllVersionsAndDeletes()
+        {
+            Mock<DocumentServiceLeaseStore> leaseStore = new Mock<DocumentServiceLeaseStore>();
+            leaseStore.Setup(l => l.IsInitializedAsync()).ReturnsAsync(true);
+
+            Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
+            leaseContainer.Setup(l => l.GetOwnedLeasesAsync()).Returns(Task.FromResult(Enumerable.Empty<DocumentServiceLease>()));
+            leaseContainer.Setup(l => l.GetAllLeasesAsync()).ReturnsAsync(new List<DocumentServiceLease>());
+
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(leaseContainer.Object);
+            leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
+            leaseStoreManager.Setup(l => l.LeaseStore).Returns(leaseStore.Object);
+            leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
+
+            ChangeFeedProcessorOptions options = new ChangeFeedProcessorOptions
+            {
+                Mode = ChangeFeedMode.AllVersionsAndDeletes,
+            };
+
+            ChangeFeedProcessorCore processor = null;
+            try
+            {
+                processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
+                processor.ApplyBuildConfiguration(
+                    leaseStoreManager.Object,
+                    null,
+                    "instanceName",
+                    new ChangeFeedLeaseOptions(),
+                    options,
+                    ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
+
+                await processor.StartAsync();
+
+                // AVAD uses LSN-based continuation (IfNoneMatch: *), not RFC1123 IfModifiedSince,
+                // so the seconds-precision back-off from PR #5617 does not apply.
+                Assert.IsNull(options.StartTime,
+                    "StartTime should remain null for AllVersionsAndDeletes mode.");
+            }
+            finally
+            {
+                if (processor != null)
+                {
+                    await processor.StopAsync();
+                }
+            }
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(InvalidOperationException))]
+        public async Task StartAsync_ThrowsWhenAllVersionsAndDeletes_WithStartFromBeginning()
+        {
+            ChangeFeedProcessorOptions options = new ChangeFeedProcessorOptions
+            {
+                Mode = ChangeFeedMode.AllVersionsAndDeletes,
+                StartFromBeginning = true,
+            };
+
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(Mock.Of<DocumentServiceLeaseContainer>);
+            leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
+            leaseStoreManager.Setup(l => l.LeaseStore).Returns(Mock.Of<DocumentServiceLeaseStore>);
+            leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
+
+            ChangeFeedProcessorCore processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
+            processor.ApplyBuildConfiguration(
+                leaseStoreManager.Object,
+                null,
+                "instanceName",
+                new ChangeFeedLeaseOptions(),
+                options,
+                ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
+
+            await processor.StartAsync();
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(InvalidOperationException))]
+        public async Task StartAsync_ThrowsWhenAllVersionsAndDeletes_WithStartTime()
+        {
+            ChangeFeedProcessorOptions options = new ChangeFeedProcessorOptions
+            {
+                Mode = ChangeFeedMode.AllVersionsAndDeletes,
+                StartTime = DateTime.UtcNow,
+            };
+
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(Mock.Of<DocumentServiceLeaseContainer>);
+            leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
+            leaseStoreManager.Setup(l => l.LeaseStore).Returns(Mock.Of<DocumentServiceLeaseStore>);
+            leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
+
+            ChangeFeedProcessorCore processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
+            processor.ApplyBuildConfiguration(
+                leaseStoreManager.Object,
+                null,
+                "instanceName",
+                new ChangeFeedLeaseOptions(),
+                options,
+                ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
+
+            await processor.StartAsync();
         }
 
         [TestMethod]

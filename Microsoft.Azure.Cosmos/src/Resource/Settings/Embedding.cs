@@ -43,6 +43,19 @@ namespace Microsoft.Azure.Cosmos
         public DistanceFunction DistanceFunction { get; set; }
 
         /// <summary>
+        /// Gets or sets the optional <see cref="Cosmos.EmbeddingSource"/> describing the source
+        /// document paths and embedding service that the Cosmos DB service should use to
+        /// generate the vector value for this embedding.
+        /// </summary>
+        [JsonProperty(PropertyName = "embeddingSource", NullValueHandling = NullValueHandling.Ignore)]
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        EmbeddingSource EmbeddingSource { get; set; }
+
+        /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
@@ -68,10 +81,16 @@ namespace Microsoft.Azure.Cosmos
         /// <inheritdoc/>
         public bool Equals(Embedding that)
         {
+            if (that is null)
+            {
+                return false;
+            }
+
             return this.Path.Equals(that.Path)
                 && this.DataType.Equals(that.DataType)
                 && this.Dimensions == that.Dimensions
-                && this.Dimensions.Equals(that.Dimensions);
+                && this.DistanceFunction.Equals(that.DistanceFunction)
+                && object.Equals(this.EmbeddingSource, that.EmbeddingSource);
         }
     }
 }
