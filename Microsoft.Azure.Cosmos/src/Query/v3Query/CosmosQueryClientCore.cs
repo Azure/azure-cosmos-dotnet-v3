@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
@@ -322,15 +321,11 @@ namespace Microsoft.Azure.Cosmos
             {
                 using (cosmosResponseMessage)
                 {
-                    if (cosmosResponseMessage.Headers.QueryMetricsText != null)
-                    {
-                        QueryMetricsTraceDatum datum = new QueryMetricsTraceDatum(
-                            new Lazy<QueryMetrics>(() => new QueryMetrics(
-                                cosmosResponseMessage.Headers.QueryMetricsText, 
-                                IndexUtilizationInfo.Empty, 
-                                ClientSideMetrics.Empty)));
-                        trace.AddDatum(TraceDatumKeys.QueryMetrics, datum);
-                    }
+                    // Note: QueryMetricsTraceDatum is attached at the transport layer
+                    // (Handler/TransportHandler.cs) for the REST/RNTBD path so the datum
+                    // is reachable from custom RequestHandlers as the response unwinds.
+                    // The thin-client path attaches it in
+                    // Query/Core/QueryClient/CosmosDistributedQueryClient.CreatePage.
 
                     if (!cosmosResponseMessage.IsSuccessStatusCode)
                     {

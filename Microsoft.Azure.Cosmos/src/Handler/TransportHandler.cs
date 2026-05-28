@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
@@ -154,6 +155,29 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 ResponseMessage responseMessage = response.ToCosmosResponseMessage(
                     request,
                     serviceRequest.RequestContext.RequestChargeTracker);
+
+                // Attach query metrics to the per-request transport trace so they are
+                // reachable from a custom RequestHandler.SendAsync as the response unwinds
+                // back through the handler pipeline (issue #5117). Before this, the datum
+                // was added in CosmosQueryClientCore.GetCosmosElementResponse, which runs
+                // after the handler pipeline has fully unwound, so handlers always saw
+                // a null GetQueryMetrics result. Guarded on operation type to avoid
+                // mis-tagging non-query operations that may ever surface a query-metrics
+                // header. The thin-client / distributed-gateway path adds the same datum
+                // from CosmosDistributedQueryClient.CreatePage (that path bypasses
+                // TransportHandler).
+                if ((request.OperationType == OperationType.Query
+                        || request.OperationType == OperationType.SqlQuery)
+                    && !string.IsNullOrEmpty(responseMessage?.Headers?.QueryMetricsText))
+                {
+                    string queryMetricsText = responseMessage.Headers.QueryMetricsText;
+                    QueryMetricsTraceDatum queryMetricsDatum = new QueryMetricsTraceDatum(
+                        new Lazy<QueryMetrics>(() => new QueryMetrics(
+                            queryMetricsText,
+                            IndexUtilizationInfo.Empty,
+                            ClientSideMetrics.Empty)));
+                    processMessageAsyncTrace.AddDatum(TraceDatumKeys.QueryMetrics, queryMetricsDatum);
+                }
 
                 // Enrich diagnostics context in-case of auth failures 
                 if (responseMessage?.StatusCode == System.Net.HttpStatusCode.Unauthorized || responseMessage?.StatusCode == System.Net.HttpStatusCode.Forbidden)
