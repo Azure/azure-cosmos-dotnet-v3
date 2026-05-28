@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Net;
     using System.Text.Json;
-    using System.Text.Json.Serialization;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -46,14 +45,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Initializes a new instance of the <see cref="DistributedTransactionOperationResult"/> class.
         /// </summary>
-        /// <remarks>
-        /// Must be <c>public</c> for System.Text.Json reflection-based deserialization.
-        /// System.Text.Json 6.x only scans <c>BindingFlags.Public</c> constructors when resolving
-        /// <see cref="JsonConstructorAttribute"/>; non-public constructors are not found.
-        /// Support for non-public constructors was added in System.Text.Json 7.0.
-        /// </remarks>
-        [JsonConstructor]
-        public DistributedTransactionOperationResult()
+        internal DistributedTransactionOperationResult()
         {
         }
 
@@ -88,7 +80,6 @@ namespace Microsoft.Azure.Cosmos
         /// Do not dispose it directly. To deserialize to a typed object, use
         /// <see cref="DistributedTransactionResponse.GetOperationResultAtIndex{T}"/>.
         /// </remarks>
-        [JsonIgnore]
         public virtual Stream ResourceStream { get; internal set; }
 
         /// <summary>
@@ -105,13 +96,10 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// ActivityId related to the operation.
         /// </summary>
-        [JsonIgnore]
         internal virtual string ActivityId { get; set; }
 
-        [JsonIgnore]
         internal ITrace Trace { get; set; }
 
-        [JsonIgnore]
         internal CosmosSerializerCore SerializerCore { get; set; }
 
         /// <summary>
@@ -203,7 +191,7 @@ namespace Microsoft.Azure.Cosmos
                 result.RequestCharge = requestCharge;
             }
 
-            if (TryGetPropertyOrdinal(json, DistributedTransactionSerializer.ResourceBody, out JsonElement resourceBody)
+            if (TryGetProperty(json, DistributedTransactionSerializer.ResourceBody, out JsonElement resourceBody)
                 && resourceBody.ValueKind != JsonValueKind.Undefined
                 && resourceBody.ValueKind != JsonValueKind.Null)
             {
@@ -265,17 +253,6 @@ namespace Microsoft.Azure.Cosmos
 
             value = default;
             return false;
-        }
-
-        internal static bool TryGetPropertyOrdinal(JsonElement element, string propertyName, out JsonElement value)
-        {
-            if (element.ValueKind != JsonValueKind.Object)
-            {
-                value = default;
-                return false;
-            }
-
-            return element.TryGetProperty(propertyName, out value);
         }
 
         private static bool TryGetInt32Property(JsonElement element, string propertyName, out int value)

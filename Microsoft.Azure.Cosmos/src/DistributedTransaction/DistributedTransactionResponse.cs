@@ -375,20 +375,20 @@ namespace Microsoft.Azure.Cosmos
             {
                 JsonElement root = responseJson.RootElement;
 
-                if (DistributedTransactionOperationResult.TryGetPropertyOrdinal(root, DistributedTransactionSerializer.IsRetriable, out JsonElement isRetriableElement) &&
+                if (DistributedTransactionOperationResult.TryGetProperty(root, DistributedTransactionSerializer.IsRetriable, out JsonElement isRetriableElement) &&
                     isRetriableElement.ValueKind == JsonValueKind.True)
                 {
                     isRetriable = true;
                 }
 
-                if (root.TryGetProperty(DistributedTransactionSerializer.DiagnosticString, out JsonElement diagnosticStringElement) &&
+                if (DistributedTransactionOperationResult.TryGetProperty(root, DistributedTransactionSerializer.DiagnosticString, out JsonElement diagnosticStringElement) &&
                     diagnosticStringElement.ValueKind == JsonValueKind.String)
                 {
                     diagnosticString = diagnosticStringElement.GetString();
                 }
 
                 // Parse operation results from "operationResponses" array.
-                if (DistributedTransactionOperationResult.TryGetPropertyOrdinal(root, DistributedTransactionSerializer.OperationResponses, out JsonElement operationResponses) &&
+                if (DistributedTransactionOperationResult.TryGetProperty(root, DistributedTransactionSerializer.OperationResponses, out JsonElement operationResponses) &&
                     operationResponses.ValueKind == JsonValueKind.Array)
                 {
                     try
