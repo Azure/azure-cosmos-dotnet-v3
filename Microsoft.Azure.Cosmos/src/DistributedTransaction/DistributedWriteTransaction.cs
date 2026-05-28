@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents a distributed transaction that supports write operations across multiple partitions and containers.
     /// </summary>
-#if INTERNAL
+#if PREVIEW
     public
 #else
     internal
