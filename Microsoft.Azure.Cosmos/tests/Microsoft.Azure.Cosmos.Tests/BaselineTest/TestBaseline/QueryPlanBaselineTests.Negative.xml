@@ -9,7 +9,10 @@
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <Exception>TryCatch resulted in an exception.</Exception>
+      <Exception>Microsoft.Azure.Cosmos.Query.Core.Monads.ExceptionWithStackTraceException : TryCatch resulted in an exception.
+Microsoft.Azure.Cosmos.Query.Core.Exceptions.ExpectedQueryPartitionProviderException : {"errors":[{"severity":"Error","location":{"start":7,"end":14},"code":"SC2005","message":"'BADFUNC' is not a recognized built-in function name."}]}
+System.Runtime.InteropServices.COMException : 0x800A0B00
+</Exception>
     </Output>
   </Result>
   <Result>
@@ -28,7 +31,10 @@
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <Exception>TryCatch resulted in an exception.</Exception>
+      <Exception>Microsoft.Azure.Cosmos.Query.Core.Monads.ExceptionWithStackTraceException : TryCatch resulted in an exception.
+Microsoft.Azure.Cosmos.Query.Core.Exceptions.ExpectedQueryPartitionProviderException : {"errors":[{"severity":"Error","location":{"start":336,"end":340},"code":"SC1001","message":"Syntax error, incorrect syntax near 'FROM'."}]}
+System.Runtime.InteropServices.COMException : 0x800A0B00
+</Exception>
     </Output>
   </Result>
   <Result>
@@ -41,7 +47,10 @@
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <Exception>TryCatch resulted in an exception.</Exception>
+      <Exception>Microsoft.Azure.Cosmos.Query.Core.Monads.ExceptionWithStackTraceException : TryCatch resulted in an exception.
+Microsoft.Azure.Cosmos.Query.Core.Exceptions.ExpectedQueryPartitionProviderException : {"errors":[{"severity":"Error","location":{"start":27,"end":59},"code":"SC2050","message":"The STARTSWITH function requires 2 to 3 argument(s)."}]}
+System.Runtime.InteropServices.COMException : 0x800A0B00
+</Exception>
     </Output>
   </Result>
   <Result>
@@ -54,7 +63,10 @@
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <Exception>TryCatch resulted in an exception.</Exception>
+      <Exception>Microsoft.Azure.Cosmos.Query.Core.Monads.ExceptionWithStackTraceException : TryCatch resulted in an exception.
+Microsoft.Azure.Cosmos.Query.Core.Exceptions.ExpectedQueryPartitionProviderException : {"errors":[{"severity":"Error","code":2206,"message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}
+System.Runtime.InteropServices.COMException : 0x800A0B00
+</Exception>
     </Output>
   </Result>
   <Result>
@@ -67,7 +79,10 @@
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <Exception>TryCatch resulted in an exception.</Exception>
+      <Exception>Microsoft.Azure.Cosmos.Query.Core.Monads.ExceptionWithStackTraceException : TryCatch resulted in an exception.
+Microsoft.Azure.Cosmos.Query.Core.Exceptions.ExpectedQueryPartitionProviderException : {"errors":[{"severity":"Error","location":{"start":13,"end":24},"code":"SC2101","message":"Cannot perform an aggregate function on an expression containing an aggregate or a subquery."}]}
+System.Runtime.InteropServices.COMException : 0x800A0B00
+</Exception>
     </Output>
   </Result>
   <Result>
@@ -121,7 +136,10 @@ FROM r]]></RewrittenQuery>
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <Exception>TryCatch resulted in an exception.</Exception>
+      <Exception>Microsoft.Azure.Cosmos.Query.Core.Monads.ExceptionWithStackTraceException : TryCatch resulted in an exception.
+Microsoft.Azure.Cosmos.Query.Core.Exceptions.ExpectedQueryPartitionProviderException : {"Errors":["Compositions of aggregates and other expressions are not allowed."]}
+System.Runtime.InteropServices.COMException : 0x800A0B00
+</Exception>
     </Output>
   </Result>
   <Result>
@@ -134,7 +152,10 @@ FROM r]]></RewrittenQuery>
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <Exception>TryCatch resulted in an exception.</Exception>
+      <Exception>Microsoft.Azure.Cosmos.Query.Core.Monads.ExceptionWithStackTraceException : TryCatch resulted in an exception.
+Microsoft.Azure.Cosmos.Query.Core.Exceptions.ExpectedQueryPartitionProviderException : {"Errors":["Compositions of aggregates and other expressions are not allowed."]}
+System.Runtime.InteropServices.COMException : 0x800A0B00
+</Exception>
     </Output>
   </Result>
   <Result>
@@ -147,7 +168,10 @@ FROM r]]></RewrittenQuery>
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <Exception>TryCatch resulted in an exception.</Exception>
+      <Exception>Microsoft.Azure.Cosmos.Query.Core.Monads.ExceptionWithStackTraceException : TryCatch resulted in an exception.
+Microsoft.Azure.Cosmos.Query.Core.Exceptions.ExpectedQueryPartitionProviderException : {"Errors":["Compositions of aggregates and other expressions are not allowed."]}
+System.Runtime.InteropServices.COMException : 0x800A0B00
+</Exception>
     </Output>
   </Result>
 </Results>

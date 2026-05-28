@@ -1,0 +1,1752 @@
+namespace Microsoft.Azure.Cosmos
+{
+    public class AccountConsistency
+    {
+        public AccountConsistency();
+        public ConsistencyLevel DefaultConsistencyLevel { get; }
+        public int MaxStalenessIntervalInSeconds { get; }
+        public int MaxStalenessPrefix { get; }
+    }
+    public class AccountProperties
+    {
+        public AccountConsistency Consistency { get; }
+        public string ETag { get; }
+        public string Id { get; }
+        public IEnumerable<AccountRegion> ReadableRegions { get; }
+        public IEnumerable<AccountRegion> WritableRegions { get; }
+    }
+    public class AccountRegion
+    {
+        public AccountRegion();
+        public string Endpoint { get; }
+        public string Name { get; }
+    }
+    public abstract class AvailabilityStrategy
+    {
+        public static AvailabilityStrategy CrossRegionHedgingStrategy(TimeSpan threshold, Nullable<TimeSpan> thresholdStep);
+    }
+    public sealed class BoundingBoxProperties
+    {
+        public BoundingBoxProperties();
+        public double Xmax { get; set; }
+        public double Xmin { get; set; }
+        public double Ymax { get; set; }
+        public double Ymin { get; set; }
+    }
+    public abstract class ChangeFeedEstimator
+    {
+        protected ChangeFeedEstimator();
+        public abstract FeedIterator<ChangeFeedProcessorState> GetCurrentStateIterator(ChangeFeedEstimatorRequestOptions changeFeedEstimatorRequestOptions=null);
+    }
+    public sealed class ChangeFeedEstimatorRequestOptions
+    {
+        public ChangeFeedEstimatorRequestOptions();
+        public Nullable<int> MaxItemCount { get; set; }
+    }
+    public class ChangeFeedItem<T>
+    {
+        public ChangeFeedItem();
+        public T Current { get; set; }
+        public ChangeFeedMetadata Metadata { get; set; }
+        public T Previous { get; set; }
+    }
+    public class ChangeFeedMetadata
+    {
+        public ChangeFeedMetadata();
+        public DateTime ConflictResolutionTimestamp { get; }
+        public bool IsTimeToLiveExpired { get; }
+        public long Lsn { get; }
+        public ChangeFeedOperationType OperationType { get; }
+        public long PreviousLsn { get; }
+    }
+    public abstract class ChangeFeedMode
+    {
+        public static ChangeFeedMode AllVersionsAndDeletes { get; }
+        public static ChangeFeedMode Incremental { get; }
+        public static ChangeFeedMode LatestVersion { get; }
+    }
+    public enum ChangeFeedOperationType
+    {
+        Create = 0,
+        Delete = 2,
+        Replace = 1,
+    }
+    public sealed class ChangeFeedPolicy
+    {
+        public ChangeFeedPolicy();
+        public static TimeSpan FullFidelityNoRetention { get; }
+        public TimeSpan FullFidelityRetention { get; set; }
+    }
+    public abstract class ChangeFeedProcessor
+    {
+        protected ChangeFeedProcessor();
+        public abstract Task StartAsync();
+        public abstract Task StopAsync();
+    }
+    public class ChangeFeedProcessorBuilder
+    {
+        public ChangeFeedProcessor Build();
+        public ChangeFeedProcessorBuilder WithErrorNotification(Container.ChangeFeedMonitorErrorDelegate errorDelegate);
+        public ChangeFeedProcessorBuilder WithInstanceName(string instanceName);
+        public ChangeFeedProcessorBuilder WithLeaseAcquireNotification(Container.ChangeFeedMonitorLeaseAcquireDelegate acquireDelegate);
+        public ChangeFeedProcessorBuilder WithLeaseConfiguration(Nullable<TimeSpan> acquireInterval=default(Nullable<TimeSpan>), Nullable<TimeSpan> expirationInterval=default(Nullable<TimeSpan>), Nullable<TimeSpan> renewInterval=default(Nullable<TimeSpan>));
+        public ChangeFeedProcessorBuilder WithLeaseContainer(Container leaseContainer);
+        public ChangeFeedProcessorBuilder WithLeaseReleaseNotification(Container.ChangeFeedMonitorLeaseReleaseDelegate releaseDelegate);
+        public ChangeFeedProcessorBuilder WithMaxItems(int maxItemCount);
+        public ChangeFeedProcessorBuilder WithPollInterval(TimeSpan pollInterval);
+        public ChangeFeedProcessorBuilder WithStartTime(DateTime startTime);
+    }
+    public abstract class ChangeFeedProcessorContext
+    {
+        protected ChangeFeedProcessorContext();
+        public abstract CosmosDiagnostics Diagnostics { get; }
+        public abstract FeedRange FeedRange { get; }
+        public abstract Headers Headers { get; }
+        public abstract string LeaseToken { get; }
+    }
+    public sealed class ChangeFeedProcessorState
+    {
+        public ChangeFeedProcessorState(string leaseToken, long estimatedLag, string instanceName);
+        public long EstimatedLag { get; }
+        public string InstanceName { get; }
+        public string LeaseToken { get; }
+    }
+    public class ChangeFeedProcessorUserException : Exception
+    {
+        public ChangeFeedProcessorUserException(Exception originalException, ChangeFeedProcessorContext context);
+        protected ChangeFeedProcessorUserException(SerializationInfo info, StreamingContext context);
+        public ChangeFeedProcessorContext ChangeFeedProcessorContext { get; }
+        public override void GetObjectData(SerializationInfo info, StreamingContext context);
+    }
+    public sealed class ChangeFeedRequestOptions : RequestOptions
+    {
+        public ChangeFeedRequestOptions();
+        public new string IfMatchEtag { get; set; }
+        public new string IfNoneMatchEtag { get; set; }
+        public Nullable<int> PageSizeHint { get; set; }
+    }
+    public abstract class ChangeFeedStartFrom
+    {
+        public static ChangeFeedStartFrom Beginning();
+        public static ChangeFeedStartFrom Beginning(FeedRange feedRange);
+        public static ChangeFeedStartFrom ContinuationToken(string continuationToken);
+        public static ChangeFeedStartFrom Now();
+        public static ChangeFeedStartFrom Now(FeedRange feedRange);
+        public static ChangeFeedStartFrom Time(DateTime dateTimeUtc);
+        public static ChangeFeedStartFrom Time(DateTime dateTimeUtc, FeedRange feedRange);
+    }
+    public sealed class ClientEncryptionIncludedPath
+    {
+        public ClientEncryptionIncludedPath();
+        public string ClientEncryptionKeyId { get; set; }
+        public string EncryptionAlgorithm { get; set; }
+        public string EncryptionType { get; set; }
+        public string Path { get; set; }
+    }
+    public abstract class ClientEncryptionKey
+    {
+        protected ClientEncryptionKey();
+        public abstract string Id { get; }
+        public abstract Task<ClientEncryptionKeyResponse> ReadAsync(RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ClientEncryptionKeyResponse> ReplaceAsync(ClientEncryptionKeyProperties clientEncryptionKeyProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+    }
+    public class ClientEncryptionKeyProperties : IEquatable<ClientEncryptionKeyProperties>
+    {
+        protected ClientEncryptionKeyProperties();
+        public ClientEncryptionKeyProperties(string id, string encryptionAlgorithm, byte[] wrappedDataEncryptionKey, EncryptionKeyWrapMetadata encryptionKeyWrapMetadata);
+        public Nullable<DateTime> CreatedTime { get; }
+        public string EncryptionAlgorithm { get; }
+        public EncryptionKeyWrapMetadata EncryptionKeyWrapMetadata { get; }
+        public string ETag { get; }
+        public string Id { get; }
+        public Nullable<DateTime> LastModified { get; }
+        public virtual string SelfLink { get; }
+        public byte[] WrappedDataEncryptionKey { get; }
+        public bool Equals(ClientEncryptionKeyProperties other);
+        public override bool Equals(object obj);
+        public override int GetHashCode();
+    }
+    public class ClientEncryptionKeyResponse : Response<ClientEncryptionKeyProperties>
+    {
+        protected ClientEncryptionKeyResponse();
+        public override string ActivityId { get; }
+        public virtual ClientEncryptionKey ClientEncryptionKey { get; }
+        public override CosmosDiagnostics Diagnostics { get; }
+        public override string ETag { get; }
+        public override Headers Headers { get; }
+        public override double RequestCharge { get; }
+        public override ClientEncryptionKeyProperties Resource { get; }
+        public override HttpStatusCode StatusCode { get; }
+        public static implicit operator ClientEncryptionKey (ClientEncryptionKeyResponse response);
+    }
+    public sealed class ClientEncryptionPolicy
+    {
+        public ClientEncryptionPolicy(IEnumerable<ClientEncryptionIncludedPath> includedPaths);
+        public ClientEncryptionPolicy(IEnumerable<ClientEncryptionIncludedPath> includedPaths, int policyFormatVersion);
+        public IEnumerable<ClientEncryptionIncludedPath> IncludedPaths { get; }
+        public int PolicyFormatVersion { get; }
+    }
+    public sealed class CompositePath
+    {
+        public CompositePath();
+        public CompositePathSortOrder Order { get; set; }
+        public string Path { get; set; }
+    }
+    public enum CompositePathSortOrder
+    {
+        Ascending = 0,
+        Descending = 1,
+    }
+    public sealed class ComputedProperty
+    {
+        public ComputedProperty();
+        public string Name { get; set; }
+        public string Query { get; set; }
+    }
+    public class ConflictProperties
+    {
+        public ConflictProperties();
+        public string Id { get; }
+        public OperationKind OperationKind { get; }
+        public string SelfLink { get; }
+    }
+    public enum ConflictResolutionMode
+    {
+        Custom = 1,
+        LastWriterWins = 0,
+    }
+    public class ConflictResolutionPolicy
+    {
+        public ConflictResolutionPolicy();
+        public ConflictResolutionMode Mode { get; set; }
+        public string ResolutionPath { get; set; }
+        public string ResolutionProcedure { get; set; }
+    }
+    public abstract class Conflicts
+    {
+        protected Conflicts();
+        public abstract Task<ResponseMessage> DeleteAsync(ConflictProperties conflict, PartitionKey partitionKey, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract FeedIterator<T> GetConflictQueryIterator<T>(QueryDefinition queryDefinition, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract FeedIterator<T> GetConflictQueryIterator<T>(string queryText=null, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract FeedIterator GetConflictQueryStreamIterator(QueryDefinition queryDefinition, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract FeedIterator GetConflictQueryStreamIterator(string queryText=null, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract T ReadConflictContent<T>(ConflictProperties conflict);
+        public abstract Task<ItemResponse<T>> ReadCurrentAsync<T>(ConflictProperties conflict, PartitionKey partitionKey, CancellationToken cancellationToken=default(CancellationToken));
+    }
+    public enum ConnectionMode
+    {
+        Direct = 1,
+        Gateway = 0,
+    }
+    public enum ConsistencyLevel
+    {
+        BoundedStaleness = 1,
+        ConsistentPrefix = 4,
+        Eventual = 3,
+        Session = 2,
+        Strong = 0,
+    }
+    public abstract class Container
+    {
+        protected Container();
+        public abstract Conflicts Conflicts { get; }
+        public abstract Database Database { get; }
+        public abstract string Id { get; }
+        public abstract Scripts Scripts { get; }
+        public abstract Task<ItemResponse<T>> CreateItemAsync<T>(T item, Nullable<PartitionKey> partitionKey=default(Nullable<PartitionKey>), ItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ResponseMessage> CreateItemStreamAsync(Stream streamPayload, PartitionKey partitionKey, ItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey);
+        public virtual Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(PartitionKey partitionKey, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ContainerResponse> DeleteContainerAsync(ContainerRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ResponseMessage> DeleteContainerStreamAsync(ContainerRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ItemResponse<T>> DeleteItemAsync<T>(string id, PartitionKey partitionKey, ItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ResponseMessage> DeleteItemStreamAsync(string id, PartitionKey partitionKey, ItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract ChangeFeedEstimator GetChangeFeedEstimator(string processorName, Container leaseContainer);
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(string processorName, Container.ChangesEstimationHandler estimationDelegate, Nullable<TimeSpan> estimationPeriod=default(Nullable<TimeSpan>));
+        public abstract FeedIterator<T> GetChangeFeedIterator<T>(ChangeFeedStartFrom changeFeedStartFrom, ChangeFeedMode changeFeedMode, ChangeFeedRequestOptions changeFeedRequestOptions=null);
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(string processorName, Container.ChangeFeedStreamHandler onChangesDelegate);
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(string processorName, Container.ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate);
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint(string processorName, Container.ChangeFeedStreamHandlerWithManualCheckpoint onChangesDelegate);
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint<T>(string processorName, Container.ChangeFeedHandlerWithManualCheckpoint<T> onChangesDelegate);
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(string processorName, Container.ChangeFeedHandler<T> onChangesDelegate);
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(string processorName, Container.ChangesHandler<T> onChangesDelegate);
+        public abstract FeedIterator GetChangeFeedStreamIterator(ChangeFeedStartFrom changeFeedStartFrom, ChangeFeedMode changeFeedMode, ChangeFeedRequestOptions changeFeedRequestOptions=null);
+        public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken=default(CancellationToken));
+        public abstract IOrderedQueryable<T> GetItemLinqQueryable<T>(bool allowSynchronousQueryExecution=false, string continuationToken=null, QueryRequestOptions requestOptions=null, CosmosLinqSerializerOptions linqSerializerOptions=null);
+        public abstract FeedIterator<T> GetItemQueryIterator<T>(FeedRange feedRange, QueryDefinition queryDefinition, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract FeedIterator<T> GetItemQueryIterator<T>(QueryDefinition queryDefinition, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract FeedIterator<T> GetItemQueryIterator<T>(string queryText=null, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract FeedIterator GetItemQueryStreamIterator(FeedRange feedRange, QueryDefinition queryDefinition, string continuationToken, QueryRequestOptions requestOptions=null);
+        public abstract FeedIterator GetItemQueryStreamIterator(QueryDefinition queryDefinition, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract FeedIterator GetItemQueryStreamIterator(string queryText=null, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(FeedRange feedRange, CancellationToken cancellationToken=default(CancellationToken));
+        public virtual Task<bool> IsFeedRangePartOfAsync(FeedRange x, FeedRange y, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ItemResponse<T>> PatchItemAsync<T>(string id, PartitionKey partitionKey, IReadOnlyList<PatchOperation> patchOperations, PatchItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ResponseMessage> PatchItemStreamAsync(string id, PartitionKey partitionKey, IReadOnlyList<PatchOperation> patchOperations, PatchItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ContainerResponse> ReadContainerAsync(ContainerRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ResponseMessage> ReadContainerStreamAsync(ContainerRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ItemResponse<T>> ReadItemAsync<T>(string id, PartitionKey partitionKey, ItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ResponseMessage> ReadItemStreamAsync(string id, PartitionKey partitionKey, ItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<FeedResponse<T>> ReadManyItemsAsync<T>(IReadOnlyList<ValueTuple<string, PartitionKey>> items, ReadManyRequestOptions readManyRequestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ResponseMessage> ReadManyItemsStreamAsync(IReadOnlyList<ValueTuple<string, PartitionKey>> items, ReadManyRequestOptions readManyRequestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ThroughputResponse> ReadThroughputAsync(RequestOptions requestOptions, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<Nullable<int>> ReadThroughputAsync(CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ContainerResponse> ReplaceContainerAsync(ContainerProperties containerProperties, ContainerRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ResponseMessage> ReplaceContainerStreamAsync(ContainerProperties containerProperties, ContainerRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ItemResponse<T>> ReplaceItemAsync<T>(T item, string id, Nullable<PartitionKey> partitionKey=default(Nullable<PartitionKey>), ItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ResponseMessage> ReplaceItemStreamAsync(Stream streamPayload, string id, PartitionKey partitionKey, ItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ThroughputResponse> ReplaceThroughputAsync(ThroughputProperties throughputProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ThroughputResponse> ReplaceThroughputAsync(int throughput, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ItemResponse<T>> UpsertItemAsync<T>(T item, Nullable<PartitionKey> partitionKey=default(Nullable<PartitionKey>), ItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ResponseMessage> UpsertItemStreamAsync(Stream streamPayload, PartitionKey partitionKey, ItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public delegate Task ChangeFeedHandlerWithManualCheckpoint<T>(ChangeFeedProcessorContext context, IReadOnlyCollection<T> changes, Func<Task> checkpointAsync, CancellationToken cancellationToken);
+        public delegate Task ChangeFeedHandler<T>(ChangeFeedProcessorContext context, IReadOnlyCollection<T> changes, CancellationToken cancellationToken);
+        public delegate Task ChangeFeedMonitorErrorDelegate(string leaseToken, Exception exception);
+        public delegate Task ChangeFeedMonitorLeaseAcquireDelegate(string leaseToken);
+        public delegate Task ChangeFeedMonitorLeaseReleaseDelegate(string leaseToken);
+        public delegate Task ChangeFeedStreamHandler(ChangeFeedProcessorContext context, Stream changes, CancellationToken cancellationToken);
+        public delegate Task ChangeFeedStreamHandlerWithManualCheckpoint(ChangeFeedProcessorContext context, Stream changes, Func<Task> checkpointAsync, CancellationToken cancellationToken);
+        public delegate Task ChangesEstimationHandler(long estimatedPendingChanges, CancellationToken cancellationToken);
+        public delegate Task ChangesHandler<T>(IReadOnlyCollection<T> changes, CancellationToken cancellationToken);
+    }
+    public class ContainerProperties
+    {
+        public ContainerProperties();
+        public ContainerProperties(string id, IReadOnlyList<string> partitionKeyPaths);
+        public ContainerProperties(string id, string partitionKeyPath);
+        public Nullable<int> AnalyticalStoreTimeToLiveInSeconds { get; set; }
+        public ChangeFeedPolicy ChangeFeedPolicy { get; set; }
+        public ClientEncryptionPolicy ClientEncryptionPolicy { get; set; }
+        public Collection<ComputedProperty> ComputedProperties { get; set; }
+        public ConflictResolutionPolicy ConflictResolutionPolicy { get; set; }
+        public Nullable<int> DefaultTimeToLive { get; set; }
+        public string ETag { get; }
+        public FullTextPolicy FullTextPolicy { get; set; }
+        public GeospatialConfig GeospatialConfig { get; set; }
+        public string Id { get; set; }
+        public IndexingPolicy IndexingPolicy { get; set; }
+        public Nullable<DateTime> LastModified { get; }
+        public Nullable<PartitionKeyDefinitionVersion> PartitionKeyDefinitionVersion { get; set; }
+        public string PartitionKeyPath { get; set; }
+        public IReadOnlyList<string> PartitionKeyPaths { get; set; }
+        public string SelfLink { get; }
+        public string TimeToLivePropertyPath { get; set; }
+        public UniqueKeyPolicy UniqueKeyPolicy { get; set; }
+        public VectorEmbeddingPolicy VectorEmbeddingPolicy { get; set; }
+    }
+    public class ContainerRequestOptions : RequestOptions
+    {
+        public ContainerRequestOptions();
+        public bool PopulateQuotaInfo { get; set; }
+    }
+    public class ContainerResponse : Response<ContainerProperties>
+    {
+        protected ContainerResponse();
+        public override string ActivityId { get; }
+        public virtual Container Container { get; }
+        public override CosmosDiagnostics Diagnostics { get; }
+        public override string ETag { get; }
+        public override Headers Headers { get; }
+        public override double RequestCharge { get; }
+        public override ContainerProperties Resource { get; }
+        public override HttpStatusCode StatusCode { get; }
+        public static implicit operator Container (ContainerResponse response);
+    }
+    public class CosmosClient : IDisposable
+    {
+        protected CosmosClient();
+        public CosmosClient(string accountEndpoint, AzureKeyCredential authKeyOrResourceTokenCredential, CosmosClientOptions clientOptions=null);
+        public CosmosClient(string accountEndpoint, TokenCredential tokenCredential, CosmosClientOptions clientOptions=null);
+        public CosmosClient(string connectionString, CosmosClientOptions clientOptions=null);
+        public CosmosClient(string accountEndpoint, string authKeyOrResourceToken, CosmosClientOptions clientOptions=null);
+        public virtual CosmosClientOptions ClientOptions { get; }
+        public virtual Uri Endpoint { get; }
+        public virtual CosmosResponseFactory ResponseFactory { get; }
+        public static Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint, AzureKeyCredential authKeyOrResourceTokenCredential, IReadOnlyList<ValueTuple<string, string>> containers, CosmosClientOptions cosmosClientOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public static Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint, TokenCredential tokenCredential, IReadOnlyList<ValueTuple<string, string>> containers, CosmosClientOptions cosmosClientOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public static Task<CosmosClient> CreateAndInitializeAsync(string connectionString, IReadOnlyList<ValueTuple<string, string>> containers, CosmosClientOptions cosmosClientOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public static Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint, string authKeyOrResourceToken, IReadOnlyList<ValueTuple<string, string>> containers, CosmosClientOptions cosmosClientOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public virtual Task<DatabaseResponse> CreateDatabaseAsync(string id, ThroughputProperties throughputProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public virtual Task<DatabaseResponse> CreateDatabaseAsync(string id, Nullable<int> throughput=default(Nullable<int>), RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public virtual Task<DatabaseResponse> CreateDatabaseIfNotExistsAsync(string id, ThroughputProperties throughputProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public virtual Task<DatabaseResponse> CreateDatabaseIfNotExistsAsync(string id, Nullable<int> throughput=default(Nullable<int>), RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public virtual Task<ResponseMessage> CreateDatabaseStreamAsync(DatabaseProperties databaseProperties, Nullable<int> throughput=default(Nullable<int>), RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public void Dispose();
+        protected virtual void Dispose(bool disposing);
+        public virtual Container GetContainer(string databaseId, string containerId);
+        public virtual Database GetDatabase(string id);
+        public virtual FeedIterator<T> GetDatabaseQueryIterator<T>(QueryDefinition queryDefinition, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public virtual FeedIterator<T> GetDatabaseQueryIterator<T>(string queryText=null, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public virtual FeedIterator GetDatabaseQueryStreamIterator(QueryDefinition queryDefinition, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public virtual FeedIterator GetDatabaseQueryStreamIterator(string queryText=null, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public virtual Task<AccountProperties> ReadAccountAsync();
+    }
+    public class CosmosClientOptions
+    {
+        public CosmosClientOptions();
+        public IEnumerable<Uri> AccountInitializationCustomEndpoints { get; set; }
+        public bool AllowBulkExecution { get; set; }
+        public string ApplicationName { get; set; }
+        public IReadOnlyList<string> ApplicationPreferredRegions { get; set; }
+        public string ApplicationRegion { get; set; }
+        public AvailabilityStrategy AvailabilityStrategy { get; set; }
+        public ConnectionMode ConnectionMode { get; set; }
+        public Nullable<ConsistencyLevel> ConsistencyLevel { get; set; }
+        public CosmosClientTelemetryOptions CosmosClientTelemetryOptions { get; set; }
+        public Collection<RequestHandler> CustomHandlers { get; }
+        public Nullable<bool> EnableContentResponseOnWrite { get; set; }
+        public bool EnableTcpConnectionEndpointRediscovery { get; set; }
+        public int GatewayModeMaxConnectionLimit { get; set; }
+        public Func<HttpClient> HttpClientFactory { get; set; }
+        public Nullable<TimeSpan> IdleTcpConnectionTimeout { get; set; }
+        public bool LimitToEndpoint { get; set; }
+        public Nullable<int> MaxRequestsPerTcpConnection { get; set; }
+        public Nullable<int> MaxRetryAttemptsOnRateLimitedRequests { get; set; }
+        public Nullable<TimeSpan> MaxRetryWaitTimeOnRateLimitedRequests { get; set; }
+        public Nullable<int> MaxTcpConnectionsPerEndpoint { get; set; }
+        public Nullable<TimeSpan> OpenTcpConnectionTimeout { get; set; }
+        public Nullable<PortReuseMode> PortReuseMode { get; set; }
+        public Nullable<PriorityLevel> PriorityLevel { get; set; }
+        public TimeSpan RequestTimeout { get; set; }
+        public CosmosSerializer Serializer { get; set; }
+        public CosmosSerializationOptions SerializerOptions { get; set; }
+        public Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback { get; set; }
+        public Nullable<TimeSpan> TokenCredentialBackgroundRefreshInterval { get; set; }
+        public JsonSerializerOptions UseSystemTextJsonSerializerWithOptions { get; set; }
+        public IWebProxy WebProxy { get; set; }
+    }
+    public class CosmosClientTelemetryOptions
+    {
+        public CosmosClientTelemetryOptions();
+        public CosmosThresholdOptions CosmosThresholdOptions { get; set; }
+        public bool DisableDistributedTracing { get; set; }
+        public bool DisableSendingMetricsToService { get; set; }
+        public QueryTextMode QueryTextMode { get; set; }
+    }
+    public abstract class CosmosDiagnostics
+    {
+        protected CosmosDiagnostics();
+        public virtual TimeSpan GetClientElapsedTime();
+        public abstract IReadOnlyList<ValueTuple<string, Uri>> GetContactedRegions();
+        public virtual int GetFailedRequestCount();
+        public virtual ServerSideCumulativeMetrics GetQueryMetrics();
+        public virtual Nullable<DateTime> GetStartTimeUtc();
+        public abstract override string ToString();
+    }
+    public class CosmosException : Exception
+    {
+        public CosmosException(string message, HttpStatusCode statusCode, int subStatusCode, string activityId, double requestCharge);
+        public virtual string ActivityId { get; }
+        public virtual CosmosDiagnostics Diagnostics { get; }
+        public virtual Headers Headers { get; }
+        public override string Message { get; }
+        public virtual double RequestCharge { get; }
+        public virtual string ResponseBody { get; }
+        public virtual Nullable<TimeSpan> RetryAfter { get; }
+        public override string StackTrace { get; }
+        public virtual HttpStatusCode StatusCode { get; }
+        public virtual int SubStatusCode { get; }
+        public override string ToString();
+        public virtual bool TryGetHeader(string headerName, out string value);
+    }
+    public abstract class CosmosLinqSerializer : CosmosSerializer
+    {
+        protected CosmosLinqSerializer();
+        public abstract string SerializeMemberName(MemberInfo memberInfo);
+    }
+    public sealed class CosmosLinqSerializerOptions
+    {
+        public CosmosLinqSerializerOptions();
+        public CosmosPropertyNamingPolicy PropertyNamingPolicy { get; set; }
+    }
+    public class CosmosOperationCanceledException : OperationCanceledException
+    {
+        public CosmosOperationCanceledException(OperationCanceledException originalException, CosmosDiagnostics diagnostics);
+        protected CosmosOperationCanceledException(SerializationInfo info, StreamingContext context);
+        public override IDictionary Data { get; }
+        public CosmosDiagnostics Diagnostics { get; }
+        public override string HelpLink { get; set; }
+        public override string Message { get; }
+        public override string Source { get; set; }
+        public override string StackTrace { get; }
+        public override Exception GetBaseException();
+        public override void GetObjectData(SerializationInfo info, StreamingContext context);
+        public override string ToString();
+    }
+    public enum CosmosPropertyNamingPolicy
+    {
+        CamelCase = 1,
+        Default = 0,
+    }
+    public abstract class CosmosResponseFactory
+    {
+        protected CosmosResponseFactory();
+        public abstract FeedResponse<T> CreateItemFeedResponse<T>(ResponseMessage responseMessage);
+        public abstract ItemResponse<T> CreateItemResponse<T>(ResponseMessage responseMessage);
+        public abstract StoredProcedureExecuteResponse<T> CreateStoredProcedureExecuteResponse<T>(ResponseMessage responseMessage);
+    }
+    public sealed class CosmosSerializationOptions
+    {
+        public CosmosSerializationOptions();
+        public bool IgnoreNullValues { get; set; }
+        public bool Indented { get; set; }
+        public CosmosPropertyNamingPolicy PropertyNamingPolicy { get; set; }
+    }
+    public abstract class CosmosSerializer
+    {
+        protected CosmosSerializer();
+        public abstract T FromStream<T>(Stream stream);
+        public abstract Stream ToStream<T>(T input);
+    }
+    public class CosmosThresholdOptions
+    {
+        public CosmosThresholdOptions();
+        public TimeSpan NonPointOperationLatencyThreshold { get; set; }
+        public Nullable<int> PayloadSizeThresholdInBytes { get; set; }
+        public TimeSpan PointOperationLatencyThreshold { get; set; }
+        public Nullable<double> RequestChargeThreshold { get; set; }
+    }
+    public abstract class Database
+    {
+        protected Database();
+        public abstract CosmosClient Client { get; }
+        public abstract string Id { get; }
+        public abstract Task<ClientEncryptionKeyResponse> CreateClientEncryptionKeyAsync(ClientEncryptionKeyProperties clientEncryptionKeyProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ContainerResponse> CreateContainerAsync(ContainerProperties containerProperties, ThroughputProperties throughputProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ContainerResponse> CreateContainerAsync(ContainerProperties containerProperties, Nullable<int> throughput=default(Nullable<int>), RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ContainerResponse> CreateContainerAsync(string id, string partitionKeyPath, Nullable<int> throughput=default(Nullable<int>), RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ContainerResponse> CreateContainerIfNotExistsAsync(ContainerProperties containerProperties, ThroughputProperties throughputProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ContainerResponse> CreateContainerIfNotExistsAsync(ContainerProperties containerProperties, Nullable<int> throughput=default(Nullable<int>), RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ContainerResponse> CreateContainerIfNotExistsAsync(string id, string partitionKeyPath, Nullable<int> throughput=default(Nullable<int>), RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ResponseMessage> CreateContainerStreamAsync(ContainerProperties containerProperties, ThroughputProperties throughputProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ResponseMessage> CreateContainerStreamAsync(ContainerProperties containerProperties, Nullable<int> throughput=default(Nullable<int>), RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<UserResponse> CreateUserAsync(string id, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract ContainerBuilder DefineContainer(string name, string partitionKeyPath);
+        public abstract Task<DatabaseResponse> DeleteAsync(RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ResponseMessage> DeleteStreamAsync(RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract ClientEncryptionKey GetClientEncryptionKey(string id);
+        public abstract FeedIterator<ClientEncryptionKeyProperties> GetClientEncryptionKeyQueryIterator(QueryDefinition queryDefinition, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract Container GetContainer(string id);
+        public abstract FeedIterator<T> GetContainerQueryIterator<T>(QueryDefinition queryDefinition, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract FeedIterator<T> GetContainerQueryIterator<T>(string queryText=null, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract FeedIterator GetContainerQueryStreamIterator(QueryDefinition queryDefinition, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract FeedIterator GetContainerQueryStreamIterator(string queryText=null, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract User GetUser(string id);
+        public abstract FeedIterator<T> GetUserQueryIterator<T>(QueryDefinition queryDefinition, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract FeedIterator<T> GetUserQueryIterator<T>(string queryText=null, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract Task<DatabaseResponse> ReadAsync(RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ResponseMessage> ReadStreamAsync(RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ThroughputResponse> ReadThroughputAsync(RequestOptions requestOptions, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<Nullable<int>> ReadThroughputAsync(CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ThroughputResponse> ReplaceThroughputAsync(ThroughputProperties throughputProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ThroughputResponse> ReplaceThroughputAsync(int throughput, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<UserResponse> UpsertUserAsync(string id, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+    }
+    public class DatabaseProperties
+    {
+        public DatabaseProperties();
+        public DatabaseProperties(string id);
+        public string ETag { get; }
+        public string Id { get; set; }
+        public Nullable<DateTime> LastModified { get; }
+        public string SelfLink { get; }
+    }
+    public class DatabaseResponse : Response<DatabaseProperties>
+    {
+        protected DatabaseResponse();
+        public override string ActivityId { get; }
+        public virtual Database Database { get; }
+        public override CosmosDiagnostics Diagnostics { get; }
+        public override string ETag { get; }
+        public override Headers Headers { get; }
+        public override double RequestCharge { get; }
+        public override DatabaseProperties Resource { get; }
+        public override HttpStatusCode StatusCode { get; }
+        public static implicit operator Database (DatabaseResponse response);
+    }
+    public enum DataType
+    {
+        LineString = 3,
+        MultiPolygon = 5,
+        Number = 0,
+        Point = 2,
+        Polygon = 4,
+        String = 1,
+    }
+    public class DedicatedGatewayRequestOptions
+    {
+        public DedicatedGatewayRequestOptions();
+        public Nullable<bool> BypassIntegratedCache { get; set; }
+        public Nullable<TimeSpan> MaxIntegratedCacheStaleness { get; set; }
+    }
+    public enum DistanceFunction
+    {
+        Cosine = 1,
+        DotProduct = 2,
+        Euclidean = 0,
+    }
+    public class Embedding : IEquatable<Embedding>
+    {
+        public Embedding();
+        public VectorDataType DataType { get; set; }
+        public int Dimensions { get; set; }
+        public DistanceFunction DistanceFunction { get; set; }
+        public string Path { get; set; }
+        public bool Equals(Embedding that);
+        public void ValidateEmbeddingPath();
+    }
+    public class EncryptionKeyWrapMetadata : IEquatable<EncryptionKeyWrapMetadata>
+    {
+        public EncryptionKeyWrapMetadata(EncryptionKeyWrapMetadata source);
+        public EncryptionKeyWrapMetadata(string type, string name, string value, string algorithm);
+        public string Algorithm { get; }
+        public string Name { get; }
+        public string Type { get; }
+        public string Value { get; }
+        public bool Equals(EncryptionKeyWrapMetadata other);
+        public override bool Equals(object obj);
+        public override int GetHashCode();
+    }
+    public sealed class ExcludedPath
+    {
+        public ExcludedPath();
+        public string Path { get; set; }
+    }
+    public abstract class FeedIterator : IDisposable
+    {
+        protected FeedIterator();
+        public abstract bool HasMoreResults { get; }
+        public void Dispose();
+        protected virtual void Dispose(bool disposing);
+        public abstract Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken=default(CancellationToken));
+    }
+    public abstract class FeedIterator<T> : IDisposable
+    {
+        protected FeedIterator();
+        public abstract bool HasMoreResults { get; }
+        public void Dispose();
+        protected virtual void Dispose(bool disposing);
+        public abstract Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken=default(CancellationToken));
+    }
+    public abstract class FeedRange
+    {
+        protected FeedRange();
+        public static FeedRange FromJsonString(string toStringValue);
+        public static FeedRange FromPartitionKey(PartitionKey partitionKey);
+        public abstract string ToJsonString();
+    }
+    public abstract class FeedResponse<T> : IEnumerable, IEnumerable<T>
+    {
+        protected FeedResponse();
+        public override string ActivityId { get; }
+        public abstract string ContinuationToken { get; }
+        public abstract int Count { get; }
+        public override string ETag { get; }
+        public abstract string IndexMetrics { get; }
+        public override double RequestCharge { get; }
+        public abstract IEnumerator<T> GetEnumerator();
+        IEnumerator System.Collections.IEnumerable.GetEnumerator();
+    }
+    public sealed class FullTextIndexPath
+    {
+        public FullTextIndexPath();
+        public string Path { get; set; }
+    }
+    public sealed class FullTextPath : IEquatable<FullTextPath>
+    {
+        public FullTextPath();
+        public string Language { get; set; }
+        public string Path { get; set; }
+        public bool Equals(FullTextPath that);
+        public void ValidateFullTextPath();
+    }
+    public sealed class FullTextPolicy
+    {
+        public FullTextPolicy();
+        public string DefaultLanguage { get; set; }
+        public Collection<FullTextPath> FullTextPaths { get; set; }
+    }
+    public sealed class GeospatialConfig
+    {
+        public GeospatialConfig();
+        public GeospatialConfig(GeospatialType geospatialType);
+        public GeospatialType GeospatialType { get; set; }
+    }
+    public enum GeospatialType
+    {
+        Geography = 0,
+        Geometry = 1,
+    }
+    public class Headers : IEnumerable
+    {
+        public Headers();
+        public virtual string ActivityId { get; }
+        public virtual string ContentLength { get; set; }
+        public virtual string ContentType { get; }
+        public virtual string ContinuationToken { get; }
+        public virtual string ETag { get; }
+        public virtual string this[string headerName] { get; set; }
+        public virtual string Location { get; }
+        public virtual double RequestCharge { get; }
+        public virtual string Session { get; }
+        public virtual void Add(string headerName, IEnumerable<string> values);
+        public virtual void Add(string headerName, string value);
+        public virtual string[] AllKeys();
+        public virtual string Get(string headerName);
+        public virtual IEnumerator<string> GetEnumerator();
+        public virtual T GetHeaderValue<T>(string headerName);
+        public virtual string GetValueOrDefault(string headerName);
+        public virtual void Remove(string headerName);
+        public virtual void Set(string headerName, string value);
+        IEnumerator System.Collections.IEnumerable.GetEnumerator();
+        public virtual bool TryGetValue(string headerName, out string value);
+    }
+    public sealed class IncludedPath
+    {
+        public IncludedPath();
+        public string Path { get; set; }
+    }
+    public enum IndexingDirective
+    {
+        Default = 0,
+        Exclude = 2,
+        Include = 1,
+    }
+    public enum IndexingMode
+    {
+        Consistent = 0,
+        Lazy = 1,
+        None = 2,
+    }
+    public sealed class IndexingPolicy
+    {
+        public IndexingPolicy();
+        public bool Automatic { get; set; }
+        public Collection<Collection<CompositePath>> CompositeIndexes { get; }
+        public Collection<ExcludedPath> ExcludedPaths { get; }
+        public Collection<FullTextIndexPath> FullTextIndexes { get; set; }
+        public Collection<IncludedPath> IncludedPaths { get; }
+        public IndexingMode IndexingMode { get; set; }
+        public Collection<SpatialPath> SpatialIndexes { get; }
+        public Collection<VectorIndexPath> VectorIndexes { get; set; }
+    }
+    public enum IndexKind
+    {
+        Hash = 0,
+        Range = 1,
+        Spatial = 2,
+    }
+    public class ItemRequestOptions : RequestOptions
+    {
+        public ItemRequestOptions();
+        public Nullable<ConsistencyLevel> ConsistencyLevel { get; set; }
+        public DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions { get; set; }
+        public Nullable<bool> EnableContentResponseOnWrite { get; set; }
+        public Nullable<IndexingDirective> IndexingDirective { get; set; }
+        public IEnumerable<string> PostTriggers { get; set; }
+        public IEnumerable<string> PreTriggers { get; set; }
+        public string SessionToken { get; set; }
+    }
+    public class ItemResponse<T> : Response<T>
+    {
+        protected ItemResponse();
+        public override string ActivityId { get; }
+        public override CosmosDiagnostics Diagnostics { get; }
+        public override string ETag { get; }
+        public override Headers Headers { get; }
+        public override double RequestCharge { get; }
+        public override T Resource { get; }
+        public override HttpStatusCode StatusCode { get; }
+    }
+    public enum OperationKind
+    {
+        Create = 1,
+        Delete = 3,
+        Invalid = 0,
+        Read = 4,
+        Replace = 2,
+    }
+    public struct PartitionKey : IEquatable<PartitionKey>
+    {
+        public static readonly PartitionKey None;
+        public static readonly PartitionKey Null;
+        public static readonly string SystemKeyName;
+        public static readonly string SystemKeyPath;
+        public PartitionKey(bool partitionKeyValue);
+        public PartitionKey(double partitionKeyValue);
+        public PartitionKey(string partitionKeyValue);
+        public bool Equals(PartitionKey other);
+        public override bool Equals(object obj);
+        public override int GetHashCode();
+        public static bool operator ==(PartitionKey left, PartitionKey right);
+        public static bool operator !=(PartitionKey left, PartitionKey right);
+        public override string ToString();
+    }
+    public sealed class PartitionKeyBuilder
+    {
+        public PartitionKeyBuilder();
+        public PartitionKeyBuilder Add(bool val);
+        public PartitionKeyBuilder Add(double val);
+        public PartitionKeyBuilder Add(string val);
+        public PartitionKeyBuilder AddNoneType();
+        public PartitionKeyBuilder AddNullValue();
+        public PartitionKey Build();
+    }
+    public enum PartitionKeyDefinitionVersion
+    {
+        V1 = 1,
+        V2 = 2,
+    }
+    public sealed class PatchItemRequestOptions : ItemRequestOptions
+    {
+        public PatchItemRequestOptions();
+        public string FilterPredicate { get; set; }
+    }
+    public abstract class PatchOperation
+    {
+        protected PatchOperation();
+        public virtual string From { get; set; }
+        public abstract PatchOperationType OperationType { get; }
+        public abstract string Path { get; }
+        public static PatchOperation Add<T>(string path, T value);
+        public static PatchOperation Increment(string path, double value);
+        public static PatchOperation Increment(string path, long value);
+        public static PatchOperation Move(string from, string path);
+        public static PatchOperation Remove(string path);
+        public static PatchOperation Replace<T>(string path, T value);
+        public static PatchOperation Set<T>(string path, T value);
+        public virtual bool TrySerializeValueParameter(CosmosSerializer cosmosSerializer, out Stream valueParam);
+    }
+    public enum PatchOperationType
+    {
+        Add = 0,
+        Increment = 4,
+        Move = 5,
+        Remove = 1,
+        Replace = 2,
+        Set = 3,
+    }
+    public abstract class PatchOperation<T> : PatchOperation
+    {
+        protected PatchOperation();
+        public abstract T Value { get; }
+    }
+    public abstract class Permission
+    {
+        protected Permission();
+        public abstract string Id { get; }
+        public abstract Task<PermissionResponse> DeleteAsync(RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<PermissionResponse> ReadAsync(Nullable<int> tokenExpiryInSeconds=default(Nullable<int>), RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<PermissionResponse> ReplaceAsync(PermissionProperties permissionProperties, Nullable<int> tokenExpiryInSeconds=default(Nullable<int>), RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+    }
+    public enum PermissionMode : byte
+    {
+        All = (byte)2,
+        Read = (byte)1,
+    }
+    public class PermissionProperties
+    {
+        public PermissionProperties(string id, PermissionMode permissionMode, Container container, PartitionKey resourcePartitionKey, string itemId);
+        public PermissionProperties(string id, PermissionMode permissionMode, Container container, Nullable<PartitionKey> resourcePartitionKey=default(Nullable<PartitionKey>));
+        public string ETag { get; }
+        public string Id { get; }
+        public Nullable<DateTime> LastModified { get; }
+        public PermissionMode PermissionMode { get; }
+        public Nullable<PartitionKey> ResourcePartitionKey { get; set; }
+        public string ResourceUri { get; }
+        public string SelfLink { get; }
+        public string Token { get; }
+    }
+    public class PermissionResponse : Response<PermissionProperties>
+    {
+        protected PermissionResponse();
+        public override string ActivityId { get; }
+        public override CosmosDiagnostics Diagnostics { get; }
+        public override string ETag { get; }
+        public override Headers Headers { get; }
+        public virtual Permission Permission { get; }
+        public override double RequestCharge { get; }
+        public override PermissionProperties Resource { get; }
+        public override HttpStatusCode StatusCode { get; }
+        public static implicit operator Permission (PermissionResponse response);
+    }
+    public enum PortReuseMode
+    {
+        PrivatePortPool = 1,
+        ReuseUnicastPort = 0,
+    }
+    public enum PriorityLevel
+    {
+        High = 1,
+        Low = 2,
+    }
+    public class QueryDefinition
+    {
+        public QueryDefinition(string query);
+        public string QueryText { get; }
+        public IReadOnlyList<ValueTuple<string, object>> GetQueryParameters();
+        public QueryDefinition WithParameter(string name, object value);
+        public QueryDefinition WithParameterStream(string name, Stream valueStream);
+    }
+    public class QueryRequestOptions : RequestOptions
+    {
+        public QueryRequestOptions();
+        public Nullable<ConsistencyLevel> ConsistencyLevel { get; set; }
+        public DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions { get; set; }
+        public Nullable<bool> EnableLowPrecisionOrderBy { get; set; }
+        public bool EnableOptimisticDirectExecution { get; set; }
+        public Nullable<bool> EnableScanInQuery { get; set; }
+        public Nullable<int> MaxBufferedItemCount { get; set; }
+        public Nullable<int> MaxConcurrency { get; set; }
+        public Nullable<int> MaxItemCount { get; set; }
+        public Nullable<PartitionKey> PartitionKey { get; set; }
+        public Nullable<bool> PopulateIndexMetrics { get; set; }
+        public QueryTextMode QueryTextMode { get; set; }
+        public Nullable<int> ResponseContinuationTokenLimitInKb { get; set; }
+        public string SessionToken { get; set; }
+    }
+    public enum QueryTextMode
+    {
+        All = 2,
+        None = 0,
+        ParameterizedOnly = 1,
+    }
+    public class ReadManyRequestOptions : RequestOptions
+    {
+        public ReadManyRequestOptions();
+        public Nullable<ConsistencyLevel> ConsistencyLevel { get; set; }
+        public string SessionToken { get; set; }
+    }
+    public static class Regions
+    {
+        public const string AustraliaCentral = "Australia Central";
+        public const string AustraliaCentral2 = "Australia Central 2";
+        public const string AustraliaEast = "Australia East";
+        public const string AustraliaSoutheast = "Australia Southeast";
+        public const string AustriaEast = "Austria East";
+        public const string BleuFranceCentral = "Bleu France Central";
+        public const string BleuFranceSouth = "Bleu France South";
+        public const string BrazilSouth = "Brazil South";
+        public const string BrazilSoutheast = "Brazil Southeast";
+        public const string CanadaCentral = "Canada Central";
+        public const string CanadaEast = "Canada East";
+        public const string CentralIndia = "Central India";
+        public const string CentralUS = "Central US";
+        public const string CentralUSEUAP = "Central US EUAP";
+        public const string ChileCentral = "Chile Central";
+        public const string ChinaEast = "China East";
+        public const string ChinaEast2 = "China East 2";
+        public const string ChinaEast3 = "China East 3";
+        public const string ChinaNorth = "China North";
+        public const string ChinaNorth2 = "China North 2";
+        public const string ChinaNorth3 = "China North 3";
+        public const string DelosCloudGermanyCentral = "Delos Cloud Germany Central";
+        public const string DelosCloudGermanyNorth = "Delos Cloud Germany North";
+        public const string EastAsia = "East Asia";
+        public const string EastUS = "East US";
+        public const string EastUS2 = "East US 2";
+        public const string EastUS2EUAP = "East US 2 EUAP";
+        public const string EastUSSLV = "East US SLV";
+        public const string FranceCentral = "France Central";
+        public const string FranceSouth = "France South";
+        public const string GermanyNorth = "Germany North";
+        public const string GermanyWestCentral = "Germany West Central";
+        public const string IndonesiaCentral = "Indonesia Central";
+        public const string IsraelCentral = "Israel Central";
+        public const string ItalyNorth = "Italy North";
+        public const string JapanEast = "Japan East";
+        public const string JapanWest = "Japan West";
+        public const string JioIndiaCentral = "Jio India Central";
+        public const string JioIndiaWest = "Jio India West";
+        public const string KoreaCentral = "Korea Central";
+        public const string KoreaSouth = "Korea South";
+        public const string MalaysiaSouth = "Malaysia South";
+        public const string MalaysiaWest = "Malaysia West";
+        public const string MexicoCentral = "Mexico Central";
+        public const string NewZealandNorth = "New Zealand North";
+        public const string NorthCentralUS = "North Central US";
+        public const string NorthEurope = "North Europe";
+        public const string NorwayEast = "Norway East";
+        public const string NorwayWest = "Norway West";
+        public const string PolandCentral = "Poland Central";
+        public const string QatarCentral = "Qatar Central";
+        public const string SouthAfricaNorth = "South Africa North";
+        public const string SouthAfricaWest = "South Africa West";
+        public const string SouthCentralUS = "South Central US";
+        public const string SouthCentralUS2 = "South Central US 2";
+        public const string SoutheastAsia = "Southeast Asia";
+        public const string SoutheastUS = "Southeast US";
+        public const string SouthIndia = "South India";
+        public const string SouthwestUS = "Southwest US";
+        public const string SpainCentral = "Spain Central";
+        public const string SwedenCentral = "Sweden Central";
+        public const string SwedenSouth = "Sweden South";
+        public const string SwitzerlandNorth = "Switzerland North";
+        public const string SwitzerlandWest = "Switzerland West";
+        public const string TaiwanNorth = "Taiwan North";
+        public const string TaiwanNorthwest = "Taiwan Northwest";
+        public const string UAECentral = "UAE Central";
+        public const string UAENorth = "UAE North";
+        public const string UKSouth = "UK South";
+        public const string UKWest = "UK West";
+        public const string USDoDCentral = "USDoD Central";
+        public const string USDoDEast = "USDoD East";
+        public const string USGovArizona = "USGov Arizona";
+        public const string USGovTexas = "USGov Texas";
+        public const string USGovVirginia = "USGov Virginia";
+        public const string USNatEast = "USNat East";
+        public const string USNatWest = "USNat West";
+        public const string USSecEast = "USSec East";
+        public const string USSecWest = "USSec West";
+        public const string USSecWestCentral = "USSec West Central";
+        public const string WestCentralUS = "West Central US";
+        public const string WestEurope = "West Europe";
+        public const string WestIndia = "West India";
+        public const string WestUS = "West US";
+        public const string WestUS2 = "West US 2";
+        public const string WestUS3 = "West US 3";
+    }
+    public abstract class RequestHandler
+    {
+        protected RequestHandler();
+        public RequestHandler InnerHandler { get; set; }
+        public virtual Task<ResponseMessage> SendAsync(RequestMessage request, CancellationToken cancellationToken);
+    }
+    public class RequestMessage : IDisposable
+    {
+        public RequestMessage();
+        public RequestMessage(HttpMethod method, Uri requestUri);
+        public virtual Stream Content { get; set; }
+        public virtual Headers Headers { get; }
+        public virtual HttpMethod Method { get; }
+        public virtual Dictionary<string, object> Properties { get; }
+        public virtual Uri RequestUri { get; }
+        public void Dispose();
+        protected virtual void Dispose(bool disposing);
+    }
+    public class RequestOptions
+    {
+        public RequestOptions();
+        public Action<Headers> AddRequestHeaders { get; set; }
+        public AvailabilityStrategy AvailabilityStrategy { get; set; }
+        public CosmosThresholdOptions CosmosThresholdOptions { get; set; }
+        public List<string> ExcludeRegions { get; set; }
+        public string IfMatchEtag { get; set; }
+        public string IfNoneMatchEtag { get; set; }
+        public Nullable<PriorityLevel> PriorityLevel { get; set; }
+        public IReadOnlyDictionary<string, object> Properties { get; set; }
+        public RequestOptions ShallowCopy();
+    }
+    public class ResponseMessage : IDisposable
+    {
+        public ResponseMessage();
+        public ResponseMessage(HttpStatusCode statusCode, RequestMessage requestMessage=null, string errorMessage=null);
+        public virtual Stream Content { get; set; }
+        public virtual string ContinuationToken { get; }
+        public virtual CosmosDiagnostics Diagnostics { get; set; }
+        public virtual string ErrorMessage { get; }
+        public virtual Headers Headers { get; }
+        public string IndexMetrics { get; }
+        public virtual bool IsSuccessStatusCode { get; }
+        public virtual RequestMessage RequestMessage { get; }
+        public virtual HttpStatusCode StatusCode { get; }
+        public void Dispose();
+        protected virtual void Dispose(bool disposing);
+        public virtual ResponseMessage EnsureSuccessStatusCode();
+    }
+    public abstract class Response<T>
+    {
+        protected Response();
+        public abstract string ActivityId { get; }
+        public abstract CosmosDiagnostics Diagnostics { get; }
+        public abstract string ETag { get; }
+        public abstract Headers Headers { get; }
+        public abstract double RequestCharge { get; }
+        public abstract T Resource { get; }
+        public abstract HttpStatusCode StatusCode { get; }
+        public static implicit operator T (Response<T> response);
+    }
+    public abstract class ServerSideCumulativeMetrics
+    {
+        protected ServerSideCumulativeMetrics();
+        public abstract ServerSideMetrics CumulativeMetrics { get; }
+        public abstract IReadOnlyList<ServerSidePartitionedMetrics> PartitionedMetrics { get; }
+        public abstract double TotalRequestCharge { get; }
+    }
+    public abstract class ServerSideMetrics
+    {
+        protected ServerSideMetrics();
+        public abstract TimeSpan DocumentLoadTime { get; }
+        public abstract TimeSpan DocumentWriteTime { get; }
+        public abstract double IndexHitRatio { get; }
+        public abstract TimeSpan IndexLookupTime { get; }
+        public abstract long OutputDocumentCount { get; }
+        public abstract long OutputDocumentSize { get; }
+        public abstract TimeSpan QueryPreparationTime { get; }
+        public abstract long RetrievedDocumentCount { get; }
+        public abstract long RetrievedDocumentSize { get; }
+        public abstract TimeSpan RuntimeExecutionTime { get; }
+        public abstract TimeSpan TotalTime { get; }
+        public abstract TimeSpan VMExecutionTime { get; }
+    }
+    public abstract class ServerSidePartitionedMetrics
+    {
+        protected ServerSidePartitionedMetrics();
+        public abstract string FeedRange { get; }
+        public abstract Nullable<int> PartitionKeyRangeId { get; }
+        public abstract double RequestCharge { get; }
+        public abstract ServerSideMetrics ServerSideMetrics { get; }
+    }
+    public sealed class SpatialPath
+    {
+        public SpatialPath();
+        public BoundingBoxProperties BoundingBox { get; set; }
+        public string Path { get; set; }
+        public Collection<SpatialType> SpatialTypes { get; }
+    }
+    public enum SpatialType
+    {
+        LineString = 1,
+        MultiPolygon = 3,
+        Point = 0,
+        Polygon = 2,
+    }
+    public class ThroughputProperties
+    {
+        public Nullable<int> AutoscaleMaxThroughput { get; }
+        public string ETag { get; }
+        public Nullable<DateTime> LastModified { get; }
+        public string SelfLink { get; }
+        public Nullable<int> Throughput { get; }
+        public static ThroughputProperties CreateAutoscaleThroughput(int autoscaleMaxThroughput);
+        public static ThroughputProperties CreateManualThroughput(int throughput);
+    }
+    public class ThroughputResponse : Response<ThroughputProperties>
+    {
+        protected ThroughputResponse();
+        public override string ActivityId { get; }
+        public override CosmosDiagnostics Diagnostics { get; }
+        public override string ETag { get; }
+        public override Headers Headers { get; }
+        public Nullable<bool> IsReplacePending { get; }
+        public Nullable<int> MinThroughput { get; }
+        public override double RequestCharge { get; }
+        public override ThroughputProperties Resource { get; }
+        public override HttpStatusCode StatusCode { get; }
+        public static implicit operator ThroughputProperties (ThroughputResponse response);
+    }
+    public abstract class TransactionalBatch
+    {
+        protected TransactionalBatch();
+        public abstract TransactionalBatch CreateItemStream(Stream streamPayload, TransactionalBatchItemRequestOptions requestOptions=null);
+        public abstract TransactionalBatch CreateItem<T>(T item, TransactionalBatchItemRequestOptions requestOptions=null);
+        public abstract TransactionalBatch DeleteItem(string id, TransactionalBatchItemRequestOptions requestOptions=null);
+        public abstract Task<TransactionalBatchResponse> ExecuteAsync(TransactionalBatchRequestOptions requestOptions, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<TransactionalBatchResponse> ExecuteAsync(CancellationToken cancellationToken=default(CancellationToken));
+        public abstract TransactionalBatch PatchItem(string id, IReadOnlyList<PatchOperation> patchOperations, TransactionalBatchPatchItemRequestOptions requestOptions=null);
+        public abstract TransactionalBatch ReadItem(string id, TransactionalBatchItemRequestOptions requestOptions=null);
+        public abstract TransactionalBatch ReplaceItemStream(string id, Stream streamPayload, TransactionalBatchItemRequestOptions requestOptions=null);
+        public abstract TransactionalBatch ReplaceItem<T>(string id, T item, TransactionalBatchItemRequestOptions requestOptions=null);
+        public abstract TransactionalBatch UpsertItemStream(Stream streamPayload, TransactionalBatchItemRequestOptions requestOptions=null);
+        public abstract TransactionalBatch UpsertItem<T>(T item, TransactionalBatchItemRequestOptions requestOptions=null);
+    }
+    public class TransactionalBatchItemRequestOptions : RequestOptions
+    {
+        public TransactionalBatchItemRequestOptions();
+        public Nullable<bool> EnableContentResponseOnWrite { get; set; }
+        public Nullable<IndexingDirective> IndexingDirective { get; set; }
+    }
+    public class TransactionalBatchOperationResult
+    {
+        protected TransactionalBatchOperationResult();
+        public virtual string ETag { get; }
+        public virtual bool IsSuccessStatusCode { get; }
+        public virtual Stream ResourceStream { get; }
+        public virtual TimeSpan RetryAfter { get; }
+        public virtual HttpStatusCode StatusCode { get; }
+    }
+    public class TransactionalBatchOperationResult<T> : TransactionalBatchOperationResult
+    {
+        protected TransactionalBatchOperationResult();
+        public virtual T Resource { get; set; }
+    }
+    public class TransactionalBatchPatchItemRequestOptions : TransactionalBatchItemRequestOptions
+    {
+        public TransactionalBatchPatchItemRequestOptions();
+        public string FilterPredicate { get; set; }
+    }
+    public class TransactionalBatchRequestOptions : RequestOptions
+    {
+        public TransactionalBatchRequestOptions();
+        public Nullable<ConsistencyLevel> ConsistencyLevel { get; set; }
+        public string SessionToken { get; set; }
+    }
+    public class TransactionalBatchResponse : IDisposable, IEnumerable, IEnumerable<TransactionalBatchOperationResult>, IReadOnlyCollection<TransactionalBatchOperationResult>, IReadOnlyList<TransactionalBatchOperationResult>
+    {
+        protected TransactionalBatchResponse();
+        public virtual string ActivityId { get; }
+        public virtual int Count { get; }
+        public virtual CosmosDiagnostics Diagnostics { get; }
+        public virtual string ErrorMessage { get; }
+        public virtual Headers Headers { get; }
+        public virtual bool IsSuccessStatusCode { get; }
+        public virtual TransactionalBatchOperationResult this[int index] { get; }
+        public virtual double RequestCharge { get; }
+        public virtual Nullable<TimeSpan> RetryAfter { get; }
+        public virtual HttpStatusCode StatusCode { get; }
+        public void Dispose();
+        protected virtual void Dispose(bool disposing);
+        public virtual IEnumerator<TransactionalBatchOperationResult> GetEnumerator();
+        public virtual TransactionalBatchOperationResult<T> GetOperationResultAtIndex<T>(int index);
+        IEnumerator System.Collections.IEnumerable.GetEnumerator();
+    }
+    public class UniqueKey
+    {
+        public UniqueKey();
+        public Collection<string> Paths { get; }
+    }
+    public sealed class UniqueKeyPolicy
+    {
+        public UniqueKeyPolicy();
+        public Collection<UniqueKey> UniqueKeys { get; }
+    }
+    public abstract class User
+    {
+        protected User();
+        public abstract string Id { get; }
+        public abstract Task<PermissionResponse> CreatePermissionAsync(PermissionProperties permissionProperties, Nullable<int> tokenExpiryInSeconds=default(Nullable<int>), RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<UserResponse> DeleteAsync(RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Permission GetPermission(string id);
+        public abstract FeedIterator<T> GetPermissionQueryIterator<T>(QueryDefinition queryDefinition, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract FeedIterator<T> GetPermissionQueryIterator<T>(string queryText=null, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract Task<UserResponse> ReadAsync(RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<UserResponse> ReplaceAsync(UserProperties userProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<PermissionResponse> UpsertPermissionAsync(PermissionProperties permissionProperties, Nullable<int> tokenExpiryInSeconds=default(Nullable<int>), RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+    }
+    public class UserProperties
+    {
+        protected UserProperties();
+        public UserProperties(string id);
+        public string ETag { get; }
+        public string Id { get; set; }
+        public Nullable<DateTime> LastModified { get; }
+        public string SelfLink { get; }
+    }
+    public class UserResponse : Response<UserProperties>
+    {
+        protected UserResponse();
+        public override string ActivityId { get; }
+        public override CosmosDiagnostics Diagnostics { get; }
+        public override string ETag { get; }
+        public override Headers Headers { get; }
+        public override double RequestCharge { get; }
+        public override UserProperties Resource { get; }
+        public override HttpStatusCode StatusCode { get; }
+        public virtual User User { get; }
+        public static implicit operator User (UserResponse response);
+    }
+    public enum VectorDataType
+    {
+        Float32 = 0,
+        Int8 = 2,
+        Uint8 = 1,
+    }
+    public sealed class VectorEmbeddingPolicy
+    {
+        public readonly Collection<Embedding> Embeddings;
+        public VectorEmbeddingPolicy(Collection<Embedding> embeddings);
+    }
+    public sealed class VectorIndexPath
+    {
+        public VectorIndexPath();
+        public int IndexingSearchListSize { get; set; }
+        public string Path { get; set; }
+        public int QuantizationByteSize { get; set; }
+        public VectorIndexType Type { get; set; }
+    }
+    public enum VectorIndexType
+    {
+        DiskANN = 1,
+        Flat = 0,
+        QuantizedFlat = 2,
+    }
+}
+namespace Microsoft.Azure.Cosmos.Fluent
+{
+    public class ChangeFeedPolicyDefinition
+    {
+        public ContainerBuilder Attach();
+    }
+    public sealed class ClientEncryptionPolicyDefinition
+    {
+        public ContainerBuilder Attach();
+        public ClientEncryptionPolicyDefinition WithIncludedPath(ClientEncryptionIncludedPath path);
+    }
+    public class CompositeIndexDefinition<T>
+    {
+        public T Attach();
+        public CompositeIndexDefinition<T> Path(string path);
+        public CompositeIndexDefinition<T> Path(string path, CompositePathSortOrder sortOrder);
+    }
+    public class ComputedPropertiesDefinition<T>
+    {
+        public T Attach();
+        public ComputedPropertiesDefinition<T> WithComputedProperty(string name, string query);
+    }
+    public class ConflictResolutionDefinition
+    {
+        public ContainerBuilder Attach();
+        public ConflictResolutionDefinition WithCustomStoredProcedureResolution(string conflictResolutionProcedure);
+        public ConflictResolutionDefinition WithLastWriterWinsResolution(string conflictResolutionPath);
+    }
+    public class ContainerBuilder : ContainerDefinition<ContainerBuilder>
+    {
+        protected ContainerBuilder();
+        public ContainerBuilder(Database database, string name, string partitionKeyPath);
+        public new ContainerProperties Build();
+        public Task<ContainerResponse> CreateAsync(ThroughputProperties throughputProperties, CancellationToken cancellationToken=default(CancellationToken));
+        public Task<ContainerResponse> CreateAsync(Nullable<int> throughput=default(Nullable<int>), CancellationToken cancellationToken=default(CancellationToken));
+        public Task<ContainerResponse> CreateIfNotExistsAsync(ThroughputProperties throughputProperties, CancellationToken cancellationToken=default(CancellationToken));
+        public Task<ContainerResponse> CreateIfNotExistsAsync(Nullable<int> throughput=default(Nullable<int>), CancellationToken cancellationToken=default(CancellationToken));
+        public ChangeFeedPolicyDefinition WithChangeFeedPolicy(TimeSpan retention);
+        public ClientEncryptionPolicyDefinition WithClientEncryptionPolicy();
+        public ClientEncryptionPolicyDefinition WithClientEncryptionPolicy(int policyFormatVersion);
+        public ConflictResolutionDefinition WithConflictResolution();
+        public FullTextPolicyDefinition WithFullTextPolicy(string defaultLanguage, Collection<FullTextPath> fullTextPaths);
+        public UniqueKeyDefinition WithUniqueKey();
+        public VectorEmbeddingPolicyDefinition WithVectorEmbeddingPolicy(Collection<Embedding> embeddings);
+    }
+    public abstract class ContainerDefinition<T> where T : ContainerDefinition<T>
+    {
+        public ContainerDefinition();
+        public ContainerProperties Build();
+        public ComputedPropertiesDefinition<T> WithComputedProperties();
+        public T WithDefaultTimeToLive(int defaultTtlInSeconds);
+        public T WithDefaultTimeToLive(TimeSpan defaultTtlTimeSpan);
+        public IndexingPolicyDefinition<T> WithIndexingPolicy();
+        public T WithPartitionKeyDefinitionVersion(PartitionKeyDefinitionVersion partitionKeyDefinitionVersion);
+        public T WithTimeToLivePropertyPath(string propertyPath);
+    }
+    public class CosmosClientBuilder
+    {
+        public CosmosClientBuilder(string connectionString);
+        public CosmosClientBuilder(string accountEndpoint, AzureKeyCredential authKeyOrResourceTokenCredential);
+        public CosmosClientBuilder(string accountEndpoint, TokenCredential tokenCredential);
+        public CosmosClientBuilder(string accountEndpoint, string authKeyOrResourceToken);
+        public CosmosClientBuilder AddCustomHandlers(params RequestHandler[] customHandlers);
+        public CosmosClient Build();
+        public Task<CosmosClient> BuildAndInitializeAsync(IReadOnlyList<ValueTuple<string, string>> containers, CancellationToken cancellationToken=default(CancellationToken));
+        public CosmosClientBuilder WithApplicationName(string applicationName);
+        public CosmosClientBuilder WithApplicationPreferredRegions(IReadOnlyList<string> applicationPreferredRegions);
+        public CosmosClientBuilder WithApplicationRegion(string applicationRegion);
+        public CosmosClientBuilder WithAvailabilityStrategy(AvailabilityStrategy strategy);
+        public CosmosClientBuilder WithBulkExecution(bool enabled);
+        public CosmosClientBuilder WithClientTelemetryOptions(CosmosClientTelemetryOptions options);
+        public CosmosClientBuilder WithConnectionModeDirect();
+        public CosmosClientBuilder WithConnectionModeDirect(Nullable<TimeSpan> idleTcpConnectionTimeout=default(Nullable<TimeSpan>), Nullable<TimeSpan> openTcpConnectionTimeout=default(Nullable<TimeSpan>), Nullable<int> maxRequestsPerTcpConnection=default(Nullable<int>), Nullable<int> maxTcpConnectionsPerEndpoint=default(Nullable<int>), Nullable<PortReuseMode> portReuseMode=default(Nullable<PortReuseMode>), Nullable<bool> enableTcpConnectionEndpointRediscovery=default(Nullable<bool>));
+        public CosmosClientBuilder WithConnectionModeGateway(Nullable<int> maxConnectionLimit=default(Nullable<int>), IWebProxy webProxy=null);
+        public CosmosClientBuilder WithConsistencyLevel(ConsistencyLevel consistencyLevel);
+        public CosmosClientBuilder WithContentResponseOnWrite(bool contentResponseOnWrite);
+        public CosmosClientBuilder WithCustomAccountEndpoints(IEnumerable<Uri> customAccountEndpoints);
+        public CosmosClientBuilder WithCustomSerializer(CosmosSerializer cosmosJsonSerializer);
+        public CosmosClientBuilder WithHttpClientFactory(Func<HttpClient> httpClientFactory);
+        public CosmosClientBuilder WithLimitToEndpoint(bool limitToEndpoint);
+        public CosmosClientBuilder WithPriorityLevel(PriorityLevel priorityLevel);
+        public CosmosClientBuilder WithRequestTimeout(TimeSpan requestTimeout);
+        public CosmosClientBuilder WithSerializerOptions(CosmosSerializationOptions cosmosSerializerOptions);
+        public CosmosClientBuilder WithSystemTextJsonSerializerOptions(JsonSerializerOptions serializerOptions);
+        public CosmosClientBuilder WithThrottlingRetryOptions(TimeSpan maxRetryWaitTimeOnThrottledRequests, int maxRetryAttemptsOnThrottledRequests);
+    }
+    public class FullTextIndexDefinition<T>
+    {
+        public FullTextIndexDefinition(T parent, Action<FullTextIndexPath> attachCallback);
+        public T Attach();
+        public FullTextIndexDefinition<T> Path(string path);
+    }
+    public class FullTextPolicyDefinition
+    {
+        public FullTextPolicyDefinition(ContainerBuilder parent, string defaultLanguage, Collection<FullTextPath> fullTextPaths, Action<FullTextPolicy> attachCallback);
+        public ContainerBuilder Attach();
+    }
+    public class IndexingPolicyDefinition<T>
+    {
+        public IndexingPolicyDefinition();
+        public T Attach();
+        public IndexingPolicyDefinition<T> WithAutomaticIndexing(bool enabled);
+        public CompositeIndexDefinition<IndexingPolicyDefinition<T>> WithCompositeIndex();
+        public PathsDefinition<IndexingPolicyDefinition<T>> WithExcludedPaths();
+        public FullTextIndexDefinition<IndexingPolicyDefinition<T>> WithFullTextIndex();
+        public PathsDefinition<IndexingPolicyDefinition<T>> WithIncludedPaths();
+        public IndexingPolicyDefinition<T> WithIndexingMode(IndexingMode indexingMode);
+        public SpatialIndexDefinition<IndexingPolicyDefinition<T>> WithSpatialIndex();
+        public VectorIndexDefinition<IndexingPolicyDefinition<T>> WithVectorIndex();
+    }
+    public class PathsDefinition<T>
+    {
+        public T Attach();
+        public PathsDefinition<T> Path(string path);
+    }
+    public class SpatialIndexDefinition<T>
+    {
+        public T Attach();
+        public SpatialIndexDefinition<T> Path(string path);
+        public SpatialIndexDefinition<T> Path(string path, params SpatialType[] spatialTypes);
+    }
+    public class UniqueKeyDefinition
+    {
+        public ContainerBuilder Attach();
+        public UniqueKeyDefinition Path(string path);
+    }
+    public class VectorEmbeddingPolicyDefinition
+    {
+        public VectorEmbeddingPolicyDefinition(ContainerBuilder parent, Collection<Embedding> embeddings, Action<VectorEmbeddingPolicy> attachCallback);
+        public ContainerBuilder Attach();
+    }
+    public class VectorIndexDefinition<T>
+    {
+        public VectorIndexDefinition(T parent, Action<VectorIndexPath> attachCallback);
+        public T Attach();
+        public VectorIndexDefinition<T> Path(string path, VectorIndexType indexType);
+        public VectorIndexDefinition<T> WithIndexingSearchListSize(int indexingSearchListSize);
+        public VectorIndexDefinition<T> WithQuantizationByteSize(int quantizationByteSize);
+    }
+}
+namespace Microsoft.Azure.Cosmos.Linq
+{
+    public static class CosmosLinq
+    {
+        public static object InvokeUserDefinedFunction(string udfName, params object[] arguments);
+    }
+    public static class CosmosLinqExtensions
+    {
+        public static Task<Response<decimal>> AverageAsync(this IQueryable<decimal> source, CancellationToken cancellationToken=default(CancellationToken));
+        public static Task<Response<double>> AverageAsync(this IQueryable<double> source, CancellationToken cancellationToken=default(CancellationToken));
+        public static Task<Response<double>> AverageAsync(this IQueryable<int> source, CancellationToken cancellationToken=default(CancellationToken));
+        public static Task<Response<double>> AverageAsync(this IQueryable<long> source, CancellationToken cancellationToken=default(CancellationToken));
+        public static Task<Response<Nullable<decimal>>> AverageAsync(this IQueryable<Nullable<decimal>> source, CancellationToken cancellationToken=default(CancellationToken));
+        public static Task<Response<Nullable<double>>> AverageAsync(this IQueryable<Nullable<double>> source, CancellationToken cancellationToken=default(CancellationToken));
+        public static Task<Response<Nullable<double>>> AverageAsync(this IQueryable<Nullable<int>> source, CancellationToken cancellationToken=default(CancellationToken));
+        public static Task<Response<Nullable<double>>> AverageAsync(this IQueryable<Nullable<long>> source, CancellationToken cancellationToken=default(CancellationToken));
+        public static Task<Response<Nullable<float>>> AverageAsync(this IQueryable<Nullable<float>> source, CancellationToken cancellationToken=default(CancellationToken));
+        public static Task<Response<float>> AverageAsync(this IQueryable<float> source, CancellationToken cancellationToken=default(CancellationToken));
+        public static Task<Response<int>> CountAsync<TSource>(this IQueryable<TSource> source, CancellationToken cancellationToken=default(CancellationToken));
+        public static int DocumentId(this object obj);
+        public static bool IsArray(this object obj);
+        public static bool IsBool(this object obj);
+        public static bool IsDefined(this object obj);
+        public static bool IsNull(this object obj);
+        public static bool IsNumber(this object obj);
+        public static bool IsObject(this object obj);
+        public static bool IsPrimitive(this object obj);
+        public static bool IsString(this object obj);
+        public static Task<Response<TSource>> MaxAsync<TSource>(this IQueryable<TSource> source, CancellationToken cancellationToken=default(CancellationToken));
+        public static Task<Response<TSource>> MinAsync<TSource>(this IQueryable<TSource> source, CancellationToken cancellationToken=default(CancellationToken));
+        public static bool RegexMatch(this object obj, string regularExpression);
+        public static bool RegexMatch(this object obj, string regularExpression, string searchModifier);
+        public static Task<Response<decimal>> SumAsync(this IQueryable<decimal> source, CancellationToken cancellationToken=default(CancellationToken));
+        public static Task<Response<double>> SumAsync(this IQueryable<double> source, CancellationToken cancellationToken=default(CancellationToken));
+        public static Task<Response<int>> SumAsync(this IQueryable<int> source, CancellationToken cancellationToken=default(CancellationToken));
+        public static Task<Response<long>> SumAsync(this IQueryable<long> source, CancellationToken cancellationToken=default(CancellationToken));
+        public static Task<Response<Nullable<decimal>>> SumAsync(this IQueryable<Nullable<decimal>> source, CancellationToken cancellationToken=default(CancellationToken));
+        public static Task<Response<Nullable<double>>> SumAsync(this IQueryable<Nullable<double>> source, CancellationToken cancellationToken=default(CancellationToken));
+        public static Task<Response<Nullable<int>>> SumAsync(this IQueryable<Nullable<int>> source, CancellationToken cancellationToken=default(CancellationToken));
+        public static Task<Response<Nullable<long>>> SumAsync(this IQueryable<Nullable<long>> source, CancellationToken cancellationToken=default(CancellationToken));
+        public static Task<Response<Nullable<float>>> SumAsync(this IQueryable<Nullable<float>> source, CancellationToken cancellationToken=default(CancellationToken));
+        public static Task<Response<float>> SumAsync(this IQueryable<float> source, CancellationToken cancellationToken=default(CancellationToken));
+        public static FeedIterator<T> ToFeedIterator<T>(this IQueryable<T> query);
+        public static QueryDefinition ToQueryDefinition<T>(this IQueryable<T> query);
+        public static QueryDefinition ToQueryDefinition<T>(this IQueryable<T> query, IDictionary<object, string> namedParameters);
+        public static FeedIterator ToStreamIterator<T>(this IQueryable<T> query);
+    }
+}
+namespace Microsoft.Azure.Cosmos.Scripts
+{
+    public abstract class Scripts
+    {
+        protected Scripts();
+        public abstract Task<StoredProcedureResponse> CreateStoredProcedureAsync(StoredProcedureProperties storedProcedureProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<TriggerResponse> CreateTriggerAsync(TriggerProperties triggerProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(UserDefinedFunctionProperties userDefinedFunctionProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<StoredProcedureResponse> DeleteStoredProcedureAsync(string id, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<TriggerResponse> DeleteTriggerAsync(string id, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<UserDefinedFunctionResponse> DeleteUserDefinedFunctionAsync(string id, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<StoredProcedureExecuteResponse<TOutput>> ExecuteStoredProcedureAsync<TOutput>(string storedProcedureId, PartitionKey partitionKey, dynamic parameters, StoredProcedureRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ResponseMessage> ExecuteStoredProcedureStreamAsync(string storedProcedureId, PartitionKey partitionKey, dynamic parameters, StoredProcedureRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ResponseMessage> ExecuteStoredProcedureStreamAsync(string storedProcedureId, Stream streamPayload, PartitionKey partitionKey, StoredProcedureRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract FeedIterator<T> GetStoredProcedureQueryIterator<T>(QueryDefinition queryDefinition, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract FeedIterator<T> GetStoredProcedureQueryIterator<T>(string queryText=null, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract FeedIterator GetStoredProcedureQueryStreamIterator(QueryDefinition queryDefinition, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract FeedIterator GetStoredProcedureQueryStreamIterator(string queryText=null, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract FeedIterator<T> GetTriggerQueryIterator<T>(QueryDefinition queryDefinition, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract FeedIterator<T> GetTriggerQueryIterator<T>(string queryText=null, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract FeedIterator GetTriggerQueryStreamIterator(QueryDefinition queryDefinition, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract FeedIterator GetTriggerQueryStreamIterator(string queryText=null, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract FeedIterator<T> GetUserDefinedFunctionQueryIterator<T>(QueryDefinition queryDefinition, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract FeedIterator<T> GetUserDefinedFunctionQueryIterator<T>(string queryText=null, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract FeedIterator GetUserDefinedFunctionQueryStreamIterator(QueryDefinition queryDefinition, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract FeedIterator GetUserDefinedFunctionQueryStreamIterator(string queryText=null, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract Task<StoredProcedureResponse> ReadStoredProcedureAsync(string id, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<TriggerResponse> ReadTriggerAsync(string id, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<UserDefinedFunctionResponse> ReadUserDefinedFunctionAsync(string id, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<StoredProcedureResponse> ReplaceStoredProcedureAsync(StoredProcedureProperties storedProcedureProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<TriggerResponse> ReplaceTriggerAsync(TriggerProperties triggerProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<UserDefinedFunctionResponse> ReplaceUserDefinedFunctionAsync(UserDefinedFunctionProperties userDefinedFunctionProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+    }
+    public class StoredProcedureExecuteResponse<T> : Response<T>
+    {
+        protected StoredProcedureExecuteResponse();
+        public override string ActivityId { get; }
+        public override CosmosDiagnostics Diagnostics { get; }
+        public override string ETag { get; }
+        public override Headers Headers { get; }
+        public override double RequestCharge { get; }
+        public override T Resource { get; }
+        public virtual string ScriptLog { get; }
+        public virtual string SessionToken { get; }
+        public override HttpStatusCode StatusCode { get; }
+    }
+    public class StoredProcedureProperties
+    {
+        public StoredProcedureProperties();
+        public StoredProcedureProperties(string id, string body);
+        public string Body { get; set; }
+        public string ETag { get; }
+        public string Id { get; set; }
+        public Nullable<DateTime> LastModified { get; }
+        public string SelfLink { get; }
+    }
+    public class StoredProcedureRequestOptions : RequestOptions
+    {
+        public StoredProcedureRequestOptions();
+        public Nullable<ConsistencyLevel> ConsistencyLevel { get; set; }
+        public bool EnableScriptLogging { get; set; }
+        public string SessionToken { get; set; }
+    }
+    public class StoredProcedureResponse : Response<StoredProcedureProperties>
+    {
+        protected StoredProcedureResponse();
+        public override string ActivityId { get; }
+        public override CosmosDiagnostics Diagnostics { get; }
+        public override string ETag { get; }
+        public override Headers Headers { get; }
+        public override double RequestCharge { get; }
+        public override StoredProcedureProperties Resource { get; }
+        public virtual string SessionToken { get; }
+        public override HttpStatusCode StatusCode { get; }
+        public static implicit operator StoredProcedureProperties (StoredProcedureResponse response);
+    }
+    public enum TriggerOperation : short
+    {
+        All = (short)0,
+        Create = (short)1,
+        Delete = (short)3,
+        Replace = (short)4,
+        Update = (short)2,
+        Upsert = (short)5,
+    }
+    public class TriggerProperties
+    {
+        public TriggerProperties();
+        public string Body { get; set; }
+        public string ETag { get; }
+        public string Id { get; set; }
+        public string SelfLink { get; }
+        public TriggerOperation TriggerOperation { get; set; }
+        public TriggerType TriggerType { get; set; }
+    }
+    public class TriggerResponse : Response<TriggerProperties>
+    {
+        protected TriggerResponse();
+        public override string ActivityId { get; }
+        public override CosmosDiagnostics Diagnostics { get; }
+        public override string ETag { get; }
+        public override Headers Headers { get; }
+        public override double RequestCharge { get; }
+        public override TriggerProperties Resource { get; }
+        public override HttpStatusCode StatusCode { get; }
+        public static implicit operator TriggerProperties (TriggerResponse response);
+    }
+    public enum TriggerType : byte
+    {
+        Post = (byte)1,
+        Pre = (byte)0,
+    }
+    public class UserDefinedFunctionProperties
+    {
+        public UserDefinedFunctionProperties();
+        public string Body { get; set; }
+        public string ETag { get; }
+        public string Id { get; set; }
+        public string SelfLink { get; }
+    }
+    public class UserDefinedFunctionResponse : Response<UserDefinedFunctionProperties>
+    {
+        protected UserDefinedFunctionResponse();
+        public override string ActivityId { get; }
+        public override CosmosDiagnostics Diagnostics { get; }
+        public override string ETag { get; }
+        public override Headers Headers { get; }
+        public override double RequestCharge { get; }
+        public override UserDefinedFunctionProperties Resource { get; }
+        public override HttpStatusCode StatusCode { get; }
+        public static implicit operator UserDefinedFunctionProperties (UserDefinedFunctionResponse response);
+    }
+}
+namespace Microsoft.Azure.Cosmos.Spatial
+{
+    public sealed class BoundingBox : IEquatable<BoundingBox>
+    {
+        public BoundingBox(Position min, Position max);
+        public Position Max { get; }
+        public Position Min { get; }
+        public bool Equals(BoundingBox other);
+        public override bool Equals(object obj);
+        public override int GetHashCode();
+    }
+    public abstract class Crs
+    {
+        protected Crs(CrsType type);
+        public static Crs Default { get; }
+        public CrsType Type { get; }
+        public static Crs Unspecified { get; }
+        public static LinkedCrs Linked(string href);
+        public static LinkedCrs Linked(string href, string type);
+        public static NamedCrs Named(string name);
+    }
+    public enum CrsType
+    {
+        Linked = 1,
+        Named = 0,
+        Unspecified = 2,
+    }
+    public abstract class Geometry
+    {
+        protected Geometry(GeometryType type, GeometryParams geometryParams);
+        public IDictionary<string, object> AdditionalProperties { get; }
+        public BoundingBox BoundingBox { get; }
+        public Crs Crs { get; }
+        public GeometryType Type { get; }
+        public double Distance(Geometry to);
+        public override bool Equals(object obj);
+        public override int GetHashCode();
+        public bool Intersects(Geometry geometry2);
+        public bool IsValid();
+        public GeometryValidationResult IsValidDetailed();
+        public bool Within(Geometry outer);
+    }
+    public class GeometryParams
+    {
+        public GeometryParams();
+        public IDictionary<string, object> AdditionalProperties { get; set; }
+        public BoundingBox BoundingBox { get; set; }
+        public Crs Crs { get; set; }
+    }
+    public enum GeometryShape
+    {
+        GeometryCollection = 6,
+        LineString = 2,
+        MultiLineString = 3,
+        MultiPoint = 1,
+        MultiPolygon = 5,
+        Point = 0,
+        Polygon = 4,
+    }
+    public enum GeometryType
+    {
+        GeometryCollection = 6,
+        LineString = 2,
+        MultiLineString = 3,
+        MultiPoint = 1,
+        MultiPolygon = 5,
+        Point = 0,
+        Polygon = 4,
+    }
+    public class GeometryValidationResult
+    {
+        public GeometryValidationResult();
+        public bool IsValid { get; }
+        public string Reason { get; }
+    }
+    public sealed class LinearRing : IEquatable<LinearRing>
+    {
+        public LinearRing(IList<Position> coordinates);
+        public ReadOnlyCollection<Position> Positions { get; }
+        public bool Equals(LinearRing other);
+        public override bool Equals(object obj);
+        public override int GetHashCode();
+    }
+    public sealed class LineString : Geometry, IEquatable<LineString>
+    {
+        public LineString(IList<Position> coordinates);
+        public LineString(IList<Position> coordinates, GeometryParams geometryParams);
+        public ReadOnlyCollection<Position> Positions { get; }
+        public bool Equals(LineString other);
+        public override bool Equals(object obj);
+        public override int GetHashCode();
+    }
+    public sealed class LinkedCrs : Crs, IEquatable<LinkedCrs>
+    {
+        public string Href { get; }
+        public string HrefType { get; }
+        public bool Equals(LinkedCrs other);
+        public override bool Equals(object obj);
+        public override int GetHashCode();
+    }
+    public sealed class MultiPolygon : Geometry, IEquatable<MultiPolygon>
+    {
+        public MultiPolygon(IList<PolygonCoordinates> polygons);
+        public MultiPolygon(IList<PolygonCoordinates> polygons, GeometryParams geometryParams);
+        public ReadOnlyCollection<PolygonCoordinates> Polygons { get; }
+        public bool Equals(MultiPolygon other);
+        public override bool Equals(object obj);
+        public override int GetHashCode();
+    }
+    public sealed class NamedCrs : Crs, IEquatable<NamedCrs>
+    {
+        public string Name { get; }
+        public bool Equals(NamedCrs other);
+        public override bool Equals(object obj);
+        public override int GetHashCode();
+    }
+    public sealed class Point : Geometry, IEquatable<Point>
+    {
+        public Point(Position position);
+        public Point(Position position, GeometryParams geometryParams);
+        public Point(double longitude, double latitude);
+        public Position Position { get; }
+        public bool Equals(Point other);
+        public override bool Equals(object obj);
+        public override int GetHashCode();
+    }
+    public sealed class Polygon : Geometry, IEquatable<Polygon>
+    {
+        public Polygon(IList<LinearRing> rings);
+        public Polygon(IList<LinearRing> rings, GeometryParams geometryParams);
+        public Polygon(IList<Position> externalRingPositions);
+        public ReadOnlyCollection<LinearRing> Rings { get; }
+        public bool Equals(Polygon other);
+        public override bool Equals(object obj);
+        public override int GetHashCode();
+    }
+    public sealed class PolygonCoordinates : IEquatable<PolygonCoordinates>
+    {
+        public PolygonCoordinates(IList<LinearRing> rings);
+        public ReadOnlyCollection<LinearRing> Rings { get; }
+        public bool Equals(PolygonCoordinates other);
+        public override bool Equals(object obj);
+        public override int GetHashCode();
+    }
+    public sealed class Position : IEquatable<Position>
+    {
+        public Position(IList<double> coordinates);
+        public Position(double longitude, double latitude);
+        public Position(double longitude, double latitude, Nullable<double> altitude);
+        public Nullable<double> Altitude { get; }
+        public ReadOnlyCollection<double> Coordinates { get; }
+        public double Latitude { get; }
+        public double Longitude { get; }
+        public bool Equals(Position other);
+        public override bool Equals(object obj);
+        public override int GetHashCode();
+    }
+}

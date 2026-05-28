@@ -422,8 +422,12 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public override void Visit(SqlOrderByClause sqlOrderByClause)
         {
             this.writer.Write("ORDER BY ");
-            sqlOrderByClause.OrderByItems[0].Accept(this);
+            if (sqlOrderByClause.Rank)
+            {
+                this.writer.Write("RANK ");
+            }
 
+            sqlOrderByClause.OrderByItems[0].Accept(this);
             for (int i = 1; i < sqlOrderByClause.OrderByItems.Length; i++)
             {
                 this.writer.Write(", ");
@@ -434,13 +438,16 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public override void Visit(SqlOrderByItem sqlOrderByItem)
         {
             sqlOrderByItem.Expression.Accept(this);
-            if (sqlOrderByItem.IsDescending)
+            if (sqlOrderByItem.IsDescending.HasValue)
             {
-                this.writer.Write(" DESC");
-            }
-            else
-            {
-                this.writer.Write(" ASC");
+                if (sqlOrderByItem.IsDescending.Value)
+                {
+                    this.writer.Write(" DESC");
+                }
+                else
+                {
+                    this.writer.Write(" ASC");
+                }
             }
         }
 

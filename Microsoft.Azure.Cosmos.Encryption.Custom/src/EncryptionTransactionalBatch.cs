@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     streamPayload = EncryptionProcessor.EncryptAsync(
                         streamPayload,
                         this.encryptor,
-                        encryptionItemRequestOptions.EncryptionOptions,
+                        encryptionItemRequestOptions,
                         diagnosticsContext,
                         cancellationToken: default).Result;
                 }
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     streamPayload = EncryptionProcessor.EncryptAsync(
                         streamPayload,
                         this.encryptor,
-                        encryptionItemRequestOptions.EncryptionOptions,
+                        encryptionItemRequestOptions,
                         diagnosticsContext,
                         cancellationToken: default).Result;
                 }
@@ -180,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     streamPayload = EncryptionProcessor.EncryptAsync(
                         streamPayload,
                         this.encryptor,
-                        encryptionItemRequestOptions.EncryptionOptions,
+                        encryptionItemRequestOptions,
                         diagnosticsContext,
                         cancellationToken: default).Result;
                 }
@@ -237,6 +237,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         result.ResourceStream,
                         this.encryptor,
                         diagnosticsContext,
+                        requestOptions: null,
                         cancellationToken);
 
                     decryptedTransactionalBatchOperationResults.Add(new EncryptionTransactionalBatchOperationResult(result, decryptedStream));

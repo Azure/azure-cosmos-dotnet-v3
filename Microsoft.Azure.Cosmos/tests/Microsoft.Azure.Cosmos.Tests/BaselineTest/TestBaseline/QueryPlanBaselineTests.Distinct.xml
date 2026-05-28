@@ -125,7 +125,7 @@
             <Range>[[],"Infinity")</Range>
           </Range>
         </QueryRanges>
-        <RewrittenQuery><![CDATA[SELECT DISTINCT c._rid, [{"item": c.blah}] AS orderByItems, c.blah AS payload
+        <RewrittenQuery><![CDATA[SELECT c._rid, [{"item": c.blah}] AS orderByItems, c.blah AS payload
 FROM c
 WHERE (({documentdb-formattableorderbyquery-filter}) AND IS_DEFINED(c.blah))
 ORDER BY c.blah]]></RewrittenQuery>

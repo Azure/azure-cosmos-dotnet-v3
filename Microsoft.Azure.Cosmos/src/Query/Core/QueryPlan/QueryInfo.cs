@@ -24,21 +24,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         }
 
         [JsonProperty("top")]
-        public int? Top
+        public uint? Top
         {
             get;
             set;
         }
 
         [JsonProperty("offset")]
-        public int? Offset
+        public uint? Offset
         {
             get;
             set;
         }
 
         [JsonProperty("limit")]
-        public int? Limit
+        public uint? Limit
         {
             get;
             set;
@@ -53,6 +53,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
         [JsonProperty("orderByExpressions")]
         public IReadOnlyList<string> OrderByExpressions
+        {
+            get;
+            set;
+        }
+        
+        [JsonProperty("embeddingParameterMap", NullValueHandling = NullValueHandling.Ignore)]
+        public Dictionary<string, string> EmbeddingParameterMap
         {
             get;
             set;
@@ -140,6 +147,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         public bool HasGroupBy => (this.GroupByExpressions != null) && (this.GroupByExpressions.Count > 0);
 
         public bool HasOrderBy => (this.OrderBy != null) && (this.OrderBy.Count > 0);
+
+        public bool HasEmbeddingParameters => (this.EmbeddingParameterMap != null) && (this.EmbeddingParameterMap.Count > 0);
 
         public bool HasOffset => this.Offset.HasValue;
 

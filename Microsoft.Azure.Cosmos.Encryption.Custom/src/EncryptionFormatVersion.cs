@@ -8,6 +8,5 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     {
         public const int AeAes = 2;
         public const int Mde = 3;
-        public const int MdeWithCompression = 4;
     }
 }

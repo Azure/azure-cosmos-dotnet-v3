@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Net;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -132,8 +131,11 @@ namespace Microsoft.Azure.Cosmos
             IDictionary<PartitionKeyRange, List<(string, PartitionKey)>> partitionKeyRangeItemMap = new
                 Dictionary<PartitionKeyRange, List<(string, PartitionKey)>>();
 
-            foreach ((string id, PartitionKey pk) item in items)
+            foreach ((string id, PartitionKey pk) in items)
             {
+                (PartitionKey? partitionKey, _) = await this.container.EnsureIdGetsAppendedToPartitionKeyIfNeededAsync(pk, id, null, cancellationToken);
+                (string id, PartitionKey pk) item = (id, partitionKey ?? pk);
+
                 Documents.Routing.PartitionKeyInternal partitionKeyInternal = 
                             await this.GetPartitionKeyInternalAsync(item.pk, trace, cancellationToken);
                 string effectivePartitionKeyValue = partitionKeyInternal.GetEffectivePartitionKeyString(this.partitionKeyDefinition);
@@ -304,6 +306,15 @@ namespace Microsoft.Azure.Cosmos
                     }
                     for (int j = 0; j < this.partitionKeySelectors.Count; j++)
                     {
+                        if (pkValues[j] == Undefined.Value)
+                        {
+                            queryStringBuilder.Append(" AND ");
+                            queryStringBuilder.Append("IS_DEFINED(c");
+                            queryStringBuilder.Append(this.partitionKeySelectors[j]);
+                            queryStringBuilder.Append(") = false");
+                            continue;
+                        }
+
                         queryStringBuilder.Append(" AND ");
                         queryStringBuilder.Append("c");
                         queryStringBuilder.Append(this.partitionKeySelectors[j]);

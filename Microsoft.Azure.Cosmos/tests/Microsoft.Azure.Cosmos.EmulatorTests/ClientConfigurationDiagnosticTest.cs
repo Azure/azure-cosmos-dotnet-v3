@@ -111,14 +111,15 @@
             ConsistencyLevel consistencyLevel = ConsistencyLevel.Session;
             string appRegion = "EastUS";
 
-            ConsistencyConfig consistencyConfig = new ConsistencyConfig(consistencyLevel, preferredRegions, appRegion);
-            Assert.AreEqual(consistencyConfig.ToString(), "(consistency: Session, prgns:[EastUS, WestUs], apprgn: EastUS)");
+            ConsistencyConfig consistencyConfig = new ConsistencyConfig(consistencyLevel, null, preferredRegions, appRegion);
+            Assert.AreEqual(consistencyConfig.ToString(), "(consistency: Session, readStrategy: NotSet, prgns:[EastUS, WestUs], apprgn: EastUS)");
 
             ConsistencyConfig consistencyConfigWithNull = new ConsistencyConfig(consistencyLevel: null,
+                                                                                readConsistencyStrategy: null,
                                                                                 preferredRegions: null,
                                                                                 applicationRegion: null);
 
-            Assert.AreEqual(consistencyConfigWithNull.ToString(), "(consistency: NotSet, prgns:[], apprgn: )");
+            Assert.AreEqual(consistencyConfigWithNull.ToString(), "(consistency: NotSet, readStrategy: NotSet, prgns:[], apprgn: )");
         }
 
         [TestMethod]
@@ -154,10 +155,9 @@
             }
             catch (CosmosOperationCanceledException oce)
             {
-                IReadOnlyList<ITrace> children = ((CosmosTraceDiagnostics)oce.Diagnostics).Value.Children;
-                ITrace exceptionChild = children[^1];
-                Assert.AreEqual("CosmosOperationCanceledException", exceptionChild.Name);
-                Assert.IsNotNull(exceptionChild.Data["Operation Cancelled Exception"]);
+                //check that the exception child exists in the trace diagnostics
+                Assert.IsTrue(oce.Diagnostics.ToString().Contains("CosmosOperationCanceledException"));
+                Assert.IsTrue(oce.Diagnostics.ToString().Contains("Operation Cancelled Exception"));
             }
         }
     }

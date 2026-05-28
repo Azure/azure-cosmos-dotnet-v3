@@ -6,13 +6,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 {
     using System;
     using System.Collections.Generic;
-    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     // Class that represents the resume value of a query. Primarily used to represent the resume value for order by query
     // The actual value is saved as a CosmosElement. Only native JSON types are supported. C* types are not supported.

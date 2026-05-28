@@ -64,7 +64,11 @@ namespace Microsoft.Azure.Cosmos
                     null,
                     MockCosmosUtil.CreateCosmosHttpClient(
                         () => new HttpClient(messageHandler),
-                        eventSource));
+                        eventSource),
+                    GlobalPartitionEndpointManagerNoOp.Instance,
+                    isThinClientEnabled: false);
+
+                TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
 
                 using (new ActivityScope(Guid.NewGuid()))
                 {
@@ -206,17 +210,24 @@ namespace Microsoft.Azure.Cosmos
             Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
             mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
 
-            Mock<GlobalEndpointManager> endpointManager = new Mock<GlobalEndpointManager>(mockDocumentClient.Object, new ConnectionPolicy());
+            Mock<GlobalEndpointManager> endpointManager = new Mock<GlobalEndpointManager>(mockDocumentClient.Object, new ConnectionPolicy(), false);
             endpointManager.Setup(gep => gep.ResolveServiceEndpoint(It.IsAny<DocumentServiceRequest>())).Returns(new Uri("http://localhost"));
             ISessionContainer sessionContainer = new SessionContainer(string.Empty);
             HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
-            return new GatewayStoreModel(
+
+            GatewayStoreModel storeModel = new GatewayStoreModel(
                 endpointManager.Object,
                 sessionContainer,
                 Cosmos.ConsistencyLevel.Eventual,
                 new DocumentClientEventSource(),
                 new JsonSerializerSettings(),
-                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                isThinClientEnabled: false);
+
+            TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager.Object);
+
+            return storeModel;
         }
 
         // Creates a StoreModel that will return addresses for normal requests and throw for address refresh

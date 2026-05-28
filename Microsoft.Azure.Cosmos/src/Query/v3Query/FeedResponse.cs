@@ -5,7 +5,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.Collections;
     using System.Collections.Generic;
-    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// The user contract for the various feed responses that serialized the responses to a type.
@@ -51,6 +50,16 @@ namespace Microsoft.Azure.Cosmos
         /// The index utilization metrics.
         /// </value>
         public abstract string IndexMetrics { get; }
+
+        /// <summary>
+        /// Gets the query advice to be used for debugging purposes. 
+        /// It's applicable to query response only. Other feed response will return null for this field.
+        /// This result is only available if QueryRequestOptions.PopulateQueryAdvice is set to true, otherwise null.
+        /// </summary>
+        /// <value>
+        /// The query advice.
+        /// </value>
+        public virtual string QueryAdvice => null;
 
         /// <summary>
         /// Request Message for this feed response

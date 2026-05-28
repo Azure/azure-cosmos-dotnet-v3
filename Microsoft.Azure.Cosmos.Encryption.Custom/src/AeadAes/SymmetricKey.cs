@@ -23,10 +23,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="rootKey">root key</param>
         internal SymmetricKey(byte[] rootKey)
         {
-            // Key validation
-            if (rootKey == null || rootKey.Length == 0)
+            ArgumentValidation.ThrowIfNull(rootKey);
+
+            if (rootKey.Length == 0)
             {
-                throw new ArgumentNullException(nameof(rootKey));
+                throw new ArgumentException("The root key cannot be empty.", nameof(rootKey));
             }
 
             this.rootKey = rootKey;

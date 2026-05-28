@@ -29,12 +29,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             string accountName,
             string endpoint,
             IList<AccountRegion> writeRegions,
-            IList<AccountRegion> readRegions)
+            IList<AccountRegion> readRegions,
+            bool? shouldEnablePPAF)
         {
             HttpResponseMessage httpResponseMessage = MockSetupsHelper.CreateStrongAccount(
                 accountName,
                 writeRegions,
-                readRegions);
+                readRegions,
+                shouldEnablePPAF: shouldEnablePPAF);
 
             Uri endpointUri = new Uri(endpoint);
             mockHttpClientHandler.Setup(x => x.SendAsync(
@@ -106,7 +108,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         public static HttpResponseMessage CreateStrongAccount(
             string accountName,
             IList<AccountRegion> writeRegions,
-            IList<AccountRegion> readRegions)
+            IList<AccountRegion> readRegions,
+            bool shouldEnableThinClient = false,
+            bool? shouldEnablePPAF = null)
         {
             AccountProperties accountProperties = new AccountProperties()
             {
@@ -114,6 +118,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 WriteLocationsInternal = new Collection<AccountRegion>(writeRegions),
                 ReadLocationsInternal = new Collection<AccountRegion>(readRegions),
                 EnableMultipleWriteLocations = writeRegions.Count > 1,
+                EnablePartitionLevelFailover = shouldEnablePPAF,
                 Consistency = new AccountConsistency()
                 {
                     DefaultConsistencyLevel = Cosmos.ConsistencyLevel.Strong
@@ -133,8 +138,28 @@ namespace Microsoft.Azure.Cosmos.Tests
                     AsyncReplication = false,
                     MinReplicaSetSize = 3,
                     MaxReplicaSetSize = 4
-                }
+                },
             };
+
+            if (shouldEnableThinClient)
+            {
+                accountProperties.AdditionalProperties = new Dictionary<string, JToken>
+                {
+                    {
+                        "thinClientWritableLocations",
+                        JArray.Parse(@"[
+                            { 'name': 'East US', 'databaseAccountEndpoint': 'https://thinclientwrite-eastus.documents.azure.com:10650/' }
+                        ]")
+                    },
+                    {
+                        "thinClientReadableLocations",
+                        JArray.Parse(@"[
+                            { 'name': 'East US', 'databaseAccountEndpoint': 'https://thinclientread-eastus.documents.azure.com:10650/' },
+                            { 'name': 'West US', 'databaseAccountEndpoint': 'https://thinclientread-westus.documents.azure.com:10650/' }
+                        ]")
+                    }
+                };
+            }
 
             return new HttpResponseMessage()
             {

@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     /// </summary>
     internal class ClientTelemetry : IDisposable
     {
-        private static readonly TimeSpan observingWindow = ClientTelemetryOptions.DefaultIntervalForTelemetryJob;
+        private static TimeSpan ObservingWindow => ClientTelemetryOptions.DefaultIntervalForTelemetryJob;
 
         private readonly ClientTelemetryProperties clientTelemetryInfo;
         private readonly ClientTelemetryProcessor processor;
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 userAgent: userAgent, 
                 connectionMode: connectionMode,
                 preferredRegions: preferredRegions,
-                aggregationIntervalInSec: (int)observingWindow.TotalSeconds);
+                aggregationIntervalInSec: (int)ObservingWindow.TotalSeconds);
 
             this.networkDataRecorder = new NetworkDataRecorder();
             this.cancellationTokenSource = new CancellationTokenSource();
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <returns>Async Task</returns>
         private async Task EnrichAndSendAsync()
         {
-            DefaultTrace.TraceInformation("Telemetry Job Started with Observing window : {0}", observingWindow);
+            DefaultTrace.TraceInformation("Telemetry Job Started with Observing window : {0}", ObservingWindow);
 
             try
             {
@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         this.clientTelemetryInfo.GlobalDatabaseAccountName = accountProperties.Id;
                     }
 
-                    await Task.Delay(observingWindow, this.cancellationTokenSource.Token);
+                    await Task.Delay(ObservingWindow, this.cancellationTokenSource.Token);
 
                     this.clientTelemetryInfo.DateTimeUtc = DateTime.UtcNow.ToString(ClientTelemetryOptions.DateFormat);
                     this.clientTelemetryInfo.MachineId = VmMetadataApiHandler.GetMachineId();
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("Exception in EnrichAndSendAsync() : {0}", ex);
+                DefaultTrace.TraceError("Exception in EnrichAndSendAsync() : {0}", ex.Message);
             }
 
             DefaultTrace.TraceInformation("Telemetry Job Stopped.");
@@ -275,7 +275,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : {0}", ex);
+                DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : {0}", ex.Message);
             }
         }
 
@@ -316,7 +316,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 }
                 catch (Exception ex)
                 {
-                    DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : {0}", ex);
+                    DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : {0}", ex.Message);
                 }
 
             }
@@ -332,7 +332,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("Request Charge Recording Failed by Telemetry. Request Charge Value : {0}  Exception : {1} ", requestChargeToRecord, ex);
+                DefaultTrace.TraceError("Request Charge Recording Failed by Telemetry. Request Charge Value : {0}  Exception : {1} ", requestChargeToRecord, ex.Message);
             }
         }
 

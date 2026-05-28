@@ -10,12 +10,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// Computed Properties fluent definition.
     /// </summary>
     /// <seealso cref="ComputedProperty"/>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    class ComputedPropertiesDefinition<T>
+    public class ComputedPropertiesDefinition<T>
     {
         private readonly Collection<ComputedProperty> computedProperties = new Collection<ComputedProperty>();
         private readonly T parent;

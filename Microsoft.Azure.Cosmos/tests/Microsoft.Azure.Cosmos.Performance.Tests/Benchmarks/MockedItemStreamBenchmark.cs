@@ -5,58 +5,129 @@
 namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
     using System.Net;
     using System.Threading.Tasks;
-    using BenchmarkDotNet.Attributes;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public class MockedItemStreamBenchmark : IItemBenchmark
     {
-        private readonly MockedItemBenchmarkHelper benchmarkHelper;
-
-        public MockedItemStreamBenchmark()
-        {
-            this.benchmarkHelper = new MockedItemBenchmarkHelper();
-        }
+        public MockedItemBenchmarkHelper BenchmarkHelper { get; set; }
 
         public async Task CreateItem()
         {
-            using (MemoryStream ms = this.benchmarkHelper.GetItemPayloadAsStream())
-            using (ResponseMessage response = await this.benchmarkHelper.TestContainer.CreateItemStreamAsync(
+            ItemRequestOptions requestOptions = null;
+            if (this.BenchmarkHelper.EnableBinaryEncoding)
+            {
+                requestOptions = new ItemRequestOptions
+                {
+                    EnableBinaryResponseOnPointOperations = true
+                };
+            }
+            using (MemoryStream ms = this.BenchmarkHelper.GetItemPayloadAsStream())
+            using (ResponseMessage response = await this.BenchmarkHelper.TestContainer.CreateItemStreamAsync(
                 ms,
-                new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId)))
+                new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId),
+                requestOptions))
             {
                 if ((int)response.StatusCode > 300 || response.Content == null)
                 {
                     throw new Exception($"Failed with status code {response.StatusCode}");
+                }
+
+                if (this.BenchmarkHelper.EnableBinaryEncoding)
+                {
+                    this.AssertResponseType(response.Content, JsonSerializationFormat.Binary);
+                }
+                else
+                {
+                    this.AssertResponseType(response.Content, JsonSerializationFormat.Text);
+                }
+            }
+        }
+
+        public async Task CreateStreamItem_SetBinaryResponseOnPointOperationsFalse_ReturnsText()
+        {
+            ItemRequestOptions requestOptions = null;
+            if (this.BenchmarkHelper.EnableBinaryEncoding)
+            {
+                requestOptions = new ItemRequestOptions
+                {
+                    EnableBinaryResponseOnPointOperations = false
+                };
+            }
+
+            using (MemoryStream ms = this.BenchmarkHelper.GetItemPayloadAsStream())
+            using (ResponseMessage response = await this.BenchmarkHelper.TestContainer.CreateItemStreamAsync(
+                ms,
+                new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId),
+                requestOptions))
+            {
+                if ((int)response.StatusCode > 300 || response.Content == null)
+                {
+                    throw new Exception($"Failed with status code {response.StatusCode}");
+                }
+
+                // This test specifically expects text, even if EnableBinaryEncoding is true.
+                if (this.BenchmarkHelper.EnableBinaryEncoding)
+                {
+                    this.AssertResponseType(response.Content, JsonSerializationFormat.Text);
                 }
             }
         }
 
         public async Task UpsertItem()
         {
-            using (MemoryStream ms = this.benchmarkHelper.GetItemPayloadAsStream())
-            using (ResponseMessage response = await this.benchmarkHelper.TestContainer.UpsertItemStreamAsync(
+            ItemRequestOptions requestOptions = null;
+            if (this.BenchmarkHelper.EnableBinaryEncoding)
+            {
+                requestOptions = new ItemRequestOptions
+                {
+                    EnableBinaryResponseOnPointOperations = true
+                };
+            }
+            using (MemoryStream ms = this.BenchmarkHelper.GetItemPayloadAsStream())
+            using (ResponseMessage response = await this.BenchmarkHelper.TestContainer.UpsertItemStreamAsync(
                 ms,
-                new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId)))
+                new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId),
+                requestOptions))
             {
                 if ((int)response.StatusCode > 300 || response.Content == null)
                 {
                     throw new Exception($"Failed with status code {response.StatusCode}");
+                }
+
+                if (this.BenchmarkHelper.EnableBinaryEncoding)
+                {
+                    this.AssertResponseType(response.Content, JsonSerializationFormat.Binary);
+                }
+                else
+                {
+                    this.AssertResponseType(response.Content, JsonSerializationFormat.Text);
                 }
             }
         }
 
         public async Task ReadItemNotExists()
         {
-            using (ResponseMessage response = await this.benchmarkHelper.TestContainer.ReadItemStreamAsync(
-                MockedItemBenchmarkHelper.NonExistingItemId,
-                new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId)))
+            ItemRequestOptions requestOptions = null;
+            if (this.BenchmarkHelper.EnableBinaryEncoding)
             {
-                if (response.StatusCode != System.Net.HttpStatusCode.NotFound)
+                requestOptions = new ItemRequestOptions
                 {
+                    EnableBinaryResponseOnPointOperations = true
+                };
+            }
+            using (ResponseMessage response = await this.BenchmarkHelper.TestContainer.ReadItemStreamAsync(
+                MockedItemBenchmarkHelper.NonExistingItemId,
+                new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId),
+                requestOptions))
+            {
+                if (response.StatusCode != HttpStatusCode.NotFound && this.BenchmarkHelper.EnableBinaryEncoding)
+                {
+                    this.AssertResponseType(response.Content, JsonSerializationFormat.Binary);
                     throw new Exception($"Failed with status code {response.StatusCode}");
                 }
             }
@@ -64,24 +135,51 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public async Task ReadItemExists()
         {
-            using (ResponseMessage response = await this.benchmarkHelper.TestContainer.ReadItemStreamAsync(
-                MockedItemBenchmarkHelper.ExistingItemId,
-                new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId)))
+            ItemRequestOptions requestOptions = null;
+            if (this.BenchmarkHelper.EnableBinaryEncoding)
             {
-                if (response.StatusCode == System.Net.HttpStatusCode.NotFound || response.Content == null)
+                requestOptions = new ItemRequestOptions
+                {
+                    EnableBinaryResponseOnPointOperations = true
+                };
+            }
+            using (ResponseMessage response = await this.BenchmarkHelper.TestContainer.ReadItemStreamAsync(
+                MockedItemBenchmarkHelper.ExistingItemId,
+                new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId),
+                requestOptions))
+            {
+                if (response.StatusCode == HttpStatusCode.NotFound || response.Content == null)
                 {
                     throw new Exception($"Failed with status code {response.StatusCode}");
+                }
+
+                if (this.BenchmarkHelper.EnableBinaryEncoding)
+                {
+                    this.AssertResponseType(response.Content, JsonSerializationFormat.Binary);
+                }
+                else
+                {
+                    this.AssertResponseType(response.Content, JsonSerializationFormat.Text);
                 }
             }
         }
 
         public async Task ReadItemExistsWithDiagnosticToString()
         {
-            using (ResponseMessage response = await this.benchmarkHelper.TestContainer.ReadItemStreamAsync(
-                MockedItemBenchmarkHelper.ExistingItemId,
-                new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId)))
+            ItemRequestOptions requestOptions = null;
+            if (this.BenchmarkHelper.EnableBinaryEncoding)
             {
-                if (response.StatusCode == System.Net.HttpStatusCode.NotFound || response.Content == null)
+                requestOptions = new ItemRequestOptions
+                {
+                    EnableBinaryResponseOnPointOperations = true
+                };
+            }
+            using (ResponseMessage response = await this.BenchmarkHelper.TestContainer.ReadItemStreamAsync(
+                MockedItemBenchmarkHelper.ExistingItemId,
+                new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId),
+                requestOptions))
+            {
+                if (response.StatusCode == HttpStatusCode.NotFound || response.Content == null)
                 {
                     throw new Exception();
                 }
@@ -91,45 +189,100 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 {
                     throw new Exception($"Failed with status code {response.StatusCode}");
                 }
+
+                if (this.BenchmarkHelper.EnableBinaryEncoding)
+                {
+                    this.AssertResponseType(response.Content, JsonSerializationFormat.Binary);
+                }
+                else
+                {
+                    this.AssertResponseType(response.Content, JsonSerializationFormat.Text);
+                }
             }
         }
 
         public async Task UpdateItem()
         {
-            using (MemoryStream ms = this.benchmarkHelper.GetItemPayloadAsStream())
-            using (ResponseMessage response = await this.benchmarkHelper.TestContainer.ReplaceItemStreamAsync(
+            ItemRequestOptions requestOptions = null;
+            if (this.BenchmarkHelper.EnableBinaryEncoding)
+            {
+                requestOptions = new ItemRequestOptions
+                {
+                    EnableBinaryResponseOnPointOperations = true
+                };
+            }
+            using (MemoryStream ms = this.BenchmarkHelper.GetItemPayloadAsStream())
+            using (ResponseMessage response = await this.BenchmarkHelper.TestContainer.ReplaceItemStreamAsync(
                 ms,
                 MockedItemBenchmarkHelper.ExistingItemId,
-                new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId)))
+                new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId),
+                requestOptions))
             {
-                if (response.StatusCode == System.Net.HttpStatusCode.NotFound || response.Content == null)
+                if (response.StatusCode == HttpStatusCode.NotFound || response.Content == null)
                 {
                     throw new Exception($"Failed with status code {response.StatusCode}");
+                }
+
+                if (this.BenchmarkHelper.EnableBinaryEncoding)
+                {
+                    this.AssertResponseType(response.Content, JsonSerializationFormat.Binary);
+                }
+                else
+                {
+                    this.AssertResponseType(response.Content, JsonSerializationFormat.Text);
                 }
             }
         }
 
         public async Task DeleteItemExists()
         {
-            using (ResponseMessage response = await this.benchmarkHelper.TestContainer.DeleteItemStreamAsync(
-                MockedItemBenchmarkHelper.ExistingItemId,
-                new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId)))
+            ItemRequestOptions requestOptions = null;
+            if (this.BenchmarkHelper.EnableBinaryEncoding)
             {
-                if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                requestOptions = new ItemRequestOptions
+                {
+                    EnableBinaryResponseOnPointOperations = true
+                };
+            }
+            using (ResponseMessage response = await this.BenchmarkHelper.TestContainer.DeleteItemStreamAsync(
+                MockedItemBenchmarkHelper.ExistingItemId,
+                new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId),
+                requestOptions))
+            {
+                if (response.StatusCode == HttpStatusCode.NotFound)
                 {
                     throw new Exception($"Failed with status code {response.StatusCode}");
+                }
+
+                if (this.BenchmarkHelper.EnableBinaryEncoding)
+                {
+                    this.AssertResponseType(response.Content, JsonSerializationFormat.Binary);
+                }
+                else
+                {
+                    this.AssertResponseType(response.Content, JsonSerializationFormat.Text);
                 }
             }
         }
 
         public async Task DeleteItemNotExists()
         {
-            using (ResponseMessage response = await this.benchmarkHelper.TestContainer.DeleteItemStreamAsync(
-                MockedItemBenchmarkHelper.NonExistingItemId,
-                new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId)))
+            ItemRequestOptions requestOptions = null;
+            if (this.BenchmarkHelper.EnableBinaryEncoding)
             {
-                if (response.StatusCode != System.Net.HttpStatusCode.NotFound)
+                requestOptions = new ItemRequestOptions
                 {
+                    EnableBinaryResponseOnPointOperations = true
+                };
+            }
+            using (ResponseMessage response = await this.BenchmarkHelper.TestContainer.DeleteItemStreamAsync(
+                MockedItemBenchmarkHelper.NonExistingItemId,
+                new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId),
+                requestOptions))
+            {
+                if (response.StatusCode != HttpStatusCode.NotFound && this.BenchmarkHelper.EnableBinaryEncoding)
+                {
+                    this.AssertResponseType(response.Content, JsonSerializationFormat.Binary);
                     throw new Exception($"Failed with status code {response.StatusCode}");
                 }
             }
@@ -137,7 +290,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public async Task ReadFeed()
         {
-            using FeedIterator streamIterator = this.benchmarkHelper.TestContainer.GetItemQueryStreamIterator();
+            using FeedIterator streamIterator = this.BenchmarkHelper.TestContainer.GetItemQueryStreamIterator();
             while (streamIterator.HasMoreResults)
             {
                 ResponseMessage response = await streamIterator.ReadNextAsync();
@@ -150,7 +303,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public async Task QuerySinglePartitionOnePage()
         {
-            using FeedIterator streamIterator = this.benchmarkHelper.TestContainer.GetItemQueryStreamIterator(
+            using FeedIterator streamIterator = this.BenchmarkHelper.TestContainer.GetItemQueryStreamIterator(
                 "select * from T",
                 requestOptions: new QueryRequestOptions()
                 {
@@ -168,18 +321,17 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public async Task QuerySinglePartitionMultiplePages()
         {
-            using FeedIterator streamIterator = this.benchmarkHelper.TestContainer.GetItemQueryStreamIterator(
-              "select * from T",
-              requestOptions: new QueryRequestOptions()
-              {
-                  MaxItemCount = 1,
-                  PartitionKey = new PartitionKey("dummyValue"),
-              });
+            using FeedIterator streamIterator = this.BenchmarkHelper.TestContainer.GetItemQueryStreamIterator(
+                "select * from T",
+                requestOptions: new QueryRequestOptions()
+                {
+                    MaxItemCount = 1,
+                    PartitionKey = new PartitionKey("dummyValue"),
+                });
 
             while (streamIterator.HasMoreResults)
             {
                 ResponseMessage response = await streamIterator.ReadNextAsync();
-
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
                     throw new Exception($"Failed with status code {response.StatusCode}");
@@ -187,5 +339,56 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
+        private void AssertResponseType(Stream responseStream, JsonSerializationFormat expectedFormat)
+        {
+            if (responseStream == null)
+            {
+                throw new ArgumentNullException(nameof(responseStream));
+            }
+
+            // Ensure the stream is seekable
+            if (!responseStream.CanSeek)
+            {
+                // Wrap the responseStream in a MemoryStream
+                MemoryStream memoryStream = new MemoryStream();
+                responseStream.CopyTo(memoryStream);
+                memoryStream.Position = 0;
+                responseStream = memoryStream;
+            }
+
+            long originalPosition = responseStream.Position;
+
+            int firstByte = responseStream.ReadByte();
+
+            // Reset the position after reading
+            responseStream.Position = originalPosition;
+
+            if (firstByte == -1)
+            {
+                throw new InvalidOperationException("Response stream is empty.");
+            }
+
+            bool isExpectedFormat = this.IsExpectedSerializationFormat(firstByte, expectedFormat);
+
+            if (!isExpectedFormat)
+            {
+                throw new InvalidOperationException(
+                    $"Response content format does not match expected format: {expectedFormat}");
+            }
+        }
+
+        private bool IsExpectedSerializationFormat(int firstByte, JsonSerializationFormat expectedFormat)
+        {
+            if (expectedFormat == JsonSerializationFormat.Binary)
+            {
+                return firstByte == (int)JsonSerializationFormat.Binary;
+            }
+            else if (expectedFormat == JsonSerializationFormat.Text)
+            {
+                return firstByte != (int)JsonSerializationFormat.Binary;
+            }
+
+            return false;
+        }
     }
 }

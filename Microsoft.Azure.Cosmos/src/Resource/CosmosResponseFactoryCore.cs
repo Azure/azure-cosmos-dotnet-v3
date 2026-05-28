@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using Microsoft.Azure.Cosmos.Scripts;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
     internal sealed class CosmosResponseFactoryCore : CosmosResponseFactoryInternal
     {
@@ -53,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
         {            
             if (cosmosResponseMessage is QueryResponse queryResponse)
             {
-                using (cosmosResponseMessage.Trace.StartChild("Query Response Serialization"))
+                using (cosmosResponseMessage.Trace.StartChild(TraceDatumKeys.QueryResponseSerialization))
                 {
                     return QueryResponse<T>.CreateResponse<T>(
                         cosmosQueryResponse: queryResponse,
@@ -61,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            using (cosmosResponseMessage.Trace.StartChild("Feed Response Serialization"))
+            using (cosmosResponseMessage.Trace.StartChild(TraceDatumKeys.FeedResponseSerialization))
             {
                 return ReadFeedResponse<T>.CreateResponse<T>(
                        cosmosResponseMessage,
@@ -73,7 +74,7 @@ namespace Microsoft.Azure.Cosmos
         private FeedResponse<T> CreateChangeFeedResponseHelper<T>(
             ResponseMessage cosmosResponseMessage)
         {
-            using (cosmosResponseMessage.Trace.StartChild("ChangeFeed Response Serialization"))
+            using (cosmosResponseMessage.Trace.StartChild(TraceDatumKeys.ChangeFeedResponseSerialization))
             {
                 return ReadFeedResponse<T>.CreateResponse<T>(
                        cosmosResponseMessage,

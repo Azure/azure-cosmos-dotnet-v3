@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             // For non-Windows platforms(like Linux and OSX) in .NET Core SDK, we cannot use ServiceInterop, so need to bypass in that case.
             // We are also now bypassing this for 32 bit host process running even on Windows as there are many 32 bit apps that will not work without this
-            if (CustomTypeExtensions.ByPassQueryParsing())
+            if (QueryPlanRetriever.BypassQueryParsing())
             {
                 // We create a ProxyDocumentQueryExecutionContext that will be initialized with DefaultDocumentQueryExecutionContext
                 // which will be used to send the query to Gateway and on getting 400(bad request) with 1004(cross partition query not servable), we initialize it with

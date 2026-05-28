@@ -4,8 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan.Cql
 {
-    using System.Collections.Generic;
-
     internal class CqlNumberLiteral : CqlLiteral
     {
         public CqlNumberLiteral(Number64 value)

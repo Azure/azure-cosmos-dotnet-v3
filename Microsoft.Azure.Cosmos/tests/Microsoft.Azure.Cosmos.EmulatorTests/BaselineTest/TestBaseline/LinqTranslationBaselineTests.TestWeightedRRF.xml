@@ -1,0 +1,77 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Standard weighted RRF calls]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => RRF(new [] {doc.StringField.FullTextScore(new [] {"test1"}), doc.StringField.FullTextScore(new [] {"test1", "text2"})}, new [] {1, 2})).Select(doc => doc.Pk)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Pk"] 
+FROM root 
+ORDER BY RANK RRF(FullTextScore(root["StringField"], "test1"), FullTextScore(root["StringField"], "test1", "text2"), [1, 2])]]></SqlQuery>
+      <Results><![CDATA[[
+  "Test",
+  "Test"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Standard weighted RRF calls using anonymous types]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => RRF(new [] {doc.StringField.FullTextScore(new [] {"test1"}), doc.StringField.FullTextScore(new [] {"test1", "text2"})}, new [] {1, 2})).Select(doc => doc.Pk)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Pk"] 
+FROM root 
+ORDER BY RANK RRF(FullTextScore(root["StringField"], "test1"), FullTextScore(root["StringField"], "test1", "text2"), [1, 2])]]></SqlQuery>
+      <Results><![CDATA[[
+  "Test",
+  "Test"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Weighted RRF with weights and functions not in a list]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => RRF(new [] {doc.StringField.FullTextScore(new [] {"test1"}), doc.StringField2.FullTextScore(new [] {"test1", "test2", "test3"}), 1, 2})).Select(doc => doc.Pk)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Expressions of type System.Double is not supported as an argument to CosmosLinqExtensions.RRF. Supported expressions are method calls to FullTextScore, VectorDistance.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Weighted RRF with weights array first]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => RRF(new [] {1, 2}, new [] {doc.StringField.FullTextScore(new [] {"test1"}), doc.StringField.FullTextScore(new [] {"test1", "text2"})})).Select(doc => doc.Pk)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Method RRF is not supported with the given argument list.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Weighted RRF with mixed and matched values/functions in array]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => RRF(new [] {1, doc.StringField.FullTextScore(new [] {"test1"})}, new [] {2, doc.StringField.FullTextScore(new [] {"test1", "text2"})})).Select(doc => doc.Pk)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Expressions of type System.Double is not supported as an argument to CosmosLinqExtensions.RRF. Supported expressions are method calls to FullTextScore, VectorDistance.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Weighted RRF with mixed and matched values/functions in array 2]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => RRF(new [] {doc.StringField.FullTextScore(new [] {"test1"}), doc.StringField.FullTextScore(new [] {"test1"})}, new [] {2, doc.StringField.FullTextScore(new [] {"test1", "text2"})})).Select(doc => doc.Pk)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Pk"] 
+FROM root 
+ORDER BY RANK RRF(FullTextScore(root["StringField"], "test1"), FullTextScore(root["StringField"], "test1"), [2, FullTextScore(root["StringField"], "test1", "text2")])]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":34,"end":200},"code":"SC2229","message":"The last parameter of the RRF function is an optional array of weights. When present, it must be a literal array of numbers, one for each of the component scores used for the RRF function. The length of this array must be the same as the number of the component scores."}]},0x800A0B00]]></ErrorMessage>
+    </Output>
+  </Result>
+</Results>

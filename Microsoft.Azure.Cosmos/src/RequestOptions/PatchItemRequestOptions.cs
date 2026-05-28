@@ -4,10 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System.Collections.Generic;
-    using System.Linq;
-    using Microsoft.Azure.Documents;
-
     /// <summary>
     /// Cosmos Patch request options
     /// </summary>

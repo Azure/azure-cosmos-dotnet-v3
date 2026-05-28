@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class ClientResources {
@@ -304,6 +304,15 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Extension function can be used in LINQ expressions only and are evaluated in Azure Cosmos DB server..
+        /// </summary>
+        internal static string ExtensionMethodNotImplemented {
+            get {
+                return ResourceManager.GetString("ExtensionMethodNotImplemented", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Expression tree cannot be processed because evaluation of Spatial expression failed..
         /// </summary>
         internal static string FailedToEvaluateSpatialExpression {
@@ -565,7 +574,25 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The right hand side of string.CompareTo() comparison must be constant &apos;0&apos;.
+        ///   Looks up a localized string similar to The right-hand side of String.Compare() comparison must be constant &apos;0&apos;..
+        /// </summary>
+        internal static string StringCompareInvalidConstant {
+            get {
+                return ResourceManager.GetString("StringCompareInvalidConstant", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid operator for string.Compare(). Vaid operators are (&apos;==&apos;, &apos;&lt;&apos;, &apos;&lt;=&apos;, &apos;&gt;&apos; or &apos;&gt;=&apos;).
+        /// </summary>
+        internal static string StringCompareInvalidOperator {
+            get {
+                return ResourceManager.GetString("StringCompareInvalidOperator", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The right-hand side of String.CompareTo() comparison must be constant &apos;0&apos;..
         /// </summary>
         internal static string StringCompareToInvalidConstant {
             get {
@@ -579,24 +606,6 @@ namespace Microsoft.Azure.Cosmos {
         internal static string StringCompareToInvalidOperator {
             get {
                 return ResourceManager.GetString("StringCompareToInvalidOperator", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Invalid operator for string.Compare(). Valid operators are (&apos;==&apos;, &apos;&lt;&apos;, &apos;&lt;=&apos;, &apos;&gt;&apos; or &apos;&gt;=&apos;).
-        /// </summary>
-        internal static string StringCompareInvalidOperator {
-            get {
-                return ResourceManager.GetString("StringCompareInvalidOperator", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to The right hand side of string.Compare() comparison must be constant &apos;0&apos;.
-        /// </summary>
-        internal static string StringCompareInvalidConstant {
-            get {
-                return ResourceManager.GetString("StringCompareInvalidConstant", resourceCulture);
             }
         }
         

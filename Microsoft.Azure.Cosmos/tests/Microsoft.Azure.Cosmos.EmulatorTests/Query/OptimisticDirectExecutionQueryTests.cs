@@ -2,8 +2,10 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Linq;
     using System.Net;
+    using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -13,11 +15,48 @@
     [TestCategory("Query")]
     public sealed class OptimisticDirectExecutionQueryTests : QueryTestsBase
     {
+        private const int MaxConcurrency = -1;
         private const int NumberOfDocuments = 8;
         private const string PartitionKeyField = "key";
         private const string NumberField = "numberField";
         private const string NullField = "nullField";
+        private const string TextField = "text";
+        private const string VectorField = "vector";
+
         private const string ClientDisableOptimisticDirectExecution = "clientDisableOptimisticDirectExecution";
+
+        private const QueryDrainingMode AllDrainModes = QueryDrainingMode.ContinuationToken | QueryDrainingMode.HoldState;
+
+        private static readonly PartitionKey PartitionKey1 = new PartitionKey("1");
+        private static readonly PartitionKey PartitionKey2 = new PartitionKey("2");
+
+        private static readonly Cosmos.VectorEmbeddingPolicy EmbeddingPolicy = new Cosmos.VectorEmbeddingPolicy(
+            new Collection<Embedding>()
+            {
+                new Embedding()
+                {
+                    Path = $"/{VectorField}",
+                    DataType = VectorDataType.Float32,
+                    DistanceFunction = DistanceFunction.DotProduct,
+                    Dimensions = 3,
+                }
+            });
+
+        private static readonly Cosmos.IndexingPolicy VectorIndexingPolicy = new Cosmos.IndexingPolicy()
+        {
+            IncludedPaths = new Collection<IncludedPath>()
+            {
+                new IncludedPath() { Path = "/*" },
+            },
+            VectorIndexes = new Collection<VectorIndexPath>()
+            {
+                new VectorIndexPath()
+                {
+                    Path = $"/{VectorField}",
+                    Type = VectorIndexType.Flat,
+                }
+            },
+        };
 
         private static class PageSizeOptions
         {
@@ -351,13 +390,6 @@
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
                     expectedPipelineType: TestInjections.PipelineType.Specialized),
-                CreateInput(
-                    query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r ORDER BY r.{NumberField}",
-                    expectedResult: first5Integers,
-                    partitionKey: null,
-                    enableOptimisticDirectExecution: true,
-                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
-                    expectedPipelineType: TestInjections.PipelineType.Specialized),
 
                 // OFFSET LIMIT with WHERE and BETWEEN (requiresDist = false)
                 CreateInput(
@@ -396,15 +428,132 @@
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.SinglePartition,
                 documents,
-                (container, documents) => RunTests(singlePartitionContainerTestCases, container),
+                (container, documents) => RunTests(singlePartitionContainerTestCases, container, AllDrainModes),
                 "/" + PartitionKeyField);
 
             await this.CreateIngestQueryDeleteAsync(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.MultiPartition,
                 documents,
-                (container, documents) => RunTests(multiPartitionContainerTestCases, container),
+                (container, documents) => RunTests(multiPartitionContainerTestCases, container, AllDrainModes),
                 "/" + PartitionKeyField);
+        }
+
+        [TestMethod]
+        public async Task TestOrderByQueries()
+        {
+            IReadOnlyList<string> documents = new List<string>
+            {
+                $@"{{ {PartitionKeyField}: ""{1}"", {NumberField}: {1}, {VectorField}: [1, 1, 1], {TextField}: ""Dogs have four paws and fur. They make good pets. They are loyal and have an acute sense of smell. They are canines."" }}",
+                $@"{{ {PartitionKeyField}: ""{1}"", {NumberField}: {2}, {VectorField}: [0, 0, 1], {TextField}: ""Cats have four paws and fur. They make good pets. They are independent and have extremely fast reflexes. They are felines."" }}",
+                $@"{{ {PartitionKeyField}: ""{1}"", {NumberField}: {3}, {VectorField}: [0, 1, 1], {TextField}: ""Chinchillas have four paws and fur. They make good pets. They are cute and their fur is very soft. They are rodents."" }}",
+                $@"{{ {PartitionKeyField}: ""{1}"", {NumberField}: {4}, {VectorField}: [1, 1, 1], {TextField}: ""Elephants have four legs and thick skin. They are massive and intelligent. They have excellent memory and are herbivores."" }}",
+                $@"{{ {PartitionKeyField}: ""{2}"", {NumberField}: {5}, {VectorField}: [2, 2, 0], {TextField}: ""Rabbits have four paws and soft fur. They make good pets. They are quick and agile with strong hind legs. They are lagomorphs."" }}",
+                $@"{{ {PartitionKeyField}: ""{2}"", {NumberField}: {6}, {VectorField}: [1, 1, 0], {TextField}: ""Horses have four hooves and flowing manes. They are strong and graceful. They have been companions to humans for centuries. They are equines."" }}",
+                $@"{{ {PartitionKeyField}: ""{2}"", {NumberField}: {7}, {VectorField}: [0, -1, -2], {TextField}: ""Lions have four paws and golden fur. They are powerful predators. They live in prides and are known as the king of beasts. They are felines."" }}",
+                $@"{{ {PartitionKeyField}: ""{2}"", {NumberField}: {8}, {VectorField}: [-1, -1, 0], {TextField}: ""Bears have four paws and thick fur. They are large omnivores. They can be both gentle and fierce depending on the situation. They are ursines."" }}",
+            };
+
+            List<DirectExecutionTestCase> testCases = new List<DirectExecutionTestCase>()
+            {
+                CreateInput(
+                    query: $"SELECT VALUE r.{NumberField} FROM r WHERE r.{NumberField} != 1 ORDER BY VectorDistance(r.{VectorField}, [1, 1, 1])",
+                    expectedResult: new List<int>{5, 4, 6, 3, 2, 8, 7},
+                    partitionKey: null,
+                    enableOptimisticDirectExecution: false,
+                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+                CreateInput(
+                    query: $"SELECT VALUE r.{NumberField} FROM r WHERE r.{NumberField} != 1 ORDER BY VectorDistance(r.{VectorField}, [1, 1, 1])",
+                    expectedResult: new List<int>{ 4, 3, 2 },
+                    partitionKey: PartitionKey1,
+                    enableOptimisticDirectExecution: false,
+                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+                CreateInput(
+                    query: $"SELECT VALUE r.{NumberField} FROM r WHERE r.{NumberField} != 1 ORDER BY VectorDistance(r.{VectorField}, [1, 1, 1])",
+                    expectedResult: new List<int>{ 5, 6, 8, 7 },
+                    partitionKey: PartitionKey2,
+                    enableOptimisticDirectExecution: false,
+                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+
+                CreateInput(
+                    query: $"SELECT VALUE r.{NumberField} FROM r WHERE NOT FullTextContains(r.{TextField}, 'elephants') ORDER BY RANK FullTextScore(r.{TextField}, 'paws', 'fur', 'dogs', 'bears')",
+                    expectedResult: new List<int>{1, 8, 3, 2, 7, 5, 6},
+                    partitionKey: null,
+                    enableOptimisticDirectExecution: false,
+                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+                CreateInput(
+                    query: $"SELECT VALUE r.{NumberField} FROM r WHERE NOT FullTextContains(r.{TextField}, 'elephants') ORDER BY RANK FullTextScore(r.{TextField}, 'paws', 'fur', 'dogs', 'bears')",
+                    expectedResult: new List<int>{ 1, 3, 2 },
+                    partitionKey: PartitionKey1,
+                    enableOptimisticDirectExecution: false,
+                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+                CreateInput(
+                    query: $"SELECT VALUE r.{NumberField} FROM r WHERE NOT FullTextContains(r.{TextField}, 'elephants') ORDER BY RANK FullTextScore(r.{TextField}, 'paws', 'fur', 'dogs', 'bears')",
+                    expectedResult: new List<int>{ 8, 7, 5, 6 },
+                    partitionKey: PartitionKey2,
+                    enableOptimisticDirectExecution: false,
+                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+
+                CreateInput(
+                    query: $"SELECT VALUE r.{NumberField} FROM r WHERE NOT FullTextContains(r.{TextField}, 'elephants') ORDER BY RANK RRF(FullTextScore(r.{TextField}, 'paws'), FullTextScore(r.{TextField}, 'fur'), FullTextScore(r.{TextField}, 'dogs'), FullTextScore(r.{TextField}, 'bears'))",
+                    expectedResult: new List<int>{3, 1, 2, 8, 7, 5, 6},
+                    partitionKey: null,
+                    enableOptimisticDirectExecution: false,
+                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+                CreateInput(
+                    query: $"SELECT VALUE r.{NumberField} FROM r WHERE NOT FullTextContains(r.{TextField}, 'elephants') ORDER BY RANK RRF(FullTextScore(r.{TextField}, 'paws'), FullTextScore(r.{TextField}, 'fur'), FullTextScore(r.{TextField}, 'dogs'), FullTextScore(r.{TextField}, 'bears'))",
+                    expectedResult: new List<int>{ 3, 1, 2 },
+                    partitionKey: PartitionKey1,
+                    enableOptimisticDirectExecution: false,
+                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+                CreateInput(
+                    query: $"SELECT VALUE r.{NumberField} FROM r WHERE NOT FullTextContains(r.{TextField}, 'elephants') ORDER BY RANK RRF(FullTextScore(r.{TextField}, 'paws'), FullTextScore(r.{TextField}, 'fur'), FullTextScore(r.{TextField}, 'dogs'), FullTextScore(r.{TextField}, 'bears'))",
+                    expectedResult: new List<int>{ 8, 7, 5, 6},
+                    partitionKey: PartitionKey2,
+                    enableOptimisticDirectExecution: false,
+                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+            };
+
+            static Task RunTestsAsync(
+                CosmosClient cosmosClient,
+                Container container,
+                IReadOnlyList<DirectExecutionTestCase> testCases)
+            {
+                ContainerInternal containerInternal = container as ContainerInternal;
+                Assert.IsNotNull(containerInternal, "Container should be of type ContainerInternal for direct execution tests.");
+
+                DatabaseInternal databaseInternal = containerInternal.Database as DatabaseInternal;
+                Assert.IsNotNull(databaseInternal, "Database should be of type DatabaseInternal for direct execution tests.");
+
+                MockCosmosQueryClient cosmosQueryClient = new MockCosmosQueryClient(cosmosClient.ClientContext, containerInternal, forceQueryPlanGatewayElseServiceInterop: true);
+                ContainerInlineCore containerInlineCore = new ContainerInlineCore(cosmosClient.ClientContext, databaseInternal, containerInternal.Id, cosmosQueryClient);
+                return RunTests(testCases, containerInlineCore, QueryDrainingMode.HoldState);
+            }
+
+            foreach (ConnectionMode connectionMode in new[] { ConnectionMode.Gateway, ConnectionMode.Direct} )
+            {
+                CosmosClient cosmosClient = this.CreateDefaultCosmosClient(connectionMode);
+
+                await this.CreateIngestQueryDeleteAsync(
+                    ToTestConnectionMode(connectionMode),
+                    CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                    documents,
+                    (container, documents) => RunTestsAsync(cosmosClient, container, testCases),
+                    "/" + PartitionKeyField,
+                    VectorIndexingPolicy,
+                    (_) => cosmosClient,
+                    GeospatialType.Geography,
+                    EmbeddingPolicy);
+            }
         }
 
         [TestMethod]
@@ -485,7 +634,7 @@
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.NonPartitioned | CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
-                (container, documents) => RunTests(testCases, container),
+                (container, documents) => RunTests(testCases, container, AllDrainModes),
                 "/undefinedPartitionKey");
         }
 
@@ -578,7 +727,7 @@
                 ConnectionModes.Direct,
                 CollectionTypes.SinglePartition,
                 documents,
-                (container, documents) => RunTests(testCases, container),
+                (container, documents) => RunTests(testCases, container, AllDrainModes),
                 "/undefinedPartitionKey");
         }
 
@@ -703,7 +852,7 @@
                     ConnectionModes.Direct | ConnectionModes.Gateway,
                     CollectionTypes.SinglePartition,
                     documents,
-                    (container, documents) => RunTests(singlePartitionContainerTestCases, container),
+                    (container, documents) => RunTests(singlePartitionContainerTestCases, container, AllDrainModes),
                     "/" + PartitionKeyField);
             }
             finally
@@ -713,7 +862,7 @@
             }
         }
 
-        private static async Task RunTests(IEnumerable<DirectExecutionTestCase> testCases, Container container)
+        private static async Task RunTests(IEnumerable<DirectExecutionTestCase> testCases, Container container, QueryDrainingMode queryDrainingMode)
         {
             foreach (DirectExecutionTestCase testCase in testCases)
             {
@@ -723,7 +872,8 @@
                     {
                         MaxItemCount = pageSize,
                         PartitionKey = testCase.PartitionKey,
-                        TestSettings = new TestInjections(simulate429s: false, simulateEmptyPages: false, new TestInjections.ResponseStats())
+                        TestSettings = new TestInjections(simulate429s: false, simulateEmptyPages: false, new TestInjections.ResponseStats()),
+                        MaxConcurrency = MaxConcurrency,
                     };
 
                     if(testCase.EnableOptimisticDirectExecution.HasValue)
@@ -731,15 +881,25 @@
                         feedOptions.EnableOptimisticDirectExecution = testCase.EnableOptimisticDirectExecution.Value;
                     }
 
-                    List<CosmosElement> items = await RunQueryAsync(
+                    List<CosmosElement> items = await RunQueryCombinationsAsync(
                             container,
                             testCase.Query,
-                            feedOptions);
+                            feedOptions,
+                            queryDrainingMode);
 
                     int[] actual = items.Cast<CosmosNumber>().Select(x => (int)Number64.ToLong(x.Value)).ToArray();
 
-                    Assert.IsTrue(testCase.ExpectedResult.SequenceEqual(actual));
-                    Assert.AreEqual(testCase.ExpectedPipelineType, feedOptions.TestSettings.Stats.PipelineType.Value);
+                    bool resultsMatched = testCase.ExpectedResult.SequenceEqual(actual);
+                    bool pipelineTypeMatched = testCase.ExpectedPipelineType == feedOptions.TestSettings.Stats.PipelineType.Value;
+                    if(!resultsMatched || !pipelineTypeMatched)
+                    {
+                        StringBuilder errorMessage = new StringBuilder();
+                        errorMessage.AppendLine(testCase.ToString());
+                        errorMessage.AppendLine($"Actual: [{string.Join(", ", actual)}]");
+                        errorMessage.AppendLine($"Actual PipelineType: {feedOptions.TestSettings.Stats.PipelineType.Value}");
+
+                        Assert.Fail(errorMessage.ToString());
+                    }
                 }
             }
         }
@@ -821,6 +981,16 @@
                 this.EnableOptimisticDirectExecution = enableOptimisticDirectExecution;
                 this.PageSizeOptions = pageSizeOptions;
                 this.ExpectedPipelineType = expectedPipelineType;
+            }
+
+            public override string ToString()
+            {
+                return $"Query: {this.Query}\n" +
+                       $"PartitionKey: {this.PartitionKey}\n" +
+                       $"EnableOptimisticDirectExecution: {this.EnableOptimisticDirectExecution}\n" +
+                       $"PageSizeOptions: [{string.Join(", ", this.PageSizeOptions)}]\n" +
+                       $"ExpectedPipelineType: {this.ExpectedPipelineType}\n" +
+                       $"ExpectedResult: [{string.Join(", ", this.ExpectedResult)}]\n";
             }
         }
     }

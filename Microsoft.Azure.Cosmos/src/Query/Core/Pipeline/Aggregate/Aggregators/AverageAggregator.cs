@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
 {
     using System;
-    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;

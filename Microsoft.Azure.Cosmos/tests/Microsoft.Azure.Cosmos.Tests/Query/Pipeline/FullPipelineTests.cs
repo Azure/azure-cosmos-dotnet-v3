@@ -254,6 +254,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 }
             }
 
+            rootTrace.SetWalkingStateRecursively();
             Assert.AreEqual(numTraces, rootTrace.Children.Count);
         }
 
@@ -338,8 +339,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 partitionedQueryExecutionInfo: null,
                 returnResultsInDeterministicOrder: null,
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
-                isNonStreamingOrderByQueryFeatureDisabled: queryRequestOptions.IsNonStreamingOrderByQueryFeatureDisabled,
+                isHybridSearchQueryPlanOptimizationDisabled: queryRequestOptions.IsHybridSearchQueryPlanOptimizationDisabled,
                 enableDistributedQueryGatewayMode: queryRequestOptions.EnableDistributedQueryGatewayMode,
+                fullTextScoreScope: queryRequestOptions.FullTextScoreScope,
                 testInjections: queryRequestOptions.TestSettings);
 
             string databaseId = "db1234";
@@ -379,6 +381,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 It.IsAny<bool>(),
                 It.IsAny<bool>(),
                 It.IsAny<bool>(),
+                It.IsAny<bool>(),
                 It.IsAny<Cosmos.GeospatialType>(),
                 It.IsAny<CancellationToken>()))
                 .Returns((
@@ -392,6 +395,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 bool hasLogicalPartitionKey,
                 bool allowDCount,
                 bool useSystemPrefix,
+                bool isHybridSearchQueryPlanOptimizationDisabled,
                 Cosmos.GeospatialType geospatialType,
                 CancellationToken cancellationToken) =>
                 {
@@ -617,6 +621,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 containerQueryProperties: new ContainerQueryProperties(),
                 isContinuationExpected: true,
                 maxConcurrency: 10,
+                fullTextScoreScope: FullTextScoreScope.Global,
                 requestContinuationToken: state);
 
             tryCreatePipeline.ThrowIfFailed();
@@ -635,6 +640,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 allowNonValueAggregateQuery: true,
                 allowDCount: true,
                 hasLogicalPartitionKey: false,
+                hybridSearchSkipOrderByRewrite: false,
                 useSystemPrefix: false,
                 geospatialType: Cosmos.GeospatialType.Geography);
 

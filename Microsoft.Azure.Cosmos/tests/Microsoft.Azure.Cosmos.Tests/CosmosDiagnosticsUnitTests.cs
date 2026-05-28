@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -67,6 +68,11 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.AreEqual(HttpStatusCode.Gone, response.StatusCode);
             Assert.AreEqual(SubStatusCodes.PartitionKeyRangeGone, response.Headers.SubStatusCode);
+
+            if (trace is Cosmos.Tracing.Trace rootLevelTrace)
+            {
+                rootLevelTrace.SetWalkingStateRecursively();
+            }
 
             IEnumerable<PointOperationStatisticsTraceDatum> pointOperationStatistics = trace.Data.Values
                 .Where(traceDatum => traceDatum is PointOperationStatisticsTraceDatum operationStatistics)
@@ -134,6 +140,78 @@ namespace Microsoft.Azure.Cosmos.Tests
             finally
             {
                 SynchronizationContext.SetSynchronizationContext(null);
+            }
+        }
+
+        [TestMethod]
+        public void ValidateConcurrentToStringCalls()
+        {
+            // Create a trace and simulate concurrent access while calling ToString()
+            using ITrace trace = Microsoft.Azure.Cosmos.Tracing.Trace.GetRootTrace("concurrency-test");
+            
+            Exception caughtException = null;
+            const int numThreads = 10;
+            const int numIterations = 100;
+            using CountdownEvent countdown = new CountdownEvent(numThreads);
+            
+            // Start multiple threads that will concurrently modify the trace
+            for (int i = 0; i < numThreads; i++)
+            {
+                int threadId = i;
+                Task.Run(() =>
+                {
+                    try
+                    {
+                        for (int j = 0; j < numIterations; j++)
+                        {
+                            // Add children and data concurrently
+                            using ITrace child = trace.StartChild($"child-{threadId}-{j}");
+                            child.AddDatum($"key-{threadId}-{j}", $"value-{threadId}-{j}");
+                            
+                            // Simulate some work
+                            Thread.Sleep(1);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Interlocked.CompareExchange(ref caughtException, ex, null);
+                    }
+                    finally
+                    {
+                        countdown.Signal();
+                    }
+                });
+            }
+            
+            // Concurrently call ToString() which caused the original issue
+            Task toStringTask = Task.Run(() =>
+            {
+                try
+                {
+                    for (int i = 0; i < numIterations; i++)
+                    {
+                        CosmosTraceDiagnostics diagnostics = new CosmosTraceDiagnostics(trace);
+                        string diagnosticsString = diagnostics.ToString();
+                        Assert.IsNotNull(diagnosticsString);
+                        
+                        // Simulate some work
+                        Thread.Sleep(1);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Interlocked.CompareExchange(ref caughtException, ex, null);
+                }
+            });
+            
+            // Wait for all threads to complete
+            countdown.Wait(TimeSpan.FromSeconds(30));
+            toStringTask.Wait(TimeSpan.FromSeconds(30));
+            
+            // Verify no exceptions occurred
+            if (caughtException != null)
+            {
+                Assert.Fail($"Concurrent access caused exception: {caughtException}");
             }
         }
 

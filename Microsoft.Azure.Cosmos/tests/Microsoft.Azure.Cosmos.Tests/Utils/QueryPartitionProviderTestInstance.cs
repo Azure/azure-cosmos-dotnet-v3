@@ -30,7 +30,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             {"maxSpatialQueryCells", 12},
             {"spatialMaxGeometryPointCount", 256},
             {"sqlDisableQueryILOptimization", false},
-            {"sqlDisableFilterPlanOptimization", false}
+            {"sqlDisableFilterPlanOptimization", false},
+            {"queryEnableFullText", true }
         };
 
         internal static readonly QueryPartitionProvider Object = new QueryPartitionProvider(DefaultQueryEngineConfiguration as IDictionary<string, object>);

@@ -1,0 +1,268 @@
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Linq;
+    using System.Net;
+    using System.Net.Http;
+    using System.Net.Http.Headers;
+    using System.Text;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using global::Azure.Core;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
+
+    /// <summary>
+    /// Provides functionality to interact with the Cosmos DB Inference Service for semantic reranking.
+    /// </summary>
+    internal class InferenceService : IDisposable
+    {
+        // Base path for the inference service endpoint.
+        private const string basePath = "/inference/semanticReranking";
+        // User agent string for inference requests.
+        private const string inferenceUserAgent = "cosmos-inference-dotnet";
+        // Default scope for AAD authentication.
+        private const string inferenceServiceDefaultScope = "https://dbinference.azure.com/.default";
+        private const string InferenceTokenPrefix = "Bearer ";
+        private const int inferenceServiceDefaultMaxConnectionLimit = 50;
+
+        /// <summary>
+        /// Default per-request timeout for inference requests. Referenced by
+        /// <see cref="CosmosClientOptions.InferenceRequestTimeout"/>.
+        /// </summary>
+        internal static readonly TimeSpan DefaultInferenceRequestTimeout = TimeSpan.FromSeconds(5);
+
+        private readonly int inferenceServiceMaxConnectionLimit;
+        private readonly string inferenceServiceBaseUrl;
+        private readonly Uri inferenceEndpoint;
+        private readonly TimeSpan inferenceRequestTimeout;
+
+        private HttpClient httpClient;
+        private AuthorizationTokenProvider cosmosAuthorization;
+
+        private bool disposedValue;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="InferenceService"/> class.
+        /// </summary>
+        /// <param name="client">The CosmosClient instance.</param>
+        /// <exception cref="InvalidOperationException">Thrown if AAD authentication is not used.</exception>
+        public InferenceService(CosmosClient client)
+        {
+            this.inferenceServiceBaseUrl = ConfigurationManager.GetEnvironmentVariable<string>("AZURE_COSMOS_SEMANTIC_RERANKER_INFERENCE_ENDPOINT", null);
+
+            if (string.IsNullOrEmpty(this.inferenceServiceBaseUrl))
+            {
+                throw new ArgumentNullException("Set environment variable AZURE_COSMOS_SEMANTIC_RERANKER_INFERENCE_ENDPOINT to use inference service");
+            }
+
+            this.inferenceServiceMaxConnectionLimit = ConfigurationManager.GetEnvironmentVariable<int?>(
+                "AZURE_COSMOS_SEMANTIC_RERANKER_INFERENCE_SERVICE_MAX_CONNECTION_LIMIT",
+                inferenceServiceDefaultMaxConnectionLimit) ?? inferenceServiceDefaultMaxConnectionLimit;
+
+            Debug.Assert(client.ClientOptions != null, "ClientOptions should not be null");
+            this.inferenceRequestTimeout = client.ClientOptions.InferenceRequestTimeout;
+
+            // Create and configure HttpClient for inference requests.
+            HttpMessageHandler httpMessageHandler = CosmosHttpClientCore.CreateHttpClientHandler(
+                        gatewayModeMaxConnectionLimit: this.inferenceServiceMaxConnectionLimit,
+                        webProxy: null,
+                        serverCertificateCustomValidationCallback: client.DocumentClient.ConnectionPolicy.ServerCertificateCustomValidationCallback);
+
+            this.httpClient = new HttpClient(httpMessageHandler);
+
+            this.CreateClientHelper(this.httpClient);
+
+            // Construct the inference service endpoint URI.
+            this.inferenceEndpoint = new Uri($"{this.inferenceServiceBaseUrl}/{basePath}");
+
+            // Ensure AAD authentication is used.
+            if (client.DocumentClient.cosmosAuthorization.GetType() != typeof(AuthorizationTokenProviderTokenCredential))
+            {
+                throw new InvalidOperationException("InferenceService only supports AAD authentication.");
+            }
+
+            // Set up token credential for authorization.
+            // This is done to ensure the correct scope, which is different than the scope of the client, is used for the inference service.
+            AuthorizationTokenProviderTokenCredential defaultOperationTokenProvider = client.DocumentClient.cosmosAuthorization as AuthorizationTokenProviderTokenCredential;
+            TokenCredential tokenCredential = defaultOperationTokenProvider.tokenCredential;
+
+            this.cosmosAuthorization = new AuthorizationTokenProviderTokenCredential(
+                tokenCredential: tokenCredential,
+                accountEndpoint: new Uri(inferenceServiceDefaultScope),
+                backgroundTokenCredentialRefreshInterval: client.ClientOptions?.TokenCredentialBackgroundRefreshInterval,
+                (token) => $"{InferenceService.InferenceTokenPrefix}{token}");
+        }
+
+        /// <summary>
+        /// Internal constructor for unit testing. Accepts an HttpMessageHandler to allow mocking HTTP responses.
+        /// </summary>
+        internal InferenceService(HttpMessageHandler messageHandler, Uri inferenceEndpoint, AuthorizationTokenProvider cosmosAuthorization)
+        {
+            this.inferenceRequestTimeout = InferenceService.DefaultInferenceRequestTimeout;
+            this.httpClient = new HttpClient(messageHandler);
+            this.CreateClientHelper(this.httpClient);
+            this.inferenceEndpoint = inferenceEndpoint;
+            this.cosmosAuthorization = cosmosAuthorization;
+        }
+
+        /// <summary>
+        /// Sends a semantic rerank request to the inference service.
+        /// </summary>
+        /// <param name="rerankContext">The context/query for reranking.</param>
+        /// <param name="documents">The documents to be reranked.</param>
+        /// <param name="options">Optional additional options for the request.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>A dictionary containing the reranked results.</returns>
+        public async Task<SemanticRerankResult> SemanticRerankAsync(
+            string rerankContext,
+            IEnumerable<string> documents,
+            IDictionary<string, object> options = null,
+            CancellationToken cancellationToken = default)
+        {
+            DateTime startDateTimeUtc = DateTime.UtcNow;
+
+            // Prepare HTTP request for semantic reranking.
+            HttpRequestMessage message = new HttpRequestMessage(HttpMethod.Post, this.inferenceEndpoint);
+            INameValueCollection additionalHeaders = new RequestNameValueCollection();
+            await this.cosmosAuthorization.AddAuthorizationHeaderAsync(
+                headersCollection: additionalHeaders,
+                this.inferenceEndpoint,
+                HttpConstants.HttpMethods.Post,
+                AuthorizationTokenType.AadToken);
+            additionalHeaders.Add(HttpConstants.HttpHeaders.UserAgent, inferenceUserAgent);
+
+            // Add all headers to the HTTP request.
+            foreach (string key in additionalHeaders.AllKeys())
+            {
+                message.Headers.Add(key, additionalHeaders[key]);
+            }
+
+            // Build the request payload.
+            Dictionary<string, object> body = this.AddSemanticRerankPayload(rerankContext, documents, options);
+
+            message.Content = new StringContent(
+                Newtonsoft.Json.JsonConvert.SerializeObject(body),
+                Encoding.UTF8,
+                RuntimeConstants.MediaTypes.Json);
+
+            // Enforce a single-attempt, no-retry timeout for the inference request.
+            // HttpClient.Timeout is intentionally left unchanged; this linked CTS is the authoritative
+            // per-request timeout for inference calls.
+            using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            linkedCts.CancelAfter(this.inferenceRequestTimeout);
+
+            HttpResponseMessage responseMessage;
+            try
+            {
+                responseMessage = await this.httpClient.SendAsync(message, linkedCts.Token);
+            }
+            catch (OperationCanceledException operationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                // Timeout triggered by the linked CTS (not the caller's cancellationToken).
+                string errorMessage = $"Inference Service Request Timeout. Start Time UTC:{startDateTimeUtc}; Total Duration:{(DateTime.UtcNow - startDateTimeUtc).TotalMilliseconds} Ms; Inference Request Timeout:{this.inferenceRequestTimeout.TotalMilliseconds} Ms; Activity id: {System.Diagnostics.Trace.CorrelationManager.ActivityId};";
+                throw CosmosExceptionFactory.CreateRequestTimeoutException(
+                    message: errorMessage,
+                    headers: new Headers()
+                    {
+                        ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString()
+                    },
+                    innerException: operationCanceledException);
+            }
+
+            if (!responseMessage.IsSuccessStatusCode)
+            {
+                string responseBody = await responseMessage.Content.ReadAsStringAsync();
+                throw new CosmosException(
+                    message: responseBody,
+                    statusCode: responseMessage.StatusCode,
+                    subStatusCode: 0,
+                    activityId: string.Empty,
+                    requestCharge: 0);
+            }
+
+            // Deserialize and return the response content as a dictionary.
+            return await SemanticRerankResult.DeserializeSemanticRerankResultAsync(responseMessage);
+        }
+
+        /// <summary>
+        /// Configures the provided HttpClient with default headers and settings for inference requests.
+        /// </summary>
+        /// <param name="httpClient">The HttpClient to configure.</param>
+        private void CreateClientHelper(HttpClient httpClient)
+        {
+            httpClient.Timeout = TimeSpan.FromSeconds(120);
+            httpClient.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue { NoCache = true };
+
+            // Set requested API version header for version enforcement.
+            httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Version,
+                HttpConstants.Versions.CurrentVersion);
+
+            httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Accept, RuntimeConstants.MediaTypes.Json);
+        }
+
+        /// <summary>
+        /// Constructs the payload for the semantic rerank request.
+        /// </summary>
+        /// <param name="rerankContext">The context/query for reranking.</param>
+        /// <param name="documents">The documents to be reranked.</param>
+        /// <param name="options">Optional additional options.</param>
+        /// <returns>A dictionary representing the request payload.</returns>
+        private Dictionary<string, object> AddSemanticRerankPayload(string rerankContext, IEnumerable<string> documents, IDictionary<string, object> options)
+        {
+            Dictionary<string, object> payload = new Dictionary<string, object>
+            {
+                { "query", rerankContext },
+                { "documents", documents.ToArray() }
+            };
+
+            if (options == null)
+            {
+                return payload;
+            }
+
+            // Add any additional options to the payload.
+            foreach (string option in options.Keys)
+            {
+                payload.Add(option, options[option]);
+            }
+
+            return payload;
+        }
+
+        /// <summary>
+        /// Disposes managed resources used by the service.
+        /// </summary>
+        /// <param name="disposing">Indicates if called from Dispose.</param>
+        protected void Dispose(bool disposing)
+        {
+            if (!this.disposedValue)
+            {
+                if (disposing)
+                {
+                    this.httpClient.Dispose();
+                    this.cosmosAuthorization.Dispose();
+                    this.httpClient = null;
+                    this.cosmosAuthorization = null;
+                }
+
+                this.disposedValue = true;
+            }
+        }
+
+        /// <summary>
+        /// Disposes the service and its resources.
+        /// </summary>
+        public void Dispose()
+        {
+            this.Dispose(true);
+        }
+    }
+}

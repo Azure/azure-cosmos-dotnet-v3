@@ -58,9 +58,17 @@ group_by_clause : K_GROUP K_BY scalar_expression_list ;
 /*--------------------------------------------------------------------------------*/
 /* ORDER BY */
 /*--------------------------------------------------------------------------------*/
-order_by_clause : K_ORDER K_BY order_by_items ;
+order_by_clause 
+    : K_ORDER K_BY order_by_items 
+    | K_ORDER K_BY K_RANK score_expression_order_by_items
+    ;
+
+score_expression_order_by_items : score_expression_order_by_item (',' score_expression_order_by_item)* ;
+score_expression_order_by_item : function_call_scalar_expression sort_order? ;
+
 order_by_items : order_by_item (',' order_by_item)* ;
 order_by_item : scalar_expression sort_order? ;
+
 sort_order
     : K_ASC
     | K_DESC
@@ -227,6 +235,7 @@ K_NULL : 'null';
 K_OFFSET : O F F S E T;
 K_OR : O R;
 K_ORDER : O R D E R;
+K_RANK : R A N K;
 K_RIGHT : R I G H T;
 K_SELECT : S E L E C T;
 K_TOP : T O P;

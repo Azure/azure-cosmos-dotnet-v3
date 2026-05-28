@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("System Usage Recording Error : {0} ", ex);
+                DefaultTrace.TraceError("System Usage Recording Error : {0} ", ex.Message);
             }
             return null;
         }

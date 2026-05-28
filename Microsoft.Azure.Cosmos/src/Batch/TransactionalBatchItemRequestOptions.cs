@@ -47,7 +47,8 @@ namespace Microsoft.Azure.Cosmos
                 IfNoneMatchEtag = itemRequestOptions.IfNoneMatchEtag,
                 Properties = itemRequestOptions.Properties,
                 EnableContentResponseOnWrite = itemRequestOptions.EnableContentResponseOnWrite,
-                IsEffectivePartitionKeyRouting = itemRequestOptions.IsEffectivePartitionKeyRouting
+                IsEffectivePartitionKeyRouting = itemRequestOptions.IsEffectivePartitionKeyRouting,
+                AvailabilityStrategy = itemRequestOptions.AvailabilityStrategy
             };
             return batchItemRequestOptions;
         }

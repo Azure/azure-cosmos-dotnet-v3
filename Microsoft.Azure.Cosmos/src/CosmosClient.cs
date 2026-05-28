@@ -323,7 +323,8 @@ namespace Microsoft.Azure.Cosmos
                     new AuthorizationTokenProviderTokenCredential(
                         tokenCredential,
                         new Uri(accountEndpoint),
-                        clientOptions?.TokenCredentialBackgroundRefreshInterval),
+                        clientOptions?.TokenCredentialBackgroundRefreshInterval,
+                        AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature),
                     clientOptions)
         {
         }
@@ -605,6 +606,15 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <remarks>This property is read-only. Modifying any options after the client has been created has no effect on the existing client instance.</remarks>
         public virtual CosmosClientOptions ClientOptions => this.ClientContext.ClientOptions;
+
+#if PREVIEW
+        /// <summary>
+        /// Gets the client-wide <see cref="ICosmosEmbeddingGenerator"/>, or <c>null</c> if none was set.
+        /// Set via <see cref="CosmosClientOptions.EmbeddingGenerator"/> or
+        /// <see cref="Fluent.CosmosClientBuilder.WithEmbeddingGenerator"/>.
+        /// </summary>
+        public virtual ICosmosEmbeddingGenerator EmbeddingGenerator => this.ClientContext.ClientOptions.EmbeddingGenerator;
+#endif
 
         /// <summary>
         /// The response factory used to create CosmosClient response types.
@@ -1160,6 +1170,34 @@ namespace Microsoft.Azure.Cosmos
                     continuationToken,
                     requestOptions),
                 this.ClientContext);
+        }
+
+        /// <summary>
+        /// Creates a new instance of a distributed write transaction.
+        /// </summary>
+        /// <returns>An instance of Distributed transaction.</returns>
+#if INTERNAL
+        public 
+#else
+        internal
+#endif
+        virtual DistributedWriteTransaction CreateDistributedWriteTransaction()
+        {
+            return new DistributedWriteTransactionCore(this.ClientContext);
+        }
+
+        /// <summary>
+        /// Creates a new instance of a distributed read transaction.
+        /// </summary>
+        /// <returns>An instance of <see cref="DistributedReadTransaction"/>.</returns>
+#if INTERNAL
+        public
+#else
+        internal
+#endif
+        virtual DistributedReadTransaction CreateDistributedReadTransaction()
+        {
+            return new DistributedReadTransactionCore(this.ClientContext);
         }
 
         /// <summary>

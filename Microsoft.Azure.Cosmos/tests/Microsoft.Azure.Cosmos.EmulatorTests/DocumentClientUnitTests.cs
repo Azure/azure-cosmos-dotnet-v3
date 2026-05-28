@@ -8,13 +8,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Globalization;
     using System.Net;
     using System.Net.Http;
+    using System.Net.Security;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Tests;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -58,6 +63,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 (HttpMessageHandler)null,
                 connectionPolicy);
 
+            await client.EnsureValidClientAsync(NoOpTrace.Singleton);
             await client.GetDatabaseAccountAsync();
 
             int expectedExecutionTimes = 11;
@@ -144,6 +150,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 (HttpMessageHandler)null,
                 connectionPolicy);
 
+            await client.EnsureValidClientAsync(NoOpTrace.Singleton);
             await client.GetDatabaseAccountAsync();
             client.StoreModel = mockStoreModel.Object;
             client.GatewayStoreModel = mockStoreModel.Object;
@@ -200,6 +207,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 (HttpMessageHandler)null,
                 connectionPolicy);
 
+            client.EnsureValidClientAsync(NoOpTrace.Singleton).Wait();
             client.GetDatabaseAccountAsync().Wait();
 
             int expectedExecutionTimes = numberOfRetries + 1 ?? 10;
@@ -267,7 +275,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             mockStoreModel.Verify(model => model.ProcessMessageAsync(It.IsAny<DocumentServiceRequest>(), default(CancellationToken)), Times.Exactly(4 * expectedExecutionTimes));
             Assert.IsTrue(throttled);
         }
-
 
         private DocumentClientException CreateTooManyRequestException(int retryAfterInMilliseconds)
         {

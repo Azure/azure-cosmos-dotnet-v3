@@ -1,0 +1,29 @@
+trigger: none
+
+pr: none
+
+variables:
+  ReleaseArguments: ' --filter "TestCategory!=Quarantine" --verbosity normal ' 
+  VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops 
+  BuildConfiguration: Release
+  Packaging.EnableSBOMSigning: true
+
+stages:
+- stage:
+  displayName: Encryption Custom Release Gates
+  jobs:
+    - template:  templates/static-tools-encryption-custom.yml
+      parameters:
+        BuildConfiguration: '${{ variables.BuildConfiguration }}'
+        VmImage: '${{ variables.VmImage }}'
+
+- stage:
+  displayName: Build, Pack and Publish
+  jobs:
+    - template:  templates/encryption-custom-nuget-pack.yml
+      parameters:
+        BuildConfiguration: Release
+        VmImage: '${{ variables.VmImage }}'
+        ReleasePackage: true
+        OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos.Encryption.Custom'
+        BlobVersion: $(BlobVersion)

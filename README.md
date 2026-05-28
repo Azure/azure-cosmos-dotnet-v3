@@ -41,17 +41,17 @@ For available versions, see [SDK versioning](./docs/versioning.md).
 ## Useful links
 
 - [Get Started APP](https://docs.microsoft.com/azure/cosmos-db/sql-api-get-started)
-- [GitHub samples](https://github.com/Azure/azure-cosmos-dotnet-v3/tree/master/Microsoft.Azure.Cosmos.Samples)
+- [GitHub samples](https://github.com/Azure/azure-cosmos-dotnet-v3/tree/main/Microsoft.Azure.Cosmos.Samples)
 - [SDK Best practices](https://docs.microsoft.com/azure/cosmos-db/sql/best-practice-dotnet)
-- [MultiMaster samples](https://github.com/markjbrown/azure-cosmosdb-dotnet/tree/master/samples/MultiMaster)
+- [MultiMaster samples](https://github.com/markjbrown/azure-cosmosdb-dotnet/tree/main/samples/MultiMaster)
 - [Resource Model of Azure Cosmos DB Service](https://docs.microsoft.com/azure/cosmos-db/sql-api-resources)
 - [Cosmos DB Resource URI](https://docs.microsoft.com/rest/api/documentdb/documentdb-resource-uri-syntax-for-rest)
 - [Partitioning](https://docs.microsoft.com/azure/cosmos-db/partition-data)
 - [Introduction to Azure Cosmos DB for NoSQL queries](https://docs.microsoft.com/azure/cosmos-db/sql-api-sql-query)
 - [SDK API](https://docs.microsoft.com/dotnet/api/microsoft.azure.cosmos?view=azure-dotnet)
-- [Using emulator](https://github.com/Azure/azure-documentdb-dotnet/blob/master/docs/documentdb-nosql-local-emulator.md)
-- [Capture traces](https://github.com/Azure/azure-documentdb-dotnet/blob/master/docs/documentdb-sdk_capture_etl.md)
-- [Release notes](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/changelog.md)
+- [Using emulator](https://github.com/Azure/azure-documentdb-dotnet/blob/main/docs/documentdb-nosql-local-emulator.md)
+- [Capture traces](https://github.com/Azure/azure-documentdb-dotnet/blob/main/docs/documentdb-sdk_capture_etl.md)
+- [Release notes](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/main/changelog.md)
 - [Diagnose and troubleshooting](https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk)
 
 ## Microsoft Open Source Code of Conduct

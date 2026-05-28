@@ -15,4 +15,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
 
         public int ttl { get; set; }
     }
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Used for CFP AllVersionsAndDeletes builder tests with HPK without having attribute annotations from STJ or NSJ.")]
+    public class ToDoActivityWithHPK
+    {
+        public string id { get; set; }
+
+        public string pk1 { get; set; }
+
+        public string pk2 { get; set; }
+
+        public string pk3 { get; set; }
+
+        public string description { get; set; }
+
+        public int ttl { get; set; }
+    }
 }

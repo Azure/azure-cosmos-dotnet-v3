@@ -40,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             IReadOnlyList<FeedRangeEpk> allRanges,
             bool isContinuationExpected,
             int maxConcurrency,
+            FullTextScoreScope fullTextScoreScope,
             CosmosElement requestContinuationToken)
         {
             if (documentContainer == null)
@@ -59,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
             if (targetRanges.Count == 0)
             {
-                throw new ArgumentException($"{nameof(targetRanges)} must not be empty.");
+                return TryCatch<IQueryPipelineStage>.FromResult(new EmptyQueryPipelineStage());
             }
 
             if (queryInfo == null && hybridSearchQueryInfo == null)
@@ -105,22 +106,31 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     allRanges: allRanges,
                     maxItemCount: maxItemCount,
                     isContinuationExpected: isContinuationExpected,
-                    maxConcurrency: maxConcurrency);
+                    maxConcurrency: maxConcurrency,
+                    fullTextScoreScope: fullTextScoreScope);
 
                 if (hybridSearchQueryInfo.Skip != null)
                 {
+                    Debug.Assert(hybridSearchQueryInfo.Skip.Value <= int.MaxValue, "PipelineFactory Assert!", "Skip value must be <= int.MaxValue");
+
+                    int skipCount = (int)hybridSearchQueryInfo.Skip.Value;
+
                     MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                     monadicCreatePipelineStage = (continuationToken) => SkipQueryPipelineStage.MonadicCreate(
-                        hybridSearchQueryInfo.Skip.Value,
+                        skipCount,
                         continuationToken,
                         monadicCreateSourceStage);
                 }
 
                 if (hybridSearchQueryInfo.Take != null)
                 {
+                    Debug.Assert(hybridSearchQueryInfo.Take.Value <= int.MaxValue, "PipelineFactory Assert!", "Take value must be <= int.MaxValue");
+
+                    int takeCount = (int)hybridSearchQueryInfo.Take.Value;
+
                     MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                     monadicCreatePipelineStage = (continuationToken) => TakeQueryPipelineStage.MonadicCreateLimitStage(
-                        hybridSearchQueryInfo.Take.Value,
+                        takeCount,
                         requestContinuationToken,
                         monadicCreateSourceStage);
                 }
@@ -150,18 +160,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             long optimalPageSize = maxItemCount;
             if (queryInfo.HasOrderBy)
             {
-                int top;
+                uint top;
                 if (queryInfo.HasTop && (queryInfo.Top.Value > 0))
                 {
                     top = queryInfo.Top.Value;
                 }
                 else if (queryInfo.HasLimit && (queryInfo.Limit.Value > 0))
                 {
-                    top = (queryInfo.Offset ?? 0) + queryInfo.Limit.Value;
+                    top = Math.Min((queryInfo.Offset ?? 0) + queryInfo.Limit.Value, int.MaxValue);
                 }
                 else
                 {
                     top = 0;
+                }
+
+                if (top > int.MaxValue)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(queryInfo.Top.Value));
                 }
 
                 if (top > 0)
@@ -257,27 +272,39 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
             if (queryInfo.HasOffset)
             {
+                Debug.Assert(queryInfo.Offset.Value <= int.MaxValue, "PipelineFactory Assert!", "Offset value must be <= int.MaxValue");
+
+                int offsetCount = (int)queryInfo.Offset.Value;
+
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                 monadicCreatePipelineStage = (continuationToken) => SkipQueryPipelineStage.MonadicCreate(
-                    queryInfo.Offset.Value,
+                    offsetCount,
                     continuationToken,
                     monadicCreateSourceStage);
             }
 
             if (queryInfo.HasLimit)
             {
+                Debug.Assert(queryInfo.Limit.Value <= int.MaxValue, "PipelineFactory Assert!", "Limit value must be <= int.MaxValue");
+
+                int limitCount = (int)queryInfo.Limit.Value;
+
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                 monadicCreatePipelineStage = (continuationToken) => TakeQueryPipelineStage.MonadicCreateLimitStage(
-                    queryInfo.Limit.Value,
+                    limitCount,
                     continuationToken,
                     monadicCreateSourceStage);
             }
 
             if (queryInfo.HasTop)
             {
+                Debug.Assert(queryInfo.Top.Value <= int.MaxValue, "PipelineFactory Assert!", "Top value must be <= int.MaxValue");
+
+                int topCount = (int)queryInfo.Top.Value;
+
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                 monadicCreatePipelineStage = (continuationToken) => TakeQueryPipelineStage.MonadicCreateTopStage(
-                    queryInfo.Top.Value,
+                    topCount,
                     continuationToken,
                     monadicCreateSourceStage);
             }

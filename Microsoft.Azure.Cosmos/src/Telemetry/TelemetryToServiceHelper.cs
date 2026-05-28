@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using HdrHistogram.Encoding;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -63,7 +64,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
            CosmosHttpClient httpClient,
            Uri serviceEndpoint,
            GlobalEndpointManager globalEndpointManager,
-           CancellationTokenSource cancellationTokenSource)
+           CancellationTokenSource cancellationTokenSource,
+           bool faultInjectionClient = false)
         {
 #if INTERNAL
             return new TelemetryToServiceHelper();
@@ -82,13 +84,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 globalEndpointManager: globalEndpointManager, 
                 cancellationTokenSource: cancellationTokenSource);
 
-            _ = helper.RetrieveConfigAndInitiateTelemetryAsync(); // Let it run in backgroud
+            _ = helper.RetrieveConfigAndInitiateTelemetryAsync(faultInjectionClient); // Let it run in backgroud
 
             return helper;
 #endif
         }
 
-        private async Task RetrieveConfigAndInitiateTelemetryAsync()
+        private async Task RetrieveConfigAndInitiateTelemetryAsync(bool faultInjectionClient)
         {
             try
             {
@@ -98,7 +100,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     TryCatch<AccountClientConfiguration> databaseAccountClientConfigs = await this.GetDatabaseAccountClientConfigAsync(
                         cosmosAuthorization: this.cosmosAuthorization,
                         httpClient: this.httpClient, 
-                        clientConfigEndpoint: serviceEndpointWithPath);
+                        clientConfigEndpoint: serviceEndpointWithPath,
+                        faultInjectionClient: faultInjectionClient);
 
                     if (databaseAccountClientConfigs.Succeeded)
                     {
@@ -112,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     }
                     else if (!this.cancellationTokenSource.IsCancellationRequested)
                     {
-                        DefaultTrace.TraceWarning("Exception while calling client config {0} ", databaseAccountClientConfigs.Exception);
+                        DefaultTrace.TraceWarning("Exception while calling client config {0} ", databaseAccountClientConfigs.Exception?.Message);
                     }
 
                     await Task.Delay(
@@ -122,13 +125,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceWarning("Exception while running client config job: {0}", ex);
+                DefaultTrace.TraceWarning("Exception while running client config job: {0}", ex.Message);
             }
         }
 
         private async Task<TryCatch<AccountClientConfiguration>> GetDatabaseAccountClientConfigAsync(AuthorizationTokenProvider cosmosAuthorization,
             CosmosHttpClient httpClient,
-            Uri clientConfigEndpoint)
+            Uri clientConfigEndpoint,
+            bool faultInjectionClient)
         {
             INameValueCollection headers = new RequestNameValueCollection();
             await cosmosAuthorization.AddAuthorizationHeaderAsync(
@@ -141,6 +145,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 try
                 {
+                    if (faultInjectionClient)
+                    {
+                        return await this.GetDatabaseAccountClientConfigFaultInjectionHelperAsync(
+                            httpClient: httpClient,
+                            clientConfigEndpoint: clientConfigEndpoint,
+                            headers: headers);
+                    }
+
                     using (HttpResponseMessage responseMessage = await httpClient.GetAsync(
                         uri: clientConfigEndpoint,
                         additionalHeaders: headers,
@@ -168,6 +180,45 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 catch (Exception ex)
                 {
                     return TryCatch<AccountClientConfiguration>.FromException(ex);
+                }
+            }
+        }
+
+        private async Task<TryCatch<AccountClientConfiguration>> GetDatabaseAccountClientConfigFaultInjectionHelperAsync(
+            CosmosHttpClient httpClient,
+            Uri clientConfigEndpoint,
+            INameValueCollection headers)
+        {
+            using (DocumentServiceRequest documentServiceRequest = DocumentServiceRequest.Create(
+                operationType: OperationType.Read,
+                resourceType: ResourceType.DatabaseAccount,
+                relativePath: clientConfigEndpoint.AbsolutePath,
+                headers: headers,
+                authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey))
+            {
+                using (HttpResponseMessage responseMessage = await httpClient.GetAsync(
+                        uri: clientConfigEndpoint,
+                        additionalHeaders: headers,
+                        resourceType: ResourceType.DatabaseAccount,
+                        timeoutPolicy: HttpTimeoutPolicyControlPlaneRead.Instance,
+                        clientSideRequestStatistics: null,
+                        cancellationToken: default,
+                        documentServiceRequest: documentServiceRequest))
+                {
+                    // It means feature flag is off at gateway, then log the exception and retry after defined interval.
+                    // If feature flag is OFF at gateway, SDK won't refresh the latest state of the flag.
+                    if (responseMessage.StatusCode == System.Net.HttpStatusCode.BadRequest)
+                    {
+                        string responseFromGateway = await responseMessage.Content.ReadAsStringAsync();
+                        return TryCatch<AccountClientConfiguration>.FromException(
+                            new InvalidOperationException($"Client Config API is not enabled at compute gateway. Response is {responseFromGateway}"));
+                    }
+
+                    using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
+                    {
+                        return TryCatch<AccountClientConfiguration>.FromResult(
+                            CosmosResource.FromStream<AccountClientConfiguration>(documentServiceResponse));
+                    }
                 }
             }
         }
@@ -216,7 +267,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 }
                 catch (Exception ex)
                 {
-                    DefaultTrace.TraceWarning($"Error While starting Telemetry Job : {0}. Hence disabling Client Telemetry", ex);
+                    DefaultTrace.TraceWarning($"Error While starting Telemetry Job : {0}. Hence disabling Client Telemetry", ex.Message);
                     this.connectionPolicy.CosmosClientTelemetryOptions.DisableSendingMetricsToService = true;
                 }
             }
@@ -249,7 +300,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceWarning("Error While stopping Telemetry Job : {0}", ex);
+                DefaultTrace.TraceWarning("Error While stopping Telemetry Job : {0}", ex.Message);
             }   
         }
     }

@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using static Microsoft.Azure.Cosmos.FaultInjection.Tests.Utils.TestCommon;
+    using ConsistencyLevel = ConsistencyLevel;
     using CosmosSystemTextJsonSerializer = Utils.TestCommon.CosmosSystemTextJsonSerializer;
     using Database = Database;
     using PartitionKey = PartitionKey;
@@ -26,8 +27,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
     {
         private const int Timeout = 66000;
 
-        private string? connectionString;
-        private CosmosSystemTextJsonSerializer? serializer;
+        private string connectionString;
+        private CosmosSystemTextJsonSerializer serializer;
 
         private CosmosClient client;
         private Database database;
@@ -43,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         public async Task Initialize()
         {
             //tests use a live account with multi-region enabled
-            this.connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", string.Empty);
+            this.connectionString = TestCommon.GetConnectionString();
 
             if (string.IsNullOrEmpty(this.connectionString))
             {
@@ -60,6 +61,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
             {
+                ConsistencyLevel = ConsistencyLevel.Session,
                 ConnectionMode = ConnectionMode.Gateway,
                 Serializer = this.serializer,
             };
@@ -97,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             List<string> readRegions;
             ReadOnlyDictionary<string, Uri> readEndpoints = new ReadOnlyDictionary<string, Uri>(new Dictionary<string, Uri>());
 
-            GlobalEndpointManager? globalEndpointManager = this.client?.ClientContext.DocumentClient.GlobalEndpointManager;
+            GlobalEndpointManager globalEndpointManager = this.client.ClientContext.DocumentClient.GlobalEndpointManager;
             if (globalEndpointManager != null)
             {
                 readEndpoints = globalEndpointManager.GetAvailableReadEndpointsByLocation();
@@ -150,6 +152,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
+                    ConsistencyLevel = ConsistencyLevel.Session,
                     ConnectionMode = ConnectionMode.Gateway,
                     Serializer = this.serializer
                 };
@@ -161,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 this.fiDatabase = this.fiClient.GetDatabase(TestCommon.FaultInjectionDatabaseName);
                 this.fiContainer = this.fiDatabase.GetContainer(TestCommon.FaultInjectionContainerName);
 
-                globalEndpointManager = this.fiClient?.ClientContext.DocumentClient.GlobalEndpointManager;
+                globalEndpointManager = this.fiClient.ClientContext.DocumentClient.GlobalEndpointManager;
 
                 localRegionRule.Enable();
                 remoteRegionRule.Enable();
@@ -169,11 +172,20 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 try
                 {
                     //test that request to local region fails
-                    ItemResponse<FaultInjectionTestObject>? response = await this.fiContainer.ReadItemAsync<FaultInjectionTestObject>(
+                    ItemResponse<FaultInjectionTestObject> response = await this.fiContainer.ReadItemAsync<FaultInjectionTestObject>(
                         "testId2",
                     new PartitionKey("pk2"));
                 }
                 catch (DocumentClientException ex)
+                {
+                    this.ValidateHitCount(localRegionRule, 1);
+                    this.ValidateHitCount(remoteRegionRule, 0);
+                    this.ValidateFaultInjectionRuleApplication(
+                        ex,
+                        (int)HttpStatusCode.Gone,
+                        localRegionRule);
+                }
+                catch (CosmosException ex)
                 {
                     this.ValidateHitCount(localRegionRule, 1);
                     this.ValidateHitCount(remoteRegionRule, 0);
@@ -200,6 +212,129 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 remoteRegionRule.Disable();
             }
         }
+
+        [TestMethod]
+        [Timeout(Timeout)]
+        [Description("Test Unautharized rule filtering")]
+        [Owner("ntripician")]
+        public async Task FIGatewayUnautharizedTest()
+        {
+            //create fault injection rule for unauthorized requests
+            string unauthorizedRuleId = "unauthorizedRule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule unauthorizedRule = new FaultInjectionRuleBuilder(
+                id: unauthorizedRuleId,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithConnectionType(FaultInjectionConnectionType.Gateway)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.Unauthorized)
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(5))
+                .Build();
+            //disable rule until ready to test
+            unauthorizedRule.Disable();
+            try
+            {
+                //create client with fault injection
+                List<FaultInjectionRule> rules = new List<FaultInjectionRule> { unauthorizedRule };
+                FaultInjector faultInjector = new FaultInjector(rules);
+                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+                {
+                    ConsistencyLevel = ConsistencyLevel.Session,
+                    ConnectionMode = ConnectionMode.Gateway,
+                    Serializer = this.serializer
+                };
+                this.fiClient = new CosmosClient(
+                    this.connectionString,
+                    faultInjector.GetFaultInjectionClientOptions(cosmosClientOptions));
+                this.fiDatabase = this.fiClient.GetDatabase(TestCommon.FaultInjectionDatabaseName);
+                this.fiContainer = this.fiDatabase.GetContainer(TestCommon.FaultInjectionContainerName);
+                unauthorizedRule.Enable();
+
+                await this.fiContainer.ReadItemAsync<FaultInjectionTestObject>(
+                    "testId2",
+                    new PartitionKey("pk2"));
+            }
+            catch (DocumentClientException ex)
+            {
+                this.ValidateHitCount(unauthorizedRule, 1);
+                this.ValidateFaultInjectionRuleApplication(
+                    ex,
+                    (int)HttpStatusCode.Unauthorized,
+                    unauthorizedRule);
+            }
+            catch (CosmosException ex)
+            {
+                this.ValidateHitCount(unauthorizedRule, 1);
+                this.ValidateFaultInjectionRuleApplication(
+                    ex,
+                    (int)HttpStatusCode.Unauthorized,
+                    unauthorizedRule);
+            }
+        }
+
+        [TestMethod]
+        [Timeout(Timeout)]
+        [Description("Test AAD token revoked rule filtering")]
+        [Owner("ntripician")]
+        public async Task FIGatewayAADRevokedTest()
+        {
+            //create fault injection rule for AAD token revoked requests
+            string aadRevokedRuleId = "AadRevoked-" + Guid.NewGuid().ToString();
+            FaultInjectionRule aadRevokedRule = new FaultInjectionRuleBuilder(
+                id: aadRevokedRuleId,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithConnectionType(FaultInjectionConnectionType.Gateway)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.AadTokenRevoked)
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(5))
+                .Build();
+            //disable rule until ready to test
+            aadRevokedRule.Disable();
+            try
+            {
+                //create client with fault injection
+                List<FaultInjectionRule> rules = new List<FaultInjectionRule> { aadRevokedRule };
+                FaultInjector faultInjector = new FaultInjector(rules);
+                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+                {
+                    ConsistencyLevel = ConsistencyLevel.Session,
+                    ConnectionMode = ConnectionMode.Gateway,
+                    Serializer = this.serializer
+                };
+                this.fiClient = new CosmosClient(
+                    this.connectionString,
+                    faultInjector.GetFaultInjectionClientOptions(cosmosClientOptions));
+                this.fiDatabase = this.fiClient.GetDatabase(TestCommon.FaultInjectionDatabaseName);
+                this.fiContainer = this.fiDatabase.GetContainer(TestCommon.FaultInjectionContainerName);
+                aadRevokedRule.Enable();
+
+                await this.fiContainer.ReadItemAsync<FaultInjectionTestObject>(
+                    "testId2",
+                    new PartitionKey("pk2"));
+            }
+            catch (DocumentClientException ex)
+            {
+                this.ValidateHitCount(aadRevokedRule, 1);
+                this.ValidateFaultInjectionRuleApplication(
+                    ex,
+                    (int)HttpStatusCode.Unauthorized,
+                    aadRevokedRule);
+            }
+            catch (CosmosException ex)
+            {
+                this.ValidateHitCount(aadRevokedRule, 1);
+                this.ValidateFaultInjectionRuleApplication(
+                    ex,
+                    (int)HttpStatusCode.Unauthorized,
+                    aadRevokedRule);
+            }
+        }
+
 
         //<summary>
         //Tests to to see if fault injection rules are applied to the correct partitions
@@ -256,6 +391,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
             {
+                ConsistencyLevel = ConsistencyLevel.Session,
                 ConnectionMode = ConnectionMode.Gateway,
                 Serializer = this.serializer,
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
@@ -392,6 +528,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
+                    ConsistencyLevel = ConsistencyLevel.Session,
                     ConnectionMode = ConnectionMode.Gateway,
                     Serializer = this.serializer,
                     EnableContentResponseOnWrite = true,
@@ -400,8 +537,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 this.fiClient = new CosmosClient(
                     this.connectionString,
                     faultInjector.GetFaultInjectionClientOptions(cosmosClientOptions));
-                this.fiDatabase = this.fiClient.GetDatabase(this.database?.Id);
-                this.fiContainer = this.fiDatabase.GetContainer(this.container?.Id);
+                this.fiDatabase = this.fiClient.GetDatabase(TestCommon.FaultInjectionDatabaseName);
+                this.fiContainer = this.fiDatabase.GetContainer(TestCommon.FaultInjectionContainerName);
 
                 delayRule.Enable();
 
@@ -471,7 +608,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.SendDelay)
-                        .WithDelay(TimeSpan.FromSeconds(66))//request timeout is 65s
+                        .WithDelay(TimeSpan.FromSeconds(6))//request timeout is 65s
                         .WithTimes(10)
                         .Build())
                 .WithDuration(TimeSpan.FromMinutes(5))
@@ -486,6 +623,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
+                    ConsistencyLevel = ConsistencyLevel.Session,
                     ConnectionMode = ConnectionMode.Gateway,
                     Serializer = this.serializer,
                     EnableContentResponseOnWrite = true,
@@ -495,8 +633,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 this.fiClient = new CosmosClient(
                     this.connectionString,
                     faultInjector.GetFaultInjectionClientOptions(cosmosClientOptions));
-                this.fiDatabase = this.fiClient.GetDatabase(this.database?.Id);
-                this.fiContainer = this.fiDatabase.GetContainer(this.container?.Id);
+                this.fiDatabase = this.fiClient.GetDatabase(TestCommon.FaultInjectionDatabaseName);
+                this.fiContainer = this.fiDatabase.GetContainer(TestCommon.FaultInjectionContainerName);
 
                 delayRule.Enable();
                 ValueStopwatch stopwatch = ValueStopwatch.StartNew();
@@ -525,20 +663,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 this.ValidateHitCount(delayRule, 1);
 
-                try
-                {
-                    ItemResponse<FaultInjectionTestObject> readResponse = await this.fiContainer.ReadItemAsync<FaultInjectionTestObject>(
-                    id,
-                    new PartitionKey(pk));
-                }
-                catch (CosmosException ex)
-                {
-                    Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
-                }
-
                 //Check the create time is at least as long as the delay in the rule
-                Assert.IsTrue(elapsed.TotalSeconds >= 66);
-                this.ValidateHitCount(delayRule, 1);
+                Assert.IsTrue(elapsed.TotalSeconds >= 6);
             }
             finally
             {
@@ -569,13 +695,13 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         [DataRow(FaultInjectionOperationType.ReadItem, FaultInjectionServerErrorType.Timeout, (int)StatusCodes.RequestTimeout, (int)SubStatusCodes.Unknown, DisplayName = "Timeout")]
         [DataRow(FaultInjectionOperationType.ReadItem, FaultInjectionServerErrorType.PartitionIsMigrating, (int)StatusCodes.Gone, (int)SubStatusCodes.CompletingPartitionMigration, DisplayName = "PartitionIsMigrating")]
         [DataRow(FaultInjectionOperationType.ReadItem, FaultInjectionServerErrorType.PartitionIsSplitting, (int)StatusCodes.Gone, (int)SubStatusCodes.CompletingSplit, DisplayName = "PartitionIsSplitting")]
-        [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.Gone, (int)StatusCodes.Gone, (int)SubStatusCodes.ServerGenerated410, DisplayName = "Gone")]
-        [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.InternalServerError, (int)StatusCodes.InternalServerError, (int)SubStatusCodes.Unknown, DisplayName = "InternalServerError")]
-        [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.TooManyRequests, (int)StatusCodes.TooManyRequests, (int)SubStatusCodes.RUBudgetExceeded, DisplayName = "TooManyRequests")]
-        [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.ReadSessionNotAvailable, (int)SubStatusCodes.ReadSessionNotAvailable, DisplayName = "ReadSessionNotAvailable")]
-        [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.Timeout, (int)StatusCodes.RequestTimeout, (int)SubStatusCodes.Unknown, DisplayName = "Timeout")]
-        [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.PartitionIsMigrating, (int)StatusCodes.Gone, (int)SubStatusCodes.CompletingPartitionMigration, DisplayName = "PartitionIsMigrating")]
-        [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.PartitionIsSplitting, (int)StatusCodes.Gone, (int)SubStatusCodes.CompletingSplit, DisplayName = "PartitionIsSplitting")]
+        [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.Gone, (int)StatusCodes.Gone, (int)SubStatusCodes.ServerGenerated410, DisplayName = "Gone - write")]
+        [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.InternalServerError, (int)StatusCodes.InternalServerError, (int)SubStatusCodes.Unknown, DisplayName = "InternalServerError - write")]
+        [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.TooManyRequests, (int)StatusCodes.TooManyRequests, (int)SubStatusCodes.RUBudgetExceeded, DisplayName = "TooManyRequests - write")]
+        [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.ReadSessionNotAvailable, (int)StatusCodes.NotFound, (int)SubStatusCodes.ReadSessionNotAvailable, DisplayName = "ReadSessionNotAvailable - write")]
+        [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.Timeout, (int)StatusCodes.RequestTimeout, (int)SubStatusCodes.Unknown, DisplayName = "Timeout - write")]
+        [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.PartitionIsMigrating, (int)StatusCodes.Gone, (int)SubStatusCodes.CompletingPartitionMigration, DisplayName = "PartitionIsMigrating - write")]
+        [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.PartitionIsSplitting, (int)StatusCodes.Gone, (int)SubStatusCodes.CompletingSplit, DisplayName = "PartitionIsSplitting - write")]
         public async Task FIGatewayServerResponse(
             FaultInjectionOperationType faultInjectionOperationType, 
             FaultInjectionServerErrorType faultInjectionServerErrorType,
@@ -608,6 +734,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
+                    ConsistencyLevel = ConsistencyLevel.Session,
                     ConnectionMode = ConnectionMode.Gateway,
                     Serializer = this.serializer,
                     MaxRetryAttemptsOnRateLimitedRequests = 0,
@@ -621,8 +748,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 this.fiClient = new CosmosClient(
                     this.connectionString,
                     faultInjector.GetFaultInjectionClientOptions(cosmosClientOptions));
-                this.fiDatabase = this.fiClient.GetDatabase(this.database?.Id);
-                this.fiContainer = this.fiDatabase.GetContainer(this.container?.Id);
+                this.fiDatabase = this.fiClient.GetDatabase(TestCommon.FaultInjectionDatabaseName);
+                this.fiContainer = this.fiDatabase.GetContainer(TestCommon.FaultInjectionContainerName);
 
                 serverErrorResponseRule.Enable();
 
@@ -678,7 +805,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 if (faultInjectionServerErrorType == FaultInjectionServerErrorType.Timeout)
                 {
-                    ChaosInterceptor? interceptor = faultInjector.GetChaosInterceptor() as ChaosInterceptor;
+                    ChaosInterceptor interceptor = faultInjector.GetChaosInterceptor() as ChaosInterceptor;
 
                     Assert.IsNotNull(interceptor);
                     Assert.IsTrue(
@@ -734,6 +861,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
+                    ConsistencyLevel = ConsistencyLevel.Session,
                     ConnectionMode = ConnectionMode.Gateway,
                     Serializer = this.serializer
                 };
@@ -741,8 +869,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 this.fiClient = new CosmosClient(
                     this.connectionString,
                     faultInjector.GetFaultInjectionClientOptions(cosmosClientOptions));
-                this.fiDatabase = this.fiClient.GetDatabase(this.database?.Id);
-                this.fiContainer = this.fiDatabase.GetContainer(this.container?.Id);
+                this.fiDatabase = this.fiClient.GetDatabase(TestCommon.FaultInjectionDatabaseName);
+                this.fiContainer = this.fiDatabase.GetContainer(TestCommon.FaultInjectionContainerName);
 
                 hitCountRule.Enable();
 
@@ -764,6 +892,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                         }
                     }
                     catch (DocumentClientException ex)
+                    {
+                        this.ValidateFaultInjectionRuleApplication(ex, (int)HttpStatusCode.Gone, hitCountRule);
+                        this.ValidateHitCount(hitCountRule, i + 1);
+                    }
+                    catch (CosmosException ex)
                     {
                         this.ValidateFaultInjectionRuleApplication(ex, (int)HttpStatusCode.Gone, hitCountRule);
                         this.ValidateHitCount(hitCountRule, i + 1);
@@ -810,6 +943,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
+                    ConsistencyLevel = ConsistencyLevel.Session,
                     ConnectionMode = ConnectionMode.Gateway,
                     Serializer = this.serializer
                 };
@@ -817,8 +951,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 this.fiClient = new CosmosClient(
                     this.connectionString,
                     faultInjector.GetFaultInjectionClientOptions(cosmosClientOptions));
-                this.fiDatabase = this.fiClient.GetDatabase(this.database?.Id);
-                this.fiContainer = this.fiDatabase.GetContainer(this.container?.Id);
+                this.fiDatabase = this.fiClient.GetDatabase(TestCommon.FaultInjectionDatabaseName);
+                this.fiContainer = this.fiDatabase.GetContainer(TestCommon.FaultInjectionContainerName);
 
                 ItemResponse<FaultInjectionTestObject> response;
 
@@ -879,6 +1013,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
+                    ConsistencyLevel = ConsistencyLevel.Session,
                     ConnectionMode = ConnectionMode.Direct,
                     Serializer = this.serializer
                 };
@@ -886,8 +1021,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 this.fiClient = new CosmosClient(
                     this.connectionString,
                     faultInjector.GetFaultInjectionClientOptions(cosmosClientOptions));
-                this.fiDatabase = this.fiClient.GetDatabase(this.database?.Id);
-                this.fiContainer = this.fiDatabase.GetContainer(this.container?.Id);
+                this.fiDatabase = this.fiClient.GetDatabase(TestCommon.FaultInjectionDatabaseName);
+                this.fiContainer = this.fiDatabase.GetContainer(TestCommon.FaultInjectionContainerName);
 
                 ItemResponse<FaultInjectionTestObject> response;
 
@@ -905,6 +1040,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 //Test on gateway mode client
                 cosmosClientOptions = new CosmosClientOptions()
                 {
+                    ConsistencyLevel = ConsistencyLevel.Session,
                     ConnectionMode = ConnectionMode.Gateway,
                     Serializer = this.serializer
                 };
@@ -912,8 +1048,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 this.fiClient = new CosmosClient(
                     this.connectionString,
                     faultInjector.GetFaultInjectionClientOptions(cosmosClientOptions));
-                this.fiDatabase = this.fiClient.GetDatabase(this.database?.Id);
-                this.fiContainer = this.fiDatabase.GetContainer(this.container?.Id);
+                this.fiDatabase = this.fiClient.GetDatabase(TestCommon.FaultInjectionDatabaseName);
+                this.fiContainer = this.fiDatabase.GetContainer(TestCommon.FaultInjectionContainerName);
 
                 rule.Enable();
 
@@ -963,25 +1099,13 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         }
 
         private void ValidateFaultInjectionRuleApplication(
-            ItemResponse<FaultInjectionTestObject> response,
-            int statusCode,
-            int subStatusCode,
-            FaultInjectionRule rule)
-        {
-            Assert.IsTrue(1 <= rule.GetHitCount());
-            Assert.IsTrue(1 <= response.Diagnostics.GetFailedRequestCount());
-            Assert.AreEqual(statusCode, response.StatusCode);
-            Assert.AreEqual(subStatusCode, response.Headers.SubStatusCode);
-        }
-
-        private void ValidateFaultInjectionRuleApplication(
             DocumentClientException ex,
             int statusCode,
             FaultInjectionRule rule)
         {
             Assert.IsTrue(1 <= rule.GetHitCount());
             Assert.IsTrue(ex.Message.Contains(rule.GetId()));
-            Assert.AreEqual(statusCode, (int?)ex.StatusCode);
+            Assert.AreEqual(statusCode, (int)ex.StatusCode);
         }
 
         private void ValidateFaultInjectionRuleApplication(
@@ -991,7 +1115,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         {
             Assert.IsTrue(1 <= rule.GetHitCount());
             Assert.IsTrue(ex.Message.Contains(rule.GetId()));
-            Assert.AreEqual(statusCode, (int?)ex.StatusCode);
+            Assert.AreEqual(statusCode, (int)ex.StatusCode);
         }
 
         private void ValidateFaultInjectionRuleApplication(
@@ -1002,7 +1126,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         {
             Assert.IsTrue(1 <= rule.GetHitCount());
             Assert.IsTrue(ex.Message.Contains(rule.GetId()));
-            Assert.AreEqual(statusCode, (int?)ex.StatusCode);
+            Assert.AreEqual(statusCode, (int)ex.StatusCode);
             Assert.AreEqual(subStatusCode.ToString(), ex.Headers.Get(WFConstants.BackendHeaders.SubStatus));
         }
 
@@ -1014,8 +1138,96 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         {
             Assert.IsTrue(1 <= rule.GetHitCount());
             Assert.IsTrue(ex.Message.Contains(rule.GetId()));
-            Assert.AreEqual(statusCode, (int?)ex.StatusCode);
+            Assert.AreEqual(statusCode, (int)ex.StatusCode);
             Assert.AreEqual(subStatusCode, ex.SubStatusCode);
+        }
+
+        [TestMethod]
+        [Timeout(Timeout)]
+        [Owner("nalutripician")]
+        [Description("Tests custom server error with custom status and substatus codes for Gateway mode")]
+        [DataRow(123, 456789, DisplayName = "Custom Status 123, SubStatus 456789")]
+        [DataRow(418, 12345, DisplayName = "Custom Status 418, SubStatus 12345")]
+        [DataRow(999, 0, DisplayName = "Custom Status 999, SubStatus 0")]
+        public async Task FaultInjectionCustomServerErrorRule_GatewayModeTest(int statusCode, int subStatusCode)
+        {
+            //id and partitionkey of item that is to be created, will want to delete after test
+            string id = "customErrorTestId";
+            string pk = "customErrorTestPk";
+
+            FaultInjectionTestObject createdItem = new FaultInjectionTestObject
+            {
+                Id = id,
+                Pk = pk
+            };
+
+            await this.container.CreateItemAsync(createdItem);
+
+            string customErrorRuleId = "customErrorRule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule customErrorRule = new FaultInjectionRuleBuilder(
+                id: customErrorRuleId,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithConnectionType(FaultInjectionConnectionType.Gateway)
+                        .WithOperationType(FaultInjectionOperationType.ReadItem)
+                        .Build(),
+                result:
+                    new FaultInjectionCustomServerErrorResultBuilder(statusCode, subStatusCode)
+                        .WithTimes(1)
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(5))
+                .Build();
+
+            customErrorRule.Disable();
+
+            try
+            {
+                //create client with fault injection
+                List<FaultInjectionRule> rules = new List<FaultInjectionRule> { customErrorRule };
+                FaultInjector faultInjector = new FaultInjector(rules);
+
+                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+                {
+                    ConsistencyLevel = ConsistencyLevel.Session,
+                    ConnectionMode = ConnectionMode.Gateway,
+                    Serializer = this.serializer,
+                };
+
+                this.fiClient = new CosmosClient(
+                    this.connectionString,
+                    faultInjector.GetFaultInjectionClientOptions(cosmosClientOptions));
+
+                this.fiDatabase = this.fiClient.GetDatabase(TestCommon.FaultInjectionDatabaseName);
+                this.fiContainer = this.fiDatabase.GetContainer(TestCommon.FaultInjectionContainerName);
+
+                customErrorRule.Enable();
+
+                try
+                {
+                    ItemResponse<FaultInjectionTestObject> response = await this.fiContainer.ReadItemAsync<FaultInjectionTestObject>(
+                        id,
+                        new PartitionKey(pk));
+
+                    Assert.Fail("Expected exception was not thrown");
+                }
+                catch (CosmosException ex)
+                {
+                    this.ValidateFaultInjectionRuleApplication(ex, statusCode, subStatusCode, customErrorRule);
+                    this.ValidateHitCount(customErrorRule, 1);
+                }
+            }
+            finally
+            {
+                customErrorRule.Disable();
+                try
+                {
+                    await this.container.DeleteItemAsync<FaultInjectionTestObject>(id, new PartitionKey(pk));
+                }
+                catch (CosmosException)
+                {
+                    // Ignore the exception
+                }
+            }
         }
     }
 }

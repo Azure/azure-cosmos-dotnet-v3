@@ -32,12 +32,6 @@ namespace Microsoft.Azure.Cosmos
             return this.TimeoutsAndDelays.GetEnumerator();
         }
 
-        // This is for control plane reads which should always be safe to retry on.
-        public override bool IsSafeToRetry(HttpMethod httpMethod)
-        {
-            return true;
-        }
-
         public override bool ShouldRetryBasedOnResponse(HttpMethod requestHttpMethod, HttpResponseMessage responseMessage)
         {
             return false;

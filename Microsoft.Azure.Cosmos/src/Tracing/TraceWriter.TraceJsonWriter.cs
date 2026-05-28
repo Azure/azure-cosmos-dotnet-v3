@@ -8,10 +8,10 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
-    using System.Net.Http;
     using System.Text;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
+    using Microsoft.Azure.Cosmos.Util;
     using Microsoft.Azure.Documents;
 
     internal static partial class TraceWriter
@@ -128,6 +128,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
             else if (value is string stringValue)
             {
                 writer.WriteStringValue(stringValue);
+            }
+            else if (value is CosmosOperationCanceledException cosmosTimeoutException)
+            {
+                writer.WriteStringValue(
+                    cosmosTimeoutException.EnsureToStringMessage(skipDiagnostics: true));
             }
             else
             {
@@ -394,7 +399,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteStringValue(storeResult.StatusCode.ToString());
 
                 this.jsonWriter.WriteFieldName(nameof(storeResult.SubStatusCode));
-                this.jsonWriter.WriteStringValue(storeResult.SubStatusCode.ToString());
+                this.jsonWriter.WriteStringValue(SubStatusMappingUtil.GetSubStatusCodeString(storeResult.StatusCode, storeResult.SubStatusCode));
 
                 this.jsonWriter.WriteFieldName(nameof(storeResult.LSN));
                 this.jsonWriter.WriteNumberValue(storeResult.LSN);
@@ -404,6 +409,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 this.jsonWriter.WriteFieldName(nameof(storeResult.GlobalCommittedLSN));
                 this.jsonWriter.WriteNumberValue(storeResult.GlobalCommittedLSN);
+
+                this.jsonWriter.WriteFieldName(nameof(storeResult.GlobalNRegionCommittedGLSN));
+                this.jsonWriter.WriteNumberValue(storeResult.GlobalNRegionCommittedGLSN);
 
                 this.jsonWriter.WriteFieldName(nameof(storeResult.ItemLSN));
                 this.jsonWriter.WriteNumberValue(storeResult.ItemLSN);

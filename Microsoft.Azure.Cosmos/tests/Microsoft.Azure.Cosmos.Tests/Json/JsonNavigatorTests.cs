@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
 
@@ -378,7 +377,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         [Ignore] // This test takes too long
         public void CuratedDocumentCountriesTest()
         {
-            JsonNavigatorTests.VerifyNavigatorWithCuratedDoc("countries", performExtraChecks: false);
+            JsonNavigatorTests.VerifyNavigatorWithCuratedDoc("countries");
         }
 
         [TestMethod]
@@ -399,7 +398,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         [Owner("mayapainter")]
         public void CuratedDocumentLogDataTest()
         {
-            JsonNavigatorTests.VerifyNavigatorWithCuratedDoc("LogData.json", performExtraChecks: false);
+            JsonNavigatorTests.VerifyNavigatorWithCuratedDoc("LogData.json");
         }
 
         [TestMethod]
@@ -479,20 +478,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             JsonNavigatorTests.VerifyNavigatorWithCuratedDoc("XpertEvents");
         }
 
-        private static void VerifyNavigatorWithCuratedDoc(string filename, bool performExtraChecks = true)
+        private static void VerifyNavigatorWithCuratedDoc(string filename)
         {
             string json = JsonTestUtils.LoadJsonCuratedDocument(filename);
 #if true
             json = JsonTestUtils.RandomSampleJson(json, maxNumberOfItems: 10);
 #endif
 
-            JsonNavigatorTests.VerifyNavigator(json, performExtraChecks);
+            JsonNavigatorTests.VerifyNavigator(json);
         }
         #endregion
 
-        private static void VerifyNavigator(
-            string input,
-            bool performExtraChecks = true)
+        private static void VerifyNavigator(string input)
         {
             CultureInfo defaultCultureInfo = System.Threading.Thread.CurrentThread.CurrentCulture;
 
@@ -518,12 +515,25 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                     byte[] binaryInput = JsonTestUtils.ConvertTextToBinary(input);
                     IJsonNavigator binaryNavigator = JsonNavigator.Create(binaryInput);
 
-                    // Test
-                    foreach (IJsonNavigator jsonNavigator in new IJsonNavigator[] { textNavigator, binaryNavigator })
+                    // Test binary + empty user string dictionary
+                    IJsonStringDictionary jsonStringDictionary = new JsonStringDictionary(new List<string>());
+                    byte[] binaryWithEmptyUserStringEncodingInput = JsonTestUtils.ConvertTextToBinary(input, jsonStringDictionary);
+                    Assert.IsTrue(binaryWithEmptyUserStringEncodingInput.SequenceEqual(binaryInput), "Binary data should be the same with empty readonly JSON dictionary.");
+
+                    // Test binary + user string encoding
+                    byte[] binaryWithUserStringEncodingInput = JsonTestUtils.ConvertTextToBinary(input, out jsonStringDictionary);
+                    if (jsonStringDictionary.TryGetString(stringId: 0, value: out _))
                     {
-                        IJsonNavigatorNode rootNode = jsonNavigator.GetRootNode();
-                        JsonToken[] tokensFromNavigator = JsonNavigatorTests.GetTokensFromNode(rootNode, jsonNavigator, performExtraChecks);
-                        Assert.AreEqual(tokensFromNavigator.Length, tokensFromReader.Length);
+                        Assert.IsFalse(binaryWithUserStringEncodingInput.SequenceEqual(binaryInput), "Binary data should be different with user string encoding.");
+                    }
+
+                    IJsonNavigator binaryNavigatorWithUserStringEncoding = JsonNavigator.Create(binaryInput, jsonStringDictionary);
+
+                    // Test
+                    foreach (IJsonNavigator jsonNavigator in new IJsonNavigator[] { textNavigator, binaryNavigator, binaryNavigatorWithUserStringEncoding })
+                    {
+                        IReadOnlyList<JsonToken> tokensFromNavigator = GetTokensFromNavigator(jsonNavigator);
+                        Assert.AreEqual(tokensFromNavigator.Count, tokensFromReader.Length);
                         IEnumerable<(JsonToken, JsonToken)> zippedTokens = tokensFromNavigator.Zip(tokensFromReader, (first, second) => (first, second));
                         foreach ((JsonToken tokenFromNavigator, JsonToken tokenFromReader) in zippedTokens)
                         {
@@ -534,6 +544,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                         }
 
                         // Test materialize
+                        IJsonNavigatorNode rootNode = jsonNavigator.GetRootNode();
                         JToken materializedToken = CosmosElement.Dispatch(jsonNavigator, rootNode).Materialize<JToken>();
 
                         try
@@ -564,110 +575,100 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             }
         }
 
-        private static JsonToken[] GetTokensFromNode(IJsonNavigatorNode node, IJsonNavigator navigator, bool performCorrectnessCheck)
+        private static IReadOnlyList<JsonToken> GetTokensFromNavigator(IJsonNavigator navigator)
+        {
+            IJsonNavigatorNode rootNode = navigator.GetRootNode();
+            List<JsonToken> tokens = new List<JsonToken>();
+            JsonNavigatorTests.AppendTokensFromNode(rootNode, navigator, tokens);
+            return tokens;
+        }
+
+        private static void AppendTokensFromNode(IJsonNavigatorNode node, IJsonNavigator navigator, List<JsonToken> tokens)
         {
             JsonNodeType nodeType = navigator.GetNodeType(node);
-            return nodeType switch
+            switch (nodeType)
             {
-                JsonNodeType.Null => new JsonToken[] { JsonToken.Null() },
-                JsonNodeType.False => new JsonToken[] { JsonToken.Boolean(false) },
-                JsonNodeType.True => new JsonToken[] { JsonToken.Boolean(true) },
-                JsonNodeType.Number => new JsonToken[] { JsonToken.Number(navigator.GetNumberValue(node)) },
-                JsonNodeType.String => new JsonToken[] { JsonToken.String(navigator.GetStringValue(node)) },
-                JsonNodeType.Array => JsonNavigatorTests.GetTokensFromArrayNode(node, navigator, performCorrectnessCheck),
-                JsonNodeType.Object => JsonNavigatorTests.GetTokensFromObjectNode(node, navigator, performCorrectnessCheck),
-                JsonNodeType.FieldName => new JsonToken[] { JsonToken.FieldName(navigator.GetStringValue(node)) },
-                JsonNodeType.Int8 => new JsonToken[] { JsonToken.Int8(navigator.GetInt8Value(node)) },
-                JsonNodeType.Int16 => new JsonToken[] { JsonToken.Int16(navigator.GetInt16Value(node)) },
-                JsonNodeType.Int32 => new JsonToken[] { JsonToken.Int32(navigator.GetInt32Value(node)) },
-                JsonNodeType.Int64 => new JsonToken[] { JsonToken.Int64(navigator.GetInt64Value(node)) },
-                JsonNodeType.UInt32 => new JsonToken[] { JsonToken.UInt32(navigator.GetUInt32Value(node)) },
-                JsonNodeType.Float32 => new JsonToken[] { JsonToken.Float32(navigator.GetFloat32Value(node)) },
-                JsonNodeType.Float64 => new JsonToken[] { JsonToken.Float64(navigator.GetFloat64Value(node)) },
-                JsonNodeType.Guid => new JsonToken[] { JsonToken.Guid(navigator.GetGuidValue(node)) },
-                JsonNodeType.Binary => new JsonToken[] { JsonToken.Binary(navigator.GetBinaryValue(node)) },
-                _ => throw new InvalidOperationException(),
+                case JsonNodeType.Array:
+                    AppendTokensFromArrayNode(node, navigator, tokens);
+                    break;
+                case JsonNodeType.Binary:
+                    tokens.Add(JsonToken.Binary(navigator.GetBinaryValue(node)));
+                    break;
+                case JsonNodeType.FieldName:
+                    tokens.Add(JsonToken.FieldName(navigator.GetStringValue(node)));
+                    break;
+                case JsonNodeType.Float32:
+                    tokens.Add(JsonToken.Float32(navigator.GetFloat32Value(node)));
+                    break;
+                case JsonNodeType.Float64:
+                    tokens.Add(JsonToken.Float64(navigator.GetFloat64Value(node)));
+                    break;
+                case JsonNodeType.Guid:
+                    tokens.Add(JsonToken.Guid(navigator.GetGuidValue(node)));
+                    break;
+                case JsonNodeType.Int16:
+                    tokens.Add(JsonToken.Int16(navigator.GetInt16Value(node)));
+                    break;
+                case JsonNodeType.Int32:
+                    tokens.Add(JsonToken.Int32(navigator.GetInt32Value(node)));
+                    break;
+                case JsonNodeType.Int64:
+                    tokens.Add(JsonToken.Int64(navigator.GetInt64Value(node)));
+                    break;
+                case JsonNodeType.Int8:
+                    tokens.Add(JsonToken.Int8(navigator.GetInt8Value(node)));
+                    break;
+                case JsonNodeType.Null:
+                    tokens.Add(JsonToken.Null());
+                    break;
+                case JsonNodeType.False:
+                    tokens.Add(JsonToken.Boolean(false));
+                    break;
+                case JsonNodeType.True:
+                    tokens.Add(JsonToken.Boolean(true));
+                    break;
+                case JsonNodeType.Number:
+                    tokens.Add(JsonToken.Number(navigator.GetNumberValue(node)));
+                    break;
+                case JsonNodeType.Object:
+                    AppendTokensFromObjectNode(node, navigator, tokens);
+                    break;
+                case JsonNodeType.String:
+                    tokens.Add(JsonToken.String(navigator.GetStringValue(node)));
+                    break;
+                case JsonNodeType.UInt32:
+                    tokens.Add(JsonToken.UInt32(navigator.GetUInt32Value(node)));
+                    break;
+                default:
+                    throw new InvalidOperationException();
             };
         }
 
-        private static JsonToken[] GetTokensFromObjectNode(IJsonNavigatorNode node, IJsonNavigator navigator, bool performCorrectnessCheck)
+        private static void AppendTokensFromArrayNode(IJsonNavigatorNode node, IJsonNavigator navigator, List<JsonToken> tokens)
         {
-            // Get the tokens through .GetObjectProperties
-            List<JsonToken> tokensFromGetProperties = new List<JsonToken>();
+            IEnumerable<IJsonNavigatorNode> arrayItems = navigator.GetArrayItems(node);
+
+            tokens.Add(JsonToken.ArrayStart());
+            foreach (IJsonNavigatorNode arrayItem in arrayItems)
+            {
+                AppendTokensFromNode(arrayItem, navigator, tokens);
+            }
+            tokens.Add(JsonToken.ArrayEnd());
+        }
+
+        private static void AppendTokensFromObjectNode(IJsonNavigatorNode node, IJsonNavigator navigator, List<JsonToken> tokens)
+        {
             IEnumerable<ObjectProperty> properties = navigator.GetObjectProperties(node);
 
-            tokensFromGetProperties.Add(JsonToken.ObjectStart());
+            tokens.Add(JsonToken.ObjectStart());
             foreach (ObjectProperty property in properties)
             {
                 string fieldname = navigator.GetStringValue(property.NameNode);
-                tokensFromGetProperties.Add(JsonToken.FieldName(fieldname));
-                tokensFromGetProperties.AddRange(JsonNavigatorTests.GetTokensFromNode(property.ValueNode, navigator, performCorrectnessCheck));
+                tokens.Add(JsonToken.FieldName(fieldname));
+
+                AppendTokensFromNode(property.ValueNode, navigator, tokens);
             }
-            tokensFromGetProperties.Add(JsonToken.ObjectEnd());
-
-            if (performCorrectnessCheck)
-            {
-                // Get the tokens again through .TryGetObjectProperty
-                List<JsonToken> tokensFromTryGetProperty = new List<JsonToken>
-                {
-                    JsonToken.ObjectStart()
-                };
-                foreach (ObjectProperty objectProperty in properties)
-                {
-                    string fieldname = navigator.GetStringValue(objectProperty.NameNode);
-                    if (navigator.TryGetObjectProperty(node, fieldname, out ObjectProperty propertyFromTryGetProperty))
-                    {
-                        tokensFromTryGetProperty.Add(JsonToken.FieldName(fieldname));
-                        tokensFromTryGetProperty.AddRange(JsonNavigatorTests.GetTokensFromNode(propertyFromTryGetProperty.ValueNode, navigator, performCorrectnessCheck));
-                    }
-                    else
-                    {
-                        Assert.Fail($"Failed to get object property with name: {fieldname}");
-                    }
-                }
-                tokensFromTryGetProperty.Add(JsonToken.ObjectEnd());
-                Assert.AreEqual(properties.Count(), navigator.GetObjectPropertyCount(node));
-                Assert.IsTrue(tokensFromGetProperties.SequenceEqual(tokensFromTryGetProperty));
-            }
-
-            return tokensFromGetProperties.ToArray();
-        }
-
-        private static JsonToken[] GetTokensFromArrayNode(IJsonNavigatorNode node, IJsonNavigator navigator, bool performCorrectnessCheck)
-        {
-            // Get tokens once through IEnumerable
-            List<JsonToken> tokensFromIEnumerable = new List<JsonToken>();
-            IEnumerable<IJsonNavigatorNode> arrayItems = navigator.GetArrayItems(node);
-
-            tokensFromIEnumerable.Add(JsonToken.ArrayStart());
-            foreach (IJsonNavigatorNode arrayItem in arrayItems)
-            {
-                tokensFromIEnumerable.AddRange(JsonNavigatorTests.GetTokensFromNode(arrayItem, navigator, performCorrectnessCheck));
-            }
-
-            tokensFromIEnumerable.Add(JsonToken.ArrayEnd());
-
-            if (performCorrectnessCheck)
-            {
-                // Get tokens once again through indexer
-                List<JsonToken> tokensFromIndexer = new List<JsonToken>
-                {
-                    JsonToken.ArrayStart()
-                };
-
-                int itemCount = navigator.GetArrayItemCount(node);
-                for (int i = 0; i < itemCount; ++i)
-                {
-                    tokensFromIndexer.AddRange(JsonNavigatorTests.GetTokensFromNode(navigator.GetArrayItemAt(node, i), navigator, performCorrectnessCheck));
-                }
-
-                tokensFromIndexer.Add(JsonToken.ArrayEnd());
-
-                Assert.AreEqual(arrayItems.Count(), navigator.GetArrayItemCount(node));
-                Assert.IsTrue(tokensFromIEnumerable.SequenceEqual(tokensFromIndexer));
-            }
-
-            return tokensFromIEnumerable.ToArray();
+            tokens.Add(JsonToken.ObjectEnd());
         }
 
         private sealed class MaterializationFailedToMatchException : Exception

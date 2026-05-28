@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 {
     using System;
@@ -18,14 +18,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
     internal partial class StreamProcessor
     {
-        private const string EncryptionPropertiesPath = "/" + Constants.EncryptedInfo;
         private static readonly SqlBitSerializer SqlBoolSerializer = new ();
         private static readonly SqlFloatSerializer SqlDoubleSerializer = new ();
         private static readonly SqlBigIntSerializer SqlLongSerializer = new ();
 
         private static readonly JsonReaderOptions JsonReaderOptions = new () { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip };
-
-        internal static int InitialBufferSize { get; set; } = 16384;
 
         internal MdeEncryptor Encryptor { get; set; } = new MdeEncryptor();
 
@@ -37,33 +34,50 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
+            using RentArrayBufferWriter bufferWriter = new (PooledStreamConfiguration.Current.StreamInitialCapacity);
+            DecryptionContext context = await this.DecryptStreamAsync(inputStream, bufferWriter, encryptor, properties, diagnosticsContext, cancellationToken);
+            await bufferWriter.CopyToAsync(outputStream, cancellationToken).ConfigureAwait(false);
+            outputStream.Position = 0;
+            return context;
+        }
+
+        internal async Task<DecryptionContext> DecryptStreamAsync(
+            Stream inputStream,
+            IBufferWriter<byte> outputBufferWriter,
+            Encryptor encryptor,
+            EncryptionProperties properties,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(inputStream);
+            ArgumentNullException.ThrowIfNull(outputBufferWriter);
+            ArgumentNullException.ThrowIfNull(encryptor);
+            ArgumentNullException.ThrowIfNull(properties);
             _ = diagnosticsContext;
 
-            if (properties.EncryptionFormatVersion != EncryptionFormatVersion.Mde && properties.EncryptionFormatVersion != EncryptionFormatVersion.MdeWithCompression)
+            if (properties.EncryptionFormatVersion != EncryptionFormatVersion.Mde)
             {
                 throw new NotSupportedException($"Unknown encryption format version: {properties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
             }
 
-            bool containsCompressed = properties.CompressedEncryptedPaths?.Count > 0;
-
-            if (properties.CompressionAlgorithm != CompressionOptions.CompressionAlgorithm.Brotli && containsCompressed)
-            {
-                throw new NotSupportedException($"Unknown compression algorithm {properties.CompressionAlgorithm}");
-            }
-
-            using ArrayPoolManager arrayPoolManager = new ();
+            int encryptedPathCount = properties.EncryptedPaths is ICollection<string> ec ? ec.Count : properties.EncryptedPaths.Count();
+            using ArrayPoolManager arrayPoolManager = new (initialRentCapacity: (encryptedPathCount * 2) + 4);
 
             DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(properties.DataEncryptionKeyId, properties.EncryptionAlgorithm, cancellationToken);
 
-            List<string> pathsDecrypted = new (properties.EncryptedPaths.Count());
+            List<string> pathsDecrypted = new (encryptedPathCount);
+            using Utf8JsonWriter writer = new (outputBufferWriter);
 
-            using Utf8JsonWriter writer = new (outputStream);
-
-            byte[] buffer = arrayPoolManager.Rent(InitialBufferSize);
+            byte[] buffer = arrayPoolManager.Rent(PooledStreamConfiguration.Current.StreamProcessorBufferSize);
 
             JsonReaderState state = new (StreamProcessor.JsonReaderOptions);
 
-            HashSet<string> encryptedPaths = properties.EncryptedPaths as HashSet<string> ?? new (properties.EncryptedPaths, StringComparer.Ordinal);
+            // Pre-encode the encrypted-paths as UTF-8 byte sequences so that we can match them
+            // with Utf8JsonReader.ValueTextEquals (which correctly handles JSON escape
+            // sequences) without materializing a new string per property name read. The _ei
+            // metadata property name is pre-encoded once per StreamProcessor instance in the
+            // encryptionPropertiesNameBytes field (declared in StreamProcessor.Encryptor.cs).
+            (byte[] nameBytes, string fullPath)[] encryptedPathsTable = BuildEncryptedPathsTable(properties.EncryptedPaths);
 
             int leftOver = 0;
 
@@ -76,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             {
                 int dataLength = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
                 int dataSize = dataLength + leftOver;
-                isFinalBlock = dataSize == 0;
+                isFinalBlock = dataLength == 0;
                 long bytesConsumed = 0;
 
                 // processing itself here
@@ -98,7 +112,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
 
             writer.Flush();
-            outputStream.Position = 0;
 
             return EncryptionProcessor.CreateDecryptionContext(pathsDecrypted, properties.DataEncryptionKeyId);
 
@@ -140,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             decryptPropertyName = null;
                             writer.WriteRawValue(reader.ValueSpan);
                             break;
-                        case JsonTokenType.None:
+                        case JsonTokenType.None: // Unreachable: pre-first-Read state
                             decryptPropertyName = null;
                             break;
                         case JsonTokenType.StartObject:
@@ -160,12 +173,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             writer.WriteEndArray();
                             break;
                         case JsonTokenType.PropertyName:
-                            string propertyName = "/" + reader.GetString();
-                            if (encryptedPaths.Contains(propertyName))
+                            string matchedPath = null;
+                            for (int i = 0; i < encryptedPathsTable.Length; i++)
                             {
-                                decryptPropertyName = propertyName;
+                                if (reader.ValueTextEquals(encryptedPathsTable[i].nameBytes))
+                                {
+                                    matchedPath = encryptedPathsTable[i].fullPath;
+                                    break;
+                                }
                             }
-                            else if (propertyName == StreamProcessor.EncryptionPropertiesPath)
+
+                            if (matchedPath != null)
+                            {
+                                decryptPropertyName = matchedPath;
+                            }
+                            else if (reader.ValueTextEquals(this.encryptionPropertiesNameBytes))
                             {
                                 if (!reader.TrySkip())
                                 {
@@ -177,7 +199,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                             writer.WritePropertyName(reader.ValueSpan);
                             break;
-                        case JsonTokenType.Comment:
+                        case JsonTokenType.Comment: // Skipped via reader options
                             break;
                         case JsonTokenType.True:
                             decryptPropertyName = null;
@@ -213,15 +235,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                 (byte[] bytes, int processedBytes) = this.Encryptor.Decrypt(encryptionKey, cipherTextWithTypeMarker, cipherTextLength, arrayPoolManager);
 
-                if (containsCompressed && properties.CompressedEncryptedPaths?.TryGetValue(decryptPropertyName, out int decompressedSize) == true)
-                {
-                    BrotliCompressor decompressor = new ();
-                    byte[] buffer = arrayPoolManager.Rent(decompressedSize);
-                    processedBytes = decompressor.Decompress(bytes, processedBytes, buffer);
-
-                    bytes = buffer;
-                }
-
                 ReadOnlySpan<byte> bytesToWrite = bytes.AsSpan(0, processedBytes);
                 switch ((TypeMarker)cipherTextWithTypeMarker[0])
                 {
@@ -237,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     case TypeMarker.Boolean:
                         writer.WriteBooleanValue(SqlBoolSerializer.Deserialize(bytesToWrite));
                         break;
-                    case TypeMarker.Null:
+                    case TypeMarker.Null: // Produced only if ciphertext was forged or future versions choose to encrypt nulls; current encryptor skips nulls.
                         writer.WriteNullValue();
                         break;
                     default:

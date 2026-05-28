@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             }
             else if (stabilityMode == OpenTelemetryStablityModes.DatabaseDupe)
             {
-                Assert.AreEqual(34, tagCollection.Count);
+                Assert.AreEqual(40, tagCollection.Count);
                 VerifyNewAndOldAttributes(tagCollection);
             }
             else if (stabilityMode == OpenTelemetryStablityModes.ClassicAppInsights)

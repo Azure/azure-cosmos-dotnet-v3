@@ -116,174 +116,187 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         [TestMethod]
         [Owner("abpai")]
-        public async Task BatchCrudRequestAsync()
+        [DataRow(true, DisplayName = "Test scenario when binary encoding is disabled at client level.")]
+        [DataRow(false, DisplayName = "Test scenario when binary disabled is disabled at client level.")]
+        public async Task BatchCrudRequestAsync(
+            bool isBinaryEncodingEnabled)
         {
-            Random random = new Random();
-
-            TestItem createItem = new TestItem("create");
-            byte[] createStreamContent = new byte[20];
-            random.NextBytes(createStreamContent);
-            byte[] createStreamBinaryId = new byte[20];
-            random.NextBytes(createStreamBinaryId);
-            int createTtl = 45;
-            TransactionalBatchItemRequestOptions createRequestOptions = new TransactionalBatchItemRequestOptions()
+            Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, isBinaryEncodingEnabled.ToString());
+            try
             {
-                Properties = new Dictionary<string, object>()
+                Random random = new Random();
+
+                TestItem createItem = new TestItem("create");
+                byte[] createStreamContent = new byte[20];
+                random.NextBytes(createStreamContent);
+                byte[] createStreamBinaryId = new byte[20];
+                random.NextBytes(createStreamBinaryId);
+                int createTtl = 45;
+                TransactionalBatchItemRequestOptions createRequestOptions = new TransactionalBatchItemRequestOptions()
+                {
+                    Properties = new Dictionary<string, object>()
                 {
                     { WFConstants.BackendHeaders.BinaryId, createStreamBinaryId },
                     { WFConstants.BackendHeaders.TimeToLiveInSeconds, createTtl.ToString() },
                 },
-                IndexingDirective = Microsoft.Azure.Cosmos.IndexingDirective.Exclude
-            };
+                    IndexingDirective = Microsoft.Azure.Cosmos.IndexingDirective.Exclude
+                };
 
-            string readId = Guid.NewGuid().ToString();
-            byte[] readStreamBinaryId = new byte[20];
-            random.NextBytes(readStreamBinaryId);
-            TransactionalBatchItemRequestOptions readRequestOptions = new TransactionalBatchItemRequestOptions()
-            {
-                Properties = new Dictionary<string, object>()
+                string readId = Guid.NewGuid().ToString();
+                byte[] readStreamBinaryId = new byte[20];
+                random.NextBytes(readStreamBinaryId);
+                TransactionalBatchItemRequestOptions readRequestOptions = new TransactionalBatchItemRequestOptions()
+                {
+                    Properties = new Dictionary<string, object>()
                 {
                     { WFConstants.BackendHeaders.BinaryId, readStreamBinaryId }
                 },
-                IfNoneMatchEtag = "readCondition"
-            };
+                    IfNoneMatchEtag = "readCondition"
+                };
 
-            TestItem replaceItem = new TestItem("repl");
-            byte[] replaceStreamContent = new byte[20];
-            random.NextBytes(replaceStreamContent);
-            const string replaceStreamId = "replStream";
-            byte[] replaceStreamBinaryId = new byte[20];
-            random.NextBytes(replaceStreamBinaryId);
-            TransactionalBatchItemRequestOptions replaceRequestOptions = new TransactionalBatchItemRequestOptions()
-            {
-                Properties = new Dictionary<string, object>()
+                TestItem replaceItem = new TestItem("repl");
+                byte[] replaceStreamContent = new byte[20];
+                random.NextBytes(replaceStreamContent);
+                const string replaceStreamId = "replStream";
+                byte[] replaceStreamBinaryId = new byte[20];
+                random.NextBytes(replaceStreamBinaryId);
+                TransactionalBatchItemRequestOptions replaceRequestOptions = new TransactionalBatchItemRequestOptions()
+                {
+                    Properties = new Dictionary<string, object>()
                 {
                     { WFConstants.BackendHeaders.BinaryId, replaceStreamBinaryId }
                 },
-                IfMatchEtag = "replCondition",
-                IndexingDirective = Microsoft.Azure.Cosmos.IndexingDirective.Exclude
-            };
+                    IfMatchEtag = "replCondition",
+                    IndexingDirective = Microsoft.Azure.Cosmos.IndexingDirective.Exclude
+                };
 
-            TestItem upsertItem = new TestItem("upsert");
-            byte[] upsertStreamContent = new byte[20];
-            random.NextBytes(upsertStreamContent);
-            byte[] upsertStreamBinaryId = new byte[20];
-            random.NextBytes(upsertStreamBinaryId);
-            TransactionalBatchItemRequestOptions upsertRequestOptions = new TransactionalBatchItemRequestOptions()
-            {
-                Properties = new Dictionary<string, object>()
+                TestItem upsertItem = new TestItem("upsert");
+                byte[] upsertStreamContent = new byte[20];
+                random.NextBytes(upsertStreamContent);
+                byte[] upsertStreamBinaryId = new byte[20];
+                random.NextBytes(upsertStreamBinaryId);
+                TransactionalBatchItemRequestOptions upsertRequestOptions = new TransactionalBatchItemRequestOptions()
+                {
+                    Properties = new Dictionary<string, object>()
                 {
                     { WFConstants.BackendHeaders.BinaryId, upsertStreamBinaryId }
                 },
-                IfMatchEtag = "upsertCondition",
-                IndexingDirective = Microsoft.Azure.Cosmos.IndexingDirective.Exclude
-            };
+                    IfMatchEtag = "upsertCondition",
+                    IndexingDirective = Microsoft.Azure.Cosmos.IndexingDirective.Exclude
+                };
 
-            string deleteId = Guid.NewGuid().ToString();
-            byte[] deleteStreamBinaryId = new byte[20];
-            random.NextBytes(deleteStreamBinaryId);
-            TransactionalBatchItemRequestOptions deleteRequestOptions = new TransactionalBatchItemRequestOptions()
-            {
-                Properties = new Dictionary<string, object>()
+                string deleteId = Guid.NewGuid().ToString();
+                byte[] deleteStreamBinaryId = new byte[20];
+                random.NextBytes(deleteStreamBinaryId);
+                TransactionalBatchItemRequestOptions deleteRequestOptions = new TransactionalBatchItemRequestOptions()
+                {
+                    Properties = new Dictionary<string, object>()
                 {
                     { WFConstants.BackendHeaders.BinaryId, deleteStreamBinaryId }
                 },
-                IfNoneMatchEtag = "delCondition"
-            };
+                    IfNoneMatchEtag = "delCondition"
+                };
 
-            CosmosJsonDotNetSerializer jsonSerializer = new CosmosJsonDotNetSerializer();
-            BatchTestHandler testHandler = new BatchTestHandler((request, operations) =>
-            {
-                Assert.AreEqual(new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1).ToString(), request.Headers.PartitionKey);
-                Assert.AreEqual(bool.TrueString, request.Headers[HttpConstants.HttpHeaders.IsBatchAtomic]);
-                Assert.AreEqual(bool.TrueString, request.Headers[HttpConstants.HttpHeaders.IsBatchOrdered]);
-                Assert.IsFalse(request.Headers.TryGetValue(HttpConstants.HttpHeaders.ShouldBatchContinueOnError, out string unused));
-
-                Assert.AreEqual(16, operations.Count);
-
-                int operationIndex = 0;
-
-                // run the loop twice, once for operations without item request options, and one for with item request options
-                for (int loopCount = 0; loopCount < 2; loopCount++)
+                CosmosJsonDotNetSerializer jsonSerializer = new CosmosJsonDotNetSerializer(isBinaryEncodingEnabled);
+                BatchTestHandler testHandler = new BatchTestHandler((request, operations) =>
                 {
-                    bool hasItemRequestOptions = loopCount == 1;
+                    Assert.AreEqual(new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1).ToString(), request.Headers.PartitionKey);
+                    Assert.AreEqual(bool.TrueString, request.Headers[HttpConstants.HttpHeaders.IsBatchAtomic]);
+                    Assert.AreEqual(bool.TrueString, request.Headers[HttpConstants.HttpHeaders.IsBatchOrdered]);
+                    Assert.IsFalse(request.Headers.TryGetValue(HttpConstants.HttpHeaders.ShouldBatchContinueOnError, out string unused));
 
-                    ItemBatchOperation operation = operations[operationIndex++];
-                    Assert.AreEqual(OperationType.Create, operation.OperationType);
-                    Assert.IsNull(operation.Id);
-                    Assert.AreEqual(createItem, BatchUnitTests.Deserialize(operation.ResourceBody, jsonSerializer));
-                    BatchUnitTests.VerifyBatchItemRequestOptionsAreEqual(hasItemRequestOptions ? createRequestOptions : null, operation.RequestOptions);
+                    Assert.AreEqual(16, operations.Count);
 
-                    operation = operations[operationIndex++];
-                    Assert.AreEqual(OperationType.Read, operation.OperationType);
-                    Assert.AreEqual(readId, operation.Id);
-                    BatchUnitTests.VerifyBatchItemRequestOptionsAreEqual(hasItemRequestOptions ? readRequestOptions : null, operation.RequestOptions);
+                    int operationIndex = 0;
 
-                    operation = operations[operationIndex++];
-                    Assert.AreEqual(OperationType.Replace, operation.OperationType);
-                    Assert.AreEqual(replaceItem.Id, operation.Id);
-                    Assert.AreEqual(replaceItem, BatchUnitTests.Deserialize(operation.ResourceBody, jsonSerializer));
-                    BatchUnitTests.VerifyBatchItemRequestOptionsAreEqual(hasItemRequestOptions ? replaceRequestOptions : null, operation.RequestOptions);
+                    // run the loop twice, once for operations without item request options, and one for with item request options
+                    for (int loopCount = 0; loopCount < 2; loopCount++)
+                    {
+                        bool hasItemRequestOptions = loopCount == 1;
 
-                    operation = operations[operationIndex++];
-                    Assert.AreEqual(OperationType.Upsert, operation.OperationType);
-                    Assert.IsNull(operation.Id);
-                    Assert.AreEqual(upsertItem, BatchUnitTests.Deserialize(operation.ResourceBody, jsonSerializer));
-                    BatchUnitTests.VerifyBatchItemRequestOptionsAreEqual(hasItemRequestOptions ? upsertRequestOptions : null, operation.RequestOptions);
+                        ItemBatchOperation operation = operations[operationIndex++];
+                        Assert.AreEqual(OperationType.Create, operation.OperationType);
+                        Assert.IsNull(operation.Id);
+                        Assert.AreEqual(createItem, BatchUnitTests.Deserialize(operation.ResourceBody, jsonSerializer));
+                        BatchUnitTests.VerifyBatchItemRequestOptionsAreEqual(hasItemRequestOptions ? createRequestOptions : null, operation.RequestOptions);
 
-                    operation = operations[operationIndex++];
-                    Assert.AreEqual(OperationType.Delete, operation.OperationType);
-                    Assert.AreEqual(deleteId, operation.Id);
-                    BatchUnitTests.VerifyBatchItemRequestOptionsAreEqual(hasItemRequestOptions ? deleteRequestOptions : null, operation.RequestOptions);
+                        operation = operations[operationIndex++];
+                        Assert.AreEqual(OperationType.Read, operation.OperationType);
+                        Assert.AreEqual(readId, operation.Id);
+                        BatchUnitTests.VerifyBatchItemRequestOptionsAreEqual(hasItemRequestOptions ? readRequestOptions : null, operation.RequestOptions);
 
-                    operation = operations[operationIndex++];
-                    Assert.AreEqual(OperationType.Create, operation.OperationType);
-                    Assert.IsNull(operation.Id);
-                    Assert.IsTrue(operation.ResourceBody.Span.SequenceEqual(createStreamContent));
-                    BatchUnitTests.VerifyBatchItemRequestOptionsAreEqual(hasItemRequestOptions ? createRequestOptions : null, operation.RequestOptions);
+                        operation = operations[operationIndex++];
+                        Assert.AreEqual(OperationType.Replace, operation.OperationType);
+                        Assert.AreEqual(replaceItem.Id, operation.Id);
+                        Assert.AreEqual(replaceItem, BatchUnitTests.Deserialize(operation.ResourceBody, jsonSerializer));
+                        BatchUnitTests.VerifyBatchItemRequestOptionsAreEqual(hasItemRequestOptions ? replaceRequestOptions : null, operation.RequestOptions);
 
-                    operation = operations[operationIndex++];
-                    Assert.AreEqual(OperationType.Replace, operation.OperationType);
-                    Assert.AreEqual(replaceStreamId, operation.Id);
-                    Assert.IsTrue(operation.ResourceBody.Span.SequenceEqual(replaceStreamContent));
-                    BatchUnitTests.VerifyBatchItemRequestOptionsAreEqual(hasItemRequestOptions ? replaceRequestOptions : null, operation.RequestOptions);
+                        operation = operations[operationIndex++];
+                        Assert.AreEqual(OperationType.Upsert, operation.OperationType);
+                        Assert.IsNull(operation.Id);
+                        Assert.AreEqual(upsertItem, BatchUnitTests.Deserialize(operation.ResourceBody, jsonSerializer));
+                        BatchUnitTests.VerifyBatchItemRequestOptionsAreEqual(hasItemRequestOptions ? upsertRequestOptions : null, operation.RequestOptions);
 
-                    operation = operations[operationIndex++];
-                    Assert.AreEqual(OperationType.Upsert, operation.OperationType);
-                    Assert.IsNull(operation.Id);
-                    Assert.IsTrue(operation.ResourceBody.Span.SequenceEqual(upsertStreamContent));
-                    BatchUnitTests.VerifyBatchItemRequestOptionsAreEqual(hasItemRequestOptions ? upsertRequestOptions : null, operation.RequestOptions);
-                }
+                        operation = operations[operationIndex++];
+                        Assert.AreEqual(OperationType.Delete, operation.OperationType);
+                        Assert.AreEqual(deleteId, operation.Id);
+                        BatchUnitTests.VerifyBatchItemRequestOptionsAreEqual(hasItemRequestOptions ? deleteRequestOptions : null, operation.RequestOptions);
 
-                return Task.FromResult(new ResponseMessage(HttpStatusCode.OK));
-            });
+                        operation = operations[operationIndex++];
+                        Assert.AreEqual(OperationType.Create, operation.OperationType);
+                        Assert.IsNull(operation.Id);
+                        Assert.IsTrue(operation.ResourceBody.Span.SequenceEqual(createStreamContent));
+                        BatchUnitTests.VerifyBatchItemRequestOptionsAreEqual(hasItemRequestOptions ? createRequestOptions : null, operation.RequestOptions);
 
-            Container container = BatchUnitTests.GetContainer(testHandler);
+                        operation = operations[operationIndex++];
+                        Assert.AreEqual(OperationType.Replace, operation.OperationType);
+                        Assert.AreEqual(replaceStreamId, operation.Id);
+                        Assert.IsTrue(operation.ResourceBody.Span.SequenceEqual(replaceStreamContent));
+                        BatchUnitTests.VerifyBatchItemRequestOptionsAreEqual(hasItemRequestOptions ? replaceRequestOptions : null, operation.RequestOptions);
 
-            TransactionalBatchResponse batchResponse = await new BatchCore((ContainerInternal)container, new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
-                .CreateItem(createItem)
-                .ReadItem(readId)
-                .ReplaceItem(replaceItem.Id, replaceItem)
-                .UpsertItem(upsertItem)
-                .DeleteItem(deleteId)
+                        operation = operations[operationIndex++];
+                        Assert.AreEqual(OperationType.Upsert, operation.OperationType);
+                        Assert.IsNull(operation.Id);
+                        Assert.IsTrue(operation.ResourceBody.Span.SequenceEqual(upsertStreamContent));
+                        BatchUnitTests.VerifyBatchItemRequestOptionsAreEqual(hasItemRequestOptions ? upsertRequestOptions : null, operation.RequestOptions);
+                    }
 
-                // stream
-                .CreateItemStream(new MemoryStream(createStreamContent))
-                .ReplaceItemStream(replaceStreamId, new MemoryStream(replaceStreamContent))
-                .UpsertItemStream(new MemoryStream(upsertStreamContent))
+                    return Task.FromResult(new ResponseMessage(HttpStatusCode.OK));
+                });
 
-                // regular with options
-                .CreateItem(createItem, createRequestOptions)
-                .ReadItem(readId, readRequestOptions)
-                .ReplaceItem(replaceItem.Id, replaceItem, replaceRequestOptions)
-                .UpsertItem(upsertItem, upsertRequestOptions)
-                .DeleteItem(deleteId, deleteRequestOptions)
+                Container container = BatchUnitTests.GetContainer(testHandler);
 
-                // stream with options
-                .CreateItemStream(new MemoryStream(createStreamContent), createRequestOptions)
-                .ReplaceItemStream(replaceStreamId, new MemoryStream(replaceStreamContent), replaceRequestOptions)
-                .UpsertItemStream(new MemoryStream(upsertStreamContent), upsertRequestOptions)
-                .ExecuteAsync();
+                TransactionalBatchResponse batchResponse = await new BatchCore((ContainerInternal)container, new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
+                    .CreateItem(createItem)
+                    .ReadItem(readId)
+                    .ReplaceItem(replaceItem.Id, replaceItem)
+                    .UpsertItem(upsertItem)
+                    .DeleteItem(deleteId)
+
+                    // stream
+                    .CreateItemStream(new MemoryStream(createStreamContent))
+                    .ReplaceItemStream(replaceStreamId, new MemoryStream(replaceStreamContent))
+                    .UpsertItemStream(new MemoryStream(upsertStreamContent))
+
+                    // regular with options
+                    .CreateItem(createItem, createRequestOptions)
+                    .ReadItem(readId, readRequestOptions)
+                    .ReplaceItem(replaceItem.Id, replaceItem, replaceRequestOptions)
+                    .UpsertItem(upsertItem, upsertRequestOptions)
+                    .DeleteItem(deleteId, deleteRequestOptions)
+
+                    // stream with options
+                    .CreateItemStream(new MemoryStream(createStreamContent), createRequestOptions)
+                    .ReplaceItemStream(replaceStreamId, new MemoryStream(replaceStreamContent), replaceRequestOptions)
+                    .UpsertItemStream(new MemoryStream(upsertStreamContent), upsertRequestOptions)
+                    .ExecuteAsync();
+
+                TransactionalBatchOperationResult<TestItem> productResponse = batchResponse.GetOperationResultAtIndex<TestItem>(0);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, null);
+            }
         }
 
         [TestMethod]
@@ -521,7 +534,9 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private static TestItem Deserialize(Memory<byte> body, CosmosSerializer serializer)
         {
-            return serializer.FromStream<TestItem>(new MemoryStream(body.Span.ToArray()));
+            return serializer.FromStream<TestItem>(
+                stream: new CloneableStream(new MemoryStream(body.Span.ToArray()),
+                allowUnsafeDataAccess: true));
         }
 
         private class BatchTestHandler : TestHandler

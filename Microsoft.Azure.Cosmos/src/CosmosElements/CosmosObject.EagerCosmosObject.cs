@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
     using System;
     using System.Collections.Generic;
-    using System.Collections.Immutable;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
 

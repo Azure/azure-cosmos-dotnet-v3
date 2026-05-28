@@ -103,6 +103,33 @@ namespace Microsoft.Azure.Cosmos
             // If it's considered a failure create the corresponding CosmosException
             if (!documentServiceResponse.StatusCode.IsSuccess())
             {
+                // DTX responses carry per-operation results in the body that must be preserved
+                // for DistributedTransactionResponse.FromResponseMessageAsync to parse.
+                // Route through a lightweight CosmosException instead of CosmosExceptionFactory.Create
+                // which disposes the stream.
+                if (requestMessage?.ResourceType == ResourceType.DistributedTransactionBatch
+                    && documentServiceResponse.ResponseBody != null)
+                {
+                    CosmosException dtxCosmosException = new CosmosException(
+                        message: $"Distributed transaction batch failed with status code {(int)documentServiceResponse.StatusCode} ({documentServiceResponse.StatusCode}).",
+                        statusCode: documentServiceResponse.StatusCode,
+                        subStatusCode: (int)documentServiceResponse.SubStatusCode,
+                        activityId: headers.ActivityId,
+                        requestCharge: headers.RequestCharge);
+
+                    ResponseMessage dtcResponseMessage = new ResponseMessage(
+                        statusCode: documentServiceResponse.StatusCode,
+                        requestMessage: requestMessage,
+                        headers: headers,
+                        cosmosException: dtxCosmosException,
+                        trace: requestMessage.Trace ?? NoOpTrace.Singleton)
+                    {
+                        Content = documentServiceResponse.ResponseBody
+                    };
+
+                    return dtcResponseMessage;
+                }
+
                 CosmosException cosmosException = CosmosExceptionFactory.Create(
                     documentServiceResponse,
                     headers,
@@ -138,7 +165,7 @@ namespace Microsoft.Azure.Cosmos
                     subStatusCode: cosmosException.Headers.SubStatusCode,
                     responseTimeUtc: DateTime.UtcNow,
                     requestCharge: cosmosException.Headers.RequestCharge,
-                    errorMessage: documentClientException.ToString(),
+                    errorMessage: documentClientException?.Message,
                     method: requestMessage?.Method,
                     requestUri: requestMessage?.RequestUriString,
                     requestSessionToken: requestMessage?.Headers?.Session,
@@ -160,7 +187,9 @@ namespace Microsoft.Azure.Cosmos
             if (requestMessage != null)
             {
                 requestMessage.Properties.Remove(nameof(DocumentClientException));
+#pragma warning disable CDX1000 // DontConvertExceptionToObject
                 requestMessage.Properties.Add(nameof(DocumentClientException), documentClientException);
+#pragma warning restore CDX1000 // DontConvertExceptionToObject
             }
 
             return responseMessage;
@@ -202,21 +231,19 @@ namespace Microsoft.Azure.Cosmos
                 if (exception is SocketException socketException)
                 {
                     DefaultTrace.TraceWarning(
-                        "Exception {0}: RequesteUri: {1}, SocketErrorCode: {2}, {3}, {4}",
+                        "Exception {0}: RequesteUri: {1}, SocketErrorCode: {2}, {3}",
                         exception.GetType(),
                         requestUri,
                         socketException.SocketErrorCode,
-                        exception.Message,
-                        exception.StackTrace);
+                        exception.Message);
                 }
                 else
                 {
                     DefaultTrace.TraceWarning(
-                        "Exception {0}: RequestUri: {1}, {2}, {3}",
+                        "Exception {0}: RequestUri: {1}, {2}",
                         exception.GetType(),
                         requestUri,
-                        exception.Message,
-                        exception.StackTrace);
+                        exception.Message);
                 }
 
                 exception = exception.InnerException;

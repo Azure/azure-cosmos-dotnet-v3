@@ -3,7 +3,6 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 {
-    using System;
     using System.Collections.Generic;
     using Newtonsoft.Json;
 

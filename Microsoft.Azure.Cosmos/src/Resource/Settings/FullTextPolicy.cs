@@ -12,12 +12,7 @@ namespace Microsoft.Azure.Cosmos
     /// Represents the full text policy configuration for specifying the full text paths on items in the container in the Azure Cosmos DB service.
     /// </summary>
     /// <seealso cref="ContainerProperties"/>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    sealed class FullTextPolicy
+    public sealed class FullTextPolicy
     {
         [JsonProperty(PropertyName = "fullTextPaths", NullValueHandling = NullValueHandling.Ignore)]
         private Collection<FullTextPath> fullTextPathsInternal;

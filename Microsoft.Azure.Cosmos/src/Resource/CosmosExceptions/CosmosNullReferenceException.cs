@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     /// adds a way to access the CosmosDiagnostics and appends additional information
     /// to the message for easier troubleshooting.
     /// </summary>
-    internal class CosmosNullReferenceException : NullReferenceException
+    internal class CosmosNullReferenceException : NullReferenceException, ICloneable
     {
         private readonly NullReferenceException originalException;
 
@@ -49,7 +49,9 @@ namespace Microsoft.Azure.Cosmos
         public override string Message => this.originalException.Message + this.Diagnostics.ToString();
 
         /// <inheritdoc/>
+#pragma warning disable CDX1002 // DontUseExceptionStackTrace
         public override string StackTrace => this.originalException.StackTrace;
+#pragma warning restore CDX1002 // DontUseExceptionStackTrace
 
         /// <inheritdoc/>
         public override IDictionary Data => this.originalException.Data;
@@ -85,6 +87,17 @@ namespace Microsoft.Azure.Cosmos
             scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.GetBaseException().Message);
 
             CosmosDbEventSource.RecordDiagnosticsForExceptions(exception.Diagnostics);
+        }
+
+        /// <summary>
+        /// Creates a shallow copy of the current exception instance.
+        /// This ensures that the cloned exception retains the same properties but does not
+        /// excessively proliferate stack traces or deep-copy unnecessary objects.
+        /// </summary>
+        /// <returns>A shallow copy of the current <see cref="CosmosOperationCanceledException"/>.</returns>
+        public object Clone()
+        {
+            return this.MemberwiseClone();
         }
     }
 }

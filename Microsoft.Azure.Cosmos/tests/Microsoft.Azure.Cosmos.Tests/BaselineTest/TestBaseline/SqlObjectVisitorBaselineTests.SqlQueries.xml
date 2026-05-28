@@ -709,7 +709,8 @@ GROUP BY "some"["random"]["path"][42], "some"["random"]["path"][42]
       },
       "IsDescending": false
     }
-  ]
+  ],
+  "Rank": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -784,7 +785,8 @@ ORDER BY "some"["random"]["path"][42] ASC
       },
       "IsDescending": true
     }
-  ]
+  ],
+  "Rank": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -968,7 +970,8 @@ OFFSET 0 LIMIT 0
         },
         "IsDescending": false
       }
-    ]
+    ],
+    "Rank": false
   },
   "OffsetLimitClause": {
     "OffsetSpec": {
@@ -1106,7 +1109,8 @@ OFFSET 0 LIMIT 0
           },
           "IsDescending": false
         }
-      ]
+      ],
+      "Rank": false
     },
     "OffsetLimitClause": {
       "OffsetSpec": {
@@ -1247,7 +1251,8 @@ OFFSET 0 LIMIT 0
           },
           "IsDescending": false
         }
-      ]
+      ],
+      "Rank": false
     },
     "OffsetLimitClause": {
       "OffsetSpec": {
@@ -1388,7 +1393,8 @@ ARRAY(
           },
           "IsDescending": false
         }
-      ]
+      ],
+      "Rank": false
     },
     "OffsetLimitClause": {
       "OffsetSpec": {

@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Contracts
             CollectionAssert.AreEqual(Encoding.UTF8.GetBytes(HttpConstants.Versions.v2020_07_15), HttpConstants.Versions.CurrentVersionUTF8);
 
             ulong capabilitites = SDKSupportedCapabilitiesHelpers.GetSDKSupportedCapabilities();
-            Assert.AreEqual(capabilitites & (ulong)SDKSupportedCapabilities.PartitionMerge, (ulong)SDKSupportedCapabilities.PartitionMerge);
+            Assert.AreEqual((ulong)(SDKSupportedCapabilities.PartitionMerge | SDKSupportedCapabilities.IgnoreUnknownRntbdTokens), capabilitites & (ulong)(SDKSupportedCapabilities.PartitionMerge | SDKSupportedCapabilities.IgnoreUnknownRntbdTokens));
         }
 
         [TestMethod]
@@ -37,9 +37,9 @@ namespace Microsoft.Azure.Cosmos.Contracts
         {
 
 #if INTERNAL
-            int expected = 7;
+            int expected = 8;
 #else
-            int expected = 5;
+            int expected = 6;
 #endif
             ContractTests.NamespaceCountTest(typeof(CosmosClient), expected);
         }

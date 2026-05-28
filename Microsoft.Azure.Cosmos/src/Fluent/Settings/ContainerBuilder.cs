@@ -78,12 +78,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <param name="retention"> Indicates for how long operation logs have to be retained. <see cref="ChangeFeedPolicy.FullFidelityRetention"/>.</param>
         /// <returns>An instance of <see cref="ChangeFeedPolicyDefinition"/>.</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        ChangeFeedPolicyDefinition WithChangeFeedPolicy(TimeSpan retention)
+        public ChangeFeedPolicyDefinition WithChangeFeedPolicy(TimeSpan retention)
         {
             return new ChangeFeedPolicyDefinition(
                 this,
@@ -138,12 +133,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="defaultLanguage">A string indicating the default language.</param>
         /// <param name="fullTextPaths">List of full text paths to include in the policy definition.</param>
         /// <returns>An instance of <see cref="FullTextPolicyDefinition"/>.</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        FullTextPolicyDefinition WithFullTextPolicy(
+        public FullTextPolicyDefinition WithFullTextPolicy(
             string defaultLanguage,
             Collection<FullTextPath> fullTextPaths)
         {

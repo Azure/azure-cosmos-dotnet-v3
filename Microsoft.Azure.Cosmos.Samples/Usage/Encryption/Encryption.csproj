@@ -9,12 +9,12 @@
     <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Azure.Identity" Version="1.12.0" />
-    <PackageReference Include="Azure.Security.KeyVault.Keys" Version="4.6.0" />
-    <PackageReference Include="Microsoft.Azure.Cosmos.Encryption" Version="2.0.4" />
+    <PackageReference Include="Azure.Identity" Version="1.17.0" />
+    <PackageReference Include="Azure.Security.KeyVault.Keys" Version="4.8.0" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Encryption" Version="2.1.0-preview4" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+    <PackageReference Include="System.Text.Json" Version="8.0.6" />
   </ItemGroup>
   <ItemGroup>
     <None Include="AppSettings.json">

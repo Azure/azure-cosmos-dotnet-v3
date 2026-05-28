@@ -15,11 +15,13 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly CosmosClient client;
         private readonly ConsistencyLevel? requestedClientConsistencyLevel;
+        private readonly Cosmos.ReadConsistencyStrategy? requestedClientReadConsistencyStrategy;
         private readonly PriorityLevel? requestedPriorityLevel;
         private readonly DiagnosticsHandler diagnosticsHandler;
         private readonly RequestHandler invalidPartitionExceptionRetryHandler;
         private readonly RequestHandler transportHandler;
         private readonly TelemetryHandler telemetryHandler;
+        private readonly int? requestedClientThroughputBucket;
 
         private IReadOnlyCollection<RequestHandler> customHandlers;
         private RequestHandler retryHandler;
@@ -27,13 +29,17 @@ namespace Microsoft.Azure.Cosmos
         public ClientPipelineBuilder(
             CosmosClient client,
             ConsistencyLevel? requestedClientConsistencyLevel,
+            Cosmos.ReadConsistencyStrategy? requestedClientReadConsistencyStrategy,
             PriorityLevel? requestedClientPriorityLevel,
             IReadOnlyCollection<RequestHandler> customHandlers,
-            TelemetryToServiceHelper telemetryToServiceHelper)
+            TelemetryToServiceHelper telemetryToServiceHelper,
+            int? requestedClientThroughputBucket)
         {
             this.client = client ?? throw new ArgumentNullException(nameof(client));
             this.requestedClientConsistencyLevel = requestedClientConsistencyLevel;
+            this.requestedClientReadConsistencyStrategy = requestedClientReadConsistencyStrategy;
             this.requestedPriorityLevel = requestedClientPriorityLevel;
+            this.requestedClientThroughputBucket = requestedClientThroughputBucket;
             this.transportHandler = new TransportHandler(client);
             Debug.Assert(this.transportHandler.InnerHandler == null, nameof(this.transportHandler));
 
@@ -153,7 +159,9 @@ namespace Microsoft.Azure.Cosmos
             RequestInvokerHandler root = new RequestInvokerHandler(
                 this.client,
                 this.requestedClientConsistencyLevel,
-                this.requestedPriorityLevel);
+                this.requestedClientReadConsistencyStrategy,
+                this.requestedPriorityLevel,
+                this.requestedClientThroughputBucket);
 
             RequestHandler current = root;
             if (this.CustomHandlers != null && this.CustomHandlers.Any())

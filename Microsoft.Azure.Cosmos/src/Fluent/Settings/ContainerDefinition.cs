@@ -130,12 +130,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <see cref="Cosmos.ComputedProperty"/> definition for Azure Cosmos container.
         /// </summary>
         /// <returns>An instance of <see cref="ComputedPropertiesDefinition{T}"/>.</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        ComputedPropertiesDefinition<T> WithComputedProperties()
+        public ComputedPropertiesDefinition<T> WithComputedProperties()
         {
             if (this.computedProperties != null)
             {

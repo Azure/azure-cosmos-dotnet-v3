@@ -93,7 +93,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
             this.processorName = processorName ?? throw new ArgumentNullException(nameof(processorName));
             this.monitoredContainer = monitoredContainer ?? throw new ArgumentNullException(nameof(monitoredContainer));
-            this.leaseContainer = leaseContainer ?? throw new ArgumentNullException(nameof(leaseContainer));
+
+            if (leaseContainer == null && documentServiceLeaseContainer == null)
+            {
+                throw new ArgumentNullException(nameof(leaseContainer));
+            }
+
+            this.leaseContainer = leaseContainer;
             this.changeFeedEstimatorRequestOptions = changeFeedEstimatorRequestOptions ?? new ChangeFeedEstimatorRequestOptions();
             if (this.changeFeedEstimatorRequestOptions.MaxItemCount.HasValue
                 && this.changeFeedEstimatorRequestOptions.MaxItemCount.Value <= 0)
@@ -398,6 +404,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             public override string IndexMetrics => null;
 
+            public override string QueryAdvice => null;
+
             internal override RequestMessage RequestMessage => null;
 
             public override IEnumerator<ChangeFeedProcessorState> GetEnumerator()
@@ -431,7 +439,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             public override CosmosDiagnostics Diagnostics => new CosmosTraceDiagnostics(this.Trace);
 
-            public override string IndexMetrics => string.Empty;
+            public override string IndexMetrics => null;
+
+            public override string QueryAdvice => null;
 
             internal override RequestMessage RequestMessage => null;
 

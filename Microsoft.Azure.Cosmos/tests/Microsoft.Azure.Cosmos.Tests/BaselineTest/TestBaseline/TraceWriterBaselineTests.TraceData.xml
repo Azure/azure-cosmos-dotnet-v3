@@ -218,7 +218,8 @@
                 ResourceType.Document,
                 OperationType.Query,
                 "42",
-                uri1.Uri);
+                uri1.Uri,
+                "region1");
 
             TraceWriterBaselineTests.GetPrivateField<List<StoreResponseStatistics>>(datum, "storeResponseStatistics").Add(storeResponseStatistics);
             rootTrace.AddDatum("Client Side Request Stats", datum);
@@ -329,6 +330,7 @@
             "LSN": 1337,
             "PartitionKeyRangeId": "42",
             "GlobalCommittedLSN": 1234,
+            "GlobalNRegionCommittedGLSN": -1,
             "ItemLSN": 15,
             "UsingLocalLSN": true,
             "QuorumAckedLSN": 23,
@@ -431,7 +433,8 @@
                 resourceType: default,
                 operationType: default,
                 requestSessionToken: default,
-                locationEndpoint: default);
+                locationEndpoint: default,
+                region: "region1");
 
             TraceWriterBaselineTests.GetPrivateField<List<StoreResponseStatistics>>(datum, "storeResponseStatistics").Add(storeResponseStatistics);
             rootTrace.AddDatum("Client Side Request Stats Default", datum);
@@ -525,6 +528,7 @@
             "LSN": 0,
             "PartitionKeyRangeId": null,
             "GlobalCommittedLSN": 0,
+            "GlobalNRegionCommittedGLSN": 0,
             "ItemLSN": 0,
             "UsingLocalLSN": false,
             "QuorumAckedLSN": 0,
@@ -565,7 +569,8 @@
                 HttpMethod.Get,
                 ResourceType.Document,
                 new HttpResponseMessage(System.Net.HttpStatusCode.OK) { ReasonPhrase = "Success" },
-                exception: null);
+                exception: null,
+                region: "region1");
 
             TraceWriterBaselineTests.GetPrivateField<List<HttpResponseStatistics>>(datum, "httpResponseStatistics").Add(httpResponseStatistics);
 
@@ -576,7 +581,8 @@
                 HttpMethod.Get,
                 ResourceType.Document,
                 responseMessage: null,
-                exception: new OperationCanceledException());
+                exception: new OperationCanceledException(),
+                region: "region1");
             TraceWriterBaselineTests.GetPrivateField<List<HttpResponseStatistics>>(datum, "httpResponseStatistics").Add(httpResponseStatisticsException);
 
             rootTrace.AddDatum("Client Side Request Stats", datum);

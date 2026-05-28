@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(message.Contains("TransportException: A client transport error occurred: The connection failed"), "StoreResult Exception is missing");
             string diagnostics = cosmosException.Diagnostics.ToString();
             Assert.IsNotNull(diagnostics);
-            Assert.IsTrue(diagnostics.Contains("TransportException: A client transport error occurred: The connection failed"));
+            Assert.IsTrue(diagnostics.Contains("A client transport error occurred: The connection failed"));
         }
 
         private void ValidateTransportException(ResponseMessage responseMessage)
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(message.Contains("Reason: (Channel is closed"), "Should contain exception message");
             string diagnostics = responseMessage.Diagnostics.ToString();
             Assert.IsNotNull(diagnostics);
-            Assert.IsTrue(diagnostics.Contains("TransportException: A client transport error occurred: The connection failed"));
+            Assert.IsTrue(diagnostics.Contains("A client transport error occurred: The connection failed"));
         }
 
         private static void Interceptor(

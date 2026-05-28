@@ -90,6 +90,9 @@ The `FaultInjectionConnectionType` specifies the type of connection that the fau
 | `Gateway` |
 | `All` |
 
+The `Gateway` connection type also supports connection to the `ThinProxy`. 
+
+
 #### Other `FaultInjectionRule` Properties
 
 When creating a `FaultInjectionRule`, you can also specify the following properties:

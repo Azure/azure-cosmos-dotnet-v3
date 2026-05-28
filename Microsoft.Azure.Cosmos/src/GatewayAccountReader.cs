@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class GatewayAccountReader
     {
+        private readonly bool isThinClientEnabled;
         private readonly ConnectionPolicy connectionPolicy;
         private readonly AuthorizationTokenProvider cosmosAuthorization;
         private readonly CosmosHttpClient httpClient;
@@ -28,13 +29,15 @@ namespace Microsoft.Azure.Cosmos
                 AuthorizationTokenProvider cosmosAuthorization,
                 ConnectionPolicy connectionPolicy,
                 CosmosHttpClient httpClient,
-                CancellationToken cancellationToken = default)
+                CancellationToken cancellationToken = default,
+                bool isThinClientEnabled = false)
         {
             this.httpClient = httpClient;
             this.serviceEndpoint = serviceEndpoint;
             this.cosmosAuthorization = cosmosAuthorization ?? throw new ArgumentNullException(nameof(AuthorizationTokenProvider));
             this.connectionPolicy = connectionPolicy;
             this.cancellationToken = cancellationToken;
+            this.isThinClientEnabled = isThinClientEnabled;
         }
 
         private async Task<AccountProperties> GetDatabaseAccountAsync(Uri serviceEndpoint)
@@ -52,16 +55,30 @@ namespace Microsoft.Azure.Cosmos
 
                 try
                 {
-                    using (HttpResponseMessage responseMessage = await this.httpClient.GetAsync(
-                        uri: serviceEndpoint,
-                        additionalHeaders: headers,
+                    using (DocumentServiceRequest request = DocumentServiceRequest.Create(
+                        operationType: OperationType.Read,
                         resourceType: ResourceType.DatabaseAccount,
-                        timeoutPolicy: HttpTimeoutPolicyControlPlaneRead.Instance,
-                        clientSideRequestStatistics: stats,
-                        cancellationToken: default))
-                    using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
+                        authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey))
                     {
-                        return CosmosResource.FromStream<AccountProperties>(documentServiceResponse);
+                        if (this.isThinClientEnabled)
+                        {
+                            headers.Add(
+                                ThinClientConstants.EnableThinClientEndpointDiscoveryHeaderName,
+                                this.isThinClientEnabled.ToString());
+                        }
+
+                        using (HttpResponseMessage responseMessage = await this.httpClient.GetAsync(
+                            uri: serviceEndpoint,
+                            additionalHeaders: headers,
+                            resourceType: ResourceType.DatabaseAccount,
+                            timeoutPolicy: HttpTimeoutPolicyControlPlaneRead.Instance,
+                            clientSideRequestStatistics: stats,
+                            cancellationToken: default,
+                            documentServiceRequest: request))
+                         using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
+                         {
+                          return CosmosResource.FromStream<AccountProperties>(documentServiceResponse);
+                         }
                     }
                 }
                 catch (ObjectDisposedException) when (this.cancellationToken.IsCancellationRequested)

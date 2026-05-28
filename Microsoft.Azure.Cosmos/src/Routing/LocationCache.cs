@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly int connectionLimit;
         private readonly ConcurrentDictionary<Uri, LocationUnavailabilityInfo> locationUnavailablityInfoByEndpoint;
         private readonly RegionNameMapper regionNameMapper;
+        private readonly Func<bool> isPartitionLevelFailoverEnabled;
 
         private DatabaseAccountLocationsInfo locationInfo;
         private DateTime lastCacheUpdateTimestamp;
@@ -39,13 +40,15 @@ namespace Microsoft.Azure.Cosmos.Routing
             Uri defaultEndpoint,
             bool enableEndpointDiscovery,
             int connectionLimit,
-            bool useMultipleWriteLocations)
+            bool useMultipleWriteLocations,
+            Func<bool> isPartitionLevelFailoverEnabled = null)
         {
             this.locationInfo = new DatabaseAccountLocationsInfo(preferredLocations, defaultEndpoint);
             this.defaultEndpoint = defaultEndpoint;
             this.enableEndpointDiscovery = enableEndpointDiscovery;
             this.useMultipleWriteLocations = useMultipleWriteLocations;
             this.connectionLimit = connectionLimit;
+            this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
 
             this.lockObject = new object();
             this.locationUnavailablityInfoByEndpoint = new ConcurrentDictionary<Uri, LocationUnavailabilityInfo>();
@@ -125,27 +128,63 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
+        /// <summary>
+        /// Gets the list of thin client read endpoints.
+        /// </summary>
+        public ReadOnlyCollection<Uri> ThinClientReadEndpoints
+        {
+            get
+            {
+                // Hot-path: avoid ConcurrentDictionary methods which acquire locks
+                if (DateTime.UtcNow - this.lastCacheUpdateTimestamp > this.unavailableLocationsExpirationTime
+                    && this.locationUnavailablityInfoByEndpoint.Any())
+                {
+                    this.UpdateLocationCache();
+                }
+
+                return this.locationInfo.ThinClientReadEndpoints;
+            }
+        }
+
+        /// <summary>
+        /// Gets the list of thin client write endpoints.
+        /// </summary>
+        public ReadOnlyCollection<Uri> ThinClientWriteEndpoints
+        {
+            get
+            {
+                // Hot-path: avoid ConcurrentDictionary methods which acquire locks
+                if (DateTime.UtcNow - this.lastCacheUpdateTimestamp > this.unavailableLocationsExpirationTime
+                    && this.locationUnavailablityInfoByEndpoint.Any())
+                {
+                    this.UpdateLocationCache();
+                }
+
+                return this.locationInfo.ThinClientWriteEndpoints;
+            }
+        }
+
         public ReadOnlyCollection<string> EffectivePreferredLocations => this.locationInfo.EffectivePreferredLocations;
 
         /// <summary>
-        /// Returns the location corresponding to the endpoint if location specific endpoint is provided.
-        /// For the defaultEndPoint, we will return the first available write location.
-        /// Returns null, in other cases.
+        /// Returns the region name corresponding to the given endpoint.
+        /// - If the endpoint matches a known write or read regional endpoint, returns that region name.
+        /// - If the endpoint is the account's default (global) endpoint and at least one write
+        ///   location is known, returns the first entry of the available write locations list.
+        ///   This applies to both single-master and multi-master accounts. Note that for multi-master
+        ///   accounts the first write location is simply the first region in the configured list,
+        ///   not necessarily the hub/primary write region.
+        /// - Otherwise, returns null.
         /// </summary>
-        /// <remarks>
-        /// Today we return null for defaultEndPoint if multiple write locations can be used.
-        /// This needs to be modifed to figure out proper location in such case.
-        /// </remarks>
         public string GetLocation(Uri endpoint)
         {
             string location = this.locationInfo.AvailableWriteEndpointByLocation.FirstOrDefault(uri => uri.Value == endpoint).Key ?? this.locationInfo.AvailableReadEndpointByLocation.FirstOrDefault(uri => uri.Value == endpoint).Key;
 
-            if (location == null && endpoint == this.defaultEndpoint && !this.CanUseMultipleWriteLocations())
+            if (location == null
+                && endpoint == this.defaultEndpoint
+                && this.locationInfo.AvailableWriteLocations.Count > 0)
             {
-                if (this.locationInfo.AvailableWriteEndpointByLocation.Any())
-                {
-                    return this.locationInfo.AvailableWriteEndpointByLocation.First().Key;
-                }
+                return this.locationInfo.AvailableWriteLocations[0];
             }
 
             return location;
@@ -153,7 +192,8 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         /// <summary>
         /// Set region name for a location if present in the locationcache otherwise set region name as null.
-        /// If endpoint's hostname is same as default endpoint hostname, set regionName as null.
+        /// For multi-master accounts, if endpoint's hostname is same as default endpoint hostname,
+        /// set regionName to the first available write region.
         /// </summary>
         /// <param name="endpoint"></param>
         /// <param name="regionName"></param>
@@ -167,12 +207,17 @@ namespace Microsoft.Azure.Cosmos.Routing
                     UriFormat.SafeUnescaped, 
                     StringComparison.OrdinalIgnoreCase) == 0)
             {
-                regionName = null;
-                return false;
+                // Use account-level enableMultipleWriteLocations (not CanUseMultipleWriteLocations which also
+                // requires client opt-in) because diagnostics should resolve the region regardless of whether
+                // the client uses multi-write. The default endpoint routes to the first write region server-side.
+                regionName = this.enableMultipleWriteLocations
+                    ? this.GetLocation(this.defaultEndpoint)
+                    : null;
+                return regionName != null;
             }
 
             regionName = this.GetLocation(endpoint);
-            return true;
+            return regionName != null;
         }
 
         /// <summary>
@@ -200,6 +245,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.UpdateLocationCache(
                 databaseAccount.WritableRegions,
                 databaseAccount.ReadableRegions,
+                thinClientWriteLocations: databaseAccount.ThinClientWritableLocationsInternal,
+                thinClientReadLocations: databaseAccount.ThinClientReadableLocationsInternal,
                 preferenceList: null,
                 enableMultipleWriteLocations: databaseAccount.EnableMultipleWriteLocations);
         }
@@ -214,7 +261,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 preferenceList: preferredLocations);
         }
 
-        public bool IsMetaData(DocumentServiceRequest request)
+        public static bool IsMetaData(DocumentServiceRequest request)
         {
             return (request.OperationType != Documents.OperationType.ExecuteJavaScript && request.ResourceType == ResourceType.StoredProcedure) ||
                 request.ResourceType != ResourceType.Document;
@@ -223,7 +270,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         public bool IsMultimasterMetadataWriteRequest(DocumentServiceRequest request)
         {
             return !request.IsReadOnlyRequest && this.locationInfo.AvailableWriteLocations.Count > 1
-                && this.IsMetaData(request) 
+                && LocationCache.IsMetaData(request) 
                 && this.CanUseMultipleWriteLocations();
 
         }
@@ -342,10 +389,18 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             ReadOnlyCollection<string> effectivePreferredLocations = databaseAccountLocationsInfoSnapshot.EffectivePreferredLocations;
 
+            // For reads when PPAF is enabled, use WriteEndpoints[0] as fallback (dynamic,
+            // tracks current write region) instead of this.defaultEndpoint (static, region-agnostic,
+            // never updated after init). This aligns with UpdateLocationCache which already uses
+            // WriteEndpoints[0] as the ReadEndpoints fallback, and matches Java/Python SDK behavior.
+            Uri fallbackEndpoint = (isReadRequest && this.isPartitionLevelFailoverEnabled?.Invoke() == true)
+                ? databaseAccountLocationsInfoSnapshot.WriteEndpoints[0]
+                : this.defaultEndpoint;
+
             return GetApplicableEndpoints(
-                isReadRequest ? this.locationInfo.AvailableReadEndpointByLocation : this.locationInfo.AvailableWriteEndpointByLocation,
+                isReadRequest ? databaseAccountLocationsInfoSnapshot.AvailableReadEndpointByLocation : databaseAccountLocationsInfoSnapshot.AvailableWriteEndpointByLocation,
                 effectivePreferredLocations,
-                this.defaultEndpoint,
+                fallbackEndpoint,
                 request.RequestContext.ExcludeRegions);
         }
 
@@ -643,6 +698,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         private void UpdateLocationCache(
             IEnumerable<AccountRegion> writeLocations = null,
             IEnumerable<AccountRegion> readLocations = null,
+            IEnumerable<AccountRegion> thinClientWriteLocations = null,
+            IEnumerable<AccountRegion> thinClientReadLocations = null,
             ReadOnlyCollection<string> preferenceList = null,
             bool? enableMultipleWriteLocations = null)
         {
@@ -685,6 +742,28 @@ namespace Microsoft.Azure.Cosmos.Routing
                     nextLocationInfo.AvailableWriteLocationByEndpoint = availableWriteLocationsByEndpoint;
                 }
 
+                if (thinClientReadLocations != null && thinClientReadLocations.Count() > 0)
+                {
+                    nextLocationInfo.ThinClientReadEndpointByLocation = this.GetEndpointByLocation(
+                        thinClientReadLocations,
+                        out ReadOnlyCollection<string> thinClientAvailableReadLocations,
+                        out ReadOnlyDictionary<Uri, string> thinClientAvailableReadLocationsByEndpoint);
+
+                    nextLocationInfo.ThinClientReadLocations = thinClientAvailableReadLocations;
+                    nextLocationInfo.ThinClientReadLocationByEndpoint = thinClientAvailableReadLocationsByEndpoint;
+                }
+
+                if (thinClientWriteLocations != null && thinClientWriteLocations.Count() > 0)
+                {
+                    nextLocationInfo.ThinClientWriteEndpointByLocation = this.GetEndpointByLocation(
+                        thinClientWriteLocations,
+                        out ReadOnlyCollection<string> thinClientAvailableWriteLocations,
+                        out ReadOnlyDictionary<Uri, string> thinClientAvailableWriteLocationsByEndpoint);
+
+                    nextLocationInfo.ThinClientWriteLocations = thinClientAvailableWriteLocations;
+                    nextLocationInfo.ThinClientWriteLocationByEndpoint = thinClientAvailableWriteLocationsByEndpoint;
+                }
+
                 nextLocationInfo.WriteEndpoints = this.GetPreferredAvailableEndpoints(
                     endpointsByLocation: nextLocationInfo.AvailableWriteEndpointByLocation,
                     orderedLocations: nextLocationInfo.AvailableWriteLocations,
@@ -698,6 +777,18 @@ namespace Microsoft.Azure.Cosmos.Routing
                     fallbackEndpoint: nextLocationInfo.WriteEndpoints[0]);
 
                 nextLocationInfo.EffectivePreferredLocations = nextLocationInfo.PreferredLocations;
+
+                nextLocationInfo.ThinClientWriteEndpoints = this.GetPreferredAvailableEndpoints(
+                    endpointsByLocation: nextLocationInfo.ThinClientWriteEndpointByLocation,
+                    orderedLocations: nextLocationInfo.ThinClientWriteLocations,
+                    expectedAvailableOperation: OperationType.Write,
+                    fallbackEndpoint: this.defaultEndpoint);
+
+                nextLocationInfo.ThinClientReadEndpoints = this.GetPreferredAvailableEndpoints(
+                    endpointsByLocation: nextLocationInfo.ThinClientReadEndpointByLocation,
+                    orderedLocations: nextLocationInfo.ThinClientReadLocations,
+                    expectedAvailableOperation: OperationType.Read,
+                    fallbackEndpoint: nextLocationInfo.ThinClientWriteEndpoints[0]);
 
                 if (nextLocationInfo.PreferredLocations == null || nextLocationInfo.PreferredLocations.Count == 0)
                 {
@@ -856,11 +947,33 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.useMultipleWriteLocations && this.enableMultipleWriteLocations;
         }
 
+        internal Uri ResolveThinClientEndpoint(DocumentServiceRequest request, bool isReadRequest)
+        {
+            if (request.RequestContext != null && request.RequestContext.LocationEndpointToRoute != null)
+            {
+                return request.RequestContext.LocationEndpointToRoute;
+            }
+
+            DatabaseAccountLocationsInfo snapshot = this.locationInfo;
+            ReadOnlyCollection<Uri> endpoints = isReadRequest
+                ? snapshot.ThinClientReadEndpoints
+                : snapshot.ThinClientWriteEndpoints;
+
+            int locationIndex = request.RequestContext.LocationIndexToRoute.GetValueOrDefault(0);
+            Uri chosenEndpoint = endpoints[locationIndex % endpoints.Count];
+
+            request.RequestContext.RouteToLocation(chosenEndpoint);
+            return chosenEndpoint;
+        }
+
         private void SetServicePointConnectionLimit(Uri endpoint)
         {
 #if !NETSTANDARD16
-            ServicePointAccessor servicePoint = ServicePointAccessor.FindServicePoint(endpoint);
-            servicePoint.ConnectionLimit = this.connectionLimit;
+            if (ServicePointAccessor.IsSupported)
+            {
+                ServicePointAccessor servicePoint = ServicePointAccessor.FindServicePoint(endpoint);
+                servicePoint.ConnectionLimit = this.connectionLimit;
+            }
 #endif
         }
 
@@ -885,6 +998,20 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.AccountReadEndpoints = new List<Uri>() { defaultEndpoint }.AsReadOnly();
                 this.ReadEndpoints = new List<Uri>() { defaultEndpoint }.AsReadOnly();
                 this.EffectivePreferredLocations = new List<string>().AsReadOnly();
+                
+                this.ThinClientWriteLocations = new List<string>().AsReadOnly();
+                this.ThinClientReadLocations = new List<string>().AsReadOnly();
+                this.ThinClientWriteEndpointByLocation =
+                    new ReadOnlyDictionary<string, Uri>(new Dictionary<string, Uri>());
+                this.ThinClientReadEndpointByLocation =
+                    new ReadOnlyDictionary<string, Uri>(new Dictionary<string, Uri>());
+                this.ThinClientWriteLocationByEndpoint =
+                    new ReadOnlyDictionary<Uri, string>(new Dictionary<Uri, string>());
+                this.ThinClientReadLocationByEndpoint =
+                    new ReadOnlyDictionary<Uri, string>(new Dictionary<Uri, string>());
+                this.ThinClientWriteEndpoints = new List<Uri>() { defaultEndpoint }.AsReadOnly();
+                this.ThinClientReadEndpoints = new List<Uri>() { defaultEndpoint }.AsReadOnly();
+
             }
 
             public DatabaseAccountLocationsInfo(DatabaseAccountLocationsInfo other)
@@ -900,6 +1027,15 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.AccountReadEndpoints = other.AccountReadEndpoints;
                 this.ReadEndpoints = other.ReadEndpoints;
                 this.EffectivePreferredLocations = other.EffectivePreferredLocations;
+                
+                this.ThinClientWriteLocations = other.ThinClientWriteLocations;
+                this.ThinClientReadLocations = other.ThinClientReadLocations;
+                this.ThinClientWriteEndpointByLocation = other.ThinClientWriteEndpointByLocation;
+                this.ThinClientReadEndpointByLocation = other.ThinClientReadEndpointByLocation;
+                this.ThinClientWriteLocationByEndpoint = other.ThinClientWriteLocationByEndpoint;
+                this.ThinClientReadLocationByEndpoint = other.ThinClientReadLocationByEndpoint;
+                this.ThinClientWriteEndpoints = other.ThinClientWriteEndpoints;
+                this.ThinClientReadEndpoints = other.ThinClientReadEndpoints;
             }
 
             public ReadOnlyCollection<string> PreferredLocations { get; set; }
@@ -914,6 +1050,16 @@ namespace Microsoft.Azure.Cosmos.Routing
             public ReadOnlyCollection<Uri> ReadEndpoints { get; set; }
             public ReadOnlyCollection<Uri> AccountReadEndpoints { get; set; }
             public ReadOnlyCollection<string> EffectivePreferredLocations { get; set; }
+            public ReadOnlyCollection<string> ThinClientWriteLocations { get; set; }
+            public ReadOnlyDictionary<string, Uri> ThinClientWriteEndpointByLocation { get; set; }
+            public ReadOnlyDictionary<Uri, string> ThinClientWriteLocationByEndpoint { get; set; }
+            public ReadOnlyCollection<Uri> ThinClientWriteEndpoints { get; set; }
+
+            public ReadOnlyCollection<string> ThinClientReadLocations { get; set; }
+            public ReadOnlyDictionary<string, Uri> ThinClientReadEndpointByLocation { get; set; }
+            public ReadOnlyDictionary<Uri, string> ThinClientReadLocationByEndpoint { get; set; }
+            public ReadOnlyCollection<Uri> ThinClientReadEndpoints { get; set; }
+
         }
 
         [Flags]

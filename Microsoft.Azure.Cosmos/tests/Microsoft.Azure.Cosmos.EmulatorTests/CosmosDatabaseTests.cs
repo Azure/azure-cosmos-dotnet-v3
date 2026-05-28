@@ -608,6 +608,83 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestMethod]
+        [DataRow(true, DisplayName = "Database creation and deletion with binary encoding enabled.")]
+        [DataRow(false, DisplayName = "Database creation and deletion with binary encoding disabled.")]
+        public async Task DatabaseCreationDeletionWithBinaryEncodingTest(bool binaryEncodingEnabled)
+        {
+            string databaseId = Guid.NewGuid().ToString();
+            string originalBinaryEncodingValue = Environment.GetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled);
+
+            try
+            {
+                // Enable or disable binary encoding as requested
+                if (binaryEncodingEnabled)
+                {
+                    Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, "True");
+                }
+                else
+                {
+                    Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, null);
+                }
+
+                // Create the database using the existing client and pattern
+                DatabaseResponse createResponse = await this.GetClient().CreateDatabaseAsync(databaseId);
+                Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+                Assert.IsNotNull(createResponse.Database);
+                Assert.IsNotNull(createResponse.Resource);
+                Assert.AreEqual(databaseId, createResponse.Resource.Id);
+
+                // Validate the database was created
+                Database createdDatabase = this.GetClient().GetDatabase(databaseId);
+                DatabaseResponse readResponse = await createdDatabase.ReadAsync();
+                Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
+                Assert.IsNotNull(readResponse.Resource);
+                Assert.AreEqual(databaseId, readResponse.Resource.Id);
+
+                // Create a container to verify item operations under binary encoding
+                string containerId = Guid.NewGuid().ToString();
+                ContainerResponse containerResponse = await createdDatabase.CreateContainerAsync(new ContainerProperties(containerId, "/pk"));
+                Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+
+                Container container = createdDatabase.GetContainer(containerId);
+                ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+                ItemResponse<ToDoActivity> itemResponse = await container.CreateItemAsync(testItem, new PartitionKey(testItem.pk));
+                Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
+
+                // Delete the database
+                DatabaseResponse deleteDbResponse = await createdDatabase.DeleteAsync();
+                Assert.AreEqual(HttpStatusCode.NoContent, deleteDbResponse.StatusCode);
+
+                // Validate that the database no longer exists
+                try
+                {
+                    await createdDatabase.ReadAsync();
+                    Assert.Fail("Expected a NotFound exception after deleting the database.");
+                }
+                catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+                {
+                    // Expected exception
+                }
+            }
+            finally
+            {
+                // Restore the original binary encoding environment variable value
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, originalBinaryEncodingValue);
+
+                // Clean up if something fails before deletion
+                try
+                {
+                    Database databaseToCleanup = this.GetClient().GetDatabase(databaseId);
+                    await databaseToCleanup.DeleteAsync();
+                }
+                catch
+                {
+                    // Ignore exceptions in cleanup
+                }
+            }
+        }
+
         private Task<DatabaseResponse> CreateDatabaseHelper()
         {
             return this.CreateDatabaseHelper(Guid.NewGuid().ToString(), databaseExists: false);

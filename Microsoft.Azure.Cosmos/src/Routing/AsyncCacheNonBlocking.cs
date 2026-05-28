@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class AsyncCacheNonBlocking<TKey, TValue> : IDisposable
     {
+        private readonly bool enableAsyncCacheExceptionNoSharing;
         private readonly CancellationTokenSource cancellationTokenSource;
         private readonly ConcurrentDictionary<TKey, AsyncLazyWithRefreshTask<TValue>> values;
         private readonly Func<Exception, bool> removeFromCacheOnBackgroundRefreshException;
@@ -30,7 +31,8 @@ namespace Microsoft.Azure.Cosmos
         public AsyncCacheNonBlocking(
             Func<Exception, bool> removeFromCacheOnBackgroundRefreshException = null,
             IEqualityComparer<TKey> keyEqualityComparer = null,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            bool enableAsyncCacheExceptionNoSharing = true)
         {
             this.keyEqualityComparer = keyEqualityComparer ?? EqualityComparer<TKey>.Default;
             this.values = new ConcurrentDictionary<TKey, AsyncLazyWithRefreshTask<TValue>>(this.keyEqualityComparer);
@@ -38,10 +40,13 @@ namespace Microsoft.Azure.Cosmos
             this.cancellationTokenSource = cancellationToken == default
                 ? new CancellationTokenSource()
                 : CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            this.enableAsyncCacheExceptionNoSharing = enableAsyncCacheExceptionNoSharing;
         }
 
-        public AsyncCacheNonBlocking()
-            : this(removeFromCacheOnBackgroundRefreshException: null, keyEqualityComparer: null)
+        public AsyncCacheNonBlocking(bool enableAsyncCacheExceptionNoSharing = true)
+            : this(removeFromCacheOnBackgroundRefreshException: null,
+                  keyEqualityComparer: null,
+                  enableAsyncCacheExceptionNoSharing: enableAsyncCacheExceptionNoSharing)
         {
         }
 
@@ -95,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 try
                 {
-                    TValue cachedResult = await initialLazyValue.GetValueAsync();
+                    TValue cachedResult = await initialLazyValue.GetValueAsync(singleValueInitFunc);
                     if (forceRefresh == null || !forceRefresh(cachedResult))
                     {
                         return cachedResult;
@@ -113,9 +118,18 @@ namespace Microsoft.Azure.Cosmos
                             "AsyncCacheNonBlocking Failed GetAsync. key: {0}, tryRemoved: {1}, Exception: {2}",
                             key,
                             removed,
-                            e);
+                            e.Message);
                     }
 
+                    if (this.enableAsyncCacheExceptionNoSharing)
+                    {
+                        // Creates a shallow copy of specific exception types to prevent stack trace proliferation 
+                        // and rethrows them, doesn't process other exceptions.
+                        if (ExceptionHandlingUtility.TryCloneException(e, out Exception clone))
+                        {
+                            throw clone;
+                        }
+                    }
                     throw;
                 }
 
@@ -129,7 +143,7 @@ namespace Microsoft.Azure.Cosmos
             // The AsyncLazyWithRefreshTask is lazy and won't create the task until GetValue is called.
             // It's possible multiple threads will call the GetOrAdd for the same key. The current asyncLazy may
             // not be used if another thread adds it first.
-            AsyncLazyWithRefreshTask<TValue> asyncLazy = new AsyncLazyWithRefreshTask<TValue>(singleValueInitFunc, this.cancellationTokenSource.Token);
+            AsyncLazyWithRefreshTask<TValue> asyncLazy = new AsyncLazyWithRefreshTask<TValue>(this.cancellationTokenSource.Token);
             AsyncLazyWithRefreshTask<TValue> result = this.values.GetOrAdd(
                 key,
                 asyncLazy);
@@ -137,7 +151,7 @@ namespace Microsoft.Azure.Cosmos
             // Another thread async lazy was inserted. Just await on the inserted lazy object.
             if (!object.ReferenceEquals(asyncLazy, result))
             {
-                return await result.GetValueAsync();
+                return await result.GetValueAsync(singleValueInitFunc);
             }
 
             // This means the current caller async lazy was inserted into the concurrent dictionary.
@@ -145,17 +159,27 @@ namespace Microsoft.Azure.Cosmos
             // the concurrent dictionary.
             try
             {
-                return await result.GetValueAsync();
+                return await result.GetValueAsync(singleValueInitFunc);
             }
             catch (Exception e)
             {
                 DefaultTrace.TraceError(
                             "AsyncCacheNonBlocking Failed GetAsync with key: {0}, Exception: {1}",
                             key.ToString(),
-                            e.ToString());
+                            e.Message);
 
                 // Remove the failed task from the dictionary so future requests can send other calls..
                 this.values.TryRemove(key, out _);
+
+                if (this.enableAsyncCacheExceptionNoSharing)
+                {
+                    // Creates a shallow copy of specific exception types to prevent stack trace proliferation
+                    // and rethrows them, doesn't process other exceptions.
+                    if (ExceptionHandlingUtility.TryCloneException(e, out Exception clone))
+                    {
+                        throw clone;
+                    }
+                }
                 throw;
             }
         }
@@ -196,7 +220,7 @@ namespace Microsoft.Azure.Cosmos
 
                 Task continuationTask = backgroundRefreshTask
                     .ContinueWith(
-                        task => DefaultTrace.TraceVerbose("Failed to refresh addresses in the background with exception: {0}", task.Exception),
+                        task => DefaultTrace.TraceVerbose("Failed to refresh addresses in the background with exception: {0}", task.Exception.Message),
                         TaskContinuationOptions.OnlyOnFaulted);
             }
         }
@@ -238,7 +262,7 @@ namespace Microsoft.Azure.Cosmos
                         key,
                         operationName,
                         removed,
-                        ex);
+                        ex.Message);
                 }
 
                 throw;
@@ -253,7 +277,6 @@ namespace Microsoft.Azure.Cosmos
         private sealed class AsyncLazyWithRefreshTask<T>
         {
             private readonly CancellationToken cancellationToken;
-            private readonly Func<T, Task<T>> createValueFunc;
             private readonly object valueLock = new ();
             private readonly object removedFromCacheLock = new ();
 
@@ -266,24 +289,22 @@ namespace Microsoft.Azure.Cosmos
                 CancellationToken cancellationToken)
             {
                 this.cancellationToken = cancellationToken;
-                this.createValueFunc = null;
                 this.value = Task.FromResult(value);
                 this.refreshInProgress = null;
             }
 
             public AsyncLazyWithRefreshTask(
-                Func<T, Task<T>> taskFactory,
                 CancellationToken cancellationToken)
             {
                 this.cancellationToken = cancellationToken;
-                this.createValueFunc = taskFactory;
                 this.value = null;
                 this.refreshInProgress = null;
             }
 
             public bool IsValueCreated => this.value != null;
 
-            public Task<T> GetValueAsync()
+            public Task<T> GetValueAsync(
+                Func<T, Task<T>> createValueFunc)
             {
                 // The task was already created so just return it.
                 Task<T> valueSnapshot = this.value;
@@ -303,7 +324,7 @@ namespace Microsoft.Azure.Cosmos
                     }
 
                     this.cancellationToken.ThrowIfCancellationRequested();
-                    this.value = this.createValueFunc(default);
+                    this.value = createValueFunc(default);
                     return this.value;
                 }
             }
@@ -418,7 +439,7 @@ namespace Microsoft.Azure.Cosmos
                 catch (ObjectDisposedException exception)
                 {
                     // Need to access the exception to avoid unobserved exception
-                    DefaultTrace.TraceInformation($"AsyncCacheNonBlocking was already disposed: {0}", exception);
+                    DefaultTrace.TraceInformation($"AsyncCacheNonBlocking was already disposed: {0}", exception.Message);
                 }
 
                 this.isDisposed = true;

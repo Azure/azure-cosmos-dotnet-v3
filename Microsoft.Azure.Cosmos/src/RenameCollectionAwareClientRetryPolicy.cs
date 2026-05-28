@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
                         // When ResolveCollectionAsync throws an exception ignore it because it's an attempt to recover an existing
                         // error. When the recovery fails we return ShouldRetryResult.NoRetry and propaganate the original exception to the client
 
-                        DefaultTrace.TraceCritical("Can't recover from session unavailable exception because resolving collection name {0} failed with {1}", request.ResourceAddress, e.ToString());
+                        DefaultTrace.TraceCritical("Can't recover from session unavailable exception because resolving collection name {0} failed with {1}", request.ResourceAddress, e.Message);
                     }
                 }
             }

@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         // Executor just returns a reponse matching the Id with Etag
         private readonly BatchAsyncBatcherExecuteDelegate Executor
-            = async (PartitionKeyRangeServerBatchRequest request, ITrace trace, CancellationToken cancellationToken) =>
+            = async (PartitionKeyRangeServerBatchRequest request, ITrace trace, ItemRequestOptions options, CancellationToken cancellationToken) =>
             {
                 List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
                 ItemBatchOperation[] arrayOperations = new ItemBatchOperation[request.Operations.Count];
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return new PartitionKeyRangeBatchExecutionResult(request.PartitionKeyRangeId, request.Operations, batchresponse);
             };
 
-        private readonly BatchAsyncBatcherExecuteDelegate ExecutorWithFailure = (PartitionKeyRangeServerBatchRequest request, ITrace trace, CancellationToken cancellationToken) => throw expectedException;
+        private readonly BatchAsyncBatcherExecuteDelegate ExecutorWithFailure = (PartitionKeyRangeServerBatchRequest request, ITrace trace, ItemRequestOptions options, CancellationToken cancellationToken) => throw expectedException;
 
         private readonly BatchAsyncBatcherRetryDelegate Retrier = (ItemBatchOperation operation, CancellationToken cancellation) => Task.CompletedTask;
 
@@ -150,9 +150,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             // 300 batch request should atleast sum up to 1000 ms barrier with wait time of 20ms in executor
             await Task.WhenAll(contexts);
 
-            await Task.Delay(2000);
+            // Poll for semaphore count to increase, with a reasonable timeout
+            System.Diagnostics.Stopwatch sw = System.Diagnostics.Stopwatch.StartNew();
+            while (newLimiter.CurrentCount < 2 && sw.Elapsed < TimeSpan.FromSeconds(10))
+            {
+                await Task.Delay(200);
+            }
 
-            Assert.IsTrue(newLimiter.CurrentCount >= 2, "Count of threads that can enter into semaphore should increase atleast by 1");
+            Assert.IsTrue(newLimiter.CurrentCount >= 2, $"Count of threads that can enter into semaphore should increase atleast by 1. Actual: {newLimiter.CurrentCount}");
         }
 
         [TestMethod]
@@ -206,11 +211,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<object>>>(),
-                It.IsAny<Tuple<string, Func<object, OpenTelemetryAttributes>>>(),
+                It.IsAny<(string OperationName, Func<object, OpenTelemetryAttributes> GetAttributes)?>(),
                 It.IsAny<ResourceType?>(),
                 It.IsAny<TraceComponent>(),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, string, string, OperationType, RequestOptions, Func<ITrace, Task<object>>, Tuple<string, Func<object, OpenTelemetryAttributes>>, ResourceType?, TraceComponent, TraceLevel>(
+               .Returns<string, string, string, OperationType, RequestOptions, Func<ITrace, Task<object>>, (string OperationName, Func<object, OpenTelemetryAttributes> GetAttributes)?, ResourceType?, TraceComponent, TraceLevel>(
                 (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, resourceType, comp, level) => func(NoOpTrace.Singleton));
 
             return mockContext.Object;

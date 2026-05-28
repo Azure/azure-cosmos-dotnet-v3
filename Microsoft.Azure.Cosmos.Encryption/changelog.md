@@ -3,6 +3,18 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="2.0.5"/> [2.0.5](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/2.0.5) - 2025-05-23
+
+#### Added
+- [#5215](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5215) Adds support for Microsoft.Azure.Cosmos from version 3.37.1 to 3.51.0 
+
+### <a name="2.1.0-preview5"/> [2.1.0-preview5](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/2.1.0-preview5) - 2025-05-23
+
+#### Added
+- [#5215](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5215) Adds support for Microsoft.Azure.Cosmos 3.52.0-preview.0
+
+### <a name="2.0.3"/> [2.0.3](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/2.0.3) - 2023-07-12
+
 ### <a name="2.0.4"/> [2.0.4](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/2.0.4) - 2023-12-12
 
 #### Added

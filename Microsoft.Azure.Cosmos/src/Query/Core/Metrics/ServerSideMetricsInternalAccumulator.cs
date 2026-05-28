@@ -6,8 +6,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 {
     using System;
     using System.Collections.Generic;
-    using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
     internal sealed class ServerSideMetricsInternalAccumulator
     {

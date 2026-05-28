@@ -125,6 +125,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 throw new Exception();
             }
 
+            if (cosmosTraceDiagnostics.Value is Trace rootLevelTrace)
+            {
+                rootLevelTrace.SetWalkingStateRecursively();
+            }
+
             Assert.AreEqual(diagnostics, cosmosTraceDiagnostics.Value.Data.Values.First());
         }
     }

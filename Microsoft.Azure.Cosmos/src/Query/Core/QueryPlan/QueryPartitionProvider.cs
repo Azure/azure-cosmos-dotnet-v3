@@ -6,8 +6,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Linq;
     using System.Runtime.InteropServices;
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -127,6 +125,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             bool hasLogicalPartitionKey,
             bool allowDCount,
             bool useSystemPrefix,
+            bool hybridSearchSkipOrderByRewrite,
             GeospatialType geospatialType)
         {
             TryCatch<PartitionedQueryExecutionInfoInternal> tryGetInternalQueryInfo = this.TryGetPartitionedQueryExecutionInfoInternal(
@@ -139,6 +138,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 hasLogicalPartitionKey: hasLogicalPartitionKey,
                 allowDCount: allowDCount,
                 useSystemPrefix: useSystemPrefix,
+                hybridSearchSkipOrderByRewrite: hybridSearchSkipOrderByRewrite,
                 geospatialType: geospatialType);
 
             if (!tryGetInternalQueryInfo.Succeeded)
@@ -190,6 +190,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             bool hasLogicalPartitionKey,
             bool allowDCount,
             bool useSystemPrefix,
+            bool hybridSearchSkipOrderByRewrite,
             GeospatialType geospatialType)
         {
             if (querySpecJsonString == null || partitionKeyDefinition == null)
@@ -243,6 +244,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                         bIsContinuationExpected = Convert.ToInt32(isContinuationExpected),
                         bRequireFormattableOrderByQuery = Convert.ToInt32(requireFormattableOrderByQuery),
                         bUseSystemPrefix = Convert.ToInt32(useSystemPrefix),
+                        bHybridSearchSkipOrderByRewrite = Convert.ToInt32(hybridSearchSkipOrderByRewrite),
                         eGeospatialType = Convert.ToInt32(geospatialType),
                         ePartitionKind = Convert.ToInt32(partitionKind)
                     };
@@ -320,7 +322,54 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                        MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
                    });
 
+            if (!this.ValidateQueryExecutionInfo(queryInfoInternal, out ArgumentException innerException))
+            {
+                return TryCatch<PartitionedQueryExecutionInfoInternal>.FromException(
+                    new ExpectedQueryPartitionProviderException(
+                        serializedQueryExecutionInfo,
+                        innerException));
+            }
+
             return TryCatch<PartitionedQueryExecutionInfoInternal>.FromResult(queryInfoInternal);
+        }
+
+        private bool ValidateQueryExecutionInfo(PartitionedQueryExecutionInfoInternal queryExecutionInfo, out ArgumentException innerException)
+        {
+            if (queryExecutionInfo.QueryInfo?.Limit.HasValue == true &&
+                queryExecutionInfo.QueryInfo.Limit.Value > int.MaxValue)
+            {
+                innerException = new ArgumentOutOfRangeException("QueryInfo.Limit");
+                return false;
+            }
+
+            if (queryExecutionInfo.QueryInfo?.Offset.HasValue == true &&
+                queryExecutionInfo.QueryInfo.Offset.Value > int.MaxValue)
+            {
+                innerException = new ArgumentOutOfRangeException("QueryInfo.Offset");
+                return false;
+            }
+
+            if (queryExecutionInfo.QueryInfo?.Top.HasValue == true &&
+                queryExecutionInfo.QueryInfo.Top.Value > int.MaxValue)
+            {
+                innerException = new ArgumentOutOfRangeException("QueryInfo.Top");
+                return false;
+            }
+
+            if ((queryExecutionInfo.HybridSearchQueryInfo?.Skip ?? 0) > int.MaxValue)
+            {
+                innerException = new ArgumentOutOfRangeException("HybridSearchQueryInfo.Skip");
+                return false;
+            }
+
+            if ((queryExecutionInfo.HybridSearchQueryInfo?.Take ?? 0) > int.MaxValue)
+            {
+                innerException = new ArgumentOutOfRangeException("HybridSearchQueryInfo.Take");
+                return false;
+            }
+
+            innerException = null;
+            return true;
         }
 
         internal static TryCatch<IntPtr> TryCreateServiceProvider(string queryEngineConfiguration)
@@ -334,7 +383,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 Exception exception = Marshal.GetExceptionForHR((int)errorCode);
                 if (exception != null)
                 {
-                    DefaultTrace.TraceWarning("QueryPartitionProvider.TryCreateServiceProvider failed with exception {0}", exception);
+                    DefaultTrace.TraceWarning("QueryPartitionProvider.TryCreateServiceProvider failed with exception {0}", exception?.Message);
                     return TryCatch<IntPtr>.FromException(exception);
                 }
                 
@@ -342,7 +391,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceWarning("QueryPartitionProvider.TryCreateServiceProvider failed with exception {0}", ex);
+                DefaultTrace.TraceWarning("QueryPartitionProvider.TryCreateServiceProvider failed with exception {0}", ex.Message);
                 return TryCatch<IntPtr>.FromException(ex);
             }
         }

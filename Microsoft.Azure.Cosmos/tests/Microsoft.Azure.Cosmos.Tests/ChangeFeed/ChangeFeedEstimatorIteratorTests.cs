@@ -391,11 +391,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>>(),
-                It.IsAny<Tuple<string, Func<FeedResponse<ChangeFeedProcessorState>, OpenTelemetryAttributes>>>(),
+                It.IsAny<(string OperationName, Func<FeedResponse<ChangeFeedProcessorState>, OpenTelemetryAttributes> GetAttributes)?>(),
                 It.IsAny<ResourceType?>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>, Tuple<string, Func<FeedResponse<ChangeFeedProcessorState>, OpenTelemetryAttributes>>, ResourceType?, TraceComponent, TraceLevel>(
+               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>, (string OperationName, Func<FeedResponse<ChangeFeedProcessorState>, OpenTelemetryAttributes> GetAttributes)?, ResourceType?, TraceComponent, TraceLevel>(
                 (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, resourceType, comp, level) =>
                 {
                     using (ITrace trace = Trace.GetRootTrace(operationName, comp, level))
@@ -428,6 +428,35 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 changeFeedEstimatorRequestOptions: default);
 
             await remainingWorkEstimator.ReadNextAsync(default);
+        }
+
+        [TestMethod]
+        public async Task ShouldWorkWithNullLeaseContainer_WhenDocumentServiceLeaseContainerProvided()
+        {
+            List<DocumentServiceLeaseCore> leases = new List<DocumentServiceLeaseCore>()
+            {
+                new DocumentServiceLeaseCore() { LeaseToken = "0" }
+            };
+
+            Mock<FeedIteratorInternal> mockIterator = new Mock<FeedIteratorInternal>();
+            mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<ITrace>(), It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.NotModified, "0:1"));
+            Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
+            mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
+
+            FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
+            {
+                return mockIterator.Object;
+            }
+
+            ChangeFeedEstimatorIterator remainingWorkEstimator = new ChangeFeedEstimatorIterator(
+                ChangeFeedEstimatorIteratorTests.GetMockedContainer(),
+                null, // No physical lease container (in-memory scenario)
+                mockContainer.Object,
+                feedCreator,
+                null);
+
+            FeedResponse<ChangeFeedProcessorState> response = await remainingWorkEstimator.ReadNextAsync(default);
+            Assert.AreEqual(1, response.Count);
         }
 
         [TestMethod]
@@ -503,11 +532,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>>(),
-                It.IsAny<Tuple<string, Func<FeedResponse<ChangeFeedProcessorState>, OpenTelemetryAttributes>>>(),
+                It.IsAny<(string OperationName, Func<FeedResponse<ChangeFeedProcessorState>, OpenTelemetryAttributes> GetAttributes)?>(),
                 It.IsAny<ResourceType?>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>, Tuple<string, Func<FeedResponse<ChangeFeedProcessorState>, OpenTelemetryAttributes>>, ResourceType?, TraceComponent, TraceLevel>(
+               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>, (string OperationName, Func<FeedResponse<ChangeFeedProcessorState>, OpenTelemetryAttributes> GetAttributes)?, ResourceType?, TraceComponent, TraceLevel>(
                 (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, resourceType, comp, level) =>
                 {
                     using (ITrace trace = Trace.GetRootTrace(operationName, comp, level))

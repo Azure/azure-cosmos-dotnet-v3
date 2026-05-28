@@ -31,12 +31,7 @@ namespace Microsoft.Azure.Cosmos
     /// }
     /// ]]>
     /// </example>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    sealed class FullTextPath : IEquatable<FullTextPath>
+    public class FullTextPath : IEquatable<FullTextPath>
     {
         /// <summary>
         /// Gets or sets a string containing the path of the full text index.
@@ -47,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or sets a string containing the language of the full text path.
         /// </summary>
-        [JsonProperty(PropertyName = "language")]
+        [JsonProperty(PropertyName = "language", NullValueHandling = NullValueHandling.Ignore)]
         public string Language { get; set; }
 
         /// <summary>
@@ -65,11 +60,6 @@ namespace Microsoft.Azure.Cosmos
             if (string.IsNullOrEmpty(this.Path))
             {
                 throw new ArgumentException("Argument {0} can't be null or empty.", nameof(this.Path));
-            }
-
-            if (string.IsNullOrEmpty(this.Language))
-            {
-                throw new ArgumentException("Argument {0} can't be null or empty.", nameof(this.Language));
             }
 
             if (this.Path[0] != '/')

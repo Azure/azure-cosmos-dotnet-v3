@@ -102,6 +102,50 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task CRUDStreamTest()
+        {
+            UserDefinedFunctionProperties settings = new UserDefinedFunctionProperties
+            {
+                Id = Guid.NewGuid().ToString(),
+                Body = UserDefinedFunctionsTests.function,
+            };
+
+            ResponseMessage responseMessage =
+                await this.scripts.CreateUserDefinedFunctionStreamAsync(
+                    settings);
+            Assert.AreEqual(HttpStatusCode.Created, responseMessage.StatusCode);
+            Assert.IsNotNull(responseMessage.Diagnostics);
+            string diagnostics = responseMessage.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+
+            responseMessage = await this.scripts.ReadUserDefinedFunctionStreamAsync(settings.Id);
+            Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+            Assert.IsNotNull(responseMessage.Diagnostics);
+            diagnostics = responseMessage.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+
+            UserDefinedFunctionProperties updatedSettings = settings;
+            updatedSettings.Body = @"function(amt) { return amt * 0.42; }";
+
+            ResponseMessage replaceResponseMessage = await this.scripts.ReplaceUserDefinedFunctionStreamAsync(
+                updatedSettings);
+            Assert.IsNotNull(replaceResponseMessage.Diagnostics);
+            diagnostics = replaceResponseMessage.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+            Assert.AreEqual(HttpStatusCode.OK, replaceResponseMessage.StatusCode);
+
+            replaceResponseMessage = await this.scripts.DeleteUserDefinedFunctionStreamAsync(settings.Id);
+            Assert.IsNotNull(replaceResponseMessage.Diagnostics);
+            diagnostics = replaceResponseMessage.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+            Assert.AreEqual(HttpStatusCode.NoContent, replaceResponseMessage.StatusCode);
+        }
+
+        [TestMethod]
         public async Task ValidateUserDefinedFunctionsTest()
         {
             try
