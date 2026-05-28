@@ -8,6 +8,10 @@ namespace Microsoft.Azure.Cosmos
 
     internal static class DistributedTransactionConstants
     {
+        // Commit guard: values used with Interlocked.CompareExchange to enforce single-use semantics.
+        internal const int CommitNotStarted = 0;
+        internal const int CommitStarted = 1;
+
         // DTX envelope sub-status codes. The full status/body matrix and the inner-vs-outer retry ownership
         // is documented at the call site in ClientRetryPolicy.ShouldRetryDtxRequest.
         internal const int DtcCoordinatorRaceConflict = 5352; // 449 sub-status: coordinator ETag race
