@@ -467,6 +467,9 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Mock<CosmosClientContext> contextMock = new Mock<CosmosClientContext>();
             contextMock
+                .Setup(c => c.Client)
+                .Returns(DistributedWriteTransactionTests.SharedMockClient);
+            contextMock
                 .Setup(c => c.OperationHelperAsync<DistributedTransactionResponse>(
                     It.IsAny<string>(),
                     It.IsAny<string>(),
@@ -489,7 +492,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     });
 
             await new DistributedWriteTransactionCore(contextMock.Object)
-                .CreateItem(Database, Container, new PartitionKey("pk"), "id", new TestItem())
+                .CreateItem(BuildMockContainer(), new PartitionKey("pk"), "id", new TestItem())
                 .CommitTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual($"{nameof(DistributedWriteTransaction)}.{nameof(DistributedWriteTransaction.CommitTransactionAsync)}", capturedOperationName);

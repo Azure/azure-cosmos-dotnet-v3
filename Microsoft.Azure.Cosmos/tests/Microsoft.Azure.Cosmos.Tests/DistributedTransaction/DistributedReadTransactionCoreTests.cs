@@ -256,6 +256,9 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Mock<CosmosClientContext> contextMock = new Mock<CosmosClientContext>();
             contextMock
+                .Setup(c => c.Client)
+                .Returns(DistributedReadTransactionCoreTests.SharedMockClient);
+            contextMock
                 .Setup(c => c.OperationHelperAsync<DistributedTransactionResponse>(
                     It.IsAny<string>(),
                     It.IsAny<string>(),
@@ -278,7 +281,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     });
 
             DistributedReadTransactionCore txn = new DistributedReadTransactionCore(contextMock.Object);
-            txn.ReadItem(Database, Collection, TestPartitionKey, ItemId);
+            txn.ReadItem(BuildMockContainer(), TestPartitionKey, ItemId);
 
             await txn.CommitTransactionAsync(CancellationToken.None);
 
