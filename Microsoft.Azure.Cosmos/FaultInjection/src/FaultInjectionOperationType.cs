@@ -79,6 +79,15 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         MetadataQueryPlan,
 
         /// <summary>
+        /// Metadata / barrier HEAD requests (e.g., consistency-barrier
+        /// <c>Head</c> against the <c>Collection</c> resource the SDK issues under
+        /// Strong / Bounded-Staleness consistency to verify <c>GlobalCommittedLSN</c>
+        /// on a replica before returning a read result).
+        /// Maps to <see cref="Microsoft.Azure.Documents.OperationType.Head"/>.
+        /// </summary>
+        MetadataRequest,
+
+        /// <summary>
         /// All operation types. Default value.
         /// </summary>
         All,

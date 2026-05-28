@@ -258,6 +258,20 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     };
 
                     return storeResponse;
+
+                case FaultInjectionServerErrorType.LeaseNotFound:
+                    INameValueCollection leaseNotFoundHeaders = args.RequestHeaders;
+                    leaseNotFoundHeaders.Set(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.LeaseNotFound).ToString(CultureInfo.InvariantCulture));
+                    leaseNotFoundHeaders.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
+
+                    storeResponse = new StoreResponse()
+                    {
+                        Status = 410,
+                        Headers = leaseNotFoundHeaders,
+                        ResponseBody = new MemoryStream(FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Lease Not Found, rule: {ruleId}"))
+                    };
+
+                    return storeResponse;
                 case FaultInjectionServerErrorType.ServiceUnavailable:
                     INameValueCollection serviceUnavailableHeaders = args.RequestHeaders;
                     serviceUnavailableHeaders.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
