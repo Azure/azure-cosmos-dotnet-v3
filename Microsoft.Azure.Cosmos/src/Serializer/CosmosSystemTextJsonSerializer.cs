@@ -62,7 +62,9 @@ namespace Microsoft.Azure.Cosmos
 
                             if (CosmosObject.TryCreateFromBuffer(content, out CosmosObject cosmosObject))
                             {
-                                return System.Text.Json.JsonSerializer.Deserialize<T>(cosmosObject.ToString(), this.jsonSerializerOptions);
+                                IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+                                cosmosObject.WriteTo(jsonWriter);
+                                return System.Text.Json.JsonSerializer.Deserialize<T>(jsonWriter.GetResult().Span, this.jsonSerializerOptions);
                             }
                             else
                             {
@@ -133,8 +135,7 @@ namespace Microsoft.Azure.Cosmos
         private T DeserializeStream<T>(
             Stream stream)
         {
-            using StreamReader reader = new (stream);
-            return System.Text.Json.JsonSerializer.Deserialize<T>(reader.ReadToEnd(), this.jsonSerializerOptions);
+            return System.Text.Json.JsonSerializer.Deserialize<T>(stream, this.jsonSerializerOptions);
         }
     }
 }
