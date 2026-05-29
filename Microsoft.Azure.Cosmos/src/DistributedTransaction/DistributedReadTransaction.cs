@@ -37,6 +37,11 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="id">The unique identifier of the item to read.</param>
         /// <param name="requestOptions">Options for the read operation.</param>
         /// <returns>The current <see cref="DistributedReadTransaction"/> instance for method chaining.</returns>
+        /// <remarks>
+        /// The distributed transaction bypasses the per-container request pipeline. Only the database and
+        /// container identifiers are extracted from <paramref name="container"/>; container-level behaviors
+        /// such as custom serializers, client-side encryption policies, or decorator wrappers are not applied.
+        /// </remarks>
         public abstract DistributedReadTransaction ReadItem(
             Container container,
             PartitionKey partitionKey,

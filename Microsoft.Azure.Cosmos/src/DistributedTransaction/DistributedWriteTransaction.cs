@@ -27,6 +27,11 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="resource">The resource to create.</param>
         /// <param name="requestOptions">Options for the create operation.</param>
         /// <returns>The current <see cref="DistributedWriteTransaction"/> instance for method chaining.</returns>
+        /// <remarks>
+        /// The distributed transaction bypasses the per-container request pipeline. Only the database and
+        /// container identifiers are extracted from <paramref name="container"/>; container-level behaviors
+        /// such as custom serializers, client-side encryption policies, or decorator wrappers are not applied.
+        /// </remarks>
         public abstract DistributedWriteTransaction CreateItem<T>(
             Container container,
             PartitionKey partitionKey,
@@ -43,6 +48,11 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="streamPayload">A <see cref="Stream"/> containing the JSON serialization of the item.</param>
         /// <param name="requestOptions">Options for the create operation.</param>
         /// <returns>The current <see cref="DistributedWriteTransaction"/> instance for method chaining.</returns>
+        /// <remarks>
+        /// The distributed transaction bypasses the per-container request pipeline. Only the database and
+        /// container identifiers are extracted from <paramref name="container"/>; container-level behaviors
+        /// such as custom serializers, client-side encryption policies, or decorator wrappers are not applied.
+        /// </remarks>
         public abstract DistributedWriteTransaction CreateItemStream(
             Container container,
             PartitionKey partitionKey,
@@ -60,6 +70,11 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="resource">The resource with updated values.</param>
         /// <param name="requestOptions">Options for the replace operation.</param>
         /// <returns>The current <see cref="DistributedWriteTransaction"/> instance for method chaining.</returns>
+        /// <remarks>
+        /// The distributed transaction bypasses the per-container request pipeline. Only the database and
+        /// container identifiers are extracted from <paramref name="container"/>; container-level behaviors
+        /// such as custom serializers, client-side encryption policies, or decorator wrappers are not applied.
+        /// </remarks>
         public abstract DistributedWriteTransaction ReplaceItem<T>(
             Container container,
             PartitionKey partitionKey,
@@ -76,6 +91,11 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="streamPayload">A <see cref="Stream"/> containing the JSON serialization of the replacement item.</param>
         /// <param name="requestOptions">Options for the replace operation.</param>
         /// <returns>The current <see cref="DistributedWriteTransaction"/> instance for method chaining.</returns>
+        /// <remarks>
+        /// The distributed transaction bypasses the per-container request pipeline. Only the database and
+        /// container identifiers are extracted from <paramref name="container"/>; container-level behaviors
+        /// such as custom serializers, client-side encryption policies, or decorator wrappers are not applied.
+        /// </remarks>
         public abstract DistributedWriteTransaction ReplaceItemStream(
             Container container,
             PartitionKey partitionKey,
@@ -91,6 +111,11 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="id">The unique identifier of the item to delete.</param>
         /// <param name="requestOptions">Options for the delete operation.</param>
         /// <returns>The current <see cref="DistributedWriteTransaction"/> instance for method chaining.</returns>
+        /// <remarks>
+        /// The distributed transaction bypasses the per-container request pipeline. Only the database and
+        /// container identifiers are extracted from <paramref name="container"/>; container-level behaviors
+        /// such as custom serializers, client-side encryption policies, or decorator wrappers are not applied.
+        /// </remarks>
         public abstract DistributedWriteTransaction DeleteItem(
             Container container,
             PartitionKey partitionKey,
@@ -106,6 +131,11 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="patchOperations">The list of <see cref="PatchOperation"/> to apply to the item.</param>
         /// <param name="requestOptions">Options for the patch operation</param>
         /// <returns>The current <see cref="DistributedWriteTransaction"/> instance for method chaining.</returns>
+        /// <remarks>
+        /// The distributed transaction bypasses the per-container request pipeline. Only the database and
+        /// container identifiers are extracted from <paramref name="container"/>; container-level behaviors
+        /// such as custom serializers, client-side encryption policies, or decorator wrappers are not applied.
+        /// </remarks>
         public abstract DistributedWriteTransaction PatchItem(
             Container container,
             PartitionKey partitionKey,
@@ -122,6 +152,11 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="streamPayload">A <see cref="Stream"/> containing the JSON serialization of the patch operations.</param>
         /// <param name="requestOptions">Options for the patch operation.</param>
         /// <returns>The current <see cref="DistributedWriteTransaction"/> instance for method chaining.</returns>
+        /// <remarks>
+        /// The distributed transaction bypasses the per-container request pipeline. Only the database and
+        /// container identifiers are extracted from <paramref name="container"/>; container-level behaviors
+        /// such as custom serializers, client-side encryption policies, or decorator wrappers are not applied.
+        /// </remarks>
         public abstract DistributedWriteTransaction PatchItemStream(
             Container container,
             PartitionKey partitionKey,
@@ -140,6 +175,11 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="resource">The resource to upsert.</param>
         /// <param name="requestOptions">Options for the upsert operation.</param>
         /// <returns>The current <see cref="DistributedWriteTransaction"/> instance for method chaining.</returns>
+        /// <remarks>
+        /// The distributed transaction bypasses the per-container request pipeline. Only the database and
+        /// container identifiers are extracted from <paramref name="container"/>; container-level behaviors
+        /// such as custom serializers, client-side encryption policies, or decorator wrappers are not applied.
+        /// </remarks>
         public abstract DistributedWriteTransaction UpsertItem<T>(
             Container container,
             PartitionKey partitionKey,
@@ -157,6 +197,11 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="streamPayload">A <see cref="Stream"/> containing the JSON serialization of the item.</param>
         /// <param name="requestOptions">Options for the upsert operation.</param>
         /// <returns>The current <see cref="DistributedWriteTransaction"/> instance for method chaining.</returns>
+        /// <remarks>
+        /// The distributed transaction bypasses the per-container request pipeline. Only the database and
+        /// container identifiers are extracted from <paramref name="container"/>; container-level behaviors
+        /// such as custom serializers, client-side encryption policies, or decorator wrappers are not applied.
+        /// </remarks>
         public abstract DistributedWriteTransaction UpsertItemStream(
             Container container,
             PartitionKey partitionKey,
