@@ -22,8 +22,14 @@ namespace Microsoft.Azure.Cosmos
             DocumentServiceLeaseContainer documentServiceLeaseContainer)
         {
             this.processorName = processorName ?? throw new ArgumentNullException(nameof(processorName));
-            this.leaseContainer = leaseContainer ?? throw new ArgumentNullException(nameof(leaseContainer));
             this.monitoredContainer = monitoredContainer ?? throw new ArgumentNullException(nameof(monitoredContainer));
+
+            if (leaseContainer == null && documentServiceLeaseContainer == null)
+            {
+                throw new ArgumentNullException(nameof(leaseContainer));
+            }
+
+            this.leaseContainer = leaseContainer;
             this.documentServiceLeaseContainer = documentServiceLeaseContainer;
         }
 

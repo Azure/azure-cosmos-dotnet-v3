@@ -22,14 +22,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [5815](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5815) Read Consistency Strategy: Adds hub region header for LastCommittedSingleWriteRegion strategy.
 - [5848](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5848) VectorEmbeddingPolicy: Adds EmbeddingSource block to Embedding model
 - [5867](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5867) Diagnostics: Adds hedging detection API (`CosmosDiagnostics.HedgingStarted`, `GetRequestedRegions`, `GetRespondedRegions`) along with the new `RequestedRegion` struct and `RequestedRegionReason` enum so callers can observe per-operation hedging behavior. `RequestedRegionReason.CircuitBreakerProbe` and `RequestedRegionReason.TransportRetry` are reserved for the future and not yet populated by this SDK; see issue #5867.
+- [5600](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5600) HPK: Adds id to partition key when "/id" is the last path in partition key definition.
+- [5838](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5838) EmbeddingGenerator: Adds ICosmosEmbeddingGenerator client-wide configuration (preview)
+- [5911](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5911) DistributedTransaction: Adds `DistributedReadTransaction` and `DistributedWriteTransaction` APIs (with `CosmosClient.CreateDistributedReadTransaction` / `CreateDistributedWriteTransaction`) for atomic read and write operations across partitions and containers (preview)
 
 #### Breaking Changes
 
 #### Bugs Fixed
 
-- [5870](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5870) CrossRegionHedgingAvailabilityStrategy: Fixes StackOverflow in CrossRegionHedgingAvailabilityStrategy Observed in .NET Framework 4.7.2.
+- [5827](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5827) ChangeFeedEstimator: Change feed estimator threw `ArgumentNullException` when an inmemory lease container was being used. Update validations so in-memory lease containers work with change feed estimator
 
 #### Other Changes
+
+- [#5887](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5887) Direct: Documents that `MaxTcpConnectionsPerEndpoint` accepts any positive value to allow customer control of the connection pool size; values of 16 or greater remain recommended.
+
+### <a name="3.61.0-preview.0"/> [3.61.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.61.0-preview.0) - 2026-5-18
+
+#### Features Added
+
+- [5815](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5815) Read Consistency Strategy: Adds hub region header for LastCommittedSingleWriteRegion strategy.
+- [5848](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5848) VectorEmbeddingPolicy: Adds EmbeddingSource block to Embedding model
+- [5804](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5804) SemanticReranking: Adds Configurable Request Timeout
+- [5839](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5839) Adds Direct package version upgrade and adds Read Consistency Strategy support for requests routed through the Thin Client proxy.
+
+#### Bugs Fixed
+
+- [5783](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5783) Container: Fixes SemanticRerankAsync TypeLoadException in derived classes
+
+### <a name="3.60.0"/> [3.60.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.60.0) - 2026-5-18
+
+#### Features Added
+
+- [5825](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5825) ChangeFeed: Promotes Full Fidelity Change Feed (AllVersionsAndDeletes) APIs to GA
+- [5839](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5839) Adds Direct package version upgrade and fixes TCP keepalive silently failing on Linux issue due to uint overload mismatch.
+
+#### Bugs Fixed
+
+- [5618](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5618) Diagnostics: Fixes null contacted region name for multimaster hub fallback (410/21005)
+- [5816](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5816) HttpTimeoutPolicy: Fixes aggressive 500ms first-attempt timeout in HttpTimeoutPolicyControlPlaneRetriableHotPath
+- [5819](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5819) LINQ: Fixes .NET 10 MemoryExtensions.Contains breaking change in LINQ queries
+- [5823](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5823) LocationCache: Fixes read fallback to use WriteEndpoints[0] when PPAF enabled and all regions excluded
+- [5825](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5825) ChangeFeedProcessor: Exempts AllVersionsAndDeletes from implicit StartTime back-off (not applicable to LSN-based continuation)
+- [5870](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5870) CrossRegionHedgingAvailabilityStrategy: Fixes StackOverflow in CrossRegionHedgingAvailabilityStrategy Observed in .NET Framework 4.7.2
 
 ### <a name="3.60.0-preview.0"/> [3.60.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.60.0-preview.0) - 2026-4-24
 
