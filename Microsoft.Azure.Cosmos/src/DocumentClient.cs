@@ -1076,7 +1076,8 @@ namespace Microsoft.Azure.Cosmos
                         this.GlobalEndpointManager,
                         this.ConnectionPolicy.EnablePartitionLevelFailover,
                         this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker,
-                        this.isThinClientEnabled);
+                        this.isThinClientEnabled,
+                        isHubRegionProcessingEnabled);
 
             this.retryPolicy = new RetryPolicy(
                 globalEndpointManager: this.GlobalEndpointManager,

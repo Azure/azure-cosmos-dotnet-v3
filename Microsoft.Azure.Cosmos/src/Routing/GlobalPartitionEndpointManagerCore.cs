@@ -54,6 +54,13 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly bool isThinClientEnabled;
 
         /// <summary>
+        /// A boolean flag indicating if hub region processing is enabled (driven by the
+        /// AZURE_COSMOS_HUB_REGION_PROCESSING_ENABLED env var, read once at client init).
+        /// When false, hub-region caching is skipped even if PPAF is enabled.
+        /// </summary>
+        private readonly bool isHubRegionProcessingEnabled;
+
+        /// <summary>
         /// A <see cref="Lazy{T}"/> instance of <see cref="ConcurrentDictionary{K,V}"/> containing the partition key range to failover info mapping.
         /// This mapping is primarily used for writes in a single master account.
         /// </summary>
@@ -99,15 +106,18 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <param name="isPartitionLevelFailoverEnabled">A boolean flag indicating if partition level failover is enabled.</param>
         /// <param name="isPartitionLevelCircuitBreakerEnabled">A boolean flag indicating if partition level circuit breaker is enabled.</param>
         /// <param name="isThinClientEnabled">A boolean flag indicating if thinclient is enabled.</param>
+        /// <param name="isHubRegionProcessingEnabled">A boolean flag indicating if hub region processing is enabled. Defaults to true.</param>
         public GlobalPartitionEndpointManagerCore(
             IGlobalEndpointManager globalEndpointManager,
             bool isPartitionLevelFailoverEnabled = false,
             bool isPartitionLevelCircuitBreakerEnabled = false,
-            bool isThinClientEnabled = false)
+            bool isThinClientEnabled = false,
+            bool isHubRegionProcessingEnabled = true)
         {
             this.isPartitionLevelAutomaticFailoverEnabled = isPartitionLevelFailoverEnabled ? 1 : 0;
             this.isPartitionLevelCircuitBreakerEnabled = isPartitionLevelCircuitBreakerEnabled ? 1 : 0;
             this.isThinClientEnabled = isThinClientEnabled;
+            this.isHubRegionProcessingEnabled = isHubRegionProcessingEnabled;
             this.globalEndpointManager = globalEndpointManager ?? throw new ArgumentNullException(nameof(globalEndpointManager));
             this.InitializeAndStartCircuitBreakerFailbackBackgroundRefresh();
         }
@@ -326,13 +336,18 @@ namespace Microsoft.Azure.Cosmos.Routing
             if (request == null
                 || request.RequestContext == null)
             {
+                DefaultTrace.TraceWarning(
+                    "TryCacheHubRegionLocationForPartition invoked with null request or RequestContext. Request is null: {0}.",
+                    request == null);
                 return;
             }
 
-            // Only cache if PPAF is enabled AND this request was part of the hub region discovery flow.
+            // Only cache if hub region processing is enabled (env-var driven kill switch) AND PPAF
+            // is enabled AND this request was part of the hub region discovery flow.
             // The cache (PartitionKeyRangeToLocationForWrite) is shared with PPAF — gating on PPAF
             // keeps the feature scoped to accounts that opted into per-partition routing.
-            if (!this.IsPartitionLevelAutomaticFailoverEnabled()
+            if (!this.isHubRegionProcessingEnabled
+                || !this.IsPartitionLevelAutomaticFailoverEnabled()
                 || !GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request))
             {
                 return;
@@ -361,9 +376,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                 });
 
             DefaultTrace.TraceInformation(
-                "Hub region cached on success for partition. PartitionKeyRange: {0}, HubRegion: {1}",
-                partitionKeyRange.Id,
-                hubRegionEndpoint);
+                "Successfully cached hub region {0} for partition key range {1}.",
+                hubRegionEndpoint,
+                partitionKeyRange.Id);
         }
 #endif
 
