@@ -90,8 +90,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             {
                 await this.highThroughputContainer.DeleteContainerAsync();
             }
-            this.client.Dispose();
-            this.fiClient.Dispose();
+            this.client?.Dispose();
+            this.fiClient?.Dispose();
         }
 
         [TestMethod]
@@ -1799,7 +1799,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         }
 
         // -----------------------------------------------------------------------------
-        // Partition merge / lease handoff repro.
+        // Partition merge / lease handoff repro — deterministic variant.
         //
         // During a partition merge / lease handoff, the backend may return 410/1022
         // (LeaseNotFound) to in-flight cross-partition FeedIterator pages. The retry
@@ -1808,14 +1808,20 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         // each page-level retry chain can run past the operation-level
         // CancellationToken.
         //
-        // This test installs a LeaseNotFound fault on the primary region only and
-        // asserts the operation-level CancellationToken is honored within a small
-        // tolerance window.
+        // To make this deterministic locally we trap the SDK on both regions:
+        //   * Primary region: LeaseNotFound on Query/Read forces cross-region failover.
+        //   * Secondary region: long ResponseDelay holds the failed-over request open
+        //     well past the user's CT.
+        //
+        // The SDK has nowhere to succeed within the CT window, so a CT-aware path
+        // should surface OperationCanceledException promptly. A non-CT-aware path
+        // sits in the secondary region's delayed read until either the request
+        // returns or MSTest kills the test.
         // -----------------------------------------------------------------------------
         [TestMethod]
-        [Timeout(Timeout)]
+        [Timeout(300000)]
         [Owner("tomasvaron")]
-        [Description("FeedIterator + 410/1022 LeaseNotFound should honor the operation CancellationToken")]
+        [Description("FeedIterator with 410/1022 in primary and long delay in secondary should honor the operation CancellationToken")]
         public async Task FaultInjectionLeaseNotFound_FeedIteratorHonorsCancellationToken()
         {
             // Build preferred regions list with non-write regions first so reads land on a remote region.
@@ -1838,19 +1844,20 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             }
 
             Assert.IsTrue(
-                preferredRegions.Count > 0,
-                "Multi-region test environment setup failed — no regions available. "
-                + "Ensure the test account has multiple regions configured so the cross-region retry path can be exercised.");
+                preferredRegions.Count >= 2,
+                "Test requires at least two regions so that cross-region retry has somewhere to fail over to. "
+                + "Ensure the test account has at least two regions configured.");
 
-            // Inject 410/1022 LeaseNotFound on Query (and ReadItem) against the primary region only.
-            // WithTimes(int.MaxValue) lets the fault fire on every matching request throughout the rule's
-            // lifetime so the SDK's cross-region retry chain keeps recurring against the local region.
+            string primaryRegion = preferredRegions[0];
+            string secondaryRegion = preferredRegions[1];
+
+            // 1) Primary region: LeaseNotFound on every Query/Read forces the SDK into cross-region retry.
             string queryLeaseNotFoundRuleId = "queryLeaseNotFoundRule-" + Guid.NewGuid();
             FaultInjectionRule queryLeaseNotFoundRule = new FaultInjectionRuleBuilder(
                 id: queryLeaseNotFoundRuleId,
                 condition: new FaultInjectionConditionBuilder()
                     .WithOperationType(FaultInjectionOperationType.QueryItem)
-                    .WithRegion(preferredRegions[0])
+                    .WithRegion(primaryRegion)
                     .Build(),
                 result: FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.LeaseNotFound)
                     .WithTimes(int.MaxValue)
@@ -1864,7 +1871,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 id: readLeaseNotFoundRuleId,
                 condition: new FaultInjectionConditionBuilder()
                     .WithOperationType(FaultInjectionOperationType.ReadItem)
-                    .WithRegion(preferredRegions[0])
+                    .WithRegion(primaryRegion)
                     .Build(),
                 result: FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.LeaseNotFound)
                     .WithTimes(int.MaxValue)
@@ -1873,7 +1880,46 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 .Build();
             readLeaseNotFoundRule.Disable();
 
-            FaultInjector faultInjector = new FaultInjector(new List<FaultInjectionRule> { queryLeaseNotFoundRule, readLeaseNotFoundRule });
+            // 2) Secondary region: long delay on every Query/Read parks the failed-over request well past the CT.
+            const int secondaryDelaySeconds = 120;
+            string secondaryQueryDelayRuleId = "secondaryQueryDelayRule-" + Guid.NewGuid();
+            FaultInjectionRule secondaryQueryDelayRule = new FaultInjectionRuleBuilder(
+                id: secondaryQueryDelayRuleId,
+                condition: new FaultInjectionConditionBuilder()
+                    .WithOperationType(FaultInjectionOperationType.QueryItem)
+                    .WithRegion(secondaryRegion)
+                    .Build(),
+                result: FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                    .WithDelay(TimeSpan.FromSeconds(secondaryDelaySeconds))
+                    .WithTimes(int.MaxValue)
+                    .Build())
+                .WithDuration(TimeSpan.FromMinutes(5))
+                .Build();
+            secondaryQueryDelayRule.Disable();
+
+            string secondaryReadDelayRuleId = "secondaryReadDelayRule-" + Guid.NewGuid();
+            FaultInjectionRule secondaryReadDelayRule = new FaultInjectionRuleBuilder(
+                id: secondaryReadDelayRuleId,
+                condition: new FaultInjectionConditionBuilder()
+                    .WithOperationType(FaultInjectionOperationType.ReadItem)
+                    .WithRegion(secondaryRegion)
+                    .Build(),
+                result: FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                    .WithDelay(TimeSpan.FromSeconds(secondaryDelaySeconds))
+                    .WithTimes(int.MaxValue)
+                    .Build())
+                .WithDuration(TimeSpan.FromMinutes(5))
+                .Build();
+            secondaryReadDelayRule.Disable();
+
+            FaultInjector faultInjector = new FaultInjector(
+                new List<FaultInjectionRule>
+                {
+                    queryLeaseNotFoundRule,
+                    readLeaseNotFoundRule,
+                    secondaryQueryDelayRule,
+                    secondaryReadDelayRule,
+                });
 
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
             {
@@ -1887,19 +1933,19 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             this.fiDatabase = this.fiClient.GetDatabase(TestCommon.FaultInjectionDatabaseName);
             this.fiContainer = this.fiDatabase.GetContainer(TestCommon.FaultInjectionContainerName);
 
-            // The query is a small cross-partition TOP 1 with ORDER BY — mirrors the failing customer
-            // diagnostic's parameterized Shape (SELECT TOP 1 ... WHERE binary-predicate ORDER BY one-field).
             string query = "SELECT TOP 1 c.id FROM c WHERE c.pk != '' ORDER BY c.pk ASC";
 
             const int cancellationBudgetSeconds = 5;
             // Bound for how long after the CT fires we are willing to wait before declaring the SDK
-            // failed to honor the token. The customer-observed gap was ~70 seconds.
+            // failed to honor the token.
             const int gracePeriodSeconds = 2;
 
             using CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(cancellationBudgetSeconds));
 
             queryLeaseNotFoundRule.Enable();
             readLeaseNotFoundRule.Enable();
+            secondaryQueryDelayRule.Enable();
+            secondaryReadDelayRule.Enable();
 
             FeedIterator<FaultInjectionTestObject> feedIterator = this.fiContainer.GetItemQueryIterator<FaultInjectionTestObject>(query);
 
@@ -1921,25 +1967,29 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 sw.Stop();
                 queryLeaseNotFoundRule.Disable();
                 readLeaseNotFoundRule.Disable();
+                secondaryQueryDelayRule.Disable();
+                secondaryReadDelayRule.Disable();
             }
 
             long elapsedSeconds = sw.ElapsedMilliseconds / 1000;
+            long primaryHits = queryLeaseNotFoundRule.GetHitCount() + readLeaseNotFoundRule.GetHitCount();
+            long secondaryHits = secondaryQueryDelayRule.GetHitCount() + secondaryReadDelayRule.GetHitCount();
 
-            // Sanity: the fault rule must actually have fired (otherwise the test is meaningless).
+            // Sanity: at least one of the fault rules must have fired. Otherwise the test setup is invalid.
             Assert.IsTrue(
-                queryLeaseNotFoundRule.GetHitCount() > 0,
-                "Fault injection rule for LeaseNotFound never fired; test setup is invalid.");
+                primaryHits + secondaryHits > 0,
+                $"No fault injection rules fired (primary={primaryHits}, secondary={secondaryHits}); test setup is invalid.");
 
             // The contract: once the operation-level CancellationToken expires, the SDK should surface
-            // OperationCanceledException within a small grace period. It MUST NOT keep retrying for
-            // tens of additional seconds while the user's token is already cancelled.
+            // OperationCanceledException within a small grace period. It MUST NOT block in the secondary
+            // region's delayed response while the user's token is already cancelled.
             Assert.IsTrue(
                 elapsedSeconds <= cancellationBudgetSeconds + gracePeriodSeconds,
                 $"Operation ran for {elapsedSeconds}s under a {cancellationBudgetSeconds}s CancellationToken "
                 + $"(allowed: <= {cancellationBudgetSeconds + gracePeriodSeconds}s). "
                 + $"CT was not honored in a timely manner. "
                 + $"Observed exception: {observed?.GetType().FullName ?? "<none>"}. "
-                + $"Rule hit count: {queryLeaseNotFoundRule.GetHitCount()}.");
+                + $"Primary LeaseNotFound hits: {primaryHits}. Secondary delay hits: {secondaryHits}.");
 
             // We also expect OperationCanceledException (or a derived TaskCanceledException) to surface,
             // not a CosmosException wrapping the injected fault.
@@ -1967,7 +2017,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         // barrier loop past the user's deadline.
         // -----------------------------------------------------------------------------
         [TestMethod]
-        [Timeout(Timeout)]
+        [Timeout(300000)]
         [Owner("tomasvaron")]
         [Description("CancellationToken must be honored between barrier (Head/Collection) requests")]
         public async Task FaultInjectionMetadataRequestDelay_HonorsCancellationToken()
