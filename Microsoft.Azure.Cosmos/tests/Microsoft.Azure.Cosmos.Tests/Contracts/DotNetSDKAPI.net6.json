@@ -8847,6 +8847,11 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.RequestedRegionReason TransportRetry;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.RequestedRegionReason Unknown": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.RequestedRegionReason Unknown;IsInitOnly:False;IsStatic:True;"
         }
       },
       "NestedTypes": {}

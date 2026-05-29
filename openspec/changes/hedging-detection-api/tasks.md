@@ -12,7 +12,7 @@
 ## 3. Public types
 
 - [x] 3.1 Create `RequestedRegion` (public readonly struct, `IEquatable<RequestedRegion>`, case-insensitive name equality, `==`/`!=`, custom `GetHashCode` that does not depend on `System.HashCode`, `ToString` = `"{regionName}:{reason}"`).
-- [x] 3.2 Create `RequestedRegionReason` (public `enum : byte`) with values `Initial`, `OperationRetry`, `RegionFailover`, `Hedging`, `CircuitBreakerProbe`, `TransportRetry`. Document that `TransportRetry` and `CircuitBreakerProbe` are reserved and not populated by v1 .NET.
+- [x] 3.2 Create `RequestedRegionReason` (public `enum : byte`) with values `Unknown` (= 0, default sentinel), `Initial`, `OperationRetry`, `RegionFailover`, `Hedging`, `CircuitBreakerProbe`, `TransportRetry`. Document that `Unknown` is the default sentinel for `default(RequestedRegion).Reason` and is never emitted by the SDK, and that `TransportRetry` and `CircuitBreakerProbe` are reserved and not populated by v1 .NET.
 
 ## 4. Internal state — `HedgingDetectionState`
 

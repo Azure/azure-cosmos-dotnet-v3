@@ -148,16 +148,27 @@ and a `ToString` of the form `"{regionName}:{reason}"`.
 ### Requirement: `RequestedRegionReason` enumeration
 
 The SDK SHALL expose a public `enum : byte` named `RequestedRegionReason`
-with values `Initial`, `OperationRetry`, `RegionFailover`, `Hedging`,
-`CircuitBreakerProbe`, and `TransportRetry`. `CircuitBreakerProbe` and
-`TransportRetry` SHALL be reserved for future use and MAY not be populated
-by every SDK version; consumers SHALL treat the enum as non-exhaustive.
+with values `Unknown`, `Initial`, `OperationRetry`, `RegionFailover`,
+`Hedging`, `CircuitBreakerProbe`, and `TransportRetry`. `Unknown` SHALL be
+the underlying-zero value and SHALL serve as the default sentinel for
+`default(RequestedRegionReason)` and `default(RequestedRegion).Reason`. The
+SDK SHALL NOT emit `Unknown` from a real dispatch.
+`CircuitBreakerProbe` and `TransportRetry` SHALL be reserved for future use
+and MAY not be populated by every SDK version; consumers SHALL treat the
+enum as non-exhaustive.
 
 #### Scenario: Reserved values do not appear in v1 .NET
 
 - **WHEN** an operation completes on the v1 .NET implementation
 - **THEN** no entry in `GetRequestedRegions()` SHALL have reason
   `CircuitBreakerProbe` or `TransportRetry`
+
+#### Scenario: `default(RequestedRegion)` is observably distinct from a real dispatch
+
+- **WHEN** a caller inspects `default(RequestedRegion)`
+- **THEN** `Reason` SHALL be `RequestedRegionReason.Unknown`
+- **AND** the SDK SHALL NOT produce a `RequestedRegion` with reason
+  `Unknown` from any real dispatch path
 
 ### Requirement: Diagnostics JSON shape is preserved
 
