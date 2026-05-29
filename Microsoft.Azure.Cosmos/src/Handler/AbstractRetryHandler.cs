@@ -105,6 +105,21 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         throw;
                     }
                 }
+                catch (CosmosException cosmosException)
+                {
+                    // Metadata requests (e.g., pkranges) that fail with a regional
+                    // error throw CosmosException from within the pipeline. Without
+                    // this catch, the exception escapes the retry loop and is caught
+                    // by the outer catch in SendAsync, which converts it to a
+                    // ResponseMessage without consulting the retry policy.
+                    // By catching it here, ClientRetryPolicy can evaluate the
+                    // failure and retry the entire operation in another region.
+                    result = await callShouldRetryException(cosmosException, cancellationToken);
+                    if (!result.ShouldRetry)
+                    {
+                        throw;
+                    }
+                }
 
                 TimeSpan backoffTime = result.BackoffTime;
                 if (backoffTime != TimeSpan.Zero)

@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Client.Tests
+namespace Microsoft.Azure.Cosmos.Client.Tests
 {
     using System;
     using Microsoft.Azure.Cosmos.Routing;
@@ -167,13 +167,12 @@
         }
 
         /// <summary>
-        /// Tests to see if different 503 substatus and other similar status codes are handeled correctly
+        /// Tests to see if different 503 substatus and other similar status codes are handeled correctly.
+        /// These status codes should NOT trigger a cross-region retry when no OnBeforeSendRequest was called.
         /// </summary>
-        /// <param name="testCode">The substatus code being Tested.</param>
         [DataRow((int)StatusCodes.ServiceUnavailable, (int)SubStatusCodes.Unknown, "ServiceUnavailable")]
         [DataRow((int)StatusCodes.ServiceUnavailable, (int)SubStatusCodes.TransportGenerated503, "ServiceUnavailable")]
         [DataRow((int)StatusCodes.InternalServerError, (int)SubStatusCodes.Unknown, "InternalServerError")]
-        [DataRow((int)StatusCodes.Gone, (int)SubStatusCodes.LeaseNotFound, "LeaseNotFound")]
         [DataRow((int)StatusCodes.Forbidden, (int)SubStatusCodes.DatabaseAccountNotFound, "DatabaseAccountNotFound")]
         [DataTestMethod]
         public void Http503LikeSubStatusHandelingTests(int statusCode, int SubStatusCode, string message)
@@ -207,6 +206,190 @@
             Task<ShouldRetryResult> retryStatus = retryPolicy.ShouldRetryAsync(documentClientException, cancellationToken);
 
             Assert.IsFalse(retryStatus.Result.ShouldRetry);
+        }
+
+        /// <summary>
+        /// Tests that 410/LeaseNotFound returns NoRetry when only one region is available
+        /// (no cross-region failover possible).
+        /// </summary>
+        [TestMethod]
+        public void Http410LeaseNotFoundNoRetryWithSingleRegion()
+        {
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+               useMultipleWriteLocations: false,
+               enableEndpointDiscovery: enableEndpointDiscovery,
+               isPreferredLocationsListEmpty: true);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+
+            CancellationToken cancellationToken = new CancellationToken();
+            Mock<INameValueCollection> nameValueCollection = new Mock<INameValueCollection>();
+
+            DocumentClientException documentClientException = new DocumentClientException(
+               message: "LeaseNotFound",
+               innerException: new Exception(),
+               responseHeaders: nameValueCollection.Object,
+               statusCode: HttpStatusCode.Gone,
+               substatusCode: SubStatusCodes.LeaseNotFound,
+               requestUri: null
+               );
+
+            Task<ShouldRetryResult> retryStatus = retryPolicy.ShouldRetryAsync(documentClientException, cancellationToken);
+
+            Assert.IsFalse(retryStatus.Result.ShouldRetry,
+                "410/LeaseNotFound should not retry when only one region is available.");
+        }
+
+        /// <summary>
+        /// Tests that 410/LeaseNotFound triggers cross-region retry via ShouldRetryOnEndpointFailureAsync
+        /// when multiple regions are configured.
+        /// </summary>
+        [TestMethod]
+        public async Task Http410LeaseNotFoundTriggersEndpointFailureRetryWithMultipleRegions()
+        {
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+               useMultipleWriteLocations: false,
+               enableEndpointDiscovery: enableEndpointDiscovery,
+               isPreferredLocationsListEmpty: false);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+
+            // Must call OnBeforeSendRequest to set locationEndpoint and request context.
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            retryPolicy.OnBeforeSendRequest(request);
+
+            Mock<INameValueCollection> nameValueCollection = new Mock<INameValueCollection>();
+
+            DocumentClientException documentClientException = new DocumentClientException(
+               message: "LeaseNotFound",
+               innerException: new Exception(),
+               responseHeaders: nameValueCollection.Object,
+               statusCode: HttpStatusCode.Gone,
+               substatusCode: SubStatusCodes.LeaseNotFound,
+               requestUri: null
+               );
+
+            ShouldRetryResult retryResult = await retryPolicy.ShouldRetryAsync(documentClientException, CancellationToken.None);
+
+            Assert.IsTrue(retryResult.ShouldRetry,
+                "410/LeaseNotFound should trigger cross-region retry when multiple regions are available.");
+        }
+
+        /// <summary>
+        /// Tests that 410/LeaseNotFound for a write request on a single-master account
+        /// returns NoRetry because the write endpoint cannot fail over.
+        /// </summary>
+        [TestMethod]
+        public async Task Http410LeaseNotFoundWriteNoRetryOnSingleMaster()
+        {
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+               useMultipleWriteLocations: false,
+               enableEndpointDiscovery: enableEndpointDiscovery,
+               isPreferredLocationsListEmpty: false);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+
+            // Write request on single-master account
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false);
+            retryPolicy.OnBeforeSendRequest(request);
+
+            Mock<INameValueCollection> nameValueCollection = new Mock<INameValueCollection>();
+
+            DocumentClientException documentClientException = new DocumentClientException(
+               message: "LeaseNotFound",
+               innerException: new Exception(),
+               responseHeaders: nameValueCollection.Object,
+               statusCode: HttpStatusCode.Gone,
+               substatusCode: SubStatusCodes.LeaseNotFound,
+               requestUri: null
+               );
+
+            ShouldRetryResult retryResult = await retryPolicy.ShouldRetryAsync(documentClientException, CancellationToken.None);
+
+            Assert.IsFalse(retryResult.ShouldRetry,
+                "410/LeaseNotFound for write on single-master should not retry — the write endpoint cannot fail over.");
+        }
+
+        /// <summary>
+        /// Tests that 500/InternalServerError for a read request triggers cross-region retry
+        /// via ShouldRetryOnEndpointFailureAsync when multiple regions are configured.
+        /// </summary>
+        [TestMethod]
+        public async Task Http500InternalServerErrorReadTriggersEndpointFailureRetryWithMultipleRegions()
+        {
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+               useMultipleWriteLocations: false,
+               enableEndpointDiscovery: enableEndpointDiscovery,
+               isPreferredLocationsListEmpty: false);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+
+            // OnBeforeSendRequest sets isReadRequest = true and locationEndpoint.
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            retryPolicy.OnBeforeSendRequest(request);
+
+            Uri initialEndpoint = request.RequestContext.LocationEndpointToRoute;
+
+            Mock<INameValueCollection> nameValueCollection = new Mock<INameValueCollection>();
+
+            DocumentClientException documentClientException = new DocumentClientException(
+               message: "InternalServerError",
+               innerException: new Exception(),
+               responseHeaders: nameValueCollection.Object,
+               statusCode: HttpStatusCode.InternalServerError,
+               substatusCode: SubStatusCodes.Unknown,
+               requestUri: null
+               );
+
+            ShouldRetryResult retryResult = await retryPolicy.ShouldRetryAsync(documentClientException, CancellationToken.None);
+
+            Assert.IsTrue(retryResult.ShouldRetry,
+                "500/InternalServerError for read requests should trigger cross-region retry when multiple regions are available.");
+
+            // Verify that after retry, the request is routed to a different endpoint.
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.AreNotEqual(initialEndpoint, request.RequestContext.LocationEndpointToRoute,
+                "After retry, the request should be routed to a different region.");
+        }
+
+        /// <summary>
+        /// Tests that 500/InternalServerError for a read request returns NoRetry
+        /// when only one region is available (no cross-region failover possible).
+        /// </summary>
+        [TestMethod]
+        public async Task Http500InternalServerErrorReadNoRetryWithSingleRegion()
+        {
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+               useMultipleWriteLocations: false,
+               enableEndpointDiscovery: enableEndpointDiscovery,
+               isPreferredLocationsListEmpty: true);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+
+            // OnBeforeSendRequest sets isReadRequest = true.
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            retryPolicy.OnBeforeSendRequest(request);
+
+            Mock<INameValueCollection> nameValueCollection = new Mock<INameValueCollection>();
+
+            DocumentClientException documentClientException = new DocumentClientException(
+               message: "InternalServerError",
+               innerException: new Exception(),
+               responseHeaders: nameValueCollection.Object,
+               statusCode: HttpStatusCode.InternalServerError,
+               substatusCode: SubStatusCodes.Unknown,
+               requestUri: null
+               );
+
+            ShouldRetryResult retryResult = await retryPolicy.ShouldRetryAsync(documentClientException, CancellationToken.None);
+
+            Assert.IsFalse(retryResult.ShouldRetry,
+                "500/InternalServerError should not retry when only one region is available.");
         }
 
         /// <summary>

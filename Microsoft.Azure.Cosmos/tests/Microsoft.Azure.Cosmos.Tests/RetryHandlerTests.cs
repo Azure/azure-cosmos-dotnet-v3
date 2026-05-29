@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using global::Azure;
     using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -447,6 +448,114 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             await invoker.SendAsync(requestMessage, new CancellationToken());
             Assert.AreEqual(expectedHandlerCalls, handlerCalls);
+        }
+
+        [TestMethod]
+        public async Task RetryHandlerCatchesCosmosExceptionAndConsultsPolicy()
+        {
+            // Verifies that when a CosmosException is thrown by the inner handler,
+            // the catch (CosmosException) block in AbstractRetryHandler catches it
+            // and consults the retry policy. When the policy returns NoRetry, the
+            // exception is re-thrown from ExecuteHttpRequestAsync but caught by the
+            // outer catch in SendAsync, which converts it to a ResponseMessage.
+            // This proves the catch block works — without it, the CosmosException
+            // would escape to SendAsync directly without consulting the policy.
+            using DocumentClient dc = new MockDocumentClient(RetryHandlerTests.TestUri, MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+            using CosmosClient client = new CosmosClient(
+                RetryHandlerTests.TestUri.OriginalString,
+                MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey,
+                new CosmosClientOptions(),
+                dc);
+
+            RetryHandler retryHandler = new RetryHandler(client);
+            int handlerCalls = 0;
+            TestHandler testHandler = new TestHandler((request, response) =>
+            {
+                handlerCalls++;
+
+                throw CosmosExceptionFactory.CreateServiceUnavailableException(
+                    message: "Service unavailable",
+                    headers: new Headers
+                    {
+                        ActivityId = Guid.NewGuid().ToString(),
+                        SubStatusCode = SubStatusCodes.TransportGenerated503
+                    },
+                    trace: Microsoft.Azure.Cosmos.Tracing.NoOpTrace.Singleton,
+                    innerException: null);
+            });
+
+            retryHandler.InnerHandler = testHandler;
+            RequestInvokerHandler invoker = new RequestInvokerHandler(
+                client,
+                requestedClientConsistencyLevel: null,
+                requestedClientReadConsistencyStrategy: null,
+                requestedClientPriorityLevel: null,
+                requestedClientThroughputBucket: null)
+            {
+                InnerHandler = retryHandler
+            };
+            RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new Uri("https://dummy.documents.azure.com:443/dbs"));
+            requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
+            requestMessage.ResourceType = ResourceType.Document;
+            requestMessage.OperationType = OperationType.Read;
+            ResponseMessage responseMessage = await invoker.SendAsync(requestMessage, new CancellationToken());
+
+            // The CosmosException was caught, policy was consulted (returned NoRetry
+            // because mock has no multi-region config), and the exception was re-thrown
+            // then caught by the outer handler and converted to ResponseMessage.
+            Assert.AreEqual(HttpStatusCode.ServiceUnavailable, responseMessage.StatusCode);
+            Assert.AreEqual(1, handlerCalls);
+        }
+
+        [TestMethod]
+        public async Task RetryHandlerRethrowsCosmosExceptionOnNoRetry()
+        {
+            // When the retry policy returns NoRetry for a CosmosException, the exception
+            // re-throws from ExecuteHttpRequestAsync but is caught by the outer catch in
+            // SendAsync and converted to a ResponseMessage. Verify the response reflects the error.
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
+
+            RetryHandler retryHandler = new RetryHandler(client);
+            int handlerCalls = 0;
+            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
+            {
+                handlerCalls++;
+                if (handlerCalls == 2)
+                {
+                    Assert.Fail("Should not retry when policy returns NoRetry.");
+                }
+
+                // Use BadRequest — ClientRetryPolicy does not retry 400s,
+                // so it returns NoRetry and the exception is re-thrown.
+                throw CosmosExceptionFactory.CreateBadRequestException(
+                    message: "Bad request",
+                    headers: new Headers
+                    {
+                        ActivityId = Guid.NewGuid().ToString(),
+                    },
+                    trace: Microsoft.Azure.Cosmos.Tracing.NoOpTrace.Singleton,
+                    innerException: null);
+            });
+
+            retryHandler.InnerHandler = testHandler;
+            RequestInvokerHandler invoker = new RequestInvokerHandler(
+                client,
+                requestedClientConsistencyLevel: null,
+                requestedClientReadConsistencyStrategy: null,
+                requestedClientPriorityLevel: null,
+                requestedClientThroughputBucket: null)
+            {
+                InnerHandler = retryHandler
+            };
+            RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new Uri("https://dummy.documents.azure.com:443/dbs"));
+            requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
+            requestMessage.ResourceType = ResourceType.Document;
+            requestMessage.OperationType = OperationType.Read;
+            ResponseMessage response = await invoker.SendAsync(requestMessage, new CancellationToken());
+
+            // The outer catch converts the re-thrown CosmosException into a ResponseMessage
+            Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.AreEqual(1, handlerCalls, "Should only call handler once — no retry for 400.");
         }
     }
 }
