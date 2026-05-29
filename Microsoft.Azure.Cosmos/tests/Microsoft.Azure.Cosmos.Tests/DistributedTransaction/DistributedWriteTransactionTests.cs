@@ -28,25 +28,93 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class DistributedWriteTransactionTests
     {
-        private const string Database = "testDb";
-        private const string Container = "testContainer";
+        private const string DatabaseName = "testDb";
+        private const string ContainerName = "testContainer";
 
         // Argument validation
+
+        [TestMethod]
+        public void CreateItem_NullContainer_ThrowsArgumentException()
+        {
+            DistributedWriteTransaction tx = this.NewTransaction();
+            Assert.ThrowsException<ArgumentNullException>(
+                () => tx.CreateItem(null, new PartitionKey("pk"), "item-id", new TestItem()));
+        }
+
+        [TestMethod]
+        public void CreateItem_NullContainerId_ThrowsArgumentException()
+        {
+            DistributedWriteTransaction tx = this.NewTransaction();
+            Assert.ThrowsException<ArgumentException>(
+                () => tx.CreateItem(BuildMockContainer(containerId: null), new PartitionKey("pk"), "item-id", new TestItem()));
+        }
+
+        [TestMethod]
+        public void CreateItem_EmptyContainerId_ThrowsArgumentException()
+        {
+            DistributedWriteTransaction tx = this.NewTransaction();
+            Assert.ThrowsException<ArgumentException>(
+                () => tx.CreateItem(BuildMockContainer(containerId: string.Empty), new PartitionKey("pk"), "item-id", new TestItem()));
+        }
+
+        [TestMethod]
+        public void CreateItem_WhitespaceContainerId_ThrowsArgumentException()
+        {
+            DistributedWriteTransaction tx = this.NewTransaction();
+            Assert.ThrowsException<ArgumentException>(
+                () => tx.CreateItem(BuildMockContainer(containerId: "   "), new PartitionKey("pk"), "item-id", new TestItem()));
+        }
 
         [TestMethod]
         public void CreateItem_NullDatabase_ThrowsArgumentException()
         {
             DistributedWriteTransaction tx = this.NewTransaction();
-            Assert.ThrowsException<ArgumentNullException>(
-                () => tx.CreateItem(null, Container, new PartitionKey("pk"), "item-id", new TestItem()));
+            Mock<Cosmos.Container> containerMock = new Mock<Cosmos.Container>();
+            containerMock.Setup(c => c.Id).Returns(ContainerName);
+            containerMock.Setup(c => c.Database).Returns((Cosmos.Database)null);
+
+            Assert.ThrowsException<ArgumentException>(
+                () => tx.CreateItem(containerMock.Object, new PartitionKey("pk"), "item-id", new TestItem()));
         }
 
         [TestMethod]
-        public void CreateItem_NullCollection_ThrowsArgumentException()
+        public void CreateItem_NullDatabaseId_ThrowsArgumentException()
         {
             DistributedWriteTransaction tx = this.NewTransaction();
-            Assert.ThrowsException<ArgumentNullException>(
-                () => tx.CreateItem(Database, null, new PartitionKey("pk"), "item-id", new TestItem()));
+            Assert.ThrowsException<ArgumentException>(
+                () => tx.CreateItem(BuildMockContainer(databaseId: null), new PartitionKey("pk"), "item-id", new TestItem()));
+        }
+
+        [TestMethod]
+        public void CreateItem_EmptyDatabaseId_ThrowsArgumentException()
+        {
+            DistributedWriteTransaction tx = this.NewTransaction();
+            Assert.ThrowsException<ArgumentException>(
+                () => tx.CreateItem(BuildMockContainer(databaseId: string.Empty), new PartitionKey("pk"), "item-id", new TestItem()));
+        }
+
+        [TestMethod]
+        public void CreateItem_WhitespaceDatabaseId_ThrowsArgumentException()
+        {
+            DistributedWriteTransaction tx = this.NewTransaction();
+            Assert.ThrowsException<ArgumentException>(
+                () => tx.CreateItem(BuildMockContainer(databaseId: "   "), new PartitionKey("pk"), "item-id", new TestItem()));
+        }
+
+        [TestMethod]
+        public void CreateItem_DifferentCosmosClient_ThrowsArgumentException()
+        {
+            DistributedWriteTransaction tx = this.NewTransaction();
+            CosmosClient differentClient = new Mock<CosmosClient>().Object;
+            Assert.ThrowsException<ArgumentException>(
+                () => tx.CreateItem(BuildMockContainer(client: differentClient), new PartitionKey("pk"), "item-id", new TestItem()));
+        }
+
+        [TestMethod]
+        public void CreateItem_SameCosmosClient_Succeeds()
+        {
+            DistributedWriteTransaction tx = this.NewTransaction();
+            tx.CreateItem(BuildMockContainer(), new PartitionKey("pk"), "item-id", new TestItem());
         }
 
         [TestMethod]
@@ -54,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             DistributedWriteTransaction tx = this.NewTransaction();
             Assert.ThrowsException<ArgumentNullException>(
-                () => tx.CreateItem<TestItem>(Database, Container, new PartitionKey("pk"), "item-id", null));
+                () => tx.CreateItem<TestItem>(BuildMockContainer(), new PartitionKey("pk"), "item-id", null));
         }
 
         [TestMethod]
@@ -62,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             DistributedWriteTransaction tx = this.NewTransaction();
             Assert.ThrowsException<ArgumentNullException>(
-                () => tx.ReplaceItem(Database, Container, new PartitionKey("pk"), null, new TestItem()));
+                () => tx.ReplaceItem(BuildMockContainer(), new PartitionKey("pk"), null, new TestItem()));
         }
 
         [TestMethod]
@@ -70,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             DistributedWriteTransaction tx = this.NewTransaction();
             Assert.ThrowsException<ArgumentNullException>(
-                () => tx.DeleteItem(Database, Container, new PartitionKey("pk"), string.Empty));
+                () => tx.DeleteItem(BuildMockContainer(), new PartitionKey("pk"), string.Empty));
         }
 
         [TestMethod]
@@ -78,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             DistributedWriteTransaction tx = this.NewTransaction();
             Assert.ThrowsException<ArgumentNullException>(
-                () => tx.PatchItem(Database, Container, new PartitionKey("pk"), "item-id", null));
+                () => tx.PatchItem(BuildMockContainer(), new PartitionKey("pk"), "item-id", null));
         }
 
         [TestMethod]
@@ -86,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             DistributedWriteTransaction tx = this.NewTransaction();
             Assert.ThrowsException<ArgumentNullException>(
-                () => tx.PatchItem(Database, Container, new PartitionKey("pk"), "item-id", new List<PatchOperation>()));
+                () => tx.PatchItem(BuildMockContainer(), new PartitionKey("pk"), "item-id", new List<PatchOperation>()));
         }
 
         [TestMethod]
@@ -94,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             DistributedWriteTransaction tx = this.NewTransaction();
             Assert.ThrowsException<ArgumentNullException>(
-                () => tx.CreateItemStream(Database, Container, new PartitionKey("pk"), "item-id", null));
+                () => tx.CreateItemStream(BuildMockContainer(), new PartitionKey("pk"), "item-id", null));
         }
 
         [TestMethod]
@@ -102,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             DistributedWriteTransaction tx = this.NewTransaction();
             Assert.ThrowsException<ArgumentNullException>(
-                () => tx.ReplaceItemStream(Database, Container, new PartitionKey("pk"), "item-id", null));
+                () => tx.ReplaceItemStream(BuildMockContainer(), new PartitionKey("pk"), "item-id", null));
         }
 
         [TestMethod]
@@ -110,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             DistributedWriteTransaction tx = this.NewTransaction();
             Assert.ThrowsException<ArgumentNullException>(
-                () => tx.PatchItemStream(Database, Container, new PartitionKey("pk"), "item-id", null));
+                () => tx.PatchItemStream(BuildMockContainer(), new PartitionKey("pk"), "item-id", null));
         }
 
         [TestMethod]
@@ -118,7 +186,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             DistributedWriteTransaction tx = this.NewTransaction();
             Assert.ThrowsException<ArgumentNullException>(
-                () => tx.UpsertItemStream(Database, Container, new PartitionKey("pk"), "item-id", null));
+                () => tx.UpsertItemStream(BuildMockContainer(), new PartitionKey("pk"), "item-id", null));
         }
 
         // Request structure
@@ -152,7 +220,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     });
 
             await new DistributedWriteTransactionCore(contextMock.Object)
-                .CreateItem(Database, Container, new PartitionKey("pk"), "item-id", new TestItem())
+                .CreateItem(BuildMockContainer(), new PartitionKey("pk"), "item-id", new TestItem())
                 .CommitTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual(ResourceType.DistributedTransactionBatch, capturedResourceType);
@@ -188,7 +256,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     });
 
             await new DistributedWriteTransactionCore(contextMock.Object)
-                .CreateItem(Database, Container, new PartitionKey("pk"), "item-id", new TestItem())
+                .CreateItem(BuildMockContainer(), new PartitionKey("pk"), "item-id", new TestItem())
                 .CommitTransactionAsync(CancellationToken.None);
 
             Assert.IsNotNull(capturedToken, "Idempotency token header must be set.");
@@ -228,7 +296,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     });
 
             DistributedTransactionResponse response = await new DistributedWriteTransactionCore(contextMock.Object)
-                .CreateItem(Database, Container, new PartitionKey("pk"), "item-id", new TestItem())
+                .CreateItem(BuildMockContainer(), new PartitionKey("pk"), "item-id", new TestItem())
                 .CommitTransactionAsync(CancellationToken.None);
 
             Assert.AreNotEqual(Guid.Empty, response.IdempotencyToken, "Response must carry the idempotency token.");
@@ -263,9 +331,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                     });
 
             await new DistributedWriteTransactionCore(contextMock.Object)
-                .CreateItem(Database, Container, new PartitionKey("pk1"), "id1", new TestItem("id1"))
-                .ReplaceItem(Database, Container, new PartitionKey("pk2"), "id2", new TestItem("id2"))
-                .DeleteItem(Database, Container, new PartitionKey("pk3"), "id3")
+                .CreateItem(BuildMockContainer(), new PartitionKey("pk1"), "id1", new TestItem("id1"))
+                .ReplaceItem(BuildMockContainer(), new PartitionKey("pk2"), "id2", new TestItem("id2"))
+                .DeleteItem(BuildMockContainer(), new PartitionKey("pk3"), "id3")
                 .CommitTransactionAsync(CancellationToken.None);
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
@@ -307,11 +375,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                     });
 
             await new DistributedWriteTransactionCore(contextMock.Object)
-                .CreateItem(Database, Container, new PartitionKey("pk"), "create", new TestItem("create"))
-                .ReplaceItem(Database, Container, new PartitionKey("pk"), "replace", new TestItem("replace"))
-                .DeleteItem(Database, Container, new PartitionKey("pk"), "delete")
-                .PatchItem(Database, Container, new PartitionKey("pk"), "patch", new[] { PatchOperation.Add("/value", "v") })
-                .UpsertItem(Database, Container, new PartitionKey("pk"), "upsert", new TestItem("upsert"))
+                .CreateItem(BuildMockContainer(), new PartitionKey("pk"), "create", new TestItem("create"))
+                .ReplaceItem(BuildMockContainer(), new PartitionKey("pk"), "replace", new TestItem("replace"))
+                .DeleteItem(BuildMockContainer(), new PartitionKey("pk"), "delete")
+                .PatchItem(BuildMockContainer(), new PartitionKey("pk"), "patch", new[] { PatchOperation.Add("/value", "v") })
+                .UpsertItem(BuildMockContainer(), new PartitionKey("pk"), "upsert", new TestItem("upsert"))
                 .CommitTransactionAsync(CancellationToken.None);
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
@@ -352,8 +420,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .ReturnsAsync(BuildSuccessResponse(2));
 
             DistributedTransactionResponse response = await new DistributedWriteTransactionCore(contextMock.Object)
-                .CreateItem(Database, Container, new PartitionKey("pk1"), "id1", new TestItem("id1"))
-                .CreateItem(Database, Container, new PartitionKey("pk2"), "id2", new TestItem("id2"))
+                .CreateItem(BuildMockContainer(), new PartitionKey("pk1"), "id1", new TestItem("id1"))
+                .CreateItem(BuildMockContainer(), new PartitionKey("pk2"), "id2", new TestItem("id2"))
                 .CommitTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
@@ -381,7 +449,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .ReturnsAsync(BuildErrorResponse(HttpStatusCode.Conflict));
 
             DistributedTransactionResponse response = await new DistributedWriteTransactionCore(contextMock.Object)
-                .CreateItem(Database, Container, new PartitionKey("pk"), "item-id", new TestItem())
+                .CreateItem(BuildMockContainer(), new PartitionKey("pk"), "item-id", new TestItem())
                 .CommitTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual(HttpStatusCode.Conflict, response.StatusCode);
@@ -625,6 +693,9 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Mock<CosmosClientContext> contextMock = new Mock<CosmosClientContext>();
             contextMock
+                .Setup(c => c.Client)
+                .Returns(DistributedWriteTransactionTests.SharedMockClient);
+            contextMock
                 .Setup(c => c.OperationHelperAsync<DistributedTransactionResponse>(
                     It.IsAny<string>(),
                     It.IsAny<string>(),
@@ -647,7 +718,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     });
 
             await new DistributedWriteTransactionCore(contextMock.Object)
-                .CreateItem(Database, Container, new PartitionKey("pk"), "id", new TestItem())
+                .CreateItem(BuildMockContainer(), new PartitionKey("pk"), "id", new TestItem())
                 .CommitTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual($"{nameof(DistributedWriteTransaction)}.{nameof(DistributedWriteTransaction.CommitTransactionAsync)}", capturedOperationName);
@@ -684,6 +755,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<CosmosClientContext> contextMock = new Mock<CosmosClientContext>();
 
             contextMock
+                .Setup(c => c.Client)
+                .Returns(DistributedWriteTransactionTests.SharedMockClient);
+
+            contextMock
                 .Setup(c => c.DocumentClient)
                 .Returns(documentClient);
 
@@ -714,6 +789,29 @@ namespace Microsoft.Azure.Cosmos.Tests
                     (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, resourceType, comp, level) => func(NoOpTrace.Singleton));
 
             return contextMock;
+        }
+
+        private static readonly CosmosClient SharedMockClient = new Mock<CosmosClient>().Object;
+
+        /// <summary>
+        /// Builds a mock <see cref="Cosmos.Container"/> that returns <see cref="DatabaseName"/>
+        /// and <see cref="ContainerName"/> from its <see cref="Cosmos.Container.Database"/>/<see cref="Cosmos.Container.Id"/>
+        /// accessors. The Container proxy makes no network calls, so a minimal mock is sufficient.
+        /// </summary>
+        private static Cosmos.Container BuildMockContainer(
+            string databaseId = DatabaseName,
+            string containerId = ContainerName,
+            CosmosClient client = null)
+        {
+            Mock<Cosmos.Database> databaseMock = new Mock<Cosmos.Database>();
+            databaseMock.Setup(d => d.Id).Returns(databaseId);
+            databaseMock.Setup(d => d.Client).Returns(client ?? DistributedWriteTransactionTests.SharedMockClient);
+
+            Mock<Cosmos.Container> containerMock = new Mock<Cosmos.Container>();
+            containerMock.Setup(c => c.Id).Returns(containerId);
+            containerMock.Setup(c => c.Database).Returns(databaseMock.Object);
+
+            return containerMock.Object;
         }
 
         private static ResponseMessage BuildSuccessResponse(int operationCount)
