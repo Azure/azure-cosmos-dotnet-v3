@@ -232,14 +232,22 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 return;
             }
 
-            // Resolve reason; consume the property so retries don't carry a stale value.
+            // Resolve reason from the property. The Remove is deferred until AFTER a
+            // successful AppendRequested so a failed region resolution (e.g. thin-client /
+            // PPCB endpoint not in GlobalEndpointManager's read/write maps; see F4 on
+            // PR #5868) does not silently swallow the dispatch-reason signal. If we removed
+            // the key here and then bailed at the region-resolution guard, any downstream
+            // re-dispatch on the same DocumentServiceRequest would default to Initial even
+            // though the upstream caller intended a different reason. Pins F5 review
+            // feedback on PR #5868.
             RequestedRegionReason reason = RequestedRegionReason.Initial;
+            bool propertyPresent = false;
             if (serviceRequest.Properties != null
                 && serviceRequest.Properties.TryGetValue(HedgingDetectionState.DispatchReasonPropertyKey, out object reasonObj)
                 && reasonObj is RequestedRegionReason resolvedReason)
             {
                 reason = resolvedReason;
-                serviceRequest.Properties.Remove(HedgingDetectionState.DispatchReasonPropertyKey);
+                propertyPresent = true;
             }
 
             // Resolve region name from the routing endpoint URI.
@@ -251,12 +259,21 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             // Skip if we couldn't resolve a name; better empty than misleading "unknown".
+            // Leave Properties[KEY] in place so a re-dispatch can still consume it.
             if (string.IsNullOrEmpty(regionName))
             {
                 return;
             }
 
             state.AppendRequested(regionName, reason);
+
+            // Append succeeded — now safe to consume the signal so subsequent retries
+            // on the same DocumentServiceRequest re-default unless a new reason is set
+            // by an upstream site (ClientRetryPolicy or CrossRegionHedgingAvailabilityStrategy).
+            if (propertyPresent)
+            {
+                serviceRequest.Properties.Remove(HedgingDetectionState.DispatchReasonPropertyKey);
+            }
         }
     }
 }
