@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents a distributed transaction that will be performed across partitions and/or collections. 
     /// </summary>
-#if INTERNAL
+#if PREVIEW
     public
 #else
     internal

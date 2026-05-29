@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents result of a specific operation in distributed transaction.
     /// </summary>
-#if INTERNAL
+#if PREVIEW
     public
 #else
     internal
@@ -324,7 +324,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     /// <typeparam name="T">The type to which the resource body was deserialized.</typeparam>
 #pragma warning disable SA1402 // File may only contain a single type
-#if INTERNAL
+#if PREVIEW
     public
 #else
     internal

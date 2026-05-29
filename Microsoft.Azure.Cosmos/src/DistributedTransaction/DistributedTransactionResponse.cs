@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents the response for a distributed transaction operation.
     /// </summary>
-#if INTERNAL
+#if PREVIEW
     public
 #else
     internal
