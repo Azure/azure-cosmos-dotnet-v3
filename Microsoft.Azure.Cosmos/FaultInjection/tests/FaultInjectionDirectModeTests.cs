@@ -1799,25 +1799,23 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         }
 
         // -----------------------------------------------------------------------------
-        // Issue #5906 / ICM 21000001041367 — partition merge / lease handoff repro
+        // Partition merge / lease handoff repro.
         //
-        // Customer-observed symptom: under a partition merge / lease handoff the SDK
-        // returned 410/1022 (LeaseNotFound) to in-flight cross-partition FeedIterator
-        // pages. The retry plumbing (Direct GoneAndRetryWithRequestRetryPolicy ->
-        // ClientRetryPolicy cross-region retry, PR #5108 in 3.50.0 + #5469 in 3.55.0)
-        // eventually succeeded against the destination region, but each page-level
-        // retry chain ran past the operation-level CancellationToken. End-to-end
-        // wall-clock was ~100 s for a 30 s user CT.
+        // During a partition merge / lease handoff, the backend may return 410/1022
+        // (LeaseNotFound) to in-flight cross-partition FeedIterator pages. The retry
+        // plumbing (Direct GoneAndRetryWithRequestRetryPolicy -> ClientRetryPolicy
+        // cross-region retry) eventually succeeds against the destination region, but
+        // each page-level retry chain can run past the operation-level
+        // CancellationToken.
         //
         // This test installs a LeaseNotFound fault on the primary region only and
         // asserts the operation-level CancellationToken is honored within a small
-        // tolerance window. EXPECTED TO FAIL on master until #5906 ships a fix to
-        // ClientRetryPolicy.ShouldRetryAsync + FeedIterator prefetch CT propagation.
+        // tolerance window.
         // -----------------------------------------------------------------------------
         [TestMethod]
         [Timeout(Timeout)]
         [Owner("tomasvaron")]
-        [Description("Repro for issue #5906: FeedIterator + 410/1022 LeaseNotFound should honor the operation CancellationToken")]
+        [Description("FeedIterator + 410/1022 LeaseNotFound should honor the operation CancellationToken")]
         public async Task FaultInjectionLeaseNotFound_FeedIteratorHonorsCancellationToken()
         {
             // Build preferred regions list with non-write regions first so reads land on a remote region.
@@ -1939,7 +1937,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 elapsedSeconds <= cancellationBudgetSeconds + gracePeriodSeconds,
                 $"Operation ran for {elapsedSeconds}s under a {cancellationBudgetSeconds}s CancellationToken "
                 + $"(allowed: <= {cancellationBudgetSeconds + gracePeriodSeconds}s). "
-                + $"CT was not honored in a timely manner — see GitHub issue #5906. "
+                + $"CT was not honored in a timely manner. "
                 + $"Observed exception: {observed?.GetType().FullName ?? "<none>"}. "
                 + $"Rule hit count: {queryLeaseNotFoundRule.GetHitCount()}.");
 
@@ -1953,28 +1951,25 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
 
         // -----------------------------------------------------------------------------
-        // Issue #5906 — companion test: verify the operation CancellationToken is
-        // honored when delays accumulate across barrier (Head/Collection) requests.
+        // Companion test: verify the operation CancellationToken is honored when delays
+        // accumulate across barrier (Head/Collection) requests.
         //
         // Under Strong / Bounded Staleness consistency the SDK issues HTTP HEAD
         // requests against the `Collection` resource to validate that a replica's
         // GlobalCommittedLSN satisfies the barrier before returning a read result.
-        // Each barrier is a separate RNTBD round-trip; the SDK can issue several in
-        // a row when waiting for the replica to catch up, or when failing over to a
-        // secondary region (as in the original ICM 21000001041367 diagnostic, which
-        // captured 6 such barriers in West US 2 after cross-region failover from
-        // Central US).
+        // Each barrier is a separate RNTBD round-trip; the SDK can issue several in a
+        // row when waiting for the replica to catch up, or when failing over to a
+        // secondary region.
         //
         // This test injects a 20-second delay on every metadata (Head) response in
         // the primary region and asserts the user's 5-second CancellationToken is
         // honored within a small tolerance — i.e., the SDK must NOT spin in the
-        // barrier loop past the user's deadline. EXPECTED TO FAIL on master until
-        // #5906 ships a CT-aware path that pre-empts in-flight barrier waits.
+        // barrier loop past the user's deadline.
         // -----------------------------------------------------------------------------
         [TestMethod]
         [Timeout(Timeout)]
         [Owner("tomasvaron")]
-        [Description("Repro for issue #5906: CancellationToken must be honored between barrier (Head/Collection) requests")]
+        [Description("CancellationToken must be honored between barrier (Head/Collection) requests")]
         public async Task FaultInjectionMetadataRequestDelay_HonorsCancellationToken()
         {
             // Build preferred regions list with non-write regions first so reads land on a remote region
@@ -2084,8 +2079,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 elapsedSeconds <= cancellationBudgetSeconds + gracePeriodSeconds,
                 $"Operation ran for {elapsedSeconds}s under a {cancellationBudgetSeconds}s CancellationToken "
                 + $"(allowed: <= {cancellationBudgetSeconds + gracePeriodSeconds}s). "
-                + $"Barrier responses delayed by {barrierDelaySeconds}s blocked the operation past the CT — "
-                + $"see GitHub issue #5906. "
+                + $"Barrier responses delayed by {barrierDelaySeconds}s blocked the operation past the CT. "
                 + $"Observed exception: {observed?.GetType().FullName ?? "<none>"}. "
                 + $"Barrier rule hit count: {barrierDelayRule.GetHitCount()}.");
 
