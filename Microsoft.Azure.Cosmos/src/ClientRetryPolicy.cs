@@ -521,8 +521,12 @@ namespace Microsoft.Azure.Cosmos
                 else
                 {
 #if !INTERNAL
-                    // Hub region discovery: only for single-master accounts.
+                    // Hub region discovery: only for single-master accounts AND read-only requests.
+                    // The hub-region-processing-only header is meaningful only on reads (the backend
+                    // routes reads to the partition's hub based on this header); writes already go to
+                    // the write region by default and the header has no defined semantics for them.
                     if (this.isHubRegionProcessingEnabled
+                        && request.IsReadOnlyRequest
                         && this.sessionTokenRetryCount >= MaxSessionTokenRetryCount)
                     {
                         this.addHubRegionProcessingOnlyHeader = true;
@@ -543,10 +547,30 @@ namespace Microsoft.Azure.Cosmos
                     }
                     else
                     {
-                        // Single-master 404/1002 retry routes to the write region. The hub-region cache
-                        // lookup is performed and if a previous request
-                        // discovered the hub for this partition, that lookup overrides the routing to
-                        // the cached hub via RouteToLocation(Uri).
+                        // Single-master 404/1002 retry.
+                        // Cache-hit fast path (warm cache from a prior request's discovery): set the
+                        // hub-region-processing-only header flag so OnBeforeSendRequest re-applies the
+                        // cache override and routes the next attempt directly to the cached hub —
+                        // Gated on read-only because
+                        // hub-region semantics apply only to reads, and on isHubRegionProcessingEnabled
+                        // because the feature can be opt-out via env var.
+                        //
+                        // Always set retryContext to the write region as a fallback below — if the
+                        // cache entry is concurrently evicted before OnBeforeSendRequest runs, the request still routes
+                        // to the write region (the original behavior) instead of falling back to preferred[0].
+#if !INTERNAL
+                        if (this.isHubRegionProcessingEnabled
+                            && request.IsReadOnlyRequest
+                            && this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(request, checkHubRegionOverrideInCache: true))
+                        {
+                            this.addHubRegionProcessingOnlyHeader = true;
+                            if (this.crossRegionAvailabilityContext != null)
+                            {
+                                this.crossRegionAvailabilityContext.ShouldAddHubRegionProcessingOnlyHeader = true;
+                            }
+                        }
+#endif
+
                         this.retryContext = new RetryContext
                         {
                             RetryLocationIndex = 0,

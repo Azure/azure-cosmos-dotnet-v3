@@ -472,18 +472,32 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             shouldRetry = await retryPolicy.ShouldRetryAsync(sessionNotAvailableException2, CancellationToken.None);
 
-            if (isSingleMaster)
+            if (isSingleMaster && isReadRequest)
             {
-                // For single master, after the second 404/1002, the hub region header flag has been set
-                // and the retry policy should allow one more retry so the request can be sent with the header.
-                Assert.IsTrue(shouldRetry.ShouldRetry, "Single master should retry once more after second 404/1002 so the hub region header is sent.");
+                // For single-master READ requests, after the second 404/1002 the hub region header
+                // flag has been set and the retry policy should allow one more retry so the request
+                // can be sent with the header.
+                Assert.IsTrue(shouldRetry.ShouldRetry, "Single master READ should retry once more after second 404/1002 so the hub region header is sent.");
 
                 // Verify the header is now present on the retry
                 retryPolicy.OnBeforeSendRequest(request);
                 headerValues = request.Headers.GetValues(HubRegionHeader);
-                Assert.IsNotNull(headerValues, "Hub region header should be present on retry after second 404/1002.");
+                Assert.IsNotNull(headerValues, "Hub region header should be present on retry after second 404/1002 (single-master read).");
                 Assert.AreEqual(1, headerValues.Length, "Header should have exactly one value.");
                 Assert.AreEqual(bool.TrueString, headerValues[0], "Header value should be 'True'.");
+            }
+            else if (isSingleMaster && !isReadRequest)
+            {
+                // For single-master WRITE requests, the hub region header MUST NOT be set —
+                // the hub-region-processing-only header is meaningful only on reads (the backend
+                // routes reads to the partition's hub based on this header). Writes already go to
+                // the write region by default and the header has no defined semantics for them.
+                if (shouldRetry.ShouldRetry)
+                {
+                    retryPolicy.OnBeforeSendRequest(request);
+                    headerValues = request.Headers.GetValues(HubRegionHeader);
+                    Assert.IsNull(headerValues, "Hub region header should NOT be present on single-master WRITE retry — header is read-only by design.");
+                }
             }
             else
             {
@@ -516,14 +530,9 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             }
         }
 
-        /// <summary>
-        /// Verifies complete flow: 404/1002 triggers hub header, 403/3 populates the PPAF cache
-        /// with the hub region discovery entry, and subsequent requests with hub header can
-        /// find the cached entry to skip the 403/3 discovery chain.
-        /// </summary>
         [TestMethod]
         [Owner("aavasthy")]
-        [Description("Validates full hub caching flow: 2× 404/1002 → hub header → 403/3 (populates cache via PPAF) → retry → subsequent request reuses cache to skip 403/3.")]
+        [Description("Full hub caching flow — STEP 1 cold cache discovery+populate, STEP 3 warm cache eager short-circuit after a single 404/1002.")]
         public async Task ClientRetryPolicy_After404With1002Twice_Then403_3_ThenSuccess_CachesHub_AndSubsequentRequestReusesCache()
         {
             // Ensure hub region processing is enabled for this test
@@ -540,7 +549,9 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                     isPreferredLocationsListEmpty: false,
                     enforceSingleMasterSingleWriteLocation: true);
 
-                GlobalPartitionEndpointManagerCore cacheManager = new GlobalPartitionEndpointManagerCore(endpointManager);
+                GlobalPartitionEndpointManagerCore cacheManager = new GlobalPartitionEndpointManagerCore(
+                    endpointManager,
+                    isPartitionLevelFailoverEnabled: true);
                 PartitionKeyRange pkRange = new PartitionKeyRange { Id = "0", MinInclusive = "", MaxExclusive = "FF" };
 
                 // ===== STEP 1: First request (cold cache) =====
@@ -656,7 +667,10 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 Assert.IsNull(request2.Headers.GetValues(HubRegionHeader),
                     "Fresh request should NOT have hub header.");
 
-                // Simulate 404/1002 #1 on request 2 — warm cache hit
+                // Simulate 404/1002 #1 on request 2 — warm cache hit triggers eager cache routing.
+                // With the warm cache, ShouldRetryOnSessionNotAvailable looks up the cache after the
+                // very first 404/1002 and sets addHubRegionProcessingOnlyHeader so OnBeforeSendRequest
+                // routes the next attempt straight to the cached hub (turns a 3-wire chain into 2 wires).
                 DocumentClientException error5 = new DocumentClientException(
                     message: "404/1002 #1 on request 2 — warm cache hit",
                     innerException: null,
@@ -667,18 +681,15 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 ShouldRetryResult shouldRetry5 = await retryPolicy2.ShouldRetryAsync(error5, CancellationToken.None);
                 Assert.IsTrue(shouldRetry5.ShouldRetry, "Should retry — warm cache routes directly to hub.");
 
-                retryPolicy2.OnBeforeSendRequest(request2);
-                Assert.IsNull(request2.Headers.GetValues(HubRegionHeader),
-                    "Hub header not yet active on first retry.");
-                ShouldRetryResult shouldRetry6 = await retryPolicy2.ShouldRetryAsync(error5, CancellationToken.None);
-                Assert.IsTrue(shouldRetry6.ShouldRetry, "Should retry — warm cache routes directly to hub.");
-
-                // Hub header is NOW active after 2x 404/1002.
+                // Hub header is ACTIVE on the very next attempt because the cache lookup at count=1 hit
+                // and set the addHubRegionProcessingOnlyHeader flag. The next OnBeforeSendRequest call
+                // both attaches the header AND routes the request to the cached hub via line 281's
+                // cache lookup — saving the write-region detour that R1 had to take.
                 retryPolicy2.OnBeforeSendRequest(request2);
 
                 string[] headerValues2 = request2.Headers.GetValues(HubRegionHeader);
                 Assert.IsNotNull(headerValues2,
-                    "Hub header MUST be present after 2x 404/1002 when warm cache is available.");
+                    "Hub header MUST be present on the first retry when warm cache is available (eager cache routing).");
                 Assert.AreEqual(bool.TrueString, headerValues2[0]);
 
                 // Verify the warm cache routes to the hub region discovered in STEP 1.

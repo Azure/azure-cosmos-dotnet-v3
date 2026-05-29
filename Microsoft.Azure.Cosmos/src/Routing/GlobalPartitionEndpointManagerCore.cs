@@ -179,7 +179,22 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return false;
             }
 
-            if (this.IsRequestEligibleForPartitionLevelCircuitBreaker(request))
+            if (isHubRegionDiscoveryActive || this.IsRequestEligibleForPerPartitionAutomaticFailover(request))
+            {
+                // For any single master write accounts, the next locations to fail over will be the read regions configured at the account level.
+                ReadOnlyCollection<Uri> nextLocations = this.isThinClientEnabled && GatewayStoreModel.IsOperationSupportedByThinClient(request)
+                    ? this.globalEndpointManager.ThinClientReadEndpoints
+                    : this.globalEndpointManager.AccountReadEndpoints;
+
+                return this.TryAddOrUpdatePartitionFailoverInfoAndMoveToNextLocation(
+                    partitionKeyRange,
+                    failedLocation,
+                    nextLocations,
+                    request,
+                    this.PartitionKeyRangeToLocationForWrite,
+                    isHubRegionDiscoveryActive);
+            }
+            else if (this.IsRequestEligibleForPartitionLevelCircuitBreaker(request))
             {
                 // For multi master write accounts, since all the regions are treated as write regions, the next locations to fail over
                 // will be the preferred read regions that are configured in the application preferred regions in the CosmosClientOptions.
@@ -193,21 +208,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                     nextLocations,
                     request,
                     this.PartitionKeyRangeToLocationForReadAndWrite,
-                    isHubRegionDiscoveryActive);
-            }
-            else if (isHubRegionDiscoveryActive || this.IsRequestEligibleForPerPartitionAutomaticFailover(request))
-            {
-                // For any single master write accounts, the next locations to fail over will be the read regions configured at the account level.
-                ReadOnlyCollection<Uri> nextLocations = this.isThinClientEnabled && GatewayStoreModel.IsOperationSupportedByThinClient(request)
-                    ? this.globalEndpointManager.ThinClientReadEndpoints
-                    : this.globalEndpointManager.AccountReadEndpoints;
-
-                return this.TryAddOrUpdatePartitionFailoverInfoAndMoveToNextLocation(
-                    partitionKeyRange,
-                    failedLocation,
-                    nextLocations,
-                    request,
-                    this.PartitionKeyRangeToLocationForWrite,
                     isHubRegionDiscoveryActive);
             }
 
@@ -329,8 +329,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return;
             }
 
-            // Only cache if this request was part of hub region discovery flow
-            if (!GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request))
+            // Only cache if PPAF is enabled AND this request was part of the hub region discovery flow.
+            // The cache (PartitionKeyRangeToLocationForWrite) is shared with PPAF — gating on PPAF
+            // keeps the feature scoped to accounts that opted into per-partition routing.
+            if (!this.IsPartitionLevelAutomaticFailoverEnabled()
+                || !GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request))
             {
                 return;
             }
@@ -694,13 +697,14 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <summary>
         /// Checks whether the request has the hub region processing header,
         /// indicating it is in the hub region discovery flow (after 2× 404/1002).
+        /// Returns false for null requests, non-read requests, or requests without the header.
         /// </summary>
         public static bool IsHubRegionRoutingActive(
             DocumentServiceRequest request)
         {
-            return request.IsReadOnlyRequest
+            return request?.IsReadOnlyRequest == true
                 && string.Equals(
-                    request?.Headers?[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
+                    request.Headers?[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
                     bool.TrueString,
                     StringComparison.OrdinalIgnoreCase);
         }
