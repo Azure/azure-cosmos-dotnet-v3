@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
     /// to deserialize a read operation response body into a typed object.
     /// </para>
     /// </remarks>
-#if INTERNAL
+#if PREVIEW
     public
 #else
     internal
