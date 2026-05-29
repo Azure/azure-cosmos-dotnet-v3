@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Diagnostics;
     using System.Net;
     using System.Net.Http;
     using System.Threading;
@@ -31,14 +32,29 @@ namespace Microsoft.Azure.Cosmos
         private const int MaxDtxRetryCount = 10;
         private const int MaxDtxInfraFailureRetryCount = 9;
         private const int DtxInfraFailureMaxExponent = 6;
+
+        // ----- RetryWith (449) jittered exponential backoff constants -----
+        private const int DefaultRetryWithInitialBackoffMilliseconds = 10;
+        private const int DefaultRetryWithMaxBackoffMilliseconds = 1000;
+        private const int DefaultRetryWithRandomSaltMilliseconds = 5;
+        private const int DefaultRetryWithTotalWaitTimeMilliseconds = 30000;
+        private const int RetryWithBackoffMultiplier = 2;
+
         private static readonly TimeSpan DtxInfraFailureBaseBackoff = TimeSpan.FromMilliseconds(100);
         private static readonly TimeSpan DtxInfraFailureMaxBackoff = TimeSpan.FromSeconds(5);
+        private static readonly object RetryWithRandomLock = new object();
+        private static readonly Random RetryWithRandom = new Random();
 
         private readonly IDocumentClientRetryPolicy throttlingRetry;
         private readonly GlobalEndpointManager globalEndpointManager;
         private readonly GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private readonly bool enableEndpointDiscovery;
         private readonly bool isThinClientEnabled;
+        private readonly bool isGatewayClientMode;
+        private readonly int retryWithInitialBackoffMilliseconds;
+        private readonly int retryWithMaxBackoffMilliseconds;
+        private readonly int? retryWithRandomSaltMilliseconds;
+        private readonly int retryWithTotalWaitTimeMilliseconds;
         private int failoverRetryCount;
 
         private int sessionTokenRetryCount;
@@ -52,6 +68,8 @@ namespace Microsoft.Azure.Cosmos
         private Uri locationEndpoint;
         private RetryContext retryContext;
         private DocumentServiceRequest documentServiceRequest;
+        private Stopwatch retryWithStopwatch;
+        private int? retryWithCurrentBackoffMilliseconds;
 #if !INTERNAL
         private volatile bool addHubRegionProcessingOnlyHeader;
         private CrossRegionAvailabilityContext crossRegionAvailabilityContext;
@@ -62,7 +80,8 @@ namespace Microsoft.Azure.Cosmos
             GlobalPartitionEndpointManager partitionKeyRangeLocationCache,
             RetryOptions retryOptions,
             bool enableEndpointDiscovery,
-            bool isThinClientEnabled)
+            bool isThinClientEnabled,
+            bool isGatewayClientMode = false)
         {
             this.throttlingRetry = new ResourceThrottleRetryPolicy(
                 retryOptions.MaxRetryAttemptsOnThrottledRequests,
@@ -77,6 +96,17 @@ namespace Microsoft.Azure.Cosmos
             this.canUseMultipleWriteLocations = false;
             this.isMultiMasterWriteRequest = false;
             this.isThinClientEnabled = isThinClientEnabled;
+            this.isGatewayClientMode = isGatewayClientMode;
+
+            RetryWithConfiguration retryWithConfig = retryOptions.GetRetryWithConfiguration();
+            this.retryWithInitialBackoffMilliseconds = retryWithConfig?.InitialRetryIntervalMilliseconds
+                ?? ClientRetryPolicy.DefaultRetryWithInitialBackoffMilliseconds;
+            this.retryWithMaxBackoffMilliseconds = retryWithConfig?.MaximumRetryIntervalMilliseconds
+                ?? ClientRetryPolicy.DefaultRetryWithMaxBackoffMilliseconds;
+            this.retryWithRandomSaltMilliseconds = retryWithConfig?.RandomSaltMaxValueMilliseconds
+                ?? ClientRetryPolicy.DefaultRetryWithRandomSaltMilliseconds;
+            this.retryWithTotalWaitTimeMilliseconds = retryWithConfig?.TotalWaitTimeMilliseconds
+                ?? ClientRetryPolicy.DefaultRetryWithTotalWaitTimeMilliseconds;
         }
 
         /// <summary> 
@@ -392,6 +422,19 @@ namespace Microsoft.Azure.Cosmos
                 return this.ShouldRetryOnUnavailableEndpointStatusCodes();
             }
 
+            // Received 449 (RetryWith) - transient concurrency error from the store.
+            // The proxy no longer retries 449 for external SDK requests to avoid noisy-neighbor amplification.
+            // The SDK handles retries with jittered exponential backoff.
+            // Only retry in Gateway mode or ThinClient mode. In Direct mode, GoneAndRetryWithRequestRetryPolicy
+            // already handles 449 at the transport layer — retrying here would cause double-retry amplification.
+            // Exclude DTX requests: DTX 449/5352 is handled by ShouldRetryDtxRequest with its own budget.
+            if (statusCode.HasValue && (int)statusCode.Value == 449
+                && (this.isGatewayClientMode || this.isThinClientEnabled)
+                && !this.isDtxRequest)
+            {
+                return this.ShouldRetryOnRetryWithStatus();
+            }
+
             if (this.isDtxRequest)
             {
                 return this.ShouldRetryDtxRequest(statusCode, subStatusCode, retryAfter, hasResponseBody);
@@ -607,6 +650,76 @@ namespace Microsoft.Azure.Cosmos
             };
 
             return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
+        }
+
+        /// <summary>
+        /// Handles retry logic for 449 (RetryWith) status code responses.
+        /// Uses jittered exponential backoff matching the direct-mode retry pattern.
+        /// The proxy no longer retries 449 for external SDK requests to avoid
+        /// noisy-neighbor amplification on shared proxy resources.
+        /// </summary>
+        private ShouldRetryResult ShouldRetryOnRetryWithStatus()
+        {
+            if (this.retryWithStopwatch == null)
+            {
+                this.retryWithStopwatch = Stopwatch.StartNew();
+            }
+
+            int elapsedMilliseconds = (int)this.retryWithStopwatch.Elapsed.TotalMilliseconds;
+            int remainingMilliseconds = this.retryWithTotalWaitTimeMilliseconds - elapsedMilliseconds;
+
+            if (remainingMilliseconds <= 0)
+            {
+                DefaultTrace.TraceWarning(
+                    "ClientRetryPolicy: RetryWith (449) total wait time exceeded. Elapsed: {0}ms, TotalWaitTime: {1}ms. Location: {2}; ResourceAddress: {3}",
+                    elapsedMilliseconds,
+                    this.retryWithTotalWaitTimeMilliseconds,
+                    this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
+                    this.documentServiceRequest?.ResourceAddress ?? string.Empty);
+                return ShouldRetryResult.NoRetry();
+            }
+
+            // Don't penalise first retry with delay — matches direct-mode GoneAndRetryWithRequestRetryPolicy behavior.
+            if (this.retryWithCurrentBackoffMilliseconds == null)
+            {
+                this.retryWithCurrentBackoffMilliseconds = this.retryWithInitialBackoffMilliseconds;
+
+                DefaultTrace.TraceWarning(
+                    "ClientRetryPolicy: Retrying on 449 (RetryWith) — first attempt, no delay. Location: {0}; ResourceAddress: {1}",
+                    this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
+                    this.documentServiceRequest?.ResourceAddress ?? string.Empty);
+
+                return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
+            }
+
+            // Use current backoff for this call, then advance for the next call.
+            // Sequence: [0ms (penalty-free), initial+j, initial*2+j, initial*4+j, ...]
+            int backoffMilliseconds = this.retryWithCurrentBackoffMilliseconds.Value;
+            this.retryWithCurrentBackoffMilliseconds = (int)Math.Min(
+                (long)this.retryWithCurrentBackoffMilliseconds.Value * ClientRetryPolicy.RetryWithBackoffMultiplier,
+                this.retryWithMaxBackoffMilliseconds);
+
+            // Add jitter (lock required: Random is not thread-safe on netstandard2.0)
+            if (this.retryWithRandomSaltMilliseconds.HasValue && this.retryWithRandomSaltMilliseconds.Value > 1)
+            {
+                lock (ClientRetryPolicy.RetryWithRandomLock)
+                {
+                    backoffMilliseconds += ClientRetryPolicy.RetryWithRandom.Next(1, this.retryWithRandomSaltMilliseconds.Value);
+                }
+            }
+
+            // Cap to remaining time and max backoff
+            backoffMilliseconds = Math.Min(backoffMilliseconds, Math.Min(remainingMilliseconds, this.retryWithMaxBackoffMilliseconds));
+
+            DefaultTrace.TraceWarning(
+                "ClientRetryPolicy: Retrying on 449 (RetryWith). BackoffTime: {0}ms, Elapsed: {1}ms, Remaining: {2}ms. Location: {3}; ResourceAddress: {4}",
+                backoffMilliseconds,
+                elapsedMilliseconds,
+                remainingMilliseconds,
+                this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
+                this.documentServiceRequest?.ResourceAddress ?? string.Empty);
+
+            return ShouldRetryResult.RetryAfter(TimeSpan.FromMilliseconds(backoffMilliseconds));
         }
 
         /// <summary>
