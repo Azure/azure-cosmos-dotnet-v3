@@ -7,9 +7,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System;
     using System.Collections.Generic;
     using System.Net;
+    using System.Threading.Tasks;
 
-    internal class DecryptableFeedResponse<T> : FeedResponse<T>
+    internal class DecryptableFeedResponse<T> : FeedResponse<T>, IAsyncDisposable
     {
+        private bool isDisposed;
+
         protected DecryptableFeedResponse(
             ResponseMessage responseMessage,
             IReadOnlyCollection<T> resource)
@@ -59,6 +62,40 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     responseMessage,
                     resource);
             }
+        }
+
+        /// <summary>
+        /// Cascades asynchronous disposal to any <see cref="IAsyncDisposable"/> items in <see cref="Resource"/>.
+        /// </summary>
+        /// <remarks>
+        /// Stream-mode <see cref="DecryptableItem"/> instances wrap pooled buffers that must be returned
+        /// to <see cref="System.Buffers.ArrayPool{T}"/> to prevent buffer leaks and to clear any plaintext
+        /// residue. Callers that abandon iteration (early-exit, exception, or never enumerate) rely on this
+        /// cascade to release those buffers. The cascade is idempotent: items already disposed by
+        /// <see cref="DecryptableItem.GetItemAsync{T}"/> are no-ops on subsequent disposal calls.
+        /// Items that do not implement <see cref="IAsyncDisposable"/> are skipped.
+        /// </remarks>
+        public async ValueTask DisposeAsync()
+        {
+            if (this.isDisposed)
+            {
+                return;
+            }
+
+            this.isDisposed = true;
+
+            if (this.Resource != null)
+            {
+                foreach (T item in this.Resource)
+                {
+                    if (item is IAsyncDisposable asyncDisposable)
+                    {
+                        await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                    }
+                }
+            }
+
+            GC.SuppressFinalize(this);
         }
     }
 }

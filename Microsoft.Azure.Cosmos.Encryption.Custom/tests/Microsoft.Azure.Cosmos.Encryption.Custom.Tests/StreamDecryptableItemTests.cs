@@ -493,6 +493,65 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
         }
 
+        [TestMethod]
+        public async Task GetItemAsync_WhenSerializerThrowsAfterDecryption_DisposesDecryptedStream()
+        {
+            TestDoc originalDoc = TestDoc.Create();
+            Stream encryptedStream = await CreateTrackingEncryptedStreamAsync(originalDoc, mockEncryptor.Object);
+
+            Stream capturedDecryptedStream = null;
+            Mock<CosmosSerializer> throwingSerializer = new Mock<CosmosSerializer>();
+            throwingSerializer.Setup(s => s.FromStream<JObject>(It.IsAny<Stream>()))
+                .Returns<Stream>(stream => EncryptionProcessor.BaseSerializer.FromStream<JObject>(stream));
+            throwingSerializer.Setup(s => s.FromStream<TestDoc>(It.IsAny<Stream>()))
+                .Callback<Stream>(s => capturedDecryptedStream = s)
+                .Throws(new InvalidOperationException("Serializer failure for regression coverage."));
+
+            StreamDecryptableItem item = new (encryptedStream, mockEncryptor.Object, throwingSerializer.Object);
+            try
+            {
+                await Assert.ThrowsExceptionAsync<EncryptionException>(() => item.GetItemAsync<TestDoc>());
+                Assert.IsNotNull(capturedDecryptedStream, "Serializer should have been invoked with decrypted stream.");
+                Assert.IsFalse(ReferenceEquals(capturedDecryptedStream, encryptedStream), "Encrypted path should produce a distinct decrypted stream.");
+                Assert.IsFalse(capturedDecryptedStream.CanRead, "Decrypted stream must be disposed by inner finally even when FromStream throws (regression: stream leak).");
+            }
+            finally
+            {
+                await item.DisposeAsync();
+            }
+        }
+
+        [TestMethod]
+        public async Task GetItemAsync_WhenDecryptedStreamAliasesContent_DisposesExactlyOnce()
+        {
+            TestDoc originalDoc = TestDoc.Create();
+            byte[] plainBytes;
+            using (MemoryStream ms = (MemoryStream)originalDoc.ToStream())
+            {
+                plainBytes = ms.ToArray();
+            }
+
+            TrackingStream trackingStream = new TrackingStream(plainBytes);
+
+            StreamDecryptableItem item = new (trackingStream, mockEncryptor.Object, cosmosSerializer);
+            try
+            {
+                (TestDoc result, DecryptionContext context) = await item.GetItemAsync<TestDoc>();
+
+                Assert.IsNotNull(result);
+                Assert.AreEqual(originalDoc.Id, result.Id);
+                Assert.IsNull(context, "Plaintext path should yield null decryption context.");
+                Assert.AreEqual(1, trackingStream.AsyncDisposeCallCount,
+                    "Aliased stream must be disposed asynchronously exactly once; inner finally must skip via aliasing guard (regression: double-dispose).");
+                Assert.AreEqual(2, trackingStream.SyncDisposeCallCount,
+                    "Sync dispose fires twice: once via the serializer's StreamReader, once via DisposeContentStreamAsync's DisposeAsync->Dispose(true). Pre-fix would observe an additional double-dispose pair.");
+            }
+            finally
+            {
+                await item.DisposeAsync();
+            }
+        }
+
         private static Mock<Encryptor> CreateEncryptor(Action onDecryptInvoked = null)
         {
             Mock<Encryptor> encryptorMock = new Mock<Encryptor>();

@@ -807,6 +807,38 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
             Assert.IsTrue(found, "Surrogate-pair escaped property name must match /😀");
         }
+
+        [TestMethod]
+        public async Task Encrypt_DoesNotMatchNestedPropertyWithSameName()
+        {
+            // Arrange: top-level "SensitiveStr" is configured for encryption; a same-named property at depth 2 must NOT be encrypted.
+            var doc = new
+            {
+                id = "1",
+                SensitiveStr = "top",
+                Nested = new { SensitiveStr = "inner", Other = 1 }
+            };
+            EncryptionOptions options = CreateOptions(new[] { "/SensitiveStr" });
+
+            MemoryStream encrypted = await EncryptAsync(doc, options);
+            using JsonDocument jd = Parse(encrypted);
+            JsonElement root = jd.RootElement;
+
+            // Nested SensitiveStr must remain plain text
+            JsonElement nestedSensitive = root.GetProperty("Nested").GetProperty("SensitiveStr");
+            Assert.AreEqual(JsonValueKind.String, nestedSensitive.ValueKind);
+            Assert.AreEqual("inner", nestedSensitive.GetString());
+            Assert.AreEqual(1, root.GetProperty("Nested").GetProperty("Other").GetInt32());
+
+            // Top-level SensitiveStr must be encrypted
+            byte[] cipherBytes = Convert.FromBase64String(root.GetProperty("SensitiveStr").GetString());
+            Assert.AreEqual((byte)TypeMarker.String, cipherBytes[0]);
+
+            // EncryptionProperties must list the top-level path exactly once and nothing nested
+            EncryptionProperties props = System.Text.Json.JsonSerializer.Deserialize<EncryptionProperties>(root.GetProperty(Constants.EncryptedInfo).GetRawText());
+            Assert.AreEqual(1, props.EncryptedPaths.Count());
+            Assert.IsTrue(props.EncryptedPaths.Contains("/SensitiveStr"));
+        }
     }
 }
 #endif

@@ -53,21 +53,31 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 {
                     (Stream decryptedStream, DecryptionContext decryptionContext) = await this.DecryptContentStreamAsync().ConfigureAwait(false);
 
-                    Stream streamToRead = decryptedStream ?? this.contentStream ?? throw new InvalidOperationException("Decryption returned no content stream.");
+                    bool decryptedAliasesContent = decryptedStream != null && ReferenceEquals(decryptedStream, this.contentStream);
 
-                    streamToRead.Position = 0;
+                    try
+                    {
+                        Stream streamToRead = decryptedStream ?? this.contentStream ?? throw new InvalidOperationException("Decryption returned no content stream.");
 
-                    T item = this.cosmosSerializer.FromStream<T>(streamToRead);
+                        streamToRead.Position = 0;
 
-                    await this.DisposeDecryptedStreamAsync(decryptedStream).ConfigureAwait(false);
+                        T item = this.cosmosSerializer.FromStream<T>(streamToRead);
 
-                    this.cachedItem = item;
-                    this.cachedDecryptionContext = decryptionContext;
-                    this.isDecrypted = true;
+                        this.cachedItem = item;
+                        this.cachedDecryptionContext = decryptionContext;
+                        this.isDecrypted = true;
 
-                    await this.DisposeContentStreamAsync().ConfigureAwait(false);
+                        await this.DisposeContentStreamAsync().ConfigureAwait(false);
 
-                    return (item, decryptionContext);
+                        return (item, decryptionContext);
+                    }
+                    finally
+                    {
+                        if (decryptedStream != null && !decryptedAliasesContent)
+                        {
+                            await decryptedStream.DisposeAsync().ConfigureAwait(false);
+                        }
+                    }
                 }
                 catch (Exception exception)
                 {
@@ -95,14 +105,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 legacyFallback: true,
                 diagnosticsContext,
                 cancellationToken: default).ConfigureAwait(false);
-        }
-
-        private async ValueTask DisposeDecryptedStreamAsync(Stream decryptedStream)
-        {
-            if (decryptedStream != null && decryptedStream != this.contentStream)
-            {
-                await decryptedStream.DisposeAsync().ConfigureAwait(false);
-            }
         }
 
         private async ValueTask DisposeContentStreamAsync()

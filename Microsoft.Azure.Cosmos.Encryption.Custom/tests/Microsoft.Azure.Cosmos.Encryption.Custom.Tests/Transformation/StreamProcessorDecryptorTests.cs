@@ -1017,6 +1017,32 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => new StreamProcessor().DecryptStreamAsync(input, bw, null, anyProps, diag, default));
             await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => new StreamProcessor().DecryptStreamAsync(input, bw, mockEncryptor.Object, null, diag, default));
         }
+
+        [TestMethod]
+        public async Task Decrypt_DoesNotMatchNestedPropertyWithSameName()
+        {
+            // Arrange: top-level "SensitiveStr" is configured for encryption; a same-named property at depth 2 must NOT be touched.
+            var doc = new
+            {
+                id = "1",
+                SensitiveStr = "top",
+                Nested = new { SensitiveStr = "inner", Other = 1 }
+            };
+            EncryptionOptions options = CreateOptions(new[] { "/SensitiveStr" });
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+            MemoryStream output = new();
+            DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+
+            output.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(output);
+            JsonElement root = jd.RootElement;
+            Assert.AreEqual("top", root.GetProperty("SensitiveStr").GetString());
+            Assert.AreEqual("inner", root.GetProperty("Nested").GetProperty("SensitiveStr").GetString());
+            Assert.AreEqual(1, root.GetProperty("Nested").GetProperty("Other").GetInt32());
+            Assert.AreEqual(1, ctx.DecryptionInfoList[0].PathsDecrypted.Count);
+            Assert.IsTrue(ctx.DecryptionInfoList[0].PathsDecrypted.Contains("/SensitiveStr"));
+        }
     }
 
     /// <summary>
