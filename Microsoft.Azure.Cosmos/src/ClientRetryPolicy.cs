@@ -90,6 +90,16 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             this.retryContext = null;
+
+            // Honor the operation-level CancellationToken before scheduling any further retry.
+            // Without this check, a fresh ShouldRetryResult.RetryAfter(...) can be issued even
+            // after the caller's token has been cancelled, causing the operation to overrun the
+            // caller's deadline.
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ShouldRetryResult.NoRetry();
+            }
+
             // Received Connection error (HttpRequestException), initiate the endpoint rediscovery
             if (exception is HttpRequestException _)
             {
@@ -185,6 +195,15 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             this.retryContext = null;
+
+            // Honor the operation-level CancellationToken before scheduling any further retry.
+            // Without this check, a fresh ShouldRetryResult.RetryAfter(...) can be issued even
+            // after the caller's token has been cancelled, causing the operation to overrun the
+            // caller's deadline.
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ShouldRetryResult.NoRetry();
+            }
 
             bool hasResponseBody = cosmosResponseMessage?.Content != null;
 

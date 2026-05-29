@@ -8,7 +8,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### <a name="unreleased-faultinjection"/> Unreleased
 
 #### Features Added
-- FaultInjection: Adds `FaultInjectionServerErrorType.LeaseNotFound` (410/1022) for injecting the lease-handoff failure mode observed during partition merge cutovers, and `FaultInjectionOperationType.MetadataRequest` for targeting consistency-barrier `Head/Collection` requests.
 
 #### Breaking Changes
 

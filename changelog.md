@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Bugs Fixed
 
 - [5827](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5827) ChangeFeedEstimator: Change feed estimator threw `ArgumentNullException` when an inmemory lease container was being used. Update validations so in-memory lease containers work with change feed estimator
+- [5913](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5913) ClientRetryPolicy: Fixes operation-level `CancellationToken` being ignored when scheduling cross-region retries on `Gone (410)` / `LeaseNotFound (1022)` and other transient backend status codes. Operations now surface `OperationCanceledException` within the caller's token deadline instead of running additional retries past it.
 
 #### Other Changes
 

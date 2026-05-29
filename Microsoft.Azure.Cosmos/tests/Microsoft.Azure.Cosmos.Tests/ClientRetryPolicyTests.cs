@@ -210,6 +210,104 @@
         }
 
         /// <summary>
+        /// Validates that <see cref="ClientRetryPolicy.ShouldRetryAsync(Exception, CancellationToken)"/>
+        /// returns NoRetry when the operation-level CancellationToken has already been cancelled.
+        /// Without this guard, the policy can issue a fresh RetryAfter result that schedules another
+        /// network attempt past the caller's deadline (the customer-observed bug in cross-region
+        /// failover on 410/1022 LeaseNotFound).
+        /// </summary>
+        [TestMethod]
+        public async Task ShouldRetryAsync_Exception_ReturnsNoRetry_WhenCancellationTokenIsCancelled()
+        {
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: true);
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            Mock<INameValueCollection> headers = new Mock<INameValueCollection>();
+            DocumentClientException leaseNotFound = new DocumentClientException(
+                message: "LeaseNotFound",
+                innerException: new Exception(),
+                responseHeaders: headers.Object,
+                statusCode: HttpStatusCode.Gone,
+                substatusCode: SubStatusCodes.LeaseNotFound,
+                requestUri: null);
+
+            ShouldRetryResult result = await retryPolicy.ShouldRetryAsync(leaseNotFound, cts.Token);
+
+            Assert.IsFalse(
+                result.ShouldRetry,
+                "ClientRetryPolicy.ShouldRetryAsync(Exception, CT) must not schedule a retry once the operation-level CancellationToken is cancelled.");
+        }
+
+        /// <summary>
+        /// Validates the ResponseMessage overload of
+        /// <see cref="ClientRetryPolicy.ShouldRetryAsync(ResponseMessage, CancellationToken)"/>
+        /// for the same CT-honor contract.
+        /// </summary>
+        [TestMethod]
+        public async Task ShouldRetryAsync_ResponseMessage_ReturnsNoRetry_WhenCancellationTokenIsCancelled()
+        {
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: true);
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            using ResponseMessage response = new ResponseMessage(HttpStatusCode.Gone);
+            response.Headers.SubStatusCode = SubStatusCodes.LeaseNotFound;
+
+            ShouldRetryResult result = await retryPolicy.ShouldRetryAsync(response, cts.Token);
+
+            Assert.IsFalse(
+                result.ShouldRetry,
+                "ClientRetryPolicy.ShouldRetryAsync(ResponseMessage, CT) must not schedule a retry once the operation-level CancellationToken is cancelled.");
+        }
+
+        /// <summary>
+        /// Regression: a non-cancelled token must still allow the policy to schedule the
+        /// documented cross-region retry on 410/1022. Guards against the CT-honor change
+        /// accidentally returning NoRetry in the normal path.
+        /// </summary>
+        [TestMethod]
+        public async Task ShouldRetryAsync_LeaseNotFound_StillRetries_WhenCancellationTokenIsNotCancelled()
+        {
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false);
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            retryPolicy.OnBeforeSendRequest(request);
+
+            Mock<INameValueCollection> headers = new Mock<INameValueCollection>();
+            DocumentClientException leaseNotFound = new DocumentClientException(
+                message: "LeaseNotFound",
+                innerException: new Exception(),
+                responseHeaders: headers.Object,
+                statusCode: HttpStatusCode.Gone,
+                substatusCode: SubStatusCodes.LeaseNotFound,
+                requestUri: null);
+
+            ShouldRetryResult result = await retryPolicy.ShouldRetryAsync(leaseNotFound, CancellationToken.None);
+
+            Assert.IsTrue(
+                result.ShouldRetry,
+                "ClientRetryPolicy.ShouldRetryAsync should still issue the documented cross-region retry on 410/1022 when the CancellationToken is not cancelled.");
+        }
+
+        /// <summary>
         /// Tests to validate that when HttpRequestException is thrown while connecting to a gateway endpoint for a single master write account with PPAF enabled,
         /// a partition level failover is added and the request is retried to the next region.
         /// </summary>

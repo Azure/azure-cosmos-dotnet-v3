@@ -4,7 +4,6 @@
 namespace Microsoft.Azure.Cosmos.FaultInjection
 {
     using System;
-    using System.Collections.Generic;
     using System.Globalization;
     using System.Net;
     using System.Net.Http.Headers;
@@ -24,7 +23,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly TimeSpan delay;
         private readonly bool suppressServiceRequest;
         private readonly double injectionRate;
-        private readonly IReadOnlyDictionary<string, string>? headerOverrides;
         private readonly FaultInjectionApplicationContext applicationContext;
         private readonly GlobalEndpointManager globalEndpointManager;
 
@@ -38,8 +36,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             bool suppressServiceRequest,
             double injectionRate,
             FaultInjectionApplicationContext applicationContext,
-            GlobalEndpointManager globalEndpointManager,
-            IReadOnlyDictionary<string, string>? headerOverrides = null)
+            GlobalEndpointManager globalEndpointManager)
         {
             this.serverErrorType = serverErrorType;
             this.times = times;
@@ -48,7 +45,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             this.injectionRate = injectionRate;
             this.applicationContext = applicationContext;
             this.globalEndpointManager = globalEndpointManager;
-            this.headerOverrides = headerOverrides;
         }
 
         /// <summary>
@@ -301,23 +297,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         Status = 401,
                         Headers = aadTokenRevokedHeaders,
                         ResponseBody = new MemoryStream(FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Aad Token Revoked, rule: {ruleId}"))
-                    };
-                    return storeResponse;
-                case FaultInjectionServerErrorType.ResponseHeaderOverride:
-                    INameValueCollection overrideHeaders = args.RequestHeaders;
-                    overrideHeaders.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
-                    if (this.headerOverrides != null)
-                    {
-                        foreach (KeyValuePair<string, string> entry in this.headerOverrides)
-                        {
-                            overrideHeaders.Set(entry.Key, entry.Value);
-                        }
-                    }
-                    storeResponse = new StoreResponse()
-                    {
-                        Status = 200,
-                        Headers = overrideHeaders,
-                        ResponseBody = new MemoryStream(FaultInjectionResponseEncoding.GetBytes($"{{\"_rid\":\"fault-injection\",\"_self\":\"\",\"_etag\":\"\\\"00000000-0000-0000-0000-000000000000\\\"\",\"_ts\":0}}"))
                     };
                     return storeResponse;
                 default:
@@ -629,33 +608,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         WFConstants.BackendHeaders.SubStatus,
                         "5013");
                     httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
-                    return httpResponse;
-                case FaultInjectionServerErrorType.ResponseHeaderOverride:
-                    httpResponse = new HttpResponseMessage
-                    {
-                        Version = isProxyCall
-                            ? new Version(2, 0)
-                            : new Version(1, 1),
-                        StatusCode = HttpStatusCode.OK,
-                        Content = new FaultInjectionHttpContent(
-                            new MemoryStream(
-                                FaultInjectionResponseEncoding.GetBytes("{\"_rid\":\"fault-injection\",\"_self\":\"\",\"_etag\":\"\\\"00000000-0000-0000-0000-000000000000\\\"\",\"_ts\":0}"))),
-                    };
-                    this.SetHttpHeaders(httpResponse, headers, isProxyCall);
-                    httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
-                    if (this.headerOverrides != null)
-                    {
-                        foreach (KeyValuePair<string, string> entry in this.headerOverrides)
-                        {
-                            // Remove any pre-existing header with the same name from SetHttpHeaders so the
-                            // caller-supplied value wins.
-                            if (httpResponse.Headers.Contains(entry.Key))
-                            {
-                                httpResponse.Headers.Remove(entry.Key);
-                            }
-                            httpResponse.Headers.Add(entry.Key, entry.Value);
-                        }
-                    }
                     return httpResponse;
                 default:
                     throw new ArgumentException($"Server error type {this.serverErrorType} is not supported");

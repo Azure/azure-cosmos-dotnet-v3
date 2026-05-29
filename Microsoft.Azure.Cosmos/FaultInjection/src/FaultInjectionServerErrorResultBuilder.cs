@@ -4,7 +4,6 @@
 namespace Microsoft.Azure.Cosmos.FaultInjection
 {
     using System;
-    using System.Collections.Generic;
 
     /// <summary>
     /// Used to create a <see cref="FaultInjectionServerErrorResult"/>.
@@ -17,7 +16,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private bool suppressServiceRequest;
         private bool isDelaySet = false;
         private double injectionRate = 1;
-        private IReadOnlyDictionary<string, string>? headerOverrides;
 
         /// <summary>
         /// Creates a <see cref="FaultInjectionServerErrorResult"/>.
@@ -97,31 +95,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         }
 
         /// <summary>
-        /// Sets the response headers to merge onto the synthetic 200 response when the
-        /// fault type is <see cref="FaultInjectionServerErrorType.ResponseHeaderOverride"/>.
-        /// Throws when the fault type is anything else.
-        /// </summary>
-        /// <param name="headerOverrides">Response header name/value pairs to merge onto the synthetic response.</param>
-        /// <returns>The current <see cref="FaultInjectionServerErrorResultBuilder"/>.</returns>
-        public FaultInjectionServerErrorResultBuilder WithHeaderOverrides(IReadOnlyDictionary<string, string>? headerOverrides)
-        {
-            if (this.serverErrorType != FaultInjectionServerErrorType.ResponseHeaderOverride)
-            {
-                throw new InvalidOperationException(
-                    $"Header overrides are not applicable for server error type '{this.serverErrorType}'. " +
-                    $"Header overrides can only be set for ResponseHeaderOverride.");
-            }
-
-            if (headerOverrides == null || headerOverrides.Count == 0)
-            {
-                throw new ArgumentException("Argument 'headerOverrides' must contain at least one entry.", nameof(headerOverrides));
-            }
-
-            this.headerOverrides = headerOverrides;
-            return this;
-        }
-
-        /// <summary>
         /// Creates a new <see cref="FaultInjectionServerErrorResult"/>.
         /// </summary>
         /// <returns>the <see cref="FaultInjectionServerErrorResult"/>.</returns>
@@ -135,19 +108,12 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 throw new ArgumentNullException(nameof(this.delay), "Argument 'delay' required for server error type: " + this.serverErrorType);
             }
 
-            if (this.serverErrorType == FaultInjectionServerErrorType.ResponseHeaderOverride
-                && (this.headerOverrides == null || this.headerOverrides.Count == 0))
-            {
-                throw new ArgumentNullException(nameof(this.headerOverrides), "WithHeaderOverrides(...) is required for server error type: " + this.serverErrorType);
-            }
-
             return new FaultInjectionServerErrorResult(
                 this.serverErrorType,
                 this.times,
                 this.delay,
                 this.suppressServiceRequest,
-                this.injectionRate,
-                this.headerOverrides);
+                this.injectionRate);
         }
     }
 }

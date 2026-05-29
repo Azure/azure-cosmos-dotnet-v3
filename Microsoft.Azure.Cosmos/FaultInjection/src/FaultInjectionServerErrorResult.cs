@@ -4,7 +4,6 @@
 namespace Microsoft.Azure.Cosmos.FaultInjection
 {
     using System;
-    using System.Collections.Generic;
 
     /// <summary>
     /// Fault Injection Server Error Result.
@@ -16,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly TimeSpan delay;
         private readonly bool suppressServiceRequests;
         private readonly double injectionRate;
-        private readonly IReadOnlyDictionary<string, string>? headerOverrides;
 
         /// <summary>
         /// Creates a new FaultInjectionServerErrorResult.
@@ -26,21 +24,18 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <param name="delay">Specifies the injected delay for the server error.</param>
         /// <param name="suppressServiceRequests">Specifies whether to suppress the actual service request.</param>
         /// <param name="injectionRate">Specifies the percentage of how many times the rule will be applied.</param>
-        /// <param name="headerOverrides">Optional response headers to merge onto a synthetic 200 response when <paramref name="serverErrorType"/> is <see cref="FaultInjectionServerErrorType.ResponseHeaderOverride"/>.</param>
         public FaultInjectionServerErrorResult(
             FaultInjectionServerErrorType serverErrorType,
             int times,
             TimeSpan delay,
             bool suppressServiceRequests,
-            double injectionRate = 1,
-            IReadOnlyDictionary<string, string>? headerOverrides = null)
+            double injectionRate = 1)
         {
             this.serverErrorType = serverErrorType;
             this.times = times;
             this.delay = delay;
             this.suppressServiceRequests = suppressServiceRequests;
             this.injectionRate = injectionRate;
-            this.headerOverrides = headerOverrides;
         }
 
         /// <summary>
@@ -89,16 +84,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         public double GetInjectionRate()
         {
             return this.injectionRate;
-        }
-
-        /// <summary>
-        /// Gets the response header overrides applied to synthetic 200 responses when the
-        /// fault type is <see cref="FaultInjectionServerErrorType.ResponseHeaderOverride"/>.
-        /// </summary>
-        /// <returns>The header overrides, or <c>null</c> when none were configured.</returns>
-        public IReadOnlyDictionary<string, string>? GetHeaderOverrides()
-        {
-            return this.headerOverrides;
         }
 
         /// <summary>
