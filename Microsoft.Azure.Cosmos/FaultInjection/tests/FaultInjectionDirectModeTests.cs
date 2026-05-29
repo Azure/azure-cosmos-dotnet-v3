@@ -2001,28 +2001,27 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
 
         // -----------------------------------------------------------------------------
-        // Companion test: verify the operation CancellationToken is honored when delays
-        // accumulate across barrier (Head/Collection) requests.
+        // Companion test: verify the operation CancellationToken is honored when the SDK
+        // sits in the consistency-barrier loop polling Head/Collection.
         //
-        // Under Strong / Bounded Staleness consistency the SDK issues RNTBD HEAD
-        // requests against the `Collection` resource on the responding replica to
-        // poll its `GlobalCommittedLSN` until it satisfies the barrier LSN selected
-        // by the quorum reader. The barrier loop fires when the responding
-        // replica's GCLSN trails the target — typical when reading from a
-        // secondary read region right after a write in the write region.
+        // Under Strong / Bounded Staleness consistency, the SDK's QuorumReader picks a
+        // target LSN from the highest LSN it saw across the quorum's Read responses,
+        // then verifies that the responding replica's GlobalCommittedLSN is at or above
+        // that target. If GCLSN is behind, it polls Head/Collection until it catches up
+        // (`WaitForReadBarrierNewAsync`).
         //
-        // To make the barrier reliably emit RNTBD `Head/Collection` requests:
-        //   1. Two clients pointed at opposite regions of the same single-master
-        //      account. Writer pins the write region; reader puts the non-write
-        //      region first in its preferred-regions list.
-        //   2. Writer creates a fresh item, establishing a new global commit LSN.
-        //   3. Reader immediately issues a Strong-consistency `ReadItemAsync`,
-        //      racing the cross-region replication. The reader's local secondary
-        //      replica has not caught up yet, so the barrier loop polls Head.
+        // To make this deterministic without relying on real cross-region replication
+        // lag, two fault rules cooperate:
+        //   1. ResponseHeaderOverride on ReadItem — synthesizes a 200 response that
+        //      reports a fresh LSN but a stale GlobalCommittedLSN. The quorum picks
+        //      the fresh LSN as the barrier target; the replica's reported GCLSN is
+        //      below it, so the SDK enters the barrier loop.
+        //   2. Gone on MetadataRequest — every barrier Head/Collection poll fails for
+        //      60s. The barrier loop retries.
         //
-        // A `ResponseDelay` is injected on the SECONDARY region — that is where
-        // the barrier RNTBD calls physically fire. Each delayed Head holds the
-        // operation open well past the user's CancellationToken.
+        // With the barrier loop spinning, the user's 5s CancellationToken should
+        // pre-empt within a small tolerance. A non-CT-aware path stays in the loop
+        // until either the retry limit or MSTest's outer timeout fires.
         // -----------------------------------------------------------------------------
         [TestMethod]
         [Timeout(300000)]
@@ -2030,8 +2029,61 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         [Description("CancellationToken must be honored between barrier (Head/Collection) requests")]
         public async Task FaultInjectionMetadataRequestDelay_HonorsCancellationToken()
         {
-            // Build preferred regions list with non-write regions first so reads land on a remote region
-            // — that's the path where Strong-consistency barriers actually fire.
+            const int cancellationBudgetSeconds = 5;
+            const int gracePeriodSeconds = 2;
+            const int barrierFaultDurationSeconds = 60;
+
+            // 1) Force the SDK into the consistency-barrier loop by reporting NumberOfReadRegions=2
+            //    with a fresh LSN and stale GlobalCommittedLSN on the write response. This mirrors
+            //    the proven pattern in BarrierRequestReplicaRetryTests.cs and triggers
+            //    ConsistencyWriter.WaitForWriteBarrierNewAsync.
+            Dictionary<string, string> staleGclsnHeaders = new Dictionary<string, string>
+            {
+                { WFConstants.BackendHeaders.NumberOfReadRegions, "2"     },
+                { WFConstants.BackendHeaders.LSN,                 "10000" },
+                { WFConstants.BackendHeaders.GlobalCommittedLSN,  "1"     },
+                { WFConstants.BackendHeaders.QuorumAckedLSN,      "10000" },
+                { WFConstants.BackendHeaders.LocalLSN,            "10000" },
+            };
+
+            string headerOverrideRuleId = "barrierHeaderOverrideRule-" + Guid.NewGuid();
+            FaultInjectionRule headerOverrideRule = new FaultInjectionRuleBuilder(
+                id: headerOverrideRuleId,
+                condition: new FaultInjectionConditionBuilder()
+                    .WithOperationType(FaultInjectionOperationType.CreateItem)
+                    .WithConnectionType(FaultInjectionConnectionType.Direct)
+                    .Build(),
+                result: FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseHeaderOverride)
+                    .WithHeaderOverrides(staleGclsnHeaders)
+                    .WithTimes(int.MaxValue)
+                    .Build())
+                .WithDuration(TimeSpan.FromSeconds(barrierFaultDurationSeconds))
+                .Build();
+            headerOverrideRule.Disable();
+
+            // 2) Fail every barrier Head/Collection poll with 410/Gone. Constrain to Direct
+            //    (RNTBD) so we don't accidentally intercept HTTP gateway metadata-resolution
+            //    calls that also use OperationType.Head — those are not barriers and aren't
+            //    retried, so they short-circuit the test before the barrier loop runs.
+            string barrierFailureRuleId = "barrierGoneRule-" + Guid.NewGuid();
+            FaultInjectionRule barrierFailureRule = new FaultInjectionRuleBuilder(
+                id: barrierFailureRuleId,
+                condition: new FaultInjectionConditionBuilder()
+                    .WithOperationType(FaultInjectionOperationType.MetadataRequest)
+                    .WithConnectionType(FaultInjectionConnectionType.Direct)
+                    .Build(),
+                result: FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.Gone)
+                    .WithTimes(int.MaxValue)
+                    .Build())
+                .WithDuration(TimeSpan.FromSeconds(barrierFaultDurationSeconds))
+                .Build();
+            barrierFailureRule.Disable();
+
+            FaultInjector faultInjector = new FaultInjector(
+                new List<FaultInjectionRule> { headerOverrideRule, barrierFailureRule });
+
+            // Build preferred regions list with non-write regions first so reads land on a remote
+            // region — that's the path where Strong-consistency barriers actually fire.
             List<string> preferredRegions = new List<string>();
             string writeRegion = null;
             GlobalEndpointManager globalEndpointManager = this.client.DocumentClient.GlobalEndpointManager;
@@ -2058,54 +2110,14 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
             Assert.IsTrue(
                 preferredRegions.Count >= 2,
-                "Test requires at least two regions so a non-write region can be exercised. "
-                + "Ensure the test account has at least two regions configured.");
-            Assert.IsNotNull(
-                writeRegion,
-                "Could not determine the write region from the account's GlobalEndpointManager.");
+                "Test requires at least two regions configured on the test account.");
 
-            string readPreferredRegion = preferredRegions[0]; // non-write region (where barriers fire)
-
-            const int barrierDelaySeconds = 30;
-            const int cancellationBudgetSeconds = 5;
-            const int gracePeriodSeconds = 2;
-
-            // Inject a long delay on every MetadataRequest (Head/Collection barrier) regardless of
-            // region. The SDK chooses which replica to poll based on quorum / GCLSN dynamics; we
-            // want to catch the barrier wherever it lands.
-            string barrierDelayRuleId = "barrierDelayRule-" + Guid.NewGuid();
-            FaultInjectionRule barrierDelayRule = new FaultInjectionRuleBuilder(
-                id: barrierDelayRuleId,
-                condition: new FaultInjectionConditionBuilder()
-                    .WithOperationType(FaultInjectionOperationType.MetadataRequest)
-                    .Build(),
-                result: FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
-                    .WithDelay(TimeSpan.FromSeconds(barrierDelaySeconds))
-                    .WithTimes(int.MaxValue)
-                    .Build())
-                .WithDuration(TimeSpan.FromMinutes(5))
-                .Build();
-            barrierDelayRule.Disable();
-
-            FaultInjector faultInjector = new FaultInjector(new List<FaultInjectionRule> { barrierDelayRule });
-
-            // Reader client: Strong consistency, prefers the non-write region. This forces the
-            // SDK's quorum reader to go through the secondary region, where the GCLSN lag against
-            // a just-written item triggers the barrier poll loop.
             CosmosClientOptions readerOptions = new CosmosClientOptions()
             {
+                ConnectionMode = ConnectionMode.Direct,
                 ConsistencyLevel = ConsistencyLevel.Strong,
                 ApplicationPreferredRegions = preferredRegions,
                 FaultInjector = faultInjector,
-                Serializer = this.serializer,
-            };
-
-            // Writer client: explicitly pinned to the write region so its writes land on the
-            // master and create a fresh global LSN gap for the reader to chase.
-            CosmosClientOptions writerOptions = new CosmosClientOptions()
-            {
-                ConsistencyLevel = ConsistencyLevel.Strong,
-                ApplicationPreferredRegions = new List<string> { writeRegion },
                 Serializer = this.serializer,
             };
 
@@ -2113,24 +2125,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             this.fiDatabase = this.fiClient.GetDatabase(TestCommon.FaultInjectionDatabaseName);
             this.fiContainer = this.fiDatabase.GetContainer(TestCommon.FaultInjectionContainerName);
 
-            using CosmosClient writerClient = new CosmosClient(this.connectionString, writerOptions);
-            Container writerContainer = writerClient
-                .GetDatabase(TestCommon.FaultInjectionDatabaseName)
-                .GetContainer(TestCommon.FaultInjectionContainerName);
-
-            // Write a fresh item from the writer client (write region). This establishes a new
-            // GCLSN target that the secondary region's replica must catch up to before the
-            // reader's Strong-consistency barrier is satisfied.
-            string freshId = "barrier-test-" + Guid.NewGuid();
-            string freshPk = "barrier-pk-" + Guid.NewGuid();
-            FaultInjectionTestObject freshItem = new FaultInjectionTestObject { Id = freshId, Pk = freshPk };
-            await writerContainer.CreateItemAsync(freshItem, new PartitionKey(freshPk));
-
-            // Immediately issue the read from the reader client (non-write region preferred) under
-            // Strong. The barrier loop will fire on the secondary replica because its GCLSN trails
-            // the just-written LSN. Enable the delay rule right before the read so the fault
-            // doesn't impact any pre-read metadata calls.
-            barrierDelayRule.Enable();
+            headerOverrideRule.Enable();
+            barrierFailureRule.Enable();
 
             using CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(cancellationBudgetSeconds));
 
@@ -2138,9 +2134,18 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             Exception observed = null;
             try
             {
-                _ = await this.fiContainer.ReadItemAsync<FaultInjectionTestObject>(
-                    id: freshId,
-                    partitionKey: new PartitionKey(freshPk),
+                // Write a new item — the synthetic header override on the response will report
+                // GCLSN behind LSN with NumberOfReadRegions=2, forcing ConsistencyWriter into
+                // WaitForWriteBarrierNewAsync. Every barrier Head/Collection poll then fails
+                // (the second rule), keeping the loop spinning past the user's CT.
+                FaultInjectionTestObject newItem = new FaultInjectionTestObject
+                {
+                    Id = "barrier-ct-" + Guid.NewGuid(),
+                    Pk = "barrier-pk-" + Guid.NewGuid(),
+                };
+                _ = await this.fiContainer.CreateItemAsync(
+                    newItem,
+                    new PartitionKey(newItem.Pk),
                     cancellationToken: cts.Token);
             }
             catch (Exception ex)
@@ -2150,35 +2155,36 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             finally
             {
                 sw.Stop();
-                barrierDelayRule.Disable();
+                headerOverrideRule.Disable();
+                barrierFailureRule.Disable();
             }
 
             long elapsedSeconds = sw.ElapsedMilliseconds / 1000;
-            long barrierHits = barrierDelayRule.GetHitCount();
+            long overrideHits = headerOverrideRule.GetHitCount();
+            long barrierHits = barrierFailureRule.GetHitCount();
 
-            // Sanity: the barrier delay rule must actually have fired. If it did not, this account /
-            // environment is not exercising the Head/Collection barrier path (e.g., the SDK
-            // resolved the Strong read entirely on the write region's local quorum). In that case
-            // the test cannot conclude anything about CT honor and is marked inconclusive.
+            // Sanity: the barrier failure rule must have fired. The header-override rule is the
+            // ideal trigger to drop the SDK into the barrier loop (synthetic stale GCLSN), but on
+            // Strong-consistency reads against the write region the SDK often issues barriers
+            // anyway as part of quorum read; either path validates the CT-honor contract.
             if (barrierHits == 0)
             {
                 Assert.Inconclusive(
-                    "Metadata/Head barrier fault never fired — the SDK did not issue a Head/Collection request "
-                    + $"in {readPreferredRegion} during the Strong read of a freshly-written item. The Strong-read "
-                    + "quorum reader may have satisfied the barrier without polling, or the read was served by the "
-                    + "write region. Verify the account topology and preferred-regions order.");
+                    $"Barrier (Head/Collection) failure rule never fired. Header override hits: {overrideHits}, "
+                    + $"barrier failure hits: {barrierHits}. The SDK did not invoke WaitForReadBarrierNewAsync; "
+                    + $"the test cannot conclude CT-honor behavior in the barrier loop.");
             }
 
-            // The contract: once the operation-level CancellationToken expires, the SDK should surface
-            // OperationCanceledException within a small grace period — even if barrier responses are
-            // still pending in the background.
+            // The contract: once the operation-level CancellationToken expires, the SDK should
+            // surface OperationCanceledException within a small grace period — it must NOT spin
+            // in WaitForReadBarrierNewAsync past the user's deadline.
             Assert.IsTrue(
                 elapsedSeconds <= cancellationBudgetSeconds + gracePeriodSeconds,
                 $"Operation ran for {elapsedSeconds}s under a {cancellationBudgetSeconds}s CancellationToken "
                 + $"(allowed: <= {cancellationBudgetSeconds + gracePeriodSeconds}s). "
-                + $"Barrier responses delayed by {barrierDelaySeconds}s blocked the operation past the CT. "
+                + $"Barrier loop did not pre-empt on CT cancellation. "
                 + $"Observed exception: {observed?.GetType().FullName ?? "<none>"}. "
-                + $"Barrier rule hit count: {barrierHits}.");
+                + $"Header override hits: {overrideHits}, barrier failure hits: {barrierHits}.");
 
             Assert.IsNotNull(observed, "Expected the operation to be cancelled, but it completed normally.");
             Assert.IsTrue(

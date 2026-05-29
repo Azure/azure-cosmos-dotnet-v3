@@ -195,7 +195,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     result.GetSuppressServiceRequests(),
                     result.GetInjectionRate(),
                     this.applicationContext, 
-                    this.globalEndpointManager));
+                    this.globalEndpointManager,
+                    result.GetHeaderOverrides()));
         }
 
         private async Task<IFaultInjectionRuleInternal> GetEffectiveCustomServerErrorRule(FaultInjectionRule rule)
