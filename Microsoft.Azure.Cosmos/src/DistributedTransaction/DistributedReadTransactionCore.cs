@@ -8,12 +8,20 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     internal class DistributedReadTransactionCore : DistributedReadTransaction
     {
+        internal const string CommitAlreadyCalledMessage =
+            "CommitTransactionAsync has already been called on this transaction instance. " +
+            "A DistributedReadTransaction is single-use; to retry, construct a new " +
+            "DistributedReadTransaction with the same items.";
+
         private readonly CosmosClientContext clientContext;
         private readonly List<DistributedTransactionOperation> operations;
+        private int isCommitInvoked;
 
         internal DistributedReadTransactionCore(CosmosClientContext clientContext)
         {
@@ -44,14 +52,33 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
-        public override async Task<DistributedTransactionResponse> CommitTransactionAsync(
+        /// <inheritdoc/>
+        /// <exception cref="OperationCanceledException">Thrown if <paramref name="cancellationToken"/> is cancelled before or during the commit.</exception>
+        public override Task<DistributedTransactionResponse> CommitTransactionAsync(
             CancellationToken cancellationToken = default)
         {
-            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                operations: this.operations,
-                clientContext: this.clientContext);
+            if (Interlocked.CompareExchange(ref this.isCommitInvoked, DistributedTransactionConstants.CommitStarted, DistributedTransactionConstants.CommitNotStarted) != DistributedTransactionConstants.CommitNotStarted)
+            {
+                throw new InvalidOperationException(CommitAlreadyCalledMessage);
+            }
 
-            return await committer.CommitTransactionAsync(cancellationToken);
+            return this.clientContext.OperationHelperAsync(
+                operationName: $"{nameof(DistributedReadTransaction)}.{nameof(CommitTransactionAsync)}",
+                containerName: null,
+                databaseName: null,
+                operationType: OperationType.CommitDistributedTransaction,
+                requestOptions: null,
+                task: (trace) =>
+                {
+                    DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                        operations: this.operations,
+                        clientContext: this.clientContext);
+
+                    return committer.CommitTransactionAsync(trace, cancellationToken);
+                },
+                openTelemetry: new (OpenTelemetryConstants.Operations.CommitDistributedReadTransaction,
+                                    (response) => new OpenTelemetryResponse(response)),
+                traceComponent: TraceComponent.Batch);
         }
 
         private static void ValidateContainerReference(string database, string collection)

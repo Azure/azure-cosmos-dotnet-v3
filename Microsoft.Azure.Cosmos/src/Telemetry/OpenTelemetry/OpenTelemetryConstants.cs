@@ -12,6 +12,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry
             public const string ExecuteBatch = "execute_batch";
             public const string ExecuteBulkPrefix = "bulk_";
 
+            // Distributed Transaction Operations
+            public const string CommitDistributedReadTransaction = "commit_distributed_read_transaction";
+            public const string CommitDistributedWriteTransaction = "commit_distributed_write_transaction";
+
             // Change feed operations
             public const string QueryChangeFeed = "query_change_feed";
             public const string QueryChangeFeedEstimator = "get_change_feed_processor_estimate";

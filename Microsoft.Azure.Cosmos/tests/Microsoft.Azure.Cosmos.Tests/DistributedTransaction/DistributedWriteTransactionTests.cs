@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -387,6 +388,274 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsFalse(response.IsSuccessStatusCode);
         }
 
+        // Double-commit guard
+
+        [TestMethod]
+        public async Task CommitAsync_CalledTwice_ThrowsInvalidOperationException()
+        {
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
+            contextMock
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<PartitionKey?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(BuildSuccessResponse(1));
+
+            DistributedWriteTransaction tx = new DistributedWriteTransactionCore(contextMock.Object)
+                .CreateItem(Database, Container, new PartitionKey("pk"), "item-id", new TestItem());
+
+            // First commit should succeed
+            DistributedTransactionResponse response = await tx.CommitTransactionAsync(CancellationToken.None);
+            Assert.IsTrue(response.IsSuccessStatusCode);
+
+            // Second commit must throw
+            InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => tx.CommitTransactionAsync(CancellationToken.None));
+            Assert.AreEqual(DistributedWriteTransactionCore.CommitAlreadyCalledMessage, ex.Message);
+        }
+
+        [TestMethod]
+        public async Task CommitAsync_CalledAfterFailedCommit_ThrowsInvalidOperationException()
+        {
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
+            contextMock
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<PartitionKey?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(BuildErrorResponse(HttpStatusCode.Conflict));
+
+            DistributedWriteTransaction tx = new DistributedWriteTransactionCore(contextMock.Object)
+                .CreateItem(Database, Container, new PartitionKey("pk"), "item-id", new TestItem());
+
+            // First commit returns an error (but the call was made — idempotency token was consumed)
+            DistributedTransactionResponse response = await tx.CommitTransactionAsync(CancellationToken.None);
+            Assert.IsFalse(response.IsSuccessStatusCode);
+
+            // Second commit must still throw — the token was already issued
+            InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => tx.CommitTransactionAsync(CancellationToken.None));
+            Assert.AreEqual(DistributedWriteTransactionCore.CommitAlreadyCalledMessage, ex.Message);
+        }
+
+        [TestMethod]
+        [Description("Verifies that a transient network exception during commit still consumes the transaction instance. " +
+                     "Callers cannot distinguish 'request never sent' from 'request reached server, response lost', " +
+                     "so retrying with a fresh token would risk a double-commit.")]
+        public async Task CommitAsync_TransientExceptionFromNetwork_StillConsumesTransaction()
+        {
+            int invocationCount = 0;
+
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
+            contextMock
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<PartitionKey?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns<string, ResourceType, OperationType, RequestOptions, ContainerInternal, PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
+                    (uri, resType, opType, opts, container, pk, itemId, stream, enricher, trace, ct) =>
+                    {
+                        Interlocked.Increment(ref invocationCount);
+                        throw new HttpRequestException("Simulated transient network failure");
+                    });
+
+            DistributedWriteTransaction tx = new DistributedWriteTransactionCore(contextMock.Object)
+                .CreateItem(Database, Container, new PartitionKey("pk"), "item-id", new TestItem());
+
+            // First commit attempt: a transient network exception escapes to the caller.
+            await Assert.ThrowsExceptionAsync<HttpRequestException>(
+                () => tx.CommitTransactionAsync(CancellationToken.None));
+
+            // Second commit attempt: must throw InvalidOperationException, NOT re-attempt the network call.
+            // The SDK has no way to know whether the first attempt's request reached the server,
+            // so a retry with a new idempotency token would risk a double-commit.
+            InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => tx.CommitTransactionAsync(CancellationToken.None));
+            Assert.AreEqual(DistributedWriteTransactionCore.CommitAlreadyCalledMessage, ex.Message);
+            Assert.AreEqual(1, invocationCount, "Second call must not re-attempt the network operation.");
+        }
+
+        [TestMethod]
+        [Description("Verifies that user-initiated cancellation during commit still consumes the transaction instance.")]
+        public async Task CommitAsync_CancelledDuringCommit_StillConsumesTransaction()
+        {
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            int invocationCount = 0;
+
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
+            contextMock
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<PartitionKey?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns<string, ResourceType, OperationType, RequestOptions, ContainerInternal, PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
+                    (uri, resType, opType, opts, container, pk, itemId, stream, enricher, trace, ct) =>
+                    {
+                        Interlocked.Increment(ref invocationCount);
+                        cts.Cancel();
+                        ct.ThrowIfCancellationRequested();
+                        return Task.FromResult(BuildSuccessResponse(1));
+                    });
+
+            DistributedWriteTransaction tx = new DistributedWriteTransactionCore(contextMock.Object)
+                .CreateItem(Database, Container, new PartitionKey("pk"), "item-id", new TestItem());
+
+            await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+                () => tx.CommitTransactionAsync(cts.Token));
+
+            // Retry with a fresh CancellationToken should still be rejected.
+            InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => tx.CommitTransactionAsync(CancellationToken.None));
+            Assert.AreEqual(DistributedWriteTransactionCore.CommitAlreadyCalledMessage, ex.Message);
+            Assert.AreEqual(1, invocationCount, "Second call must not re-attempt the network operation.");
+        }
+
+        [TestMethod]
+        [Description("Verifies that only one of N concurrent callers wins the Interlocked.CompareExchange gate. " +
+                     "Uses Task.Run + ManualResetEventSlim so that all racers hit CommitTransactionAsync from " +
+                     "separate thread-pool threads simultaneously, providing genuine concurrency coverage.")]
+        public async Task CommitAsync_ConcurrentCalls_OnlyOneSucceeds()
+        {
+            int invocationCount = 0;
+
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
+            contextMock
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<PartitionKey?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns<string, ResourceType, OperationType, RequestOptions, ContainerInternal, PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
+                    async (uri, resType, opType, opts, container, pk, itemId, stream, enricher, trace, ct) =>
+                    {
+                        Interlocked.Increment(ref invocationCount);
+                        await Task.Delay(50, ct);
+                        return BuildSuccessResponse(1);
+                    });
+
+            DistributedWriteTransaction tx = new DistributedWriteTransactionCore(contextMock.Object)
+                .CreateItem(Database, Container, new PartitionKey("pk"), "item-id", new TestItem());
+
+            const int RacerCount = 16;
+            using ManualResetEventSlim gate = new ManualResetEventSlim(initialState: false);
+
+            // Spawn all racers on separate thread-pool threads, each blocked on the gate.
+            Task<DistributedTransactionResponse>[] tasks = new Task<DistributedTransactionResponse>[RacerCount];
+            for (int i = 0; i < RacerCount; i++)
+            {
+                tasks[i] = Task.Run(async () =>
+                {
+                    gate.Wait();
+                    return await tx.CommitTransactionAsync(CancellationToken.None);
+                });
+            }
+
+            gate.Set(); // release all racers simultaneously
+
+            int successCount = 0;
+            int rejectedCount = 0;
+            foreach (Task<DistributedTransactionResponse> t in tasks)
+            {
+                try
+                {
+                    await t;
+                    successCount++;
+                }
+                catch (InvalidOperationException)
+                {
+                    rejectedCount++;
+                }
+            }
+
+            Assert.AreEqual(1, successCount, "Exactly one racer should win the CompareExchange.");
+            Assert.AreEqual(RacerCount - 1, rejectedCount, "All other racers should be rejected by the guard.");
+            // This assertion is the key atomicity proof: without Interlocked, two threads could
+            // both read isCommitInvoked==CommitNotStarted before either writes CommitStarted,
+            // and invocationCount would be >1.
+            Assert.AreEqual(1, invocationCount, "The underlying commit pipeline must only fire once.");
+        }
+
+        [TestMethod]
+        [Description("CommitTransactionAsync must route through OperationHelperAsync with the correct operation name, OperationType, TraceComponent, and OTel operation name for the write path — ensuring the write path is distinct from the read path.")]
+        public async Task CommitTransactionAsync_RoutesThroughOperationHelper_WithExpectedWiring()
+        {
+            string capturedOperationName = null;
+            OperationType capturedOperationType = default;
+            TraceComponent capturedTraceComponent = default;
+            string capturedOTelOperationName = null;
+
+            Mock<CosmosClientContext> contextMock = new Mock<CosmosClientContext>();
+            contextMock
+                .Setup(c => c.OperationHelperAsync<DistributedTransactionResponse>(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<Func<ITrace, Task<DistributedTransactionResponse>>>(),
+                    It.IsAny<(string OperationName, Func<DistributedTransactionResponse, Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryAttributes> GetAttributes)?>(),
+                    It.IsAny<ResourceType?>(),
+                    It.IsAny<TraceComponent>(),
+                    It.IsAny<TraceLevel>()))
+                .Returns<string, string, string, OperationType, RequestOptions, Func<ITrace, Task<DistributedTransactionResponse>>, (string, Func<DistributedTransactionResponse, Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryAttributes>)?, ResourceType?, TraceComponent, TraceLevel>(
+                    (operationName, containerName, databaseName, operationType, requestOptions, func, oTelTuple, resourceType, comp, level) =>
+                    {
+                        capturedOperationName = operationName;
+                        capturedOperationType = operationType;
+                        capturedTraceComponent = comp;
+                        capturedOTelOperationName = oTelTuple?.Item1;
+                        return Task.FromResult<DistributedTransactionResponse>(null);
+                    });
+
+            await new DistributedWriteTransactionCore(contextMock.Object)
+                .CreateItem(Database, Container, new PartitionKey("pk"), "id", new TestItem())
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.AreEqual($"{nameof(DistributedWriteTransaction)}.{nameof(DistributedWriteTransaction.CommitTransactionAsync)}", capturedOperationName);
+            Assert.AreEqual(OperationType.CommitDistributedTransaction, capturedOperationType);
+            Assert.AreEqual(TraceComponent.Batch, capturedTraceComponent);
+            Assert.AreEqual(OpenTelemetryConstants.Operations.CommitDistributedWriteTransaction, capturedOTelOperationName);
+        }
+
         // Helpers
 
         /// <summary>
@@ -428,6 +697,21 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<ITrace>(),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(containerProps);
+
+            contextMock
+                .Setup(c => c.OperationHelperAsync<DistributedTransactionResponse>(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<Func<ITrace, Task<DistributedTransactionResponse>>>(),
+                    It.IsAny<(string OperationName, Func<DistributedTransactionResponse, Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryAttributes> GetAttributes)?>(),
+                    It.IsAny<ResourceType?>(),
+                    It.IsAny<TraceComponent>(),
+                    It.IsAny<TraceLevel>()))
+                .Returns<string, string, string, OperationType, RequestOptions, Func<ITrace, Task<DistributedTransactionResponse>>, (string, Func<DistributedTransactionResponse, Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryAttributes>)?, ResourceType?, TraceComponent, TraceLevel>(
+                    (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, resourceType, comp, level) => func(NoOpTrace.Singleton));
 
             return contextMock;
         }
