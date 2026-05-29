@@ -46,7 +46,15 @@ namespace Microsoft.Azure.Cosmos.Tracing
         private readonly object regionLock = new object();
         private List<RequestedRegion> requestedRegions;
         private List<string> respondedRegions;
-        private bool hedgingStarted;
+
+        // Volatile + monotonic-true. Read lock-free by the public HedgingStarted getter;
+        // written only under regionLock so the write is ordered with the requestedRegions
+        // mutation that triggers it. See F7 review feedback on PR #5868: the previous
+        // implementation took the lock on every read of a write-once flag, adding an
+        // avoidable Monitor.Enter on the public CosmosDiagnostics.HedgingStarted() hot
+        // path. volatile gives readers an acquire-fence (so the flip cannot be reordered
+        // before the list Add that established it) without contending on regionLock.
+        private volatile bool hedgingStarted;
 
         /// <summary>
         /// Appends a dispatched-region entry. No-op if <paramref name="regionName"/> is
@@ -102,18 +110,10 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         /// <summary>
         /// Returns <c>true</c> if at least one <see cref="RequestedRegionReason.Hedging"/>
-        /// entry has been appended for this operation.
+        /// entry has been appended for this operation. Read lock-free; safe to call on
+        /// the diagnostics hot path. See F7 review feedback on PR #5868.
         /// </summary>
-        internal bool HedgingStarted
-        {
-            get
-            {
-                lock (this.regionLock)
-                {
-                    return this.hedgingStarted;
-                }
-            }
-        }
+        internal bool HedgingStarted => this.hedgingStarted;
 
         /// <summary>
         /// Returns a snapshot of the dispatched-region list. Snapshot is taken under the

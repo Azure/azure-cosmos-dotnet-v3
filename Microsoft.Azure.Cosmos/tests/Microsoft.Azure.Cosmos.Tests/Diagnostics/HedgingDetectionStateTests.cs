@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Diagnostics
 {
     using System.Collections.Generic;
+    using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -136,6 +137,111 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             Assert.AreEqual(writerCount * perWriter, state.GetRequestedRegionsSnapshot().Count);
             Assert.AreEqual(writerCount * perWriter, state.GetRespondedRegionsSnapshot().Count);
             Assert.IsTrue(state.HedgingStarted);
+        }
+
+        /// <summary>
+        /// Pins the F7 fix on PR #5868: the <c>hedgingStarted</c> backing field MUST be
+        /// declared <c>volatile</c> so the public <c>HedgingStarted</c> getter can read it
+        /// without acquiring <c>regionLock</c>. Without <c>volatile</c>, the lock-free read
+        /// would not see the writer-side flip in a memory-model-correct way and the
+        /// reviewer-flagged optimization would silently re-introduce a race.
+        /// </summary>
+        [TestMethod]
+        public void HedgingStartedBackingField_IsDeclaredVolatile()
+        {
+            FieldInfo field = typeof(HedgingDetectionState).GetField(
+                name: "hedgingStarted",
+                bindingAttr: BindingFlags.NonPublic | BindingFlags.Instance);
+
+            Assert.IsNotNull(field, "Backing field 'hedgingStarted' must exist on HedgingDetectionState.");
+
+            // The C# 'volatile' modifier surfaces as the IsVolatile required custom modifier
+            // on the field's type signature. Asserting on this catches an accidental drop of
+            // the modifier (e.g. during a refactor) without depending on source-level scrape.
+            System.Type[] requiredMods = field.GetRequiredCustomModifiers();
+            bool hasVolatileModifier = false;
+            foreach (System.Type mod in requiredMods)
+            {
+                if (mod == typeof(System.Runtime.CompilerServices.IsVolatile))
+                {
+                    hasVolatileModifier = true;
+                    break;
+                }
+            }
+
+            Assert.IsTrue(
+                hasVolatileModifier,
+                "F7 invariant: 'hedgingStarted' must be 'volatile bool' so the lock-free HedgingStarted getter is memory-model correct.");
+        }
+
+        /// <summary>
+        /// Functional companion to <see cref="HedgingStartedBackingField_IsDeclaredVolatile"/>:
+        /// readers spinning on <c>HedgingStarted</c> must observe <c>true</c> after a single
+        /// writer flips it, without ever acquiring <c>regionLock</c>. This catches a regression
+        /// where someone re-introduces locking on the read path or drops <c>volatile</c> from
+        /// the backing field — the readers would either deadlock against the writer or never
+        /// observe the flip.
+        /// </summary>
+        [TestMethod]
+        public async Task HedgingStarted_LockFreeRead_ObservesWriterFlip()
+        {
+            HedgingDetectionState state = new HedgingDetectionState();
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            CancellationToken ct = cts.Token;
+
+            // Three readers spin on HedgingStarted concurrently with a single writer that
+            // performs many AppendRequested calls (each one takes regionLock). If the read
+            // path is genuinely lock-free, the readers will record the flip moment and exit
+            // promptly; if it took the lock, they would queue behind the writer and the test
+            // would take noticeably longer (or, on stricter builds, expose the contention via
+            // a deadline overrun).
+            const int readerCount = 3;
+            Task<bool>[] readers = new Task<bool>[readerCount];
+            for (int r = 0; r < readerCount; r++)
+            {
+                readers[r] = Task.Run(() =>
+                {
+                    while (!ct.IsCancellationRequested)
+                    {
+                        if (state.HedgingStarted)
+                        {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                });
+            }
+
+            // Writer appends a series of non-Hedging entries first (so readers observe the
+            // false state across many iterations), then a single Hedging entry to flip the
+            // flag.
+            Task writer = Task.Run(() =>
+            {
+                for (int i = 0; i < 200; i++)
+                {
+                    state.AppendRequested("R" + (i % 4), RequestedRegionReason.Initial);
+                }
+
+                state.AppendRequested("West US", RequestedRegionReason.Hedging);
+            });
+
+            await writer;
+
+            // Bound the readers; if any reader has not seen true within 5 seconds the
+            // lock-free invariant is broken or volatile was dropped.
+            Task allReadersDone = Task.WhenAll(readers);
+            Task completed = await Task.WhenAny(allReadersDone, Task.Delay(5000, ct));
+            cts.Cancel();
+            await allReadersDone;
+
+            Assert.AreSame(allReadersDone, completed, "Readers must observe the Hedging flip within the 5-second deadline (F7 lock-free read).");
+            foreach (Task<bool> reader in readers)
+            {
+                Assert.IsTrue(reader.Result, "Every reader must observe HedgingStarted == true after the writer flipped it.");
+            }
+
+            Assert.IsTrue(state.HedgingStarted, "Post-condition: HedgingStarted remains true (monotonic).");
         }
     }
 }
