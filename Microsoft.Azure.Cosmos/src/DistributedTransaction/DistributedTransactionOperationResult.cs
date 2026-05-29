@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Net;
     using System.Text.Json;
-    using System.Text.Json.Serialization;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -46,58 +45,30 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Initializes a new instance of the <see cref="DistributedTransactionOperationResult"/> class.
         /// </summary>
-        /// <remarks>
-        /// Must be <c>public</c> for System.Text.Json reflection-based deserialization.
-        /// System.Text.Json 6.x only scans <c>BindingFlags.Public</c> constructors when resolving
-        /// <see cref="JsonConstructorAttribute"/>; non-public constructors are not found.
-        /// Support for non-public constructors was added in System.Text.Json 7.0.
-        /// </remarks>
-        [JsonConstructor]
-        public DistributedTransactionOperationResult()
+        internal DistributedTransactionOperationResult()
         {
         }
 
         /// <summary>
         /// Gets the index of this operation within the distributed transaction.
         /// </summary>
-        [JsonInclude]
-        [JsonPropertyName("index")]
         public virtual int Index { get; internal set; }
 
         /// <summary>
         /// Gets the HTTP status code returned by the operation.
         /// </summary>
-        [JsonInclude]
-        [JsonPropertyName("statusCode")]
         public virtual HttpStatusCode StatusCode { get; internal set; }
 
         /// <summary>
         /// Gets a value indicating whether the HTTP status code returned by the operation indicates success.
         /// </summary>
-        [JsonIgnore]
         public virtual bool IsSuccessStatusCode => (int)this.StatusCode >= 200 && (int)this.StatusCode <= 299;
 
         /// <summary>
         /// Gets the entity tag (ETag) associated with the operation result.
         /// The ETag is used for concurrency control and represents the version of the resource.
         /// </summary>
-        [JsonInclude]
-        [JsonPropertyName("etag")]
         public virtual string ETag { get; internal set; }
-
-        /// <summary>
-        /// Gets the session token associated with the operation result.
-        /// </summary>
-        [JsonInclude]
-        [JsonPropertyName("sessionToken")]
-        public virtual string SessionToken { get; internal set; }
-
-        /// <summary>
-        /// Gets the raw partition key range ID emitted by the server.
-        /// </summary>
-        [JsonInclude]
-        [JsonPropertyName("partitionKeyRangeId")]
-        public virtual string PartitionKeyRangeId { get; internal set; }
 
         /// <summary>
         /// Gets the resource stream associated with the operation result.
@@ -109,46 +80,27 @@ namespace Microsoft.Azure.Cosmos
         /// Do not dispose it directly. To deserialize to a typed object, use
         /// <see cref="DistributedTransactionResponse.GetOperationResultAtIndex{T}"/>.
         /// </remarks>
-        [JsonIgnore]
         public virtual Stream ResourceStream { get; internal set; }
 
         /// <summary>
         /// Gets the number of request units consumed by this operation.
         /// </summary>
-        [JsonInclude]
-        [JsonPropertyName("requestCharge")]
         public virtual double RequestCharge { get; internal set; }
 
-        [JsonIgnore]
         internal virtual SubStatusCodes SubStatusCode { get; set; }
 
-        /// <summary>
-        /// Gets the sub-status code value as an unsigned integer.
-        /// </summary>
-        [JsonInclude]
-        [JsonPropertyName("subStatusCode")]
-        public virtual uint SubStatusCodeValue
-        {
-            get => (uint)this.SubStatusCode;
-            internal set => this.SubStatusCode = (SubStatusCodes)value;
-        }
+        internal virtual string SessionToken { get; set; }
+
+        internal virtual string PartitionKeyRangeId { get; set; }
 
         /// <summary>
         /// ActivityId related to the operation.
         /// </summary>
-        [JsonIgnore]
         internal virtual string ActivityId { get; set; }
 
-        [JsonIgnore]
         internal ITrace Trace { get; set; }
 
-        [JsonIgnore]
         internal CosmosSerializerCore SerializerCore { get; set; }
-
-        private static readonly JsonSerializerOptions CaseInsensitiveOptions = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true,
-        };
 
         /// <summary>
         /// Returns a fresh <see cref="Stream"/> that exposes the same bytes as <paramref name="source"/>
@@ -197,10 +149,49 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The deserialized operation result with a canonical session token.</returns>
         internal static DistributedTransactionOperationResult FromJson(JsonElement json)
         {
-            DistributedTransactionOperationResult result = JsonSerializer.Deserialize<DistributedTransactionOperationResult>(json, DistributedTransactionOperationResult.CaseInsensitiveOptions)
-                ?? throw new JsonException($"Failed to deserialize DTC operation result: Deserialize returned null. JSON element kind: '{json.ValueKind}'.");
+            if (json.ValueKind != JsonValueKind.Object)
+            {
+                throw new JsonException($"DTC operation result must be a JSON object, but was '{json.ValueKind}'.");
+            }
 
-            if (json.TryGetProperty(DistributedTransactionSerializer.ResourceBody, out JsonElement resourceBody)
+            DistributedTransactionOperationResult result = new DistributedTransactionOperationResult();
+
+            if (TryGetInt32Property(json, DistributedTransactionSerializer.Index, out int index))
+            {
+                result.Index = index;
+            }
+
+            if (TryGetInt32Property(json, DistributedTransactionSerializer.StatusCode, out int statusCode))
+            {
+                result.StatusCode = (HttpStatusCode)statusCode;
+            }
+
+            if (TryGetUInt32Property(json, DistributedTransactionSerializer.SubStatusCode, out uint subStatus))
+            {
+                result.SubStatusCode = (SubStatusCodes)subStatus;
+            }
+
+            if (TryGetProperty(json, DistributedTransactionSerializer.ResponseETag, out JsonElement etagEl) && etagEl.ValueKind == JsonValueKind.String)
+            {
+                result.ETag = etagEl.GetString();
+            }
+
+            if (TryGetProperty(json, DistributedTransactionSerializer.SessionToken, out JsonElement sessionTokenEl) && sessionTokenEl.ValueKind == JsonValueKind.String)
+            {
+                result.SessionToken = sessionTokenEl.GetString();
+            }
+
+            if (TryGetProperty(json, DistributedTransactionSerializer.PartitionKeyRangeId, out JsonElement pkRangeIdEl) && pkRangeIdEl.ValueKind == JsonValueKind.String)
+            {
+                result.PartitionKeyRangeId = pkRangeIdEl.GetString();
+            }
+
+            if (TryGetDoubleProperty(json, DistributedTransactionSerializer.RequestCharge, out double requestCharge))
+            {
+                result.RequestCharge = requestCharge;
+            }
+
+            if (TryGetProperty(json, DistributedTransactionSerializer.ResourceBody, out JsonElement resourceBody)
                 && resourceBody.ValueKind != JsonValueKind.Undefined
                 && resourceBody.ValueKind != JsonValueKind.Null)
             {
@@ -241,6 +232,90 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return result;
+        }
+
+        internal static bool TryGetProperty(JsonElement element, string propertyName, out JsonElement value)
+        {
+            if (element.ValueKind != JsonValueKind.Object)
+            {
+                value = default;
+                return false;
+            }
+
+            foreach (JsonProperty prop in element.EnumerateObject())
+            {
+                if (string.Equals(prop.Name, propertyName, StringComparison.OrdinalIgnoreCase))
+                {
+                    value = prop.Value;
+                    return true;
+                }
+            }
+
+            value = default;
+            return false;
+        }
+
+        private static bool TryGetInt32Property(JsonElement element, string propertyName, out int value)
+        {
+            if (TryGetProperty(element, propertyName, out JsonElement propertyElement))
+            {
+                if (propertyElement.ValueKind != JsonValueKind.Number)
+                {
+                    throw new JsonException($"'{propertyName}' must be a JSON number, but was '{propertyElement.ValueKind}'.");
+                }
+
+                if (!propertyElement.TryGetInt32(out value))
+                {
+                    throw new JsonException($"'{propertyName}' must be a 32-bit integer JSON number.");
+                }
+
+                return true;
+            }
+
+            value = default;
+            return false;
+        }
+
+        private static bool TryGetUInt32Property(JsonElement element, string propertyName, out uint value)
+        {
+            if (TryGetProperty(element, propertyName, out JsonElement propertyElement))
+            {
+                if (propertyElement.ValueKind != JsonValueKind.Number)
+                {
+                    throw new JsonException($"'{propertyName}' must be a JSON number, but was '{propertyElement.ValueKind}'.");
+                }
+
+                if (!propertyElement.TryGetUInt32(out value))
+                {
+                    throw new JsonException($"'{propertyName}' must be a 32-bit unsigned integer JSON number.");
+                }
+
+                return true;
+            }
+
+            value = default;
+            return false;
+        }
+
+        private static bool TryGetDoubleProperty(JsonElement element, string propertyName, out double value)
+        {
+            if (TryGetProperty(element, propertyName, out JsonElement propertyElement))
+            {
+                if (propertyElement.ValueKind != JsonValueKind.Number)
+                {
+                    throw new JsonException($"'{propertyName}' must be a JSON number, but was '{propertyElement.ValueKind}'.");
+                }
+
+                if (!propertyElement.TryGetDouble(out value))
+                {
+                    throw new JsonException($"'{propertyName}' must be a double-precision JSON number.");
+                }
+
+                return true;
+            }
+
+            value = default;
+            return false;
         }
     }
 

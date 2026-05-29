@@ -36,7 +36,6 @@ namespace Microsoft.Azure.Cosmos
             Headers headers,
             IReadOnlyList<DistributedTransactionOperation> operations,
             CosmosSerializerCore serializer,
-            ITrace trace,
             Guid idempotencyToken,
             bool isRetriable = false)
         {
@@ -46,7 +45,6 @@ namespace Microsoft.Azure.Cosmos
             this.ErrorMessage = errorMessage;
             this.Operations = operations;
             this.SerializerCore = serializer;
-            this.Trace = trace;
             this.IdempotencyToken = idempotencyToken;
             this.IsRetriable = isRetriable;
         }
@@ -145,7 +143,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual bool IsSuccessStatusCode => (int)this.StatusCode >= 200 && (int)this.StatusCode <= 299;
 
         /// <summary>
-        /// Gets the error message associated with the distributed transaction response, if any.
+        /// Gets the error message associated with the distributed transaction response.
         /// </summary>
         public virtual string ErrorMessage { get; }
 
@@ -182,8 +180,6 @@ namespace Microsoft.Azure.Cosmos
         internal virtual CosmosSerializerCore SerializerCore { get; }
 
         internal IReadOnlyList<DistributedTransactionOperation> Operations { get; }
-
-        internal ITrace Trace { get; }
 
         /// <summary>
         /// Returns an enumerator that iterates through the operation results.
@@ -223,7 +219,7 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            using (ITrace createResponseTrace = trace.StartChild("Create Distributed Transaction Response", TraceComponent.Batch, TraceLevel.Info))
+            using (trace.StartChild("Create Distributed Transaction Response", TraceComponent.Batch, TraceLevel.Info))
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
@@ -254,7 +250,6 @@ namespace Microsoft.Azure.Cosmos
                             serverRequest,
                             serializer,
                             idempotencyToken,
-                            createResponseTrace,
                             cancellationToken);
                     }
 
@@ -266,7 +261,6 @@ namespace Microsoft.Azure.Cosmos
                         responseMessage.Headers,
                         serverRequest.Operations,
                         serializer,
-                        createResponseTrace,
                         idempotencyToken);
 
                     // Validate results count matches operations count
@@ -278,7 +272,6 @@ namespace Microsoft.Azure.Cosmos
 
                         if (responseMessage.IsSuccessStatusCode)
                         {
-                            string preservedDiagnosticString = response.DiagnosticString;
                             SubStatusCodes wireSubStatusCode = responseMessage.Headers.SubStatusCode;
                             response.Dispose();
 
@@ -289,14 +282,10 @@ namespace Microsoft.Azure.Cosmos
                                 responseMessage.Headers,
                                 serverRequest.Operations,
                                 serializer,
-                                createResponseTrace,
-                                idempotencyToken)
-                            {
-                                DiagnosticString = preservedDiagnosticString,
-                            };
+                                idempotencyToken);
                         }
 
-                        response.CreateAndPopulateResults(serverRequest.Operations, createResponseTrace);
+                        response.CreateAndPopulateResults(serverRequest.Operations);
                     }
 
                     return response;
@@ -357,7 +346,6 @@ namespace Microsoft.Azure.Cosmos
             DistributedTransactionServerRequest serverRequest,
             CosmosSerializerCore serializer,
             Guid idempotencyToken,
-            ITrace trace,
             CancellationToken cancellationToken)
         {
             List<DistributedTransactionOperationResult> results = new List<DistributedTransactionOperationResult>();
@@ -374,6 +362,12 @@ namespace Microsoft.Azure.Cosmos
                 DefaultTrace.TraceWarning(
                     "DistributedTransactionResponse: failed to parse response body: {0}",
                     jsonEx.Message);
+
+                if (responseMessage.IsSuccessStatusCode)
+                {
+                    return CreateDeserializationFailureResponse(responseMessage, serverRequest, serializer, idempotencyToken);
+                }
+
                 return null;
             }
 
@@ -381,20 +375,20 @@ namespace Microsoft.Azure.Cosmos
             {
                 JsonElement root = responseJson.RootElement;
 
-                if (root.TryGetProperty("isRetriable", out JsonElement isRetriableElement) &&
+                if (DistributedTransactionOperationResult.TryGetProperty(root, DistributedTransactionSerializer.IsRetriable, out JsonElement isRetriableElement) &&
                     isRetriableElement.ValueKind == JsonValueKind.True)
                 {
                     isRetriable = true;
                 }
 
-                if (root.TryGetProperty(DistributedTransactionSerializer.DiagnosticString, out JsonElement diagnosticStringElement) &&
+                if (DistributedTransactionOperationResult.TryGetProperty(root, DistributedTransactionSerializer.DiagnosticString, out JsonElement diagnosticStringElement) &&
                     diagnosticStringElement.ValueKind == JsonValueKind.String)
                 {
                     diagnosticString = diagnosticStringElement.GetString();
                 }
 
                 // Parse operation results from "operationResponses" array.
-                if (root.TryGetProperty("operationResponses", out JsonElement operationResponses) &&
+                if (DistributedTransactionOperationResult.TryGetProperty(root, DistributedTransactionSerializer.OperationResponses, out JsonElement operationResponses) &&
                     operationResponses.ValueKind == JsonValueKind.Array)
                 {
                     try
@@ -404,9 +398,6 @@ namespace Microsoft.Azure.Cosmos
                             cancellationToken.ThrowIfCancellationRequested();
 
                             DistributedTransactionOperationResult operationResult = DistributedTransactionOperationResult.FromJson(operationElement);
-                            operationResult.Trace = trace;
-                            operationResult.ActivityId = responseMessage.Headers.ActivityId;
-                            operationResult.SerializerCore = serializer;
                             results.Add(operationResult);
                         }
                     }
@@ -415,8 +406,21 @@ namespace Microsoft.Azure.Cosmos
                         DefaultTrace.TraceWarning(
                             "DistributedTransactionResponse: per-operation parse failed; forcing isRetriable=false. {0}",
                             jsonEx.Message);
+
+                        // Dispose any resource streams allocated for the partially-parsed operations
+                        // before discarding them.
+                        foreach (DistributedTransactionOperationResult partial in results)
+                        {
+                            partial.ResourceStream?.Dispose();
+                        }
+
                         results.Clear();
                         isRetriable = false;
+
+                        if (responseMessage.IsSuccessStatusCode)
+                        {
+                            return CreateDeserializationFailureResponse(responseMessage, serverRequest, serializer, idempotencyToken);
+                        }
                     }
                 }
             }
@@ -458,7 +462,6 @@ namespace Microsoft.Azure.Cosmos
                 responseMessage.Headers,
                 serverRequest.Operations,
                 serializer,
-                trace,
                 idempotencyToken,
                 isRetriable)
             {
@@ -468,8 +471,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private void CreateAndPopulateResults(
-            IReadOnlyList<DistributedTransactionOperation> operations,
-            ITrace trace)
+            IReadOnlyList<DistributedTransactionOperation> operations)
         {
             this.results = new List<DistributedTransactionOperationResult>(operations.Count);
 
@@ -478,11 +480,31 @@ namespace Microsoft.Azure.Cosmos
                 this.results.Add(new DistributedTransactionOperationResult(this.StatusCode)
                 {
                     SubStatusCode = this.SubStatusCode,
-                    ActivityId = this.ActivityId,
-                    Trace = trace,
-                    SerializerCore = this.SerializerCore,
                 });
             }
+        }
+
+        /// <summary>
+        /// Builds an InternalServerError response indicating the server replied with success but
+        /// the SDK could not deserialize the response payload. Mirrors TransactionalBatch behavior.
+        /// </summary>
+        private static DistributedTransactionResponse CreateDeserializationFailureResponse(
+            ResponseMessage responseMessage,
+            DistributedTransactionServerRequest serverRequest,
+            CosmosSerializerCore serializer,
+            Guid idempotencyToken)
+        {
+            DistributedTransactionResponse failedResponse = new DistributedTransactionResponse(
+                HttpStatusCode.InternalServerError,
+                SubStatusCodes.Unknown,
+                ClientResources.ServerResponseDeserializationFailure,
+                responseMessage.Headers,
+                serverRequest.Operations,
+                serializer,
+                idempotencyToken);
+
+            failedResponse.CreateAndPopulateResults(serverRequest.Operations);
+            return failedResponse;
         }
     }
 }

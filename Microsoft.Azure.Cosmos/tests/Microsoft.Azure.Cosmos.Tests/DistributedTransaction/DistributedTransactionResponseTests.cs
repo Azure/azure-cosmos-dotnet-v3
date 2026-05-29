@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Description("When the response body contains malformed JSON and the HTTP status is success, the SDK must return 500.")]
+        [Description("When the response body contains malformed JSON and the HTTP status is success, the SDK must return 500 with a deserialization-failure error message.")]
         public async Task FromResponseMessage_MalformedJson_SuccessStatus_ReturnsInternalServerError()
         {
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
@@ -116,6 +116,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.AreEqual(HttpStatusCode.InternalServerError, response.StatusCode);
             Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.AreEqual(ClientResources.ServerResponseDeserializationFailure, response.ErrorMessage);
         }
 
         [TestMethod]
@@ -140,6 +141,51 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 Assert.AreEqual(HttpStatusCode.Conflict, response[i].StatusCode);
             }
+        }
+
+        [DataTestMethod]
+        [Description("When per-operation fields have wrong types or non-object entries, parsing fails and a success response is converted to InternalServerError with a deserialization-failure message.")]
+        [DataRow(@"{""operationResponses"":[{""index"":0,""statusCode"":""abc""}]}", DisplayName = "statusCode wrong type")]
+        [DataRow(@"{""operationResponses"":[{""index"":0,""statusCode"":449,""subStatusCode"":""abc""}]}", DisplayName = "subStatusCode wrong type")]
+        [DataRow(@"{""operationResponses"":[{""index"":0,""statusCode"":201,""requestCharge"":""abc""}]}", DisplayName = "requestCharge wrong type")]
+        [DataRow(@"{""operationResponses"":[{""index"":""abc"",""statusCode"":201}]}", DisplayName = "index wrong type")]
+        [DataRow(@"{""operationResponses"":[null]}", DisplayName = "non-object element (null)")]
+        public async Task FromResponseMessage_OperationResult_InvalidElement_SuccessStatus_ReturnsInternalServerError(string json)
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.InternalServerError, response.StatusCode);
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.AreEqual(ClientResources.ServerResponseDeserializationFailure, response.ErrorMessage);
+        }
+
+        [TestMethod]
+        [Description("Top-level lookups are case-insensitive; PascalCase 'OperationResponses' is accepted.")]
+        public async Task FromResponseMessage_OperationResponses_PascalCaseKey_SuccessStatus_ParsesSuccessfully()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            string json = @"{""OperationResponses"":[{""index"":0,""statusCode"":201}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.IsTrue(response.IsSuccessStatusCode);
+            Assert.AreEqual(1, response.Count);
+            Assert.AreEqual(HttpStatusCode.Created, response[0].StatusCode);
         }
 
         // Count mismatch
@@ -284,15 +330,21 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         // Idempotency token resolution
 
-        [TestMethod]
-        [Description("When the IdempotencyToken header is absent from the response, the request token is used as the fallback.")]
-        public async Task FromResponseMessage_IdempotencyToken_MissingFromHeader_FallsBackToRequestToken()
+        [DataTestMethod]
+        [Description("When the IdempotencyToken response header is absent or unparseable, the SDK falls back to the request token.")]
+        [DataRow(null, DisplayName = "Header absent")]
+        [DataRow("not-a-valid-guid", DisplayName = "Invalid GUID in header")]
+        public async Task FromResponseMessage_IdempotencyToken_FallsBackToRequestToken(string headerValue)
         {
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
 
             string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
             ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
-            // No IdempotencyToken header added
+
+            if (headerValue != null)
+            {
+                responseMessage.Headers.Add(HttpConstants.HttpHeaders.IdempotencyToken, headerValue);
+            }
 
             DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
                 responseMessage,
@@ -302,54 +354,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 CancellationToken.None);
 
             Assert.AreEqual(serverRequest.IdempotencyToken, response.IdempotencyToken,
-                "The request token must be used when the response header is absent.");
-        }
-
-        [TestMethod]
-        [Description("When the IdempotencyToken response header contains a non-GUID value, the SDK falls back to the request token.")]
-        public async Task FromResponseMessage_IdempotencyToken_InvalidGuidInHeader_FallsBackToRequestToken()
-        {
-            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
-
-            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
-            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
-            responseMessage.Headers.Add(HttpConstants.HttpHeaders.IdempotencyToken, "not-a-valid-guid");
-
-            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
-                responseMessage,
-                serverRequest,
-                MockCosmosUtil.Serializer,
-                NoOpTrace.Singleton,
-                CancellationToken.None);
-
-            Assert.AreEqual(serverRequest.IdempotencyToken, response.IdempotencyToken,
-                "An unparseable header value must fall back to the request token.");
+                "The request token must be used when the response header is absent or unparseable.");
         }
 
         // IDisposable and ObjectDisposed
-
-        [TestMethod]
-        [Description("Dispose() must set result ResourceStreams to null so callers cannot accidentally use a closed stream.")]
-        public async Task Dispose_ReleasesResultResourceStreams()
-        {
-            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
-
-            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201,""resourceBody"":{""id"":""item1""}}]}";
-            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
-
-            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
-                responseMessage,
-                serverRequest,
-                MockCosmosUtil.Serializer,
-                NoOpTrace.Singleton,
-                CancellationToken.None);
-
-            Assert.IsNotNull(response[0].ResourceStream, "ResourceStream should be populated from resourcebody before Dispose.");
-
-            response.Dispose();
-
-            // Indexer-after-dispose behavior is covered by Indexer_AfterDispose_ThrowsObjectDisposedException.
-        }
 
         [TestMethod]
         [Description("Calling Dispose() a second time must be a safe no-op.")]
@@ -428,9 +436,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(1, response[1].Index);
         }
 
-        [TestMethod]
-        [Description("Accessing a negative index must throw ArgumentOutOfRangeException.")]
-        public async Task Indexer_NegativeIndex_ThrowsArgumentOutOfRangeException()
+        [DataTestMethod]
+        [Description("Accessing an out-of-range index must throw ArgumentOutOfRangeException.")]
+        [DataRow(-1, DisplayName = "Negative index")]
+        [DataRow(1, DisplayName = "Index equals count")]
+        public async Task Indexer_OutOfRange_ThrowsArgumentOutOfRangeException(int index)
         {
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
             string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
@@ -443,25 +453,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => _ = response[-1]);
-        }
-
-        [TestMethod]
-        [Description("Accessing index equal to Count must throw ArgumentOutOfRangeException.")]
-        public async Task Indexer_IndexEqualsCount_ThrowsArgumentOutOfRangeException()
-        {
-            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
-            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
-            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
-
-            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
-                responseMessage,
-                serverRequest,
-                MockCosmosUtil.Serializer,
-                NoOpTrace.Singleton,
-                CancellationToken.None);
-
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => _ = response[response.Count]);
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => _ = response[index]);
         }
 
         [TestMethod]
@@ -575,6 +567,25 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.AreEqual(expectedETag, response[0].ETag,
                 "ETag must equal the value from the JSON 'etag' field.");
+        }
+
+        [TestMethod]
+        [Description("resourceBody lookup is case-insensitive; PascalCase 'ResourceBody' populates ResourceStream.")]
+        public async Task FromResponseMessage_OperationResult_ResourceBody_PascalCaseKey_Deserializes()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201,""ResourceBody"":{""id"":""item1""}}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.IsNotNull(response[0].ResourceStream, "ResourceStream should be populated because property name lookup is case-insensitive.");
         }
 
         [TestMethod]
@@ -745,6 +756,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [DataRow(@"{""isRetriable"":false,""operationResponses"":[{""index"":0,""statusCode"":503}]}", false, DisplayName = "JSON boolean false → IsRetriable=false")]
         [DataRow(@"{""operationResponses"":[{""index"":0,""statusCode"":503}]}", false, DisplayName = "isRetriable absent → IsRetriable=false")]
         [DataRow(@"{""isRetriable"":""true"",""operationResponses"":[{""index"":0,""statusCode"":503}]}", false, DisplayName = "string 'true' (not a JSON boolean) → IsRetriable=false")]
+        [DataRow(@"{""IsRetriable"":true,""operationResponses"":[{""index"":0,""statusCode"":503}]}", true, DisplayName = "PascalCase 'IsRetriable' is accepted")]
         public async Task FromResponseMessage_IsRetriable_Parsing(string json, bool expected)
         {
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
@@ -762,14 +774,16 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         // DiagnosticString parsing
 
-        [TestMethod]
-        [Description("DiagnosticString deserializes from the 'diagnosticString' JSON property.")]
-        public async Task FromResponseMessage_DiagnosticString_DeserializesCorrectly()
+        [DataTestMethod]
+        [Description("DiagnosticString deserializes from the top-level JSON property case-insensitively.")]
+        [DataRow("diagnosticString", DisplayName = "camelCase key")]
+        [DataRow("DiagnosticString", DisplayName = "PascalCase key")]
+        public async Task FromResponseMessage_DiagnosticString_DeserializesCorrectly(string diagnosticStringPropertyName)
         {
             const string expectedDiagnosticString = "TransactionCommitted";
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
 
-            string json = $@"{{""diagnosticString"":""{expectedDiagnosticString}"",""operationResponses"":[{{""index"":0,""statusCode"":200}}]}}";
+            string json = $@"{{""{diagnosticStringPropertyName}"":""{expectedDiagnosticString}"",""operationResponses"":[{{""index"":0,""statusCode"":200}}]}}";
             ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
 
             DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
@@ -1192,31 +1206,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             using StreamReader reader = new StreamReader(response[0].ResourceStream);
             string raw = reader.ReadToEnd();
             StringAssert.Contains(raw, "\"id\":\"dup\"", "Underlying ResourceStream must remain readable after GetOperationResultAtIndex<T>.");
-        }
-
-        [TestMethod]
-        [Description("Reading response[index].ResourceStream directly after GetOperationResultAtIndex<T> must still return the original bytes.")]
-        public async Task GetOperationResultAtIndex_FollowedByDirectStreamRead_StreamIsIntact()
-        {
-            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
-            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":200,""resourceBody"":{""id"":""x"",""value"":99}}]}";
-            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
-
-            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
-                responseMessage,
-                serverRequest,
-                MockCosmosUtil.Serializer,
-                NoOpTrace.Singleton,
-                CancellationToken.None);
-
-            _ = response.GetOperationResultAtIndex<TestDocument>(0);
-
-            Stream stream = response[0].ResourceStream;
-            Assert.IsNotNull(stream);
-            stream.Position = 0;
-            using StreamReader reader = new StreamReader(stream);
-            string raw = reader.ReadToEnd();
-            Assert.AreEqual(@"{""id"":""x"",""value"":99}", raw);
         }
 
         [TestMethod]
