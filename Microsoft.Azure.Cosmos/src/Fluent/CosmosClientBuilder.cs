@@ -447,7 +447,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="maxTcpConnectionsPerEndpoint">
         /// Controls the maximum number of TCP connections that may be opened to each Cosmos DB back-end.
         /// Together with MaxRequestsPerTcpConnection, this setting limits the number of requests that are simultaneously sent to a single Cosmos DB back-end(MaxRequestsPerTcpConnection x MaxTcpConnectionPerEndpoint).
-        /// The default value is 65,535. Value must be greater than or equal to 16.
+        /// The default value is 65,535. Any positive value is accepted, allowing applications to constrain the connection pool size when needed; values of 16 or greater are recommended.
         /// </param>
         /// <param name="portReuseMode">
         /// (Direct/TCP) Controls the client port reuse policy used by the transport stack.
