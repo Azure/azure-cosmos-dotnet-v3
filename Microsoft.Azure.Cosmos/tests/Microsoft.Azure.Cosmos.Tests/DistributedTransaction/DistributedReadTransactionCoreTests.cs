@@ -446,6 +446,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<CosmosClientContext> contextMock = new Mock<CosmosClientContext>();
 
             contextMock
+                .Setup(c => c.Client)
+                .Returns(DistributedReadTransactionCoreTests.SharedMockClient);
+
+            contextMock
                 .Setup(c => c.DocumentClient)
                 .Returns(new MockDocumentClient());
 
