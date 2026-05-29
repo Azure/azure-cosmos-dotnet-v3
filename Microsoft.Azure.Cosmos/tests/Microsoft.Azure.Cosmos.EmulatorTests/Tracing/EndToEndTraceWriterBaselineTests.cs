@@ -1546,10 +1546,15 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             int startLineNumber;
             int endLineNumber;
 
+            Container readAsyncContainer = await EndToEndTraceWriterBaselineTests.database.CreateContainerAsync(
+                   id: "containerForReadAsync",
+                   partitionKeyPath: "/id",
+                   throughput: 1000);
+
             for (int i = 0; i < 5; i++)
             {
                 ToDoActivity item = ToDoActivity.CreateRandomToDoActivity("pk" + i, "id" + i);
-                await container.CreateItemAsync(item);
+                await readAsyncContainer.CreateItemAsync(item);
             }
 
             List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>();
@@ -1566,7 +1571,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             {
                 startLineNumber = GetLineNumber();
                 ITrace trace;
-                using (ResponseMessage responseMessage = await container.ReadManyItemsStreamAsync(itemList))
+                using (ResponseMessage responseMessage = await readAsyncContainer.ReadManyItemsStreamAsync(itemList))
                 {
                     trace = responseMessage.Trace;
                 }
@@ -1583,7 +1588,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             //----------------------------------------------------------------
             {
                 startLineNumber = GetLineNumber();
-                FeedResponse<ToDoActivity> feedResponse = await container.ReadManyItemsAsync<ToDoActivity>(itemList);
+                FeedResponse<ToDoActivity> feedResponse = await readAsyncContainer.ReadManyItemsAsync<ToDoActivity>(itemList);
                 ITrace trace = ((CosmosTraceDiagnostics)feedResponse.Diagnostics).Value;
                 endLineNumber = GetLineNumber();
 
