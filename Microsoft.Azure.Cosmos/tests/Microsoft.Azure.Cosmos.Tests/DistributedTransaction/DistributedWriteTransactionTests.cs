@@ -478,7 +478,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .ReturnsAsync(BuildSuccessResponse(1));
 
             DistributedWriteTransaction tx = new DistributedWriteTransactionCore(contextMock.Object)
-                .CreateItem(Database, Container, new PartitionKey("pk"), "item-id", new TestItem());
+                .CreateItem(BuildMockContainer(), new PartitionKey("pk"), "item-id", new TestItem());
 
             // First commit should succeed
             DistributedTransactionResponse response = await tx.CommitTransactionAsync(CancellationToken.None);
@@ -510,7 +510,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .ReturnsAsync(BuildErrorResponse(HttpStatusCode.Conflict));
 
             DistributedWriteTransaction tx = new DistributedWriteTransactionCore(contextMock.Object)
-                .CreateItem(Database, Container, new PartitionKey("pk"), "item-id", new TestItem());
+                .CreateItem(BuildMockContainer(), new PartitionKey("pk"), "item-id", new TestItem());
 
             // First commit returns an error (but the call was made — idempotency token was consumed)
             DistributedTransactionResponse response = await tx.CommitTransactionAsync(CancellationToken.None);
@@ -552,7 +552,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     });
 
             DistributedWriteTransaction tx = new DistributedWriteTransactionCore(contextMock.Object)
-                .CreateItem(Database, Container, new PartitionKey("pk"), "item-id", new TestItem());
+                .CreateItem(BuildMockContainer(), new PartitionKey("pk"), "item-id", new TestItem());
 
             // First commit attempt: a transient network exception escapes to the caller.
             await Assert.ThrowsExceptionAsync<HttpRequestException>(
@@ -598,7 +598,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     });
 
             DistributedWriteTransaction tx = new DistributedWriteTransactionCore(contextMock.Object)
-                .CreateItem(Database, Container, new PartitionKey("pk"), "item-id", new TestItem());
+                .CreateItem(BuildMockContainer(), new PartitionKey("pk"), "item-id", new TestItem());
 
             await Assert.ThrowsExceptionAsync<OperationCanceledException>(
                 () => tx.CommitTransactionAsync(cts.Token));
@@ -641,7 +641,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     });
 
             DistributedWriteTransaction tx = new DistributedWriteTransactionCore(contextMock.Object)
-                .CreateItem(Database, Container, new PartitionKey("pk"), "item-id", new TestItem());
+                .CreateItem(BuildMockContainer(), new PartitionKey("pk"), "item-id", new TestItem());
 
             const int RacerCount = 16;
             using ManualResetEventSlim gate = new ManualResetEventSlim(initialState: false);
