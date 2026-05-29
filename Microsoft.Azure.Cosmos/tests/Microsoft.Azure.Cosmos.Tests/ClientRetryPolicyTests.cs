@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Client.Tests
+namespace Microsoft.Azure.Cosmos.Client.Tests
 {
     using System;
     using Microsoft.Azure.Cosmos.Routing;
@@ -1184,6 +1184,145 @@
             ShouldRetryResult innerResult = await policy.ShouldRetryAsync(emptyBodyResponse, CancellationToken.None);
             Assert.IsTrue(innerResult.ShouldRetry,
                 "CRP's inner retry budget must NOT have been consumed by the deferred body-bearing calls; an empty-body response should still trigger an inner retry.");
+        }
+
+        /// <summary>
+        /// Hedging-Detection invariant: when a hedge arm has already been tagged with
+        /// <see cref="RequestedRegionReason.Hedging"/> by
+        /// <c>CrossRegionHedgingAvailabilityStrategy.CloneAndSendAsync</c>, a subsequent retry
+        /// on the same cloned request (e.g. 410 Gone, 449) must NOT silently overwrite the
+        /// dispatch reason with <see cref="RequestedRegionReason.OperationRetry"/> or
+        /// <see cref="RequestedRegionReason.RegionFailover"/>. Doing so would erase the hedge
+        /// origin from the <c>GetRequestedRegions()</c> sequence on the second dispatch of
+        /// the same arm. Pins F3 review feedback on PR #5868.
+        /// </summary>
+        [TestMethod]
+        public async Task OnBeforeSendRequest_HedgeArmRetry_PreservesHedgingReason()
+        {
+            // Arrange — standard 2-region client (matches the Initialize() defaults).
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery,
+                isThinClientEnabled: false);
+
+            // A hedge-arm dispatch carries a pre-seeded Hedging tag in Properties (this
+            // mirrors what CrossRegionHedgingAvailabilityStrategy.CloneAndSendAsync does
+            // for requestNumber > 0).
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            request.Properties = new Dictionary<string, object>
+            {
+                {
+                    Microsoft.Azure.Cosmos.Tracing.HedgingDetectionState.DispatchReasonPropertyKey,
+                    RequestedRegionReason.Hedging
+                }
+            };
+
+            // First attempt — retryContext is null, so OnBeforeSendRequest must not touch
+            // the existing Hedging value.
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.IsTrue(
+                request.Properties.TryGetValue(
+                    Microsoft.Azure.Cosmos.Tracing.HedgingDetectionState.DispatchReasonPropertyKey,
+                    out object firstAttemptReasonObj),
+                "Hedging tag must survive the first OnBeforeSendRequest call (retryContext == null).");
+            Assert.AreEqual(RequestedRegionReason.Hedging, firstAttemptReasonObj);
+
+            // Simulate a 410 Gone on the hedge arm → retryContext gets populated.
+            // 410/LeaseNotFound flows through ShouldRetryOnUnavailableEndpointStatusCodes
+            // and yields RetryRequestOnPreferredLocations = true (RegionFailover-shaped).
+            DocumentClientException leaseNotFound = new DocumentClientException(
+                message: "LeaseNotFound on hedge arm",
+                innerException: null,
+                statusCode: HttpStatusCode.Gone,
+                substatusCode: SubStatusCodes.LeaseNotFound,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: new DictionaryNameValueCollection());
+
+            ShouldRetryResult retryDecision = await retryPolicy.ShouldRetryAsync(leaseNotFound, CancellationToken.None);
+            Assert.IsTrue(retryDecision.ShouldRetry, "410/LeaseNotFound must trigger a CRP retry decision.");
+
+            // Critical assertion — second OnBeforeSendRequest (retryContext != null) must
+            // PRESERVE the existing Hedging tag rather than overwriting it. Without the
+            // preservation guard this would flip to RegionFailover / OperationRetry, and
+            // the dispatch site would record the retry of the hedge arm as a same-region
+            // retry, losing the hedge origin entirely.
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.IsTrue(
+                request.Properties.TryGetValue(
+                    Microsoft.Azure.Cosmos.Tracing.HedgingDetectionState.DispatchReasonPropertyKey,
+                    out object retryReasonObj),
+                "Hedging tag must still be present on Properties after the hedge-arm retry.");
+            Assert.AreEqual(
+                RequestedRegionReason.Hedging,
+                retryReasonObj,
+                "Hedge-arm retry must NOT overwrite Hedging with RegionFailover / OperationRetry — see F3 on PR #5868.");
+        }
+
+        /// <summary>
+        /// Companion to <see cref="OnBeforeSendRequest_HedgeArmRetry_PreservesHedgingReason"/>:
+        /// when the existing tag is NOT <see cref="RequestedRegionReason.Hedging"/> (e.g. it
+        /// is the OperationRetry value written by a previous retry), the policy MUST overwrite
+        /// it with the new retry reason. The preservation guard is strictly scoped to
+        /// <see cref="RequestedRegionReason.Hedging"/>.
+        /// </summary>
+        [TestMethod]
+        public async Task OnBeforeSendRequest_NonHedgeRetry_OverwritesPreviousReason()
+        {
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery,
+                isThinClientEnabled: false);
+
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            request.Properties = new Dictionary<string, object>
+            {
+                {
+                    Microsoft.Azure.Cosmos.Tracing.HedgingDetectionState.DispatchReasonPropertyKey,
+                    RequestedRegionReason.OperationRetry
+                }
+            };
+
+            // First attempt (retryContext == null): nothing overwritten.
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.AreEqual(
+                RequestedRegionReason.OperationRetry,
+                request.Properties[Microsoft.Azure.Cosmos.Tracing.HedgingDetectionState.DispatchReasonPropertyKey]);
+
+            // Drive a 410/LeaseNotFound → ShouldRetryOnUnavailableEndpointStatusCodes
+            // sets retryContext.RetryRequestOnPreferredLocations = true.
+            DocumentClientException leaseNotFound = new DocumentClientException(
+                message: "LeaseNotFound",
+                innerException: null,
+                statusCode: HttpStatusCode.Gone,
+                substatusCode: SubStatusCodes.LeaseNotFound,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: new DictionaryNameValueCollection());
+
+            ShouldRetryResult retryDecision = await retryPolicy.ShouldRetryAsync(leaseNotFound, CancellationToken.None);
+            Assert.IsTrue(retryDecision.ShouldRetry);
+
+            // Now the policy SHOULD overwrite OperationRetry → RegionFailover.
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.AreEqual(
+                RequestedRegionReason.RegionFailover,
+                request.Properties[Microsoft.Azure.Cosmos.Tracing.HedgingDetectionState.DispatchReasonPropertyKey],
+                "Non-Hedging tag must be overwritten by the policy's new retry reason.");
         }
 
         private static DocumentServiceRequest CreateDtxRequest()

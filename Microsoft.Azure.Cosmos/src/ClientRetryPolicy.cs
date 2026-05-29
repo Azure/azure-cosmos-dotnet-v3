@@ -284,12 +284,28 @@ namespace Microsoft.Azure.Cosmos
             // genuine retry attempt — first-attempt dispatches default to Initial (set by
             // the dispatch site), and hedge-arm dispatches have their Hedging reason set by
             // CrossRegionHedgingAvailabilityStrategy before reaching this policy.
+            //
+            // Hedging preservation invariant: when a hedge arm itself triggers a retry (e.g.
+            // 410 Gone / 449), this method is re-entered with retryContext != null on the
+            // same cloned RequestMessage. The Hedging value previously seeded by
+            // CrossRegionHedgingAvailabilityStrategy.CloneAndSendAsync must NOT be silently
+            // overwritten with OperationRetry / RegionFailover, otherwise the hedge origin
+            // is lost from the GetRequestedRegions() sequence. Preserve the existing value
+            // if it is already Hedging.
             if (this.retryContext != null && request.Properties != null)
             {
-                RequestedRegionReason reason = this.retryContext.RetryRequestOnPreferredLocations
-                    ? RequestedRegionReason.RegionFailover
-                    : RequestedRegionReason.OperationRetry;
-                request.Properties[Tracing.HedgingDetectionState.DispatchReasonPropertyKey] = reason;
+                bool alreadyTaggedAsHedging =
+                    request.Properties.TryGetValue(Tracing.HedgingDetectionState.DispatchReasonPropertyKey, out object existingReasonObj)
+                    && existingReasonObj is RequestedRegionReason existingReason
+                    && existingReason == RequestedRegionReason.Hedging;
+
+                if (!alreadyTaggedAsHedging)
+                {
+                    RequestedRegionReason reason = this.retryContext.RetryRequestOnPreferredLocations
+                        ? RequestedRegionReason.RegionFailover
+                        : RequestedRegionReason.OperationRetry;
+                    request.Properties[Tracing.HedgingDetectionState.DispatchReasonPropertyKey] = reason;
+                }
             }
         }
 
