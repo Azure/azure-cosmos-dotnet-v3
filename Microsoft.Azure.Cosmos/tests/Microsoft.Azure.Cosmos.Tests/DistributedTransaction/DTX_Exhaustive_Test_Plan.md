@@ -276,23 +276,23 @@
 
 | Test | Expectation | Level | Implemented |
 |------|-------------|-------|-------------|
-| 449/5352 (Coordinator Race Conflict) no body → inner retries | Up to 10 retries with max(RetryAfter, 1s) delay | Unit | ❌ No |
-| 449/5352 with body → defers to outer loop (`ShouldDeferDtxThrottleToOuterLoop`) | No inner retry; body's `isRetriable` controls outer retry | Unit | ❌ No |
-| 449/5352 exhausts inner budget (10) → failure returned | Non-retriable after 10 attempts | Unit | ❌ No |
+| 449/5352 (Coordinator Race Conflict) no body → inner retries | Up to 10 retries with max(RetryAfter, 1s) delay | Unit | ✅ Yes |
+| 449/5352 with body → defers to outer loop (`ShouldDeferDtxThrottleToOuterLoop`) | No inner retry; body's `isRetriable` controls outer retry | Unit | ✅ Yes |
+| 449/5352 exhausts inner budget (10) → failure returned | Non-retriable after 10 attempts | Unit | ✅ Yes |
 | 429/3200 (Ledger Throttled) no body → ResourceThrottleRetryPolicy handles | Uses server RetryAfter header | Unit | ❌ No |
 | 429/3200 with body → defers to outer loop (`ShouldDeferDtxThrottleToOuterLoop`) | No inner retry; outer loop uses `isRetriable` | Unit | ❌ No |
 | 429/3200 exhausts throttle retries → 429 to caller | Throttle error surfaced | Unit | ❌ No |
-| 500/5411 (Ledger Failure) no body → infra retry | Exponential backoff (100ms base, 5s cap), up to 9 retries | Unit | ❌ No |
-| 500/5411 exhausts infra budget → 500 returned | Error surfaced | Unit | ❌ No |
-| 500/5412 (Account Config Failure) → infra retry | Shares budget with 5411/5413 | Unit | ❌ No |
-| 500/5413 (Dispatch Failure) → infra retry | Shares budget | Unit | ❌ No |
+| 500/5411 (Ledger Failure) no body → infra retry | Exponential backoff (100ms base, 5s cap), up to 9 retries | Unit | ✅ Yes |
+| 500/5411 exhausts infra budget → 500 returned | Error surfaced | Unit | ✅ Yes |
+| 500/5412 (Account Config Failure) → infra retry | Shares budget with 5411/5413 | Unit | ✅ Yes |
+| 500/5413 (Dispatch Failure) → infra retry | Shares budget | Unit | ✅ Yes |
 | Mix of 5411/5412/5413 → single shared budget (9 total) | Budget counted together | Unit | ❌ No |
-| 408 (Request Timeout) no body → coordinator retry | Up to 10 with max(RetryAfter, 1s) delay | Unit | ❌ No |
-| 408 with body → defers to outer loop | Body present triggers deferral; no inner retry | Unit | ❌ No |
-| 408 exhausts coordinator budget → timeout error surfaced | Failure after 10 attempts | Unit | ❌ No |
+| 408 (Request Timeout) no body → coordinator retry | Up to 10 with max(RetryAfter, 1s) delay | Unit | ✅ Yes |
+| 408 with body → defers to outer loop | Body present triggers deferral; no inner retry | Unit | ✅ Yes |
+| 408 exhausts coordinator budget → timeout error surfaced | Failure after 10 attempts | Unit | ✅ Yes |
 | 449 without sub-status 5352 (plain 449) → not matched by DTX classifier | Falls through; standard CRP `RetryWith` handling | Unit | ❌ No |
 | 429 without sub-status 3200 (standard throttle) → not matched by DTX classifier | Standard throttle policy handles it | Unit | ❌ No |
-| 500 without sub-status (plain 500) → not matched by DTX infra classifier | Falls through to default `NoRetry()` | Unit | ❌ No |
+| 500 without sub-status (plain 500) → not matched by DTX infra classifier | Falls through to default `NoRetry()` | Unit | ✅ Yes |
 | 452/5421 (HLC Clock Skew Aborted) | Inner DTX classifier does not match (no handler for 452); returns `NoRetry()` — falls through to outer body-based loop; retried only if `isRetriable=true` in body | Unit | ❌ No |
 | 500 with unrecognized sub-status → inner classifier returns `NoRetry()` | Falls through to outer loop / default policy; not auto-retried by inner DTX classifier | Unit | ❌ No |
 | isRetriable=true in response body → outer loop retries | Up to 10 outer retries with exponential backoff | Unit | ❌ No |
@@ -382,8 +382,8 @@
 
 | Test | Expectation | Level | Implemented |
 |------|-------------|-------|-------------|
-| DTX request returns 408 → endpoint NOT marked unavailable | `isDtxRequest` guard prevents routing cache poisoning (408 = "transaction in-progress", not endpoint failure) | Unit | ❌ No |
-| Non-DTX request returns 408 → endpoint marked unavailable (normal behavior) | Standard CRP behavior unchanged | Unit | ❌ No |
+| DTX request returns 408 → endpoint NOT marked unavailable | `isDtxRequest` guard prevents routing cache poisoning (408 = "transaction in-progress", not endpoint failure) | Unit | ✅ Yes |
+| Non-DTX request returns 408 → endpoint marked unavailable (normal behavior) | Standard CRP behavior unchanged | Unit | ✅ Yes |
 | DTX 408 does not trigger partition key range unavailability marking | Only coordinator retry path engaged | Unit | ❌ No |
 
 ### 3.10 `isRetriable` Field Edge Cases
@@ -1085,9 +1085,9 @@
 
 | Test | Expectation | Level | Implemented |
 |------|-------------|-------|-------------|
-| 449/5352 + body present → no inner retry (prevents 10 outer × 10 inner = 100 wire requests) | Deferred to outer loop immediately | Unit | ❌ No |
-| 429/3200 + body present → no inner retry (prevents throttle × outer amplification) | `ShouldDeferDtxThrottleToOuterLoop` returns true | Unit | ❌ No |
-| 408 + body present → no inner retry | Body indicates server processed; defer to outer | Unit | ❌ No |
+| 449/5352 + body present → no inner retry (prevents 10 outer × 10 inner = 100 wire requests) | Deferred to outer loop immediately | Unit | ✅ Yes |
+| 429/3200 + body present → no inner retry (prevents throttle × outer amplification) | `ShouldDeferDtxThrottleToOuterLoop` returns true | Unit | ✅ Yes |
+| 408 + body present → no inner retry | Body indicates server processed; defer to outer | Unit | ✅ Yes |
 | Worst-case wire request count: max 10 outer attempts (not 10 × 10 = 100) | Total ≤ 10 server round-trips per commit | Unit | ❌ No |
 | 500/5411 infra retry does NOT defer when body is absent | Inner retry proceeds (up to 9) | Unit | ❌ No |
 | JsonException during `operationResponses` parsing → `isRetriable` forced to `false` | Prevents retry-on-corrupt-body infinite loop | Unit | ❌ No |
