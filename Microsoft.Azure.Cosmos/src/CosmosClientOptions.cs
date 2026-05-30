@@ -406,6 +406,18 @@ namespace Microsoft.Azure.Cosmos
         ReadConsistencyStrategy? ReadConsistencyStrategy { get; set; }
 
         /// <summary>
+        /// Gets or sets the client-wide default <see cref="ICosmosEmbeddingGenerator"/> used to generate
+        /// query-time vector embeddings for hybrid and vector-search queries.
+        /// </summary>
+        [JsonIgnore]
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        ICosmosEmbeddingGenerator EmbeddingGenerator { get; set; }
+
+        /// <summary>
         /// Sets the priority level for requests created using cosmos client.
         /// </summary>
         /// <remarks>
@@ -631,7 +643,7 @@ namespace Microsoft.Azure.Cosmos
         /// Together with MaxRequestsPerTcpConnection, this setting limits the number of requests that are simultaneously sent to a single Cosmos DB back-end(MaxRequestsPerTcpConnection x MaxTcpConnectionPerEndpoint).
         /// </summary>
         /// <value>
-        /// The default value is 65,535. Value must be greater than or equal to 16.
+        /// The default value is 65,535. Any positive value is accepted, allowing applications to constrain the connection pool size when needed; values of 16 or greater are recommended.
         /// </value>
         public int? MaxTcpConnectionsPerEndpoint
         {

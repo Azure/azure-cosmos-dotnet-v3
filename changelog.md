@@ -19,11 +19,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+- [5600](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5600) HPK: Adds id to partition key when "/id" is the last path in partition key definition.
+- [5838](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5838) EmbeddingGenerator: Adds ICosmosEmbeddingGenerator client-wide configuration (preview)
+- [5911](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5911) DistributedTransaction: Adds `DistributedReadTransaction` and `DistributedWriteTransaction` APIs (with `CosmosClient.CreateDistributedReadTransaction` / `CreateDistributedWriteTransaction`) for atomic read and write operations across partitions and containers (preview)
+
 #### Breaking Changes
 
 #### Bugs Fixed
 
+- [5827](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5827) ChangeFeedEstimator: Change feed estimator threw `ArgumentNullException` when an inmemory lease container was being used. Update validations so in-memory lease containers work with change feed estimator
+
 #### Other Changes
+
+- [#5887](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5887) Direct: Documents that `MaxTcpConnectionsPerEndpoint` accepts any positive value to allow customer control of the connection pool size; values of 16 or greater remain recommended.
 
 ### <a name="3.61.0-preview.0"/> [3.61.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.61.0-preview.0) - 2026-5-18
 
@@ -32,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [5815](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5815) Read Consistency Strategy: Adds hub region header for LastCommittedSingleWriteRegion strategy.
 - [5848](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5848) VectorEmbeddingPolicy: Adds EmbeddingSource block to Embedding model
 - [5804](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5804) SemanticReranking: Adds Configurable Request Timeout
+- [5839](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5839) Adds Direct package version upgrade and adds Read Consistency Strategy support for requests routed through the Thin Client proxy.
 
 #### Bugs Fixed
 
@@ -42,7 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Features Added
 
 - [5825](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5825) ChangeFeed: Promotes Full Fidelity Change Feed (AllVersionsAndDeletes) APIs to GA
-- [5839](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5839) Direct: Adds Direct package version bump to 3.43.0
+- [5839](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5839) Adds Direct package version upgrade and fixes TCP keepalive silently failing on Linux issue due to uint overload mismatch.
 
 #### Bugs Fixed
 
