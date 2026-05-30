@@ -270,7 +270,20 @@ namespace Microsoft.Azure.Cosmos.Handlers
             // Append succeeded — now safe to consume the signal so subsequent retries
             // on the same DocumentServiceRequest re-default unless a new reason is set
             // by an upstream site (ClientRetryPolicy or CrossRegionHedgingAvailabilityStrategy).
-            if (propertyPresent)
+            //
+            // Exception: when the reason is Hedging, LEAVE THE PROPERTY IN PLACE so that
+            // subsequent physical retries of this hedge arm (driven by ClientRetryPolicy
+            // on the same cloned RequestMessage — e.g. 410 Gone / 449 on the arm) remain
+            // tagged as Hedging. RequestMessage.Properties and the cached DSR's Properties
+            // are the same reference (see RequestMessage.ToDocumentServiceRequest), so
+            // removing the key here would drain it from RequestMessage.Properties too —
+            // and the retry-driven re-entry of ClientRetryPolicy.OnBeforeSendRequest
+            // would then see an empty slot and overwrite it with OperationRetry /
+            // RegionFailover, silently losing the hedge origin from the
+            // GetRequestedRegions() sequence. The preservation guard in
+            // ClientRetryPolicy.OnBeforeSendRequest (F3) relies on this key still being
+            // present at retry time. Pins F3 review feedback on PR #5868.
+            if (propertyPresent && reason != RequestedRegionReason.Hedging)
             {
                 serviceRequest.Properties.Remove(HedgingDetectionState.DispatchReasonPropertyKey);
             }
