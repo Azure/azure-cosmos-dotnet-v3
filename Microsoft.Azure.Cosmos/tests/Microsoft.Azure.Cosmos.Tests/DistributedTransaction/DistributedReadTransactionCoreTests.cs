@@ -268,7 +268,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .ReturnsAsync(BuildReadSuccessResponse(1));
 
             DistributedReadTransaction tx = new DistributedReadTransactionCore(contextMock.Object)
-                .ReadItem(Database, Collection, TestPartitionKey, ItemId);
+                .ReadItem(BuildMockContainer(), TestPartitionKey, ItemId);
 
             DistributedTransactionResponse response = await tx.CommitTransactionAsync(CancellationToken.None);
             Assert.IsTrue(response.IsSuccessStatusCode);
@@ -298,7 +298,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .ReturnsAsync(BuildReadErrorResponse(HttpStatusCode.ServiceUnavailable));
 
             DistributedReadTransaction tx = new DistributedReadTransactionCore(contextMock.Object)
-                .ReadItem(Database, Collection, TestPartitionKey, ItemId);
+                .ReadItem(BuildMockContainer(), TestPartitionKey, ItemId);
 
             // First commit returns a server error — instance is still consumed.
             DistributedTransactionResponse response = await tx.CommitTransactionAsync(CancellationToken.None);
@@ -339,7 +339,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     });
 
             DistributedReadTransaction tx = new DistributedReadTransactionCore(contextMock.Object)
-                .ReadItem(Database, Collection, TestPartitionKey, ItemId);
+                .ReadItem(BuildMockContainer(), TestPartitionKey, ItemId);
 
             const int RacerCount = 16;
             using ManualResetEventSlim gate = new ManualResetEventSlim(initialState: false);
@@ -444,6 +444,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             containerProps.PartitionKeyPath = "/pk";
 
             Mock<CosmosClientContext> contextMock = new Mock<CosmosClientContext>();
+
+            contextMock
+                .Setup(c => c.Client)
+                .Returns(DistributedReadTransactionCoreTests.SharedMockClient);
 
             contextMock
                 .Setup(c => c.DocumentClient)
