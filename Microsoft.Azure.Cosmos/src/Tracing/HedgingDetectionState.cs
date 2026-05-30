@@ -47,13 +47,23 @@ namespace Microsoft.Azure.Cosmos.Tracing
         private List<RequestedRegion> requestedRegions;
         private List<string> respondedRegions;
 
-        // Volatile + monotonic-true. Read lock-free by the public HedgingStarted getter;
-        // written only under regionLock so the write is ordered with the requestedRegions
-        // mutation that triggers it. See F7 review feedback on PR #5868: the previous
-        // implementation took the lock on every read of a write-once flag, adding an
-        // avoidable Monitor.Enter on the public CosmosDiagnostics.HedgingStarted() hot
-        // path. volatile gives readers an acquire-fence (so the flip cannot be reordered
-        // before the list Add that established it) without contending on regionLock.
+        // Monotonic-true flag (false → true exactly once, never reset). Read lock-free
+        // by the public HedgingStarted getter; written only under regionLock.
+        //
+        // The volatile keyword is REQUIRED FOR THE READER SIDE: it gives the lock-free
+        // getter an acquire fence so the flip cannot be observed before the matching
+        // requestedRegions.Add that established the Hedging entry. On the writer side
+        // volatile's release fence is redundant — the lock release already publishes the
+        // store to other threads — but the write MUST stay inside regionLock so the flag
+        // flip remains atomic with the list Add. If a future contributor moves the write
+        // outside the lock as an "optimization", snapshot readers could observe
+        // HedgingStarted == true before the corresponding RequestedRegion is visible in
+        // GetRequestedRegionsSnapshot(), breaking the diagnostics invariant that
+        // HedgingStarted implies at least one Hedging entry exists.
+        //
+        // See F7 review feedback on PR #5868: the previous implementation took the lock
+        // on every read, adding an avoidable Monitor.Enter on the public
+        // CosmosDiagnostics.HedgingStarted() hot path.
         private volatile bool hedgingStarted;
 
         /// <summary>
@@ -80,6 +90,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 if (reason == RequestedRegionReason.Hedging)
                 {
+                    // Intentionally written inside regionLock so the flag flip is atomic
+                    // with the Add above. See the field-level comment on hedgingStarted.
                     this.hedgingStarted = true;
                 }
             }
