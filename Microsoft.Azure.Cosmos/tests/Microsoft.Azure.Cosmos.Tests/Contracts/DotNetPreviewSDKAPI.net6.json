@@ -1005,10 +1005,10 @@
     "Microsoft.Azure.Cosmos.DistributedReadTransaction;Microsoft.Azure.Cosmos.DistributedTransaction;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.DistributedReadTransaction ReadItem(System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
+        "Microsoft.Azure.Cosmos.DistributedReadTransaction ReadItem(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.DistributedReadTransaction ReadItem(System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.DistributedReadTransaction ReadItem(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -1018,10 +1018,10 @@
         "Microsoft.Azure.Cosmos.DistributedReadTransaction;Microsoft.Azure.Cosmos.DistributedTransaction;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
           "Subclasses": {},
           "Members": {
-            "Microsoft.Azure.Cosmos.DistributedReadTransaction ReadItem(System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
+            "Microsoft.Azure.Cosmos.DistributedReadTransaction ReadItem(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
               "Type": "Method",
               "Attributes": [],
-              "MethodInfo": "Microsoft.Azure.Cosmos.DistributedReadTransaction ReadItem(System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+              "MethodInfo": "Microsoft.Azure.Cosmos.DistributedReadTransaction ReadItem(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             }
           },
           "NestedTypes": {}
@@ -1029,50 +1029,50 @@
         "Microsoft.Azure.Cosmos.DistributedWriteTransaction;Microsoft.Azure.Cosmos.DistributedTransaction;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
           "Subclasses": {},
           "Members": {
-            "Microsoft.Azure.Cosmos.DistributedWriteTransaction CreateItem[T](System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, T, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
+            "Microsoft.Azure.Cosmos.DistributedWriteTransaction CreateItem[T](Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, T, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
               "Type": "Method",
               "Attributes": [],
-              "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction CreateItem[T](System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, T, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+              "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction CreateItem[T](Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, T, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
             },
-            "Microsoft.Azure.Cosmos.DistributedWriteTransaction CreateItemStream(System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
+            "Microsoft.Azure.Cosmos.DistributedWriteTransaction CreateItemStream(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
               "Type": "Method",
               "Attributes": [],
-              "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction CreateItemStream(System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+              "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction CreateItemStream(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "Microsoft.Azure.Cosmos.DistributedWriteTransaction DeleteItem(System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
+            "Microsoft.Azure.Cosmos.DistributedWriteTransaction DeleteItem(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
               "Type": "Method",
               "Attributes": [],
-              "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction DeleteItem(System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+              "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction DeleteItem(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "Microsoft.Azure.Cosmos.DistributedWriteTransaction PatchItem(System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.PatchOperation], Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
+            "Microsoft.Azure.Cosmos.DistributedWriteTransaction PatchItem(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.PatchOperation], Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
               "Type": "Method",
               "Attributes": [],
-              "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction PatchItem(System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.PatchOperation], Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+              "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction PatchItem(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.PatchOperation], Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "Microsoft.Azure.Cosmos.DistributedWriteTransaction PatchItemStream(System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
+            "Microsoft.Azure.Cosmos.DistributedWriteTransaction PatchItemStream(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
               "Type": "Method",
               "Attributes": [],
-              "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction PatchItemStream(System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+              "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction PatchItemStream(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "Microsoft.Azure.Cosmos.DistributedWriteTransaction ReplaceItem[T](System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, T, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
+            "Microsoft.Azure.Cosmos.DistributedWriteTransaction ReplaceItem[T](Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, T, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
               "Type": "Method",
               "Attributes": [],
-              "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction ReplaceItem[T](System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, T, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+              "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction ReplaceItem[T](Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, T, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
             },
-            "Microsoft.Azure.Cosmos.DistributedWriteTransaction ReplaceItemStream(System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
+            "Microsoft.Azure.Cosmos.DistributedWriteTransaction ReplaceItemStream(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
               "Type": "Method",
               "Attributes": [],
-              "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction ReplaceItemStream(System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+              "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction ReplaceItemStream(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "Microsoft.Azure.Cosmos.DistributedWriteTransaction UpsertItem[T](System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, T, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
+            "Microsoft.Azure.Cosmos.DistributedWriteTransaction UpsertItem[T](Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, T, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
               "Type": "Method",
               "Attributes": [],
-              "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction UpsertItem[T](System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, T, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+              "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction UpsertItem[T](Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, T, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
             },
-            "Microsoft.Azure.Cosmos.DistributedWriteTransaction UpsertItemStream(System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
+            "Microsoft.Azure.Cosmos.DistributedWriteTransaction UpsertItemStream(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
               "Type": "Method",
               "Attributes": [],
-              "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction UpsertItemStream(System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+              "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction UpsertItemStream(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             }
           },
           "NestedTypes": {}
@@ -1121,11 +1121,9 @@
           "Attributes": [],
           "MethodInfo": "Boolean get_IsSuccessStatusCode();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Boolean IsSuccessStatusCode[System.Text.Json.Serialization.JsonIgnoreAttribute()]": {
+        "Boolean IsSuccessStatusCode": {
           "Type": "Property",
-          "Attributes": [
-            "JsonIgnoreAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "Boolean IsSuccessStatusCode;CanRead:True;CanWrite:False;Boolean get_IsSuccessStatusCode();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Double get_RequestCharge()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -1135,12 +1133,9 @@
           ],
           "MethodInfo": "Double get_RequestCharge();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Double RequestCharge[System.Text.Json.Serialization.JsonIncludeAttribute()]-[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"requestCharge\")]": {
+        "Double RequestCharge": {
           "Type": "Property",
-          "Attributes": [
-            "JsonIncludeAttribute",
-            "JsonPropertyNameAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "Double RequestCharge;CanRead:True;CanWrite:True;Double get_RequestCharge();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Int32 get_Index()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -1150,12 +1145,9 @@
           ],
           "MethodInfo": "Int32 get_Index();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Int32 Index[System.Text.Json.Serialization.JsonIncludeAttribute()]-[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"index\")]": {
+        "Int32 Index": {
           "Type": "Property",
-          "Attributes": [
-            "JsonIncludeAttribute",
-            "JsonPropertyNameAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "Int32 Index;CanRead:True;CanWrite:True;Int32 get_Index();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.IO.Stream get_ResourceStream()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -1165,11 +1157,9 @@
           ],
           "MethodInfo": "System.IO.Stream get_ResourceStream();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.IO.Stream ResourceStream[System.Text.Json.Serialization.JsonIgnoreAttribute()]": {
+        "System.IO.Stream ResourceStream": {
           "Type": "Property",
-          "Attributes": [
-            "JsonIgnoreAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.IO.Stream ResourceStream;CanRead:True;CanWrite:True;System.IO.Stream get_ResourceStream();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Net.HttpStatusCode get_StatusCode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -1179,20 +1169,14 @@
           ],
           "MethodInfo": "System.Net.HttpStatusCode get_StatusCode();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Net.HttpStatusCode StatusCode[System.Text.Json.Serialization.JsonIncludeAttribute()]-[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"statusCode\")]": {
+        "System.Net.HttpStatusCode StatusCode": {
           "Type": "Property",
-          "Attributes": [
-            "JsonIncludeAttribute",
-            "JsonPropertyNameAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.Net.HttpStatusCode StatusCode;CanRead:True;CanWrite:True;System.Net.HttpStatusCode get_StatusCode();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String ETag[System.Text.Json.Serialization.JsonIncludeAttribute()]-[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"etag\")]": {
+        "System.String ETag": {
           "Type": "Property",
-          "Attributes": [
-            "JsonIncludeAttribute",
-            "JsonPropertyNameAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.String ETag;CanRead:True;CanWrite:True;System.String get_ETag();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.String get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -1201,56 +1185,6 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "System.String get_ETag();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.String get_PartitionKeyRangeId()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.String get_PartitionKeyRangeId();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.String get_SessionToken()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.String get_SessionToken();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.String PartitionKeyRangeId[System.Text.Json.Serialization.JsonIncludeAttribute()]-[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"partitionKeyRangeId\")]": {
-          "Type": "Property",
-          "Attributes": [
-            "JsonIncludeAttribute",
-            "JsonPropertyNameAttribute"
-          ],
-          "MethodInfo": "System.String PartitionKeyRangeId;CanRead:True;CanWrite:True;System.String get_PartitionKeyRangeId();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.String SessionToken[System.Text.Json.Serialization.JsonIncludeAttribute()]-[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"sessionToken\")]": {
-          "Type": "Property",
-          "Attributes": [
-            "JsonIncludeAttribute",
-            "JsonPropertyNameAttribute"
-          ],
-          "MethodInfo": "System.String SessionToken;CanRead:True;CanWrite:True;System.String get_SessionToken();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "UInt32 get_SubStatusCodeValue()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "UInt32 get_SubStatusCodeValue();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "UInt32 SubStatusCodeValue[System.Text.Json.Serialization.JsonIncludeAttribute()]-[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"subStatusCode\")]": {
-          "Type": "Property",
-          "Attributes": [
-            "JsonIncludeAttribute",
-            "JsonPropertyNameAttribute"
-          ],
-          "MethodInfo": "UInt32 SubStatusCodeValue;CanRead:True;CanWrite:True;UInt32 get_SubStatusCodeValue();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void .ctor()[System.Text.Json.Serialization.JsonConstructorAttribute()]": {
-          "Type": "Constructor",
-          "Attributes": [
-            "JsonConstructorAttribute"
-          ],
-          "MethodInfo": "Void .ctor()"
         }
       },
       "NestedTypes": {}
@@ -1468,50 +1402,50 @@
     "Microsoft.Azure.Cosmos.DistributedWriteTransaction;Microsoft.Azure.Cosmos.DistributedTransaction;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.DistributedWriteTransaction CreateItem[T](System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, T, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
+        "Microsoft.Azure.Cosmos.DistributedWriteTransaction CreateItem[T](Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, T, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction CreateItem[T](System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, T, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction CreateItem[T](Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, T, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.DistributedWriteTransaction CreateItemStream(System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
+        "Microsoft.Azure.Cosmos.DistributedWriteTransaction CreateItemStream(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction CreateItemStream(System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction CreateItemStream(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.DistributedWriteTransaction DeleteItem(System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
+        "Microsoft.Azure.Cosmos.DistributedWriteTransaction DeleteItem(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction DeleteItem(System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction DeleteItem(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.DistributedWriteTransaction PatchItem(System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.PatchOperation], Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
+        "Microsoft.Azure.Cosmos.DistributedWriteTransaction PatchItem(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.PatchOperation], Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction PatchItem(System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.PatchOperation], Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction PatchItem(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.PatchOperation], Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.DistributedWriteTransaction PatchItemStream(System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
+        "Microsoft.Azure.Cosmos.DistributedWriteTransaction PatchItemStream(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction PatchItemStream(System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction PatchItemStream(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.DistributedWriteTransaction ReplaceItem[T](System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, T, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
+        "Microsoft.Azure.Cosmos.DistributedWriteTransaction ReplaceItem[T](Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, T, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction ReplaceItem[T](System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, T, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction ReplaceItem[T](Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, T, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.DistributedWriteTransaction ReplaceItemStream(System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
+        "Microsoft.Azure.Cosmos.DistributedWriteTransaction ReplaceItemStream(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction ReplaceItemStream(System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction ReplaceItemStream(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.DistributedWriteTransaction UpsertItem[T](System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, T, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
+        "Microsoft.Azure.Cosmos.DistributedWriteTransaction UpsertItem[T](Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, T, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction UpsertItem[T](System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, T, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction UpsertItem[T](Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, T, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.DistributedWriteTransaction UpsertItemStream(System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
+        "Microsoft.Azure.Cosmos.DistributedWriteTransaction UpsertItemStream(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction UpsertItemStream(System.String, System.String, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction UpsertItemStream(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
