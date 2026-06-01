@@ -388,6 +388,26 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Sets the request timeout for inference service operations (e.g., semantic reranking).
+        /// This is a single-attempt timeout with no retries; if the request does not complete
+        /// within the specified duration, a <see cref="CosmosException"/> with status 408 (Request Timeout) is thrown.
+        /// </summary>
+        /// <param name="inferenceRequestTimeout">A time to use as timeout for inference operations.</param>
+        /// <value>Default value is 5 seconds.</value>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+        /// <seealso cref="CosmosClientOptions.InferenceRequestTimeout"/>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        CosmosClientBuilder WithInferenceRequestTimeout(TimeSpan inferenceRequestTimeout)
+        {
+            this.clientOptions.InferenceRequestTimeout = inferenceRequestTimeout;
+            return this;
+        }
+
+        /// <summary>
         /// Sets the connection mode to Direct. This is used by the client when connecting to the Azure Cosmos DB service.
         /// </summary>
         /// <remarks>
@@ -427,7 +447,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="maxTcpConnectionsPerEndpoint">
         /// Controls the maximum number of TCP connections that may be opened to each Cosmos DB back-end.
         /// Together with MaxRequestsPerTcpConnection, this setting limits the number of requests that are simultaneously sent to a single Cosmos DB back-end(MaxRequestsPerTcpConnection x MaxTcpConnectionPerEndpoint).
-        /// The default value is 65,535. Value must be greater than or equal to 16.
+        /// The default value is 65,535. Any positive value is accepted, allowing applications to constrain the connection pool size when needed; values of 16 or greater are recommended.
         /// </param>
         /// <param name="portReuseMode">
         /// (Direct/TCP) Controls the client port reuse policy used by the transport stack.
@@ -847,6 +867,24 @@ namespace Microsoft.Azure.Cosmos.Fluent
         CosmosClientBuilder WithReadConsistencyStrategy(Cosmos.ReadConsistencyStrategy readConsistencyStrategy)
         {
             this.clientOptions.ReadConsistencyStrategy = readConsistencyStrategy;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the client-wide default <see cref="ICosmosEmbeddingGenerator"/> used to generate
+        /// query-time vector embeddings for hybrid and vector-search queries.
+        /// </summary>
+        /// <param name="embeddingGenerator">The embedding generator to use as the client-wide default.</param>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="embeddingGenerator"/> is <c>null</c>.</exception>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        CosmosClientBuilder WithEmbeddingGenerator(ICosmosEmbeddingGenerator embeddingGenerator)
+        {
+            this.clientOptions.EmbeddingGenerator = embeddingGenerator ?? throw new ArgumentNullException(nameof(embeddingGenerator));
             return this;
         }
     }

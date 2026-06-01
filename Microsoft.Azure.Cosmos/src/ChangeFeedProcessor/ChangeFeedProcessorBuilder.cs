@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.IO;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using static Microsoft.Azure.Cosmos.Container;
@@ -219,15 +220,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
         public virtual ChangeFeedProcessorBuilder WithInMemoryLeaseContainer()
         {
-            if (this.leaseContainer != null)
-            {
-                throw new InvalidOperationException("The builder already defined a lease container.");
-            }
-
-            if (this.LeaseStoreManager != null)
-            {
-                throw new InvalidOperationException("The builder already defined an in-memory lease container instance.");
-            }
+            this.ValidateNoLeaseContainerConfigured();
 
             if (string.IsNullOrEmpty(this.InstanceName))
             {
@@ -235,6 +228,65 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.LeaseStoreManager = new DocumentServiceLeaseStoreManagerInMemory();
+            return this;
+        }
+
+        /// <summary>
+        /// Uses an in-memory container to maintain state of the leases, optionally initialized from a <see cref="MemoryStream"/>
+        /// containing previously persisted lease state.
+        /// 
+        /// When the processor is stopped via <see cref="ChangeFeedProcessor.StopAsync"/>, the current lease state
+        /// is automatically written back to the same <paramref name="leaseState"/> stream, allowing the state to be
+        /// restored when creating a new processor instance.
+        /// 
+        /// Using an in-memory container restricts the scaling capability to just the instance running the current processor.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <see cref="ChangeFeedProcessor.StopAsync"/> must not be invoked concurrently from multiple threads; the
+        /// in-memory container expects a single shutdown call and does not synchronize concurrent writers to
+        /// <paramref name="leaseState"/>.
+        /// </para>
+        /// </remarks>
+        /// <param name="leaseState">
+        /// A <see cref="MemoryStream"/> that serves as both input and output for lease state.
+        /// If the stream contains data, leases are deserialized and used to initialize the container.
+        /// When the processor stops, the current lease state is serialized back into this stream.
+        /// The stream must be writable and expandable (for example, created via <c>new MemoryStream()</c>).
+        /// A fixed-size stream such as <c>new MemoryStream(byte[])</c> will fail at shutdown if the
+        /// serialized lease state exceeds the original buffer capacity.
+        /// A <see cref="MemoryStream"/> is required (rather than the base <see cref="System.IO.Stream"/> type) so that
+        /// the lease state can be trimmed via <see cref="MemoryStream.SetLength(long)"/> when a new snapshot is smaller
+        /// than the previously persisted one. To integrate with <see cref="System.IO.Stream"/>-based persistence
+        /// (e.g., a file or blob), call <see cref="MemoryStream.ToArray"/> after <see cref="ChangeFeedProcessor.StopAsync"/>
+        /// to obtain the persisted bytes; create an expandable
+        /// <see cref="MemoryStream"/> (<c>new MemoryStream()</c>), write the bytes into it, set
+        /// <see cref="System.IO.Stream.Position"/> back to 0, and pass it to this method.
+        /// </param>
+        /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="leaseState"/> is null.</exception>
+        public virtual ChangeFeedProcessorBuilder WithInMemoryLeaseContainer(MemoryStream leaseState)
+        {
+            if (leaseState == null)
+            {
+                throw new ArgumentNullException(nameof(leaseState));
+            }
+
+            this.ValidateNoLeaseContainerConfigured();
+
+            if (!leaseState.CanWrite)
+            {
+                throw new ArgumentException("The lease state stream must be writable so that state can be persisted on shutdown.", nameof(leaseState));
+            }
+
+            if (string.IsNullOrEmpty(this.InstanceName))
+            {
+                this.InstanceName = ChangeFeedProcessorBuilder.InMemoryDefaultHostName;
+            }
+
+            // Deserialization of lease state (if any) is handled inside the manager
+            // so that serialization and deserialization are co-located in the same layer.
+            this.LeaseStoreManager = new DocumentServiceLeaseStoreManagerInMemory(leaseState);
             return this;
         }
 
@@ -316,6 +368,19 @@ namespace Microsoft.Azure.Cosmos
 
             this.isBuilt = true;
             return this.changeFeedProcessor;
+        }
+
+        private void ValidateNoLeaseContainerConfigured()
+        {
+            if (this.leaseContainer != null)
+            {
+                throw new InvalidOperationException("The builder already defined a lease container.");
+            }
+
+            if (this.LeaseStoreManager != null)
+            {
+                throw new InvalidOperationException("The builder already defined an in-memory lease container instance.");
+            }
         }
     }
 }
