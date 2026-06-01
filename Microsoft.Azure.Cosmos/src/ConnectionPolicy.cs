@@ -485,7 +485,7 @@ namespace Microsoft.Azure.Cosmos
         /// Together with MaxRequestsPerTcpConnection, this setting limits the number of requests that are simultaneously sent to a single Cosmos DB back-end(MaxRequestsPerTcpConnection x MaxTcpConnectionPerEndpoint).
         /// </summary>
         /// <value>
-        /// The default value is 65,535. Value must be greater than or equal to 16.
+        /// The default value is 65,535. Any positive value is accepted, allowing applications to constrain the connection pool size when needed; values of 16 or greater are recommended.
         /// </value>
         public int? MaxTcpConnectionsPerEndpoint
         {
