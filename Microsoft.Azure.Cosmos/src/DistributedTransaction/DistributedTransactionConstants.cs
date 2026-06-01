@@ -23,6 +23,15 @@ namespace Microsoft.Azure.Cosmos
             return $"dbs/{database}/colls/{container}";
         }
 
+        /// <summary>
+        /// Validates that the <paramref name="container"/> belongs to <paramref name="expectedClient"/>
+        /// and extracts the database and container identifiers.
+        /// </summary>
+        /// <remarks>
+        /// Only the name identifiers (Database.Id and Container.Id) are used by the distributed transaction
+        /// pipeline. Per-container behaviors such as custom serializers, client-side encryption policies,
+        /// or decorator wrappers attached to the <see cref="Container"/> instance are not honored downstream.
+        /// </remarks>
         internal static (string databaseId, string containerId) ValidateAndUnpackContainer(
             Container container,
             CosmosClient expectedClient)
