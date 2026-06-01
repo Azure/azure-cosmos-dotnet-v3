@@ -49,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
+- [5873](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5873) Direct: Fixes silent truncation of `OpenTcpConnectionTimeout`. Sub-second values in [0, 1s) are now explicitly normalized to 0 and fractional values ≥ 1 second are rounded up to the nearest whole second (for example, 2.3s becomes 3s). Negative values emit a warning trace but are left unchanged for backward compatibility.
 - [5783](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5783) Container: Fixes SemanticRerankAsync TypeLoadException in derived classes
 
 ### <a name="3.60.0"/> [3.60.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.60.0) - 2026-5-18
