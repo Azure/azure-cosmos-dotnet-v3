@@ -33,6 +33,16 @@ namespace Microsoft.Azure.Cosmos
             Exception exception,
             CancellationToken cancellationToken)
         {
+            // Honor the operation-level CancellationToken before scheduling any further retry.
+            // Without this check, a fresh ShouldRetryResult.RetryAfter(...) (exponential backoff up
+            // to ~16s) can be issued even after the caller's token has been cancelled, causing the
+            // operation to overrun the caller's deadline.
+            if (cancellationToken.IsCancellationRequested)
+            {
+                this.durationTimer.Stop();
+                return Task.FromResult(ShouldRetryResult.NoRetry());
+            }
+
             TimeSpan backoffTime = TimeSpan.FromSeconds(0);
 
             if (!WebExceptionUtility.IsWebExceptionRetriable(exception))

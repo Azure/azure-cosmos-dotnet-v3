@@ -48,6 +48,15 @@ namespace Microsoft.Azure.Cosmos
             Exception exception,
             CancellationToken cancellationToken)
         {
+            // Honor the operation-level CancellationToken before scheduling any further retry.
+            // Without this check, a fresh ShouldRetryResult.RetryAfter(...) can be issued even
+            // after the caller's token has been cancelled, causing the operation to overrun the
+            // caller's deadline (default maxWaitTimeInSeconds=60 for throttling backoffs).
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromResult(ShouldRetryResult.NoRetry());
+            }
+
             if (exception is DocumentClientException dce)
             {
                 if (!this.IsValidThrottleStatusCode(dce.StatusCode))
@@ -79,6 +88,12 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage cosmosResponseMessage,
             CancellationToken cancellationToken)
         {
+            // Honor the operation-level CancellationToken before scheduling any further retry.
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromResult(ShouldRetryResult.NoRetry());
+            }
+
             if (!this.IsValidThrottleStatusCode(cosmosResponseMessage?.StatusCode))
             {
                 DefaultTrace.TraceVerbose(
