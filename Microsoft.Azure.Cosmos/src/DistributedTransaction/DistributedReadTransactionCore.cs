@@ -30,21 +30,20 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override DistributedReadTransaction ReadItem(
-            string database,
-            string collection,
+            Container container,
             PartitionKey partitionKey,
             string id,
             DistributedTransactionRequestOptions requestOptions = null)
         {
-            DistributedReadTransactionCore.ValidateContainerReference(database, collection);
+            (string databaseId, string containerId) = DistributedTransactionConstants.ValidateAndUnpackContainer(container, this.clientContext.Client);
             DistributedReadTransactionCore.ValidateItemId(id);
 
             this.operations.Add(
                 new DistributedTransactionOperation(
                     operationType: OperationType.Read,
                     operationIndex: this.operations.Count,
-                    database: database,
-                    container: collection,
+                    database: databaseId,
+                    container: containerId,
                     partitionKey: partitionKey,
                     id: id,
                     requestOptions: requestOptions));
@@ -79,19 +78,6 @@ namespace Microsoft.Azure.Cosmos
                 openTelemetry: new (OpenTelemetryConstants.Operations.CommitDistributedReadTransaction,
                                     (response) => new OpenTelemetryResponse(response)),
                 traceComponent: TraceComponent.Batch);
-        }
-
-        private static void ValidateContainerReference(string database, string collection)
-        {
-            if (string.IsNullOrWhiteSpace(database))
-            {
-                throw new ArgumentNullException(nameof(database));
-            }
-
-            if (string.IsNullOrWhiteSpace(collection))
-            {
-                throw new ArgumentNullException(nameof(collection));
-            }
         }
 
         private static void ValidateItemId(string id)
