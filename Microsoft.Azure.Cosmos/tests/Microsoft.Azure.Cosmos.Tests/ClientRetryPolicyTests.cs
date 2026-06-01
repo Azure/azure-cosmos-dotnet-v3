@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Client.Tests
+namespace Microsoft.Azure.Cosmos.Client.Tests
 {
     using System;
     using Microsoft.Azure.Cosmos.Routing;
@@ -20,6 +20,8 @@
     using System.Net.Http;
     using System.Reflection;
     using System.Collections.Concurrent;
+    using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// Tests for <see cref="ClientRetryPolicy"/>
@@ -1184,6 +1186,361 @@
             ShouldRetryResult innerResult = await policy.ShouldRetryAsync(emptyBodyResponse, CancellationToken.None);
             Assert.IsTrue(innerResult.ShouldRetry,
                 "CRP's inner retry budget must NOT have been consumed by the deferred body-bearing calls; an empty-body response should still trigger an inner retry.");
+        }
+
+        /// <summary>
+        /// Hedging-Detection invariant: when a hedge arm has already been tagged with
+        /// <see cref="RequestedRegionReason.Hedging"/> by
+        /// <c>CrossRegionHedgingAvailabilityStrategy.CloneAndSendAsync</c>, a subsequent retry
+        /// on the same cloned request (e.g. 410 Gone, 449) must NOT silently overwrite the
+        /// dispatch reason with <see cref="RequestedRegionReason.OperationRetry"/> or
+        /// <see cref="RequestedRegionReason.RegionFailover"/>. Doing so would erase the hedge
+        /// origin from the <c>GetRequestedRegions()</c> sequence on the second dispatch of
+        /// the same arm. Pins F3 review feedback on PR #5868.
+        /// </summary>
+        [TestMethod]
+        public async Task OnBeforeSendRequest_HedgeArmRetry_PreservesHedgingReason()
+        {
+            // Arrange — standard 2-region client (matches the Initialize() defaults).
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery,
+                isThinClientEnabled: false);
+
+            // A hedge-arm dispatch carries a pre-seeded Hedging tag in Properties (this
+            // mirrors what CrossRegionHedgingAvailabilityStrategy.CloneAndSendAsync does
+            // for requestNumber > 0).
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            request.Properties = new Dictionary<string, object>
+            {
+                {
+                    Microsoft.Azure.Cosmos.Tracing.HedgingDetectionState.DispatchReasonPropertyKey,
+                    RequestedRegionReason.Hedging
+                }
+            };
+
+            // First attempt — retryContext is null, so OnBeforeSendRequest must not touch
+            // the existing Hedging value.
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.IsTrue(
+                request.Properties.TryGetValue(
+                    Microsoft.Azure.Cosmos.Tracing.HedgingDetectionState.DispatchReasonPropertyKey,
+                    out object firstAttemptReasonObj),
+                "Hedging tag must survive the first OnBeforeSendRequest call (retryContext == null).");
+            Assert.AreEqual(RequestedRegionReason.Hedging, firstAttemptReasonObj);
+
+            // Simulate a 410 Gone on the hedge arm → retryContext gets populated.
+            // 410/LeaseNotFound flows through ShouldRetryOnUnavailableEndpointStatusCodes
+            // and yields RetryRequestOnPreferredLocations = true (RegionFailover-shaped).
+            DocumentClientException leaseNotFound = new DocumentClientException(
+                message: "LeaseNotFound on hedge arm",
+                innerException: null,
+                statusCode: HttpStatusCode.Gone,
+                substatusCode: SubStatusCodes.LeaseNotFound,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: new DictionaryNameValueCollection());
+
+            ShouldRetryResult retryDecision = await retryPolicy.ShouldRetryAsync(leaseNotFound, CancellationToken.None);
+            Assert.IsTrue(retryDecision.ShouldRetry, "410/LeaseNotFound must trigger a CRP retry decision.");
+
+            // Critical assertion — second OnBeforeSendRequest (retryContext != null) must
+            // PRESERVE the existing Hedging tag rather than overwriting it. Without the
+            // preservation guard this would flip to RegionFailover / OperationRetry, and
+            // the dispatch site would record the retry of the hedge arm as a same-region
+            // retry, losing the hedge origin entirely.
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.IsTrue(
+                request.Properties.TryGetValue(
+                    Microsoft.Azure.Cosmos.Tracing.HedgingDetectionState.DispatchReasonPropertyKey,
+                    out object retryReasonObj),
+                "Hedging tag must still be present on Properties after the hedge-arm retry.");
+            Assert.AreEqual(
+                RequestedRegionReason.Hedging,
+                retryReasonObj,
+                "Hedge-arm retry must NOT overwrite Hedging with RegionFailover / OperationRetry — see F3 on PR #5868.");
+        }
+
+        /// <summary>
+        /// Companion to <see cref="OnBeforeSendRequest_HedgeArmRetry_PreservesHedgingReason"/>:
+        /// when the existing tag is NOT <see cref="RequestedRegionReason.Hedging"/> (e.g. it
+        /// is the OperationRetry value written by a previous retry), the policy MUST overwrite
+        /// it with the new retry reason. The preservation guard is strictly scoped to
+        /// <see cref="RequestedRegionReason.Hedging"/>.
+        /// </summary>
+        [TestMethod]
+        public async Task OnBeforeSendRequest_NonHedgeRetry_OverwritesPreviousReason()
+        {
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery,
+                isThinClientEnabled: false);
+
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            request.Properties = new Dictionary<string, object>
+            {
+                {
+                    Microsoft.Azure.Cosmos.Tracing.HedgingDetectionState.DispatchReasonPropertyKey,
+                    RequestedRegionReason.OperationRetry
+                }
+            };
+
+            // First attempt (retryContext == null): nothing overwritten.
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.AreEqual(
+                RequestedRegionReason.OperationRetry,
+                request.Properties[Microsoft.Azure.Cosmos.Tracing.HedgingDetectionState.DispatchReasonPropertyKey]);
+
+            // Drive a 410/LeaseNotFound → ShouldRetryOnUnavailableEndpointStatusCodes
+            // sets retryContext.RetryRequestOnPreferredLocations = true.
+            DocumentClientException leaseNotFound = new DocumentClientException(
+                message: "LeaseNotFound",
+                innerException: null,
+                statusCode: HttpStatusCode.Gone,
+                substatusCode: SubStatusCodes.LeaseNotFound,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: new DictionaryNameValueCollection());
+
+            ShouldRetryResult retryDecision = await retryPolicy.ShouldRetryAsync(leaseNotFound, CancellationToken.None);
+            Assert.IsTrue(retryDecision.ShouldRetry);
+
+            // Now the policy SHOULD overwrite OperationRetry → RegionFailover.
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.AreEqual(
+                RequestedRegionReason.RegionFailover,
+                request.Properties[Microsoft.Azure.Cosmos.Tracing.HedgingDetectionState.DispatchReasonPropertyKey],
+                "Non-Hedging tag must be overwritten by the policy's new retry reason.");
+        }
+
+        /// <summary>
+        /// Pins the F3 fix on <see cref="TransportHandler.AppendDispatchedRegion"/>: when
+        /// the resolved dispatch reason is <see cref="RequestedRegionReason.Hedging"/>,
+        /// the dispatch site MUST NOT remove the property from
+        /// <c>DocumentServiceRequest.Properties</c>. Subsequent physical retries of the
+        /// same hedge arm (driven by <see cref="ClientRetryPolicy"/> via
+        /// <c>OnBeforeSendRequest</c> on the same cloned <c>RequestMessage</c>) need to
+        /// observe the existing Hedging tag so the preservation guard in
+        /// <see cref="ClientRetryPolicy.OnBeforeSendRequest"/> can keep the reason as
+        /// Hedging rather than overwriting it with OperationRetry / RegionFailover.
+        ///
+        /// Pins F3 review feedback on PR #5868: without this carve-out the F3 preservation
+        /// guard is dead code in production because TransportHandler drains the shared
+        /// Properties dictionary before the retry-driven re-entry of OnBeforeSendRequest
+        /// can observe it.
+        /// </summary>
+        [TestMethod]
+        public void AppendDispatchedRegion_HedgingReason_LeavesPropertyForRetry()
+        {
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: false);
+
+            using ITrace rootTrace = Trace.GetRootTrace("AppendDispatchedRegion_HedgingReason");
+            using RequestMessage requestMessage = new RequestMessage(
+                HttpMethod.Get,
+                "/dbs/db/colls/coll/docs/id",
+                rootTrace)
+            {
+                ResourceType = ResourceType.Document,
+                OperationType = OperationType.Read,
+            };
+
+            DocumentServiceRequest serviceRequest = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            serviceRequest.RequestContext.RouteToLocation(ClientRetryPolicyTests.Location1Endpoint);
+            serviceRequest.Properties = new Dictionary<string, object>
+            {
+                {
+                    HedgingDetectionState.DispatchReasonPropertyKey,
+                    RequestedRegionReason.Hedging
+                }
+            };
+
+            TransportHandler.AppendDispatchedRegion(requestMessage, serviceRequest, endpointManager);
+
+            // The Hedging entry must have been recorded ...
+            IReadOnlyList<RequestedRegion> regions = rootTrace.Summary.HedgingDetectionState.GetRequestedRegionsSnapshot();
+            Assert.AreEqual(1, regions.Count, "AppendRequested should have recorded exactly one region.");
+            Assert.AreEqual(RequestedRegionReason.Hedging, regions[0].Reason);
+
+            // ... AND the property must remain so subsequent retries can observe it
+            // (this is the F3 carve-out).
+            Assert.IsTrue(
+                serviceRequest.Properties.ContainsKey(HedgingDetectionState.DispatchReasonPropertyKey),
+                "Hedging property must remain on Properties after AppendDispatchedRegion so the F3 preservation guard in ClientRetryPolicy can keep it on the next physical retry of this hedge arm.");
+            Assert.AreEqual(
+                RequestedRegionReason.Hedging,
+                serviceRequest.Properties[HedgingDetectionState.DispatchReasonPropertyKey],
+                "Hedging property value must be unchanged.");
+        }
+
+        /// <summary>
+        /// Inverse of <see cref="AppendDispatchedRegion_HedgingReason_LeavesPropertyForRetry"/>:
+        /// when the resolved reason is NOT Hedging (e.g. OperationRetry written by
+        /// <see cref="ClientRetryPolicy"/> on a same-region retry), the dispatch site MUST
+        /// consume the property so a subsequent dispatch without a fresh upstream tag
+        /// defaults to <see cref="RequestedRegionReason.Initial"/> rather than re-using
+        /// the stale OperationRetry / RegionFailover value. Pins the original F5 behavior
+        /// for non-Hedging reasons.
+        /// </summary>
+        [TestMethod]
+        public void AppendDispatchedRegion_NonHedgingReason_RemovesPropertyAfterConsume()
+        {
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: false);
+
+            using ITrace rootTrace = Trace.GetRootTrace("AppendDispatchedRegion_NonHedgingReason");
+            using RequestMessage requestMessage = new RequestMessage(
+                HttpMethod.Get,
+                "/dbs/db/colls/coll/docs/id",
+                rootTrace)
+            {
+                ResourceType = ResourceType.Document,
+                OperationType = OperationType.Read,
+            };
+
+            DocumentServiceRequest serviceRequest = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            serviceRequest.RequestContext.RouteToLocation(ClientRetryPolicyTests.Location1Endpoint);
+            serviceRequest.Properties = new Dictionary<string, object>
+            {
+                {
+                    HedgingDetectionState.DispatchReasonPropertyKey,
+                    RequestedRegionReason.OperationRetry
+                }
+            };
+
+            TransportHandler.AppendDispatchedRegion(requestMessage, serviceRequest, endpointManager);
+
+            IReadOnlyList<RequestedRegion> regions = rootTrace.Summary.HedgingDetectionState.GetRequestedRegionsSnapshot();
+            Assert.AreEqual(1, regions.Count);
+            Assert.AreEqual(RequestedRegionReason.OperationRetry, regions[0].Reason);
+
+            Assert.IsFalse(
+                serviceRequest.Properties.ContainsKey(HedgingDetectionState.DispatchReasonPropertyKey),
+                "Non-Hedging property must be removed after AppendDispatchedRegion so subsequent dispatches default to Initial unless explicitly re-tagged.");
+        }
+
+        /// <summary>
+        /// End-to-end production-order test for F3 + F5: drives the exact sequence the
+        /// hedge-arm retry path takes inside <see cref="TransportHandler.ProcessMessageAsync"/>:
+        /// <list type="number">
+        /// <item>Strategy seeds <c>Properties[KEY] = Hedging</c>.</item>
+        /// <item><c>OnBeforeSendRequest</c> (first attempt, retryContext == null) leaves it alone.</item>
+        /// <item><c>AppendDispatchedRegion</c> consumes it. With the F3 fix this LEAVES the
+        /// property on Properties because the reason was Hedging.</item>
+        /// <item>410 Gone -> <c>ShouldRetryAsync</c> populates <c>retryContext</c>.</item>
+        /// <item><c>OnBeforeSendRequest</c> (retry, retryContext != null) MUST see Hedging
+        /// on Properties and preserve it via the F3 guard.</item>
+        /// <item><c>AppendDispatchedRegion</c> on the retry records the second physical
+        /// dispatch as Hedging, not as RegionFailover.</item>
+        /// </list>
+        /// Without the F3 fix in <see cref="TransportHandler.AppendDispatchedRegion"/>,
+        /// the property would be drained at step 3 and the retry would be silently
+        /// recorded as RegionFailover, defeating the F3 guard in
+        /// <see cref="ClientRetryPolicy.OnBeforeSendRequest"/>.
+        /// </summary>
+        [TestMethod]
+        public async Task HedgeArmRetry_ProductionOrder_RecordsBothPhysicalAttemptsAsHedging()
+        {
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: false);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery: true,
+                isThinClientEnabled: false);
+
+            using ITrace rootTrace = Trace.GetRootTrace("HedgeArmRetry_ProductionOrder");
+            using RequestMessage requestMessage = new RequestMessage(
+                HttpMethod.Get,
+                "/dbs/db/colls/coll/docs/id",
+                rootTrace)
+            {
+                ResourceType = ResourceType.Document,
+                OperationType = OperationType.Read,
+            };
+
+            // Step 1: hedge orchestrator pre-seeds Properties[KEY] = Hedging on the
+            // cloned RequestMessage before it enters the pipeline.
+            requestMessage.Properties[HedgingDetectionState.DispatchReasonPropertyKey] =
+                RequestedRegionReason.Hedging;
+
+            // Hand-build a DSR whose Properties is the SAME reference as
+            // requestMessage.Properties — this mirrors RequestMessage.ToDocumentServiceRequest()
+            // line 302 (`serviceRequest.Properties = this.Properties`) and is essential
+            // for reproducing the bug: TransportHandler.Remove on serviceRequest.Properties
+            // also mutates requestMessage.Properties.
+            DocumentServiceRequest serviceRequest = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            serviceRequest.Properties = requestMessage.Properties;
+            serviceRequest.RequestContext.RouteToLocation(ClientRetryPolicyTests.Location1Endpoint);
+
+            // Step 2: first OnBeforeSendRequest (retryContext == null). The Hedging tag
+            // must survive.
+            retryPolicy.OnBeforeSendRequest(serviceRequest);
+            Assert.AreEqual(
+                RequestedRegionReason.Hedging,
+                serviceRequest.Properties[HedgingDetectionState.DispatchReasonPropertyKey],
+                "First OnBeforeSendRequest (retryContext == null) must not touch the Hedging tag.");
+
+            // Step 3: AppendDispatchedRegion consumes the property (records the first
+            // physical hedge dispatch). With the F3 fix the property remains.
+            TransportHandler.AppendDispatchedRegion(requestMessage, serviceRequest, endpointManager);
+            Assert.IsTrue(
+                serviceRequest.Properties.ContainsKey(HedgingDetectionState.DispatchReasonPropertyKey),
+                "F3 fix: Hedging property must survive TransportHandler.AppendDispatchedRegion so the next retry's OnBeforeSendRequest can preserve it.");
+
+            // Step 4: 410 Gone -> ShouldRetryAsync populates retryContext.
+            DocumentClientException leaseNotFound = new DocumentClientException(
+                message: "LeaseNotFound on hedge arm",
+                innerException: null,
+                statusCode: HttpStatusCode.Gone,
+                substatusCode: SubStatusCodes.LeaseNotFound,
+                requestUri: serviceRequest.RequestContext.LocationEndpointToRoute,
+                responseHeaders: new DictionaryNameValueCollection());
+            ShouldRetryResult retryDecision = await retryPolicy.ShouldRetryAsync(leaseNotFound, CancellationToken.None);
+            Assert.IsTrue(retryDecision.ShouldRetry, "410/LeaseNotFound must trigger a CRP retry decision on a hedge arm.");
+
+            // Step 5: second OnBeforeSendRequest (retryContext != null). The F3 guard
+            // MUST observe Hedging on Properties and preserve it.
+            retryPolicy.OnBeforeSendRequest(serviceRequest);
+            Assert.AreEqual(
+                RequestedRegionReason.Hedging,
+                serviceRequest.Properties[HedgingDetectionState.DispatchReasonPropertyKey],
+                "F3 guard must preserve Hedging on the retry-side OnBeforeSendRequest — otherwise the hedge origin is silently overwritten with RegionFailover.");
+
+            // Step 6: AppendDispatchedRegion on the retry records the second physical
+            // attempt — also as Hedging.
+            TransportHandler.AppendDispatchedRegion(requestMessage, serviceRequest, endpointManager);
+
+            IReadOnlyList<RequestedRegion> regions = rootTrace.Summary.HedgingDetectionState.GetRequestedRegionsSnapshot();
+            Assert.AreEqual(2, regions.Count, "Both physical dispatches of the hedge arm should have been recorded.");
+            Assert.IsTrue(
+                regions.All(r => r.Reason == RequestedRegionReason.Hedging),
+                $"Both physical retries of the hedge arm must be recorded as Hedging, not RegionFailover. Actual reasons: [{string.Join(", ", regions.Select(r => r.Reason))}].");
+            Assert.IsTrue(
+                rootTrace.Summary.HedgingDetectionState.HedgingStarted,
+                "HedgingStarted must be true after a Hedging entry has been appended.");
         }
 
         private static DocumentServiceRequest CreateDtxRequest()
