@@ -31,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Bugs Fixed
 
 - [5827](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5827) ChangeFeedEstimator: Change feed estimator threw `ArgumentNullException` when an inmemory lease container was being used. Update validations so in-memory lease containers work with change feed estimator
+- [5910](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5910) Upgraded Direct package to 3.43.2.
+- [5910](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5910) Direct: Fixed RNTBD thread-pool starvation by making `Dispatcher.OnIdleTimer` asynchronous (ports public [PR 5817](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5817))
 
 #### Other Changes
 
