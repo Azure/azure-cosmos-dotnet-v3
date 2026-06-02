@@ -26,6 +26,26 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         }
 
         [TestMethod]
+        public void Equality_RegionNameIsCaseInsensitive()
+        {
+            RequestedRegion a = new RequestedRegion("East US", RequestedRegionReason.Initial);
+            RequestedRegion b = new RequestedRegion("east us", RequestedRegionReason.Initial);
+
+            Assert.IsTrue(a.Equals(b));
+            Assert.IsTrue(a.Equals((object)b));
+            Assert.AreEqual(a.GetHashCode(), b.GetHashCode());
+        }
+
+        [TestMethod]
+        public void Equality_DifferentReason_NotEqual()
+        {
+            RequestedRegion a = new RequestedRegion("East US", RequestedRegionReason.Initial);
+            RequestedRegion b = new RequestedRegion("East US", RequestedRegionReason.Hedging);
+
+            Assert.IsFalse(a.Equals(b));
+        }
+
+        [TestMethod]
         public void Equals_NonRequestedRegionObject_ReturnsFalse()
         {
             RequestedRegion r = new RequestedRegion("East US", RequestedRegionReason.Initial);
