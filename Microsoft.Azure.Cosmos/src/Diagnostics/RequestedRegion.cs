@@ -54,26 +54,6 @@ namespace Microsoft.Azure.Cosmos
                 && this.Reason == other.Reason;
         }
 
-        /// <inheritdoc/>
-        public override bool Equals(object obj)
-        {
-            return obj is RequestedRegion other && this.Equals(other);
-        }
-
-        /// <inheritdoc/>
-        public override int GetHashCode()
-        {
-            int regionHash = this.RegionName == null
-                ? 0
-                : StringComparer.OrdinalIgnoreCase.GetHashCode(this.RegionName);
-            // Combine without depending on System.HashCode (net6+) to keep this constant
-            // across TFMs.
-            unchecked
-            {
-                return (regionHash * 397) ^ (byte)this.Reason;
-            }
-        }
-
         /// <summary>
         /// Returns a human-readable representation of this <see cref="RequestedRegion"/> in the
         /// form <c>"{regionName}:{reason}"</c>.
@@ -83,21 +63,5 @@ namespace Microsoft.Azure.Cosmos
         {
             return $"{this.RegionName}:{this.Reason}";
         }
-
-        /// <summary>
-        /// Equality operator.
-        /// </summary>
-        /// <param name="left">The left operand.</param>
-        /// <param name="right">The right operand.</param>
-        /// <returns><c>true</c> if the two values are equal; otherwise <c>false</c>.</returns>
-        public static bool operator ==(RequestedRegion left, RequestedRegion right) => left.Equals(right);
-
-        /// <summary>
-        /// Inequality operator.
-        /// </summary>
-        /// <param name="left">The left operand.</param>
-        /// <param name="right">The right operand.</param>
-        /// <returns><c>true</c> if the two values are not equal; otherwise <c>false</c>.</returns>
-        public static bool operator !=(RequestedRegion left, RequestedRegion right) => !left.Equals(right);
     }
 }
