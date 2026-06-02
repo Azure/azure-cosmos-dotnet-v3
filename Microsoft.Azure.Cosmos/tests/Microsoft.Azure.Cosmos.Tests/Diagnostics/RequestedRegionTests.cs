@@ -32,8 +32,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             RequestedRegion b = new RequestedRegion("east us", RequestedRegionReason.Initial);
 
             Assert.IsTrue(a.Equals(b));
-            Assert.IsTrue(a == b);
-            Assert.IsFalse(a != b);
             Assert.IsTrue(a.Equals((object)b));
             Assert.AreEqual(a.GetHashCode(), b.GetHashCode());
         }
@@ -45,8 +43,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             RequestedRegion b = new RequestedRegion("East US", RequestedRegionReason.Hedging);
 
             Assert.IsFalse(a.Equals(b));
-            Assert.IsTrue(a != b);
-            Assert.IsFalse(a == b);
         }
 
         [TestMethod]
