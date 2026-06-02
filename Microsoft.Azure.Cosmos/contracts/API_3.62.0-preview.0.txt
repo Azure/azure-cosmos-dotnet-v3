@@ -1246,8 +1246,6 @@ namespace Microsoft.Azure.Cosmos
         public bool Equals(RequestedRegion other);
         public override bool Equals(object obj);
         public override int GetHashCode();
-        public static bool operator ==(RequestedRegion left, RequestedRegion right);
-        public static bool operator !=(RequestedRegion left, RequestedRegion right);
         public override string ToString();
     }
     public enum RequestedRegionReason : byte
