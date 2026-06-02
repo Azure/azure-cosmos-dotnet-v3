@@ -532,7 +532,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
         [TestMethod]
         [Owner("aavasthy")]
-        [Description("Full hub caching flow — STEP 1 cold cache discovery+populate, STEP 3 warm cache eager short-circuit after a single 404/1002.")]
+        [Description("Full hub caching flow — STEP 1 cold cache discovery+populate, STEP 3 warm cache 2-wire fast path: wire 2 routes directly to cached hub WITHOUT the hub header (trusts the cache).")]
         public async Task ClientRetryPolicy_After404With1002Twice_Then403_3_ThenSuccess_CachesHub_AndSubsequentRequestReusesCache()
         {
             // Ensure hub region processing is enabled for this test
@@ -652,7 +652,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 Assert.IsFalse(normalOverride,
                     "Without hub header, partition-level cache should NOT override routing.");
 
-                // ===== STEP 3: Second request with errors (warm cache) =====
+                // ===== STEP 3: Second request — warm cache (2-wire fast path) =====
                 ClientRetryPolicy retryPolicy2 = new ClientRetryPolicy(
                     endpointManager,
                     cacheManager,
@@ -665,38 +665,288 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
                 retryPolicy2.OnBeforeSendRequest(request2);
                 Assert.IsNull(request2.Headers.GetValues(HubRegionHeader),
-                    "Fresh request should NOT have hub header.");
+                    "Wire 1 (fresh request, no retry, sessionTokenRetryCount=0) MUST NOT carry the hub header.");
 
-                // Simulate 404/1002 #1 on request 2 — warm cache hit triggers eager cache routing.
-                // With the warm cache, ShouldRetryOnSessionNotAvailable looks up the cache after the
-                // very first 404/1002 and sets addHubRegionProcessingOnlyHeader so OnBeforeSendRequest
-                // routes the next attempt straight to the cached hub (turns a 3-wire chain into 2 wires).
+                // Simulate 404/1002 #1 on request 2 (preferred region).
+                // sessionTokenRetryCount becomes 1. The cold-cache flag-set block at line 528 does
+                // NOT fire (1 < 2), so addHubRegionProcessingOnlyHeader stays FALSE.
+                // The next OnBeforeSendRequest does a warm-cache lookup (gated on
+                // sessionTokenRetryCount > 0) and routes wire 2 directly to the cached hub WITHOUT
+                // attaching the header — the warm-cache fast path.
                 DocumentClientException error5 = new DocumentClientException(
-                    message: "404/1002 #1 on request 2 — warm cache hit",
+                    message: "404/1002 #1 on request 2 (preferred)",
                     innerException: null,
                     statusCode: HttpStatusCode.NotFound,
                     substatusCode: SubStatusCodes.ReadSessionNotAvailable,
                     requestUri: ClientRetryPolicyTests.Location1Endpoint,
                     responseHeaders: new DictionaryNameValueCollection());
                 ShouldRetryResult shouldRetry5 = await retryPolicy2.ShouldRetryAsync(error5, CancellationToken.None);
-                Assert.IsTrue(shouldRetry5.ShouldRetry, "Should retry — warm cache routes directly to hub.");
+                Assert.IsTrue(shouldRetry5.ShouldRetry, "Should retry — warm cache routes wire 2 directly to cached hub.");
 
-                // Hub header is ACTIVE on the very next attempt because the cache lookup at count=1 hit
-                // and set the addHubRegionProcessingOnlyHeader flag. The next OnBeforeSendRequest call
-                // both attaches the header AND routes the request to the cached hub via line 281's
-                // cache lookup — saving the write-region detour that R1 had to take.
                 retryPolicy2.OnBeforeSendRequest(request2);
 
-                string[] headerValues2 = request2.Headers.GetValues(HubRegionHeader);
-                Assert.IsNotNull(headerValues2,
-                    "Hub header MUST be present on the first retry when warm cache is available (eager cache routing).");
-                Assert.AreEqual(bool.TrueString, headerValues2[0]);
+                Assert.IsNull(request2.Headers.GetValues(HubRegionHeader),
+                    "Wire 2 (warm-cache fast path) MUST NOT carry the hub header — the header is only attached after the cold-cache threshold (2 × 404/1002).");
 
-                // Verify the warm cache routes to the hub region discovered in STEP 1.
-                bool cachedOverride = cacheManager.TryAddPartitionLevelLocationOverride(request2, checkHubRegionOverrideInCache: true);
-                Assert.IsTrue(cachedOverride, "With checkHubRegionOverrideInCache, cache should route to cached hub.");
                 Assert.AreEqual(hubRegion, request2.RequestContext.LocationEndpointToRoute,
-                    "Should route to cached hub directly (skipping 403/3 discovery).");
+                    "Wire 2 MUST route directly to the cached hub via the warm-cache cache override — skips the write-region detour AND the 403/3 discovery chain.");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled, originalHubRegionFlag);
+            }
+        }
+
+        /// <summary>
+        /// Hub reassignment: after R1 populates the cache with hub A,
+        /// a subsequent request that escalates to the header-bearing retry and receives 403/3 from
+        /// the cached hub must invalidate the cache via TryMoveNextLocation.
+        /// </summary>
+        [TestMethod]
+        [Owner("aavasthy")]
+        [Description("Hub reassignment: 403/3 from cached hub with hub header invalidates the cache (Current advances).")]
+        public async Task ClientRetryPolicy_HubRegion_403_3_OnCachedHub_InvalidatesCache()
+        {
+            string originalHubRegionFlag = Environment.GetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled);
+            Environment.SetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled, "True");
+
+            try
+            {
+                const bool enableEndpointDiscovery = true;
+                using GlobalEndpointManager endpointManager = this.Initialize(
+                    useMultipleWriteLocations: false,
+                    enableEndpointDiscovery: enableEndpointDiscovery,
+                    isPreferredLocationsListEmpty: false,
+                    enforceSingleMasterSingleWriteLocation: true);
+
+                GlobalPartitionEndpointManagerCore cacheManager = new GlobalPartitionEndpointManagerCore(
+                    endpointManager,
+                    isPartitionLevelFailoverEnabled: true);
+                PartitionKeyRange pkRange = new PartitionKeyRange { Id = "0", MinInclusive = "", MaxExclusive = "FF" };
+
+                // Pre-populate the cache with hub A via TryCacheHubRegionLocationForPartition.
+                Uri hubA = ClientRetryPolicyTests.Location1Endpoint;
+                DocumentServiceRequest seed = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+                seed.RequestContext.ResolvedPartitionKeyRange = pkRange;
+                seed.RequestContext.RouteToLocation(hubA);
+                seed.Headers[HubRegionHeader] = bool.TrueString;
+                cacheManager.TryCacheHubRegionLocationForPartition(seed);
+
+                DocumentServiceRequest probe = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+                probe.RequestContext.ResolvedPartitionKeyRange = pkRange;
+                probe.Headers[HubRegionHeader] = bool.TrueString;
+                Assert.IsTrue(cacheManager.TryAddPartitionLevelLocationOverride(probe, checkHubRegionOverrideInCache: true));
+                Assert.AreEqual(hubA, probe.RequestContext.LocationEndpointToRoute, "Cache must start at hub A.");
+
+                // Drive the policy through a header-bearing 403/3 from the cached hub.
+                ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                    endpointManager, cacheManager, new RetryOptions(), enableEndpointDiscovery, isThinClientEnabled: false);
+                DocumentServiceRequest request = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+                request.RequestContext.ResolvedPartitionKeyRange = pkRange;
+
+                // Wire 1 + 2: two 404/1002s arm the header flag.
+                retryPolicy.OnBeforeSendRequest(request);
+                await retryPolicy.ShouldRetryAsync(
+                    new DocumentClientException(
+                        message: "404/1002 #1",
+                        innerException: null,
+                        statusCode: HttpStatusCode.NotFound,
+                        substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                        requestUri: request.RequestContext.LocationEndpointToRoute,
+                        responseHeaders: new DictionaryNameValueCollection()),
+                    CancellationToken.None);
+                retryPolicy.OnBeforeSendRequest(request);
+                await retryPolicy.ShouldRetryAsync(
+                    new DocumentClientException(
+                        message: "404/1002 #2",
+                        innerException: null,
+                        statusCode: HttpStatusCode.NotFound,
+                        substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                        requestUri: request.RequestContext.LocationEndpointToRoute,
+                        responseHeaders: new DictionaryNameValueCollection()),
+                    CancellationToken.None);
+
+                // Wire 3: header attached, cache HIT -> routes to hub A. Simulate 403/3 (reassignment).
+                retryPolicy.OnBeforeSendRequest(request);
+                Assert.IsNotNull(request.Headers.GetValues(HubRegionHeader), "Wire 3 must carry the hub header.");
+                Assert.AreEqual(hubA, request.RequestContext.LocationEndpointToRoute, "Wire 3 must route to cached hub A.");
+
+                ShouldRetryResult retry403 = await retryPolicy.ShouldRetryAsync(
+                    new DocumentClientException(
+                        message: "403/3 from cached hub A (reassignment)",
+                        innerException: null,
+                        statusCode: HttpStatusCode.Forbidden,
+                        substatusCode: SubStatusCodes.WriteForbidden,
+                        requestUri: hubA,
+                        responseHeaders: new DictionaryNameValueCollection()),
+                    CancellationToken.None);
+
+                Assert.IsTrue(retry403.ShouldRetry, "403/3 on cached hub must trigger a retry on the advanced location.");
+
+                // Cache must have advanced: probe again with header → either MISS (cache cleared) OR HIT on a different region.
+                DocumentServiceRequest postProbe = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+                postProbe.RequestContext.ResolvedPartitionKeyRange = pkRange;
+                postProbe.Headers[HubRegionHeader] = bool.TrueString;
+                bool postHit = cacheManager.TryAddPartitionLevelLocationOverride(postProbe, checkHubRegionOverrideInCache: true);
+                if (postHit)
+                {
+                    Assert.AreNotEqual(hubA, postProbe.RequestContext.LocationEndpointToRoute,
+                        "After 403/3 on hub A, cache Current must NOT still be hub A.");
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled, originalHubRegionFlag);
+            }
+        }
+
+        /// <summary>
+        /// Cached hub returns 503. Pins existing behavior: hub-region caching does NOT add 503-specific
+        /// invalidation.
+        /// </summary>
+        [TestMethod]
+        [Owner("aavasthy")]
+        [Description("503 from cached hub: cache NOT invalidated; uses standard 503 retry path.")]
+        public async Task ClientRetryPolicy_HubRegion_503_OnCachedHub_DoesNotInvalidateCache()
+        {
+            string originalHubRegionFlag = Environment.GetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled);
+            Environment.SetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled, "True");
+
+            try
+            {
+                const bool enableEndpointDiscovery = true;
+                using GlobalEndpointManager endpointManager = this.Initialize(
+                    useMultipleWriteLocations: false,
+                    enableEndpointDiscovery: enableEndpointDiscovery,
+                    isPreferredLocationsListEmpty: false,
+                    enforceSingleMasterSingleWriteLocation: true);
+
+                GlobalPartitionEndpointManagerCore cacheManager = new GlobalPartitionEndpointManagerCore(
+                    endpointManager,
+                    isPartitionLevelFailoverEnabled: true);
+                PartitionKeyRange pkRange = new PartitionKeyRange { Id = "0", MinInclusive = "", MaxExclusive = "FF" };
+
+                Uri hubA = ClientRetryPolicyTests.Location1Endpoint;
+                DocumentServiceRequest seed = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+                seed.RequestContext.ResolvedPartitionKeyRange = pkRange;
+                seed.RequestContext.RouteToLocation(hubA);
+                seed.Headers[HubRegionHeader] = bool.TrueString;
+                cacheManager.TryCacheHubRegionLocationForPartition(seed);
+
+                ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                    endpointManager, cacheManager, new RetryOptions(), enableEndpointDiscovery, isThinClientEnabled: false);
+                DocumentServiceRequest request = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+                request.RequestContext.ResolvedPartitionKeyRange = pkRange;
+
+                // Wire 1: 404/1002 to drive retry.
+                retryPolicy.OnBeforeSendRequest(request);
+                await retryPolicy.ShouldRetryAsync(
+                    new DocumentClientException(
+                        message: "404/1002",
+                        innerException: null,
+                        statusCode: HttpStatusCode.NotFound,
+                        substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                        requestUri: request.RequestContext.LocationEndpointToRoute,
+                        responseHeaders: new DictionaryNameValueCollection()),
+                    CancellationToken.None);
+
+                // Wire 2: cache HIT routes to hub A (no header on warm-cache fast path).
+                retryPolicy.OnBeforeSendRequest(request);
+                Assert.AreEqual(hubA, request.RequestContext.LocationEndpointToRoute, "Wire 2 must route to cached hub A.");
+
+                // Simulate 503 from the cached hub.
+                await retryPolicy.ShouldRetryAsync(
+                    new DocumentClientException(
+                        message: "503 from cached hub A",
+                        innerException: null,
+                        statusCode: HttpStatusCode.ServiceUnavailable,
+                        substatusCode: SubStatusCodes.Unknown,
+                        requestUri: hubA,
+                        responseHeaders: new DictionaryNameValueCollection()),
+                    CancellationToken.None);
+
+                // Cache must NOT be invalidated: a fresh probe with header must still hit hub A.
+                DocumentServiceRequest probe = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+                probe.RequestContext.ResolvedPartitionKeyRange = pkRange;
+                probe.Headers[HubRegionHeader] = bool.TrueString;
+                Assert.IsTrue(cacheManager.TryAddPartitionLevelLocationOverride(probe, checkHubRegionOverrideInCache: true),
+                    "Cache must still contain the partition entry after a 503 from cached hub.");
+                Assert.AreEqual(hubA, probe.RequestContext.LocationEndpointToRoute,
+                    "Cache Current must remain at hub A after a 503 (hub-region caching does NOT add 503-specific invalidation).");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled, originalHubRegionFlag);
+            }
+        }
+
+        /// <summary>
+        /// Cached hub returns 429. Pins existing behavior: hub-region caching does NOT mark the cache
+        /// stale on throttling — 429 flows through the normal throttling retry path.
+        /// </summary>
+        [TestMethod]
+        [Owner("aavasthy")]
+        [Description("429 from cached hub: cache NOT invalidated; throttling retry path unchanged.")]
+        public async Task ClientRetryPolicy_HubRegion_429_OnCachedHub_DoesNotInvalidateCache()
+        {
+            string originalHubRegionFlag = Environment.GetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled);
+            Environment.SetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled, "True");
+
+            try
+            {
+                const bool enableEndpointDiscovery = true;
+                using GlobalEndpointManager endpointManager = this.Initialize(
+                    useMultipleWriteLocations: false,
+                    enableEndpointDiscovery: enableEndpointDiscovery,
+                    isPreferredLocationsListEmpty: false,
+                    enforceSingleMasterSingleWriteLocation: true);
+
+                GlobalPartitionEndpointManagerCore cacheManager = new GlobalPartitionEndpointManagerCore(
+                    endpointManager,
+                    isPartitionLevelFailoverEnabled: true);
+                PartitionKeyRange pkRange = new PartitionKeyRange { Id = "0", MinInclusive = "", MaxExclusive = "FF" };
+
+                Uri hubA = ClientRetryPolicyTests.Location1Endpoint;
+                DocumentServiceRequest seed = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+                seed.RequestContext.ResolvedPartitionKeyRange = pkRange;
+                seed.RequestContext.RouteToLocation(hubA);
+                seed.Headers[HubRegionHeader] = bool.TrueString;
+                cacheManager.TryCacheHubRegionLocationForPartition(seed);
+
+                ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                    endpointManager, cacheManager, new RetryOptions(), enableEndpointDiscovery, isThinClientEnabled: false);
+                DocumentServiceRequest request = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+                request.RequestContext.ResolvedPartitionKeyRange = pkRange;
+
+                retryPolicy.OnBeforeSendRequest(request);
+                await retryPolicy.ShouldRetryAsync(
+                    new DocumentClientException(
+                        message: "404/1002",
+                        innerException: null,
+                        statusCode: HttpStatusCode.NotFound,
+                        substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                        requestUri: request.RequestContext.LocationEndpointToRoute,
+                        responseHeaders: new DictionaryNameValueCollection()),
+                    CancellationToken.None);
+
+                retryPolicy.OnBeforeSendRequest(request);
+                Assert.AreEqual(hubA, request.RequestContext.LocationEndpointToRoute, "Wire 2 must route to cached hub A.");
+
+                // Simulate 429 from cached hub. ResponseMessage with TooManyRequests status; SDK uses
+                // throttlingRetry which honors Retry-After (we pass 0 so this is fast).
+                ResponseMessage throttledResponse = new ResponseMessage(HttpStatusCode.TooManyRequests, requestMessage: null, errorMessage: "Simulated 429 from cached hub");
+                throttledResponse.Headers.RetryAfter = TimeSpan.Zero;
+
+                await retryPolicy.ShouldRetryAsync(throttledResponse, CancellationToken.None);
+
+                // Cache must NOT be invalidated: throttle != wrong hub.
+                DocumentServiceRequest probe = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+                probe.RequestContext.ResolvedPartitionKeyRange = pkRange;
+                probe.Headers[HubRegionHeader] = bool.TrueString;
+                Assert.IsTrue(cacheManager.TryAddPartitionLevelLocationOverride(probe, checkHubRegionOverrideInCache: true),
+                    "Cache must still contain the partition entry after a 429 from cached hub.");
+                Assert.AreEqual(hubA, probe.RequestContext.LocationEndpointToRoute,
+                    "Cache Current must remain at hub A after a 429 (throttle != wrong hub).");
             }
             finally
             {

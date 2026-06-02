@@ -273,16 +273,28 @@ namespace Microsoft.Azure.Cosmos
                 this.crossRegionAvailabilityContext = sharedCtx;
             }
 
-            // If previous attempt failed with 404/1002, add the hub-region-processing-only header to all subsequent retry attempts.
-            // Also check the shared context — another hedged request may have already set the flag.
-            if (this.addHubRegionProcessingOnlyHeader
-                || this.crossRegionAvailabilityContext?.ShouldAddHubRegionProcessingOnlyHeader == true)
-            {
-                request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
+            // Hub-region cache + header handling for single-master reads.
+            // On a retry (sessionTokenRetryCount > 0), check the per-partition hub cache. On HIT,
+            // route directly to the cached hub URI — the warm-cache fast path (2 wires instead of
+            // discovery). The hub-region-processing-only header is attached only when the cold-cache
+            // flag is set (after 2 × 404/1002, or propagated via the shared hedge context), so it
+            // never appears on wire 1 or on a warm-cache wire 2.
+            bool hubHeaderFlagSet = this.addHubRegionProcessingOnlyHeader
+                || this.crossRegionAvailabilityContext?.ShouldAddHubRegionProcessingOnlyHeader == true;
 
-                // If there is a cache override present, that would resolve and set the location endpoint from the cache. No need
-                // for re-resolving the service endpoint.
-                if (this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(request, checkHubRegionOverrideInCache: true))
+            if (this.isHubRegionProcessingEnabled
+                && request.IsReadOnlyRequest
+                && (this.sessionTokenRetryCount > 0 || hubHeaderFlagSet))
+            {
+                bool pkRangeLocationCacheHit = this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(
+                    request, checkHubRegionOverrideInCache: true);
+
+                if (hubHeaderFlagSet)
+                {
+                    request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
+                }
+
+                if (pkRangeLocationCacheHit)
                 {
                     return;
                 }
@@ -547,30 +559,11 @@ namespace Microsoft.Azure.Cosmos
                     }
                     else
                     {
-                        // Single-master 404/1002 retry.
-                        // Cache-hit fast path (warm cache from a prior request's discovery): set the
-                        // hub-region-processing-only header flag so OnBeforeSendRequest re-applies the
-                        // cache override and routes the next attempt directly to the cached hub —
-                        // Gated on read-only because
-                        // hub-region semantics apply only to reads, and on isHubRegionProcessingEnabled
-                        // because the feature can be opt-out via env var.
-                        //
-                        // Always set retryContext to the write region as a fallback below — if the
-                        // cache entry is concurrently evicted before OnBeforeSendRequest runs, the request still routes
-                        // to the write region (the original behavior) instead of falling back to preferred[0].
-#if !INTERNAL
-                        if (this.isHubRegionProcessingEnabled
-                            && request.IsReadOnlyRequest
-                            && this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(request, checkHubRegionOverrideInCache: true))
-                        {
-                            this.addHubRegionProcessingOnlyHeader = true;
-                            if (this.crossRegionAvailabilityContext != null)
-                            {
-                                this.crossRegionAvailabilityContext.ShouldAddHubRegionProcessingOnlyHeader = true;
-                            }
-                        }
-#endif
-
+                        // Single-master 404/1002 retry. Set retryContext to the write region as
+                        // a fallback. OnBeforeSendRequest will do a cache lookup first: warm cache
+                        // HIT routes wire 2 to the cached hub (no header); MISS falls through to
+                        // this fallback (write region, no header) until the 2 × 404/1002 threshold
+                        // triggers the hub-region-processing-only header on the next wire.
                         this.retryContext = new RetryContext
                         {
                             RetryLocationIndex = 0,
