@@ -19,12 +19,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+#### Breaking Changes
+
+#### Bugs Fixed
+
+#### Other Changes
+
+### <a name="3.62.0-preview.0"/> [3.62.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.62.0-preview.0) - 2026-6-1
+
+#### Features Added
+
+- [5838](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5838) EmbeddingGenerator: Adds ICosmosEmbeddingGenerator client-wide configuration (preview)
+- [5911](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5911) DistributedTransaction: Adds `DistributedReadTransaction` and `DistributedWriteTransaction` APIs (with `CosmosClient.CreateDistributedReadTransaction` / `CreateDistributedWriteTransaction`) for atomic read and write operations across partitions and containers (preview)
+
+### <a name="3.61.0"/> [3.61.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.61.0) - 2026-6-1
+
+#### Features Added
+
 - [5815](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5815) Read Consistency Strategy: Adds hub region header for LastCommittedSingleWriteRegion strategy.
 - [5848](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5848) VectorEmbeddingPolicy: Adds EmbeddingSource block to Embedding model
 - [5867](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5867) Diagnostics: Adds hedging detection API (`CosmosDiagnostics.HedgingStarted`, `GetRequestedRegions`, `GetRespondedRegions`) along with the new `RequestedRegion` struct and `RequestedRegionReason` enum so callers can observe per-operation hedging behavior. `RequestedRegionReason.Unknown` (= 0) is the default sentinel for `default(RequestedRegion).Reason` and is never emitted by the SDK; `RequestedRegionReason.CircuitBreakerProbe` and `RequestedRegionReason.TransportRetry` are reserved for the future and not yet populated by this SDK; see issue #5867.
 - [5600](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5600) HPK: Adds id to partition key when "/id" is the last path in partition key definition.
-- [5838](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5838) EmbeddingGenerator: Adds ICosmosEmbeddingGenerator client-wide configuration (preview)
-- [5911](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5911) DistributedTransaction: Adds `DistributedReadTransaction` and `DistributedWriteTransaction` APIs (with `CosmosClient.CreateDistributedReadTransaction` / `CreateDistributedWriteTransaction`) for atomic read and write operations across partitions and containers (preview)
 
 #### Breaking Changes
 
