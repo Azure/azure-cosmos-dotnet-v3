@@ -1,0 +1,71 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Microsoft.Azure.Cosmos.NativeDriverPoc
+
+    Phase-2 .NET host for the Cosmos native-driver async-FFI work. Unlike
+    its sibling Microsoft.Azure.Cosmos.NativeAsyncPoc (which validated the
+    completion-queue hypothesis against a hand-rolled 14-function Rust
+    cdylib), this project targets the **production spec** drafted in PR
+    https://github.com/Azure/azure-sdk-for-rust/pull/4461 — the
+    `azure_data_cosmos_driver_native` crate, library output
+    `azurecosmosdriver.{dll,so,dylib}`.
+
+    Why a sibling and not an in-place rewrite of NativeAsyncPoc:
+      * NativeAsyncPoc is the validated baseline behind the verdict doc
+        and the spec-PR comment evidence. Replacing it loses the proof.
+      * The two surfaces differ enough that a side-by-side comparison is
+        actively useful for the team review tomorrow — the V1 file map
+        (NativeMethods/CompletionQueueLoop/NativeCosmosClient/Program)
+        is preserved 1:1 here so reviewers can diff function-for-function.
+      * When the Rust feature branch lands and produces a real
+        azurecosmosdriver.dll, only the V2 project needs to be touched.
+
+    Build behavior (deliberate):
+      * The native DLL is NOT required to build. If
+        azurecosmosdriver.dll is present in $(DriverNativeArtifactDir),
+        it is copied next to the executable so the default
+        AssemblyDirectory probing finds it at runtime.
+      * If absent, the build emits a single warning and still produces a
+        runnable .exe. The .exe will fail at the first DllImport call
+        with a DllNotFoundException — by design — until the Rust crate
+        ships its bundle.
+      * Set RequireDriverNativeArtifact=true to flip the warning to an
+        error (useful for CI once the Rust artifact is being produced).
+
+    NOT shipped. NOT referenced from Microsoft.Azure.Cosmos.csproj.
+    Lives under tools/ for an explicit "POC only" signal.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Microsoft.Azure.Cosmos.NativeDriverPoc</RootNamespace>
+    <AssemblyName>Microsoft.Azure.Cosmos.NativeDriverPoc</AssemblyName>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+    <DriverNativeArtifactDir Condition="'$(DriverNativeArtifactDir)' == ''">Q:\src\.poc-artifacts\azurecosmosdriver\</DriverNativeArtifactDir>
+    <RequireDriverNativeArtifact Condition="'$(RequireDriverNativeArtifact)' == ''">false</RequireDriverNativeArtifact>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="$(DriverNativeArtifactDir)azurecosmosdriver.dll"
+             Condition="Exists('$(DriverNativeArtifactDir)azurecosmosdriver.dll')">
+      <Link>azurecosmosdriver.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <Target Name="ReportDriverNativeArtifactStatus" BeforeTargets="Build">
+    <Message Importance="high"
+             Condition="Exists('$(DriverNativeArtifactDir)azurecosmosdriver.dll')"
+             Text="[NativeDriverPoc] Using azurecosmosdriver.dll from '$(DriverNativeArtifactDir)'." />
+    <Warning Condition="!Exists('$(DriverNativeArtifactDir)azurecosmosdriver.dll') and '$(RequireDriverNativeArtifact)' != 'true'"
+             Text="[NativeDriverPoc] azurecosmosdriver.dll not found at '$(DriverNativeArtifactDir)'. Build will succeed but the executable will fail at the first DllImport call until the Rust feature branch (PR #4461 / #4452) lands and a build of azure_data_cosmos_driver_native is published into this directory." />
+    <Error Condition="!Exists('$(DriverNativeArtifactDir)azurecosmosdriver.dll') and '$(RequireDriverNativeArtifact)' == 'true'"
+           Text="[NativeDriverPoc] azurecosmosdriver.dll required (RequireDriverNativeArtifact=true) but not found at '$(DriverNativeArtifactDir)'." />
+  </Target>
+</Project>
