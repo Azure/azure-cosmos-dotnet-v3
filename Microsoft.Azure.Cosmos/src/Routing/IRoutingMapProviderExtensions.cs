@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -25,13 +26,15 @@ namespace Microsoft.Azure.Cosmos
             this IRoutingMapProvider routingMapProvider,
             string collectionResourceId,
             string effectivePartitionKey,
-            ITrace trace)
+            ITrace trace,
+            CancellationToken cancellationToken = default)
         {
             IReadOnlyList<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(
                 collectionResourceId,
                 Range<string>.GetPointRange(effectivePartitionKey),
                 trace: trace,
-                forceRefresh: false);
+                forceRefresh: false,
+                cancellationToken: cancellationToken);
 
             if (ranges == null)
             {
@@ -74,12 +77,15 @@ namespace Microsoft.Azure.Cosmos
             string collectionResourceId,
             IEnumerable<Range<string>> sortedRanges,
             ITrace trace,
-            bool forceRefresh = false)
+            bool forceRefresh = false,
+            CancellationToken cancellationToken = default)
         {
             if (sortedRanges == null)
             {
                 throw new ArgumentNullException(nameof(sortedRanges));
             }
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             // Remove the duplicates
             SortedSet<Range<string>> distinctSortedRanges = new SortedSet<Range<string>>(sortedRanges, Range<string>.MinComparer.Instance);
@@ -94,6 +100,8 @@ namespace Microsoft.Azure.Cosmos
             List<PartitionKeyRange> targetRanges = new List<PartitionKeyRange>();
             foreach (Range<string> range in sortedRanges)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 // if the range is empty then it by definition does not span any ranges.
                 if (range.IsEmpty)
                 {
@@ -136,7 +144,8 @@ namespace Microsoft.Azure.Cosmos
                     collectionResourceId,
                     queryRange,
                     trace,
-                    forceRefresh);
+                    forceRefresh,
+                    cancellationToken);
 
                 if (overlappingRanges == null)
                 {

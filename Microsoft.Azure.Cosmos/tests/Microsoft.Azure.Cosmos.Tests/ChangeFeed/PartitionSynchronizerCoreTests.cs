@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
@@ -76,7 +77,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<string>(),
                 It.Is<Documents.Routing.Range<string>>(r => r.Min == range.Min && r.Max == range.Max),
                 It.IsAny<ITrace>(),
-                true))
+                true,
+                It.IsAny<CancellationToken>()))
                 .ReturnsAsync(resultingRanges);
 
             Mock<DocumentServiceLeaseManager> leaseManager = new Mock<DocumentServiceLeaseManager>();
@@ -143,7 +145,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<string>(),
                 It.Is<Documents.Routing.Range<string>>(r => r.Min == range.Min && r.Max == range.Max),
                 It.IsAny<ITrace>(),
-                It.Is<bool>(b => b == true)))
+                It.Is<bool>(b => b == true),
+                It.IsAny<CancellationToken>()))
                 .ReturnsAsync(resultingRanges);
 
             Mock<DocumentServiceLeaseManager> leaseManager = new Mock<DocumentServiceLeaseManager>();
@@ -212,7 +215,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<string>(),
                 It.Is<Documents.Routing.Range<string>>(r => r.Min == range.Min && r.Max == range.Max),
                 It.IsAny<ITrace>(),
-                It.Is<bool>(b => b == true)))
+                It.Is<bool>(b => b == true),
+                It.IsAny<CancellationToken>()))
                 .ReturnsAsync(resultingRanges);
 
             Mock<DocumentServiceLeaseManager> leaseManager = new Mock<DocumentServiceLeaseManager>();
@@ -273,7 +277,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<string>(),
                 It.Is<Documents.Routing.Range<string>>(r => r.Min == range.Min && r.Max == range.Max),
                 It.IsAny<ITrace>(),
-                true))
+                true,
+                It.IsAny<CancellationToken>()))
                 .ReturnsAsync(resultingRanges);
 
             Mock<DocumentServiceLeaseManager> leaseManager = new Mock<DocumentServiceLeaseManager>();
@@ -325,7 +330,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<string>(),
                 It.IsAny<Documents.Routing.Range<string>>(),
                 It.IsAny<ITrace>(),
-                false))
+                false,
+                It.IsAny<CancellationToken>()))
                 .ReturnsAsync(resultingRanges);
 
             Mock<DocumentServiceLeaseManager> leaseManager = new Mock<DocumentServiceLeaseManager>();
@@ -373,7 +379,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<string>(),
                 It.IsAny<Documents.Routing.Range<string>>(),
                 It.IsAny<ITrace>(),
-                false))
+                false,
+                It.IsAny<CancellationToken>()))
                 .ReturnsAsync(resultingRanges);
 
             Mock<DocumentServiceLeaseManager> leaseManager = new Mock<DocumentServiceLeaseManager>();
@@ -428,7 +435,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<string>(),
                 It.IsAny<Documents.Routing.Range<string>>(),
                 It.IsAny<ITrace>(),
-                false))
+                false,
+                It.IsAny<CancellationToken>()))
                 .ReturnsAsync(resultingRanges);
 
             Mock<DocumentServiceLeaseManager> leaseManager = new Mock<DocumentServiceLeaseManager>();

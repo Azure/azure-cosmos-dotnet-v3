@@ -387,7 +387,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 string serialized = JsonConvert.SerializeObject(compositeContinuationTokens);
 
-                this.compositeContinuationToken = StandByFeedContinuationToken.CreateAsync("containerRid", serialized, (string containerRid, Documents.Routing.Range<string> ranges, ITrace trace, bool forceRefresh) =>
+                this.compositeContinuationToken = StandByFeedContinuationToken.CreateAsync("containerRid", serialized, (string containerRid, Documents.Routing.Range<string> ranges, ITrace trace, bool forceRefresh, CancellationToken cancellationToken) =>
                 {
                     IReadOnlyList<Documents.PartitionKeyRange> filteredRanges = new List<Documents.PartitionKeyRange>()
                     {

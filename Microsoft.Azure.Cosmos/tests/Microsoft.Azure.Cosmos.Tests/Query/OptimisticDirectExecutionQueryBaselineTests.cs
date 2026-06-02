@@ -1335,17 +1335,17 @@
             return Task.FromResult(this.queryPartitionProvider.ClientDisableOptimisticDirectExecution);
         }
 
-        public override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangeByFeedRangeAsync(string resourceLink, string collectionResourceId, PartitionKeyDefinition partitionKeyDefinition, FeedRangeInternal feedRangeInternal, bool forceRefresh, ITrace trace)
+        public override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangeByFeedRangeAsync(string resourceLink, string collectionResourceId, PartitionKeyDefinition partitionKeyDefinition, FeedRangeInternal feedRangeInternal, bool forceRefresh, ITrace trace, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
         }
 
-        public override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(string resourceLink, string collectionResourceId, IReadOnlyList<Range<string>> providedRanges, bool forceRefresh, ITrace trace)
+        public override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(string resourceLink, string collectionResourceId, IReadOnlyList<Range<string>> providedRanges, bool forceRefresh, ITrace trace, CancellationToken cancellationToken = default)
         {
             return Task.FromResult(this.targetPartitionKeyRanges.ToList());
         }
 
-        public override Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(string collectionResourceId, Range<string> range, bool forceRefresh = false)
+        public override Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(string collectionResourceId, Range<string> range, bool forceRefresh = false, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
         }

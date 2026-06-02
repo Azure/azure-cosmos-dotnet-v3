@@ -55,8 +55,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             string collectionRid,
             Range<string> range,
             ITrace trace,
-            bool forceRefresh = false)
+            bool forceRefresh = false,
+            CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             using (ITrace childTrace = trace.StartChild("Try Get Overlapping Ranges", TraceComponent.Routing, Tracing.TraceLevel.Info))
             {
                 Debug.Assert(ResourceId.TryParse(collectionRid, out ResourceId collectionRidParsed), "Could not parse CollectionRid from ResourceId.");
@@ -65,7 +68,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     collectionRid: collectionRid,
                     previousValue: null,
                     request: null,
-                    trace: childTrace);
+                    trace: childTrace,
+                    cancellationToken: cancellationToken);
 
                 if (forceRefresh && routingMap != null)
                 {
@@ -73,7 +77,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                         collectionRid: collectionRid,
                         previousValue: routingMap,
                         request: null,
-                        trace: childTrace);
+                        trace: childTrace,
+                        cancellationToken: cancellationToken);
                 }
 
                 if (routingMap == null)
@@ -90,15 +95,19 @@ namespace Microsoft.Azure.Cosmos.Routing
             string collectionResourceId,
             string partitionKeyRangeId,
             ITrace trace,
-            bool forceRefresh = false)
+            bool forceRefresh = false,
+            CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             Debug.Assert(ResourceId.TryParse(collectionResourceId, out _), "Could not parse CollectionRid from ResourceId.");
 
             CollectionRoutingMap routingMap = await this.TryLookupAsync(
                 collectionRid: collectionResourceId,
                 previousValue: null,
                 request: null,
-                trace: trace);
+                trace: trace,
+                cancellationToken: cancellationToken);
 
             if (forceRefresh && routingMap != null)
             {
@@ -106,7 +115,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     collectionRid: collectionResourceId,
                     previousValue: routingMap,
                     request: null,
-                    trace: trace);
+                    trace: trace,
+                    cancellationToken: cancellationToken);
             }
 
             if (routingMap == null)
@@ -118,11 +128,21 @@ namespace Microsoft.Azure.Cosmos.Routing
             return routingMap.TryGetRangeByPartitionKeyRangeId(partitionKeyRangeId);
         }
 
-        public virtual async Task<CollectionRoutingMap> TryLookupAsync(
+        public virtual Task<CollectionRoutingMap> TryLookupAsync(
             string collectionRid,
             CollectionRoutingMap previousValue,
             DocumentServiceRequest request,
             ITrace trace)
+        {
+            return this.TryLookupAsync(collectionRid, previousValue, request, trace, cancellationToken: default);
+        }
+
+        public virtual async Task<CollectionRoutingMap> TryLookupAsync(
+            string collectionRid,
+            CollectionRoutingMap previousValue,
+            DocumentServiceRequest request,
+            ITrace trace,
+            CancellationToken cancellationToken)
         {
             try
             {
@@ -132,7 +152,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                         collectionRid: collectionRid,
                         previousRoutingMap: previousValue,
                         trace: trace,
-                        clientSideRequestStatistics: request?.RequestContext?.ClientRequestStatistics),
+                        clientSideRequestStatistics: request?.RequestContext?.ClientRequestStatistics,
+                        cancellationToken: cancellationToken),
                     forceRefresh: (currentValue) => PartitionKeyRangeCache.ShouldForceRefresh(previousValue, currentValue));
             }
             catch (DocumentClientException ex)
@@ -186,7 +207,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             string collectionRid,
             CollectionRoutingMap previousRoutingMap,
             ITrace trace,
-            IClientSideRequestStatistics clientSideRequestStatistics)
+            IClientSideRequestStatistics clientSideRequestStatistics,
+            CancellationToken cancellationToken = default)
         {
             List<PartitionKeyRange> ranges = new List<PartitionKeyRange>();
             string changeFeedNextIfNoneMatch = previousRoutingMap?.ChangeFeedNextIfNoneMatch;
@@ -200,6 +222,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     maxRetryWaitTimeInSeconds: retryOptions.MaxRetryWaitTimeInSeconds);
             do
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 INameValueCollection headers = new RequestNameValueCollection();
 
                 headers.Set(HttpConstants.HttpHeaders.PageSize, PageSizeString);

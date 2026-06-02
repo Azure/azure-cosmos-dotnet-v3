@@ -148,7 +148,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     containerProperties.PartitionKey,
                     feedRange,
                     forceRefresh: false,
-                    trace);
+                    trace,
+                    cancellationToken);
                 return TryCatch<List<FeedRangeEpk>>.FromResult(
                     overlappingRanges.Select(range => new FeedRangeEpk(
                         new Documents.Routing.Range<string>(
@@ -182,7 +183,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     _ = await this.cosmosQueryClient.TryGetOverlappingRangesAsync(
                         resourceId,
                         FeedRangeEpk.FullRange.Range,
-                        forceRefresh: true);
+                        forceRefresh: true,
+                        cancellationToken: cancellationToken);
 
                     return TryCatch.FromResult();
                 }

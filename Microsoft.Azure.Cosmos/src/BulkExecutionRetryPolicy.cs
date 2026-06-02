@@ -126,7 +126,8 @@ namespace Microsoft.Azure.Cosmos
                         containerRid,
                         FeedRangeEpk.FullRange.Range,
                         NoOpTrace.Singleton,
-                        forceRefresh: true);
+                        forceRefresh: true,
+                        cancellationToken: cancellationToken);
                     return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
                 }
 

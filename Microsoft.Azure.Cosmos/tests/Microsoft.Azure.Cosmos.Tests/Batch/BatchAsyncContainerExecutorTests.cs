@@ -383,7 +383,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                             It.IsAny<string>(),
                             It.IsAny<Documents.Routing.Range<string>>(),
                             It.IsAny<ITrace>(),
-                            It.Is<bool>(b => b == true) // Mocking only the refresh, if it doesn't get called, the test fails
+                            It.Is<bool>(b => b == true), // Mocking only the refresh, if it doesn't get called, the test fails
+                            It.IsAny<CancellationToken>()
                         )
                 ).Returns((string collectionRid, Documents.Routing.Range<string> range, ITrace trace, bool forceRefresh) => Task.FromResult<IReadOnlyList<PartitionKeyRange>>(this.ResolveOverlapingPartitionKeyRanges(collectionRid, range, forceRefresh)));
             }

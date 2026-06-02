@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -21,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     /// </remarks>
     internal class StandByFeedContinuationToken
     {
-        internal delegate Task<IReadOnlyList<Documents.PartitionKeyRange>> PartitionKeyRangeCacheDelegate(string containerRid, Documents.Routing.Range<string> ranges, ITrace trace, bool forceRefresh);
+        internal delegate Task<IReadOnlyList<Documents.PartitionKeyRange>> PartitionKeyRangeCacheDelegate(string containerRid, Documents.Routing.Range<string> ranges, ITrace trace, bool forceRefresh, CancellationToken cancellationToken = default);
 
         private readonly string containerRid;
         private readonly PartitionKeyRangeCacheDelegate pkRangeCacheDelegate;
