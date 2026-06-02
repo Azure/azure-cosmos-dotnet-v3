@@ -699,6 +699,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             }
         }
 
+#if !INTERNAL
         /// <summary>
         /// Hub reassignment: after R1 populates the cache with hub A,
         /// a subsequent request that escalates to the header-bearing retry and receives 403/3 from
@@ -955,6 +956,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 Environment.SetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled, originalHubRegionFlag);
             }
         }
+#endif
 
         /// <summary>
         /// Verifies that when the hub region itself returns 404/1002 with the hub header active,

@@ -507,6 +507,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         /// without torn writes. N parallel callers all complete discovery with the same success URI;
         /// the cache must end with exactly that URI as <c>Current</c> and no infinite loops.
         /// </summary>
+#if !INTERNAL
         [TestMethod]
         [Timeout(15000)]
         public void TryCacheHubRegionLocationForPartition_ParallelCallers_ConvergesToHub()
@@ -613,6 +614,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(hubZ, probe.RequestContext.LocationEndpointToRoute,
                 "Late-arriving stale 403/3 from a region that is no longer Current must NOT overwrite the confirmed hub.");
         }
+#endif
 
         private static void SimulateConsecutiveFailures(
             GlobalPartitionEndpointManagerCore failoverManager,
