@@ -272,58 +272,159 @@ strings are .NET `string`s, the response can outlive the entire client.
 result landed, their cancellation already completed the TCS — we don't
 want a second `Set*` to throw.
 
-### Why this enables unbounded concurrency from ONE pump thread
+### How the pump routes completions — no scanning, ever
 
-This is the part worth slowing down on.
+A common misconception is that the pump scans `pending` to find the
+finished op. It does not. **Routing is O(1) per completion regardless
+of how many ops are in flight**, because each completion carries its
+own label.
 
-Imagine 1,000 callers all do `await client.ReadItemAsync(...)` more or
-less simultaneously. The lifecycle for ONE call looks like:
+The mechanism: at submit time, we mint a token (`Interlocked.Increment`),
+put `pending[token] = tcs`, and pass `token` to Rust as the
+`user_data` cookie on `cosmos_driver_submit`. When that op finishes,
+Rust attaches the same cookie to the completion it pushes onto the CQ.
+The pump reads the cookie via `cosmos_completion_user_data`, does one
+`pending.TryRemove(cookie)`, and is done routing.
+
+> "Which op finished?" is answered **by Rust**, not by .NET. The pump
+> never iterates `pending`.
+
+### `cosmos_cq_wait` is a block, not a poll
+
+The pump does not spin. `cosmos_cq_wait(timeoutMs)` is a blocking park
+— under the hood Rust uses a condvar / event / semaphore. The thread is
+**asleep at the OS level** when no traffic. It wakes via condvar signal
+when (a) a completion is enqueued, (b) the timeout fires, or (c)
+`cosmos_cq_shutdown` is called. So an idle client costs zero CPU; a
+busy client costs ~5–10 µs of pump time per completion.
+
+### Worked example — three concurrent reads
+
+Three callers fire `ReadItemAsync` in quick succession on the same
+client. They run on three different threadpool threads. Wall-clock
+times are illustrative.
+
+**Setup phase (T=0):**
 
 ```
-caller thread T1    pump thread P            CQ (native)
-─────────────────   ──────────────────        ─────────────────
-Register(tcs) ─────►  pending[7] = tcs
-submit(op,...,7) ─────────────────────────►   queue ops, return op_handle
-return Task<>       (caller awaits)
+T=0  Caller A:  tcs_A = new TCS<>();  pending[7] = tcs_A;
+                submit(op_A, user_data=7);  return Task_A   →  caller awaits
 
-                    (Rust workers do I/O)
+T=0  Caller B:  tcs_B = new TCS<>();  pending[8] = tcs_B;
+                submit(op_B, user_data=8);  return Task_B   →  caller awaits
 
-                                              ◄── posts completion(user_data=7)
-                    cosmos_cq_wait() ─────────► returns completion ptr
-                    user_data → 7
-                    pending.TryRemove(7) → tcs
-                    TrySetResult(...)
-                                              ─── continuation resumes
-                    cosmos_completion_free
-                    loop
+T=0  Caller C:  tcs_C = new TCS<>();  pending[9] = tcs_C;
+                submit(op_C, user_data=9);  return Task_C   →  caller awaits
 ```
 
-Now scale that to 1,000 concurrent calls. What changes?
+After T=0: `pending = {7→tcs_A, 8→tcs_B, 9→tcs_C}`. All three callers
+are `await`-ing. Rust worker tasks are doing the HTTPS round-trips —
+they will finish in whatever order the network decides, **not** in
+submission order.
 
-- **The dictionary grows to 1,000 entries.** O(1) writes from caller
-  threads. O(1) lookups from the pump.
-- **The pump still does one `cosmos_cq_wait` at a time.** It pulls one
-  completion, fans it onto the matching TCS, frees, loops. The TCS
-  continuation runs on the **thread pool** (because we created the TCS
-  with `RunContinuationsAsynchronously`) — not on the pump thread.
-- **None of the 1,000 callers are blocked on the pump.** They returned
-  from `submit` immediately. They're just `await`ing a `Task`.
-- **The pump is never the bottleneck** as long as the per-completion
-  work (dispatch + free) is faster than the inter-completion arrival
-  rate. Empirically, dispatch is ~microseconds; even at 100K ops/sec
-  the pump is loafing.
+**Pump (before any completion):**
 
-The critical design choice that makes this work:
+```
+while loop iter N:
+   cosmos_cq_wait(200)   ──►  parked on OS condvar, asleep
+```
 
-> **`TaskCreationOptions.RunContinuationsAsynchronously`**
+**T=15 ms — op B finishes first (shortest round-trip happened to be B):**
 
-If we used the default (synchronous continuations), `tcs.TrySetResult`
-would inline the awaiter's continuation onto the pump thread. With 1,000
-awaiters, the pump would run 1,000 user callbacks sequentially before
-draining the next completion. With the async option, `TrySetResult`
-just schedules the continuation on the threadpool and returns — pump
-keeps draining the queue at full speed. **The continuation runs in
-parallel with the next dispatch.**
+```
+Rust worker B:  build completion{ user_data=8, outcome=Ok, response=... }
+                enqueue onto CQ
+                signal condvar
+
+Pump:           wakes from cosmos_cq_wait → returns completion pointer
+                DispatchCompletion:
+                   cosmos_completion_user_data(completion) → 8
+                   pending.TryRemove(8) → tcs_B               (O(1) lookup)
+                   tcs_B.TrySetResult(MaterializeResponse(...))
+                       → Task_B continuation scheduled on threadpool
+                       → pump does NOT run the continuation itself
+                cosmos_completion_free(completion)
+                loop → cosmos_cq_wait → parked again
+```
+
+After T=15: `pending = {7→tcs_A, 9→tcs_C}`. Caller B's `await` is
+unwinding on some threadpool thread. **Critical:** the pump did not
+touch tcs_A or tcs_C — it didn't even read those entries.
+
+**T=22 ms — op C finishes:**
+
+```
+Pump:  wake, user_data=9, pending.TryRemove(9) → tcs_C
+       tcs_C.TrySetResult(...) → Task_C continuation scheduled
+       free completion, loop, park
+```
+
+After T=22: `pending = {7→tcs_A}`.
+
+**T=30 ms — op A finishes last:**
+
+```
+Pump:  wake, user_data=7, pending.TryRemove(7) → tcs_A
+       tcs_A.TrySetResult(...) → Task_A continuation scheduled
+       free completion, loop, park
+```
+
+After T=30: `pending = {}`. Pump is asleep on `cosmos_cq_wait`. Nothing
+to do.
+
+### Why this scales to N concurrent ops
+
+The example above with N=3 generalizes to N=1,000 or N=100,000 with
+**no change to the per-completion cost**:
+
+- Caller side: each submit does `Interlocked.Increment` + one dict put
+  + one Rust call. O(1) per caller.
+- Pump side: each completion does one `cq_wait` return + one
+  `user_data` read + one dict TryRemove + one `TrySetResult` + one
+  `completion_free`. **O(1) per completion, independent of N.**
+- TCS continuations run on the **threadpool**, not on the pump, because
+  we built each TCS with `TaskCreationOptions.RunContinuationsAsynchronously`.
+  With the default (synchronous continuations), `TrySetResult` would
+  inline the awaiter's callback onto the pump thread — with 1,000
+  awaiters, the pump would have to run 1,000 user callbacks
+  sequentially before draining the next completion. The async option
+  prevents that: `TrySetResult` schedules the continuation and
+  returns immediately; pump goes right back to `cq_wait`.
+
+The pump's CPU is therefore proportional to **throughput**
+(completions/sec), not **concurrency** (in-flight ops). Empirically,
+dispatch is microseconds; even at 100K ops/sec the pump is loafing.
+
+### Contrast: what a scanning design would look like
+
+To make the cookie-based design pop, consider the alternative the
+pump deliberately doesn't do:
+
+```csharp
+// Hypothetical — NOT what we do
+foreach (var kvp in pending)
+{
+    if (kvp.Value.SomehowReady())        // poll each TCS
+    {
+        kvp.Value.SetResult(...);
+        pending.Remove(kvp.Key);
+    }
+}
+```
+
+That would be O(N) per cycle — at 10,000 pending ops the pump would do
+10,000 checks per iteration just to find the one that finished. The
+cookie design replaces that with **a single `pending.TryRemove(cookie)`**
+because the CQ already told us which cookie is ready. O(N) → O(1).
+
+### When `pending` is iterated
+
+Exactly once in the loop's whole lifetime: during
+`DrainPendingOnShutdown`, when the pump exits and needs to fail every
+still-pending TCS with `"Completion queue was shut down or drained"`.
+That bounds the worst-case iteration at "however many ops were in
+flight at the moment of disposal." Nowhere else in the pump's
+hot path does `pending` get iterated.
 
 ### What if the pump can't keep up?
 
