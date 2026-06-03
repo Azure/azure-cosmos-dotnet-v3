@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Runtime.ExceptionServices;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -179,6 +180,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             if (!eligibility.IsEligible)
             {
+                CosmosDbEventSource.MetadataHedgeSkipped(diag.SkipReason.ToString(), diag.ResourceType);
                 return await this.PrimaryOnlyAsync(request, primaryEndpoint, sendToEndpoint, hedgeContext, diag, trace, cancellationToken);
             }
 
@@ -187,6 +189,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 diag.Eligible = false;
                 diag.SkipReason = MetadataHedgeSkipReason.BudgetExhausted;
+                MetadataHedgingMeter.RecordBudgetExhausted(diag.ResourceType);
+                CosmosDbEventSource.MetadataHedgeSkipped(diag.SkipReason.ToString(), diag.ResourceType);
                 return await this.PrimaryOnlyAsync(request, primaryEndpoint, sendToEndpoint, hedgeContext, diag, trace, cancellationToken);
             }
 
@@ -199,6 +203,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.hedgeBudget.Release();
                 diag.Eligible = false;
                 diag.SkipReason = MetadataHedgeSkipReason.SingleRegion;
+                CosmosDbEventSource.MetadataHedgeSkipped(diag.SkipReason.ToString(), diag.ResourceType);
                 return await this.PrimaryOnlyAsync(request, primaryEndpoint, sendToEndpoint, hedgeContext, diag, trace, cancellationToken);
             }
 
@@ -243,6 +248,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     diag.SkipReason = MetadataHedgeSkipReason.GatewayKillSwitchOn;
                     diag.TotalAttempts = 1;
                     diag.WinningRegion = diag.PrimaryRegion;
+                    CosmosDbEventSource.MetadataHedgeSkipped(diag.SkipReason.ToString(), diag.ResourceType);
                     DocumentServiceResponse primaryLate = await ObserveWinningTaskAsync(primaryTask);
                     hedgeContext.RecordWinner(primaryEndpoint, diag.PrimaryRegion);
                     trace?.AddDatum(TraceDatumKey, diag);
@@ -253,6 +259,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                 hedgeContext.AttemptedEndpoints.TryAdd(hedgeEndpoint.AbsoluteUri, 0);
                 hedgeContext.TryMarkHedgedThisOperation();
                 diag.HedgeFiredElapsedMs = sw.Elapsed.TotalMilliseconds;
+                MetadataHedgingMeter.RecordFire(diag.PrimaryRegion, diag.HedgeRegion, diag.HedgeFiredElapsedMs.Value);
+                CosmosDbEventSource.MetadataHedgeFired(diag.PrimaryRegion, diag.HedgeRegion, diag.HedgeFiredElapsedMs.Value);
                 Task<DocumentServiceResponse> hedgeTask = SendOneAsync(sendToEndpoint, request, hedgeEndpoint, hedgeCts.Token);
 
                 // ---- 7. Wait for first ACCEPTABLE winner ----
@@ -287,6 +295,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                         diag.HedgeOutcome = finished.Result.StatusCode == HttpStatusCode.Unauthorized
                             ? "Auth401"
                             : "Auth403";
+                        MetadataHedgingMeter.RecordHedgeAuthReject(diag.HedgeRegion, (int)finished.Result.StatusCode);
+                        CosmosDbEventSource.MetadataHedgeAuthReject(diag.HedgeRegion, (int)finished.Result.StatusCode);
                     }
 
                     if (remaining.Length == 1)
@@ -311,6 +321,17 @@ namespace Microsoft.Azure.Cosmos.Routing
                 diag.TotalAttempts = 2;
                 hedgeContext.RecordWinner(winningEndpoint, winningRegion);
 
+                double totalElapsedMs = sw.Elapsed.TotalMilliseconds;
+                if (winner == primaryTask)
+                {
+                    CosmosDbEventSource.MetadataHedgePrimaryWon(diag.PrimaryRegion, totalElapsedMs, hedgeFired: true);
+                }
+                else
+                {
+                    MetadataHedgingMeter.RecordHedgeWin(diag.HedgeRegion);
+                    CosmosDbEventSource.MetadataHedgeWon(diag.HedgeRegion, totalElapsedMs);
+                }
+
                 // Transfer ownership of the loser CTS to BackgroundCleanupAsync; null out
                 // the local ref so the outer finally does not double-dispose.
                 CancellationTokenSource loserCts;
@@ -327,10 +348,12 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 loserCts.Cancel();
 
+                string loserRegion = (loser == primaryTask) ? diag.PrimaryRegion : diag.HedgeRegion;
+
                 // Fire-and-forget cleanup. Awaits the loser, disposes its response body
                 // and CTS, and updates diag.LoserOutcome. Swallows OCE and any other
                 // loser-thrown exception — see design §5.7.1.
-                _ = BackgroundCleanupAsync(loser, loserCts, diag, this.hedgeBudget);
+                _ = BackgroundCleanupAsync(loser, loserCts, diag, this.hedgeBudget, loserRegion);
                 budgetReleased = true;       // cleanup releases the budget
 
                 trace?.AddDatum(TraceDatumKey, diag);
@@ -443,7 +466,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             Task<DocumentServiceResponse> loser,
             CancellationTokenSource loserCts,
             MetadataHedgeDiagnostics diag,
-            SemaphoreSlim hedgeBudget)
+            SemaphoreSlim hedgeBudget,
+            string loserRegion)
         {
             try
             {
@@ -458,6 +482,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
 
                 diag.LoserOutcome = "CompletedAfterWinner";
+                MetadataHedgingMeter.RecordLateLoser(loserRegion, diag.LoserOutcome);
             }
             catch (OperationCanceledException)
             {
@@ -466,6 +491,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             catch (Exception ex)
             {
                 diag.LoserOutcome = $"Faulted({ex.GetType().Name})";
+                MetadataHedgingMeter.RecordLateLoser(loserRegion, diag.LoserOutcome);
             }
             finally
             {

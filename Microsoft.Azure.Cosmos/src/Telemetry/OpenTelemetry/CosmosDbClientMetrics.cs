@@ -225,6 +225,112 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Metadata hedging metrics. Emitted by <c>MetadataHedgingStrategy</c>
+        /// for PPAF cold-start cross-region hedging — see
+        /// <c>docs/PPAF_Metadata_Hedging_ColdStart_Design.md</c> §9.1.1.
+        /// </summary>
+        public static class MetadataHedgingMetrics
+        {
+            /// <summary>
+            /// The name of the metadata hedging meter.
+            /// </summary>
+            public const string MeterName = "Azure.Cosmos.Client.MetadataHedging";
+
+            /// <summary>
+            /// Version of the metadata hedging meter.
+            /// </summary>
+            public const string Version = "1.0.0";
+
+            /// <summary>
+            /// Metric names.
+            /// </summary>
+            public static class Name
+            {
+                /// <summary>
+                /// Number of hedge dispatches (i.e., threshold elapsed and hedge sent).
+                /// </summary>
+                public const string Fires = "azure.cosmosdb.client.metadata_hedging.fires";
+
+                /// <summary>
+                /// Number of operations whose acceptable winner was the hedge branch.
+                /// </summary>
+                public const string HedgeWins = "azure.cosmosdb.client.metadata_hedging.hedge_wins";
+
+                /// <summary>
+                /// Number of eligible requests skipped because the per-client semaphore was full.
+                /// </summary>
+                public const string BudgetExhausted = "azure.cosmosdb.client.metadata_hedging.budget_exhausted";
+
+                /// <summary>
+                /// Loser settled after the winner returned.
+                /// </summary>
+                public const string LateLoser = "azure.cosmosdb.client.metadata_hedging.late_loser";
+
+                /// <summary>
+                /// Hedge response was rejected by the per-branch 401/403 overlay.
+                /// </summary>
+                public const string HedgeAuthReject = "azure.cosmosdb.client.metadata_hedging.hedge_auth_reject";
+
+                /// <summary>
+                /// Distribution of hedge-fired elapsed time (always greater than or equal to threshold).
+                /// </summary>
+                public const string HedgeFiredElapsed = "azure.cosmosdb.client.metadata_hedging.hedge_fired_elapsed";
+            }
+
+            /// <summary>
+            /// Units for metrics.
+            /// </summary>
+            public static class Unit
+            {
+                /// <summary>
+                /// Unit representing requests.
+                /// </summary>
+                public const string Request = "{request}";
+
+                /// <summary>
+                /// Unit representing time in seconds.
+                /// </summary>
+                public const string Sec = "s";
+            }
+
+            /// <summary>
+            /// Descriptions for metrics.
+            /// </summary>
+            public static class Description
+            {
+                /// <summary>
+                /// Description for the fires counter.
+                /// </summary>
+                public const string Fires = "Number of metadata hedge dispatches (threshold elapsed and hedge sent).";
+
+                /// <summary>
+                /// Description for the hedge wins counter.
+                /// </summary>
+                public const string HedgeWins = "Number of metadata operations whose acceptable winner was the hedge branch.";
+
+                /// <summary>
+                /// Description for the budget exhausted counter.
+                /// </summary>
+                public const string BudgetExhausted = "Eligible metadata requests skipped because the per-client hedge concurrency budget was full.";
+
+                /// <summary>
+                /// Description for the late loser counter.
+                /// </summary>
+                public const string LateLoser = "Loser metadata branch settled after the winner had already returned.";
+
+                /// <summary>
+                /// Description for the hedge auth reject counter.
+                /// </summary>
+                public const string HedgeAuthReject = "Hedge metadata response rejected by the per-branch 401/403 overlay.";
+
+                /// <summary>
+                /// Description for the hedge fired elapsed histogram.
+                /// </summary>
+                public const string HedgeFiredElapsed = "Elapsed time from operation start to hedge dispatch.";
+            }
+        }
+
+        /// <summary>
         /// Buckets
         /// </summary>
         public static class HistogramBuckets

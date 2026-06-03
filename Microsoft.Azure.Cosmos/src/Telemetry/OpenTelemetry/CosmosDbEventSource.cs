@@ -30,6 +30,57 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         }
 
         [NonEvent]
+        public static bool IsMetadataHedgingEnabled(EventLevel level)
+        {
+            return CosmosDbEventSource.Singleton.IsEnabled(level, Keywords.MetadataHedging);
+        }
+
+        [NonEvent]
+        public static void MetadataHedgeFired(string primaryRegion, string hedgeRegion, double elapsedMs)
+        {
+            if (CosmosDbEventSource.Singleton.IsEnabled(EventLevel.Informational, Keywords.MetadataHedging))
+            {
+                CosmosDbEventSource.Singleton.OnMetadataHedgeFired(primaryRegion ?? string.Empty, hedgeRegion ?? string.Empty, elapsedMs);
+            }
+        }
+
+        [NonEvent]
+        public static void MetadataHedgeWon(string hedgeRegion, double totalElapsedMs)
+        {
+            if (CosmosDbEventSource.Singleton.IsEnabled(EventLevel.Informational, Keywords.MetadataHedging))
+            {
+                CosmosDbEventSource.Singleton.OnMetadataHedgeWon(hedgeRegion ?? string.Empty, totalElapsedMs);
+            }
+        }
+
+        [NonEvent]
+        public static void MetadataHedgePrimaryWon(string primaryRegion, double totalElapsedMs, bool hedgeFired)
+        {
+            if (CosmosDbEventSource.Singleton.IsEnabled(EventLevel.Informational, Keywords.MetadataHedging))
+            {
+                CosmosDbEventSource.Singleton.OnMetadataHedgePrimaryWon(primaryRegion ?? string.Empty, totalElapsedMs, hedgeFired);
+            }
+        }
+
+        [NonEvent]
+        public static void MetadataHedgeSkipped(string skipReason, string resourceType)
+        {
+            if (CosmosDbEventSource.Singleton.IsEnabled(EventLevel.Informational, Keywords.MetadataHedging))
+            {
+                CosmosDbEventSource.Singleton.OnMetadataHedgeSkipped(skipReason ?? string.Empty, resourceType ?? string.Empty);
+            }
+        }
+
+        [NonEvent]
+        public static void MetadataHedgeAuthReject(string hedgeRegion, int statusCode)
+        {
+            if (CosmosDbEventSource.Singleton.IsEnabled(EventLevel.Warning, Keywords.MetadataHedging))
+            {
+                CosmosDbEventSource.Singleton.OnMetadataHedgeAuthReject(hedgeRegion ?? string.Empty, statusCode);
+            }
+        }
+
+        [NonEvent]
         public static void RecordDiagnosticsForRequests(
             CosmosThresholdOptions config,
             Documents.OperationType operationType,
@@ -88,6 +139,46 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private void FailedRequest(string message)
         {
             this.WriteEvent(3, message);
+        }
+
+        [Event(4, Level = EventLevel.Informational, Keywords = Keywords.MetadataHedging)]
+        private void OnMetadataHedgeFired(string primaryRegion, string hedgeRegion, double elapsedMs)
+        {
+            this.WriteEvent(4, primaryRegion, hedgeRegion, elapsedMs);
+        }
+
+        [Event(5, Level = EventLevel.Informational, Keywords = Keywords.MetadataHedging)]
+        private void OnMetadataHedgeWon(string hedgeRegion, double totalElapsedMs)
+        {
+            this.WriteEvent(5, hedgeRegion, totalElapsedMs);
+        }
+
+        [Event(6, Level = EventLevel.Informational, Keywords = Keywords.MetadataHedging)]
+        private void OnMetadataHedgePrimaryWon(string primaryRegion, double totalElapsedMs, bool hedgeFired)
+        {
+            this.WriteEvent(6, primaryRegion, totalElapsedMs, hedgeFired);
+        }
+
+        [Event(7, Level = EventLevel.Informational, Keywords = Keywords.MetadataHedging)]
+        private void OnMetadataHedgeSkipped(string skipReason, string resourceType)
+        {
+            this.WriteEvent(7, skipReason, resourceType);
+        }
+
+        [Event(8, Level = EventLevel.Warning, Keywords = Keywords.MetadataHedging)]
+        private void OnMetadataHedgeAuthReject(string hedgeRegion, int statusCode)
+        {
+            this.WriteEvent(8, hedgeRegion, statusCode);
+        }
+
+        /// <summary>
+        /// EventSource keywords. <see cref="MetadataHedging"/> isolates the
+        /// PPAF cold-start metadata-hedging events so consumers can subscribe
+        /// independently — see design §9.1.2.
+        /// </summary>
+        public static class Keywords
+        {
+            public const EventKeywords MetadataHedging = (EventKeywords)0x1;
         }
     }
 }
