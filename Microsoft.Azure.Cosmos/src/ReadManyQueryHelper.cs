@@ -483,6 +483,16 @@ namespace Microsoft.Azure.Cosmos
             using (pointReadResponse)
             {
                 string containerRid = await this.container.GetCachedRIDAsync(forceRefresh: false, trace, cancellationToken);
+
+                // Mirror the wire response's SubStatusCode into the synthetic
+                // CosmosQueryResponseMessageHeaders that we hand to QueryResponse.CreateSuccess /
+                // CreateFailure. Without this, the stream overload's combined ResponseMessage
+                // surfaces SubStatusCode=Unknown for non-404 failures (e.g. 400/410/503), which
+                // loses the diagnostic signal a caller would see on a direct ReadItemStreamAsync
+                // call. Note: the 404-swallow guard below intentionally reads from
+                // pointReadResponse.Headers directly (not from this synthetic header) so the
+                // guard's "Unknown means missing item" check is decoupled from how we shape the
+                // synthetic header.
                 CosmosQueryResponseMessageHeaders responseHeaders = new CosmosQueryResponseMessageHeaders(
                     continauationToken: null,
                     disallowContinuationTokenMessage: null,
@@ -491,14 +501,16 @@ namespace Microsoft.Azure.Cosmos
                 {
                     RequestCharge = pointReadResponse.Headers?.RequestCharge ?? 0,
                     ActivityId = pointReadResponse.Headers?.ActivityId,
-                    SubStatusCode = Documents.SubStatusCodes.Unknown
+                    SubStatusCode = pointReadResponse.Headers?.SubStatusCode ?? Documents.SubStatusCodes.Unknown
                 };
 
                 // Treat 404/Unknown as "missing item" — do not fail the overall ReadMany.
                 // This matches the Java SDK behavior (see pointReadsForReadMany in
                 // RxDocumentClientImpl.java) and parallels its bug fixes (azure-sdk-for-java
                 // PRs 34966, 35513) for swallowing missing-item 404s in the point-read
-                // fast path.
+                // fast path. The guard reads pointReadResponse.Headers directly, NOT the
+                // synthetic responseHeaders above, so it remains anchored to the real wire
+                // value regardless of how the synthetic header is shaped.
                 if (pointReadResponse.StatusCode == System.Net.HttpStatusCode.NotFound
                     && pointReadResponse.Headers?.SubStatusCode == Documents.SubStatusCodes.Unknown)
                 {
