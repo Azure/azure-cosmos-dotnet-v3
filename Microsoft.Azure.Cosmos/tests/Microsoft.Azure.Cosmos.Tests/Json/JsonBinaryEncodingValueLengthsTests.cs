@@ -324,6 +324,162 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             Assert.IsInstanceOfType(caught, typeof(InsufficientExecutionStackException));
         }
 
+        [TestMethod]
+        [Owner("tvaron")]
+        public void DeeplyNestedCosmosObjectDistinctHashThrowsCatchableException()
+        {
+            // Object-shaped companion to DeeplyNestedCosmosArrayHashThrowsCatchableException:
+            // exercises DistinctHash.Visit(CosmosObject) which is the
+            // recursive hashing path for object-rooted DISTINCT query results.
+            CosmosElement deeplyNested = CosmosObject.Create(new Dictionary<string, CosmosElement>());
+            for (int i = 0; i < 10_000; i++)
+            {
+                deeplyNested = CosmosObject.Create(new Dictionary<string, CosmosElement> { ["n"] = deeplyNested });
+            }
+
+            Exception caught = RunOnSmallStackThread(
+                () => global::Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct.DistinctHash.GetHash(deeplyNested));
+
+            Assert.IsInstanceOfType(caught, typeof(InsufficientExecutionStackException));
+        }
+
+        [TestMethod]
+        [Owner("tvaron")]
+        public void DeeplyNestedCosmosArrayGetHashCodeThrowsCatchableException()
+        {
+            // Direct CosmosArray.GetHashCode() recursion (each level calls
+            // GetHashCode on its single child, which is itself a CosmosArray).
+            // Without the guard this would stack-overflow when nested
+            // CosmosArrays are placed in a HashSet/Dictionary.
+            CosmosArray deeplyNested = CosmosArray.Create();
+            for (int i = 0; i < 10_000; i++)
+            {
+                deeplyNested = CosmosArray.Create(new[] { (CosmosElement)deeplyNested });
+            }
+
+            Exception caught = RunOnSmallStackThread(() => deeplyNested.GetHashCode());
+
+            Assert.IsInstanceOfType(caught, typeof(InsufficientExecutionStackException));
+        }
+
+        [TestMethod]
+        [Owner("tvaron")]
+        public void DeeplyNestedCosmosObjectGetHashCodeThrowsCatchableException()
+        {
+            CosmosElement deeplyNested = CosmosObject.Create(new Dictionary<string, CosmosElement>());
+            for (int i = 0; i < 10_000; i++)
+            {
+                deeplyNested = CosmosObject.Create(new Dictionary<string, CosmosElement> { ["n"] = deeplyNested });
+            }
+
+            Exception caught = RunOnSmallStackThread(() => deeplyNested.GetHashCode());
+
+            Assert.IsInstanceOfType(caught, typeof(InsufficientExecutionStackException));
+        }
+
+        [TestMethod]
+        [Owner("tvaron")]
+        public void DeeplyNestedCosmosArrayEqualsThrowsCatchableException()
+        {
+            // CosmosArray.Equals(CosmosArray) recurses element-wise; two
+            // identical deep trees would otherwise blow the stack when used
+            // as Dictionary keys or for partition-key value comparison.
+            CosmosArray BuildTree()
+            {
+                CosmosArray node = CosmosArray.Create();
+                for (int i = 0; i < 10_000; i++)
+                {
+                    node = CosmosArray.Create(new[] { (CosmosElement)node });
+                }
+                return node;
+            }
+
+            CosmosArray left = BuildTree();
+            CosmosArray right = BuildTree();
+
+            Exception caught = RunOnSmallStackThread(() => left.Equals(right));
+
+            Assert.IsInstanceOfType(caught, typeof(InsufficientExecutionStackException));
+        }
+
+        [TestMethod]
+        [Owner("tvaron")]
+        public void DeeplyNestedCosmosObjectEqualsThrowsCatchableException()
+        {
+            CosmosObject BuildTree()
+            {
+                CosmosElement node = CosmosObject.Create(new Dictionary<string, CosmosElement>());
+                for (int i = 0; i < 10_000; i++)
+                {
+                    node = CosmosObject.Create(new Dictionary<string, CosmosElement> { ["n"] = node });
+                }
+                return (CosmosObject)node;
+            }
+
+            CosmosObject left = BuildTree();
+            CosmosObject right = BuildTree();
+
+            Exception caught = RunOnSmallStackThread(() => left.Equals(right));
+
+            Assert.IsInstanceOfType(caught, typeof(InsufficientExecutionStackException));
+        }
+
+        [TestMethod]
+        [Owner("tvaron")]
+        public void DeeplyNestedCosmosArrayToSqlScalarExpressionThrowsCatchableException()
+        {
+            // CosmosElementToSqlScalarExpressionVisitor.Visit(CosmosArray) is
+            // the recursive walker used when LINQ translates in-memory
+            // CosmosElement constants into SQL scalar expressions.
+            CosmosArray deeplyNested = CosmosArray.Create();
+            for (int i = 0; i < 10_000; i++)
+            {
+                deeplyNested = CosmosArray.Create(new[] { (CosmosElement)deeplyNested });
+            }
+
+            Exception caught = RunOnSmallStackThread(
+                () => deeplyNested.Accept(global::Microsoft.Azure.Cosmos.Linq.CosmosElementToSqlScalarExpressionVisitor.Singleton));
+
+            Assert.IsInstanceOfType(caught, typeof(InsufficientExecutionStackException));
+        }
+
+        [TestMethod]
+        [Owner("tvaron")]
+        public void DeeplyNestedCosmosObjectToSqlScalarExpressionThrowsCatchableException()
+        {
+            CosmosElement deeplyNested = CosmosObject.Create(new Dictionary<string, CosmosElement>());
+            for (int i = 0; i < 10_000; i++)
+            {
+                deeplyNested = CosmosObject.Create(new Dictionary<string, CosmosElement> { ["n"] = deeplyNested });
+            }
+
+            Exception caught = RunOnSmallStackThread(
+                () => deeplyNested.Accept(global::Microsoft.Azure.Cosmos.Linq.CosmosElementToSqlScalarExpressionVisitor.Singleton));
+
+            Assert.IsInstanceOfType(caught, typeof(InsufficientExecutionStackException));
+        }
+
+        private static Exception RunOnSmallStackThread(Action action)
+        {
+            Exception caught = null;
+            System.Threading.Thread thread = new System.Threading.Thread(
+                () =>
+                {
+                    try
+                    {
+                        action();
+                    }
+                    catch (Exception ex)
+                    {
+                        caught = ex;
+                    }
+                },
+                maxStackSize: 256 * 1024);
+            thread.Start();
+            thread.Join();
+            return caught;
+        }
+
         private static byte[] BuildArrL4ChainPayload(int depth)
         {
             // Layout:
