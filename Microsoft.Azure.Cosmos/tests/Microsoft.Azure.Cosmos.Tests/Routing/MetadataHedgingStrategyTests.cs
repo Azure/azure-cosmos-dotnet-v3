@@ -667,5 +667,80 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             Assert.IsFalse(MetadataHedgingStrategy.PhaseDefault, "Phase 1 default must be off; bump this assertion when promoting to a later phase.");
         }
+
+        // ---------------------------------------------------------------
+        // CreateIfEnabled — wiring from CosmosClientOptions (Stage 7)
+        // ---------------------------------------------------------------
+
+        [TestMethod]
+        [Owner("dkunda")]
+        public void CreateIfEnabled_NullOptIn_FollowsPhaseDefault_ReturnsNullInPhase1()
+        {
+            MetadataHedgingStrategy strategy = MetadataHedgingStrategy.CreateIfEnabled(
+                enableMetadataHedgingForColdStart: null,
+                options: null,
+                globalEndpointManager: BuildEndpointManagerMock(new[] { PrimaryEndpoint }).Object,
+                isPpafEnabled: () => true);
+
+            Assert.IsNull(strategy);
+        }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        public void CreateIfEnabled_ExplicitFalse_ReturnsNull()
+        {
+            MetadataHedgingStrategy strategy = MetadataHedgingStrategy.CreateIfEnabled(
+                enableMetadataHedgingForColdStart: false,
+                options: null,
+                globalEndpointManager: BuildEndpointManagerMock(new[] { PrimaryEndpoint }).Object,
+                isPpafEnabled: () => true);
+
+            Assert.IsNull(strategy);
+        }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        public void CreateIfEnabled_ExplicitTrue_BuildsStrategyWithDefaultThreshold()
+        {
+            using MetadataHedgingStrategy strategy = MetadataHedgingStrategy.CreateIfEnabled(
+                enableMetadataHedgingForColdStart: true,
+                options: null,
+                globalEndpointManager: BuildEndpointManagerMock(new[] { PrimaryEndpoint, HedgeEndpoint }).Object,
+                isPpafEnabled: () => true);
+
+            Assert.IsNotNull(strategy);
+            Assert.AreEqual(
+                HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance.FirstAttemptTimeout
+                    + MetadataHedgingOptions.DefaultThresholdStep,
+                strategy.Threshold);
+            Assert.AreEqual(MetadataHedgingOptions.DefaultPerClientConcurrencyBudget, strategy.PerClientConcurrencyBudget);
+        }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        public void CreateIfEnabled_ExplicitTrue_HonorsCustomerThresholdAndBudget()
+        {
+            MetadataHedgingOptions options = new MetadataHedgingOptions
+            {
+                Threshold = TimeSpan.FromMilliseconds(750),
+                PerClientConcurrencyBudget = 16,
+            };
+
+            using MetadataHedgingStrategy strategy = MetadataHedgingStrategy.CreateIfEnabled(
+                enableMetadataHedgingForColdStart: true,
+                options: options,
+                globalEndpointManager: BuildEndpointManagerMock(new[] { PrimaryEndpoint, HedgeEndpoint }).Object,
+                isPpafEnabled: () => true);
+
+            Assert.IsNotNull(strategy);
+            Assert.AreEqual(TimeSpan.FromMilliseconds(750), strategy.Threshold);
+            Assert.AreEqual(16, strategy.PerClientConcurrencyBudget);
+        }
+
+        private static IGlobalEndpointManager BuildMockGlobalEndpointManager()
+        {
+            Mock<IGlobalEndpointManager> mock = new Mock<IGlobalEndpointManager>(MockBehavior.Loose);
+            return mock.Object;
+        }
     }
 }

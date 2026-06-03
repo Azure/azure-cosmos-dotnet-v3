@@ -89,6 +89,39 @@ namespace Microsoft.Azure.Cosmos.Routing
             return customerOptIn ?? PhaseDefault;
         }
 
+        /// <summary>
+        /// Builds the strategy from the customer-supplied
+        /// <see cref="CosmosClientOptions.EnableMetadataHedgingForColdStart"/>
+        /// tri-state and optional <see cref="MetadataHedgingOptions"/>, or
+        /// returns <c>null</c> when the resolved opt-in is <c>false</c>.
+        /// The Gateway kill-switch is hard-wired to <c>false</c> in Phase 1;
+        /// see design §5.1 and §12.
+        /// </summary>
+        internal static MetadataHedgingStrategy CreateIfEnabled(
+            bool? enableMetadataHedgingForColdStart,
+            MetadataHedgingOptions options,
+            IGlobalEndpointManager globalEndpointManager,
+            Func<bool> isPpafEnabled)
+        {
+            if (!ResolveOptIn(enableMetadataHedgingForColdStart))
+            {
+                return null;
+            }
+
+            MetadataHedgingOptions effectiveOptions = options ?? new MetadataHedgingOptions();
+            TimeSpan threshold = effectiveOptions.Threshold
+                ?? (HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance.FirstAttemptTimeout
+                    + MetadataHedgingOptions.DefaultThresholdStep);
+
+            return new MetadataHedgingStrategy(
+                globalEndpointManager: globalEndpointManager,
+                isHedgingDisabledByGateway: () => false,
+                isPpafEnabled: isPpafEnabled,
+                isOptInEnabled: true,
+                threshold: threshold,
+                options: effectiveOptions);
+        }
+
         internal int AvailableBudget => this.hedgeBudget.CurrentCount;
 
         /// <summary>
