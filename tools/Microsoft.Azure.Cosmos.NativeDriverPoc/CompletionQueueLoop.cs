@@ -10,30 +10,13 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
     using static Microsoft.Azure.Cosmos.NativeDriverPoc.NativeMethods;
 
     /// <summary>
-    /// V2 receive loop for the production-spec
+    /// V2 receive loop for the production
     /// <c>azure_data_cosmos_driver_native</c> completion queue
-    /// (NATIVE_WRAPPER_SPEC.md §3.1). One dedicated background thread per CQ
-    /// calls <see cref="NativeMethods.cosmos_cq_wait"/>, retrieves a
-    /// <c>cosmos_completion_t*</c>, fans the outcome (OK / ERROR / CANCELLED)
-    /// onto the matching <see cref="TaskCompletionSource{T}"/>, then frees
-    /// the completion handle.
+    /// (header lines 696-835). One background thread per CQ calls
+    /// <see cref="NativeMethods.cosmos_cq_wait"/>, retrieves an opaque
+    /// <c>cosmos_completion_t*</c>, fans the outcome onto the matching
+    /// <see cref="TaskCompletionSource{T}"/>, then frees the completion.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Differences vs V1 (NativeAsyncPoc): the spec opaqued the completion
-    /// record (V1 returned <c>user_data</c> / <c>status</c> / <c>response</c>
-    /// as three out-params from the wait call). The V2 wait returns a single
-    /// opaque pointer; the host calls the <c>cosmos_completion_*</c>
-    /// accessor family to read each field. The host is responsible for
-    /// freeing the completion regardless of outcome — and for freeing the
-    /// taken response / error after taking ownership.
-    /// </para>
-    /// <para>
-    /// Spec §3.1.3 "wait returned NULL" disambiguation rule is implemented
-    /// here: NULL + state==Running == timeout (continue); NULL + state in
-    /// {Shutdown, Drained} == terminal (drain pending, exit).
-    /// </para>
-    /// </remarks>
     internal sealed class CompletionQueueLoop : IDisposable
     {
         private readonly IntPtr cqHandle;
@@ -44,8 +27,9 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
 
         public CompletionQueueLoop(IntPtr runtime, CosmosCqOptions? options = null)
         {
-            CosmosCqOptions opts = options ?? CosmosCqOptions.Default;
-            this.cqHandle = cosmos_cq_create(runtime, in opts);
+            this.cqHandle = options.HasValue
+                ? cosmos_cq_create(runtime, options.Value)
+                : cosmos_cq_create_default(runtime, IntPtr.Zero);
             if (this.cqHandle == IntPtr.Zero)
             {
                 throw new InvalidOperationException("cosmos_cq_create returned NULL");
@@ -62,11 +46,6 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
 
         public IntPtr Handle => this.cqHandle;
 
-        /// <summary>
-        /// Reserve a new user_data token and bind it to the TCS the pump
-        /// should resolve on completion. Returns an <see cref="IntPtr"/>
-        /// already shaped for passing to <see cref="cosmos_driver_submit"/>.
-        /// </summary>
         public IntPtr Register(TaskCompletionSource<CosmosNativeResponse> tcs, out ulong token)
         {
             token = (ulong)Interlocked.Increment(ref this.nextUserData);
@@ -74,7 +53,6 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
             return new IntPtr((long)token);
         }
 
-        /// <summary>Cancel a registration if the synchronous submit failed.</summary>
         public bool Unregister(ulong token) => this.pending.TryRemove(token, out _);
 
         private void Pump()
@@ -84,14 +62,12 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
                 IntPtr completion = cosmos_cq_wait(this.cqHandle, timeoutMs: 200);
                 if (completion == IntPtr.Zero)
                 {
-                    // Spec §3.1.3 — wait returned NULL. Distinguish timeout
-                    // (Running) from terminal (Shutdown/Drained).
+                    // Header §720 — NULL on timeout / shutdown / drained / spurious wake.
                     CosmosCqState state = cosmos_cq_state(this.cqHandle);
                     if (state == CosmosCqState.Running)
                     {
                         continue;
                     }
-
                     this.DrainPendingOnShutdown();
                     return;
                 }
@@ -110,7 +86,6 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
                 }
             }
 
-            // Disposed flag was raised; signal Rust side and drain.
             cosmos_cq_shutdown(this.cqHandle);
             this.DrainPendingOnShutdown();
         }
@@ -136,8 +111,7 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
                     IntPtr response = cosmos_completion_take_response(completion);
                     try
                     {
-                        CosmosNativeResponse materialized = MaterializeResponse(response);
-                        tcs.TrySetResult(materialized);
+                        tcs.TrySetResult(MaterializeResponse(response));
                     }
                     finally
                     {
@@ -151,20 +125,16 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
 
                 case CosmosCompletionOutcome.Error:
                 {
+                    CosmosErrorCode coarse = cosmos_completion_status(completion);
                     IntPtr error = cosmos_completion_take_error(completion);
                     Exception ex;
                     try
                     {
-                        ex = error == IntPtr.Zero
-                            ? new InvalidOperationException("completion outcome=ERROR but cosmos_completion_take_error returned NULL")
-                            : new CosmosNativeException(error);
+                        ex = new CosmosNativeException(error, coarse);
                     }
                     finally
                     {
-                        if (error != IntPtr.Zero)
-                        {
-                            cosmos_error_free(error);
-                        }
+                        if (error != IntPtr.Zero) cosmos_error_free(error);
                     }
                     tcs.TrySetException(ex);
                     break;
@@ -189,51 +159,26 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
         {
             if (response == IntPtr.Zero)
             {
-                return new CosmosNativeResponse(
-                    http: 0, ru: 0.0,
-                    activityId: null, sessionToken: null,
-                    etag: null, continuation: null,
-                    body: Array.Empty<byte>());
+                return new CosmosNativeResponse(0, 0.0, null, null, null, null, Array.Empty<byte>());
             }
 
             ushort http = cosmos_response_status_code(response);
             double ru = cosmos_response_request_charge(response);
+            string? activityId = PtrToUtf8(cosmos_response_activity_id(response));
+            string? sessionToken = PtrToUtf8(cosmos_response_session_token(response));
+            string? etag = PtrToUtf8(cosmos_response_etag(response));
+            string? continuation = PtrToUtf8(cosmos_response_continuation_token(response));
 
-            string? activityId = null;
-            if (cosmos_response_activity_id(response, out IntPtr aPtr) == CosmosErrorCode.Success)
+            byte[] body = Array.Empty<byte>();
+            if (cosmos_response_body(response, out IntPtr dataPtr, out UIntPtr lenNative) == CosmosErrorCode.Success
+                && dataPtr != IntPtr.Zero)
             {
-                activityId = PtrToUtf8(aPtr);
-            }
-
-            string? sessionToken = null;
-            if (cosmos_response_session_token(response, out IntPtr sPtr) == CosmosErrorCode.Success)
-            {
-                sessionToken = PtrToUtf8(sPtr);
-            }
-
-            string? etag = null;
-            if (cosmos_response_etag(response, out IntPtr ePtr) == CosmosErrorCode.Success)
-            {
-                etag = PtrToUtf8(ePtr);
-            }
-
-            string? continuation = null;
-            if (cosmos_response_continuation_token(response, out IntPtr cPtr) == CosmosErrorCode.Success)
-            {
-                continuation = PtrToUtf8(cPtr);
-            }
-
-            byte[] body;
-            CosmosBytesView bodyView = cosmos_response_body(response);
-            int len = (int)bodyView.Len.ToUInt32();
-            if (bodyView.Data == IntPtr.Zero || len <= 0)
-            {
-                body = Array.Empty<byte>();
-            }
-            else
-            {
-                body = new byte[len];
-                Marshal.Copy(bodyView.Data, body, 0, len);
+                int len = (int)lenNative.ToUInt32();
+                if (len > 0)
+                {
+                    body = new byte[len];
+                    Marshal.Copy(dataPtr, body, 0, len);
+                }
             }
 
             return new CosmosNativeResponse(http, ru, activityId, sessionToken, etag, continuation, body);
@@ -255,8 +200,6 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
             {
                 return;
             }
-            // The pump observes `disposed`, calls cosmos_cq_shutdown, drains.
-            // We give it up to 5s to exit cleanly before tearing the handle.
             this.pumpThread.Join(TimeSpan.FromSeconds(5));
             cosmos_cq_free(this.cqHandle);
         }

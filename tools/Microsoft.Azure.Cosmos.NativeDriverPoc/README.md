@@ -1,38 +1,30 @@
-# Microsoft.Azure.Cosmos.NativeDriverPoc (V2, spec-aligned)
+# Microsoft.Azure.Cosmos.NativeDriverPoc (V2, PR #4515-aligned)
 
-This is the **V2** .NET host for the Cosmos async-FFI work. It targets the
-production spec drafted in
-[Azure/azure-sdk-for-rust#4461](https://github.com/Azure/azure-sdk-for-rust/pull/4461)
-— the `azure_data_cosmos_driver_native` crate, which produces
-`azurecosmosdriver.{dll,so,dylib}`.
+V2 .NET host for the Cosmos async-FFI work, targeting the actual
+`azure_data_cosmos_driver_native` crate landed as draft in
+[Azure/azure-sdk-for-rust#4515](https://github.com/Azure/azure-sdk-for-rust/pull/4515).
+The crate produces `azurecosmosdriver.{dll,so,dylib}`.
 
-The sibling project [`Microsoft.Azure.Cosmos.NativeAsyncPoc`](../Microsoft.Azure.Cosmos.NativeAsyncPoc/)
-(V1) remains the validated baseline against the original 14-function
-hand-rolled cdylib. V1 stays as the evidence behind the verdict doc;
-V2 is the path forward once the production crate lands.
+The sibling V1 project
+[`Microsoft.Azure.Cosmos.NativeAsyncPoc`](../Microsoft.Azure.Cosmos.NativeAsyncPoc/)
+remains the validated baseline against the original 14-function hand-
+rolled cdylib (F1–F4 green; verdict doc preserved). V2 stays
+spec-aligned for the forward path.
 
-## Why two projects side-by-side
+## Source of truth
 
-| | V1 (NativeAsyncPoc) | V2 (NativeDriverPoc) |
-|---|---|---|
-| Targets | hand-rolled `cosmos_async_poc.dll` | spec-aligned `azurecosmosdriver.dll` |
-| Function count | 14 P/Invokes | ~50 P/Invokes |
-| Error model | flat `CosmosStatus` enum | two-tier `CosmosErrorCode` + rich `cosmos_error_t` |
-| Completion | 3 out-params (`user_data`, `status`, `response`) | 1 opaque `cosmos_completion_t*` + accessor family |
-| Cancellation | `cosmos_cancel(opHandle)` | `cosmos_operation_handle_cancel(opHandle)` + cooperative |
-| Status | **PROVEN** — F1-F4 all green on emulator | **READY** — compiles green; runs the moment the DLL lands |
-
-Function-for-function diff is intentional: reviewers can place the two
-`NativeMethods.cs` files side by side and audit every spec interpretation
-against the V1 ground truth.
+Every signature here mirrors the cbindgen-generated header
+`include/azurecosmosdriver.h` from the PR (1833 lines, cached at
+`Q:\src\.poc-artifacts\pr4515\azurecosmosdriver.h`). Each P/Invoke in
+`NativeMethods.cs` is tagged with its header line range.
 
 ## Build behavior
 
 ```powershell
-# Build without the DLL — succeeds with one warning.
+# Default — build without the DLL; succeeds with one warning.
 dotnet build .\tools\Microsoft.Azure.Cosmos.NativeDriverPoc\
 
-# Build with the DLL — bundles it into the output directory.
+# With the DLL present:
 $env:DriverNativeArtifactDir = "Q:\src\.poc-artifacts\azurecosmosdriver\"
 dotnet build .\tools\Microsoft.Azure.Cosmos.NativeDriverPoc\
 
@@ -41,85 +33,120 @@ dotnet build .\tools\Microsoft.Azure.Cosmos.NativeDriverPoc\ `
   -p:RequireDriverNativeArtifact=true
 ```
 
-The MSBuild target `ReportDriverNativeArtifactStatus` checks for the DLL
-at `$(DriverNativeArtifactDir)\azurecosmosdriver.dll` and either:
-* copies it next to the .exe and prints a confirmation, **or**
-* emits a warning explaining how to produce it (default), **or**
-* fails the build (when `RequireDriverNativeArtifact=true`).
+## Drop-in steps when consuming the PR's DLL
 
-The executable runs a preflight check on `Main` entry; if the DLL is
-absent it exits 2 with the same remediation steps printed to stderr —
-friendlier than a raw `DllNotFoundException` at the first call.
+```powershell
+git -C Q:\src\azure-sdk-for-rust fetch origin `
+  users/kundadebdatta/4372_cosmos_driver_native_crate_async_impl
+git -C Q:\src\azure-sdk-for-rust checkout `
+  users/kundadebdatta/4372_cosmos_driver_native_crate_async_impl
+cargo build --release -p azure_data_cosmos_driver_native
+Copy-Item Q:\src\azure-sdk-for-rust\target\release\azurecosmosdriver.dll `
+  Q:\src\.poc-artifacts\azurecosmosdriver\
+dotnet run --project .\tools\Microsoft.Azure.Cosmos.NativeDriverPoc\
+```
 
-## When the DLL arrives — drop-in steps
+F1–F5 should pass against a running emulator.
 
-1. Pull the feature branch behind PR #4452 in `azure-sdk-for-rust`.
-2. `cargo build -p azure_data_cosmos_driver_native --release`
-3. Copy `target\release\azurecosmosdriver.dll` to
-   `Q:\src\.poc-artifacts\azurecosmosdriver\` (or set
-   `DriverNativeArtifactDir` to wherever it lives).
-4. `dotnet run --project .\tools\Microsoft.Azure.Cosmos.NativeDriverPoc\`
-5. F1-F5 should pass against a running emulator.
+## What's bound vs deferred
 
-No .NET code changes are anticipated unless the spec moves between now
-and the merge.
+| Area | Bound | Deferred (additive, doesn't block F-checks) |
+|---|---|---|
+| Phase 0 (version, bytes, string) | ✅ | – |
+| Phase 1 (errors, CQ, completion, op handle) | ✅ | – |
+| Phase 2 (runtime builder) | ✅ (5 setters + build) | – |
+| Phase 3 (account / database / driver) | ✅ | `cosmos_driver_options_builder_*` (5 fns) |
+| Phase 4 (partition key) | ✅ (builder + add_string only) | `add_number/_bool/_null/_undefined`, `_empty`, `_clone`, `_component_count`, `_is_empty` |
+| Phase 5 (op options) | ❌ | All `cosmos_operation_options_builder_*` (~20 fns), `CosmosReadConsistency`, `CosmosContentResponseOnWrite` |
+| Phase 6 (CRUD + submit + response) | ✅ for item-CRUD + body + submit + status/RU/body/headers | `cosmos_operation_read_offer/_replace_offer/_read_all_items/_query_items/_query_plan_for_features/_batch`, additional op mutators (session_token, activity_id, max_item_count, populate_metrics, precondition_if_*, patch_max_attempts), `cosmos_feed_range_*`, `cosmos_response_take_driver/_take_container`, async `cosmos_driver_get_or_create_submit` and `cosmos_driver_resolve_container_submit` |
+| Phase 7 (diagnostics) | – | not in PR yet |
+| Phase 8 (pagination) | – | not in PR yet |
+| Phase 9 (patch, batch sub-ops) | – | not in PR yet |
+
+## Findings worth a comment on PR #4515
+
+### 1. cbindgen + macro-expanded `#[no_mangle]` — item factories missing from header
+
+The six item-CRUD factories
+(`cosmos_operation_{create,read,upsert,replace,delete,patch}_item`) are
+generated by the `item_factory!` macro in `operation.rs` (line 441 in
+the PR head). Each expands to a `#[no_mangle] pub extern "C" fn` so the
+symbols ARE present in the compiled cdylib — verified via the README's
+own .NET / Go / Python quick-starts, all of which call them.
+
+But cbindgen does NOT emit declarations for macro-expanded
+`#[no_mangle]` exports into `azurecosmosdriver.h`. Result: the header
+is missing the six functions advertised in the rollout matrix and
+exercised in the README sample. Consumers that vendor the header
+without a Rust toolchain (the explicit goal stated in the crate
+README) will hit "implicit declaration" errors in C and "unbound
+symbol" lints in language bindings that auto-generate from the header.
+
+P/Invoke is unaffected because it resolves by symbol name — but the C
+test harness in `c_tests/` will paper over the gap by including
+hand-written prototypes. Fix is either:
+- swap `item_factory!` for a generated-by-build.rs file the crate
+  includes, or
+- ditch the macro and write the six functions long-hand.
+
+### 2. Spec-draft predicates dropped without an ABI replacement
+
+The spec (NATIVE_WRAPPER_SPEC.md §3.5.2 in earlier revisions) listed
+eight `cosmos_error_is_*` predicates: `is_transient`, `is_throttled`,
+`is_not_found`, `is_conflict`, `is_precondition_failed`, `is_timeout`,
+`is_gone`, `is_service_error`. The implementation kept only
+`cosmos_error_is_from_wire`. The other seven are gone.
+
+The information IS still retrievable — every wire error carries a
+`CosmosErrorCode` in the 2xxx band (`2404` = NOT_FOUND, `2429` =
+THROTTLED, etc.) so host SDKs can derive the predicates by comparing.
+V2 does exactly that — see `CosmosNativeException.IsNotFound` etc. —
+but it's worth confirming this trade-off was intentional, since every
+language binding will now ship its own predicate set. A note in the
+crate README would save downstream consumers the back-and-forth.
+
+### 3. `cosmos_error_kind_t` enum / accessor — gone from spec → impl
+
+Earlier spec revisions had a 7-variant `cosmos_error_kind_t`
+(Service / Transport / Client / Authentication / Serialization /
+Configuration / Unknown) plus `cosmos_error_kind()` accessor.
+Neither exists in the implementation. Same trade-off as #2 — the
+information is recoverable from the 1xxx / 2xxx / 3xxx / 4xxx error
+code bands — but worth flagging for consistency.
+
+### 4. Resolved spec ambiguities (these are fine)
+
+- ✅ `cosmos_error_t **out_error` IS double pointer — wrapper allocates,
+  caller frees via `cosmos_error_free`.
+- ✅ `cosmos_cq_options_t` layout is `(uint32 capacity_hint, uint32
+  max_capacity, bool include_error_details)` — matches what V2
+  assumed.
+- ✅ `cosmos_completion_was_cancel_requested` exists per spec.
 
 ## F-checks
 
-| | Check | New vs V1? |
+| | Check | Notes |
 |---|---|---|
-| F1 | Single read returns 200 + seeded body marker | same shape |
-| F2 | 1000 submits, average < 100µs (non-blocking submit) | scaled up |
-| F3 | 1000 concurrent reads on one pump complete in <5s | scaled up |
-| F4 | CancellationToken → `cosmos_operation_handle_cancel` honored on 100 trials | reuses V1 idea, larger sample |
-| F5 | Read non-existent item surfaces `CosmosNativeException(IsNotFound=true, HttpStatusCode=404)` | **NEW** — validates spec §6.2 "404 surfaces as ERROR not OK" |
-
-## Spec ambiguities flagged
-
-These are open questions discovered while writing the bindings; each
-deserves a comment on PR #4461 before the spec is signed off.
-
-* **`cosmos_error_t *out_error` is opaque + owned by caller.** Multiple
-  entry points (`cosmos_runtime_builder_build`,
-  `cosmos_account_ref_with_master_key`,
-  `cosmos_driver_get_or_create_blocking`) declare a trailing
-  `cosmos_error_t *out_error` (single pointer). Because `cosmos_error_t`
-  is opaque and freed via `cosmos_error_free`, the only sane
-  interpretation is `cosmos_error_t **out_error` — wrapper allocates,
-  caller frees. V2 binds it as `out IntPtr` on the assumption that the
-  spec text means double-pointer.
-* **`cosmos_bytes_view_t` returned by value.** Spec §3.3 publishes the
-  layout and uses pass-by-value for both inputs and outputs. On Windows
-  x64 with MS ABI, 16-byte aggregate return goes via hidden pointer;
-  cbindgen + Rust `extern "C"` should handle that, and so should the
-  .NET P/Invoke marshaller, but this is unverified until the DLL ships
-  and F1 actually runs.
-* **`cosmos_cq_options_t` capacity defaults.** Spec lists
-  `CapacityHint`, `MaxCapacity`, `IncludeErrorDetails` but doesn't pin
-  default values when zero is passed. V2 defaults to 1024 / 0
-  (unbounded) / true for safety; would prefer the spec be explicit.
-* **`cosmos_completion_was_cancel_requested` access pattern.** Spec
-  says this predicate is true on the completion record after cancel
-  was requested, regardless of outcome. The current pump consumes
-  outcome and frees the completion in one breath; surfacing this
-  predicate to user code would require either a richer
-  `CosmosNativeResponse` (with `WasCancelRequested`) or a callback hook.
-  V2 leaves it on the table for the post-DLL iteration.
+| F1 | Single read returns 200 + seeded body marker | uses `cosmos_operation_read_item` (header-undeclared but DLL-exported) |
+| F2 | 1000 submits, average < 100µs | non-blocking submit assertion |
+| F3 | 1000 concurrent reads on one pump complete in <5s | parallelism over a single CQ |
+| F4 | CancellationToken → `cosmos_operation_handle_cancel` honored on 100 trials | TaskCanceled OR natural-completion both allowed (race) |
+| F5 | Read non-existent item → `CosmosNativeException.IsNotFound == true && HttpStatusCode == 404` | validates the dropped is_not_found predicate is reconstructible from `CoarseCode == NotFound` |
 
 ## File map
 
 | File | What it is |
 |---|---|
 | `Microsoft.Azure.Cosmos.NativeDriverPoc.csproj` | Build def + MSBuild target that warn-or-bundles the native DLL. |
-| `NativeMethods.cs` | Raw P/Invoke surface (~50 functions, every signature tagged with its spec section). |
-| `CosmosNativeException.cs` | Rich-error wrapper + materialized `CosmosNativeResponse` (both copy out of native memory in the ctor). |
-| `CompletionQueueLoop.cs` | One pump thread per CQ; spec §3.1.3 NULL-result disambiguation; outcome-dispatch onto TCS. |
-| `NativeCosmosClient.cs` | Owns the full object graph (runtime / account / db / container / pk / driver / cq); CRUD `*Async` methods. |
-| `Program.cs` | F1-F5 driver against the emulator. |
+| `NativeMethods.cs` | Raw P/Invoke surface (~45 fns covering Phase 0–6 single-item CRUD). Every fn tagged with its header line range. |
+| `CosmosNativeException.cs` | Rich-error wrapper + `CosmosNativeResponse`. Both copy out of native memory in the ctor. |
+| `CompletionQueueLoop.cs` | One pump thread per CQ; opaque-completion model with `cosmos_cq_state` disambiguation on NULL wait. |
+| `NativeCosmosClient.cs` | Owns full object graph; CRUD `*Async(CancellationToken)`. Container resolved via driver (not constructed by name); PK via builder API. |
+| `Program.cs` | F1–F5 driver against the emulator. Includes preflight + `cosmos_version()` print. |
 
 ## Branch / commit context
 
-* Branch: `users/ananth/poc-native-async-spike` in worktree
+- Branch: `users/ananth/poc-native-async-spike` in worktree
   `Q:\src\azure-cosmos-dotnet-v3\worktrees\poc-async-ffi`.
-* V1 commits: `5486eb7b4` (V1 .NET host), `438470960` (V1 .sln).
-* V2 commit: see the commit that adds this README.
+- V1 commits: `5486eb7b4`, `438470960`.
+- V2 commits: see git log on this branch.

@@ -10,99 +10,94 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
     /// <summary>
     /// Strongly-typed exception thrown when a Cosmos completion arrives
     /// with <see cref="CosmosCompletionOutcome.Error"/>. Mirrors the rich
-    /// payload exposed by <c>cosmos_error_t</c> per spec §3.5.2.
+    /// payload exposed by <c>cosmos_error_t</c> per
+    /// <c>azurecosmosdriver.h</c> lines 1082-1137.
     /// </summary>
     /// <remarks>
-    /// Construction COPIES every field out of native memory then frees
-    /// the <c>cosmos_error_t*</c>. After construction this object has no
-    /// live pointer into Rust-owned memory — safe to keep, serialize,
-    /// store, or hand to user code.
+    /// <para>
+    /// Construction COPIES every accessor result out of native memory.
+    /// After construction this object has no live pointer into Rust-owned
+    /// memory — safe to keep, serialize, store, or hand to user code.
+    /// </para>
+    /// <para>
+    /// Big change vs the earlier draft: there is NO <c>cosmos_error_kind</c>
+    /// accessor and NO per-failure-class <c>is_*</c> predicates
+    /// (IsThrottled / IsNotFound / etc.). The "kind" lives in
+    /// <see cref="CoarseCode"/> — compare against the enum bands
+    /// (2xxx = wire-mapped HTTP, 3xxx = client-side, 4xxx = wrapper-fatal).
+    /// The only predicate exposed by the actual ABI is
+    /// <see cref="IsFromWire"/>.
+    /// </para>
     /// </remarks>
     internal sealed class CosmosNativeException : Exception
     {
-        public CosmosErrorKind Kind { get; }
+        public CosmosErrorCode CoarseCode { get; }
         public ushort HttpStatusCode { get; }
-
-        /// <summary>Spec §3.5.2 — synthetic sub-status (e.g. 20008 for CLIENT_OPERATION_TIMEOUT). -1 if absent.</summary>
         public int SubStatus { get; }
-        public byte[] ResponseBody { get; }
+        public bool IsFromWire { get; }
         public string? ActivityId { get; }
         public string? SessionToken { get; }
         public string? ETag { get; }
         public long RetryAfterMs { get; }
         public string? Backtrace { get; }
 
-        public bool IsTransient { get; }
-        public bool IsThrottled { get; }
-        public bool IsNotFound { get; }
-        public bool IsConflict { get; }
-        public bool IsPreconditionFailed { get; }
-        public bool IsTimeout { get; }
-        public bool IsGone { get; }
-        public bool IsServiceError { get; }
+        // Convenience predicates derived from CoarseCode — these are the
+        // ABI-stable replacement for the spec-draft cosmos_error_is_*
+        // predicates that were dropped between spec and implementation.
+        public bool IsNotFound => this.CoarseCode == CosmosErrorCode.NotFound;
+        public bool IsConflict => this.CoarseCode == CosmosErrorCode.Conflict;
+        public bool IsThrottled => this.CoarseCode == CosmosErrorCode.Throttled;
+        public bool IsTimeout =>
+            this.CoarseCode == CosmosErrorCode.Timeout ||
+            this.CoarseCode == CosmosErrorCode.ClientOperationTimeout;
+        public bool IsGone => this.CoarseCode == CosmosErrorCode.Gone;
+        public bool IsPreconditionFailed => this.CoarseCode == CosmosErrorCode.PreconditionFailed;
+        public bool IsServiceError =>
+            this.CoarseCode == CosmosErrorCode.ServiceError ||
+            this.CoarseCode == CosmosErrorCode.ServiceUnavailable;
+        public bool IsTransient =>
+            this.IsThrottled ||
+            this.IsTimeout ||
+            this.IsGone ||
+            this.IsServiceError ||
+            this.CoarseCode == CosmosErrorCode.TransportFailure;
 
         /// <summary>
-        /// Build the exception by copying all fields out of the native
-        /// <c>cosmos_error_t*</c>. Does NOT free the handle — caller owns
-        /// that decision (the pump frees it after constructing this).
+        /// Build the exception by copying accessor results out of the
+        /// native <c>cosmos_error_t*</c>. Does NOT free the handle — the
+        /// caller owns that decision (the pump frees after constructing).
         /// </summary>
-        public CosmosNativeException(IntPtr error)
-            : base(FormatMessage(error))
+        public CosmosNativeException(IntPtr error, CosmosErrorCode coarseCode)
+            : base(FormatMessage(error, coarseCode))
         {
-            this.Kind = cosmos_error_kind(error);
-            this.HttpStatusCode = cosmos_error_status_code(error);
-            this.SubStatus = cosmos_error_sub_status(error);
-
-            CosmosBytesView body = cosmos_error_response_body(error);
-            this.ResponseBody = BytesViewToManaged(body);
-
-            this.ActivityId = PtrToUtf8(cosmos_error_activity_id(error));
-            this.SessionToken = PtrToUtf8(cosmos_error_session_token(error));
-            this.ETag = PtrToUtf8(cosmos_error_etag(error));
-            this.RetryAfterMs = cosmos_error_retry_after_ms(error);
-            this.Backtrace = PtrToUtf8(cosmos_error_backtrace(error));
-
-            this.IsTransient = cosmos_error_is_transient(error);
-            this.IsThrottled = cosmos_error_is_throttled(error);
-            this.IsNotFound = cosmos_error_is_not_found(error);
-            this.IsConflict = cosmos_error_is_conflict(error);
-            this.IsPreconditionFailed = cosmos_error_is_precondition_failed(error);
-            this.IsTimeout = cosmos_error_is_timeout(error);
-            this.IsGone = cosmos_error_is_gone(error);
-            this.IsServiceError = cosmos_error_is_service_error(error);
+            this.CoarseCode = coarseCode;
+            this.HttpStatusCode = error == IntPtr.Zero ? (ushort)0 : cosmos_error_status_code(error);
+            this.SubStatus = error == IntPtr.Zero ? -1 : cosmos_error_sub_status(error);
+            this.IsFromWire = error != IntPtr.Zero && cosmos_error_is_from_wire(error);
+            this.ActivityId = error == IntPtr.Zero ? null : PtrToUtf8(cosmos_error_activity_id(error));
+            this.SessionToken = error == IntPtr.Zero ? null : PtrToUtf8(cosmos_error_session_token(error));
+            this.ETag = error == IntPtr.Zero ? null : PtrToUtf8(cosmos_error_etag(error));
+            this.RetryAfterMs = error == IntPtr.Zero ? -1 : cosmos_error_retry_after_ms(error);
+            this.Backtrace = error == IntPtr.Zero ? null : PtrToUtf8(cosmos_error_backtrace(error));
         }
 
-        private static string FormatMessage(IntPtr error)
+        private static string FormatMessage(IntPtr error, CosmosErrorCode coarseCode)
         {
             if (error == IntPtr.Zero)
             {
-                return "Cosmos native error: <null error handle>";
+                return $"Cosmos native error [code={coarseCode}]: <null error handle>";
             }
             string? msg = PtrToUtf8(cosmos_error_message(error));
-            CosmosErrorKind kind = cosmos_error_kind(error);
             ushort http = cosmos_error_status_code(error);
             int sub = cosmos_error_sub_status(error);
-            return $"Cosmos native error [kind={kind}, http={http}, sub={sub}]: {msg ?? "(no message)"}";
-        }
-
-        private static byte[] BytesViewToManaged(CosmosBytesView v)
-        {
-            int len = (int)v.Len.ToUInt32();
-            if (v.Data == IntPtr.Zero || len <= 0)
-            {
-                return Array.Empty<byte>();
-            }
-            byte[] copy = new byte[len];
-            Marshal.Copy(v.Data, copy, 0, len);
-            return copy;
+            return $"Cosmos native error [code={coarseCode}, http={http}, sub={sub}]: {msg ?? "(no message)"}";
         }
     }
 
     /// <summary>
     /// Successful response materialized out of the native
-    /// <c>cosmos_response_t*</c>. All string + byte fields are
-    /// COPIED out of native memory so the host can keep this past
-    /// the native response handle's lifetime.
+    /// <c>cosmos_response_t*</c>. All string + byte fields are copied
+    /// out of native memory.
     /// </summary>
     internal sealed class CosmosNativeResponse
     {
