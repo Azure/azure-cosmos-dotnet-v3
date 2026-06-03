@@ -47,9 +47,9 @@ namespace Microsoft.Azure.Cosmos.NativeDriverBenchmark
             Console.WriteLine($"validate: {settings.Describe()}");
             Console.WriteLine();
 
-            // --- V3 SDK ---------------------------------------------------
-            long sdkBytes;
-            int sdkHttp;
+            // --- V3 SDK Gateway -------------------------------------------
+            long sdkGwBytes;
+            int sdkGwHttp;
             try
             {
                 using var sdk = new CosmosClient(
@@ -57,21 +57,51 @@ namespace Microsoft.Azure.Cosmos.NativeDriverBenchmark
                     new CosmosClientOptions
                     {
                         ConnectionMode = ConnectionMode.Gateway,
-                        ApplicationName = "cosmos-nativedriver-benchmark-validate",
+                        ApplicationName = "cosmos-bench-validate-gw",
                     });
                 Container container = sdk.GetDatabase(settings.Database).GetContainer(settings.Container);
                 using ResponseMessage rm = await container
                     .ReadItemStreamAsync(settings.ItemId, new PartitionKey(settings.PartitionKey))
                     .ConfigureAwait(false);
-                sdkHttp = (int)rm.StatusCode;
+                sdkGwHttp = (int)rm.StatusCode;
                 using var ms = new MemoryStream();
                 if (rm.Content != null) await rm.Content.CopyToAsync(ms).ConfigureAwait(false);
-                sdkBytes = ms.Length;
-                Console.WriteLine($"[V3 SDK]        http={sdkHttp} bytes={sdkBytes} ru={rm.Headers?.RequestCharge:F2} activityId={rm.Headers?.ActivityId}");
+                sdkGwBytes = ms.Length;
+                Console.WriteLine($"[V3 SDK Gateway] http={sdkGwHttp} bytes={sdkGwBytes} ru={rm.Headers?.RequestCharge:F2} activityId={rm.Headers?.ActivityId}");
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"FAIL — V3 SDK: {ex.GetType().Name}: {ex.Message}");
+                Console.Error.WriteLine($"FAIL — V3 SDK Gateway: {ex.GetType().Name}: {ex.Message}");
+                return 1;
+            }
+
+            // --- V3 SDK Direct --------------------------------------------
+            long sdkDirBytes;
+            int sdkDirHttp;
+            try
+            {
+                using var sdk = new CosmosClient(
+                    settings.Endpoint, settings.Key,
+                    new CosmosClientOptions
+                    {
+                        ConnectionMode = ConnectionMode.Direct,
+                        ApplicationName = "cosmos-bench-validate-dir",
+                    });
+                Container container = sdk.GetDatabase(settings.Database).GetContainer(settings.Container);
+                using ResponseMessage rm = await container
+                    .ReadItemStreamAsync(settings.ItemId, new PartitionKey(settings.PartitionKey))
+                    .ConfigureAwait(false);
+                sdkDirHttp = (int)rm.StatusCode;
+                using var ms = new MemoryStream();
+                if (rm.Content != null) await rm.Content.CopyToAsync(ms).ConfigureAwait(false);
+                sdkDirBytes = ms.Length;
+                Console.WriteLine($"[V3 SDK Direct]  http={sdkDirHttp} bytes={sdkDirBytes} ru={rm.Headers?.RequestCharge:F2} activityId={rm.Headers?.ActivityId}");
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"FAIL — V3 SDK Direct: {ex.GetType().Name}: {ex.Message}");
+                Console.Error.WriteLine("  Hint: Direct mode requires outbound TCP to backend replicas (ephemeral port range).");
+                Console.Error.WriteLine("        If you're behind a restrictive firewall, fall back to Gateway-only.");
                 return 1;
             }
 
@@ -87,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.NativeDriverBenchmark
                 CosmosNativeResponse r = await native.ReadItemAsync(settings.ItemId).ConfigureAwait(false);
                 nativeHttp = r.HttpStatusCode;
                 nativeBytes = r.Body.LongLength;
-                Console.WriteLine($"[Native driver] http={nativeHttp} bytes={nativeBytes} ru={r.RequestCharge:F2} activityId={r.ActivityId}");
+                Console.WriteLine($"[Native driver]  http={nativeHttp} bytes={nativeBytes} ru={r.RequestCharge:F2} activityId={r.ActivityId}");
             }
             catch (DllNotFoundException ex)
             {
@@ -108,13 +138,17 @@ namespace Microsoft.Azure.Cosmos.NativeDriverBenchmark
             }
 
             Console.WriteLine();
-            if (sdkHttp == 200 && nativeHttp == 200 && sdkBytes == nativeBytes)
+            if (sdkGwHttp == 200 && sdkDirHttp == 200 && nativeHttp == 200 &&
+                sdkGwBytes == nativeBytes && sdkDirBytes == nativeBytes)
             {
-                Console.WriteLine($"PASS — both paths returned HTTP 200 with {sdkBytes} bytes.");
+                Console.WriteLine($"PASS — all three paths returned HTTP 200 with {nativeBytes} bytes.");
                 return 0;
             }
 
-            Console.Error.WriteLine($"MISMATCH — SDK: http={sdkHttp} bytes={sdkBytes} / Native: http={nativeHttp} bytes={nativeBytes}");
+            Console.Error.WriteLine(
+                $"MISMATCH — SDK Gateway: http={sdkGwHttp} bytes={sdkGwBytes} / " +
+                $"SDK Direct: http={sdkDirHttp} bytes={sdkDirBytes} / " +
+                $"Native: http={nativeHttp} bytes={nativeBytes}");
             return 1;
         }
     }

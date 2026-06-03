@@ -2,16 +2,19 @@
 
 Apples-to-apples single-item read benchmark comparing:
 
-| Path | API used | Transport |
-|---|---|---|
-| **V3 SDK** (`Microsoft.Azure.Cosmos` NuGet) | `Container.ReadItemStreamAsync` | Gateway (HTTPS) |
-| **Native driver** (PR #4515 cdylib) | `NativeCosmosClient.ReadItemAsync` | Gateway (HTTPS) |
+| Path | API used | Transport | Role |
+|---|---|---|---|
+| **V3 SDK Gateway** (`Microsoft.Azure.Cosmos` NuGet) | `Container.ReadItemStreamAsync` | Gateway (HTTPS) | **Baseline** — apples-to-apples with native |
+| **V3 SDK Direct** (`Microsoft.Azure.Cosmos` NuGet) | `Container.ReadItemStreamAsync` | Direct (TCP) | Production-typical reference |
+| **Native driver** (PR #4515 cdylib) | `NativeCosmosClient.ReadItemAsync` | Gateway (HTTPS) | The new thing |
 
-Both paths read the same `(id, partitionKey)` and return raw bytes — no
-typed deserialization on either side. SDK is pinned to
-`ConnectionMode.Gateway` so the comparison stays apples-to-apples with the
-native driver's HTTPS-via-`reqwest` transport (Phase 6 of PR #4515 is
-gateway-only today).
+All three paths read the same `(id, partitionKey)` and return raw bytes —
+no typed deserialization on any side. V3 SDK Gateway is the BDN baseline
+(`Ratio = 1.00`) because it shares a transport with the native driver,
+so the native ratio is meaningful. V3 SDK Direct shows what TCP-direct
+buys you over gateway — that's the headroom the native driver eventually
+needs to close once it grows a direct-mode transport (Phase 6 of PR
+#4515 is gateway-only today).
 
 The style mirrors the V3 perf-tests `SerializerBenchmark.cs`: one
 `[MemoryDiagnoser]` class, two `[Benchmark]` methods, baseline-vs-other
@@ -73,11 +76,11 @@ if you keep your secrets elsewhere.
 ## Usage
 
 ```powershell
-# 1. Sanity-check connectivity + that both paths see the same doc:
+# 1. Sanity-check connectivity + that all three paths see the same doc:
 . .\scripts\Load-Env.ps1   # reads .env
 
 dotnet run -c Release --project .\tools\Microsoft.Azure.Cosmos.NativeDriverBenchmark -- validate
-# Expected: "PASS — both paths returned HTTP 200 with N bytes."
+# Expected: "PASS — all three paths returned HTTP 200 with N bytes."
 
 # 2. Run the benchmark:
 dotnet run -c Release --project .\tools\Microsoft.Azure.Cosmos.NativeDriverBenchmark
@@ -85,12 +88,16 @@ dotnet run -c Release --project .\tools\Microsoft.Azure.Cosmos.NativeDriverBench
 
 BenchmarkDotNet writes a markdown summary into
 `BenchmarkDotNet.Artifacts/results/` next to a CSV + JSON. The summary
-table shows `Mean / Error / StdDev / Ratio / Allocated`.
+table shows `Mean / Error / StdDev / Ratio / Allocated` for all three
+benchmarks side-by-side.
 
 ## Reading the output
 
 - **Mean** — per-call latency averaged over iterations.
-- **Ratio** — V3 SDK is the baseline (1.00). Native ratio < 1.00 = faster.
+- **Ratio** — V3 SDK Gateway is the baseline (1.00).
+  - V3 SDK Direct ratio < 1.00 = TCP-direct is faster than gateway (expected, usually 0.4-0.7 for read-item).
+  - Native driver ratio close to 1.00 = native is competitive with the SDK on the same transport.
+  - Native ratio < 1.00 vs Gateway baseline = native is faster than the SDK on gateway (the immediate win).
 - **Allocated** — managed bytes allocated per call. Native path should
   show fewer allocations once the spec-defined zero-copy body accessor
   paths are exercised; today the native binding still copies bytes out
