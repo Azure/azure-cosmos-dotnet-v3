@@ -888,6 +888,30 @@ namespace Microsoft.Azure.Cosmos
         public AvailabilityStrategy AvailabilityStrategy { get; set; }
 
         /// <summary>
+        /// Tri-state opt-in / kill-switch for cold-start metadata cache hedging.
+        /// </summary>
+        /// <remarks>
+        /// When set to <c>true</c>, the SDK proactively dispatches a hedged cross-region
+        /// request for the first-time population of the Collection and PartitionKeyRange
+        /// metadata caches if the primary region's response has not arrived within
+        /// <see cref="Cosmos.MetadataHedgingOptions.Threshold"/>. When set to <c>false</c>,
+        /// metadata hedging is suppressed regardless of the SDK's phase default.
+        /// When left <c>null</c>, the SDK follows the current release-phase default
+        /// (off in Phase 1; on for PPAF-enabled multi-region accounts in later phases).
+        /// The Gateway-controlled <c>disableCrossRegionalHedging</c> account flag, when
+        /// set, takes precedence over this property.
+        /// See <c>docs/PPAF_Metadata_Hedging_ColdStart_Design.md</c> §5.1.
+        /// </remarks>
+        internal bool? EnableMetadataHedgingForColdStart { get; set; }
+
+        /// <summary>
+        /// Tuning knobs for cold-start metadata hedging. Any null property falls back
+        /// to the SDK-derived default (see
+        /// <c>docs/PPAF_Metadata_Hedging_ColdStart_Design.md</c> §5.9).
+        /// </summary>
+        internal MetadataHedgingOptions MetadataHedgingOptions { get; set; }
+
+        /// <summary>
         /// Provides SessionTokenMismatchRetryPolicy optimization through customer supplied region switch hints,
         /// which guide SDK-internal retry policies on how early to fallback to the next applicable region.
         /// With a single-write-region account the next applicable region is the write-region, with a 
