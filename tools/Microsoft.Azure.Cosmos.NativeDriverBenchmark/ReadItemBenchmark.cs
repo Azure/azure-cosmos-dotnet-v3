@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.NativeDriverBenchmark
                 this.settings.Database,
                 this.settings.Container,
                 this.settings.PartitionKey,
-                userAgentSuffix: "cosmos-nativedriver-benchmark");
+                userAgentSuffix: "cosmos-bench");
 
             // --- Warm up both: prime DNS, TCP, TLS, gateway routing -------
             for (int i = 0; i < 5; i++)

@@ -83,17 +83,27 @@ namespace Microsoft.Azure.Cosmos.NativeDriverBenchmark
                 using var native = new NativeCosmosClient(
                     settings.Endpoint, settings.Key,
                     settings.Database, settings.Container, settings.PartitionKey,
-                    userAgentSuffix: "cosmos-nativedriver-benchmark-validate");
+                    userAgentSuffix: "cosmos-bench-validate");
                 CosmosNativeResponse r = await native.ReadItemAsync(settings.ItemId).ConfigureAwait(false);
                 nativeHttp = r.HttpStatusCode;
                 nativeBytes = r.Body.LongLength;
                 Console.WriteLine($"[Native driver] http={nativeHttp} bytes={nativeBytes} ru={r.RequestCharge:F2} activityId={r.ActivityId}");
             }
+            catch (DllNotFoundException ex)
+            {
+                Console.Error.WriteLine($"FAIL — Native driver: {ex.GetType().Name}: {ex.Message}");
+                Console.Error.WriteLine("  Cause: azurecosmosdriver.dll is not on the probing path.");
+                Console.Error.WriteLine("  Build it: pwsh ..\\Microsoft.Azure.Cosmos.NativeDriverPoc\\scripts\\build-native-dll.ps1");
+                return 1;
+            }
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"FAIL — Native driver: {ex.GetType().Name}: {ex.Message}");
-                Console.Error.WriteLine("  Most common cause: azurecosmosdriver.dll is not on the probing path.");
-                Console.Error.WriteLine("  See ..\\Microsoft.Azure.Cosmos.NativeDriverPoc\\scripts\\build-native-dll.ps1");
+                if (ex.Message.Contains("InvalidOptionValue", StringComparison.Ordinal))
+                {
+                    Console.Error.WriteLine("  Hint: the value passed to that FFI option violates the driver's contract");
+                    Console.Error.WriteLine("        (e.g. user-agent suffix must be <=25 chars / [A-Za-z0-9._~-]).");
+                }
                 return 1;
             }
 
