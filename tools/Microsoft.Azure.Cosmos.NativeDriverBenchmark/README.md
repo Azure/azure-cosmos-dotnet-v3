@@ -1,26 +1,22 @@
 # Microsoft.Azure.Cosmos.NativeDriverBenchmark
 
-Apples-to-apples single-item read benchmark comparing:
+Apples-to-apples single-item CRUD benchmarks comparing three drivers:
 
 | Path | API used | Transport | Role |
 |---|---|---|---|
-| **V3 SDK Gateway** (`Microsoft.Azure.Cosmos` NuGet) | `Container.ReadItemStreamAsync` | Gateway (HTTPS) | **Baseline** — apples-to-apples with native |
-| **V3 SDK Direct** (`Microsoft.Azure.Cosmos` NuGet) | `Container.ReadItemStreamAsync` | Direct (TCP) | Production-typical reference |
-| **Native driver** (PR #4515 cdylib) | `NativeCosmosClient.ReadItemAsync` | Gateway (HTTPS) | The new thing |
+| **V3 SDK Gateway** (`Microsoft.Azure.Cosmos` NuGet) | `Container.*StreamAsync` | Gateway (HTTPS) | **Baseline** — apples-to-apples with native |
+| **V3 SDK Direct** (`Microsoft.Azure.Cosmos` NuGet) | `Container.*StreamAsync` | Direct (TCP) | Production-typical reference |
+| **Native driver** (PR #4515 cdylib) | `NativeCosmosClient.*Async` | Gateway (HTTPS) | The new thing |
 
-All three paths read the same `(id, partitionKey)` and return raw bytes —
-no typed deserialization on any side. V3 SDK Gateway is the BDN baseline
-(`Ratio = 1.00`) because it shares a transport with the native driver,
-so the native ratio is meaningful. V3 SDK Direct shows what TCP-direct
-buys you over gateway — that's the headroom the native driver eventually
-needs to close once it grows a direct-mode transport (Phase 6 of PR
-#4515 is gateway-only today).
-
-The style mirrors the V3 perf-tests `SerializerBenchmark.cs`: one
-`[MemoryDiagnoser]` class, two `[Benchmark]` methods, baseline-vs-other
-ratio in the output. No 1000-concurrent-reads — single-call latency only,
-matching the simple "criterion happy-path" style of the Rust SDK
-benchmarks.
+Four operations are covered — Read, Create, Replace, Delete — one BDN class
+per op (12 benchmark methods total). All three drivers run the same op
+against the same payload shape, returning raw bytes / status codes — no
+typed deserialization on any side. V3 SDK Gateway is the BDN baseline
+(`Ratio = 1.00`) for each class because it shares a transport with the
+native driver, so the native ratio is meaningful. V3 SDK Direct shows the
+TCP-direct headroom — that's the gap the native driver eventually needs
+to close once it grows a direct-mode transport (Phase 6 of PR #4515 is
+gateway-only today).
 
 ## Configuration — env vars only (no secrets in source)
 
@@ -76,32 +72,101 @@ if you keep your secrets elsewhere.
 ## Usage
 
 ```powershell
-# 1. Sanity-check connectivity + that all three paths see the same doc:
-. .\scripts\Load-Env.ps1   # reads .env
+. .\scripts\Load-Env.ps1   # reads .env into the current shell
 
+# Sanity check 1: reads-only (cheap, no writes).
 dotnet run -c Release --project .\tools\Microsoft.Azure.Cosmos.NativeDriverBenchmark -- validate
 # Expected: "PASS — all three paths returned HTTP 200 with N bytes."
 
-# 2. Run the benchmark:
+# Sanity check 2: full CRUD per mode (writes 3 throwaway docs, deletes them).
+dotnet run -c Release --project .\tools\Microsoft.Azure.Cosmos.NativeDriverBenchmark -- validate --crud
+# Expected: "PASS — all three modes completed CREATE/READ/REPLACE/READ/DELETE."
+
+# Full benchmark matrix (4 classes x 3 methods = 12 benchmarks).
 dotnet run -c Release --project .\tools\Microsoft.Azure.Cosmos.NativeDriverBenchmark
+
+# Filter to a subset (BDN's --filter is glob-style on FullName.Method):
+dotnet run -c Release --project .\tools\Microsoft.Azure.Cosmos.NativeDriverBenchmark -- --filter "*ReadItem*"
+dotnet run -c Release --project .\tools\Microsoft.Azure.Cosmos.NativeDriverBenchmark -- --filter "*Create*"
+dotnet run -c Release --project .\tools\Microsoft.Azure.Cosmos.NativeDriverBenchmark -- --filter "*Native*"
+
+# Discover without running.
+dotnet run -c Release --project .\tools\Microsoft.Azure.Cosmos.NativeDriverBenchmark -- --list flat
 ```
 
 BenchmarkDotNet writes a markdown summary into
-`BenchmarkDotNet.Artifacts/results/` next to a CSV + JSON. The summary
-table shows `Mean / Error / StdDev / Ratio / Allocated` for all three
-benchmarks side-by-side.
+`BenchmarkDotNet.Artifacts/results/` next to a CSV + JSON. Each benchmark
+class produces its own table with `Mean / Error / StdDev / Ratio / Allocated`.
+
+## RU and time budget
+
+Reads cost ~1 RU; writes cost ~7 RU (Create / Delete) and ~11 RU (Replace).
+Per benchmark method, ShortRun runs `(3 warmup + 10 measured) × InvocationCount`
+calls. Write benchmarks use `InvocationCount=4` (vs `16` for reads) to keep
+RU costs reasonable.
+
+| Class | Pre-seed RU | Per-method ops | Full-class RU | Notes |
+|---|---|---|---|---|
+| Read | 0 | 208 measured + 80 warmup = 288 | ~870 (~290 reads × 3 modes × 1 RU) | uses the pre-existing doc |
+| Create | 0 (pool is in-memory) | 52 measured + 5 warmup = 57 | ~1,200 (~170 creates × 7 RU + cleanup deletes) | pool of 256 ids per mode |
+| Replace | ~20 (3 pre-seed creates) | 52 measured + 5 warmup = 57 | ~1,900 (~170 replaces × 11 RU) | one target doc per mode |
+| Delete | ~5,400 (256 × 3 × ~7 RU) | 52 measured + 5 warmup = 57 | ~6,500 (pre-seed dominates) | pre-creates 768 docs |
+
+A **full-matrix run** on a 400 RU/s container takes about **3 minutes** wall
+time and consumes about **10,000 RU** (well under throttle limit if the
+container has burst capacity, otherwise expect ~25 seconds of 429-induced
+backoff during the Delete pre-seed).
+
+To stay below ~3,000 RU, run `--filter "*ReadItem*"` (full read matrix) or
+`--filter "*Replace*"` (lightest write op) instead of the full suite.
 
 ## Reading the output
 
 - **Mean** — per-call latency averaged over iterations.
-- **Ratio** — V3 SDK Gateway is the baseline (1.00).
-  - V3 SDK Direct ratio < 1.00 = TCP-direct is faster than gateway (expected, usually 0.4-0.7 for read-item).
+- **Ratio** — V3 SDK Gateway is the baseline (1.00) per class.
+  - V3 SDK Direct ratio < 1.00 = TCP-direct is faster than gateway. Typical: ~0.4–0.7 for reads, ~0.85–0.95 for writes (writes are server-bound — less gateway-vs-direct delta).
   - Native driver ratio close to 1.00 = native is competitive with the SDK on the same transport.
-  - Native ratio < 1.00 vs Gateway baseline = native is faster than the SDK on gateway (the immediate win).
-- **Allocated** — managed bytes allocated per call. Native path should
-  show fewer allocations once the spec-defined zero-copy body accessor
-  paths are exercised; today the native binding still copies bytes out
-  of the unmanaged buffer in `MaterializeResponse`.
+  - Native ratio < 1.00 vs Gateway baseline = native is faster than the SDK on gateway.
+- **Allocated** — managed bytes per call. The interesting column. Native
+  path typically shows **~15× fewer managed allocations** because the response
+  body lands as a `byte[]` instead of a `Stream` wrapper. The Allocated Ratio
+  column on the native row is the headline number for the FFI win.
+
+### Example output (Replace, real account, 2026-06-03)
+
+```
+| Method                                                          | Mean     | Allocated | Ratio | Alloc Ratio |
+|---------------------------------------------------------------- |---------:|----------:|------:|------------:|
+| 'V3 SDK — Gateway (ReplaceItemStreamAsync)'                     | 45.78 ms |     31 KB |  1.00 |        1.00 |
+| 'V3 SDK — Direct (ReplaceItemStreamAsync)'                      | 42.36 ms |  33.21 KB |  0.93 |        1.07 |
+| 'Native driver — Gateway (NativeCosmosClient.ReplaceItemAsync)' | 43.73 ms |   2.11 KB |  0.96 |        0.07 |
+```
+
+Native is within noise of Gateway on wall time (same transport, lower
+managed overhead) and is **15× lower** on managed allocations per op.
+
+## State-isolation contract for the write benchmarks
+
+Each write benchmark class manages its own state so the timed window is
+just the wire op — no id generation, no pre-create overhead.
+
+| Class | GlobalSetup | Per-iteration | GlobalCleanup |
+|---|---|---|---|
+| `ReadItem` | Build 3 clients, warm each 5× against the pre-existing `COSMOS_ITEM_ID` | Single read of the same doc | Dispose clients |
+| `CreateItem` | Build 3 clients, generate 256 unique ids per mode (in-memory), warm each 5× | Pop next id from pool, CREATE | Best-effort DELETE all consumed ids |
+| `ReplaceItem` | Build 3 clients, pre-create 1 doc per mode via gateway, warm each 5× | REPLACE same doc with bumped version | DELETE the 3 target docs |
+| `DeleteItem` | Build 3 clients, pre-create 256 docs per mode via gateway (the pool), warm each 5× | Pop next doc from pool, DELETE | Best-effort DELETE any unused pool docs |
+
+All write benchmarks use a **class-local partition key** of the form
+`bench-{op}-pk-{runGuid}` so they don't touch the read-benchmark's
+pre-seeded doc and don't collide with each other across runs. The native
+client takes its PK at ctor time and uses it for every op on that client
+— this is the constraint that drives the "all writes in a class share
+one PK" design.
+
+If a run is killed mid-benchmark, leaked docs share the `bench-{op}-*` id
+prefix and can be scrubbed with a one-off cleanup query against the
+container if necessary.
 
 ## Architecture notes — why a separate project
 
@@ -115,10 +180,9 @@ benchmarks side-by-side.
 - **Solution layout**: project is part of `AsyncFfiPoc.sln`, so opening
   the worktree in Visual Studio shows all three POC projects.
 
-## Future iterations (not needed for tomorrow's comparison)
+## Future iterations
 
 - Add an AAD-token-based config (`DefaultAzureCredential`) once the
   native driver lands its credential surface.
-- Add a `WriteItem` benchmark using `cosmos_operation_create_item` once
-  the SDK side is configured to skip `EnableContentResponseOnWrite`.
 - Add a query benchmark once `cosmos_query_items` is bound.
+- Add a transactional-batch benchmark once the FFI exposes it.
