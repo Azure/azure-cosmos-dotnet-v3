@@ -34,6 +34,32 @@ Your sample doc (`taskNum`, `cost`, `description`, `children[…]`, etc.) is
 perfect — no need to re-hydrate. Just pick any one of those entries and
 plug its `id` + `pk` into the env vars above.
 
+### Recommended: a `.env` file + loader script
+
+Typing six `$env:` lines every time you open a new shell gets old. A
+template + loader is checked in:
+
+```powershell
+# one-time
+cd tools\Microsoft.Azure.Cosmos.NativeDriverBenchmark
+copy .env.example .env
+notepad .env          # fill in real endpoint + key
+
+# every new shell
+. .\scripts\Load-Env.ps1
+# Loaded 6 variable(s) from ...\.env
+```
+
+`.env` is gitignored (rule: `*.env` with a `!*.env.example` exception);
+`.env.example` is the committed template. The loader sets
+process-scope variables visible to `dotnet run` started from the same
+shell — no `setx`, nothing persists machine-wide.
+
+Loader behaviour: skips blank lines and `#` comments, strips surrounding
+`"` / `'` quotes, tolerates an `export ` prefix, no variable
+interpolation. Override the path with `. .\scripts\Load-Env.ps1 -Path C:\secrets\cosmos.env`
+if you keep your secrets elsewhere.
+
 ## Prereqs
 
 1. `azurecosmosdriver.dll` must be on the .NET probing path. Build it
@@ -48,12 +74,7 @@ plug its `id` + `pk` into the env vars above.
 
 ```powershell
 # 1. Sanity-check connectivity + that both paths see the same doc:
-$env:COSMOS_ENDPOINT       = "https://<account>.documents.azure.com:443/"
-$env:COSMOS_KEY            = "<key>"
-$env:COSMOS_DATABASE       = "db1"
-$env:COSMOS_CONTAINER      = "items"
-$env:COSMOS_ITEM_ID        = "d00a39eb-5401-45f7-ae3e-211c5383a327"
-$env:COSMOS_PARTITION_KEY  = "TBDfaa02479-865f-4116-9a84-8617a10704c4"
+. .\scripts\Load-Env.ps1   # reads .env
 
 dotnet run -c Release --project .\tools\Microsoft.Azure.Cosmos.NativeDriverBenchmark -- validate
 # Expected: "PASS — both paths returned HTTP 200 with N bytes."
