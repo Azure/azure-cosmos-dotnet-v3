@@ -329,6 +329,16 @@ namespace Microsoft.Azure.Cosmos
                     List<string> excludeRegions = new List<string>(hedgeRegions);
                     excludeRegions.RemoveAt(requestNumber);
                     clonedRequest.RequestOptions.ExcludeRegions = excludeRegions;
+
+                    // Hedging-Detection API: this code path is only reached AFTER the
+                    // previous loop iteration's threshold delay elapsed without primary-wins
+                    // cancellation. Tag the upcoming dispatch as Hedging so the downstream
+                    // dispatch site records it with the correct reason. If this method
+                    // is never invoked for a given requestNumber (e.g., primary wins under
+                    // the threshold), no phantom Hedging entry is produced — see AC2/AC13
+                    // and design doc §12 "no phantom entries".
+                    clonedRequest.Properties[HedgingDetectionState.DispatchReasonPropertyKey] =
+                        RequestedRegionReason.Hedging;
                 }
 
                 try

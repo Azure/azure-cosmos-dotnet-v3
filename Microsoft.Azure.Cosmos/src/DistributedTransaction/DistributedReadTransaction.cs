@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
     /// to deserialize a read operation response body into a typed object.
     /// </para>
     /// </remarks>
-#if INTERNAL
+#if PREVIEW
     public
 #else
     internal
@@ -32,15 +32,18 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Adds a read operation to the distributed transaction.
         /// </summary>
-        /// <param name="database">The name of the database containing the container.</param>
-        /// <param name="collection">The name of the container where the item exists.</param>
+        /// <param name="container">The <see cref="Container"/> reference where the item exists.</param>
         /// <param name="partitionKey">The partition key for the item.</param>
         /// <param name="id">The unique identifier of the item to read.</param>
         /// <param name="requestOptions">Options for the read operation.</param>
         /// <returns>The current <see cref="DistributedReadTransaction"/> instance for method chaining.</returns>
+        /// <remarks>
+        /// The distributed transaction bypasses the per-container request pipeline. Only the database and
+        /// container identifiers are extracted from <paramref name="container"/>; container-level behaviors
+        /// such as custom serializers, client-side encryption policies, or decorator wrappers are not applied.
+        /// </remarks>
         public abstract DistributedReadTransaction ReadItem(
-            string database,
-            string collection,
+            Container container,
             PartitionKey partitionKey,
             string id,
             DistributedTransactionRequestOptions requestOptions = null);

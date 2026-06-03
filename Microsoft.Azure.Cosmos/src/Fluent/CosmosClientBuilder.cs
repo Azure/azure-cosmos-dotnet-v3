@@ -435,6 +435,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Controls the amount of time allowed for trying to establish a connection.
         /// The default timeout is 5 seconds. Recommended values are greater than or equal to 5 seconds.
         /// When the time elapses, the attempt is cancelled and an error is returned. Longer timeouts will delay retries and failures.
+        /// At the transport boundary, values in [<see cref="TimeSpan.Zero"/>, 1 second) are treated as 0
+        /// (use the configured request timeout). Values greater than or equal to 1 second are rounded up to
+        /// the nearest whole second (for example, 2.3 seconds becomes 3 seconds).
+        /// Negative values are not recommended and will emit a warning trace. They are preserved for
+        /// backward compatibility; at the transport boundary they are truncated to whole seconds and the
+        /// TransportClient returns the configured request timeout for any stored value not greater than zero.
         /// </param>
         /// <param name="maxRequestsPerTcpConnection">
         /// Controls the number of requests allowed simultaneously over a single TCP connection. When more requests are in flight simultaneously, the direct/TCP client will open additional connections.
@@ -447,7 +453,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="maxTcpConnectionsPerEndpoint">
         /// Controls the maximum number of TCP connections that may be opened to each Cosmos DB back-end.
         /// Together with MaxRequestsPerTcpConnection, this setting limits the number of requests that are simultaneously sent to a single Cosmos DB back-end(MaxRequestsPerTcpConnection x MaxTcpConnectionPerEndpoint).
-        /// The default value is 65,535. Value must be greater than or equal to 16.
+        /// The default value is 65,535. Any positive value is accepted, allowing applications to constrain the connection pool size when needed; values of 16 or greater are recommended.
         /// </param>
         /// <param name="portReuseMode">
         /// (Direct/TCP) Controls the client port reuse policy used by the transport stack.

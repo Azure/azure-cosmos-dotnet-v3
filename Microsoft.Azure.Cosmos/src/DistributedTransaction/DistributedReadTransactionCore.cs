@@ -14,8 +14,14 @@ namespace Microsoft.Azure.Cosmos
 
     internal class DistributedReadTransactionCore : DistributedReadTransaction
     {
+        internal const string CommitAlreadyCalledMessage =
+            "CommitTransactionAsync has already been called on this transaction instance. " +
+            "A DistributedReadTransaction is single-use; to retry, construct a new " +
+            "DistributedReadTransaction with the same items.";
+
         private readonly CosmosClientContext clientContext;
         private readonly List<DistributedTransactionOperation> operations;
+        private int isCommitInvoked;
 
         internal DistributedReadTransactionCore(CosmosClientContext clientContext)
         {
@@ -24,21 +30,20 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override DistributedReadTransaction ReadItem(
-            string database,
-            string collection,
+            Container container,
             PartitionKey partitionKey,
             string id,
             DistributedTransactionRequestOptions requestOptions = null)
         {
-            DistributedReadTransactionCore.ValidateContainerReference(database, collection);
+            (string databaseId, string containerId) = DistributedTransactionConstants.ValidateAndUnpackContainer(container, this.clientContext.Client);
             DistributedReadTransactionCore.ValidateItemId(id);
 
             this.operations.Add(
                 new DistributedTransactionOperation(
                     operationType: OperationType.Read,
                     operationIndex: this.operations.Count,
-                    database: database,
-                    container: collection,
+                    database: databaseId,
+                    container: containerId,
                     partitionKey: partitionKey,
                     id: id,
                     requestOptions: requestOptions));
@@ -46,9 +51,16 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
+        /// <inheritdoc/>
+        /// <exception cref="OperationCanceledException">Thrown if <paramref name="cancellationToken"/> is cancelled before or during the commit.</exception>
         public override Task<DistributedTransactionResponse> CommitTransactionAsync(
             CancellationToken cancellationToken = default)
         {
+            if (Interlocked.CompareExchange(ref this.isCommitInvoked, DistributedTransactionConstants.CommitStarted, DistributedTransactionConstants.CommitNotStarted) != DistributedTransactionConstants.CommitNotStarted)
+            {
+                throw new InvalidOperationException(CommitAlreadyCalledMessage);
+            }
+
             return this.clientContext.OperationHelperAsync(
                 operationName: $"{nameof(DistributedReadTransaction)}.{nameof(CommitTransactionAsync)}",
                 containerName: null,
@@ -66,19 +78,6 @@ namespace Microsoft.Azure.Cosmos
                 openTelemetry: new (OpenTelemetryConstants.Operations.CommitDistributedReadTransaction,
                                     (response) => new OpenTelemetryResponse(response)),
                 traceComponent: TraceComponent.Batch);
-        }
-
-        private static void ValidateContainerReference(string database, string collection)
-        {
-            if (string.IsNullOrWhiteSpace(database))
-            {
-                throw new ArgumentNullException(nameof(database));
-            }
-
-            if (string.IsNullOrWhiteSpace(collection))
-            {
-                throw new ArgumentNullException(nameof(collection));
-            }
         }
 
         private static void ValidateItemId(string id)

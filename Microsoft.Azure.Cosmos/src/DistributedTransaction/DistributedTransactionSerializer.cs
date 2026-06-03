@@ -24,10 +24,16 @@ namespace Microsoft.Azure.Cosmos
         internal const string DatabaseResourceId = "databaseResourceId";
         internal const string PartitionKey = "partitionKey";
         internal const string Index = "index";
+        internal const string StatusCode = "statusCode";
+        internal const string SubStatusCode = "subStatusCode";
         internal const string ResourceBody = "resourceBody";
+        internal const string RequestCharge = "requestCharge";
+        internal const string IsRetriable = "isRetriable";
+        internal const string OperationResponses = "operationResponses";
         internal const string SessionToken = "sessionToken";
         internal const string PartitionKeyRangeId = "partitionKeyRangeId";
         internal const string ETag = "ifMatch";
+        internal const string ResponseETag = "Etag";
         internal const string OperationType = "operationType";
         internal const string ResourceType = "resourceType";
         internal const string DiagnosticString = "diagnosticString";

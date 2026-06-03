@@ -48,12 +48,15 @@
     <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.0.102" PrivateAssets="All" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="3.1.7" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'net46'">
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="1.1.2" />
+  <ItemGroup>
+    <!--
+      Library consumes only Microsoft.Extensions.Caching.Distributed.IDistributedCache from the
+      Abstractions package. The Memory package is intentionally NOT referenced here — the
+      library has no MemoryCache dependency. Version floor stays at the lowest build that
+      satisfies the API surface (3.1.7) so consumers inherit the minimum possible constraint
+      and are free to unify upward to any LTS they prefer.
+    -->
+    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="3.1.7" />
   </ItemGroup>
 
   <ItemGroup>
