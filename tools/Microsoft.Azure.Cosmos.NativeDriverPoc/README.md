@@ -155,7 +155,9 @@ code bands — but worth flagging for consistency.
   assumed.
 - ✅ `cosmos_completion_was_cancel_requested` exists per spec.
 
-## F-checks
+## F-checks (`dotnet run`)
+
+Default entry point. All five F-checks target the read path against the emulator (`https://localhost:8081/`).
 
 | | Check | Notes |
 |---|---|---|
@@ -164,6 +166,20 @@ code bands — but worth flagging for consistency.
 | F3 | 1000 concurrent reads on one pump complete in <5s | parallelism over a single CQ |
 | F4 | CancellationToken → `cosmos_operation_handle_cancel` honored on 100 trials | TaskCanceled OR natural-completion both allowed (race) |
 | F5 | Read non-existent item → `CosmosNativeException.IsNotFound == true && HttpStatusCode == 404` | validates the dropped is_not_found predicate is reconstructible from `CoarseCode == NotFound` |
+
+## CRUD sample (`dotnet run -- crud`)
+
+Linear, V3-SDK-ItemManagement-style walk-through for the full write cycle. Each invocation generates a fresh GUID-suffixed id and deletes the document at the end so the sample is idempotent. Use env vars (`COSMOS_ENDPOINT`, `COSMOS_KEY`, `COSMOS_DATABASE`, `COSMOS_CONTAINER`) to target a real account; emulator defaults otherwise.
+
+| Step | API | Expected |
+|---|---|---|
+| 1 | `CreateItemAsync` | `http=201` |
+| 2 | `ReadItemAsync` | `http=200`, body shows `"version":1` |
+| 3 | `ReplaceItemAsync` | `http=200` |
+| 4 | `ReadItemAsync` | `http=200`, body shows `"version":2` and updated message |
+| 5 | `DeleteItemAsync` | `http=204` |
+
+The sample intentionally does **not** cover F2NoBlock / F3Concurrency / F4Cancel / F5NotFound for the write paths — those scenarios are already proven for `ReadItem` in the F-check harness and re-running them on writes adds no new code-path coverage.
 
 ## File map
 
@@ -174,7 +190,8 @@ code bands — but worth flagging for consistency.
 | `CosmosNativeException.cs` | Rich-error wrapper + `CosmosNativeResponse`. Both copy out of native memory in the ctor. |
 | `CompletionQueueLoop.cs` | One pump thread per CQ; opaque-completion model with `cosmos_cq_state` disambiguation on NULL wait. |
 | `NativeCosmosClient.cs` | Owns full object graph; CRUD `*Async(CancellationToken)`. Container resolved via driver (not constructed by name); PK via builder API. |
-| `Program.cs` | F1–F5 driver against the emulator. Includes preflight + `cosmos_version()` print. |
+| `Program.cs` | Default `Main`: F1–F5 driver against the emulator. Includes preflight + `cosmos_version()` print. Dispatches `-- crud` to the sample. |
+| `Samples/CrudSample.cs` | Linear `Create → Read → Replace → Read → Delete` walk-through, idempotent, env-var driven. Style mirrors V3 SDK ItemManagement samples + Rust crate examples. |
 
 ## Branch / commit context
 

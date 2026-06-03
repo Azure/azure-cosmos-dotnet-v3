@@ -22,8 +22,15 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
         private const string PartitionKey = "p";
         private const string ItemId = "x";
 
-        public static async Task<int> Main()
+        public static async Task<int> Main(string[] args)
         {
+            // Subcommand dispatch — keeps the existing F-check harness as the
+            // default (zero-arg) entry point. Sample programs live alongside.
+            if (args.Length > 0 && string.Equals(args[0], "crud", StringComparison.OrdinalIgnoreCase))
+            {
+                return await Samples.CrudSample.RunAsync().ConfigureAwait(false);
+            }
+
             Console.WriteLine("=== Async-FFI POC V2 — PR #4515 .NET host ===");
             Console.WriteLine($"  endpoint   = {EmulatorEndpoint}");
             Console.WriteLine($"  db/cont    = {DatabaseId}/{ContainerId}");
