@@ -635,5 +635,37 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 base.Dispose(disposing);
             }
         }
+
+        // ---------------------------------------------------------------
+        // Phase-default resolver (Stage 6)
+        // ---------------------------------------------------------------
+
+        [TestMethod]
+        [Owner("dkunda")]
+        public void ResolveOptIn_NullCustomerSetting_FollowsPhaseDefault()
+        {
+            Assert.AreEqual(MetadataHedgingStrategy.PhaseDefault, MetadataHedgingStrategy.ResolveOptIn(null));
+        }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        public void ResolveOptIn_ExplicitTrue_OverridesPhaseDefault()
+        {
+            Assert.IsTrue(MetadataHedgingStrategy.ResolveOptIn(true));
+        }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        public void ResolveOptIn_ExplicitFalse_OverridesPhaseDefault()
+        {
+            Assert.IsFalse(MetadataHedgingStrategy.ResolveOptIn(false));
+        }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        public void PhaseDefault_Phase1_IsFalse()
+        {
+            Assert.IsFalse(MetadataHedgingStrategy.PhaseDefault, "Phase 1 default must be off; bump this assertion when promoting to a later phase.");
+        }
     }
 }

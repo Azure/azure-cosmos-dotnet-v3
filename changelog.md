@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [5600](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5600) HPK: Adds id to partition key when "/id" is the last path in partition key definition.
 - [5838](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5838) EmbeddingGenerator: Adds ICosmosEmbeddingGenerator client-wide configuration (preview)
 - [5911](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5911) DistributedTransaction: Adds `DistributedReadTransaction` and `DistributedWriteTransaction` APIs (with `CosmosClient.CreateDistributedReadTransaction` / `CreateDistributedWriteTransaction`) for atomic read and write operations across partitions and containers (preview)
+- [5917](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5917) Metadata Hedging: Adds cold-start cross-region hedging for the Collection and PartitionKeyRange metadata caches in PPAF-enabled multi-region accounts. Reduces first-operation latency tails when the primary region is slow during cache population. Off by default in Phase 1; tracked via the new `Azure.Cosmos.Client.MetadataHedging` Meter and the `Metadata Hedge Context` diagnostics block. See [docs/PPAF_Metadata_Hedging_ColdStart_Design.md](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/main/docs/PPAF_Metadata_Hedging_ColdStart_Design.md).
 
 #### Breaking Changes
 

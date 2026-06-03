@@ -30,6 +30,16 @@ namespace Microsoft.Azure.Cosmos.Routing
     {
         internal const string TraceDatumKey = "Metadata Hedge Context";
 
+        /// <summary>
+        /// Single source-of-truth for the release-phase default applied when
+        /// <see cref="CosmosClientOptions.EnableMetadataHedgingForColdStart"/>
+        /// is left <c>null</c>. Phase 1 = <c>false</c> (off by default).
+        /// Phases 2 and 3 will flip this constant; the public property is
+        /// preserved across all phases for binary compatibility — see design
+        /// <c>docs/PPAF_Metadata_Hedging_ColdStart_Design.md</c> §12.
+        /// </summary>
+        internal const bool PhaseDefault = false;
+
         private readonly IGlobalEndpointManager globalEndpointManager;
         private readonly Func<bool> isHedgingDisabledByGateway;
         private readonly Func<bool> isPpafEnabled;
@@ -65,6 +75,19 @@ namespace Microsoft.Azure.Cosmos.Routing
         internal TimeSpan Threshold => this.threshold;
 
         internal int PerClientConcurrencyBudget => this.perClientConcurrencyBudget;
+
+        /// <summary>
+        /// Resolves the tri-state
+        /// <see cref="CosmosClientOptions.EnableMetadataHedgingForColdStart"/>
+        /// to a concrete opt-in <see cref="bool"/> by falling back to
+        /// <see cref="PhaseDefault"/> when the customer left the property
+        /// <c>null</c>. An explicit <c>true</c> / <c>false</c> always wins
+        /// over the phase default — see design §5.1 and §12.
+        /// </summary>
+        internal static bool ResolveOptIn(bool? customerOptIn)
+        {
+            return customerOptIn ?? PhaseDefault;
+        }
 
         internal int AvailableBudget => this.hedgeBudget.CurrentCount;
 
