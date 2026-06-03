@@ -220,6 +220,29 @@ namespace Microsoft.Azure.Cosmos.Common
                                 IClientSideRequestStatistics clientSideRequestStatistics,
                                 CancellationToken cancellationToken);
 
+        // Cold-start aware overloads. Default delegates to the existing abstract so subclasses
+        // (e.g. encryption-mirrored caches) keep compiling and remain hedge-disabled. See
+        // docs/PPAF_Metadata_Hedging_ColdStart_Design.md §5.4 / §5.6.
+        protected virtual Task<ContainerProperties> GetByRidAsync(string apiVersion,
+                                string collectionRid,
+                                ITrace trace,
+                                IClientSideRequestStatistics clientSideRequestStatistics,
+                                bool isColdStart,
+                                CancellationToken cancellationToken)
+        {
+            return this.GetByRidAsync(apiVersion, collectionRid, trace, clientSideRequestStatistics, cancellationToken);
+        }
+
+        protected virtual Task<ContainerProperties> GetByNameAsync(string apiVersion,
+                                string resourceAddress,
+                                ITrace trace,
+                                IClientSideRequestStatistics clientSideRequestStatistics,
+                                bool isColdStart,
+                                CancellationToken cancellationToken)
+        {
+            return this.GetByNameAsync(apiVersion, resourceAddress, trace, clientSideRequestStatistics, cancellationToken);
+        }
+
         private async Task<ContainerProperties> ResolveByPartitionKeyRangeIdentityAsync(string apiVersion, 
                                 PartitionKeyRangeIdentity partitionKeyRangeIdentity, 
                                 ITrace trace, 
@@ -263,7 +286,7 @@ namespace Microsoft.Azure.Cosmos.Common
                 async () =>
                 {
                     DateTime currentTime = DateTime.UtcNow;
-                    ContainerProperties collection = await this.GetByRidAsync(apiVersion, collectionResourceId, trace, clientSideRequestStatistics, cancellationToken);
+                    ContainerProperties collection = await this.GetByRidAsync(apiVersion, collectionResourceId, trace, clientSideRequestStatistics, isColdStart: true, cancellationToken);
                     cache.collectionInfoByIdLastRefreshTime.AddOrUpdate(collectionResourceId, currentTime,
                              (string currentKey, DateTime currentValue) => currentTime);
                     return collection;
@@ -295,7 +318,7 @@ namespace Microsoft.Azure.Cosmos.Common
                 async () =>
                 {
                     DateTime currentTime = DateTime.UtcNow;
-                    ContainerProperties collection = await this.GetByNameAsync(apiVersion, resourceFullName, trace, clientSideRequestStatistics, cancellationToken);
+                    ContainerProperties collection = await this.GetByNameAsync(apiVersion, resourceFullName, trace, clientSideRequestStatistics, isColdStart: !forceRefesh, cancellationToken);
                     cache.collectionInfoById.Set(collection.ResourceId, collection);
                     cache.collectionInfoByNameLastRefreshTime.AddOrUpdate(resourceFullName, currentTime,
                         (string currentKey, DateTime currentValue) => currentTime);
@@ -324,7 +347,7 @@ namespace Microsoft.Azure.Cosmos.Common
                    async () =>
                    {
                        DateTime currentTime = DateTime.UtcNow;
-                       ContainerProperties collection = await this.GetByNameAsync(request.Headers[HttpConstants.HttpHeaders.Version], resourceFullName, trace, clientSideRequestStatistics, cancellationToken);
+                       ContainerProperties collection = await this.GetByNameAsync(request.Headers[HttpConstants.HttpHeaders.Version], resourceFullName, trace, clientSideRequestStatistics, isColdStart: false, cancellationToken);
                        cache.collectionInfoById.Set(collection.ResourceId, collection);
                        cache.collectionInfoByNameLastRefreshTime.AddOrUpdate(resourceFullName, currentTime,
                        (string currentKey, DateTime currentValue) => currentTime);
