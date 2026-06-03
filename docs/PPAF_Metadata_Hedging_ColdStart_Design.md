@@ -21,7 +21,7 @@ During cold start, every `CosmosClient` must populate three foundational caches 
 
 All three cache loads flow through the Gateway HTTP path. The HTTP layer applies `HttpTimeoutPolicyControlPlaneRetriableHotPath` whose first-attempt timeout was recently raised from 500 ms to **1 s** (issue [#5642](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5642)). When the primary region's Gateway is healthy, the impact is invisible; but when the primary region is degraded — brownout, partial failure, AAD slowness, transient TLS/connection establishment churn — a single slow metadata response can stall the entire client warm-up by 1 s + the local retry backoff before the next attempt completes. Production telemetry shows this as elevated p99 latency on the first operation issued by a cold client, which is exactly the request that customer SLOs are most sensitive to.
 
-The existing `MetadataRequestThrottleRetryPolicy` already supports cross-region fallback, but only *reactively* (after a failure or `503` / `Gone+LeaseNotFound` / `Forbidden+DatabaseAccountNotFound`) and only *sequentially*. There is no proactive, latency-driven hedging path for metadata reads today.
+The existing `MetadataRequestThrottleRetryPolicy` already supports cross-region fallback, but only *reactively* (after a failure or `503` / `500` / `Gone+LeaseNotFound` / `Forbidden+DatabaseAccountNotFound` — verified at `MetadataRequestThrottleRetryPolicy.cs:152-161` and `:194-203`) and only *sequentially*. There is no proactive, latency-driven hedging path for metadata reads today.
 
 **Relationship to in-flight work.** This design must compose with two adjacent PRs that touch the same surface:
 
@@ -111,7 +111,8 @@ namespace Microsoft.Azure.Cosmos
     public sealed class MetadataHedgingOptions
     {
         /// <summary>Time after which the hedge branch is dispatched if the
-        /// primary has not produced a non-transient response. Default:
+        /// primary has not produced an acceptable response (per the §5.13
+        /// per-branch overlay over <c>RetryUtility.IsRegionalFailure</c>). Default:
         /// <c>firstControlPlaneRetriableTimeout + 500 ms</c> (today: 1.5 s).</summary>
         public TimeSpan? Threshold { get; set; }
 
@@ -222,16 +223,21 @@ namespace Microsoft.Azure.Cosmos.Routing
         // -------- Set exactly once after the first attempt's winner is decided --------
         // Backed by Interlocked.CompareExchange to give a single-publication guarantee
         // even if a late loser continuation tries to re-publish; first writer wins.
-        public Uri WinningEndpoint { get; private set; }
-        public string WinningRegion { get; private set; }
+        private Uri winningEndpoint;
+        private string winningRegion;
+        public Uri WinningEndpoint => Volatile.Read(ref this.winningEndpoint);
+        public string WinningRegion => Volatile.Read(ref this.winningRegion);
 
         // -------- Cross-thread shared, thread-safe --------
-        // ConcurrentDictionary<Uri,byte> rather than HashSet<Uri> because the
-        // strategy writes (Add) on the orchestration thread while the retry policy
-        // reads (Contains/Keys) on the BackoffRetryUtility thread, and late loser
-        // continuations may also Add after the winner has returned.
-        public ConcurrentDictionary<Uri, byte> AttemptedEndpoints { get; }
-            = new ConcurrentDictionary<Uri, byte>();
+        // ConcurrentDictionary<string,byte> keyed on Uri.AbsoluteUri (not
+        // ConcurrentDictionary<Uri,byte>) because Uri equality uses the
+        // default reference / hash that includes UserInfo, Fragment, and case
+        // semantics that have surprised callers in the past. AbsoluteUri is the
+        // canonical normalized form used by GlobalEndpointManager throughout
+        // LocationCache and avoids any drift between probe-resolved endpoints
+        // and the keys stored at hedge dispatch time.
+        public ConcurrentDictionary<string, byte> AttemptedEndpoints { get; }
+            = new ConcurrentDictionary<string, byte>();
 
         public bool IsFirstReadFeedPage { get; set; }            // PK-range only; subsequent pages skip hedge
 
@@ -245,7 +251,17 @@ namespace Microsoft.Azure.Cosmos.Routing
         internal bool TryMarkHedgedThisOperation()
             => Interlocked.Exchange(ref this.hasHedgedThisOperation, 1) == 0;
 
-        internal void RecordWinner(Uri endpoint, string region);
+        // Single-publication via Interlocked.CompareExchange. First caller wins;
+        // late loser continuations that arrive after the winner has already been
+        // recorded are no-ops (the second CompareExchange observes a non-null
+        // existing value and leaves it intact). The two fields are independently
+        // CAS'd but the (endpoint, region) pair is computed by a single caller
+        // before invocation, so tearing across them is not possible.
+        internal void RecordWinner(Uri endpoint, string region)
+        {
+            Interlocked.CompareExchange(ref this.winningEndpoint, endpoint, null);
+            Interlocked.CompareExchange(ref this.winningRegion,   region,   null);
+        }
     }
 
     internal readonly struct MetadataHedgingResult
@@ -282,10 +298,11 @@ namespace Microsoft.Azure.Cosmos.Routing
     /// <summary>
     /// Diagnostic record attached to the request's trace. Populated by the strategy
     /// from a single thread for the eligibility/winner fields; <c>LoserOutcome</c>
-    /// is populated by a fire-and-forget continuation on an arbitrary thread and
-    /// is therefore marked <see langword="volatile"/>. The trace datum is published
-    /// (via <c>trace.AddDatum</c>) only after the winner is decided; consumers reading
-    /// the datum must tolerate <c>LoserOutcome</c> updating later (see §10).
+    /// and <c>HedgeOutcome</c> may be updated from off-orchestration-thread continuations
+    /// (BackgroundCleanupAsync) so they are read/written through <see cref="Volatile"/>.
+    /// The trace datum is published (via <c>trace.AddDatum</c>) only after the winner
+    /// is decided; consumers reading the datum must tolerate these fields updating
+    /// later (see §10).
     /// </summary>
     internal sealed class MetadataHedgeDiagnostics
     {
@@ -296,6 +313,22 @@ namespace Microsoft.Azure.Cosmos.Routing
         public double ThresholdMs { get; set; }
         public double? HedgeFiredElapsedMs { get; set; }
         public string WinningRegion { get; set; }
+
+        // Recorded by the winner-decision path (§5.3 step 5a / step 6). Values:
+        //   "Won"      — hedge was the acceptable winner.
+        //   "Auth401"  — hedge returned 401 and was rejected by IsAcceptableWinner.
+        //   "Auth403"  — hedge returned plain 403 (sub-status NOT DatabaseAccountNotFound)
+        //                and was rejected by IsAcceptableWinner.
+        //   null       — hedge did not fire, or primary won outright.
+        // Volatile because BackgroundCleanupAsync may also set this from an off-
+        // orchestration-thread continuation when the loser was the hedge.
+        private string hedgeOutcome;
+        public string HedgeOutcome
+        {
+            get => Volatile.Read(ref this.hedgeOutcome);
+            set => Volatile.Write(ref this.hedgeOutcome, value);
+        }
+
         private string loserOutcome;
         public string LoserOutcome
         {
@@ -351,12 +384,16 @@ public async Task<MetadataHedgingResult> ExecuteAsync(
         return new MetadataHedgingResult(primaryOnly, request.RequestContext.LocationEndpointToRoute, /*region*/ null, hedgeFired: false, diag);
     }
 
-    CancellationTokenSource primaryCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-    CancellationTokenSource hedgeCts   = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-    CancellationTokenSource timerCts   = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+    CancellationTokenSource primaryCts = null;
+    CancellationTokenSource hedgeCts   = null;
+    CancellationTokenSource timerCts   = null;
 
     try
     {
+        primaryCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        hedgeCts   = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timerCts   = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
         // ---- 3. Resolve primary + hedge endpoints ----
         Uri primaryEndpoint = request.RequestContext.LocationEndpointToRoute
                               ?? this.globalEndpointManager.ResolveServiceEndpoint(request);
@@ -382,7 +419,7 @@ public async Task<MetadataHedgingResult> ExecuteAsync(
 
         // ---- 4. Launch primary + delayed hedge ----
         DocumentServiceRequest primaryReq = request;   // already routed to primary
-        hedgeContext.AttemptedEndpoints.TryAdd(primaryEndpoint, 0);
+        hedgeContext.AttemptedEndpoints.TryAdd(primaryEndpoint.AbsoluteUri, 0);
 
         Stopwatch sw = Stopwatch.StartNew();
         Task<DocumentServiceResponse> primaryTask = SendOneAsync(sendToCurrentlyRoutedEndpoint, primaryReq, primaryCts.Token);
@@ -400,10 +437,12 @@ public async Task<MetadataHedgingResult> ExecuteAsync(
         //         intentionally fall through to dispatch the hedge — fast-fail on
         //         a degraded primary is one of the most common cold-start tail
         //         scenarios this design is meant to mitigate.
-        //   (iii) the response is non-transient.
+        //   (iii) the response is an acceptable winner for the primary branch.
+        //         For the primary, this is identical to !IsRegionalFailure(resp);
+        //         the per-branch overlay only changes behavior for the hedge.
         if (firstCompleted == primaryTask
             && primaryTask.Status == TaskStatus.RanToCompletion
-            && IsNonTransient(primaryTask.Result))
+            && IsAcceptableWinner(primaryTask.Result, HedgeBranch.Primary))
         {
             timerCts.Cancel();              // only cancels the Task.Delay, not anything observable to the retry policy
             diag.TotalAttempts = 1;
@@ -424,16 +463,19 @@ public async Task<MetadataHedgingResult> ExecuteAsync(
         }
 
         DocumentServiceRequest hedgeReq = CloneForHedge(primaryReq, hedgeEndpoint);
-        hedgeContext.AttemptedEndpoints.TryAdd(hedgeEndpoint, 0);
+        hedgeContext.AttemptedEndpoints.TryAdd(hedgeEndpoint.AbsoluteUri, 0);
         hedgeContext.TryMarkHedgedThisOperation();      // suppresses re-hedge on later BackoffRetryUtility retries (§6.1)
         diag.HedgeFiredElapsedMs = sw.Elapsed.TotalMilliseconds;
         Task<DocumentServiceResponse> hedgeTask = SendOneAsync(sendToCurrentlyRoutedEndpoint, hedgeReq, hedgeCts.Token);
 
-        // ---- 6. Wait for first NON-TRANSIENT winner (not just first-completed) ----
+        // ---- 6. Wait for first ACCEPTABLE winner (not just first-completed) ----
         // First-completed semantics would let a fast 503 from the hedge beat a
         // healthy 200 from the primary that lands 2 ms later, regressing the
-        // §6.1 "no attempt amplification" claim. Loop until either a branch
-        // produces a non-transient response or both branches have settled.
+        // §6.1 "no attempt amplification" claim. Per-branch overlay also rejects
+        // 401/plain-403 from the hedge branch (§5.13 hedge-auth guard) so an RBAC
+        // misconfiguration in the secondary cannot poison the operation result.
+        // Loop until either a branch produces an acceptable winner or both
+        // branches have settled.
         Task<DocumentServiceResponse>[] remaining = new[] { primaryTask, hedgeTask };
         Task<DocumentServiceResponse> winner = null;
         Task<DocumentServiceResponse> loser  = null;
@@ -441,17 +483,35 @@ public async Task<MetadataHedgingResult> ExecuteAsync(
         while (true)
         {
             Task<DocumentServiceResponse> finished = await Task.WhenAny(remaining);
+            HedgeBranch branch = (finished == primaryTask) ? HedgeBranch.Primary : HedgeBranch.Hedge;
 
-            if (finished.Status == TaskStatus.RanToCompletion && IsNonTransient(finished.Result))
+            if (finished.Status == TaskStatus.RanToCompletion
+                && IsAcceptableWinner(finished.Result, branch))
             {
                 winner = finished;
                 loser  = (finished == primaryTask) ? hedgeTask : primaryTask;
+                if (branch == HedgeBranch.Hedge && diag.HedgeOutcome == null)
+                {
+                    diag.HedgeOutcome = "Won";
+                }
                 break;
+            }
+
+            // If the hedge returned with a per-branch reject (401/403), record it for
+            // diagnostics before we drop the response.
+            if (branch == HedgeBranch.Hedge
+                && finished.Status == TaskStatus.RanToCompletion
+                && (finished.Result.StatusCode == HttpStatusCode.Unauthorized
+                    || finished.Result.StatusCode == HttpStatusCode.Forbidden))
+            {
+                diag.HedgeOutcome = finished.Result.StatusCode == HttpStatusCode.Unauthorized
+                    ? "Auth401"
+                    : "Auth403";
             }
 
             if (remaining.Length == 1)
             {
-                // Both branches have now settled and neither produced a non-transient response.
+                // Both branches have now settled and neither produced an acceptable winner.
                 // Prefer the primary's outcome (preserves "primary's exception via ExceptionDispatchInfo"
                 // contract — §10). If the primary settled transient/faulted but the hedge faulted
                 // outright, the primary's transient response is still the surfaced outcome.
@@ -474,8 +534,20 @@ public async Task<MetadataHedgingResult> ExecuteAsync(
         // OperationCanceledException is observed by BackgroundCleanupAsync and
         // never escapes this method, so MetadataRequestThrottleRetryPolicy
         // (post-#5780) cannot misclassify it as a regional failure. See §5.7.
-        CancellationTokenSource loserCts  = (loser  == primaryTask) ? primaryCts : hedgeCts;
-        CancellationTokenSource winnerCts = (winner == primaryTask) ? primaryCts : hedgeCts;
+        // OWNERSHIP TRANSFER: the loser's CTS is handed to BackgroundCleanupAsync,
+        // which becomes responsible for its disposal. Null out the local ref so
+        // the outer finally does not double-dispose it.
+        CancellationTokenSource loserCts;
+        if (loser == primaryTask)
+        {
+            loserCts = primaryCts;
+            primaryCts = null;          // transfer ownership to BackgroundCleanupAsync
+        }
+        else
+        {
+            loserCts = hedgeCts;
+            hedgeCts = null;            // transfer ownership to BackgroundCleanupAsync
+        }
         loserCts.Cancel();
 
         // Fire-and-forget cleanup: awaits the loser, disposes its response body
@@ -485,23 +557,20 @@ public async Task<MetadataHedgingResult> ExecuteAsync(
 
         trace.AddDatum("Metadata Hedge Context", diag);
 
-        try
-        {
-            // ObserveWinningTaskAsync re-raises the winner's exception (if any) via
-            // ExceptionDispatchInfo.Capture(...).Throw() — preserves the throwing-frame
-            // stack across the await boundary. See §5.12 for net472 unwind discipline.
-            DocumentServiceResponse winningResponse = await ObserveWinningTaskAsync(winner);
-            return new MetadataHedgingResult(winningResponse, winningEndpoint, winningRegion, hedgeFired: true, diag);
-        }
-        finally
-        {
-            winnerCts.Dispose();
-            timerCts.Dispose();
-            // loserCts is disposed inside BackgroundCleanupAsync.
-        }
+        // ObserveWinningTaskAsync re-raises the winner's exception (if any) via
+        // ExceptionDispatchInfo.Capture(...).Throw() — preserves the throwing-frame
+        // stack across the await boundary. See §5.12 for net472 unwind discipline.
+        DocumentServiceResponse winningResponse = await ObserveWinningTaskAsync(winner);
+        return new MetadataHedgingResult(winningResponse, winningEndpoint, winningRegion, hedgeFired: true, diag);
     }
     finally
     {
+        // Disposes whichever CTSs are still locally owned. The loser's CTS, if
+        // any, was nulled out above when transferred to BackgroundCleanupAsync.
+        // The winner's CTS and the timer CTS are always still locally owned.
+        primaryCts?.Dispose();
+        hedgeCts?.Dispose();
+        timerCts?.Dispose();
         this.hedgeBudget.Release();
     }
 }
@@ -566,7 +635,7 @@ private static async Task BackgroundCleanupAsync(
 }
 ```
 
-`IsNonTransient` is the **shared** `RetryUtility.IsRegionalFailure(...)` helper (see §5.7) — not a local copy of the status-code set. It returns `true` for 2xx and for 4xx that are not retriable by `MetadataRequestThrottleRetryPolicy` (i.e., not `503/500/Gone+LeaseNotFound/Forbidden+DatabaseAccountNotFound`, and not transport-level `HttpRequestException`/non-user `OperationCanceledException`). For 404 we treat it as a non-transient winner — both branches racing to 404 is benign; the first wins.
+`IsAcceptableWinner(response, branch)` is defined in §5.13 and composes `RetryUtility.IsRegionalFailure(...)` with a per-branch overlay that rejects 401 / plain 403 from the **hedge** branch (the RBAC-role-assignment-missing-in-secondary case). For the **primary** branch, `IsAcceptableWinner` is identical to `!IsRegionalFailure(...)` — i.e., a 401 from the primary still surfaces to the caller normally. This shared helper consolidates the 3-to-4 copies of the failure-class list that exist or are being added today across PR #5780 and this design. For 404 we treat it as an acceptable winner regardless of branch — both branches racing to 404 is benign; the first wins.
 
 `CloneForHedge` creates a `DocumentServiceRequest` copy with `request.RequestContext.RouteToLocation(hedgeEndpoint)` set, cloned headers (notably re-signed `Authorization` if the token is bound to URI — see §5.13 for full per-auth-mode handling), and a fresh `ClientRequestStatistics` snapshot to keep diagnostics from the two branches separable.
 
@@ -631,10 +700,46 @@ catch (DocumentClientException ex) { /* unchanged */ }
 
 `isFirstPopulation` is determined by the caller. Implementation detail (and the central correction vs. the spec's earlier draft): the two metadata caches use **different** async-cache primitives, so they need different plumbing:
 
-- **`ClientCollectionCache` uses `AsyncCache<string, ContainerProperties>`** (`CollectionCache.cs:34`), **not** `AsyncCacheNonBlocking`. `AsyncCache.GetAsync` takes `Func<Task<TValue>>` — the factory does **not** see the previous value. Therefore `isColdStart` must be **threaded in explicitly from each caller**: it cannot be inferred from "previous value was null" inside the factory, because `ClientCollectionCache.ResolveByNameAsync(forceRefresh: true)` `TryRemoveIfCompleted`s the key and re-issues `GetAsync` with `obsoleteValue: null`, which looks identical to a true cold start to the factory. Force-refresh must NOT hedge.
+- **`ClientCollectionCache` uses `AsyncCache<string, ContainerProperties>`** (`CollectionCache.cs:34`), **not** `AsyncCacheNonBlocking`. `AsyncCache.GetAsync` takes `Func<Task<TValue>>` — the factory does **not** see the previous value. Therefore `isColdStart` must be **threaded in explicitly from each caller**: it cannot be inferred from "previous value was null" inside the factory, because `ClientCollectionCache.ResolveByNameAsync(forceRefresh: true)` `TryRemoveIfCompleted`s the key and re-issues `GetAsync` with `obsoleteValue: null`, which looks identical to a true cold start to the factory. Force-refresh must NOT hedge. The concrete mapping is **`isColdStart = !forceRefresh`** — see §5.6 for the walk-through.
 - **`PartitionKeyRangeCache` uses `AsyncCacheNonBlocking<…>`** (`PartitionKeyRangeCache.cs:28`). Its factory receives `previousValue`; the cold-start signal can be derived as `previousValue == null` *inside* the factory. (But by convention we still set `isColdStart` on the `MetadataHedgingContext` from the caller, to keep the two paths symmetric.)
 
-Plumbing change for `ClientCollectionCache`: `CollectionCache.GetByNameAsync` and `GetByRidAsync` are **`protected abstract`** on the base class (`CollectionCache.cs:211-221`). Adding a new `bool isColdStart` parameter is a non-trivial breaking change on a protected/abstract surface — any subclass (encryption-mirrored caches in `Microsoft.Azure.Cosmos.Encryption*`, test doubles) must be updated. We therefore **default the new parameter to `false`** in the base abstract signature, and update only the call sites that need to opt in (the `ResolveByNameAsync` / `ResolveByRidAsync` cold-population paths). Implementations that do not override the new overload remain compilable and hedge-disabled by default.
+**Plumbing change for `ClientCollectionCache` — virtual overload, not a new parameter on the abstract.** `CollectionCache.GetByNameAsync` / `GetByRidAsync` are **`protected abstract`** on the base class (`CollectionCache.cs:211-221`). Adding a parameter to an `abstract` method — *even with a default value* — changes the method's signature; existing subclass overrides (the encryption-mirrored caches in `Microsoft.Azure.Cosmos.Encryption*` and any customer/test subclass) override a method that **no longer exists in that form** and fail to compile. Default values only affect what callers may omit at the call site; they do not make an old override automatically satisfy the new abstract contract.
+
+We therefore add a **new `protected virtual` overload** that takes `isColdStart` and delegates to the existing `abstract` method:
+
+```csharp
+internal abstract class CollectionCache : IDisposable
+{
+    // Existing abstract (unchanged signature — preserves source compat for all subclass overrides).
+    protected abstract Task<ContainerProperties> GetByNameAsync(
+        string apiVersion, string resourceFullName, IClientSideRequestStatistics csrs,
+        ITrace trace, IClientSideRequestStatistics clientSideRequestStatistics, CancellationToken ct);
+
+    // NEW: hedge-aware overload. Default implementation discards isColdStart and
+    // calls the existing abstract — encryption subclasses that don't override this
+    // simply inherit hedge-disabled behavior, which is the desired default.
+    protected virtual Task<ContainerProperties> GetByNameAsync(
+        string apiVersion, string resourceFullName, IClientSideRequestStatistics csrs,
+        ITrace trace, IClientSideRequestStatistics clientSideRequestStatistics,
+        bool isColdStart, CancellationToken ct)
+        => this.GetByNameAsync(apiVersion, resourceFullName, csrs, trace, clientSideRequestStatistics, ct);
+
+    // Same pair for GetByRidAsync.
+}
+
+internal sealed class ClientCollectionCache : CollectionCache
+{
+    // Existing abstract override (unchanged).
+    protected override Task<ContainerProperties> GetByNameAsync(...) { /* unchanged body */ }
+
+    // NEW: hedge-aware override. Forwards isColdStart into MetadataHedgingContext.
+    protected override Task<ContainerProperties> GetByNameAsync(
+        ..., bool isColdStart, CancellationToken ct)
+        => this.ReadCollectionAsync(resourceFullName, csrs, trace, isColdStart, ct);
+}
+```
+
+`AsyncCache.GetAsync(key, obsoleteValue: null, factory: () => this.GetByNameAsync(..., isColdStart, ct), ct, forceRefresh: forceRefresh)` invokes the new virtual overload. Encryption-mirrored caches that override only the existing abstract continue to compile and run without modification; they are hedge-disabled by default (their factory invocations route through the base virtual which ignores `isColdStart`). When/if the encryption stack opts in, it overrides the new virtual independently.
 
 ### 5.5 Wiring point #2 — `PartitionKeyRangeCache.GetRoutingMapForCollectionAsync`
 
@@ -689,7 +794,8 @@ do
             trace,
             clientSideRequestStatistics,
             metadataRetryPolicy,
-            hedgeContext),     // <- new
+            hedgeContext,           // <- new
+            cancellationToken),     // <- new: caller-supplied token (NOT CancellationToken.None)
         retryPolicy: metadataRetryPolicy))
     {
         lastStatusCode = response.StatusCode;
@@ -711,7 +817,8 @@ private async Task<DocumentServiceResponse> ExecutePartitionKeyRangeReadChangeFe
     ITrace trace,
     IClientSideRequestStatistics clientSideRequestStatistics,
     IDocumentClientRetryPolicy retryPolicy,
-    MetadataHedgingContext hedgeContext)
+    MetadataHedgingContext hedgeContext,
+    CancellationToken cancellationToken)            // <- new
 {
     using (ITrace childTrace = trace.StartChild("Read PartitionKeyRange Change Feed", TraceComponent.Transport, Tracing.TraceLevel.Info))
     using (DocumentServiceRequest request = DocumentServiceRequest.Create(
@@ -733,20 +840,59 @@ private async Task<DocumentServiceResponse> ExecutePartitionKeyRangeReadChangeFe
             sendToCurrentlyRoutedEndpoint: (req, ct) => this.storeModel.ProcessMessageAsync(req, ct),
             hedgeContext: hedgeContext,
             trace: childTrace,
-            cancellationToken: CancellationToken.None);
+            cancellationToken: cancellationToken);   // <- propagate caller token; CancellationToken.None
+                                                     //    here would defeat caller-driven cancellation
+                                                     //    of the entire BackoffRetryUtility loop.
 
         return result.Response;
     }
 }
 ```
 
+The `cancellationToken` is the customer-supplied token threaded through `GetRoutingMapForCollectionAsync` -> `AsyncCacheNonBlocking.GetAsync(..., ct)` -> the BackoffRetryUtility lambda -> `ExecutePartitionKeyRangeReadChangeFeedAsync(..., ct)` -> `MetadataHedgingStrategy.ExecuteAsync(..., ct)`. Inside `ExecuteAsync`, this token is the parent of all three per-branch CTSs (`primaryCts`/`hedgeCts`/`timerCts` via `CreateLinkedTokenSource`), so customer-cancellation cancels **all** in-flight branches as well as the threshold timer. The previous `CancellationToken.None` value would have made customer cancellation a no-op for the duration of any in-flight metadata read — a correctness regression vs. today's behavior.
+
 ### 5.6 Cold-start signal — concrete propagation
 
-The "previousValue == null" signal lives in different places for the two caches:
+The "previousValue == null" signal lives in different places for the two caches.
 
-- **`ClientCollectionCache`**: `CollectionCache.ResolveByNameAsync` / `ResolveByRidAsync` invoke `GetByNameAsync` / `GetByRidAsync` through `AsyncCache.GetAsync`. The cache itself knows whether this is an initial population or a refresh (the latter sets `forceRefresh: true` or passes a non-null `previousValue`). We propagate that bit by adding an `isColdStart` parameter to `ReadCollectionAsync` and the matching base methods, defaulting `false`. Refresh callers explicitly pass `false`; first-time callers pass `true`.
+**`ClientCollectionCache` — `isColdStart = !forceRefresh`.**
 
-- **`PartitionKeyRangeCache`**: `GetRoutingMapForCollectionAsync` already receives `previousRoutingMap`. `isColdStart = previousRoutingMap == null` is the exact signal — no plumbing change needed beyond setting it on `MetadataHedgingContext`.
+`CollectionCache.ResolveByNameAsync(forceRefresh, ...)` is the only entry point into the AsyncCache that exposes the customer-visible "this is a refresh" intent. Internally it calls `AsyncCache.GetAsync(key, obsoleteValue: null, factory, ct, forceRefresh)`. The three reachable cases are:
+
+| Caller intent | `forceRefresh` | Cache state | Factory invoked? | `isColdStart` value | Hedge eligible? |
+|---|---|---|---|---|---|
+| First-time read | `false` | miss | yes | `true` | yes (cold start) |
+| Steady-state read | `false` | hit | **no** | (moot — factory not invoked) | n/a |
+| Refresh after `OperationCanceledException` / 410 | `true` | hit-but-stale | yes | `false` | no (force-refresh must not hedge) |
+
+The recipe for the caller is simply `isColdStart = !forceRefresh`. The mid-row "moot" case is correct because `AsyncCache.GetAsync` short-circuits and never invokes the factory on a cache hit; the parameter is computed but never read.
+
+Concretely in `ClientCollectionCache.ResolveByNameAsync` / `ResolveByRidAsync`, the call becomes:
+
+```csharp
+return await this.collectionInfoByNameCache.GetAsync(
+    key: resourceFullName,
+    obsoleteValue: null,
+    singleValueInitFunc: () => this.GetByNameAsync(
+        apiVersion, resourceFullName, csrs, trace,
+        clientSideRequestStatistics,
+        isColdStart: !forceRefresh,             // <- the only new bit at the call site
+        ct),
+    cancellationToken: ct,
+    forceRefresh: forceRefresh);
+```
+
+Note that "cache evicted then re-populated by a non-force-refresh caller" is also `isColdStart = true` — this is the container-recreate-with-same-name false positive flagged in §5.11; the false positive is acceptable because that incarnation of the container IS a genuine first-population.
+
+**`PartitionKeyRangeCache` — `isColdStart = previousRoutingMap == null`.**
+
+`AsyncCacheNonBlocking.GetAsync` takes `Func<TValue, Task<TValue>>` — the factory **does** receive the previous value. `GetRoutingMapForCollectionAsync` already receives `previousRoutingMap` as a parameter, so:
+
+```csharp
+bool isColdStart = previousRoutingMap == null;
+```
+
+Subsequent calls with a non-null `previousRoutingMap`, including `ShouldForceRefresh`-driven refreshes, do not hedge.
 
 ### 5.7 Coordination with `MetadataRequestThrottleRetryPolicy`
 
@@ -762,9 +908,34 @@ If the losing hedge branch's `OperationCanceledException` were observed by `Meta
 
 This is the structural guarantee that makes "hedge a healthy secondary" not poison the secondary for follow-on reads.
 
+##### 5.7.1.1 Acknowledged tradeoff: lost primary regional-failure signal when hedge wins
+
+There is a deliberate, complementary asymmetry to invariant 5.7.1: when the hedge wins on a primary 500/503/`HttpRequestException`/non-user-cancellation, the primary's regional-failure signal is observed only by `BackgroundCleanupAsync` and is intentionally **not** forwarded to `MetadataRequestThrottleRetryPolicy`. This means `LocationCache.MarkEndpointUnavailableForRead(primaryEndpoint)` is **not** called for that operation, even though the primary genuinely failed.
+
+This tradeoff is acceptable because:
+
+- The next metadata or data-plane request issued through `MetadataRequestThrottleRetryPolicy` or `ClientRetryPolicy` will independently observe the primary's degraded state and call `MarkEndpointUnavailableForRead` on the first failure that surfaces to the caller. The 5-minute TTL on the `LocationCache` deprioritization is reached one extra request later — not a correctness problem.
+- The alternative — having `BackgroundCleanupAsync` reach into `LocationCache` directly when the loser was the primary — would re-introduce a cross-component coupling that this design has worked hard to avoid (the hedge helper would gain authority over endpoint state, which today is owned exclusively by `ClientRetryPolicy` / `MetadataRequestThrottleRetryPolicy`).
+- Telemetry exposes the gap: `azure.cosmosdb.client.metadata_hedging.hedge_wins` growing while `MarkEndpointUnavailableForRead` calls stay flat is the signal that primary-failure-but-hedge-won is happening. Operators see it; the next failing request closes the gap.
+
+##### 5.7.1.2 Race window: hedge dispatch vs. retry-policy regional fallback
+
+When the primary fails *before* the hedge timer fires, `MetadataRequestThrottleRetryPolicy.ShouldRetryAsync` may classify the failure as regional and schedule a same-loop sequential fallback to region B. If the threshold fires within the same scheduling tick, the hedge helper may **also** dispatch to region B. The two paths are not strictly mutually exclusive across the t=threshold ± `Task.Delay` precision window.
+
+Worked example (threshold = 1.5 s):
+
+- t=0 — primary dispatched to region A. Threshold timer armed for t=1.5 s.
+- t=1.4 s — primary returns 503. `step 5a`'s `IsAcceptableWinner(primary)` returns `false`; control falls through.
+- t=1.4 s+ε — hedge helper observes primary completion ≥ threshold-elapsed semantic; before the timer callback runs, retry-policy's regional fallback (running synchronously inside the same `BackoffRetryUtility` iteration) may have already scheduled the next attempt to region B.
+- t=1.5 s — timer fires. `MetadataHedgingContext.HasHedgedThisOperation` is checked via `Interlocked.CompareExchange`; if the next-attempt retry-policy path has already set it, hedge is skipped (`SkipReason=AlreadyHedgedThisOperation`). If not, hedge dispatches to region B and immediately sets the flag, so the *next* retry-policy iteration will observe `HasHedgedThisOperation=true` and skip the second-dispatch path it would otherwise take.
+
+The `MetadataHedgingContext.HasHedgedThisOperation` `Interlocked.CompareExchange` (rule 9 in §6) is the serialization point that closes the race — at most one of {hedge-helper-dispatch, retry-policy-fallback} actually issues a duplicate request to region B per operation. The other observes the flag and short-circuits.
+
+The total wall-clock attempt cap (`MetadataRequestThrottleRetryPolicy`'s existing retry budget) remains the upper bound regardless of which path won the race.
+
 #### 5.7.2 Shared regional-failure classifier
 
-Both this design's `IsNonTransient` predicate (§5.3) and `MetadataRequestThrottleRetryPolicy` need the same status-code set. PR #5780's reviewer (xinlian12) asked that the duplicated definitions be consolidated. Add a small static helper:
+Both this design's `IsAcceptableWinner` predicate (§5.3 / §5.13) and `MetadataRequestThrottleRetryPolicy` need the same status-code set for the *regional-failure* classification. PR #5780's reviewer (xinlian12) asked that the duplicated definitions be consolidated. Add a small static helper:
 
 ```csharp
 internal static class RetryUtility
@@ -774,7 +945,9 @@ internal static class RetryUtility
     /// that should advance the retry policy to a new preferred location.
     /// Used by:
     ///   - MetadataRequestThrottleRetryPolicy.ShouldRetryAsync (post-#5780)
-    ///   - MetadataHedgingStrategy.IsNonTransient (this spec, negated)
+    ///   - MetadataHedgingStrategy.IsAcceptableWinner (this spec, negated for
+    ///     the primary branch; composed with the per-branch 401/403 overlay
+    ///     for the hedge branch — see §5.13)
     /// </summary>
     internal static bool IsRegionalFailure(
         DocumentServiceResponse responseOrNull,
@@ -800,7 +973,7 @@ internal static class RetryUtility
 }
 ```
 
-`MetadataHedgingStrategy.IsNonTransient(response)` becomes `!RetryUtility.IsRegionalFailure(response, null, callerCT)`. This eliminates the 3-to-4 copies of the failure-class list that exist or are being added today.
+`MetadataRequestThrottleRetryPolicy` consumes `IsRegionalFailure` directly. `MetadataHedgingStrategy.IsAcceptableWinner(response, branch)` (§5.13) composes this helper with a per-branch overlay that rejects 401/plain-403 from the **hedge** branch only. This eliminates the 3-to-4 copies of the failure-class list that exist or are being added today and keeps the per-branch policy localized.
 
 #### 5.7.3 `MetadataRequestThrottleRetryPolicy` extensions
 
@@ -841,10 +1014,10 @@ private bool IncrementRetryIndexOnUnavailableEndpointForMetadataRead()
 }
 ```
 
-It never resolves an endpoint. Endpoint resolution happens separately in `OnBeforeSendRequest` via `globalEndpointManager.ResolveServiceEndpoint(request)`. To "skip an attempted endpoint," the method needs a bounded probe loop that *does* resolve, but does **not** mutate `LocationCache` state per probe:
+It never resolves an endpoint. Endpoint resolution happens separately in `OnBeforeSendRequest` via `globalEndpointManager.ResolveServiceEndpoint(request)`. To "skip an attempted endpoint," the method needs a bounded probe loop that *does* resolve, but does **not** mutate `LocationCache` state per probe. The new shape uses `this.request` (the inflight DSR already held by the policy via `OnBeforeSendRequest`) — passing the request as a parameter would invert the existing `IDocumentClientRetryPolicy` surface for no benefit:
 
 ```csharp
-private bool IncrementRetryIndexOnUnavailableEndpointForMetadataRead(DocumentServiceRequest request)
+private bool IncrementRetryIndexOnUnavailableEndpointForMetadataRead()
 {
     int maxIndices = this.globalEndpointManager.ReadEndpoints.Count;
     for (int probe = 0; probe < maxIndices; probe++)
@@ -852,13 +1025,20 @@ private bool IncrementRetryIndexOnUnavailableEndpointForMetadataRead(DocumentSer
         this.unavailableEndpointRetryCount++;
         if (this.unavailableEndpointRetryCount > MaxRetryCountForUnavailableEndpoint) return false;
 
+        // Side-effect: the existing path writes this.retryContext.RetryLocationIndex
+        // = this.unavailableEndpointRetryCount before returning true (see existing
+        // MetadataRequestThrottleRetryPolicy implementation). Preserve that side-effect
+        // exactly so OnBeforeSendRequest on the NEXT BackoffRetryUtility iteration
+        // re-routes to the new index.
+        this.retryContext.RetryLocationIndex = this.unavailableEndpointRetryCount;
+
         // Tentatively resolve the would-be endpoint for the new RetryLocationIndex.
         // ResolveServiceEndpoint is read-only against LocationCache (no mutation per probe);
         // this is documented as a hard invariant for any future LocationCache refactor.
-        request.RequestContext.RouteToLocation(this.unavailableEndpointRetryCount, /*usePreferredLocations*/ true);
-        Uri probed = this.globalEndpointManager.ResolveServiceEndpoint(request);
+        this.request.RequestContext.RouteToLocation(this.unavailableEndpointRetryCount, /*usePreferredLocations*/ true);
+        Uri probed = this.globalEndpointManager.ResolveServiceEndpoint(this.request);
 
-        if (this.hedgeContext == null || !this.hedgeContext.AttemptedEndpoints.ContainsKey(probed))
+        if (this.hedgeContext == null || !this.hedgeContext.AttemptedEndpoints.ContainsKey(probed.AbsoluteUri))
         {
             return true;     // landed on an un-attempted endpoint
         }
@@ -868,6 +1048,8 @@ private bool IncrementRetryIndexOnUnavailableEndpointForMetadataRead(DocumentSer
 }
 ```
 
+**Side-effect invariant:** every `return true` path must leave `this.retryContext.RetryLocationIndex == this.unavailableEndpointRetryCount`. The next `BackoffRetryUtility` iteration's `OnBeforeSendRequest` reads this back when re-routing the request, so the probe loop's index advancement must be persisted to the policy's retry-context before returning. `return false` paths leave the index past-the-end, signaling exhaustion to the caller.
+
 If `hedgeContext` is null (no hedge in use, or attached to a wrapped/test-double policy) the loop collapses to the original counter behavior. If all preferred regions are exhausted by hedge attempts, the policy terminates the retry instead of looping on a region the hedge already tried — capping total attempts at `preferred-region-count`.
 
 ### 5.8 Hedge execution model — summary
@@ -875,13 +1057,13 @@ If `hedgeContext` is null (no hedge in use, or attached to a wrapped/test-double
 1. Evaluate eligibility ([§6](#6-eligibility-and-precedence-rules)). If ineligible, send to primary only.
 2. Acquire one slot from the per-client semaphore using `Wait(TimeSpan.Zero)` (true synchronous non-blocking — no Task allocation). If unavailable → skip hedge with `SkipReason=BudgetExhausted`.
 3. Resolve primary endpoint (`request.RequestContext.LocationEndpointToRoute` already set by `MetadataRequestThrottleRetryPolicy.OnBeforeSendRequest`). Pick the next preferred secondary as the hedge target (next in `PreferredLocations` order — not a proximity measurement). Respect `ExcludeRegions` (§6 rule 8).
-4. Allocate **per-branch CancellationTokenSources** (`primaryCts`, `hedgeCts`, `timerCts`), each linked to the caller token. Send the primary via `SendOneAsync(primaryCts.Token)`; start `Task.Delay(Threshold, timerCts.Token)`.
-5. If the primary `RanToCompletion` *and* the response is non-transient *and* the timer has not elapsed → cancel `timerCts` only; return primary as winner. If the primary **faults** before the timer (HttpRequestException, socket reset, fast `TaskCanceledException` from `HttpTimeoutPolicy`), fall through to hedge dispatch — fast-fail on a degraded primary must trigger the hedge, not bypass it.
+4. Allocate **per-branch CancellationTokenSources** (`primaryCts`, `hedgeCts`, `timerCts`) **inside the outer `try`**, each linked to the caller token. All three are disposed in the outer `finally` (with a null-guard) — the loser's CTS ownership transfers to `BackgroundCleanupAsync` via local-ref null-out so it is not double-disposed. Send the primary via `SendOneAsync(primaryCts.Token)`; start `Task.Delay(Threshold, timerCts.Token)`.
+5. If the primary `RanToCompletion` *and* the response is an acceptable winner for the primary branch (`IsAcceptableWinner(resp, Primary)` == `!IsRegionalFailure(resp)`) *and* the timer has not elapsed → cancel `timerCts` only; return primary as winner. If the primary **faults** before the timer (HttpRequestException, socket reset, fast `TaskCanceledException` from `HttpTimeoutPolicy`), fall through to hedge dispatch — fast-fail on a degraded primary must trigger the hedge, not bypass it.
 6. If the timer elapses (or the primary settled transient/faulted) → re-check the Gateway kill-switch; if flipped to true → suppress hedge, await primary via `ObserveWinningTaskAsync`. Otherwise mark `hedgeContext.TryMarkHedgedThisOperation()` and dispatch the hedge via `SendOneAsync(hedgeCts.Token)`.
-7. **Wait-for-non-transient loop**: `Task.WhenAny` returns; if the completed task is a non-transient success → winner. If transient/faulted → continue waiting on the other branch. If both branches settle without a non-transient winner → prefer the primary's outcome (§10).
-8. Cancel **only the loser's own CTS** (never a shared linked CTS). Hand the loser to `BackgroundCleanupAsync`, which awaits it, disposes its `DocumentServiceResponse` (handle-leak fix), and records `LoserOutcome` — and **never rethrows**. This is the structural guarantee that the loser's `OperationCanceledException` cannot reach `MetadataRequestThrottleRetryPolicy` and trigger a spurious `MarkEndpointUnavailableForRead` against the healthy loser region (§5.7.1).
+7. **Wait-for-acceptable-winner loop**: `Task.WhenAny` returns; if the completed task is `RanToCompletion` AND `IsAcceptableWinner(resp, branch)` is `true` for that branch → winner. The per-branch overlay rejects 401/plain-403 from the **hedge** branch (§5.13) so a hedge-401 cannot beat a slow primary-200. If transient/faulted/per-branch-rejected → continue waiting on the other branch. If both branches settle without an acceptable winner → prefer the primary's outcome (§10).
+8. Cancel **only the loser's own CTS** (never a shared linked CTS), null out the local ref to that CTS (ownership transfer), and hand the loser to `BackgroundCleanupAsync`, which awaits it, disposes its `DocumentServiceResponse` (handle-leak fix), disposes the loser CTS, and records `LoserOutcome` — and **never rethrows**. This is the structural guarantee that the loser's `OperationCanceledException` cannot reach `MetadataRequestThrottleRetryPolicy` and trigger a spurious `MarkEndpointUnavailableForRead` against the healthy loser region (§5.7.1).
 9. Re-raise the winner's exception (if any) via `ObserveWinningTaskAsync` (uses `ExceptionDispatchInfo.Capture(...).Throw()` to preserve the throwing-frame stack across the await boundary — see §5.12 net472 discipline).
-10. Always release the semaphore in `finally`.
+10. Always dispose the locally-owned CTSs (with `?.Dispose()` null-guards) and release the semaphore in the outer `finally`.
 
 ### 5.9 Threshold derivation
 
@@ -935,7 +1117,7 @@ This design adopts the same discipline:
 
 | Auth mode | Hedge-safe? | What `CloneForHedge` does |
 |---|---|---|
-| **Master key** (HMAC over `verb + resourceType + resourceId + date`) | Yes | Re-sign with the same key; resource path is region-independent. `dateHeader` is refreshed if older than 5 minutes (master-key tolerance is ~15 min, but we refresh proactively to handle slow hedge dispatch at the threshold). |
+| **Master key** (HMAC over `verb + resourceType + resourceId + date`) | Yes | **Reuse the original `Authorization` + `x-ms-date` pair verbatim.** Auth is signed *upstream* of `MetadataHedgingStrategy.ExecuteAsync` (in `ClientCollectionCache.cs:219-227` and `PartitionKeyRangeCache.cs:284-294`, exactly once per request) — `storeModel.ProcessMessageAsync` does **not** re-invoke `GetUserAuthorizationTokenAsync`. The hedge is dispatched at most `Threshold` ≈ 1.5 s after the primary was signed; the master-key HMAC clock-skew tolerance is ~15 minutes, so the original signature is still valid. Refreshing `x-ms-date` without re-running the auth provider would produce an `xdate=T2` + `HMAC(...T1)` mismatch → guaranteed 401 on every master-key hedge. |
 | **Resource token** (permission-scoped) | Yes if the token is portable to the readable secondary for the matching resource (the common case). The token is reused verbatim; no re-signing. |
 | **AAD `TokenCredential`** (bearer) | Yes for non-sovereign clouds (single audience `https://<account>.documents.azure.com`). For sovereign clouds with per-region audiences, the token must be re-acquired for the secondary's audience; if cached, the cache key is the audience+scope tuple. |
 | **RBAC data-plane token** (AAD principal + role assignment) | **Conditional.** If the role assignment exists in both regions, hedge is safe. **If the role assignment is missing in the secondary** (a common misconfiguration), the hedge will always 401. |
@@ -949,18 +1131,56 @@ private DocumentServiceRequest CloneForHedge(DocumentServiceRequest src, Uri hed
     clone.RequestContext.RouteToLocation(hedgeEndpoint);
     clone.RequestContext.ClientRequestStatistics = new ClientSideRequestStatistics();
 
-    // Refresh date header if stale (hedge dispatched up to Threshold ms after primary signed).
-    string dateHeader = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
-    clone.Headers[HttpConstants.HttpHeaders.XDate] = dateHeader;
-
-    // Auth re-signing is delegated to the existing AuthorizationTokenProvider, which
-    // is auth-mode-aware. For master key it re-signs; for resource token it reuses;
-    // for AAD/RBAC it re-acquires a token for the secondary audience if needed.
+    // Headers (notably Authorization and x-ms-date) are deep-cloned by src.Clone() and
+    // are reused verbatim. We do NOT touch x-ms-date here: the master-key HMAC was
+    // computed over (verb + resourceType + resourceId + xdate) by the upstream auth
+    // provider (ClientCollectionCache.cs:219-227 / PartitionKeyRangeCache.cs:284-294)
+    // BEFORE the request entered ExecuteAsync. Rewriting x-ms-date now would break that
+    // HMAC because storeModel.ProcessMessageAsync does not re-invoke the auth provider.
+    // The 1.5 s hedge dispatch is well inside the 15-minute master-key skew tolerance.
+    //
+    // For AAD/RBAC: the bearer token is already in the Authorization header and is
+    // audience-bound to the account (not the region) for non-sovereign clouds, so it
+    // is also reused verbatim. Sovereign-cloud per-region audiences are addressed by
+    // the upstream token provider's cache key (audience + scope tuple); if the hedge
+    // endpoint requires a different audience, the upstream provider re-acquires before
+    // re-signing — and again, by that point ExecuteAsync is already running, so the
+    // first hedge against a sovereign cloud's per-region audience may 401. The
+    // hedge-401/403 guard below catches that case.
     return clone;
 }
 ```
 
-**Hedge-401/403 guard.** Because of the RBAC-role-assignment-missing-in-secondary case, the strategy treats `401 Unauthorized` and `403 Forbidden` from the *hedge* branch as a hard skip, not a candidate winner. This is enforced by `IsNonTransient`: a 401/403 from the hedge is classified as "transient-for-hedge" and the wait-for-winner loop (§5.3 step 6) continues waiting for the primary even if the hedge returns first. If the primary also fails, the primary's exception is surfaced — not the hedge's misleading 401. Diagnostics record `SkipReason=AuthModeNotEligibleForHedge` when this fires repeatedly so operators can detect role-assignment gaps.
+**Hedge-401/403 guard.** Because of the RBAC-role-assignment-missing-in-secondary case (and the sovereign-cloud-audience case noted above), the strategy treats `401 Unauthorized` and plain `403 Forbidden` (sub-status ≠ `DatabaseAccountNotFound`) from the *hedge* branch as a hard skip, not a candidate winner. This is **NOT** enforceable via `IsRegionalFailure` alone (that helper is shared with `MetadataRequestThrottleRetryPolicy`, which must classify a 401 from a *primary* as a non-regional failure so the customer's auth error surfaces normally). The strategy therefore composes `IsRegionalFailure` with a per-branch overlay:
+
+```csharp
+private static bool IsAcceptableWinner(DocumentServiceResponse resp, HedgeBranch branch)
+{
+    // Regional failures are never acceptable winners (both branches).
+    if (RetryUtility.IsRegionalFailure(resp, exceptionOrNull: null, callerToken: default)) return false;
+
+    if (branch == HedgeBranch.Hedge)
+    {
+        // 401 from the hedge branch is almost always a misconfiguration in the
+        // secondary (RBAC role assignment missing, sovereign-cloud audience drift).
+        // Never let it surface as the operation result while the primary may still
+        // return 200. The wait-for-winner loop (§5.3 step 6) continues on the primary.
+        if (resp.StatusCode == HttpStatusCode.Unauthorized) return false;
+
+        // Plain 403 from the hedge branch (sub-status ≠ DatabaseAccountNotFound) is
+        // also treated as non-winning for the same reason. Forbidden + DatabaseAccountNotFound
+        // is already filtered by IsRegionalFailure above (it indicates the hedge endpoint
+        // has been failed over and our LocationCache is stale).
+        if (resp.StatusCode == HttpStatusCode.Forbidden) return false;
+    }
+
+    return true;
+}
+
+internal enum HedgeBranch { Primary, Hedge }
+```
+
+`§5.3` uses `IsAcceptableWinner(finished.Result, branch)` in both step 5a (primary, branch = Primary) and step 6 (wait-for-winner loop, branch derived from which task `finished` refers to). For the primary branch, `IsAcceptableWinner` is identical to `!IsRegionalFailure(resp, null, ct)` — i.e., a 401 from the primary is still classified as non-regional and surfaces to the caller normally. Diagnostics gain a new field `HedgeOutcome` set to `"Auth401"` / `"Auth403"` whenever the guard fires (separate from `SkipReason`, which is evaluated *pre*-dispatch); `azure.cosmosdb.client.metadata_hedging.fires` growing while `azure.cosmosdb.client.metadata_hedging.hedge_wins` stays at 0 with a non-zero `azure.cosmosdb.client.metadata_hedging.hedge_auth_reject` (§9.1) is the operational signal that role assignments or audience configuration in the secondary need attention.
 
 **Eligibility check.** `EvaluateEligibility` also performs a fast-path skip when `request.AuthorizationTokenType` is a mode known not to be cross-region-portable (none today, but the enum is open for future modes).
 
@@ -1064,19 +1284,40 @@ Every metadata hedge attempt emits a **`Metadata Hedge Context`** block into the
 
 Cosmos on-call engineers and customers can use these fields to confirm the kill-switch took effect, to validate threshold tuning, and to investigate suspected metadata hedge regressions. The fields are also consumed by the SDK's test suite to assert behavior deterministically without reflection.
 
-### 9.1 Counters (`EventSource` / `Meter`)
+### 9.1 Telemetry — Metrics (`Meter`) and Events (`EventSource`)
 
-Per-trace diagnostics are sufficient for debugging individual requests but not for monitoring at scale during Phase 2 default-on canary. The following counters are emitted on the existing `CosmosClient` `EventSource` (and, where the customer enables OpenTelemetry, on a `System.Diagnostics.Metrics.Meter` named `Azure.Cosmos.MetadataHedging`):
+Per-trace diagnostics are sufficient for debugging individual requests but not for monitoring at scale during Phase 2 default-on canary. Two complementary surfaces are emitted: an OpenTelemetry-compatible `Meter` for numeric/histogram aggregation, and the existing SDK `EventSource` for typed per-event tracing.
 
-| Counter | Type | Description |
+#### 9.1.1 Metrics (`System.Diagnostics.Metrics.Meter`)
+
+Meter name: **`Azure.Cosmos.Client.MetadataHedging`**.
+
+The meter name follows the established SDK convention (`Azure.Cosmos.Client.Operation`, `Azure.Cosmos.Client.Request` defined in `Microsoft.Azure.Cosmos/src/Telemetry/CosmosDbClientMetrics.cs`). Customers who enable telemetry via the glob `meterProviderBuilder.AddMeter("Azure.Cosmos.Client.*")` pick this up automatically. Instrument names use the existing `azure.cosmosdb.client.*` prefix to match `azure.cosmosdb.client.operation.request_charge`, `azure.cosmosdb.client.active_instance.count`, etc.
+
+| Instrument | Type | Unit | Description |
+|---|---|---|---|
+| `azure.cosmosdb.client.metadata_hedging.fires` | counter | `{request}` | Number of hedge dispatches (i.e., threshold elapsed and hedge sent). |
+| `azure.cosmosdb.client.metadata_hedging.hedge_wins` | counter | `{request}` | Number of operations whose acceptable winner was the hedge branch (not the primary). The win *rate* is the customer-side ratio `hedge_wins / fires`; this counter shape is more conventional than a `(0..1)` histogram and composes correctly across rollups. |
+| `azure.cosmosdb.client.metadata_hedging.budget_exhausted` | counter | `{request}` | Number of eligible requests skipped because the per-client semaphore was full. A sustained non-zero value indicates the customer should raise `PerClientConcurrencyBudget`. |
+| `azure.cosmosdb.client.metadata_hedging.late_loser` | counter | `{request}` | Loser settled after the winner returned. Sustained large values indicate the loser's HTTP request is not honoring cancellation and is consuming connection-pool capacity beyond the perceived end of the operation. |
+| `azure.cosmosdb.client.metadata_hedging.hedge_auth_reject` | counter | `{request}` | Hedge returned 401 or plain 403 and was rejected by the per-branch overlay (§5.13). Sustained non-zero for a tenant strongly suggests RBAC role assignments missing in the secondary or sovereign-cloud audience drift. |
+| `azure.cosmosdb.client.metadata_hedging.hedge_fired_elapsed` | histogram | `s` | Distribution of `HedgeFiredElapsedMs` (always ≥ `Threshold`). Used to validate the threshold tuning. |
+
+These instruments are the **primary signal** for Phase 2 (default-on canary) and Phase 3 (full rollout) decisions. Trace-datum log scraping is acceptable for ad-hoc debugging but does not scale to per-region/per-customer monitoring.
+
+#### 9.1.2 Events (`EventSource`)
+
+EventSource emits **strongly-typed per-event records**, not OTel counters — the two surfaces serve different consumers (ETW/`logman` for the EventSource, OTLP/Prometheus for the Meter) and are intentionally not collapsed. The events are added to the existing SDK EventSource (`Microsoft.Azure.Cosmos.CosmosDbEventSource`) under a new keyword `MetadataHedging`:
+
+| Event method | Payload | Triggered when |
 |---|---|---|
-| `metadata_hedge.fire_count` | counter | Number of hedge dispatches (i.e., threshold elapsed and hedge sent). |
-| `metadata_hedge.win_rate` | histogram(0..1 per attempt) | Whether the hedge won (1) or the primary won after dispatch (0). Operator validates that hedge wins are the minority — if hedge wins approach 50% the primary region is genuinely degraded, which is a separate alert. |
-| `metadata_hedge.budget_exhausted_count` | counter | Number of eligible requests skipped because the per-client semaphore was full. A sustained non-zero value indicates the customer should raise `PerClientConcurrencyBudget`. |
-| `metadata_hedge.late_loser_count` | counter | Loser settled after the winner returned. Sustained large values indicate the loser's HTTP request is not honoring cancellation and is consuming connection-pool capacity beyond the perceived end of the operation. |
-| `metadata_hedge.hedge_fired_elapsed_ms` | histogram | Distribution of `HedgeFiredElapsedMs` (always ≥ Threshold). Used to validate the threshold tuning. |
+| `OnMetadataHedgeFired(string primaryRegion, string hedgeRegion, double elapsedMs)` | as named | The hedge timer elapsed and the hedge branch was dispatched. |
+| `OnMetadataHedgeWon(string hedgeRegion, double totalElapsedMs)` | as named | The hedge branch was the acceptable winner. |
+| `OnMetadataHedgePrimaryWon(string primaryRegion, double totalElapsedMs, bool hedgeFired)` | as named | The primary branch was the acceptable winner. |
+| `OnMetadataHedgeSkipped(string skipReason, string resourceType)` | as named | A request was ineligible for hedging — the `SkipReason` enum is the payload. |
+| `OnMetadataHedgeAuthReject(string hedgeRegion, int statusCode)` | as named | A hedge response was rejected by the per-branch 401/403 overlay (§5.13). |
 
-These counters are the **primary signal** for Phase 2 (default-on canary) and Phase 3 (full rollout) decisions. Trace-datum log scraping is acceptable for ad-hoc debugging but does not scale to per-region/per-customer monitoring.
+EventSource consumers ingest one record per event; the metrics surface aggregates them. There is intentionally no `Counter` directly on `EventSource` — the previous draft conflated these two patterns; this version separates them.
 
 Operationally, no customer action is required to enable the feature in steady state — the feature is PPAF-aligned and ships ON by default for PPAF-enabled accounts in multi-region configurations. The Gateway kill-switch `disableCrossRegionalHedging` (existing) provides the same operator-controlled escape hatch as for data-plane hedging. The `CosmosClientOptions.EnableMetadataHedgingForColdStart` opt-in (tri-state, see §5.1) is a permanent customer-side escape hatch — `null` follows the phase default, `false` forces the feature off without disabling the SDK.
 
@@ -1085,17 +1326,18 @@ Operationally, no customer action is required to enable the feature in steady st
 ## 10. Edge Cases and Risk Analysis
 
 - **Container recreated with the same name:** cache evicts and repopulates. Looks like cold start. Acceptable false positive — the new incarnation is genuinely first-population.
-- **404 on Collection Read:** `MetadataRequestThrottleRetryPolicy` does NOT retry 404. Hedge branch may still race; the first 404 (a non-transient response) wins and surfaces normally. Both branches returning 404 is also fine.
-- **Both hedge branches fault (or both transient):** `ExecuteAsync`'s wait-for-non-transient loop (§5.3 step 6) drains both branches. If neither produces a non-transient response, the **primary**'s outcome is preferred (returned via `ObserveWinningTaskAsync` which re-raises via `ExceptionDispatchInfo` preserving the throwing-frame stack). `MetadataRequestThrottleRetryPolicy` then classifies the primary's failure and advances (with the §5.7.4 attempted-endpoints skip) to the next preferred region.
+- **404 on Collection Read:** `MetadataRequestThrottleRetryPolicy` does NOT retry 404. Hedge branch may still race; the first 404 (an acceptable winner per §5.13 `IsAcceptableWinner`) wins and surfaces normally. Both branches returning 404 is also fine.
+- **Primary returns 500 or 503 before threshold elapses:** `IsAcceptableWinner` returns `false` for the primary (both 500 and 503 are regional failures per `RetryUtility.IsRegionalFailure`). The primary's step-5a early-return path is NOT taken; control falls through to dispatch the hedge after threshold. The wait-for-winner loop then prefers the hedge's acceptable response, OR — if both branches settle without an acceptable winner — surfaces the primary's 500/503 to `MetadataRequestThrottleRetryPolicy` which will then advance via the §5.7.4 attempted-endpoints skip. Note the **asymmetry**: when the hedge wins on a primary-503/500, the primary's regional-failure signal is observed only by `BackgroundCleanupAsync` and never reaches the retry policy, so `LocationCache.MarkEndpointUnavailableForRead(primary)` is not called for that operation. This is a deliberate tradeoff — see §5.7.1.
+- **Both hedge branches fault (or both transient):** `ExecuteAsync`'s wait-for-acceptable-winner loop (§5.3 step 6) drains both branches. If neither produces an acceptable response, the **primary**'s outcome is preferred (returned via `ObserveWinningTaskAsync` which re-raises via `ExceptionDispatchInfo` preserving the throwing-frame stack). `MetadataRequestThrottleRetryPolicy` then classifies the primary's failure and advances (with the §5.7.4 attempted-endpoints skip) to the next preferred region.
 - **Mid-flight kill-switch flip to `true`:** the helper re-checks `isHedgingDisabledByGateway()` immediately before dispatching the hedge request after the timer fires. If the flag flipped during the wait, the hedge is suppressed and the primary outcome is awaited via `ObserveWinningTaskAsync`.
-- **Late loser settles after winner returned:** `BackgroundCleanupAsync` awaits the loser, disposes its `DocumentServiceResponse` body, and updates `diag.LoserOutcome` (volatile field) and the `metadata_hedge.late_loser_count` counter. The loser's exception (including the `OperationCanceledException` from the selective loser-CTS cancel) never escapes — it cannot reach `MetadataRequestThrottleRetryPolicy` and therefore cannot trigger `MarkEndpointUnavailableForRead` against the loser's region (§5.7.1).
+- **Late loser settles after winner returned:** `BackgroundCleanupAsync` awaits the loser, disposes its `DocumentServiceResponse` body, and updates `diag.LoserOutcome` (volatile field) and the `azure.cosmosdb.client.metadata_hedging.late_loser` counter. The loser's exception (including the `OperationCanceledException` from the selective loser-CTS cancel) never escapes — it cannot reach `MetadataRequestThrottleRetryPolicy` and therefore cannot trigger `MarkEndpointUnavailableForRead` against the loser's region (§5.7.1).
 - **PK-range ReadFeed continuation across regions:** explicitly avoided — only the first page hedges; subsequent pages are pinned to the winner. Eliminates ETag/continuation drift across regions.
 - **Concurrent cold-start of N collections:** bounded by the per-client semaphore (default 8). Beyond 8, additional cold-start metadata loads skip the hedge with `SkipReason=BudgetExhausted`; they still complete via the primary region. Customers with N > 8 may raise `MetadataHedgingOptions.PerClientConcurrencyBudget` (public — §5.1).
 - **Session token / write isolation:** not affected. Both branches issue read-only metadata GETs; no write side-effects in either region.
 - **Single-region account:** `ReadEndpoints.Count == 1` → `SkipReason=SingleRegion`, primary-only behavior; no overhead beyond a single dictionary check.
 - **All preferred regions in `ExcludeRegions`:** `SkipReason=ExcludedRegionLeavesNoTarget`, primary runs alone.
 - **Customer with `EnablePartitionLevelFailover=false`:** out of scope by design; metadata hedging is PPAF-aligned and does not fire.
-- **RBAC role assignment missing in secondary:** hedge always 401s; per §5.13, 401/403 from the hedge is classified non-winning so the primary's outcome surfaces unaffected. Operator detects via `metadata_hedge.fire_count` growing while `metadata_hedge.win_rate` stays at 0 for that customer's traffic shape.
+- **RBAC role assignment missing in secondary:** hedge always 401s; per §5.13, 401/403 from the hedge is classified non-winning so the primary's outcome surfaces unaffected. Operator detects via `azure.cosmosdb.client.metadata_hedging.fires` growing with non-zero `azure.cosmosdb.client.metadata_hedging.hedge_auth_reject` for that customer's traffic shape.
 
 ---
 
@@ -1107,7 +1349,7 @@ Operationally, no customer action is required to enable the feature in steady st
 - **Coordination test:** hedge attempts region A+B; retry policy advances to region C (not A or B); when no untried region remains, retry terminates instead of looping.
 - **PK-range pagination test:** page 1 hedges and selects region B; pages 2..N are sent against region B only (asserts `senderCallCount` per region).
 - **Budget exhaustion test:** 20 concurrent cold-start collection loads with budget=8 → 8 hedge, 12 skip with `BudgetExhausted`. Then raise `PerClientConcurrencyBudget=32` and confirm all 20 hedge.
-- **No-re-hedge-across-retries test:** first attempt hedges (regions A+B both fault), retry attempts region C only (no second hedge); assertion: `metadata_hedge.fire_count == 1` across the whole operation, even though the cache was never populated (still cold).
+- **No-re-hedge-across-retries test:** first attempt hedges (regions A+B both fault), retry attempts region C only (no second hedge); assertion: `azure.cosmosdb.client.metadata_hedging.fires == 1` across the whole operation, even though the cache was never populated (still cold).
 - **Loser-cancellation invariant test (Finding #2 regression guard):** primary returns 200 after threshold; hedge returns 200 before primary; assertion: `MarkEndpointUnavailableForRead` is NOT called on the primary's endpoint (use `LocationCache` instrumentation), and no `OperationCanceledException` escapes `MetadataHedgingStrategy.ExecuteAsync`.
 - **Loser-disposal test:** assert `DocumentServiceResponse.Dispose` is called exactly once for both winner and loser (no handle leak on `ResponseBody` stream).
 - **Threshold-derivation test:** changing `HttpTimeoutPolicy.FirstAttemptTimeout` updates `MetadataHedgeThreshold`; an assertion guards the invariant `Threshold > FirstAttemptTimeout`.
@@ -1116,13 +1358,17 @@ Operationally, no customer action is required to enable the feature in steady st
 - **Diagnostics-shape test:** every observable field listed in [§9](#9-diagnostics-and-operational-usage) and every counter in §9.1 is present and correctly populated for at least one fired-hedge and one skipped-hedge scenario.
 - **Data-plane regression test:** existing `CrossRegionHedgingAvailabilityStrategy` data-plane behavior is unchanged by these metadata-hedging additions (the two strategies must not interfere).
 - **Emulator integration test** (`Microsoft.Azure.Cosmos.EmulatorTests`): a fault-injection scenario where the primary Gateway pauses for 2 s; assert that the hedge fires and the first document operation completes within ~1.6 s.
+- **Hedge 401/403 per-branch overlay test (Finding B2 regression guard):** hedge branch returns `401 Unauthorized`; primary returns 200 after threshold; assertion: `MetadataHedgingResult.WinningResponse.StatusCode == 200`, `diag.HedgeOutcome == "Auth401"`, `azure.cosmosdb.client.metadata_hedging.hedge_auth_reject` incremented by 1. Repeat for `403 Forbidden` (sub-status NOT `DatabaseAccountNotFound`); assert `diag.HedgeOutcome == "Auth403"`. Negative cases: `403 + DatabaseAccountNotFound` from the hedge must classify as regional-failure (existing path) — not auth-reject.
+- **Mid-flight kill-switch flip test:** primary in flight, threshold timer running. Flip `DocumentClient.IsHedgingDisabledByGateway` to `true` (via mock); assertion: when the timer fires, the hedge is suppressed (`SkipReason` is set on diag, no hedge `DocumentServiceRequest` is dispatched to the secondary store-model), and the primary outcome is awaited via `ObserveWinningTaskAsync`.
+- **Primary 500 → hedge wins, retry-policy still sees 500 on follow-on test (Finding R1 regression guard):** primary returns 500 at t=1.4 s; hedge wins at t=2.0 s with 200; assertion (a): `MetadataHedgingResult.WinningResponse.StatusCode == 200` and the operation succeeds; assertion (b): `LocationCache.MarkEndpointUnavailableForRead(primaryEndpoint)` is NOT called for this operation (validates the deliberate asymmetry in §5.7.1.1); assertion (c): a follow-on data-plane request whose first attempt routes to the same primary observes the next 500 and *then* triggers `MarkEndpointUnavailableForRead` — proving the gap closes within one extra request.
+- **Session-token RID-change cleanup preserved test (regression guard for the existing `SessionContainer` invalidation path):** simulate `Collection.ResourceId` change between two cold-start hedged reads of the same collection name (container recreated with same name → §5.11 false positive). Assertion: `SessionContainer.ClearTokenByResourceId(oldRid)` is invoked exactly once, the new RID's session tokens are independently maintained, and no stale-RID session token leaks into the second cold-start's hedge dispatch. This guards the pre-existing collection-recreated-same-name path against accidental coupling to hedge-context state.
 
 ---
 
 ## 12. Rollout Plan
 
 1. **Phase 1:** Ship behind `CosmosClientOptions.EnableMetadataHedgingForColdStart` as `bool?` (default `null` → off this phase). Internal pre-release testing in TIP / Test cloud. `MetadataHedgingOptions` is public from day one.
-2. **Phase 2:** Default-on for PPAF-enabled multi-region clients in canary regions. The phase default for `null` becomes "on". Customers can still force-off by setting `EnableMetadataHedgingForColdStart = false`. Monitor secondary Gateway QPS, P99 first-op latency, the §9.1 counters (`metadata_hedge.win_rate`, `metadata_hedge.budget_exhausted_count`, `metadata_hedge.late_loser_count`), and `Metadata Hedge Context` diagnostics.
+2. **Phase 2:** Default-on for PPAF-enabled multi-region clients in canary regions. The phase default for `null` becomes "on". Customers can still force-off by setting `EnableMetadataHedgingForColdStart = false`. Monitor secondary Gateway QPS, P99 first-op latency, the §9.1 instruments (`azure.cosmosdb.client.metadata_hedging.hedge_wins / .fires`, `.budget_exhausted`, `.late_loser`), and `Metadata Hedge Context` diagnostics.
 3. **Phase 3:** Default-on everywhere PPAF is enabled (the phase default for `null` becomes "on" globally). **The `EnableMetadataHedgingForColdStart` property is NOT removed** — only its phase default changes. This avoids a source/binary break against customers who set it explicitly to `true` during Phase 1/2. The Gateway kill-switch `disableCrossRegionalHedging` remains as the operator-side escape hatch; the per-client `EnableMetadataHedgingForColdStart = false` remains as the customer-side escape hatch. `MetadataHedgingOptions.PerClientConcurrencyBudget` (public) remains tunable for high-container-cardinality startups.
 4. **Phase 4 (follow-up, separate design):** consider extending the same machinery to `GatewayAccountReader` account-properties read, the most visible cold-start metadata operation but the most invasive to hedge safely.
 
