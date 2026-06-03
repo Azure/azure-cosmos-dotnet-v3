@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly CollectionCache collectionCache;
         private readonly IGlobalEndpointManager endpointManager;
         private readonly bool useLengthAwareRangeComparer;
+        private readonly MetadataHedgingStrategy metadataHedgingStrategy;
 
         public PartitionKeyRangeCache(
             ICosmosAuthorizationTokenProvider authorizationTokenProvider,
@@ -40,6 +41,25 @@ namespace Microsoft.Azure.Cosmos.Routing
             IGlobalEndpointManager endpointManager,
             bool useLengthAwareRangeComparer,
             bool enableAsyncCacheExceptionNoSharing = true)
+            : this(
+                authorizationTokenProvider,
+                storeModel,
+                collectionCache,
+                endpointManager,
+                useLengthAwareRangeComparer,
+                enableAsyncCacheExceptionNoSharing,
+                metadataHedgingStrategy: null)
+        {
+        }
+
+        public PartitionKeyRangeCache(
+            ICosmosAuthorizationTokenProvider authorizationTokenProvider,
+            IStoreModel storeModel,
+            CollectionCache collectionCache,
+            IGlobalEndpointManager endpointManager,
+            bool useLengthAwareRangeComparer,
+            bool enableAsyncCacheExceptionNoSharing,
+            MetadataHedgingStrategy metadataHedgingStrategy)
         {
             this.routingMapCache = new AsyncCacheNonBlocking<string, CollectionRoutingMap>(
                     keyEqualityComparer: StringComparer.Ordinal,
@@ -49,6 +69,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.collectionCache = collectionCache;
             this.endpointManager = endpointManager;
             this.useLengthAwareRangeComparer = useLengthAwareRangeComparer;
+            this.metadataHedgingStrategy = metadataHedgingStrategy;
         }
 
         public virtual async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
@@ -198,6 +219,18 @@ namespace Microsoft.Azure.Cosmos.Routing
                     endpointManager: this.endpointManager,
                     maxRetryAttemptsOnThrottledRequests: retryOptions.MaxRetryAttemptsOnThrottledRequests,
                     maxRetryWaitTimeInSeconds: retryOptions.MaxRetryWaitTimeInSeconds);
+
+            MetadataHedgingContext hedgeContext = new MetadataHedgingContext
+            {
+                IsColdStart = previousRoutingMap == null,
+                ResourceType = ResourceType.PartitionKeyRange,
+                IsFirstReadFeedPage = true,
+            };
+
+            // `as` (not hard cast). If the retry policy is wrapped or replaced
+            // with a test double, hedge still runs and dedup degrades to a no-op.
+            metadataRetryPolicy.AttachHedgeContext(hedgeContext);
+
             do
             {
                 INameValueCollection headers = new RequestNameValueCollection();
@@ -210,7 +243,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
 
                 using (DocumentServiceResponse response = await BackoffRetryUtility<DocumentServiceResponse>.ExecuteAsync(
-                    () => this.ExecutePartitionKeyRangeReadChangeFeedAsync(collectionRid, headers, trace, clientSideRequestStatistics, metadataRetryPolicy),
+                    () => this.ExecutePartitionKeyRangeReadChangeFeedAsync(collectionRid, headers, trace, clientSideRequestStatistics, metadataRetryPolicy, hedgeContext, CancellationToken.None),
                     retryPolicy: metadataRetryPolicy))
                 {
                     lastStatusCode = response.StatusCode;
@@ -232,6 +265,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                         ranges.AddRange(feedResource);
                     }
                 }
+
+                hedgeContext.IsFirstReadFeedPage = false;
             }
             while (lastStatusCode != HttpStatusCode.NotModified);
 
@@ -270,7 +305,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                                                                                 INameValueCollection headers, 
                                                                                 ITrace trace,
                                                                                 IClientSideRequestStatistics clientSideRequestStatistics,
-                                                                                IDocumentClientRetryPolicy retryPolicy)
+                                                                                IDocumentClientRetryPolicy retryPolicy,
+                                                                                MetadataHedgingContext hedgeContext,
+                                                                                CancellationToken cancellationToken)
         {
             using (ITrace childTrace = trace.StartChild("Read PartitionKeyRange Change Feed", TraceComponent.Transport, Tracing.TraceLevel.Info))
             {
@@ -282,6 +319,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                     headers))
                 {
                     retryPolicy.OnBeforeSendRequest(request);
+
+                    // Pages 2..N: pin to the winning region from page 1 so the
+                    // change-feed continuation completes against a single replica.
+                    if (hedgeContext != null && !hedgeContext.IsFirstReadFeedPage && hedgeContext.WinningEndpoint != null)
+                    {
+                        request.RequestContext.RouteToLocation(hedgeContext.WinningEndpoint);
+                    }
+
                     string authorizationToken = null;
                     try
                     {
@@ -323,6 +368,26 @@ namespace Microsoft.Azure.Cosmos.Routing
                     {
                         try
                         {
+                            if (this.metadataHedgingStrategy != null && hedgeContext != null)
+                            {
+                                MetadataHedgingResult hedgeResult = await this.metadataHedgingStrategy.ExecuteAsync(
+                                    request,
+                                    sendToEndpoint: async (req, targetEndpoint, ct) =>
+                                    {
+                                        if (targetEndpoint != null)
+                                        {
+                                            req.RequestContext.RouteToLocation(targetEndpoint);
+                                        }
+
+                                        return await this.storeModel.ProcessMessageAsync(req);
+                                    },
+                                    hedgeContext: hedgeContext,
+                                    trace: childTrace,
+                                    cancellationToken: cancellationToken);
+
+                                return hedgeResult.Response;
+                            }
+
                             return await this.storeModel.ProcessMessageAsync(request);
                         }
                         catch (DocumentClientException ex)
