@@ -6,6 +6,8 @@
 namespace Microsoft.Azure.Cosmos.Tests.Json
 {
     using System;
+    using System.Collections.Generic;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -148,6 +150,204 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
             Assert.ThrowsException<JsonMaxNestingExceededException>(
                 () => JsonReader.Create(payload));
+        }
+
+        [TestMethod]
+        [Owner("tvaron")]
+        public void DepthAtCapObj1Throws()
+        {
+            // Mirror of DepthAtCapThrows for the Obj1 (0xE9) code path. The
+            // guard fires before the malformed bottom of the chain is reached.
+            byte[] payload = BuildObj1ChainPayload(nestingDepth: JsonObjectState.JsonMaxNestingDepth);
+
+            Assert.ThrowsException<JsonMaxNestingExceededException>(
+                () => JsonBinaryEncoding.GetValueLength(payload.AsSpan(start: 1)));
+        }
+
+        [TestMethod]
+        [Owner("tvaron")]
+        public void DeeplyNestedCosmosArrayHashThrowsCatchableException()
+        {
+            // Even with the decode-time guard in place, length-prefixed array
+            // markers (ArrL1/L2/L4) skip the depth guard because their length
+            // is read from a length prefix rather than discovered recursively.
+            // A hostile endpoint could therefore still return a deeply-nested
+            // payload that materializes cleanly and only blows the stack later
+            // -- when the customer calls DISTINCT, puts the element in a
+            // HashSet, or compares two such results. EnsureSufficientExecutionStack
+            // on the recursive walkers must turn that uncatchable
+            // StackOverflowException into a catchable InsufficientExecutionStackException.
+            //
+            // Run the recursion on an explicitly small-stack thread so the
+            // assertion does not depend on the host thread's default stack size
+            // (Linux main threads have 8 MB stacks; .NET ThreadPool workers
+            // have 1.5 MB; macOS non-main pthreads have 512 KB). A 256 KB
+            // dedicated stack guarantees the guard fires regardless of host.
+            CosmosArray deeplyNested = CosmosArray.Create();
+            for (int i = 0; i < 10_000; i++)
+            {
+                deeplyNested = CosmosArray.Create(new[] { (CosmosElement)deeplyNested });
+            }
+
+            Exception caught = null;
+            System.Threading.Thread thread = new System.Threading.Thread(
+                () =>
+                {
+                    try
+                    {
+                        global::Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct.DistinctHash.GetHash(deeplyNested);
+                    }
+                    catch (Exception ex)
+                    {
+                        caught = ex;
+                    }
+                },
+                maxStackSize: 256 * 1024);
+            thread.Start();
+            thread.Join();
+
+            Assert.IsInstanceOfType(caught, typeof(InsufficientExecutionStackException));
+        }
+
+        [TestMethod]
+        [Owner("tvaron")]
+        public void DeeplyNestedCosmosArrayToQueryLiteralThrowsCatchableException()
+        {
+            // Companion to DeeplyNestedCosmosArrayHashThrowsCatchableException:
+            // CosmosElementToQueryLiteral.Visit(CosmosArray|CosmosObject) is the
+            // visitor that serializes a CosmosElement back to a query-string
+            // literal (used by the cross-partition OrderBy pipeline when it
+            // re-emits sort-key values into a continuation token). It walks the
+            // element graph recursively, so without an EnsureSufficientExecutionStack
+            // guard a hostile order-by result could turn into an unrecoverable
+            // StackOverflowException during continuation-token construction.
+            CosmosArray deeplyNested = CosmosArray.Create();
+            for (int i = 0; i < 10_000; i++)
+            {
+                deeplyNested = CosmosArray.Create(new[] { (CosmosElement)deeplyNested });
+            }
+
+            Exception caught = null;
+            System.Threading.Thread thread = new System.Threading.Thread(
+                () =>
+                {
+                    try
+                    {
+                        System.Text.StringBuilder builder = new System.Text.StringBuilder();
+                        global::Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy.CosmosElementToQueryLiteral visitor =
+                            new global::Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy.CosmosElementToQueryLiteral(builder);
+                        deeplyNested.Accept(visitor);
+                    }
+                    catch (Exception ex)
+                    {
+                        caught = ex;
+                    }
+                },
+                maxStackSize: 256 * 1024);
+            thread.Start();
+            thread.Join();
+
+            Assert.IsInstanceOfType(caught, typeof(InsufficientExecutionStackException));
+        }
+
+        [TestMethod]
+        [Owner("tvaron")]
+        public void DeeplyNestedCosmosObjectToQueryLiteralThrowsCatchableException()
+        {
+            // Object-shaped companion to DeeplyNestedCosmosArrayToQueryLiteralThrowsCatchableException:
+            // exercises the Visit(CosmosObject) branch of the same visitor.
+            // Built outside-in so the innermost object value is the seed empty
+            // object and each level wraps the previous in a single-property
+            // CosmosObject.
+            CosmosElement deeplyNested = CosmosObject.Create(new Dictionary<string, CosmosElement>());
+            for (int i = 0; i < 10_000; i++)
+            {
+                deeplyNested = CosmosObject.Create(new Dictionary<string, CosmosElement> { ["n"] = deeplyNested });
+            }
+
+            Exception caught = null;
+            System.Threading.Thread thread = new System.Threading.Thread(
+                () =>
+                {
+                    try
+                    {
+                        System.Text.StringBuilder builder = new System.Text.StringBuilder();
+                        global::Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy.CosmosElementToQueryLiteral visitor =
+                            new global::Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy.CosmosElementToQueryLiteral(builder);
+                        deeplyNested.Accept(visitor);
+                    }
+                    catch (Exception ex)
+                    {
+                        caught = ex;
+                    }
+                },
+                maxStackSize: 256 * 1024);
+            thread.Start();
+            thread.Join();
+
+            Assert.IsInstanceOfType(caught, typeof(InsufficientExecutionStackException));
+        }
+
+        [TestMethod]
+        [Owner("tvaron")]
+        public void DeeplyNestedDeserializationVisitorThrowsCatchableException()
+        {
+            // End-to-end attack-chain regression test for JsonSerializer.DeserializationVisitor.
+            // Build a binary payload with thousands of nested ArrL4 (length-
+            // prefixed array) markers. The decoder's depth guard does not
+            // protect against length-prefixed arrays (their child count is
+            // declared, not discovered recursively), so without the walker
+            // guard the recursive deserialization would tear down the host
+            // with StackOverflowException. With the guard in place this
+            // surfaces as a catchable InsufficientExecutionStackException
+            // wrapped in the visitor's TryCatch result.
+            const int Depth = 10_000;
+            byte[] payload = BuildArrL4ChainPayload(Depth);
+
+            Exception caught = null;
+            System.Threading.Thread thread = new System.Threading.Thread(
+                () =>
+                {
+                    try
+                    {
+                        Microsoft.Azure.Cosmos.Json.JsonSerializer.Monadic.Deserialize<System.Collections.Generic.IReadOnlyList<object>>(payload).ThrowIfFailed();
+                    }
+                    catch (Exception ex)
+                    {
+                        caught = ex;
+                    }
+                },
+                maxStackSize: 256 * 1024);
+            thread.Start();
+            thread.Join();
+
+            Assert.IsInstanceOfType(caught, typeof(InsufficientExecutionStackException));
+        }
+
+        private static byte[] BuildArrL4ChainPayload(int depth)
+        {
+            // Layout:
+            //   [0]            0x80                       binary format
+            //   then `depth` frames of:
+            //     [pos]        0xE4                       ArrL4
+            //     [pos+1..+4]  length (uint32 LE)         bytes-after-this-prefix to end
+            //   final byte:    0xE0                       Arr0 (innermost empty array)
+            int totalLength = 1 + (depth * 5) + 1;
+            byte[] payload = new byte[totalLength];
+            payload[0] = BinaryFormatMarker;
+            int pos = 1;
+            for (int i = 0; i < depth; i++)
+            {
+                payload[pos++] = 0xE4;
+                int len = ((depth - 1 - i) * 5) + 1;
+                payload[pos++] = (byte)(len & 0xFF);
+                payload[pos++] = (byte)((len >> 8) & 0xFF);
+                payload[pos++] = (byte)((len >> 16) & 0xFF);
+                payload[pos++] = (byte)((len >> 24) & 0xFF);
+            }
+
+            payload[pos] = Arr0TypeMarker;
+            return payload;
         }
 
         private static byte[] BuildArr1ChainPayload(int nestingDepth)

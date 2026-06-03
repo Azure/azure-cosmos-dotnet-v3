@@ -27,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Bugs Fixed
 
 - [5827](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5827) ChangeFeedEstimator: Change feed estimator threw `ArgumentNullException` when an inmemory lease container was being used. Update validations so in-memory lease containers work with change feed estimator
-- [5909](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5909) Json: Fixes unbounded recursion in the binary JSON value-length decoder (`Arr1`/`Obj1` type markers) that could be triggered by a crafted response payload to crash the client process. The decoder now enforces the same nesting cap (256) as the streaming reader and throws `JsonMaxNestingExceededException` instead. `JsonObjectState.Push` also now throws `JsonMaxNestingExceededException` (was `InvalidOperationException`) so callers can handle both depth-cap failures with a single catch.
+- [5909](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5909) Json: Fixes a denial-of-service vulnerability where a crafted binary-JSON response payload could crash the client process with an unrecoverable `StackOverflowException`. The decoder and re-serializer paths now enforce the existing 256-level nesting cap, surface a catchable `JsonMaxNestingExceededException` / `InsufficientExecutionStackException` / `JsonInvalidTokenException` instead of terminating the host, and reject malformed reference-string redirects up front.
 
 #### Other Changes
 
