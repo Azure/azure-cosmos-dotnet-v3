@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.NativeDriverBenchmark
     ///     PR #4515 Phase 6 is gateway-only today.
     /// </summary>
     [MemoryDiagnoser]
+    [MinColumn, MaxColumn]
     [Config(typeof(Config))]
     public class ReadItemBenchmark
     {

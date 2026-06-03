@@ -31,6 +31,7 @@ namespace Microsoft.Azure.Cosmos.NativeDriverBenchmark
     /// read item (<c>COSMOS_ITEM_ID</c>) untouched.
     /// </summary>
     [MemoryDiagnoser]
+    [MinColumn, MaxColumn]
     [Config(typeof(Config))]
     public class CreateItemBenchmark
     {

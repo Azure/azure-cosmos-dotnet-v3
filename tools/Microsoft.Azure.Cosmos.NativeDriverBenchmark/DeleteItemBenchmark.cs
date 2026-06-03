@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.NativeDriverBenchmark
     /// All three drivers operate on the SAME class-local partition key.
     /// </summary>
     [MemoryDiagnoser]
+    [MinColumn, MaxColumn]
     [Config(typeof(Config))]
     public class DeleteItemBenchmark
     {

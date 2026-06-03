@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.NativeDriverBenchmark
     /// </summary>
     [MemoryDiagnoser]
     [Config(typeof(Config))]
+    [MinColumn, MaxColumn]
     public class ReplaceItemBenchmark
     {
         private sealed class Config : ManualConfig

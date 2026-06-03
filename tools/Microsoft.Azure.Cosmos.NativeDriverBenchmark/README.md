@@ -26,8 +26,8 @@ gateway-only today).
 | `COSMOS_KEY` | account master key (read-only is sufficient) |
 | `COSMOS_DATABASE` | `db1` |
 | `COSMOS_CONTAINER` | `items` |
-| `COSMOS_ITEM_ID` | `d00a39eb-5401-45f7-ae3e-211c5383a327` |
-| `COSMOS_PARTITION_KEY` | `TBDfaa02479-865f-4116-9a84-8617a10704c4` |
+| `COSMOS_ITEM_ID` | `ITEM-ID` |
+| `COSMOS_PARTITION_KEY` | `PK` |
 
 Your sample doc (`taskNum`, `cost`, `description`, `children[…]`, etc.) is
 perfect — no need to re-hydrate. Just pick any one of those entries and
@@ -96,7 +96,11 @@ dotnet run -c Release --project .\tools\Microsoft.Azure.Cosmos.NativeDriverBench
 
 BenchmarkDotNet writes a markdown summary into
 `BenchmarkDotNet.Artifacts/results/` next to a CSV + JSON. Each benchmark
-class produces its own table with `Mean / Error / StdDev / Ratio / Allocated`.
+class produces its own table with `Mean / Min / Max / Error / StdDev / Ratio / Allocated`.
+`Min` and `Max` come from `[MinColumn, MaxColumn]` on each benchmark class —
+useful for spotting whether the long tail is wider on one driver than another
+within a single short run. (No p95/p99 — these are short, sub-second
+benchmarks; for sustained-load tail-latency numbers use the soak harness.)
 
 ## RU and time budget
 
@@ -123,6 +127,13 @@ To stay below ~3,000 RU, run `--filter "*ReadItem*"` (full read matrix) or
 ## Reading the output
 
 - **Mean** — per-call latency averaged over iterations.
+- **Min** — fastest single-call observation across all measured iterations.
+  Under stable network conditions, this is "what the driver can do when nothing
+  is in the way." A native Min meaningfully below the SDK Min on the same
+  transport = real per-call wins (not just averaging artifacts).
+- **Max** — slowest single-call observation. A Max far above Mean = at least
+  one outlier (GC pause, network blip, threadpool hiccup). Watch for: native
+  Max no worse than SDK Max = no new tail-latency surprises from FFI.
 - **Ratio** — V3 SDK Gateway is the baseline (1.00) per class.
   - V3 SDK Direct ratio < 1.00 = TCP-direct is faster than gateway. Typical: ~0.4–0.7 for reads, ~0.85–0.95 for writes (writes are server-bound — less gateway-vs-direct delta).
   - Native driver ratio close to 1.00 = native is competitive with the SDK on the same transport.
