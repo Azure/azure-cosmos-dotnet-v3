@@ -232,6 +232,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [DataRow("{\"Documents\":[],\"Documents\":[{\"id\":\"y\"}]}", "y")]
         [DataRow("{\"Documents\":[],\"Documents\":[],\"Documents\":[{\"id\":\"z\"}]}", "z")]
         [DataRow("{\"Documents\":[{\"id\":\"x\"}],\"Documents\":[{\"id\":\"y\"}]}", "x,y")]
+        // The Cosmos gateway will never emit duplicate root-property keys, so this behavior is
+        // intentionally permissive (yield from every Documents array seen) rather than strict
+        // (reject or last-wins). Tracking which Documents key "won" would require a second pass
+        // over the envelope; instead, the splitter treats every occurrence as content. If a future
+        // maintainer "fixes" this to last-wins to match strict JSON rules, drop this test row first
+        // — the rest of the splitter assumes any object inside a Documents array is a document.
         public async Task SplitIntoSubstreamsAsync_DuplicateDocumentsProperty_YieldsFromAllDocumentsArrays(string payload, string expectedIdsCsv)
         {
             await AssertYieldedIdsAsync(payload, expectedIdsCsv);
