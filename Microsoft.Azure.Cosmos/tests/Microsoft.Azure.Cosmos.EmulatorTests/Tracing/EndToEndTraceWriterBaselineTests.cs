@@ -1546,10 +1546,15 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             int startLineNumber;
             int endLineNumber;
 
+            // Provision at the minimum throughput so the container is single-physical-partition
+            // on every emulator build (local + pipeline). Combined with the routing-map-based
+            // BuildSinglePartitionItemListAsync helper below, this guarantees a deterministic
+            // trace shape: every ReadMany call dispatches a single query against one PartitionKeyRange,
+            // never the (count == 1) point-read fast path that ReadManyQueryHelper introduces in PR #5905.
             Container readAsyncContainer = await EndToEndTraceWriterBaselineTests.database.CreateContainerAsync(
                    id: "containerForReadAsync",
                    partitionKeyPath: "/id",
-                   throughput: 1000);
+                   throughput: 400);
 
             for (int i = 0; i < 5; i++)
             {
@@ -1557,11 +1562,10 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 await readAsyncContainer.CreateItemAsync(item);
             }
 
-            List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>();
-            for (int i = 0; i < 5; i++)
-            {
-                itemList.Add(("id" + i, new PartitionKey(i.ToString())));
-            }
+            List<(string, PartitionKey)> itemList = await BuildSinglePartitionItemListAsync(
+                readAsyncContainer,
+                candidatePkCount: 100,
+                takeCount: 5);
 
             EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
 
@@ -1599,6 +1603,57 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             //----------------------------------------------------------------
 
             this.ExecuteTestSuite(inputs);
+        }
+
+        /// <summary>
+        /// Deterministically builds an itemList for ReadMany where every (id, PartitionKey)
+        /// tuple maps to the same physical partition, so the call always goes through the
+        /// query path (entry.Value.Count > 1 in ReadManyQueryHelper.ReadManyTaskHelperAsync)
+        /// regardless of how the emulator splits the container. Mirrors the routing-map
+        /// pattern used by <c>CosmosReadManyItemsTests.GroupPksByPhysicalPartitionAsync</c>
+        /// (Microsoft.Azure.Cosmos.SDK.EmulatorTests) so unit tests and trace baselines
+        /// agree on physical-partition selection.
+        /// </summary>
+        private static async Task<List<(string, PartitionKey)>> BuildSinglePartitionItemListAsync(
+            Container container,
+            int candidatePkCount,
+            int takeCount)
+        {
+            ContainerInternal containerInternal = (ContainerInternal)container;
+            ContainerProperties containerProperties = (await container.ReadContainerAsync()).Resource;
+            Microsoft.Azure.Cosmos.Routing.CollectionRoutingMap collectionRoutingMap =
+                await containerInternal.GetRoutingMapAsync(CancellationToken.None);
+
+            Dictionary<string, List<string>> pksByPhysicalPartition = new Dictionary<string, List<string>>();
+            for (int i = 0; i < candidatePkCount; i++)
+            {
+                string candidatePk = i.ToString();
+                string effectivePk = new PartitionKey(candidatePk)
+                    .InternalKey
+                    .GetEffectivePartitionKeyString(containerProperties.PartitionKey);
+                string pkrId = collectionRoutingMap.GetRangeByEffectivePartitionKey(effectivePk).Id;
+
+                if (!pksByPhysicalPartition.TryGetValue(pkrId, out List<string> bucket))
+                {
+                    bucket = new List<string>();
+                    pksByPhysicalPartition[pkrId] = bucket;
+                }
+                bucket.Add(candidatePk);
+            }
+
+            KeyValuePair<string, List<string>> chosen = pksByPhysicalPartition
+                .OrderBy(kvp => kvp.Key, StringComparer.Ordinal)
+                .FirstOrDefault(kvp => kvp.Value.Count >= takeCount);
+
+            Assert.IsNotNull(
+                chosen.Key,
+                $"No single physical partition holds {takeCount} candidate PKs out of {candidatePkCount}. " +
+                $"Increase candidatePkCount or lower throughput.");
+
+            return chosen.Value
+                .Take(takeCount)
+                .Select(pk => ("id" + pk, new PartitionKey(pk)))
+                .ToList();
         }
 
         public override Output ExecuteTest(Input input)
