@@ -35,6 +35,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="container">The <see cref="Container"/> instance to configure. Must be an <see cref="EncryptionContainer"/>.</param>
         /// <returns>The configured <see cref="EncryptionContainer"/> instance.</returns>
         /// <exception cref="NotSupportedException">Thrown if <paramref name="container"/> is not an <see cref="EncryptionContainer"/>.</exception>
+        /// <remarks>
+        /// <para>
+        /// Streaming JSON processing uses pooled <c>ArrayPool&lt;byte&gt;</c> buffers to reduce allocations on the
+        /// decrypt path. When the result type is <see cref="DecryptableItem"/>, individual items are decrypted
+        /// lazily inside <see cref="DecryptableItem.GetItemAsync{T}"/> and hold a rented buffer until the item is
+        /// disposed.
+        /// </para>
+        /// <para>
+        /// <strong>Disposal contract for <c>FeedResponse&lt;DecryptableItem&gt;</c>.</strong> The <c>FeedResponse&lt;T&gt;</c>
+        /// returned from <c>FeedIterator&lt;DecryptableItem&gt;.ReadNextAsync</c> implements <see cref="IAsyncDisposable"/>
+        /// at runtime, but the compile-time return type does not advertise it. Callers MUST cast each page to
+        /// <see cref="IAsyncDisposable"/> and dispose it (typically in a <c>finally</c> block) so that any items the
+        /// caller skipped, did not enumerate, or did not call <c>GetItemAsync</c> on return their pooled buffers to
+        /// the pool. Forgetting to dispose leaks <c>ArrayPool</c> rentals and risks leaving plaintext residue in
+        /// pooled memory until GC. See the example on <see cref="DecryptableItem"/> for the recommended pattern.
+        /// </para>
+        /// </remarks>
         public static Container UseStreamingJsonProcessingByDefault(this Container container)
         {
             if (container is not EncryptionContainer encryptionContainer)

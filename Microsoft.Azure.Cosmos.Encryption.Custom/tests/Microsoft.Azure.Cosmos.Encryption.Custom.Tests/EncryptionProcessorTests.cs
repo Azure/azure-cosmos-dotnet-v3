@@ -227,6 +227,115 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 Assert.IsTrue(ex.Message.IndexOf("not supported", StringComparison.OrdinalIgnoreCase) >= 0, $"Unexpected message: {ex.Message}");
             }
         }
+
+        [TestMethod]
+        public async Task ConvertResponseToDecryptableItemsAsync_Stream_WhenSplitterThrowsMidFeed_PreservesOriginalException()
+        {
+            // Regression coverage for the orphan-cleanup path added to
+            // EncryptionProcessor.ConvertResponseToDecryptableItemsStreamAsync.
+            //
+            // Scenario: the underlying transport yields a partial Cosmos feed payload (one complete
+            // document, then errors). Before the fix, the splitter would yield a pooled stream that
+            // was wrapped into a StreamDecryptableItem held only in the method's local list; when the
+            // splitter then threw, the partial list (and its rented ArrayPool buffers) was abandoned.
+            // The fix drains that list inside a catch block and rethrows the original exception so
+            // the caller still sees the underlying transport failure (not a wrapped/swallowed one).
+            byte[] partialFeed = System.Text.Encoding.UTF8.GetBytes("{\"_count\":2,\"Documents\":[{\"id\":\"doc1\",\"pk\":\"pk\"},");
+            IOException sentinel = new ("simulated mid-feed transport error");
+
+            using ThrowAfterPrefixStream stream = new (partialFeed, sentinel);
+
+            Mock<CosmosSerializer> serializerMock = new ();
+
+            IOException thrown = await Assert.ThrowsExceptionAsync<IOException>(async () =>
+            {
+                _ = await EncryptionProcessor.ConvertResponseToDecryptableItemsAsync(
+                    stream,
+                    mockEncryptor.Object,
+                    serializerMock.Object,
+                    JsonProcessor.Stream,
+                    CancellationToken.None);
+            });
+
+            Assert.AreSame(sentinel, thrown, "Original exception identity must be preserved through the orphan-cleanup catch path.");
+        }
+
+        private sealed class ThrowAfterPrefixStream : Stream
+        {
+            private readonly byte[] prefix;
+            private readonly Exception toThrow;
+            private int position;
+
+            public ThrowAfterPrefixStream(byte[] prefix, Exception toThrow)
+            {
+                this.prefix = prefix ?? throw new ArgumentNullException(nameof(prefix));
+                this.toThrow = toThrow ?? throw new ArgumentNullException(nameof(toThrow));
+            }
+
+            public override bool CanRead => true;
+
+            public override bool CanSeek => false;
+
+            public override bool CanWrite => false;
+
+            public override long Length => throw new NotSupportedException();
+
+            public override long Position
+            {
+                get => this.position;
+                set => throw new NotSupportedException();
+            }
+
+            public override void Flush()
+            {
+            }
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                if (this.position >= this.prefix.Length)
+                {
+                    throw this.toThrow;
+                }
+
+                int available = this.prefix.Length - this.position;
+                int toCopy = Math.Min(available, count);
+                Buffer.BlockCopy(this.prefix, this.position, buffer, offset, toCopy);
+                this.position += toCopy;
+                return toCopy;
+            }
+
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                if (this.position >= this.prefix.Length)
+                {
+                    return Task.FromException<int>(this.toThrow);
+                }
+
+                return Task.FromResult(this.Read(buffer, offset, count));
+            }
+
+#if NET8_0_OR_GREATER
+            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                if (this.position >= this.prefix.Length)
+                {
+                    return ValueTask.FromException<int>(this.toThrow);
+                }
+
+                int available = this.prefix.Length - this.position;
+                int toCopy = Math.Min(available, buffer.Length);
+                this.prefix.AsSpan(this.position, toCopy).CopyTo(buffer.Span);
+                this.position += toCopy;
+                return new ValueTask<int>(toCopy);
+            }
+#endif
+
+            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+            public override void SetLength(long value) => throw new NotSupportedException();
+
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        }
 #endif
     }
 }

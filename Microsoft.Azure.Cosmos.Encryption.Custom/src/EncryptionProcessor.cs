@@ -411,17 +411,45 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             List<DecryptableItem> decryptableItems = new ();
 
-            await foreach (Stream itemStream in JsonArrayStreamSplitter.SplitIntoSubstreamsAsync(content, cancellationToken).ConfigureAwait(false))
+            try
             {
-                StreamDecryptableItem item = new (
-                    itemStream,
-                    encryptor,
-                    cosmosSerializer);
+                await foreach (Stream itemStream in JsonArrayStreamSplitter.SplitIntoSubstreamsAsync(content, cancellationToken).ConfigureAwait(false))
+                {
+                    StreamDecryptableItem item = new (
+                        itemStream,
+                        encryptor,
+                        cosmosSerializer);
 
-                decryptableItems.Add(item);
+                    decryptableItems.Add(item);
+                }
+
+                return decryptableItems;
             }
+            catch
+            {
+                // If the splitter throws after yielding one or more documents (e.g. cancellation,
+                // malformed/truncated payload, oversized token), every StreamDecryptableItem already
+                // appended to the local list owns a pooled PooledMemoryStream that the caller will
+                // never see and therefore cannot dispose. Drain the partial list before re-throwing
+                // so those rented ArrayPool buffers are returned (and cleared of any plaintext residue).
+                foreach (DecryptableItem partialItem in decryptableItems)
+                {
+                    if (partialItem is IAsyncDisposable asyncDisposable)
+                    {
+                        try
+                        {
+                            await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                        }
+                        catch
+                        {
+                            // Best-effort cleanup: swallow per-item disposal failures so we still
+                            // attempt to drain the remaining orphans and re-throw the original cause.
+                        }
+                    }
+                }
 
-            return decryptableItems;
+                throw;
+            }
         }
 #endif
 

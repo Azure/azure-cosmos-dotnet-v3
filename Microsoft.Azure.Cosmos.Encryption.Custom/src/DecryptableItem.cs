@@ -99,6 +99,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// Disposes any resources held by the decryptable item.
         /// Default implementation does nothing. Override in derived classes that hold disposable resources.
         /// </summary>
+        /// <remarks>
+        /// Stream-mode <see cref="DecryptableItem"/> implementations wrap pooled <c>ArrayPool&lt;byte&gt;</c>
+        /// buffers that must be returned to prevent buffer leaks and clear any plaintext residue. Callers
+        /// that obtain a <c>FeedResponse&lt;DecryptableItem&gt;</c> page and abandon iteration (early-exit,
+        /// exception, or never enumerate) should dispose the page through <see cref="IAsyncDisposable"/> so
+        /// that disposal cascades to every item. See the type-level remarks for the recommended pattern.
+        /// </remarks>
         /// <returns>A ValueTask representing the asynchronous dispose operation.</returns>
         public virtual ValueTask DisposeAsync()
         {
