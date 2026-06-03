@@ -35,16 +35,48 @@ dotnet build .\tools\Microsoft.Azure.Cosmos.NativeDriverPoc\ `
 
 ## Drop-in steps when consuming the PR's DLL
 
+There's a helper at [`scripts/build-native-dll.ps1`](scripts/build-native-dll.ps1):
+
 ```powershell
+# One-shot — fetches PR #4515, builds the cdylib, drops it where the POC expects it.
+pwsh .\tools\Microsoft.Azure.Cosmos.NativeDriverPoc\scripts\build-native-dll.ps1
+
+# Local iteration after the first run:
+pwsh .\tools\Microsoft.Azure.Cosmos.NativeDriverPoc\scripts\build-native-dll.ps1 `
+  -Configuration debug -SkipFetch
+```
+
+Or do it by hand (what the script does, expanded):
+
+```powershell
+# Prereqs (one-time): rustup from https://rustup.rs/. The crate pins
+# toolchain 1.95 via rust-toolchain.toml so rustup auto-installs it on
+# first `cargo` invocation. No OpenSSL needed (crate uses rustls).
+$env:Path = "$env:USERPROFILE\.cargo\bin;$env:Path"  # if cargo isn't on PATH
+
+# 1. Sync the feature branch.
 git -C Q:\src\azure-sdk-for-rust fetch origin `
   users/kundadebdatta/4372_cosmos_driver_native_crate_async_impl
 git -C Q:\src\azure-sdk-for-rust checkout `
   users/kundadebdatta/4372_cosmos_driver_native_crate_async_impl
+
+# 2. Build the cdylib + regenerate the C header via build.rs/cbindgen.
+cd Q:\src\azure-sdk-for-rust
 cargo build --release -p azure_data_cosmos_driver_native
-Copy-Item Q:\src\azure-sdk-for-rust\target\release\azurecosmosdriver.dll `
-  Q:\src\.poc-artifacts\azurecosmosdriver\
-dotnet run --project .\tools\Microsoft.Azure.Cosmos.NativeDriverPoc\
+
+# 3. Drop the artifact next to the .NET POC (matches the csproj knob
+#    DriverNativeArtifactDir, default Q:\src\.poc-artifacts\azurecosmosdriver\).
+Copy-Item target\release\azurecosmosdriver.dll `
+  Q:\src\.poc-artifacts\azurecosmosdriver\ -Force
+
+# 4. Run the F-checks against the emulator.
+dotnet run --project Q:\src\azure-cosmos-dotnet-v3\worktrees\poc-async-ffi\tools\Microsoft.Azure.Cosmos.NativeDriverPoc\
 ```
+
+Artifact name per platform (from the crate README):
+- Windows: `target\release\azurecosmosdriver.dll`
+- Linux:   `target/release/libazurecosmosdriver.so`
+- macOS:   `target/release/libazurecosmosdriver.dylib`
 
 F1–F5 should pass against a running emulator.
 
