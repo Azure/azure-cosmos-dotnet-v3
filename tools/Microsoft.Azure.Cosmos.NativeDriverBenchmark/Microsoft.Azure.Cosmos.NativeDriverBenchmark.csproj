@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Microsoft.Azure.Cosmos.NativeDriverBenchmark
+
+    Apples-to-apples ReadItem throughput/latency comparison between:
+      * Microsoft.Azure.Cosmos V3 SDK (NuGet)            -> Gateway HTTPS
+      * azure_data_cosmos_driver_native (PR #4515 cdylib) -> Gateway HTTPS
+
+    Both paths read the SAME (id, partitionKey) from a real Cosmos account
+    and return the raw bytes — matching the schema-agnostic data-plane
+    contract of the native driver (see sdk/cosmos/AGENTS.md). SDK uses
+    Container.ReadItemStreamAsync so neither side does typed deserialization.
+
+    Style mirrors V3 perf tests (SerializerBenchmark.cs):
+      [MemoryDiagnoser] class with [GlobalSetup] + [Benchmark] methods.
+      No 1000-concurrent-reads — single-call latency, stable Wilcoxon-style
+      runs courtesy of BenchmarkDotNet's default short job.
+
+    Configuration via env vars (no secrets in source):
+      COSMOS_ENDPOINT          e.g. https://my-account.documents.azure.com:443/
+      COSMOS_KEY               master key (read perms sufficient)
+      COSMOS_DATABASE          database id (e.g. db1)
+      COSMOS_CONTAINER         container id (e.g. items)
+      COSMOS_ITEM_ID           id of a doc that already exists
+      COSMOS_PARTITION_KEY     pk value for that doc
+
+    Usage:
+      See README.md for env vars and run commands.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Microsoft.Azure.Cosmos.NativeDriverBenchmark</RootNamespace>
+    <AssemblyName>Microsoft.Azure.Cosmos.NativeDriverBenchmark</AssemblyName>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+    <!-- BenchmarkDotNet refuses to run unless this is Release. -->
+    <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.14.0" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.49.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Reuse NativeCosmosClient / CompletionQueueLoop / NativeMethods.
+         The V2 POC project exposes them via [InternalsVisibleTo]. -->
+    <ProjectReference Include="..\Microsoft.Azure.Cosmos.NativeDriverPoc\Microsoft.Azure.Cosmos.NativeDriverPoc.csproj" />
+  </ItemGroup>
+</Project>

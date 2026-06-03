@@ -68,4 +68,10 @@
     <Error Condition="!Exists('$(DriverNativeArtifactDir)azurecosmosdriver.dll') and '$(RequireDriverNativeArtifact)' == 'true'"
            Text="[NativeDriverPoc] azurecosmosdriver.dll required (RequireDriverNativeArtifact=true) but not found at '$(DriverNativeArtifactDir)'." />
   </Target>
+    <ItemGroup>
+        <InternalsVisibleTo Include="Microsoft.Azure.Cosmos.NativeDriverBenchmark" />
+    </ItemGroup>
+
+
+
 </Project>
