@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 int newSize = checked(buffer.Length * 2);
                 if (maxBufferSize > 0 && newSize > maxBufferSize)
                 {
-                    throw new InvalidOperationException($"JSON token exceeds maximum buffer size of {maxBufferSize} bytes");
+                    throw new InvalidOperationException($"JSON document or token does not fit within the maximum buffer size of {maxBufferSize} bytes");
                 }
 
                 byte[] newBuffer = ArrayPool<byte>.Shared.Rent(newSize);

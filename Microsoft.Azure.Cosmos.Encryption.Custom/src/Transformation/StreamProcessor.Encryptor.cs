@@ -67,7 +67,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                     if (leftOver == dataSize)
                     {
-                        byte[] newBuffer = arrayPoolManager.Rent(buffer.Length * 2);
+                        int newSize = checked(buffer.Length * 2);
+                        if (newSize > MaxBufferSize)
+                        {
+                            throw new InvalidOperationException($"JSON document or token does not fit within the maximum buffer size of {MaxBufferSize} bytes");
+                        }
+
+                        byte[] newBuffer = arrayPoolManager.Rent(newSize);
                         buffer.AsSpan().CopyTo(newBuffer);
                         buffer = newBuffer;
                     }

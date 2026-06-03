@@ -243,6 +243,49 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
+        public async Task GetItemAsync_WhenDecryptionFails_PopulatesDataEncryptionKeyIdOnException()
+        {
+            // Regression: StreamDecryptableItem used to hardcode dataEncryptionKeyId: string.Empty in the
+            // EncryptionException it threw on decryption failure, dropping the diagnostic identifier
+            // customers use to correlate key-store/DEK-revocation failures. The fix extracts the id from
+            // the on-stream _ei.DataEncryptionKeyId (or from a successful pre-failure DecryptionContext).
+            TestDoc originalDoc = TestDoc.Create();
+            EncryptionItemRequestOptions requestOptions = new ()
+            {
+                EncryptionOptions = new ()
+                {
+                    DataEncryptionKeyId = dekId,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
+                    PathsToEncrypt = TestDoc.PathsToEncrypt
+                }
+            };
+
+            Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
+                originalDoc.ToStream(),
+                mockEncryptor.Object,
+                requestOptions,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+
+            Mock<Encryptor> failingMockEncryptor = new Mock<Encryptor>();
+            failingMockEncryptor.Setup(m => m.DecryptAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException("Null DEK was returned."));
+
+            StreamDecryptableItem streamItem = new StreamDecryptableItem(
+                encryptedStream,
+                failingMockEncryptor.Object,
+                cosmosSerializer);
+
+            EncryptionException ex = await Assert.ThrowsExceptionAsync<EncryptionException>(
+                async () => await streamItem.GetItemAsync<TestDoc>());
+
+            Assert.AreEqual(dekId, ex.DataEncryptionKeyId,
+                "EncryptionException must surface the DEK id from _ei so customers can diagnose key-store/DEK-revocation failures.");
+            Assert.IsTrue(ex.EncryptedContent.Length > 0, "EncryptedContent should still be populated for diagnostics.");
+            Assert.IsNotNull(ex.InnerException, "Inner exception should preserve the underlying failure.");
+        }
+
+        [TestMethod]
         public async Task GetItemAsync_ExceptionHandling_EquivalentToDecryptableItemCore()
         {
             TestDoc originalDoc = TestDoc.Create();

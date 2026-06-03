@@ -1025,6 +1025,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 #endif
 
 #if NET8_0_OR_GREATER
+        /// <summary>
+        /// Sets <c>JsonProcessor.Stream</c> as the default for subsequent encryption operations on this container.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This is a one-way, configure-once-before-use switch. It should be set during container setup,
+        /// before any encryption-aware operation (read/query/change-feed) is issued on the container instance.
+        /// Per-call <c>RequestOptions.Properties["encryption-json-processor"]</c> overrides remain effective
+        /// after this call and can route individual operations back through the Newtonsoft path.
+        /// </para>
+        /// <para>
+        /// Mutating the default while iterators are in flight has undefined behavior — per-operation
+        /// processor selection captures the current value at request time without synchronization.
+        /// </para>
+        /// </remarks>
         public void UseStreamingJsonProcessingByDefault()
         {
             this.DefaultJsonProcessor = JsonProcessor.Stream;

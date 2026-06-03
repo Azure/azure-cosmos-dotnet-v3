@@ -7,8 +7,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     using System;
     using System.IO;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
 
     internal sealed class StreamDecryptableItem : DecryptableItem
     {
@@ -49,9 +51,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     return ((T)this.cachedItem, this.cachedDecryptionContext);
                 }
 
+                DecryptionContext decryptionContextForDiagnostics = null;
                 try
                 {
                     (Stream decryptedStream, DecryptionContext decryptionContext) = await this.DecryptContentStreamAsync().ConfigureAwait(false);
+                    decryptionContextForDiagnostics = decryptionContext;
 
                     bool decryptedAliasesContent = decryptedStream != null && ReferenceEquals(decryptedStream, this.contentStream);
 
@@ -81,11 +85,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 }
                 catch (Exception exception)
                 {
+                    // Best-effort DEK ID extraction for the diagnostic EncryptionException, in priority order:
+                    //   1. If decryption succeeded and serialization later threw, the DEK ID is already in the context.
+                    //   2. Else if contentStream is still readable/seekable, parse it out of _ei.
+                    //   3. Else fall back to string.Empty (matches the prior behavior and avoids re-throwing inside the catch).
+                    // Falls back to string.Empty rather than null because EncryptionException's ctor rejects null DataEncryptionKeyId.
+                    string dataEncryptionKeyId = decryptionContextForDiagnostics?.DecryptionInfoList?.FirstOrDefault()?.DataEncryptionKeyId
+                        ?? await this.TryReadDataEncryptionKeyIdAsync().ConfigureAwait(false)
+                        ?? string.Empty;
+
                     string encryptedContent = await this.TryReadStreamAsStringAsync().ConfigureAwait(false);
 
                     await this.DisposeContentStreamAsync().ConfigureAwait(false);
 
-                    throw new EncryptionException(dataEncryptionKeyId: string.Empty, encryptedContent: encryptedContent ?? string.Empty, exception);
+                    throw new EncryptionException(dataEncryptionKeyId: dataEncryptionKeyId, encryptedContent: encryptedContent ?? string.Empty, exception);
                 }
             }
             finally
@@ -105,6 +118,28 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 legacyFallback: true,
                 diagnosticsContext,
                 cancellationToken: default).ConfigureAwait(false);
+        }
+
+        private async Task<string> TryReadDataEncryptionKeyIdAsync()
+        {
+            try
+            {
+                if (this.contentStream == null || !this.contentStream.CanRead || !this.contentStream.CanSeek)
+                {
+                    return null;
+                }
+
+                EncryptionProperties properties = await EncryptionPropertiesStreamReader.ReadAsync(
+                    this.contentStream,
+                    PooledJsonSerializer.SerializerOptions,
+                    cancellationToken: default).ConfigureAwait(false);
+
+                return properties?.DataEncryptionKeyId;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private async ValueTask DisposeContentStreamAsync()

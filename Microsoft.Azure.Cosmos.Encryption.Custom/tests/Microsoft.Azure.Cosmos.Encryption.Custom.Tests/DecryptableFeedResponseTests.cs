@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -157,6 +158,50 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 async () => await response.DisposeAsync());
 
             Assert.AreEqual("simulated dispose failure", ex.Message);
+        }
+
+        [TestMethod]
+        public async Task DisposeAsync_WhenItemThrows_StillDisposesRemainingItems()
+        {
+            // Regression test for the cascade-leak bug: if the first item throws on DisposeAsync,
+            // the rest of the page must still be drained so their pooled buffers are returned.
+            CountingDecryptableItem beforeThrowing = new ();
+            ThrowingDecryptableItem throwingItem = new ();
+            CountingDecryptableItem afterThrowing1 = new ();
+            CountingDecryptableItem afterThrowing2 = new ();
+
+            DecryptableFeedResponse<DecryptableItem> response = DecryptableFeedResponse<DecryptableItem>.CreateResponse(
+                new ResponseMessage(HttpStatusCode.OK),
+                new List<DecryptableItem> { beforeThrowing, throwingItem, afterThrowing1, afterThrowing2 });
+
+            // A single failure surfaces as the original InvalidOperationException (identity preserved
+            // via ExceptionDispatchInfo), not wrapped in AggregateException.
+            InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                async () => await response.DisposeAsync());
+
+            Assert.AreEqual("simulated dispose failure", ex.Message);
+            Assert.AreEqual(1, beforeThrowing.DisposeAsyncCallCount, "Items prior to the throwing one must be disposed.");
+            Assert.AreEqual(1, afterThrowing1.DisposeAsyncCallCount, "Cascade must continue past the throwing item to release pooled buffers.");
+            Assert.AreEqual(1, afterThrowing2.DisposeAsyncCallCount, "Cascade must drain every item after the throwing one.");
+        }
+
+        [TestMethod]
+        public async Task DisposeAsync_WhenMultipleItemsThrow_AggregatesAndStillDrains()
+        {
+            CountingDecryptableItem stillDrained = new ();
+            ThrowingDecryptableItem throwing1 = new ();
+            ThrowingDecryptableItem throwing2 = new ();
+
+            DecryptableFeedResponse<DecryptableItem> response = DecryptableFeedResponse<DecryptableItem>.CreateResponse(
+                new ResponseMessage(HttpStatusCode.OK),
+                new List<DecryptableItem> { throwing1, stillDrained, throwing2 });
+
+            AggregateException ex = await Assert.ThrowsExceptionAsync<AggregateException>(
+                async () => await response.DisposeAsync());
+
+            Assert.AreEqual(2, ex.InnerExceptions.Count, "Both throwing items should be surfaced.");
+            Assert.IsTrue(ex.InnerExceptions.All(inner => inner is InvalidOperationException && inner.Message == "simulated dispose failure"));
+            Assert.AreEqual(1, stillDrained.DisposeAsyncCallCount, "Non-throwing items between/after throwing ones must still be disposed.");
         }
 
         private sealed class CountingDecryptableItem : DecryptableItem
