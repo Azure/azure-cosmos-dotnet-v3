@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Threading;
@@ -240,6 +241,74 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 cosmosSerializer);
 
             await streamItem.GetItemAsync<TestDoc>();
+        }
+
+        [TestMethod]
+        public async Task GetItemAsync_StreamMode_WithMdeAlgorithm_TakesGenuineMdeStreamPath()
+        {
+            // Coverage regression: every existing `Stream`-variant exception/decrypt test in this file
+            // encrypts with the legacy `AEAes256CbcHmacSha256Randomized` algorithm, which causes
+            // SystemTextJsonStreamAdapter.DecryptAsync to throw NotSupportedException and routes the
+            // request through the Newtonsoft legacy-fallback (EncryptionProcessor.DecryptAsync with
+            // legacyFallback: true). Net effect: the MDE stream-decrypt path is never actually
+            // exercised by the StreamDecryptableItem test class. This test plugs that gap by encrypting
+            // with the MDE algorithm and asserting via the diagnostics-context selection scope that
+            // the JsonProcessor.Stream path was the one taken (and that the document round-trips).
+            TestDoc originalDoc = TestDoc.Create();
+
+            EncryptionOptions encryptionOptions = new ()
+            {
+                DataEncryptionKeyId = dekId,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                PathsToEncrypt = TestDoc.PathsToEncrypt,
+            };
+
+            using MemoryStream encryptedBuffer = new ();
+            Mock<Encryptor> mdeEncryptor = TestEncryptorFactory.CreateMde(dekId, out _);
+            await EncryptionProcessor.EncryptAsync(
+                originalDoc.ToStream(),
+                encryptedBuffer,
+                mdeEncryptor.Object,
+                encryptionOptions,
+                JsonProcessor.Stream,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None).ConfigureAwait(false);
+
+            encryptedBuffer.Position = 0;
+            byte[] encryptedBytes = encryptedBuffer.ToArray();
+
+            List<Activity> capturedActivities = new ();
+            using ActivityListener listener = new ()
+            {
+                ShouldListenTo = source => source.Name == "Microsoft.Azure.Cosmos.Encryption.Custom",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStarted = a => { lock (capturedActivities) { capturedActivities.Add(a); } },
+            };
+            ActivitySource.AddActivityListener(listener);
+
+            await using StreamDecryptableItem streamItem = new (new MemoryStream(encryptedBytes), mdeEncryptor.Object, cosmosSerializer);
+
+            (TestDoc result, DecryptionContext ctx) = await streamItem.GetItemAsync<TestDoc>();
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(originalDoc.Id, result.Id, "MDE stream-decrypt must round-trip the document.");
+            Assert.AreEqual(originalDoc.SensitiveStr, result.SensitiveStr);
+            Assert.AreEqual(originalDoc.SensitiveInt, result.SensitiveInt);
+            Assert.IsNotNull(ctx);
+            Assert.IsTrue(ctx.DecryptionInfoList?.Count > 0, "DecryptionContext must list at least one decrypted path.");
+            Assert.AreEqual(dekId, ctx.DecryptionInfoList[0].DataEncryptionKeyId);
+
+            string expectedStreamScope = CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream;
+            string newtonsoftScope = CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft;
+            lock (capturedActivities)
+            {
+                Assert.IsTrue(
+                    capturedActivities.Any(a => a.DisplayName == expectedStreamScope),
+                    $"Expected MDE stream-decrypt scope '{expectedStreamScope}' not seen. Captured: {string.Join(", ", capturedActivities.Select(a => a.DisplayName))}");
+                Assert.IsFalse(
+                    capturedActivities.Any(a => a.DisplayName == newtonsoftScope),
+                    $"Newtonsoft fallback scope '{newtonsoftScope}' must not be taken when the payload is MDE-encrypted (regression: previously every existing test fell through to this path).");
+            }
         }
 
         [TestMethod]
