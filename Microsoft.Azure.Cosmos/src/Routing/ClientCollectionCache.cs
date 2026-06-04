@@ -88,16 +88,17 @@ namespace Microsoft.Azure.Cosmos.Routing
             cancellationToken.ThrowIfCancellationRequested();
             IDocumentClientRetryPolicy retryPolicyInstance = new ClearingSessionContainerClientRetryPolicy(
                 this.sessionContainer, this.retryPolicy.GetRequestPolicy());
-            return TaskHelper.InlineIfPossible(
-                  () => this.ReadCollectionAsync(
-                      PathsHelper.GeneratePath(ResourceType.Collection, collectionRid, false),
+            return TaskHelper.RunInlineIfNeededAsync(
+                  () => MetadataDetachedExecutor.ExecuteAsync(
+                      (ct) => this.ReadCollectionAsync(
+                          PathsHelper.GeneratePath(ResourceType.Collection, collectionRid, false),
+                          retryPolicyInstance,
+                          trace,
+                          clientSideRequestStatistics,
+                          isColdStart,
+                          ct),
                       retryPolicyInstance,
-                      trace,
-                      clientSideRequestStatistics,
-                      isColdStart,
-                      cancellationToken),
-                  retryPolicyInstance,
-                  cancellationToken);
+                      cancellationToken));
         }
 
         protected override Task<ContainerProperties> GetByNameAsync(string apiVersion,
@@ -119,11 +120,12 @@ namespace Microsoft.Azure.Cosmos.Routing
             cancellationToken.ThrowIfCancellationRequested();
             IDocumentClientRetryPolicy retryPolicyInstance = new ClearingSessionContainerClientRetryPolicy(
                 this.sessionContainer, this.retryPolicy.GetRequestPolicy());
-            return TaskHelper.InlineIfPossible(
-                () => this.ReadCollectionAsync(
-                    resourceAddress, retryPolicyInstance, trace, clientSideRequestStatistics, isColdStart, cancellationToken),
-                retryPolicyInstance,
-                cancellationToken);
+            return TaskHelper.RunInlineIfNeededAsync(
+                () => MetadataDetachedExecutor.ExecuteAsync(
+                    (ct) => this.ReadCollectionAsync(
+                        resourceAddress, retryPolicyInstance, trace, clientSideRequestStatistics, isColdStart, ct),
+                    retryPolicyInstance,
+                    cancellationToken));
         }
 
         internal override Task<ContainerProperties> ResolveByNameAsync(
