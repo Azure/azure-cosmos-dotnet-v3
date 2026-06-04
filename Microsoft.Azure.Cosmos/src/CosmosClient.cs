@@ -1176,7 +1176,7 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a new instance of a distributed write transaction.
         /// </summary>
         /// <returns>An instance of Distributed transaction.</returns>
-#if INTERNAL
+#if PREVIEW
         public 
 #else
         internal
@@ -1190,7 +1190,7 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a new instance of a distributed read transaction.
         /// </summary>
         /// <returns>An instance of <see cref="DistributedReadTransaction"/>.</returns>
-#if INTERNAL
+#if PREVIEW
         public
 #else
         internal
