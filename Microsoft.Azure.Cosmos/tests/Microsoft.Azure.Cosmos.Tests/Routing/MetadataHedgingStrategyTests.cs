@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [Owner("dkunda")]
         public void EvaluateEligibility_OptInDisabled_SkipsWithOptInDisabled()
         {
-            using MetadataHedgingStrategy strategy = BuildStrategy(isOptInEnabled: false);
+            using MetadataHedgingStrategy strategy = BuildStrategy(customerOptIn: false);
             DocumentServiceRequest req = BuildCollectionReadRequest();
             MetadataHedgingContext ctx = NewColdStartContext(ResourceType.Collection);
 
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [Owner("dkunda")]
         public void EvaluateEligibility_PpafDisabled_SkipsWithPpafDisabled()
         {
-            using MetadataHedgingStrategy strategy = BuildStrategy(ppafEnabled: false);
+            using MetadataHedgingStrategy strategy = BuildStrategy(customerOptIn: null, ppafEnabled: false);
             DocumentServiceRequest req = BuildCollectionReadRequest();
             MetadataHedgingContext ctx = NewColdStartContext(ResourceType.Collection);
 
@@ -72,6 +72,32 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
             Assert.IsFalse(result.IsEligible);
             Assert.AreEqual(MetadataHedgeSkipReason.PpafDisabled, result.SkipReason);
+        }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        public void EvaluateEligibility_NullOptIn_PpafEnabled_IsEligible()
+        {
+            using MetadataHedgingStrategy strategy = BuildStrategy(customerOptIn: null, ppafEnabled: true);
+            DocumentServiceRequest req = BuildCollectionReadRequest();
+            MetadataHedgingContext ctx = NewColdStartContext(ResourceType.Collection);
+
+            MetadataHedgeEligibility result = strategy.EvaluateEligibility(req, ctx);
+
+            Assert.IsTrue(result.IsEligible);
+        }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        public void EvaluateEligibility_ExplicitOptIn_PpafDisabled_IsEligible()
+        {
+            using MetadataHedgingStrategy strategy = BuildStrategy(customerOptIn: true, ppafEnabled: false);
+            DocumentServiceRequest req = BuildCollectionReadRequest();
+            MetadataHedgingContext ctx = NewColdStartContext(ResourceType.Collection);
+
+            MetadataHedgeEligibility result = strategy.EvaluateEligibility(req, ctx);
+
+            Assert.IsTrue(result.IsEligible);
         }
 
         [TestMethod]
@@ -189,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [Owner("dkunda")]
         public async Task ExecuteAsync_NotEligible_DoesNotConsumeHedgeBudget()
         {
-            using MetadataHedgingStrategy strategy = BuildStrategy(isOptInEnabled: false);
+            using MetadataHedgingStrategy strategy = BuildStrategy(customerOptIn: false);
             DocumentServiceRequest req = BuildCollectionReadRequest();
             MetadataHedgingContext ctx = NewColdStartContext(ResourceType.Collection);
             int callCount = 0;
@@ -523,7 +549,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
         private static MetadataHedgingStrategy BuildStrategy(
             IGlobalEndpointManager gem = null,
-            bool isOptInEnabled = true,
+            bool? customerOptIn = true,
             bool killSwitchOn = false,
             bool ppafEnabled = true,
             TimeSpan? threshold = null,
@@ -534,7 +560,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 globalEndpointManager: gem,
                 isHedgingDisabledByGateway: () => killSwitchOn,
                 isPpafEnabled: () => ppafEnabled,
-                isOptInEnabled: isOptInEnabled,
+                customerOptIn: customerOptIn,
                 threshold: threshold ?? TimeSpan.FromMilliseconds(100),
                 options: options ?? new MetadataHedgingOptions());
         }
@@ -637,35 +663,29 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         }
 
         // ---------------------------------------------------------------
-        // Phase-default resolver (Stage 6)
+        // Opt-in resolver (follows PPAF when customer setting is null)
         // ---------------------------------------------------------------
 
         [TestMethod]
         [Owner("dkunda")]
-        public void ResolveOptIn_NullCustomerSetting_FollowsPhaseDefault()
+        public void ResolveOptIn_NullCustomerSetting_FollowsPpafState()
         {
-            Assert.AreEqual(MetadataHedgingStrategy.PhaseDefault, MetadataHedgingStrategy.ResolveOptIn(null));
+            Assert.IsTrue(MetadataHedgingStrategy.ResolveOptIn(null, isPpafEnabled: true));
+            Assert.IsFalse(MetadataHedgingStrategy.ResolveOptIn(null, isPpafEnabled: false));
         }
 
         [TestMethod]
         [Owner("dkunda")]
-        public void ResolveOptIn_ExplicitTrue_OverridesPhaseDefault()
+        public void ResolveOptIn_ExplicitTrue_OverridesPpafState()
         {
-            Assert.IsTrue(MetadataHedgingStrategy.ResolveOptIn(true));
+            Assert.IsTrue(MetadataHedgingStrategy.ResolveOptIn(true, isPpafEnabled: false));
         }
 
         [TestMethod]
         [Owner("dkunda")]
-        public void ResolveOptIn_ExplicitFalse_OverridesPhaseDefault()
+        public void ResolveOptIn_ExplicitFalse_OverridesPpafState()
         {
-            Assert.IsFalse(MetadataHedgingStrategy.ResolveOptIn(false));
-        }
-
-        [TestMethod]
-        [Owner("dkunda")]
-        public void PhaseDefault_Phase1_IsFalse()
-        {
-            Assert.IsFalse(MetadataHedgingStrategy.PhaseDefault, "Phase 1 default must be off; bump this assertion when promoting to a later phase.");
+            Assert.IsFalse(MetadataHedgingStrategy.ResolveOptIn(false, isPpafEnabled: true));
         }
 
         // ---------------------------------------------------------------
@@ -674,15 +694,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
         [TestMethod]
         [Owner("dkunda")]
-        public void CreateIfEnabled_NullOptIn_FollowsPhaseDefault_ReturnsNullInPhase1()
+        public void CreateIfEnabled_NullOptIn_BuildsStrategy_DefersToPpafAtRequestTime()
         {
-            MetadataHedgingStrategy strategy = MetadataHedgingStrategy.CreateIfEnabled(
+            using MetadataHedgingStrategy strategy = MetadataHedgingStrategy.CreateIfEnabled(
                 enableMetadataHedgingForColdStart: null,
                 options: null,
-                globalEndpointManager: BuildEndpointManagerMock(new[] { PrimaryEndpoint }).Object,
+                globalEndpointManager: BuildEndpointManagerMock(new[] { PrimaryEndpoint, HedgeEndpoint }).Object,
                 isPpafEnabled: () => true);
 
-            Assert.IsNull(strategy);
+            Assert.IsNotNull(strategy);
         }
 
         [TestMethod]

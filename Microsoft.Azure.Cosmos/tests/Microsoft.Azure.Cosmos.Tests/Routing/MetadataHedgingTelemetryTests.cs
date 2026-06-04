@@ -280,7 +280,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 globalEndpointManager: BuildEndpointManagerMock().Object,
                 isHedgingDisabledByGateway: () => false,
                 isPpafEnabled: () => true,
-                isOptInEnabled: true,
+                customerOptIn: true,
                 threshold: threshold ?? TimeSpan.FromMilliseconds(100),
                 options: options ?? new MetadataHedgingOptions());
         }

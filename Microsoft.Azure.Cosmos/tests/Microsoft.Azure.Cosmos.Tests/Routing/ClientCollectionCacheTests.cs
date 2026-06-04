@@ -153,6 +153,47 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
         [TestMethod]
         [Owner("dkunda")]
+        public async Task ClientCollectionCache_WithStrategy_WarmCacheHit_DoesNotHedgeOrResend()
+        {
+            int sendCount = 0;
+            Mock<IStoreModel> storeModel = BuildStoreModelMock(_ => { Interlocked.Increment(ref sendCount); return BuildOkContainerResponse(); });
+
+            // Low threshold: a cold-start read would be eligible to hedge if the
+            // populate delegate ever ran on the warm path. The primary store model
+            // responds immediately so the cold-start populate itself stays a single send.
+            MetadataHedgingStrategy strategy = BuildStrategy(threshold: TimeSpan.FromMilliseconds(50));
+            ClientCollectionCache cache = BuildClientCollectionCache(storeModel.Object, strategy);
+
+            // Cold start: first population of the cache entry.
+            ContainerProperties cold = await cache.ResolveByNameAsync(
+                apiVersion: HttpConstants.Versions.CurrentVersion,
+                resourceAddress: "dbs/db/colls/coll",
+                forceRefesh: false,
+                trace: NoOpTrace.Singleton,
+                clientSideRequestStatistics: null,
+                cancellationToken: CancellationToken.None);
+
+            int sendsAfterColdStart = sendCount;
+
+            // Warmed-up client: a subsequent read of the same entry must hit the
+            // cache, never re-enter the cold-start populate delegate, and therefore
+            // never hedge — producing zero additional metadata sends.
+            ContainerProperties warm = await cache.ResolveByNameAsync(
+                apiVersion: HttpConstants.Versions.CurrentVersion,
+                resourceAddress: "dbs/db/colls/coll",
+                forceRefesh: false,
+                trace: NoOpTrace.Singleton,
+                clientSideRequestStatistics: null,
+                cancellationToken: CancellationToken.None);
+
+            Assert.IsNotNull(cold);
+            Assert.IsNotNull(warm);
+            Assert.AreEqual(1, sendsAfterColdStart, "Cold-start populate should issue exactly one send when the primary wins before the threshold.");
+            Assert.AreEqual(sendsAfterColdStart, sendCount, "Warm cache hit must not issue any additional metadata sends or hedges.");
+        }
+
+        [TestMethod]
+        [Owner("dkunda")]
         public async Task ClientCollectionCache_WithStrategy_ColdStart_PrimaryWinsBeforeThreshold_SingleSend()
         {
             int sendCount = 0;
@@ -241,7 +282,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 globalEndpointManager: gem.Object,
                 isHedgingDisabledByGateway: () => false,
                 isPpafEnabled: () => true,
-                isOptInEnabled: true,
+                customerOptIn: true,
                 threshold: threshold ?? TimeSpan.FromMilliseconds(50),
                 options: new MetadataHedgingOptions());
         }

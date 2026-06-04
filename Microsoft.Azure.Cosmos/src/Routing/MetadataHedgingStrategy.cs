@@ -30,20 +30,10 @@ namespace Microsoft.Azure.Cosmos.Routing
     {
         internal const string TraceDatumKey = "Metadata Hedge Context";
 
-        /// <summary>
-        /// Single source-of-truth for the release-phase default applied when
-        /// <see cref="CosmosClientOptions.EnableMetadataHedgingForColdStart"/>
-        /// is left <c>null</c>. Phase 1 = <c>false</c> (off by default).
-        /// Phases 2 and 3 will flip this constant; the public property is
-        /// preserved across all phases for binary compatibility — see design
-        /// <c>docs/PPAF_Metadata_Hedging_ColdStart_Design.md</c> §12.
-        /// </summary>
-        internal const bool PhaseDefault = false;
-
         private readonly IGlobalEndpointManager globalEndpointManager;
         private readonly Func<bool> isHedgingDisabledByGateway;
         private readonly Func<bool> isPpafEnabled;
-        private readonly bool isOptInEnabled;
+        private readonly bool? customerOptIn;
         private readonly TimeSpan threshold;
         private readonly SemaphoreSlim hedgeBudget;
         private readonly int perClientConcurrencyBudget;
@@ -53,14 +43,14 @@ namespace Microsoft.Azure.Cosmos.Routing
             IGlobalEndpointManager globalEndpointManager,
             Func<bool> isHedgingDisabledByGateway,
             Func<bool> isPpafEnabled,
-            bool isOptInEnabled,
+            bool? customerOptIn,
             TimeSpan threshold,
             MetadataHedgingOptions options)
         {
             this.globalEndpointManager = globalEndpointManager ?? throw new ArgumentNullException(nameof(globalEndpointManager));
             this.isHedgingDisabledByGateway = isHedgingDisabledByGateway ?? (() => false);
             this.isPpafEnabled = isPpafEnabled ?? (() => false);
-            this.isOptInEnabled = isOptInEnabled;
+            this.customerOptIn = customerOptIn;
 
             if (threshold <= TimeSpan.Zero)
             {
@@ -79,23 +69,30 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <summary>
         /// Resolves the tri-state
         /// <see cref="CosmosClientOptions.EnableMetadataHedgingForColdStart"/>
-        /// to a concrete opt-in <see cref="bool"/> by falling back to
-        /// <see cref="PhaseDefault"/> when the customer left the property
-        /// <c>null</c>. An explicit <c>true</c> / <c>false</c> always wins
-        /// over the phase default — see design §5.1 and §12.
+        /// to a concrete opt-in <see cref="bool"/>. When the customer leaves
+        /// the property <c>null</c>, cold-start metadata hedging follows the
+        /// account's PPAF (Per-Partition Automatic Failover) state — enabled by
+        /// default when PPAF is enabled, disabled otherwise. An explicit
+        /// <c>true</c> enables hedging even when PPAF is disabled, and an
+        /// explicit <c>false</c> disables it regardless of PPAF — see design
+        /// §5.1.
         /// </summary>
-        internal static bool ResolveOptIn(bool? customerOptIn)
+        internal static bool ResolveOptIn(bool? customerOptIn, bool isPpafEnabled)
         {
-            return customerOptIn ?? PhaseDefault;
+            return customerOptIn ?? isPpafEnabled;
         }
 
         /// <summary>
         /// Builds the strategy from the customer-supplied
         /// <see cref="CosmosClientOptions.EnableMetadataHedgingForColdStart"/>
-        /// tri-state and optional <see cref="MetadataHedgingOptions"/>, or
-        /// returns <c>null</c> when the resolved opt-in is <c>false</c>.
-        /// The Gateway kill-switch is hard-wired to <c>false</c> in Phase 1;
-        /// see design §5.1 and §12.
+        /// tri-state and optional <see cref="MetadataHedgingOptions"/>. Returns
+        /// <c>null</c> only when the customer explicitly disabled hedging
+        /// (<c>false</c>). When the property is <c>true</c> or left <c>null</c>
+        /// the strategy is created and the per-request eligibility check
+        /// resolves the effective opt-in against the live PPAF state (a
+        /// <c>null</c> property follows PPAF; an explicit <c>true</c> enables
+        /// hedging even when PPAF is disabled). The Gateway kill-switch is
+        /// hard-wired to <c>false</c> in Phase 1; see design §5.1.
         /// </summary>
         internal static MetadataHedgingStrategy CreateIfEnabled(
             bool? enableMetadataHedgingForColdStart,
@@ -103,7 +100,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             IGlobalEndpointManager globalEndpointManager,
             Func<bool> isPpafEnabled)
         {
-            if (!ResolveOptIn(enableMetadataHedgingForColdStart))
+            // Explicit customer kill-switch: hedging is suppressed regardless of PPAF.
+            if (enableMetadataHedgingForColdStart == false)
             {
                 return null;
             }
@@ -117,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 globalEndpointManager: globalEndpointManager,
                 isHedgingDisabledByGateway: () => false,
                 isPpafEnabled: isPpafEnabled,
-                isOptInEnabled: true,
+                customerOptIn: enableMetadataHedgingForColdStart,
                 threshold: threshold,
                 options: effectiveOptions);
         }
@@ -142,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 throw new ArgumentNullException(nameof(hedgeContext));
             }
 
-            if (!this.isOptInEnabled)
+            if (this.customerOptIn == false)
             {
                 return MetadataHedgeEligibility.Skip(MetadataHedgeSkipReason.OptInDisabled);
             }
@@ -152,7 +150,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return MetadataHedgeEligibility.Skip(MetadataHedgeSkipReason.GatewayKillSwitchOn);
             }
 
-            if (!this.isPpafEnabled())
+            // When the customer leaves the opt-in null, cold-start metadata hedging
+            // follows the live PPAF state. An explicit opt-in of true bypasses this gate.
+            if (!ResolveOptIn(this.customerOptIn, this.isPpafEnabled()))
             {
                 return MetadataHedgeEligibility.Skip(MetadataHedgeSkipReason.PpafDisabled);
             }
