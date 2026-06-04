@@ -149,29 +149,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                     // It's Windows and x64, should have loaded the DLL
                     gatewayQueryPlanTrace.AddDatum("ServiceInterop unavailable", true);
                 }
-
-                // Java alignment: the gateway query-plan request flows through the standard
-                // RequestInvokerHandler pipeline, which internally invokes
-                // BackoffRetryUtility<T>.ExecuteAsync with the caller's CancellationToken.
-                // Without isolation, the same preemption bug that #5805 / #5844 fix for
-                // ClientCollectionCache applies here: a caller CT that trips mid-failover
-                // would short-circuit ClientRetryPolicy.ShouldRetryAsync at the top of the
-                // retry loop, surfacing OperationCanceledException instead of a successful
-                // cross-region retry. Java's RxDocumentClientImpl drives the same query-plan
-                // request through Reactor's error-only retryWhen, which cannot be preempted
-                // by downstream cancellation; wrapping with ExecuteDetachedAsync gives the
-                // .NET pipeline the same structural guarantee while preserving caller-side
-                // OperationCanceledException semantics on the response path.
-                return MetadataDetachedExecutor.ExecuteDetachedAsync(
-                    (detachedToken) => queryContext.ExecuteQueryPlanRequestAsync(
-                        resourceLink,
-                        ResourceType.Document,
-                        OperationType.QueryPlan,
-                        sqlQuerySpec,
-                        partitionKey,
-                        GetSupportedQueryFeaturesString(isHybridSearchQueryPlanOptimizationDisabled),
-                        trace,
-                        detachedToken),
+                
+                return queryContext.ExecuteQueryPlanRequestAsync(
+                    resourceLink,
+                    ResourceType.Document,
+                    OperationType.QueryPlan,
+                    sqlQuerySpec,
+                    partitionKey,
+                    GetSupportedQueryFeaturesString(isHybridSearchQueryPlanOptimizationDisabled),
+                    trace,
                     cancellationToken);
             }
         }
