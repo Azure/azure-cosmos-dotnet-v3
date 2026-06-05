@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
-- [#](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/) ThinClient: Fixes per-request `ExcludeRegions` being ignored when thin client mode is enabled, so thin client requests now route to the same region the gateway path would have chosen.
+- [5928](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5928) ThinClient: Fixes per-request `ExcludeRegions` being ignored when thin client mode is enabled, so thin client requests now route to the same region the gateway path would have chosen.
 
 #### Other Changes
 
