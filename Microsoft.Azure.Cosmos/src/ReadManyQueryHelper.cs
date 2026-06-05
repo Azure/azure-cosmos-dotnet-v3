@@ -482,35 +482,13 @@ namespace Microsoft.Azure.Cosmos
 
             using (pointReadResponse)
             {
-                string containerRid = await this.container.GetCachedRIDAsync(forceRefresh: false, trace, cancellationToken);
-
-                // Mirror the wire response's SubStatusCode into the synthetic
-                // CosmosQueryResponseMessageHeaders that we hand to QueryResponse.CreateSuccess /
-                // CreateFailure. Without this, the stream overload's combined ResponseMessage
-                // surfaces SubStatusCode=Unknown for non-404 failures (e.g. 400/410/503), which
-                // loses the diagnostic signal a caller would see on a direct ReadItemStreamAsync
-                // call. Note: the 404-swallow guard below intentionally reads from
-                // pointReadResponse.Headers directly (not from this synthetic header) so the
-                // guard's "Unknown means missing item" check is decoupled from how we shape the
-                // synthetic header.
-                CosmosQueryResponseMessageHeaders responseHeaders = new CosmosQueryResponseMessageHeaders(
-                    continauationToken: null,
-                    disallowContinuationTokenMessage: null,
-                    resourceType: Documents.ResourceType.Document,
-                    containerRid: containerRid)
-                {
-                    RequestCharge = pointReadResponse.Headers?.RequestCharge ?? 0,
-                    ActivityId = pointReadResponse.Headers?.ActivityId,
-                    SubStatusCode = pointReadResponse.Headers?.SubStatusCode ?? Documents.SubStatusCodes.Unknown
-                };
-
                 // Treat 404/Unknown as "missing item" — do not fail the overall ReadMany.
                 // This matches the Java SDK behavior (see pointReadsForReadMany in
                 // RxDocumentClientImpl.java) and parallels its bug fixes (azure-sdk-for-java
                 // PRs 34966, 35513) for swallowing missing-item 404s in the point-read
-                // fast path. The guard reads pointReadResponse.Headers directly, NOT the
-                // synthetic responseHeaders above, so it remains anchored to the real wire
-                // value regardless of how the synthetic header is shaped.
+                // fast path. The guard reads pointReadResponse.Headers directly so it
+                // remains anchored to the real wire value regardless of how the synthetic
+                // header is shaped below.
                 if (pointReadResponse.StatusCode == System.Net.HttpStatusCode.NotFound
                     && pointReadResponse.Headers?.SubStatusCode == Documents.SubStatusCodes.Unknown)
                 {
@@ -519,7 +497,7 @@ namespace Microsoft.Azure.Cosmos
                         QueryResponse.CreateSuccess(
                             result: Array.Empty<CosmosElement>(),
                             count: 0,
-                            responseHeaders: responseHeaders,
+                            responseHeaders: ReadManyQueryHelper.BuildSyntheticQueryResponseHeaders(pointReadResponse, containerRid: null),
                             serializationOptions: null,
                             trace: trace)
                     };
@@ -534,7 +512,7 @@ namespace Microsoft.Azure.Cosmos
                     return new List<ResponseMessage>
                     {
                         QueryResponse.CreateFailure(
-                            responseHeaders: responseHeaders,
+                            responseHeaders: ReadManyQueryHelper.BuildSyntheticQueryResponseHeaders(pointReadResponse, containerRid: null),
                             statusCode: pointReadResponse.StatusCode,
                             requestMessage: null,
                             cosmosException: pointReadResponse.CosmosException,
@@ -542,11 +520,18 @@ namespace Microsoft.Azure.Cosmos
                     };
                 }
 
-                // Success: parse the single-document body into a CosmosElement and wrap
-                // as a one-element QueryResponse.
+                // Success: parse the single-document body into a CosmosElement, then derive
+                // the container RID from the document's _rid field. A document's resource
+                // ID encodes the parent container's RID hierarchically (see CollectionCache
+                // and NetworkAttachedDocumentContainer for the canonical pattern), so we
+                // avoid an extra ContainerCore.GetCachedRIDAsync hop. On the failure paths
+                // above, the synthetic header's containerRid is non-load-bearing and is
+                // left null.
                 CosmosElement element = await ReadManyQueryHelper.ReadStreamAsCosmosElementAsync(
                     pointReadResponse.Content,
                     cancellationToken);
+
+                string containerRid = ReadManyQueryHelper.TryGetContainerRidFromDocument(element);
                 IReadOnlyList<CosmosElement> elements = element != null
                     ? (IReadOnlyList<CosmosElement>)new[] { element }
                     : Array.Empty<CosmosElement>();
@@ -556,14 +541,60 @@ namespace Microsoft.Azure.Cosmos
                     QueryResponse.CreateSuccess(
                         result: elements,
                         count: elements.Count,
-                        responseHeaders: responseHeaders,
+                        responseHeaders: ReadManyQueryHelper.BuildSyntheticQueryResponseHeaders(pointReadResponse, containerRid: containerRid),
                         serializationOptions: null,
                         trace: trace)
                 };
             }
         }
 
-        private static async Task<CosmosElement> ReadStreamAsCosmosElementAsync(
+        /// <summary>
+        /// Shapes the synthetic <see cref="CosmosQueryResponseMessageHeaders"/> that the
+        /// point-read fast path hands to <see cref="QueryResponse.CreateSuccess"/> /
+        /// <see cref="QueryResponse.CreateFailure"/>. Mirrors the wire response's
+        /// SubStatusCode so non-404 failures (e.g. 400/410/503) surface the same
+        /// diagnostic signal a caller would see on a direct ReadItemStreamAsync call;
+        /// without this, the stream overload's combined ResponseMessage would surface
+        /// SubStatusCode=Unknown for those failures.
+        /// </summary>
+        private static CosmosQueryResponseMessageHeaders BuildSyntheticQueryResponseHeaders(
+            ResponseMessage pointReadResponse,
+            string containerRid)
+        {
+            return new CosmosQueryResponseMessageHeaders(
+                continauationToken: null,
+                disallowContinuationTokenMessage: null,
+                resourceType: Documents.ResourceType.Document,
+                containerRid: containerRid)
+            {
+                RequestCharge = pointReadResponse.Headers?.RequestCharge ?? 0,
+                ActivityId = pointReadResponse.Headers?.ActivityId,
+                SubStatusCode = pointReadResponse.Headers?.SubStatusCode ?? Documents.SubStatusCodes.Unknown
+            };
+        }
+
+        /// <summary>
+        /// Extracts the parent container RID from a document's <c>_rid</c> field. A
+        /// document's resource ID encodes the container RID hierarchically; this is the
+        /// same derivation used by <c>CollectionCache</c> and
+        /// <c>NetworkAttachedDocumentContainer</c>. Returns <c>null</c> when the element
+        /// is not a document object, lacks <c>_rid</c>, or carries a malformed resource id —
+        /// in which case callers should treat the synthetic header's containerRid as unknown.
+        /// </summary>
+        internal static string TryGetContainerRidFromDocument(CosmosElement document)
+        {
+            if (document is CosmosObject documentObject
+                && documentObject.TryGetValue("_rid", out CosmosString ridString)
+                && ridString != null
+                && Documents.ResourceId.TryParse(ridString.Value, out Documents.ResourceId resourceId))
+            {
+                return resourceId.DocumentCollectionId.ToString();
+            }
+
+            return null;
+        }
+
+        internal static async Task<CosmosElement> ReadStreamAsCosmosElementAsync(
             Stream stream,
             CancellationToken cancellationToken)
         {
