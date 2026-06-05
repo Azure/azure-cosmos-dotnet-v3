@@ -955,15 +955,44 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             DatabaseAccountLocationsInfo snapshot = this.locationInfo;
-            ReadOnlyCollection<Uri> endpoints = isReadRequest
-                ? snapshot.ThinClientReadEndpoints
-                : snapshot.ThinClientWriteEndpoints;
+            ReadOnlyCollection<Uri> endpoints = this.GetApplicableThinClientEndpoints(request, isReadRequest, snapshot);
 
             int locationIndex = request.RequestContext.LocationIndexToRoute.GetValueOrDefault(0);
             Uri chosenEndpoint = endpoints[locationIndex % endpoints.Count];
 
             request.RequestContext.RouteToLocation(chosenEndpoint);
             return chosenEndpoint;
+        }
+
+        /// <summary>
+        /// Resolves the applicable thin client endpoints for a request, honoring per-request
+        /// <see cref="DocumentServiceRequestContext.ExcludeRegions"/>. Mirrors the gateway
+        /// path in <see cref="GetApplicableEndpoints(DocumentServiceRequest, bool)"/>.
+        /// </summary>
+        /// <remarks>
+        /// When all preferred regions are excluded, falls back to the first thin client write
+        /// endpoint (which itself falls back to <see cref="defaultEndpoint"/> at initialization
+        /// time). This keeps requests on the thin client routing path rather than dropping back
+        /// to the gateway endpoint and breaking thin client port semantics.
+        /// </remarks>
+        private ReadOnlyCollection<Uri> GetApplicableThinClientEndpoints(
+            DocumentServiceRequest request,
+            bool isReadRequest,
+            DatabaseAccountLocationsInfo snapshot)
+        {
+            IReadOnlyList<string> excludeRegions = request.RequestContext?.ExcludeRegions;
+            if (excludeRegions == null || excludeRegions.Count == 0)
+            {
+                return isReadRequest ? snapshot.ThinClientReadEndpoints : snapshot.ThinClientWriteEndpoints;
+            }
+
+            Uri fallbackEndpoint = snapshot.ThinClientWriteEndpoints[0];
+
+            return GetApplicableEndpoints(
+                isReadRequest ? snapshot.ThinClientReadEndpointByLocation : snapshot.ThinClientWriteEndpointByLocation,
+                snapshot.EffectivePreferredLocations,
+                fallbackEndpoint,
+                excludeRegions);
         }
 
         private void SetServicePointConnectionLimit(Uri endpoint)

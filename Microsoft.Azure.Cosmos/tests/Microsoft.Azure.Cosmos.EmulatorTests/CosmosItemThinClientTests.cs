@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -1605,6 +1605,98 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // If no exception was thrown, proceed with the actual request
                 return base.SendAsync(request, cancellationToken);
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task ReadItem_WithExcludeRegions_OnThinClient_PinsToNonExcludedReadRegion()
+        {
+            const string CentralUs = "Central US";
+            const string EastUs2 = "East US 2";
+            
+            List<string> excludeRegions = new List<string>
+            {
+                CentralUs
+            };
+
+            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
+            string connectionString = Environment.GetEnvironmentVariable("COSMOSDB_THINCLIENT");
+           
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                Assert.Fail("Set environment variable COSMOSDB_THINCLIENT to run the test");
+            }
+
+            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = null,
+                PropertyNameCaseInsensitive = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            };
+
+            CosmosClient cosmosClient = new CosmosClient(
+                connectionString,
+                new CosmosClientOptions
+                {
+                    ConnectionMode = ConnectionMode.Gateway,
+                    ApplicationPreferredRegions = new List<string> {CentralUs, EastUs2 },
+                    Serializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions),
+                });
+
+            Database cosmosDatabase = null;
+            try
+            {
+                cosmosDatabase = await cosmosClient.CreateDatabaseIfNotExistsAsync("TestDb_" + Guid.NewGuid());
+                Container cosmosContainer = await cosmosDatabase.CreateContainerIfNotExistsAsync(
+                    "TestContainer_" + Guid.NewGuid(),
+                    "/pk");
+
+                TestObject seed = new TestObject
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = Guid.NewGuid().ToString(),
+                    Other = "exclude-regions read fixture",
+                };
+                ItemResponse<TestObject> createResponse = await cosmosContainer.CreateItemAsync(seed, new PartitionKey(seed.Pk));
+
+                await Task.Delay(TimeSpan.FromSeconds(30));
+
+                ItemResponse<TestObject> readResponse = await cosmosContainer.ReadItemAsync<TestObject>(
+                    seed.Id,
+                    new PartitionKey(seed.Pk),
+                    new ItemRequestOptions
+                    {
+                        ExcludeRegions = excludeRegions,
+                    });
+
+                string readDiagnostics = readResponse.Diagnostics.ToString();
+
+                Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
+                Assert.AreEqual(seed.Id, readResponse.Resource.Id);
+                foreach (string excludedRegion in excludeRegions)
+                {
+                    string excludedHost = excludedRegion.Replace(" ", string.Empty).ToLowerInvariant() + ".documents.azure.com:10650";
+                    Assert.IsFalse(
+                        readDiagnostics.Contains(excludedHost),
+                        $"Read with ExcludeRegions=[{string.Join(",", excludeRegions)}] must not route to '{excludedHost}'.");
+                }
+            }
+            finally
+            {
+                if (cosmosDatabase != null)
+                {
+                    try
+                    {
+                        await cosmosDatabase.DeleteAsync();
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                cosmosClient.Dispose();
+                Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "False");
             }
         }
     }

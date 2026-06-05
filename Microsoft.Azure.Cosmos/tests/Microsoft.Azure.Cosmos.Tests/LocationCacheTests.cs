@@ -1926,6 +1926,69 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             Assert.AreEqual("https://writelocation.documents.azure.com/", cache.WriteEndpoints[0].AbsoluteUri);
         }
 
+        /// <summary>
+        /// Regression test for issue #5789. <see cref="LocationCache.ResolveThinClientEndpoint"/>
+        /// must filter the thin client endpoint list by <see cref="DocumentServiceRequestContext.ExcludeRegions"/>,
+        /// matching the gateway-path behavior in <see cref="LocationCache.GetApplicableEndpoints(DocumentServiceRequest, bool)"/>.
+        /// Before the fix, ExcludeRegions was silently ignored on the thin client path and every request collapsed
+        /// onto the first thin client endpoint.
+        /// </summary>
+        [TestMethod]
+        public void ValidateResolveThinClientEndpoint_HonorsExcludeRegionsTest()
+        {
+            // Arrange: multi-write account with 3 regions; identical region names across gateway and thin client.
+            Collection<AccountRegion> writeRegions = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "Region1", Endpoint = "https://region1.documents.azure.com" },
+                new AccountRegion { Name = "Region2", Endpoint = "https://region2.documents.azure.com" },
+                new AccountRegion { Name = "Region3", Endpoint = "https://region3.documents.azure.com" },
+            };
+
+            Collection<AccountRegion> readRegions = writeRegions;
+
+            Collection<AccountRegion> thinClientWrites = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "Region1", Endpoint = "https://region1.documents.azure.com:10650/" },
+                new AccountRegion { Name = "Region2", Endpoint = "https://region2.documents.azure.com:10650/" },
+                new AccountRegion { Name = "Region3", Endpoint = "https://region3.documents.azure.com:10650/" },
+            };
+
+            Collection<AccountRegion> thinClientReads = thinClientWrites;
+
+            AccountProperties accountProps = new AccountProperties
+            {
+                ReadLocationsInternal = readRegions,
+                WriteLocationsInternal = writeRegions,
+                ThinClientReadableLocationsInternal = thinClientReads,
+                ThinClientWritableLocationsInternal = thinClientWrites,
+                EnableMultipleWriteLocations = true,
+            };
+
+            LocationCache cache = new LocationCache(
+                preferredLocations: new List<string> { "Region1", "Region2", "Region3" }.AsReadOnly(),
+                defaultEndpoint: new Uri("https://defaultendpoint.documents.azure.com"),
+                enableEndpointDiscovery: true,
+                connectionLimit: 50,
+                useMultipleWriteLocations: true);
+
+            cache.OnDatabaseAccountRead(accountProps);
+
+            // Act: write request with the primary region excluded — must resolve to the next preferred thin client write endpoint.
+            DocumentServiceRequest writeRequest = DocumentServiceRequest.Create(
+                OperationType.Create,
+                ResourceType.Document,
+                AuthorizationTokenType.PrimaryMasterKey);
+            writeRequest.RequestContext.ExcludeRegions = new List<string> { "Region1", "Region3" };
+
+            Uri resolvedThinWrite = cache.ResolveThinClientEndpoint(writeRequest, isReadRequest: false);
+
+            // Assert: ExcludeRegions is honored — Region2 is the only non-excluded preferred region.
+            Assert.AreEqual(
+                "https://region2.documents.azure.com:10650/",
+                resolvedThinWrite.AbsoluteUri,
+                "ResolveThinClientEndpoint must skip excluded regions and pick the first non-excluded preferred thin client endpoint.");
+        }
+
 
         private ReadOnlyCollection<Uri> GetApplicableRegions(bool isReadRequest, bool useMultipleWriteLocations, bool usesPreferredLocations, List<string> excludeRegions, bool isDefaultEndpointARegionalEndpoint)
         {
