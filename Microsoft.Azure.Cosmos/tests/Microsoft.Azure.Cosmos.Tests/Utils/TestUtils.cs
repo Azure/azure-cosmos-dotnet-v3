@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -77,6 +77,38 @@ namespace Microsoft.Azure.Cosmos.Tests
                 ).Returns(Task.FromResult(containerProperties));
 
             storeModel.SetCaches(partitionKeyRangeCache.Object, clientCollectionCache.Object);
+        }
+
+        public static void EnableThinClientLocationsForTest(
+            GlobalEndpointManager endpointManager,
+            string thinClientEndpoint = "https://mock.thinclient.com/")
+        {
+            AccountProperties accountProperties = new AccountProperties
+            {
+                ReadLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "region1", Endpoint = thinClientEndpoint }
+                },
+                WriteLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "region1", Endpoint = thinClientEndpoint }
+                },
+                ThinClientWritableLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "region1", Endpoint = thinClientEndpoint }
+                },
+                ThinClientReadableLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "region1", Endpoint = thinClientEndpoint }
+                }
+            };
+
+            FieldInfo locationCacheField = typeof(GlobalEndpointManager).GetField(
+                "locationCache",
+                BindingFlags.NonPublic | BindingFlags.Instance)
+                ?? throw new InvalidOperationException("Could not find 'locationCache' field on GlobalEndpointManager");
+            LocationCache locationCache = (LocationCache)locationCacheField.GetValue(endpointManager);
+            locationCache.OnDatabaseAccountRead(accountProperties);
         }
     }
 }

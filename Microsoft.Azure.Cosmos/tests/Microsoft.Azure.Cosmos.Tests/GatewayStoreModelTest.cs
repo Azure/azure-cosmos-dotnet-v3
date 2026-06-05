@@ -1272,6 +1272,7 @@ namespace Microsoft.Azure.Cosmos
 
             UserAgentContainer userAgentContainer = new UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix");
             GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            TestUtils.EnableThinClientLocationsForTest(endpointManager);
             SessionContainer sessionContainer = new SessionContainer("testhost");
             GatewayStoreModel storeModel = new GatewayStoreModel(
                 endpointManager,
@@ -1414,6 +1415,7 @@ namespace Microsoft.Azure.Cosmos
 
             UserAgentContainer userAgentContainer = new UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix");
             GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            TestUtils.EnableThinClientLocationsForTest(endpointManager);
             SessionContainer sessionContainer = new SessionContainer("testhost");
 
             GatewayStoreModel storeModel = new GatewayStoreModel(
@@ -1657,6 +1659,7 @@ namespace Microsoft.Azure.Cosmos
 
             UserAgentContainer userAgentContainer = new UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix");
             GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            TestUtils.EnableThinClientLocationsForTest(endpointManager);
             SessionContainer sessionContainer = new SessionContainer("testhost");
 
             GatewayStoreModel storeModel = new GatewayStoreModel(
@@ -1714,6 +1717,7 @@ namespace Microsoft.Azure.Cosmos
 
             ConnectionPolicy connectionPolicy = new ConnectionPolicy();
             GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, connectionPolicy);
+            TestUtils.EnableThinClientLocationsForTest(endpointManager);
 
             Mock<GlobalPartitionEndpointManager> globalPartitionEndpointManager = new Mock<GlobalPartitionEndpointManager>();
 
