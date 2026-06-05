@@ -40,12 +40,6 @@ namespace Microsoft.Azure.Cosmos
             Exception exception,
             CancellationToken cancellationToken)
         {
-            // Honor the operation-level CancellationToken before scheduling any further retry.
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return ShouldRetryResult.NoRetry();
-            }
-
             if (exception is CosmosException clientException)
             {
                 ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
@@ -71,12 +65,6 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage cosmosResponseMessage,
             CancellationToken cancellationToken)
         {
-            // Honor the operation-level CancellationToken before scheduling any further retry.
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return ShouldRetryResult.NoRetry();
-            }
-
             ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
                 cosmosResponseMessage?.StatusCode,
                 cosmosResponseMessage?.Headers.SubStatusCode,
@@ -125,7 +113,7 @@ namespace Microsoft.Azure.Cosmos
                     await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
                         containerRid,
                         FeedRangeEpk.FullRange.Range,
-                        NoOpTrace.Singleton,
+                        NoOpTrace.Singleton, 
                         forceRefresh: true);
                     return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
                 }

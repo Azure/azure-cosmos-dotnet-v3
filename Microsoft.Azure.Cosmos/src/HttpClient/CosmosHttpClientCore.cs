@@ -512,10 +512,7 @@ namespace Microsoft.Azure.Cosmos
 
                 if (delayForNextRequest != TimeSpan.Zero)
                 {
-                    // Honor the operation-level CancellationToken during the inter-attempt delay.
-                    // Without forwarding the token, a long delayForNextRequest (driven by HttpTimeoutPolicy)
-                    // would make the wait uninterruptible even after the caller's deadline has expired.
-                    await Task.Delay(delayForNextRequest, cancellationToken);
+                    await Task.Delay(delayForNextRequest);
                 }
             }
         }

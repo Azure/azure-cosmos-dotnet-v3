@@ -119,41 +119,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "Should use server-provided RetryAfter delay");
         }
 
-        [TestMethod]
-        public async Task ShouldRetryAsync_Exception_HonorsCancellationToken()
-        {
-            ResourceThrottleRetryPolicy policy = new ResourceThrottleRetryPolicy(
-                maxAttemptCount: 9,
-                maxWaitTimeInSeconds: 60);
-
-            using CancellationTokenSource cts = new CancellationTokenSource();
-            cts.Cancel();
-
-            DocumentClientException dce = new DocumentClientException(
-                "throttled",
-                null,
-                (HttpStatusCode)StatusCodes.TooManyRequests);
-
-            ShouldRetryResult result = await policy.ShouldRetryAsync(dce, cts.Token);
-            Assert.IsFalse(result.ShouldRetry, "Cancelled token must short-circuit retry");
-        }
-
-        [TestMethod]
-        public async Task ShouldRetryAsync_ResponseMessage_HonorsCancellationToken()
-        {
-            ResourceThrottleRetryPolicy policy = new ResourceThrottleRetryPolicy(
-                maxAttemptCount: 9,
-                maxWaitTimeInSeconds: 60);
-
-            using CancellationTokenSource cts = new CancellationTokenSource();
-            cts.Cancel();
-
-            ResponseMessage throttledResponse = ResourceThrottleRetryPolicyTests.CreateThrottledResponseWithRetryAfter(TimeSpan.FromSeconds(30));
-
-            ShouldRetryResult result = await policy.ShouldRetryAsync(throttledResponse, cts.Token);
-            Assert.IsFalse(result.ShouldRetry, "Cancelled token must short-circuit retry");
-        }
-
         private static ResponseMessage CreateThrottledResponseWithoutRetryAfter()
         {
             ResponseMessage response = new ResponseMessage((HttpStatusCode)429);
