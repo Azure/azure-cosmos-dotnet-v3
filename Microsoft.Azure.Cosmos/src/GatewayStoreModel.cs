@@ -589,11 +589,11 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Returns <c>true</c> iff the request is currently eligible for thin-client dispatch:
+        /// Returns true if the request is currently eligible for thin-client dispatch:
         /// the operation type is supported AND the service is still advertising thin-client
         /// endpoints for the request's direction. When either condition is false the dispatch
         /// falls back to the regular gateway path on the very next request without a client
-        /// restart (kill-switch). Mirrors Java SDK <c>ThinClientStoreModel.getEndpoint</c>.
+        /// restart.
         /// </summary>
         internal static bool IsThinClientRoutable(IGlobalEndpointManager endpointManager, DocumentServiceRequest request)
         {

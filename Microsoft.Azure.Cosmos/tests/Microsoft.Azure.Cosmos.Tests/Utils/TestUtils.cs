@@ -110,5 +110,36 @@ namespace Microsoft.Azure.Cosmos.Tests
             LocationCache locationCache = (LocationCache)locationCacheField.GetValue(endpointManager);
             locationCache.OnDatabaseAccountRead(accountProperties);
         }
+
+        /// <summary>
+        /// Simulates the service withdrawing all thin-client locations
+        /// by feeding the LocationCache an AccountProperties snapshot whose
+        /// thin-client collections are empty while keeping regular read / write locations.
+        /// </summary>
+        public static void DisableThinClientLocationsForTest(
+            GlobalEndpointManager endpointManager,
+            string regularEndpoint = "https://mock.proxy.com/")
+        {
+            AccountProperties accountProperties = new AccountProperties
+            {
+                ReadLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "region1", Endpoint = regularEndpoint }
+                },
+                WriteLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "region1", Endpoint = regularEndpoint }
+                },
+                ThinClientWritableLocationsInternal = new Collection<AccountRegion>(),
+                ThinClientReadableLocationsInternal = new Collection<AccountRegion>()
+            };
+
+            FieldInfo locationCacheField = typeof(GlobalEndpointManager).GetField(
+                "locationCache",
+                BindingFlags.NonPublic | BindingFlags.Instance)
+                ?? throw new InvalidOperationException("Could not find 'locationCache' field on GlobalEndpointManager");
+            LocationCache locationCache = (LocationCache)locationCacheField.GetValue(endpointManager);
+            locationCache.OnDatabaseAccountRead(accountProperties);
+        }
     }
 }

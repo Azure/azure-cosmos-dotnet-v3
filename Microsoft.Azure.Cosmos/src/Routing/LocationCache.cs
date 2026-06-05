@@ -245,19 +245,22 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <param name="databaseAccount">Read DatabaseAccoaunt </param>
         public void OnDatabaseAccountRead(AccountProperties databaseAccount)
         {
-            // Refresh the per-direction thin-client availability signals on every account read
-            // so dispatch falls back to gateway mode on the next request when the service stops
-            // advertising thin-client endpoints.
-            this.hasThinClientReadLocations = databaseAccount.ThinClientReadableLocationsInternal?.Count > 0;
-            this.hasThinClientWriteLocations = databaseAccount.ThinClientWritableLocationsInternal?.Count > 0;
+            lock (this.lockObject)
+            {
+                // Refresh the per-direction thin-client availability signals on every account read
+                // so dispatch falls back to gateway mode on the next request when the service stops
+                // advertising thin-client endpoints.
+                this.hasThinClientReadLocations = databaseAccount.ThinClientReadableLocationsInternal?.Count > 0;
+                this.hasThinClientWriteLocations = databaseAccount.ThinClientWritableLocationsInternal?.Count > 0;
 
-            this.UpdateLocationCache(
-                databaseAccount.WritableRegions,
-                databaseAccount.ReadableRegions,
-                thinClientWriteLocations: databaseAccount.ThinClientWritableLocationsInternal,
-                thinClientReadLocations: databaseAccount.ThinClientReadableLocationsInternal,
-                preferenceList: null,
-                enableMultipleWriteLocations: databaseAccount.EnableMultipleWriteLocations);
+                this.UpdateLocationCache(
+                    databaseAccount.WritableRegions,
+                    databaseAccount.ReadableRegions,
+                    thinClientWriteLocations: databaseAccount.ThinClientWritableLocationsInternal,
+                    thinClientReadLocations: databaseAccount.ThinClientReadableLocationsInternal,
+                    preferenceList: null,
+                    enableMultipleWriteLocations: databaseAccount.EnableMultipleWriteLocations);
+            }
         }
 
         public bool HasThinClientReadLocations => this.hasThinClientReadLocations;
