@@ -245,8 +245,7 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                             It.IsAny<string>(),
                             It.IsAny<Documents.Routing.Range<string>>(),
                             It.IsAny<ITrace>(),
-                            It.IsAny<bool>(),
-                            It.IsAny<CancellationToken>()
+                            It.IsAny<bool>()
                         )
                 ).Returns(
                 (string collectionRid, Documents.Routing.Range<string> range, ITrace trace, bool forceRefresh)
@@ -258,8 +257,7 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                         It.IsAny<string>(),
                         It.IsAny<string>(),
                         It.IsAny<ITrace>(),
-                        It.IsAny<bool>(),
-                        It.IsAny<CancellationToken>()
+                        It.IsAny<bool>()
                     )
             ).Returns((string collectionRid, string pkRangeId, ITrace trace, bool forceRefresh) =>
             Task.FromResult<PartitionKeyRange>(this.ResolvePartitionKeyRangeById(collectionRid, pkRangeId, forceRefresh)));

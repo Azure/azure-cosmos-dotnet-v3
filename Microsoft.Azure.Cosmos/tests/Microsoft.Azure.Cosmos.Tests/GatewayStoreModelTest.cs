@@ -447,8 +447,7 @@ namespace Microsoft.Azure.Cosmos
                             containerProperties.ResourceId,
                             partitionKeyRangeId,
                             It.IsAny<ITrace>(),
-                            false,
-                            It.IsAny<CancellationToken>())).Returns(Task.FromResult(new PartitionKeyRange { Id = "range_1" }));
+                            false)).Returns(Task.FromResult(new PartitionKeyRange { Id = "range_1" }));
 
                         await GatewayStoreModel.ApplySessionTokenAsync(
                             dsr,
@@ -1128,8 +1127,7 @@ namespace Microsoft.Azure.Cosmos
                          It.Is<string>(str => str == "dbs/OVJwAA==/colls/OVJwAOcMtA0="),
                          It.Is<string>(str => str == splitPKRangeId),
                          It.IsAny<ITrace>(),
-                         It.Is<bool>(b => b == true),
-                         It.IsAny<CancellationToken>()), shouldCallRefresh ? Times.Once : Times.Never);
+                         It.Is<bool>(b => b == true)), shouldCallRefresh ? Times.Once : Times.Never);
                 }
             }
         }

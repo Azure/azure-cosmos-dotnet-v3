@@ -150,8 +150,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 string collectionRid,
                 Documents.Routing.Range<string> range,
                 ITrace trace,
-                bool forceRefresh,
-                CancellationToken cancellationToken = default)
+                bool forceRefresh)
             {
                 return Task.FromResult(this.overlappingRanges);
             }

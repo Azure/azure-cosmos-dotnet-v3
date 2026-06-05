@@ -207,8 +207,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                     It.IsAny<string>(),
                     It.IsAny<Documents.Routing.Range<string>>(),
                     It.IsAny<ITrace>(),
-                    It.IsAny<bool>(),
-                    It.IsAny<CancellationToken>()))
+                    It.IsAny<bool>()))
                 .Returns(Task.FromResult((IReadOnlyList<PartitionKeyRange>)result));
 
             this.globalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy(), false);

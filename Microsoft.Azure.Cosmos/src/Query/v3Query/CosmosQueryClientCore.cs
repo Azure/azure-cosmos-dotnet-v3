@@ -240,8 +240,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKeyDefinition partitionKeyDefinition,
             FeedRangeInternal feedRangeInternal,
             bool forceRefresh,
-            ITrace trace,
-            CancellationToken cancellationToken = default)
+            ITrace trace)
         {
             using (ITrace childTrace = trace.StartChild("Get Overlapping Feed Ranges", TraceComponent.Routing, Tracing.TraceLevel.Info))
             {
@@ -253,8 +252,7 @@ namespace Microsoft.Azure.Cosmos
                     collectionResourceId,
                     providedRanges,
                     forceRefresh,
-                    childTrace,
-                    cancellationToken);
+                    childTrace);
 
                 return QueryRangeUtils.LimitPartitionKeyRangesToProvidedRanges(ranges, providedRanges, this.clientContext.ClientOptions.UseLengthAwareRangeComparer);
             }
@@ -265,8 +263,7 @@ namespace Microsoft.Azure.Cosmos
             string collectionResourceId,
             IReadOnlyList<Range<string>> providedRanges,
             bool forceRefresh,
-            ITrace trace,
-            CancellationToken cancellationToken = default)
+            ITrace trace)
         {
             if (string.IsNullOrEmpty(collectionResourceId))
             {
@@ -284,7 +281,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
 
-                List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges, getPKRangesTrace, forceRefresh: false, cancellationToken: cancellationToken);
+                List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges, getPKRangesTrace);
                 if (ranges == null && PathsHelper.IsNameBased(resourceLink))
                 {
                     // Refresh the cache and don't try to re-resolve collection as it is not clear what already
@@ -463,16 +460,14 @@ namespace Microsoft.Azure.Cosmos
         public override async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
             string collectionResourceId,
             Range<string> range,
-            bool forceRefresh = false,
-            CancellationToken cancellationToken = default)
+            bool forceRefresh = false)
         {
             PartitionKeyRangeCache partitionKeyRangeCache = await this.GetRoutingMapProviderAsync();
             return await partitionKeyRangeCache.TryGetOverlappingRangesAsync( 
                 collectionResourceId, 
                 range,
                 NoOpTrace.Singleton,
-                forceRefresh,
-                cancellationToken);
+                forceRefresh);
         }
 
         private Task<PartitionKeyRangeCache> GetRoutingMapProviderAsync()

@@ -258,44 +258,5 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
             }
         }
-
-        /// <summary>
-        /// Validates that <see cref="PartitionKeyRangeCache.TryGetOverlappingRangesAsync"/> throws
-        /// <see cref="OperationCanceledException"/> when the caller-provided <see cref="CancellationToken"/>
-        /// is already canceled, instead of issuing the underlying routing-map fetch.
-        /// </summary>
-        [TestMethod]
-        [Owner("tvaron3")]
-        public async Task TryGetOverlappingRangesAsync_WithCancelledToken_ThrowsOperationCanceledException()
-        {
-            const string containerRId = "ccZ1ANCszwk=";
-            Mock<ICosmosAuthorizationTokenProvider> mockTokenProvider = new (MockBehavior.Strict);
-            Mock<IStoreModel> mockStoreModel = new (MockBehavior.Strict);
-            Mock<IGlobalEndpointManager> mockEndpointManager = new (MockBehavior.Strict);
-
-            PartitionKeyRangeCache partitionKeyRangeCache = new (
-                authorizationTokenProvider: mockTokenProvider.Object,
-                storeModel: mockStoreModel.Object,
-                collectionCache: null,
-                endpointManager: mockEndpointManager.Object,
-                useLengthAwareRangeComparer: false,
-                enableAsyncCacheExceptionNoSharing: true);
-
-            using CancellationTokenSource cts = new ();
-            cts.Cancel();
-
-            await Assert.ThrowsExceptionAsync<OperationCanceledException>(() =>
-                partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                    containerRId,
-                    FeedRangeEpk.FullRange.Range,
-                    NoOpTrace.Singleton,
-                    forceRefresh: false,
-                    cancellationToken: cts.Token));
-
-            // Ensure the cancellation short-circuited before any backend call was issued.
-            mockStoreModel.Verify(
-                m => m.ProcessMessageAsync(It.IsAny<DocumentServiceRequest>(), It.IsAny<CancellationToken>()),
-                Times.Never);
-        }
     }
 }

@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -34,8 +33,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 string collectionIdOrNameBasedLink,
                 Range<string> range,
                 ITrace trace,
-                bool forceRefresh = false,
-                CancellationToken cancellationToken = default)
+                bool forceRefresh = false)
             {
                 return Task.FromResult(this.routingMap.GetOverlappingRanges(range));
             }
@@ -44,8 +42,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 string collectionResourceId,
                 string partitionKeyRangeId,
                 ITrace trace,
-                bool forceRefresh = false,
-                CancellationToken cancellationToken = default)
+                bool forceRefresh = false)
             {
                 return Task.FromResult(this.routingMap.TryGetRangeByPartitionKeyRangeId(partitionKeyRangeId));
             }

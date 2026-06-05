@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.Query;
@@ -224,7 +223,7 @@ namespace Microsoft.Azure.Cosmos
 
         private static StandByFeedContinuationToken.PartitionKeyRangeCacheDelegate CreateCacheFromRange(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
         {
-            return (string containerRid, Documents.Routing.Range<string> ranges, ITrace trace, bool forceRefresh, CancellationToken cancellationToken) =>
+            return (string containerRid, Documents.Routing.Range<string> ranges, ITrace trace, bool forceRefresh) =>
             {
                 if (ranges.Max.Equals(Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey))
                 {
