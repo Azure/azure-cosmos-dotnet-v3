@@ -195,7 +195,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     result.GetSuppressServiceRequests(),
                     result.GetInjectionRate(),
                     this.applicationContext, 
-                    this.globalEndpointManager));
+                    this.globalEndpointManager,
+                    result.GetHeaderOverrides()));
         }
 
         private async Task<IFaultInjectionRuleInternal> GetEffectiveCustomServerErrorRule(FaultInjectionRule rule)
@@ -354,6 +355,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 FaultInjectionOperationType.MetadataPartitionKeyRange => OperationType.ReadFeed,
                 FaultInjectionOperationType.MetadataRefreshAddresses => OperationType.Invalid,
                 FaultInjectionOperationType.MetadataQueryPlan => OperationType.QueryPlan,
+                FaultInjectionOperationType.MetadataRequest => OperationType.Head,
                 _ => throw new ArgumentException($"FaultInjectionOperationType: {faultInjectionOperationType} is not supported"),
             };
         }
@@ -376,6 +378,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 FaultInjectionOperationType.MetadataPartitionKeyRange => ResourceType.PartitionKeyRange,
                 FaultInjectionOperationType.MetadataRefreshAddresses => ResourceType.Address,
                 FaultInjectionOperationType.MetadataQueryPlan => ResourceType.Document,
+                FaultInjectionOperationType.MetadataRequest => ResourceType.Collection,
                 _ => throw new ArgumentException($"FaultInjectionOperationType: {faultInjectionOperationType} is not supported"),
             };
         }

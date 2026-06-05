@@ -72,6 +72,15 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         ServiceUnavailable,
 
         /// <summary>
+        /// Returns a successful (200) response with caller-supplied response headers merged
+        /// onto the actual replica response. Useful for deterministically provoking SDK
+        /// consistency / barrier paths by lying about <c>LSN</c> / <c>GlobalCommittedLSN</c>
+        /// / <c>QuorumAckedLSN</c> values without depending on real cross-region replication
+        /// lag.
+        /// </summary>
+        ResponseHeaderOverride,
+
+        /// <summary>
         /// 403:1008 Database account not found from gateway
         /// </summary>
         DatabaseAccountNotFound,

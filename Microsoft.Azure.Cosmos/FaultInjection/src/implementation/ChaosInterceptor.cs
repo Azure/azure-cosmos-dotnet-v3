@@ -192,13 +192,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     delay,
                     args.CommonArguments.ActivityId);
 
-                // The RNTBD IChaosInterceptor.OnBeforeConnectionWriteAsync signature does not accept a
-                // CancellationToken, so we cannot directly observe the caller's cancellation. Cap the
-                // injected delay at the request timeout so the operation-level CT (which is honored at
-                // the request-timeout boundary by the SDK) is observed within a bounded grace period
-                // instead of being blocked for the full caller-requested delay.
-                TimeSpan effectiveDelay = delay > this.requestTimeout ? this.requestTimeout : delay;
-                await Task.Delay(effectiveDelay);
+                await Task.Delay(delay);
             }
         }
 
@@ -221,9 +215,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                      delay,
                      args.CommonArguments.ActivityId);
 
-                // See OnBeforeConnectionWriteAsync for why the delay is capped at the request timeout.
-                TimeSpan effectiveDelay = delay > this.requestTimeout ? this.requestTimeout : delay;
-                await Task.Delay(effectiveDelay);
+                await Task.Delay(delay);
             }
         }
 

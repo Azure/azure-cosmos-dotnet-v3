@@ -34,6 +34,8 @@ This result will return a server error to the customer: `FaultInjectionServerErr
 | `ConnectionDelay`       | n/a          | Used to simulate high channel acquisition.                                  |
 | `ServiceUnavailable`    | 503:0        | The service is currently unavailable.                                       |
 
+> Note: `FaultInjectionConditionBuilder.WithOperationType(FaultInjectionOperationType.MetadataRequest)` targets metadata HEAD requests (e.g., the consistency-barrier `Head/Collection` requests the SDK issues under Strong / Bounded-Staleness consistency to verify `GlobalCommittedLSN` before returning a read).
+
 ##### `FaultInjectionConnectionErrorResult`
 
 This result will return a connection error to the customer: `FaultInjectionConnectionErrorResult`. Currently, the following connection error types are supported:
