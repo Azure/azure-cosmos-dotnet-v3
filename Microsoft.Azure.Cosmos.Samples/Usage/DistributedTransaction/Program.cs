@@ -263,7 +263,14 @@ namespace Cosmos.Samples.DistributedTransaction
             else
             {
                 Console.WriteLine($"Transaction failed with status: {response.StatusCode}");
-                Console.WriteLine($"  Error: {response.ErrorMessage}");
+                Console.WriteLine($"  Error:           {response.ErrorMessage}");
+                Console.WriteLine($"  Activity Id:     {response.ActivityId}");
+                Console.WriteLine($"  Request Charge:  {response.RequestCharge:F2} RUs");
+                Console.WriteLine($"  IsRetriable:     {response.IsRetriable}");
+                Console.WriteLine($"  Idempotency:     {response.IdempotencyToken}");
+                Console.WriteLine($"  DiagnosticString:{response.DiagnosticString}");
+                Console.WriteLine($"  Diagnostics:");
+                Console.WriteLine(response.Diagnostics?.ToString() ?? "(null)");
             }
 
             Console.WriteLine();
