@@ -28,10 +28,10 @@ crossing the FFI boundary.
    └─────────────────────────────────────────────────────────────┘
                               │
    ┌─────────────────────────────────────────────────────────────┐
-   │  2. CompletionQueueLoop                                     │
+   │  2. CompletionQueueLoop  +  NativeAsyncOperation            │
    │     • One BG thread per CQ                                  │
-   │     • Tokens ↔ TaskCompletionSource<CosmosNativeResponse>   │
-   │     • Pumps cosmos_cq_wait → fans onto pending TCS          │
+   │     • user_data = GCHandle.ToIntPtr(boxed NativeAsyncOp)    │
+   │     • Pumps cosmos_cq_wait → GCHandle.FromIntPtr → settle   │
    └─────────────────────────────────────────────────────────────┘
                               │
    ┌─────────────────────────────────────────────────────────────┐
@@ -125,12 +125,9 @@ That's exactly what `CompletionQueueLoop` is for.
 ```csharp
 internal sealed class CompletionQueueLoop : IDisposable
 {
-    private readonly IntPtr cqHandle;                                          // 1
-    private readonly Thread pumpThread;                                        // 2
-    private readonly ConcurrentDictionary<ulong, TaskCompletionSource<...>>    // 3
-        pending;
-    private long nextUserData;                                                 // 4
-    private int disposed;                                                      // 5
+    private readonly IntPtr cqHandle;     // 1
+    private readonly Thread pumpThread;   // 2
+    private int disposed;                 // 3
 }
 ```
 
@@ -140,46 +137,104 @@ internal sealed class CompletionQueueLoop : IDisposable
    `"cosmos-native-driver-cq-pump"`. `IsBackground = true` so it doesn't
    keep the process alive. It does **nothing but `cosmos_cq_wait`** in a
    loop.
-3. **`pending`** — the routing table. Maps a **token** (a 64-bit counter)
-   to the `TaskCompletionSource` waiting on that op's result.
-   `ConcurrentDictionary` because writes (Register) come from N caller
-   threads while reads (DispatchCompletion) come from the single pump.
-4. **`nextUserData`** — monotonic counter for tokens. `Interlocked.Increment`
-   keeps it allocation-free and threadsafe.
-5. **`disposed`** — `int` flag, mutated via `Interlocked.Exchange`. Both
+3. **`disposed`** — `int` flag, mutated via `Interlocked.Exchange`. Both
    the pump's loop guard and the Dispose idempotency hinge on it.
 
-### The token-as-user_data trick
+That's it. There is **no `pending` map, no counter, no central routing
+table.** The CLR's GCHandle table IS the routing table — see the next
+section.
 
-The Rust FFI exposes `cosmos_driver_submit` with a `user_data: IntPtr`
-parameter. Whatever you pass in is handed back to you on the matching
+### GCHandle as `user_data` — routing without a map
+
+The Rust FFI exposes the two submit entry points
+(`cosmos_driver_execute_singleton_operation_submit` and
+`cosmos_driver_execute_operation_submit`) with a `user_data: IntPtr`
+parameter. Whatever we pass in is handed back to us on the matching
 completion via `cosmos_completion_user_data`. The DLL never dereferences
-it — it's just a 64-bit cookie.
+it — it's just an 8-byte cookie that round-trips.
 
-**We use that cookie as a routing token, not a pointer.** That's the key
-design choice:
+**We use that cookie as a `GCHandle` to a boxed per-op object.** That's
+the key design choice, settled by the Aaron Robinson + Kevin Jones +
+Ashley Schroder thread in May 2026:
 
 ```csharp
-public IntPtr Register(TaskCompletionSource<CosmosNativeResponse> tcs, out ulong token)
+// Submit side (NativeCosmosClient.RunSingletonAsync)
+var op       = new NativeAsyncOperation();              // { Id, Tcs }
+IntPtr cookie = op.AllocateUserData();                  // GCHandle.Alloc + ToIntPtr
+builder.Submit(driver, cq.Handle, cookie, OperationBucket.Singleton, out _);
+
+// Pump side (CompletionQueueLoop.DispatchCompletion)
+IntPtr userData = cosmos_completion_user_data(completion);
+NativeAsyncOperation op = NativeAsyncOperation.FromUserData(userData, out var gch);
+op.Tcs.TrySetResult(MaterializeResponse(...));
+gch.Free();                                              // exactly once
+```
+
+Why GCHandle and not a `ConcurrentDictionary<ulong, TCS>` keyed by a
+monotonic counter? Three reasons, in Aaron's words and our reasoning:
+
+1. **The GC is already a perfectly good routing primitive.** Aaron:
+   *"The GCHandle approach is going to defer the mapping and threading
+   issue to the GC, which is generally just as good as Rust... I would
+   avoid the ConcurrentDictionary&lt;&gt; unless there is a real need for
+   a disjoint mapping."* The GCHandle table is a process-global,
+   constant-time identity map maintained by the runtime — we don't need
+   to maintain a parallel one.
+2. **Boxed, so we get an `Id` for diagnostics.** Aaron again: *"I'd
+   prefer the box because you want an ID to help fish out problems and
+   where things might go wrong (that is, logging and trace)."* The
+   `Id` is a process-wide monotonic counter on
+   `NativeAsyncOperation` — useful for log correlation, not for routing.
+3. **Lower per-op cost on the chatty path.** No dict node allocation,
+   no concurrent-hash contention. `GCHandle.Alloc`/`Free` and
+   `GCHandle.FromIntPtr` are roughly the same wall-clock cost as a
+   `ConcurrentDictionary.TryAdd`/`TryRemove`, but they avoid a shared
+   data structure that becomes a hotspot when completions are
+   chatty (Aaron: *"if this is going to be chatty a
+   ConcurrentDictionary&lt;,&gt; is not something I'd suggest"*).
+
+The blog that crystallised the pattern —
+[Nazarii Piontko, *"Rust↔C# async interop"*
+(2026-04-26)](https://www.npiontko.pro/2026/04/26/rust-csharp-async-interop) —
+uses the same primitive, with an abstract `AsyncOperation` base + typed
+`AsyncOperation<T>` leaves. Our POC only has one completion shape
+(`CosmosNativeResponse`), so we collapse the hierarchy to a single
+sealed class.
+
+### The boxed payload — `NativeAsyncOperation`
+
+```csharp
+internal sealed class NativeAsyncOperation
 {
-    token = (ulong)Interlocked.Increment(ref this.nextUserData);
-    this.pending[token] = tcs;
-    return new IntPtr((long)token);   // pass to cosmos_driver_submit as user_data
+    public ulong Id { get; }                                       // diagnostic, not routing
+    public TaskCompletionSource<CosmosNativeResponse> Tcs { get; } // RunContinuationsAsynchronously
+
+    public IntPtr AllocateUserData() =>
+        GCHandle.ToIntPtr(GCHandle.Alloc(this, GCHandleType.Normal));
+
+    public static NativeAsyncOperation FromUserData(IntPtr ud, out GCHandle gch)
+    {
+        gch = GCHandle.FromIntPtr(ud);
+        return (NativeAsyncOperation)gch.Target!;
+    }
 }
 ```
 
-Why a token and not a `GCHandle.ToIntPtr(handle)`? Three reasons:
+Three deliberate choices:
 
-1. **No pinning.** A `GCHandle` would pin the managed TCS for the
-   duration. With tokens, the TCS is just an entry in a dictionary — GC
-   moves it freely.
-2. **Safety on stale completions.** If a completion ever arrives for a
-   token we don't recognize (shutdown race, cancelled op, double-free
-   bug in the driver), `TryRemove` returns false and we log + drop. With
-   `GCHandle` a stale pointer would be a use-after-free.
-3. **Cheap.** `Interlocked.Increment` + dict put is faster than allocating
-   a `GCHandle`, and the routing table doubles as our "still pending"
-   view for shutdown drain.
+* **`Id` field** — a process-wide monotonic counter (`Interlocked.Increment`
+  on a static). Aaron explicitly called this out: an ID makes it possible
+  to grep traces, correlate logs, and identify orphaned ops in heap dumps.
+  Routing doesn't need it; debugging does.
+* **`GCHandleType.Normal`** — keeps the object alive but does **not**
+  pin its memory. Rust never reads the bytes; it only carries the
+  `IntPtr` from `ToIntPtr` back to us. The handle slot itself is stable;
+  the underlying object can move freely during GC.
+* **`TaskCreationOptions.RunContinuationsAsynchronously`** — without
+  this, `tcs.TrySetResult` would inline the awaiter's continuation on
+  the pump thread. Kevin called this out in the thread: *"sets the
+  result on the TCS, with an asynchronous continuation, so that the C#
+  side doesn't tie up the completion thread."*
 
 ### The pump loop
 
@@ -193,7 +248,6 @@ private void Pump()
         {
             CosmosCqState state = cosmos_cq_state(this.cqHandle);
             if (state == CosmosCqState.Running) continue;     // timeout / spurious — re-arm
-            this.DrainPendingOnShutdown();
             return;                                            // CQ drained or shutting down
         }
         try { this.DispatchCompletion(completion); }
@@ -201,7 +255,7 @@ private void Pump()
         finally { cosmos_completion_free(completion); }
     }
     cosmos_cq_shutdown(this.cqHandle);
-    this.DrainPendingOnShutdown();
+    this.DrainAfterShutdown();
 }
 ```
 
@@ -218,8 +272,8 @@ timeout window. Tunable.
 **B. NULL is overloaded.** The FFI returns NULL from `cosmos_cq_wait` for
 four different reasons: timeout, shutdown, drained, spurious wake.
 Disambiguation requires a second call — `cosmos_cq_state` — exactly per
-header §720. We split: `Running` → re-arm; anything else → drain
-pending TCSes and exit. This is the **single most contract-sensitive
+header §720. We split: `Running` → re-arm; anything else → exit and
+trigger the shutdown drain. This is the **single most contract-sensitive
 line** in the file.
 
 **C. Per-completion lifecycle.** Every completion must be `free`'d
@@ -238,21 +292,27 @@ process. (For prod, this would route to a structured logger.)
 ```csharp
 private void DispatchCompletion(IntPtr completion)
 {
-    IntPtr userDataPtr = cosmos_completion_user_data(completion);
-    ulong token = (ulong)userDataPtr.ToInt64();
+    IntPtr userData = cosmos_completion_user_data(completion);
+    if (userData == IntPtr.Zero) { /* log + drop */ return; }
 
-    if (!this.pending.TryRemove(token, out var tcs))
+    NativeAsyncOperation op;
+    GCHandle gch;
+    try { op = NativeAsyncOperation.FromUserData(userData, out gch); }
+    catch (Exception ex)
     {
-        Console.Error.WriteLine($"[pump] completion for unknown user_data 0x{token:X16} dropped");
+        // GCHandle.FromIntPtr throws if the slot was already freed —
+        // i.e. duplicate delivery or a slot that was rolled back at
+        // pre-flight. Drop + log; never crash the pump.
+        Console.Error.WriteLine($"[pump] invalid user_data 0x{userData:X16} dropped: {ex.Message}");
         return;
     }
 
-    CosmosCompletionOutcome outcome = cosmos_completion_outcome(completion);
-    switch (outcome) { /* Ok | Error | Cancelled */ }
+    try { SettleCompletion(op, completion); }
+    finally { gch.Free(); }    // exactly once per submission
 }
 ```
 
-Three outcomes, three TCS endings:
+Three outcomes inside `SettleCompletion`, three TCS endings:
 
 | Outcome | What we do | TCS state |
 |---|---|---|
@@ -272,22 +332,32 @@ strings are .NET `string`s, the response can outlive the entire client.
 result landed, their cancellation already completed the TCS — we don't
 want a second `Set*` to throw.
 
-### How the pump routes completions — no scanning, ever
+**One subtle but important invariant:** `gch.Free()` runs **after**
+`SettleCompletion` has handed the result to the `TCS`. The TCS is a
+separate object referenced by the awaiter, so the `NativeAsyncOperation`
+becoming GC-eligible after the Free doesn't strand any state — the
+result is already on its way to the awaiter via the threadpool
+continuation we attached in `RunSingletonAsync`.
 
-A common misconception is that the pump scans `pending` to find the
-finished op. It does not. **Routing is O(1) per completion regardless
-of how many ops are in flight**, because each completion carries its
-own label.
+### How the pump routes completions — no lookup, ever
 
-The mechanism: at submit time, we mint a token (`Interlocked.Increment`),
-put `pending[token] = tcs`, and pass `token` to Rust as the
-`user_data` cookie on `cosmos_driver_submit`. When that op finishes,
-Rust attaches the same cookie to the completion it pushes onto the CQ.
-The pump reads the cookie via `cosmos_completion_user_data`, does one
-`pending.TryRemove(cookie)`, and is done routing.
+A common misconception is that the pump needs a dictionary to find the
+right TCS. It does not — and with Option C it doesn't even own one.
+**Routing is one `GCHandle.FromIntPtr` per completion, regardless of how
+many ops are in flight,** because each completion carries the GCHandle
+directly.
 
-> "Which op finished?" is answered **by Rust**, not by .NET. The pump
-> never iterates `pending`.
+The mechanism: at submit time, we box a `NativeAsyncOperation`,
+GCHandle-pin it (`GCHandleType.Normal`), and pass the
+`GCHandle.ToIntPtr` to Rust as the `user_data` cookie. When that op
+finishes, Rust attaches the same cookie to the completion it pushes onto
+the CQ. The pump reads the cookie via `cosmos_completion_user_data`,
+does one `GCHandle.FromIntPtr` (constant time, no contention), sets the
+result on `op.Tcs`, and frees the handle. Done.
+
+> "Which op finished?" is answered **by Rust** (it carries the cookie),
+> not by .NET. The pump never enumerates anything. There is nothing to
+> enumerate.
 
 ### `cosmos_cq_wait` is a block, not a poll
 
@@ -307,20 +377,20 @@ times are illustrative.
 **Setup phase (T=0):**
 
 ```
-T=0  Caller A:  tcs_A = new TCS<>();  pending[7] = tcs_A;
-                submit(op_A, user_data=7);  return Task_A   →  caller awaits
+T=0  Caller A:  op_A = new NativeAsyncOperation();  cookie_A = GCHandle.Alloc(op_A).ToIntPtr();
+                submit(opReq, user_data=cookie_A);  return op_A.Tcs.Task   →  caller awaits
 
-T=0  Caller B:  tcs_B = new TCS<>();  pending[8] = tcs_B;
-                submit(op_B, user_data=8);  return Task_B   →  caller awaits
+T=0  Caller B:  op_B = new NativeAsyncOperation();  cookie_B = GCHandle.Alloc(op_B).ToIntPtr();
+                submit(opReq, user_data=cookie_B);  return op_B.Tcs.Task   →  caller awaits
 
-T=0  Caller C:  tcs_C = new TCS<>();  pending[9] = tcs_C;
-                submit(op_C, user_data=9);  return Task_C   →  caller awaits
+T=0  Caller C:  op_C = new NativeAsyncOperation();  cookie_C = GCHandle.Alloc(op_C).ToIntPtr();
+                submit(opReq, user_data=cookie_C);  return op_C.Tcs.Task   →  caller awaits
 ```
 
-After T=0: `pending = {7→tcs_A, 8→tcs_B, 9→tcs_C}`. All three callers
-are `await`-ing. Rust worker tasks are doing the HTTPS round-trips —
-they will finish in whatever order the network decides, **not** in
-submission order.
+After T=0: three GCHandle table entries, three Tasks held by awaiters.
+All three callers are `await`-ing. Rust worker tasks are doing the HTTPS
+round-trips — they will finish in whatever order the network decides,
+**not** in submission order.
 
 **Pump (before any completion):**
 
@@ -332,55 +402,55 @@ while loop iter N:
 **T=15 ms — op B finishes first (shortest round-trip happened to be B):**
 
 ```
-Rust worker B:  build completion{ user_data=8, outcome=Ok, response=... }
+Rust worker B:  build completion{ user_data=cookie_B, outcome=Ok, response=... }
                 enqueue onto CQ
                 signal condvar
 
 Pump:           wakes from cosmos_cq_wait → returns completion pointer
                 DispatchCompletion:
-                   cosmos_completion_user_data(completion) → 8
-                   pending.TryRemove(8) → tcs_B               (O(1) lookup)
-                   tcs_B.TrySetResult(MaterializeResponse(...))
+                   cosmos_completion_user_data(completion) → cookie_B
+                   NativeAsyncOperation.FromUserData(cookie_B, out gch) → op_B
+                   op_B.Tcs.TrySetResult(MaterializeResponse(...))
                        → Task_B continuation scheduled on threadpool
                        → pump does NOT run the continuation itself
+                   gch.Free()    ← op_B is now GC-eligible
                 cosmos_completion_free(completion)
                 loop → cosmos_cq_wait → parked again
 ```
 
-After T=15: `pending = {7→tcs_A, 9→tcs_C}`. Caller B's `await` is
-unwinding on some threadpool thread. **Critical:** the pump did not
-touch tcs_A or tcs_C — it didn't even read those entries.
+After T=15: two GCHandle entries left (cookie_A, cookie_C). Caller B's
+`await` is unwinding on some threadpool thread. **Critical:** the pump
+did not touch op_A or op_C — it didn't even read those entries.
 
 **T=22 ms — op C finishes:**
 
 ```
-Pump:  wake, user_data=9, pending.TryRemove(9) → tcs_C
-       tcs_C.TrySetResult(...) → Task_C continuation scheduled
-       free completion, loop, park
+Pump:  wake, user_data=cookie_C, FromUserData → op_C
+       op_C.Tcs.TrySetResult(...) → Task_C continuation scheduled
+       gch.Free(), free completion, loop, park
 ```
-
-After T=22: `pending = {7→tcs_A}`.
 
 **T=30 ms — op A finishes last:**
 
 ```
-Pump:  wake, user_data=7, pending.TryRemove(7) → tcs_A
-       tcs_A.TrySetResult(...) → Task_A continuation scheduled
-       free completion, loop, park
+Pump:  wake, user_data=cookie_A, FromUserData → op_A
+       op_A.Tcs.TrySetResult(...) → Task_A continuation scheduled
+       gch.Free(), free completion, loop, park
 ```
 
-After T=30: `pending = {}`. Pump is asleep on `cosmos_cq_wait`. Nothing
-to do.
+After T=30: zero GCHandle entries. Pump is asleep on `cosmos_cq_wait`.
+Nothing to do.
 
 ### Why this scales to N concurrent ops
 
 The example above with N=3 generalizes to N=1,000 or N=100,000 with
 **no change to the per-completion cost**:
 
-- Caller side: each submit does `Interlocked.Increment` + one dict put
-  + one Rust call. O(1) per caller.
+- Caller side: each submit does one `new NativeAsyncOperation()` + one
+  `GCHandle.Alloc` + one Rust call. O(1) per caller, no shared state.
 - Pump side: each completion does one `cq_wait` return + one
-  `user_data` read + one dict TryRemove + one `TrySetResult` + one
+  `user_data` read + one `GCHandle.FromIntPtr` (constant-time CLR
+  table lookup) + one `TrySetResult` + one `gch.Free` + one
   `completion_free`. **O(1) per completion, independent of N.**
 - TCS continuations run on the **threadpool**, not on the pump, because
   we built each TCS with `TaskCreationOptions.RunContinuationsAsynchronously`.
@@ -395,66 +465,24 @@ The pump's CPU is therefore proportional to **throughput**
 (completions/sec), not **concurrency** (in-flight ops). Empirically,
 dispatch is microseconds; even at 100K ops/sec the pump is loafing.
 
-### Contrast: what a scanning design would look like
-
-To make the cookie-based design pop, consider the alternative the
-pump deliberately doesn't do:
-
-```csharp
-// Hypothetical — NOT what we do
-foreach (var kvp in pending)
-{
-    if (kvp.Value.SomehowReady())        // poll each TCS
-    {
-        kvp.Value.SetResult(...);
-        pending.Remove(kvp.Key);
-    }
-}
-```
-
-That would be O(N) per cycle — at 10,000 pending ops the pump would do
-10,000 checks per iteration just to find the one that finished. The
-cookie design replaces that with **a single `pending.TryRemove(cookie)`**
-because the CQ already told us which cookie is ready. O(N) → O(1).
-
-### When `pending` is iterated
-
-Exactly once in the loop's whole lifetime: during
-`DrainPendingOnShutdown`, when the pump exits and needs to fail every
-still-pending TCS with `"Completion queue was shut down or drained"`.
-That bounds the worst-case iteration at "however many ops were in
-flight at the moment of disposal." Nowhere else in the pump's
-hot path does `pending` get iterated.
-
-### What if the pump can't keep up?
-
-If callers create completions faster than the pump drains them, the CQ
-fills up. The Rust side bounds that with a configurable capacity. If
-the cap is hit, the Rust workers backpressure (they don't post more
-until headroom appears). Today we use `cosmos_cq_create_default` which
-picks a sane bound; for true sustained high throughput you'd want
-multiple CQs and multiple pumps (the `CompletionQueueLoop` class is
-designed to be instantiated N times — though `NativeCosmosClient`
-currently only creates one).
-
 ### Cancellation — the "second handle" model
 
 The most subtle bit. A `CancellationToken` arrives on the caller side
 in .NET-land, but the in-flight work lives in Rust-land — how do we
 poke it?
 
-The Rust FFI returns TWO things from `cosmos_driver_submit`:
+The Rust FFI returns TWO things from `cosmos_driver_execute_*_submit`:
 
 - The completion (eventually, via the CQ) — this is what tells us the
   op finished.
 - An `operation_handle_t*` (immediately, by return value) — this is
   what tells the driver to cancel.
 
-In `NativeCosmosClient.RunOperationAsync`:
+In `NativeCosmosClient.RunSingletonAsync`:
 
 ```csharp
-IntPtr opHandle = cosmos_driver_submit(this.driver, op, IntPtr.Zero,
-    this.cq.Handle, userData, out preError);
+opHandle = builder.Submit(this.driver, this.cq.Handle, userData,
+                          OperationBucket.Singleton, out preError);
 
 CancellationTokenRegistration ctr = default;
 if (ct.CanBeCanceled)
@@ -465,11 +493,11 @@ if (ct.CanBeCanceled)
     }, opHandle);
 }
 
-tcs.Task.ContinueWith(static (_, state) =>
+op.Tcs.Task.ContinueWith(static (_, state) =>
 {
     var st = (Tuple<IntPtr, CancellationTokenRegistration>)state!;
-    st.Item2.Dispose();
-    cosmos_operation_handle_free(st.Item1);
+    st.Item2.Dispose();                       // synchronously unwires the cancel callback
+    cosmos_operation_handle_free(st.Item1);   // then it's safe to free the handle
 }, Tuple.Create(opHandle, ctr), TaskContinuationOptions.ExecuteSynchronously);
 ```
 
@@ -492,10 +520,32 @@ asserts exactly that (TaskCanceled OR natural-completion is accepted
 on 100 trials).
 
 The `ContinueWith` at the bottom is the cleanup: when the Task settles
-(any outcome), we unregister the CT and free the op handle. That's what
-keeps the design leak-free.
+(any outcome), we unregister the CT and free the op handle. The
+GCHandle around `NativeAsyncOperation` was already freed by the pump
+inside `DispatchCompletion` — this continuation only owns the op handle
+and the CT registration.
 
-### Shutdown — the drain pattern
+### Pre-flight rollback — who frees the GCHandle when Submit fails?
+
+There is exactly one path where the pump will **not** see a completion:
+when `cosmos_driver_execute_*_submit` returns `NULL` (pre-flight reject
+with `out_pre_error` populated). In that case the submitter
+(`RunSingletonAsync`) owns the cleanup:
+
+```csharp
+if (opHandle == IntPtr.Zero)
+{
+    GCHandle.FromIntPtr(userData).Free();     // pump won't see a completion → we free
+    op.Tcs.TrySetException(new InvalidOperationException(
+        $"submit pre-flight rejected: {preError} (op#{op.Id})"));
+    return op.Tcs.Task;
+}
+```
+
+This is the only Free outside the pump. Everywhere else,
+`DispatchCompletion` owns it.
+
+### Shutdown — let Rust drain, then let the pump finish
 
 Dispose is "polite":
 
@@ -508,16 +558,23 @@ public void Dispose()
 }
 ```
 
-The set-and-check pattern makes it idempotent (subsequent calls are
-no-ops). The `Join` gives the pump up to one timeout window plus one
-final iteration to exit gracefully. The pump's loop sees `disposed != 0`
-on its next iteration after the wait returns, falls into
-`DrainPendingOnShutdown`, fails every still-pending TCS with a clear
-exception message, and exits. Only THEN do we free the CQ handle.
+Setting the flag, the pump's next `cosmos_cq_wait` returns (within one
+200 ms window). It sees `disposed != 0`, falls into
+`cosmos_cq_shutdown(...)` + `DrainAfterShutdown()`. The Rust contract
+for shutdown is to post completions for every in-flight op (typically
+with `Cancelled` outcome), so `DrainAfterShutdown` keeps calling
+`cosmos_cq_wait` (with a tight 50 ms timeout) and dispatching every
+completion it sees — settling TCSes and freeing GCHandles via the
+normal path. Once `cosmos_cq_wait` returns NULL with a terminal CQ
+state, the pump exits, `Join` completes, and we free the CQ.
 
-Awaiters whose ops were in-flight at Dispose time get a clear
-`InvalidOperationException: "Completion queue was shut down or drained"`
-— never a hang.
+Awaiters whose ops were in flight at Dispose time wake up with whatever
+outcome Rust posted on shutdown (usually `TaskCanceledException`),
+never hang. The deliberate trade-off vs the old map-based drain: we
+trust the Rust contract instead of maintaining a parallel registry. If
+that contract is ever broken on the Rust side we'd see GCHandle table
+growth across client churn and add an outstanding-handles set here as
+defense in depth.
 
 ### Why one CQ per client (today)?
 
@@ -529,60 +586,92 @@ the pump.
 If we later want to scale to per-partition or per-region CQs (so
 different traffic classes don't share queue space), the design accommodates
 it cleanly: `CompletionQueueLoop` is constructed from an `IntPtr runtime`
-plus optional `CosmosCqOptions`. You just instantiate more. The routing
-table is per-loop, so there's no cross-talk between pumps.
+plus optional `CosmosCqOptions`. You just instantiate more. Each pump
+owns its own slice of GCHandle entries, so there is no cross-talk.
 
 ---
 
-## How CRUD methods actually flow (NativeCosmosClient.RunOperationAsync)
+## How CRUD methods actually flow (NativeCosmosClient.RunSingletonAsync)
 
 ```csharp
-private Task<CosmosNativeResponse> RunOperationAsync(
-    OperationFactory factory, string? bodyJson, CancellationToken ct)
+private Task<CosmosNativeResponse> RunSingletonAsync(
+    Action<CosmosOperationRequestBuilder> configure, CancellationToken ct)
 {
-    var tcs = new TaskCompletionSource<CosmosNativeResponse>(
-        TaskCreationOptions.RunContinuationsAsynchronously);          // 1
+    var op = new NativeAsyncOperation();                              // 1
 
     if (ct.IsCancellationRequested)                                   // 2
-    { tcs.TrySetCanceled(ct); return tcs.Task; }
+    { op.Tcs.TrySetCanceled(ct); return op.Tcs.Task; }
 
-    CosmosErrorCode rc = factory(out IntPtr op);                      // 3
-    if (rc != Success || op == 0) { /* fail */ }
+    IntPtr userData = op.AllocateUserData();                          // 3
 
-    if (bodyJson != null) { /* cosmos_operation_with_body */ }         // 4
+    IntPtr opHandle;
+    CosmosErrorCode preError;
+    using (var builder = new CosmosOperationRequestBuilder())
+    {
+        try { configure(builder); }                                   // 4
+        catch (Exception ex)
+        {
+            GCHandle.FromIntPtr(userData).Free();                     // 4a
+            op.Tcs.TrySetException(ex);
+            return op.Tcs.Task;
+        }
 
-    IntPtr userData = this.cq.Register(tcs, out ulong token);         // 5
+        opHandle = builder.Submit(                                    // 5
+            this.driver, this.cq.Handle, userData,
+            OperationBucket.Singleton, out preError);
+    }
 
-    IntPtr opHandle = cosmos_driver_submit(                           // 6
-        this.driver, op, 0, this.cq.Handle, userData, out preError);
+    if (opHandle == IntPtr.Zero)                                      // 6
+    {
+        GCHandle.FromIntPtr(userData).Free();
+        op.Tcs.TrySetException(new InvalidOperationException(...));
+        return op.Tcs.Task;
+    }
 
-    if (opHandle == 0) { /* unregister + fail */ }
+    CancellationTokenRegistration ctr = default;                      // 7
+    if (ct.CanBeCanceled)
+        ctr = ct.Register(static s => cosmos_operation_handle_cancel((IntPtr)s!), opHandle);
 
-    /* CT wiring + cleanup ContinueWith */                            // 7
+    op.Tcs.Task.ContinueWith(static (_, state) =>                     // 8
+    {
+        var st = (Tuple<IntPtr, CancellationTokenRegistration>)state!;
+        st.Item2.Dispose();
+        cosmos_operation_handle_free(st.Item1);
+    }, Tuple.Create(opHandle, ctr), TaskContinuationOptions.ExecuteSynchronously);
 
-    return tcs.Task;
+    return op.Tcs.Task;
 }
 ```
 
 Per call:
 
-1. **Allocate a TCS** with async continuations. Cheap.
+1. **Allocate the boxed payload** (`NativeAsyncOperation`) — gives us
+   the `Id` for diagnostics and the `Tcs` for the awaiter (built with
+   `RunContinuationsAsynchronously`).
 2. **Fast-path early-cancel.** Don't even ask Rust to do work if the
    caller already gave up.
-3. **Build the operation** via a per-op factory (`read_item` /
-   `create_item` / etc). The factory is the only thing that differs
-   between CRUD methods; everything else is shared.
-4. **Attach body** (writes only). Per header §1251 the wrapper copies
-   the bytes into its own storage, so the managed `byte[]` is free to
-   GC immediately.
-5. **Register the TCS** into the routing table, get a token, cast token
-   to `IntPtr` for the `user_data` slot.
-6. **Submit.** Consumes the `op` on success per header §1764. Returns
-   the `operation_handle` immediately; the actual completion arrives
-   later via the CQ.
+3. **Allocate the `GCHandle`** rooting `op` and grab its `IntPtr` — this
+   is the cookie Rust will round-trip. The CLR's GCHandle table is now
+   carrying the routing.
+4. **Build the operation request** via the supplied configure action.
+   The builder owns the lifetime of every borrowed pointer (UTF-8
+   strings via `Marshal.StringToCoTaskMemUTF8`, body bytes via pinned
+   `GCHandle`, options sub-struct pinned in place). If `configure`
+   throws (4a), we roll back the GCHandle ourselves before failing the
+   TCS — no completion is coming.
+5. **Submit.** The wrapper deep-copies all borrowed pointers before
+   returning, so the builder is safe to dispose on `using` exit. The
+   submit returns the `operation_handle` immediately; the actual
+   completion arrives later via the CQ.
+6. **Pre-flight rollback.** If submit returned NULL, Rust rejected
+   before queuing the op — no completion will arrive, so we own the
+   GCHandle free.
 7. **Wire CT** → cancel pokes `cosmos_operation_handle_cancel`.
-   **Wire cleanup** → when the Task settles (any way), the CT is
-   unregistered and the op handle is freed.
+8. **Wire cleanup ContinueWith** → when the Task settles (any outcome),
+   the CT registration is unregistered and the op handle is freed. The
+   `GCHandle` around `NativeAsyncOperation` was already freed by the
+   pump in `DispatchCompletion`; this continuation only owns the op
+   handle and the CT registration.
 
 Return the Task. Done. The caller is now `await`ing; the pump will
 eventually deliver the result.
@@ -618,7 +707,9 @@ them.
 | File | What it is |
 |---|---|
 | `NativeMethods.cs` | Raw P/Invoke surface. ~45 fns, each tagged with `azurecosmosdriver.h` line range. No logic. |
-| `CompletionQueueLoop.cs` | The pump. One thread, one CQ, token→TCS routing, idempotent dispose. |
+| `NativeAsyncOperation.cs` | The boxed `{ Id, Tcs }` payload that gets GCHandle-rooted as `user_data`. Routing primitive. |
+| `CompletionQueueLoop.cs` | The pump. One thread, one CQ, GCHandle-based dispatch, idempotent dispose. |
+| `CosmosOperationRequestBuilder.cs` | Fluent staging of every borrowed pointer for one submit call. Owns the lifetime contract. |
 | `NativeCosmosClient.cs` | Object-graph owner. Staged-build ctor, `*ItemAsync` methods, CT→cancel wiring, leak-free cleanup. |
 | `CosmosNativeException.cs` | Strongly-typed rich error (CoarseCode + HTTP + sub-status + retry-after + …). All fields copied at construction. |
 | `Program.cs` | F-check harness (default) + `-- crud` dispatcher to `Samples/CrudSample`. |
@@ -654,7 +745,7 @@ contract comments inline.
 | | Check | What it validates |
 |---|---|---|
 | F1 | Single read returns 200 + seeded body marker | Whole layer cake end-to-end on the happy path |
-| F2 | 1000 submits, average < 100µs | `cosmos_driver_submit` is non-blocking — submit returns before the wire round-trip |
+| F2 | 1000 submits, average < 100µs | `cosmos_driver_execute_singleton_operation_submit` is non-blocking — submit returns before the wire round-trip |
 | F3 | 1000 concurrent reads on one pump complete in <5s | Pump scales horizontally over a single CQ |
 | F4 | CT → `cosmos_operation_handle_cancel` honored on 100 trials | The "second handle" cancel model works; race with natural-completion is tolerated |
 | F5 | Read non-existent item → `IsNotFound == true && HttpStatusCode == 404` | `CoarseCode` discriminator survives the Error path; predicates work |

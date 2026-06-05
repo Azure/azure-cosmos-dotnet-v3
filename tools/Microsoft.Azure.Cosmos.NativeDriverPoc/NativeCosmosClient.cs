@@ -4,7 +4,6 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
 {
     using System;
     using System.Runtime.InteropServices;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using static Microsoft.Azure.Cosmos.NativeDriverPoc.NativeMethods;
@@ -140,82 +139,130 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
         public CompletionQueueLoop CompletionQueue => this.cq;
 
         public Task<CosmosNativeResponse> ReadItemAsync(string itemId, CancellationToken ct = default) =>
-            this.RunOperationAsync(
-                (out IntPtr op) => cosmos_operation_read_item(this.container, itemId, this.partitionKey, out op),
-                bodyJson: null, ct);
+            this.RunSingletonAsync(b => b
+                .WithKind(CosmosOperationKind.ReadItem)
+                .WithContainer(this.container)
+                .WithPartitionKey(this.partitionKey)
+                .WithItemId(itemId), ct);
 
         public Task<CosmosNativeResponse> CreateItemAsync(string itemId, string bodyJson, CancellationToken ct = default) =>
-            this.RunOperationAsync(
-                (out IntPtr op) => cosmos_operation_create_item(this.container, itemId, this.partitionKey, out op),
-                bodyJson, ct);
+            this.RunSingletonAsync(b => b
+                .WithKind(CosmosOperationKind.CreateItem)
+                .WithContainer(this.container)
+                .WithPartitionKey(this.partitionKey)
+                .WithItemId(itemId)
+                .WithJsonBody(bodyJson), ct);
 
         public Task<CosmosNativeResponse> UpsertItemAsync(string itemId, string bodyJson, CancellationToken ct = default) =>
-            this.RunOperationAsync(
-                (out IntPtr op) => cosmos_operation_upsert_item(this.container, itemId, this.partitionKey, out op),
-                bodyJson, ct);
+            this.RunSingletonAsync(b => b
+                .WithKind(CosmosOperationKind.UpsertItem)
+                .WithContainer(this.container)
+                .WithPartitionKey(this.partitionKey)
+                .WithItemId(itemId)
+                .WithJsonBody(bodyJson), ct);
 
         public Task<CosmosNativeResponse> ReplaceItemAsync(string itemId, string bodyJson, CancellationToken ct = default) =>
-            this.RunOperationAsync(
-                (out IntPtr op) => cosmos_operation_replace_item(this.container, itemId, this.partitionKey, out op),
-                bodyJson, ct);
+            this.RunSingletonAsync(b => b
+                .WithKind(CosmosOperationKind.ReplaceItem)
+                .WithContainer(this.container)
+                .WithPartitionKey(this.partitionKey)
+                .WithItemId(itemId)
+                .WithJsonBody(bodyJson), ct);
 
         public Task<CosmosNativeResponse> DeleteItemAsync(string itemId, CancellationToken ct = default) =>
-            this.RunOperationAsync(
-                (out IntPtr op) => cosmos_operation_delete_item(this.container, itemId, this.partitionKey, out op),
-                bodyJson: null, ct);
+            this.RunSingletonAsync(b => b
+                .WithKind(CosmosOperationKind.DeleteItem)
+                .WithContainer(this.container)
+                .WithPartitionKey(this.partitionKey)
+                .WithItemId(itemId), ct);
 
-        private delegate CosmosErrorCode OperationFactory(out IntPtr op);
-
-        private Task<CosmosNativeResponse> RunOperationAsync(
-            OperationFactory factory, string? bodyJson, CancellationToken ct)
+        /// <summary>
+        /// Core dispatch path against the post-PR-#4515 spec.
+        ///
+        /// Builds a <see cref="CosmosOperationRequest"/> via the supplied
+        /// <paramref name="configure"/> action, dispatches through
+        /// <c>cosmos_driver_execute_singleton_operation_submit</c>, and
+        /// wires the resulting opaque handle into the CQ pump (which
+        /// completes the TCS once the Rust side posts a completion).
+        ///
+        /// Routing model: Aaron Robinson + Kevin Jones + Ashley Schroder
+        /// consensus (May 2026 Teams thread). The <c>user_data</c> cookie
+        /// we hand to Rust is a <see cref="GCHandle"/> rooting a boxed
+        /// <see cref="NativeAsyncOperation"/> (with a diagnostic
+        /// <see cref="NativeAsyncOperation.Id"/> for trace correlation
+        /// and a <see cref="TaskCompletionSource{T}"/> for the result).
+        /// No <c>ConcurrentDictionary&lt;ulong, TCS&gt;</c>, no monotonic
+        /// counter — the GCHandle table is the routing primitive.
+        ///
+        /// Lifetime contract:
+        ///   * Every pointer in the request struct (UTF-8 strings, body
+        ///     bytes, options sub-struct) is owned by the
+        ///     <see cref="CosmosOperationRequestBuilder"/> and lives in
+        ///     pinned / CoTaskMem-allocated memory.
+        ///   * The wrapper deep-copies before the submit call returns
+        ///     (header line 829 + 848), so the builder is safe to dispose
+        ///     immediately after the synchronous submit returns.
+        ///   * The opaque <c>cosmos_operation_handle_t*</c> is freed on the
+        ///     completion side (ContinueWith below), not here.
+        ///   * The <see cref="GCHandle"/> is freed by the CQ pump's
+        ///     <c>DispatchCompletion</c> after it has settled the TCS —
+        ///     except on the pre-flight rollback path (submit returned
+        ///     NULL), where we free it inline here because no completion
+        ///     will ever arrive.
+        /// </summary>
+        private Task<CosmosNativeResponse> RunSingletonAsync(
+            Action<CosmosOperationRequestBuilder> configure,
+            CancellationToken ct)
         {
-            var tcs = new TaskCompletionSource<CosmosNativeResponse>(
-                TaskCreationOptions.RunContinuationsAsynchronously);
+            var op = new NativeAsyncOperation();
 
             if (ct.IsCancellationRequested)
             {
-                tcs.TrySetCanceled(ct);
-                return tcs.Task;
+                op.Tcs.TrySetCanceled(ct);
+                return op.Tcs.Task;
             }
 
-            // 1. Build the operation
-            CosmosErrorCode rc = factory(out IntPtr op);
-            if (rc != CosmosErrorCode.Success || op == IntPtr.Zero)
-            {
-                tcs.TrySetException(new InvalidOperationException($"operation factory failed: {rc}"));
-                return tcs.Task;
-            }
+            // 1. Allocate the GCHandle that will keep `op` alive across
+            //    the FFI boundary. The IntPtr it produces IS the user_data
+            //    cookie Rust will round-trip back to the pump.
+            IntPtr userData = op.AllocateUserData();
 
-            // 2. Attach body — copied into wrapper storage per header §1251
-            if (bodyJson != null)
+            IntPtr opHandle;
+            CosmosErrorCode preError;
+            using (var builder = new CosmosOperationRequestBuilder())
             {
-                byte[] bytes = Encoding.UTF8.GetBytes(bodyJson);
-                rc = cosmos_operation_with_body(op, bytes, (UIntPtr)bytes.Length);
-                if (rc != CosmosErrorCode.Success)
+                try
                 {
-                    cosmos_operation_free(op);
-                    tcs.TrySetException(new InvalidOperationException($"cosmos_operation_with_body failed: {rc}"));
-                    return tcs.Task;
+                    configure(builder);
                 }
+                catch (Exception ex)
+                {
+                    // Pre-flight rollback: no completion will arrive, so
+                    // we free the GCHandle ourselves before failing the TCS.
+                    GCHandle.FromIntPtr(userData).Free();
+                    op.Tcs.TrySetException(ex);
+                    return op.Tcs.Task;
+                }
+
+                // 2. Submit — the wrapper deep-copies all borrowed pointers
+                //    before returning, so the builder's pinned/Marshal-
+                //    allocated memory is safe to release on `using` exit.
+                opHandle = builder.Submit(
+                    this.driver, this.cq.Handle, userData,
+                    OperationBucket.Singleton, out preError);
             }
-
-            // 3. Register TCS
-            IntPtr userData = this.cq.Register(tcs, out ulong token);
-
-            // 4. Submit — consumes op on success per header §1764
-            IntPtr opHandle = cosmos_driver_submit(
-                this.driver, op, IntPtr.Zero, this.cq.Handle, userData, out CosmosErrorCode preError);
 
             if (opHandle == IntPtr.Zero)
             {
-                this.cq.Unregister(token);
-                cosmos_operation_free(op);
-                tcs.TrySetException(new InvalidOperationException(
-                    $"cosmos_driver_submit pre-flight rejected: {preError}"));
-                return tcs.Task;
+                // Pre-flight rollback on the Rust side: no completion will
+                // arrive, so we own the GCHandle free.
+                GCHandle.FromIntPtr(userData).Free();
+                op.Tcs.TrySetException(new InvalidOperationException(
+                    $"cosmos_driver_execute_singleton_operation_submit pre-flight rejected: {preError} (op#{op.Id})"));
+                return op.Tcs.Task;
             }
 
-            // 5. Wire CancellationToken → cosmos_operation_handle_cancel
+            // 3. Wire CancellationToken → cosmos_operation_handle_cancel.
             CancellationTokenRegistration ctr = default;
             if (ct.CanBeCanceled)
             {
@@ -225,15 +272,19 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
                 }, opHandle);
             }
 
-            // 6. Release op handle (and unregister ct hook) once completion observed
-            tcs.Task.ContinueWith(static (_, state) =>
+            // 4. Release the op handle (and unregister ct hook) once
+            //    the pump has observed completion and resolved the TCS.
+            //    Note: the GCHandle is freed by the pump in DispatchCompletion,
+            //    so this continuation only needs to clean up the op handle
+            //    and the CT registration.
+            op.Tcs.Task.ContinueWith(static (_, state) =>
             {
                 var st = (Tuple<IntPtr, CancellationTokenRegistration>)state!;
                 st.Item2.Dispose();
                 cosmos_operation_handle_free(st.Item1);
             }, Tuple.Create(opHandle, ctr), TaskContinuationOptions.ExecuteSynchronously);
 
-            return tcs.Task;
+            return op.Tcs.Task;
         }
 
         private static void ThrowOn(CosmosErrorCode rc, string call)

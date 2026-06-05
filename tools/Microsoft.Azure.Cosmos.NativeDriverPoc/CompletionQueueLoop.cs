@@ -3,7 +3,6 @@
 namespace Microsoft.Azure.Cosmos.NativeDriverPoc
 {
     using System;
-    using System.Collections.Concurrent;
     using System.Runtime.InteropServices;
     using System.Threading;
     using System.Threading.Tasks;
@@ -17,12 +16,41 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
     /// <c>cosmos_completion_t*</c>, fans the outcome onto the matching
     /// <see cref="TaskCompletionSource{T}"/>, then frees the completion.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Routing model (Option C — GCHandle).</b> The <c>user_data</c> cookie
+    /// that Rust round-trips is a <see cref="GCHandle.ToIntPtr"/> of a
+    /// <see cref="NativeAsyncOperation"/> instance allocated by the
+    /// submitter. The pump recovers the operation via
+    /// <see cref="GCHandle.FromIntPtr"/>, sets the result on its
+    /// <see cref="NativeAsyncOperation.Tcs"/>, then frees the handle —
+    /// exactly once per submission. No central dictionary, no shared
+    /// counter. The CLR's GCHandle table is the routing primitive.
+    /// </para>
+    /// <para>
+    /// This design follows the consensus in Aaron Robinson + Kevin Jones +
+    /// Ashley Schroder's Teams thread (May 2026); see
+    /// <see cref="NativeAsyncOperation"/> for the verbatim recommendations
+    /// and the blog reference that crystallised the approach.
+    /// </para>
+    /// <para>
+    /// <b>Shutdown contract.</b> On <see cref="Dispose"/>, the pump exits
+    /// its wait loop, calls <c>cosmos_cq_shutdown</c>, then drains any
+    /// remaining completions through the normal dispatch path before
+    /// freeing the CQ handle. Rust's <c>cosmos_cq_shutdown</c> is
+    /// documented to post completions (typically with the
+    /// <see cref="CosmosCompletionOutcome.Cancelled"/> outcome) for every
+    /// in-flight op, so awaiters wake up cleanly with a
+    /// <see cref="TaskCanceledException"/> instead of hanging. If a future
+    /// Rust change breaks that guarantee we'd see GCHandle table growth
+    /// across client lifetimes and add a defensive outstanding-handles
+    /// set here; today we trust the contract.
+    /// </para>
+    /// </remarks>
     internal sealed class CompletionQueueLoop : IDisposable
     {
         private readonly IntPtr cqHandle;
         private readonly Thread pumpThread;
-        private readonly ConcurrentDictionary<ulong, TaskCompletionSource<CosmosNativeResponse>> pending;
-        private long nextUserData;
         private int disposed;
 
         public CompletionQueueLoop(IntPtr runtime, CosmosCqOptions? options = null)
@@ -35,7 +63,6 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
                 throw new InvalidOperationException("cosmos_cq_create returned NULL");
             }
 
-            this.pending = new ConcurrentDictionary<ulong, TaskCompletionSource<CosmosNativeResponse>>();
             this.pumpThread = new Thread(this.Pump)
             {
                 IsBackground = true,
@@ -45,15 +72,6 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
         }
 
         public IntPtr Handle => this.cqHandle;
-
-        public IntPtr Register(TaskCompletionSource<CosmosNativeResponse> tcs, out ulong token)
-        {
-            token = (ulong)Interlocked.Increment(ref this.nextUserData);
-            this.pending[token] = tcs;
-            return new IntPtr((long)token);
-        }
-
-        public bool Unregister(ulong token) => this.pending.TryRemove(token, out _);
 
         private void Pump()
         {
@@ -68,7 +86,6 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
                     {
                         continue;
                     }
-                    this.DrainPendingOnShutdown();
                     return;
                 }
 
@@ -86,22 +103,96 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
                 }
             }
 
+            // Disposed flag was set — ask Rust to drain in-flight ops and
+            // process every completion it surfaces so the awaiters wake up.
             cosmos_cq_shutdown(this.cqHandle);
-            this.DrainPendingOnShutdown();
+            this.DrainAfterShutdown();
+        }
+
+        /// <summary>
+        /// After <c>cosmos_cq_shutdown</c> we keep pumping until
+        /// <c>cosmos_cq_wait</c> returns NULL with the CQ in a terminal
+        /// state. Every completion observed in this phase still routes
+        /// through <see cref="DispatchCompletion"/>, which frees its
+        /// <see cref="GCHandle"/> normally — so the in-flight set drains
+        /// without us tracking it.
+        /// </summary>
+        private void DrainAfterShutdown()
+        {
+            while (true)
+            {
+                IntPtr completion = cosmos_cq_wait(this.cqHandle, timeoutMs: 50);
+                if (completion == IntPtr.Zero)
+                {
+                    CosmosCqState state = cosmos_cq_state(this.cqHandle);
+                    if (state == CosmosCqState.Running)
+                    {
+                        // Shouldn't happen post-shutdown; defensive re-arm.
+                        continue;
+                    }
+                    return;
+                }
+
+                try
+                {
+                    this.DispatchCompletion(completion);
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"[pump-drain] dispatch error: {ex}");
+                }
+                finally
+                {
+                    cosmos_completion_free(completion);
+                }
+            }
         }
 
         private void DispatchCompletion(IntPtr completion)
         {
-            IntPtr userDataPtr = cosmos_completion_user_data(completion);
-            ulong token = (ulong)userDataPtr.ToInt64();
-
-            if (!this.pending.TryRemove(token, out var tcs))
+            IntPtr userData = cosmos_completion_user_data(completion);
+            if (userData == IntPtr.Zero)
             {
-                Console.Error.WriteLine(
-                    $"[pump] completion for unknown user_data 0x{token:X16} dropped");
+                Console.Error.WriteLine("[pump] completion with NULL user_data dropped");
                 return;
             }
 
+            // GCHandle is the routing primitive — no dict, no lookup.
+            // The handle's Target field IS the NativeAsyncOperation we
+            // stashed at submit time.
+            NativeAsyncOperation op;
+            GCHandle gch;
+            try
+            {
+                op = NativeAsyncOperation.FromUserData(userData, out gch);
+            }
+            catch (Exception ex)
+            {
+                // FromIntPtr throws InvalidOperationException on an
+                // invalidated handle — typically a double-delivery or a
+                // handle that was already freed via the pre-flight
+                // rollback path. Drop and log; never let it crash the pump.
+                Console.Error.WriteLine(
+                    $"[pump] completion for invalid user_data 0x{userData.ToInt64():X16} dropped: {ex.Message}");
+                return;
+            }
+
+            try
+            {
+                SettleCompletion(op, completion);
+            }
+            finally
+            {
+                // Free the GCHandle exactly once per completion — this is
+                // the spot. After this line the IntPtr is invalid; any
+                // duplicate delivery from Rust will be caught by the
+                // try/catch above.
+                gch.Free();
+            }
+        }
+
+        private static void SettleCompletion(NativeAsyncOperation op, IntPtr completion)
+        {
             CosmosCompletionOutcome outcome = cosmos_completion_outcome(completion);
 
             switch (outcome)
@@ -111,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
                     IntPtr response = cosmos_completion_take_response(completion);
                     try
                     {
-                        tcs.TrySetResult(MaterializeResponse(response));
+                        op.Tcs.TrySetResult(MaterializeResponse(response));
                     }
                     finally
                     {
@@ -136,19 +227,19 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
                     {
                         if (error != IntPtr.Zero) cosmos_error_free(error);
                     }
-                    tcs.TrySetException(ex);
+                    op.Tcs.TrySetException(ex);
                     break;
                 }
 
                 case CosmosCompletionOutcome.Cancelled:
                 {
-                    tcs.TrySetCanceled();
+                    op.Tcs.TrySetCanceled();
                     break;
                 }
 
                 default:
                 {
-                    tcs.TrySetException(new InvalidOperationException(
+                    op.Tcs.TrySetException(new InvalidOperationException(
                         $"unexpected cosmos_completion_outcome: {outcome}"));
                     break;
                 }
@@ -182,16 +273,6 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
             }
 
             return new CosmosNativeResponse(http, ru, activityId, sessionToken, etag, continuation, body);
-        }
-
-        private void DrainPendingOnShutdown()
-        {
-            foreach (var kvp in this.pending)
-            {
-                kvp.Value.TrySetException(
-                    new InvalidOperationException("Completion queue was shut down or drained"));
-            }
-            this.pending.Clear();
         }
 
         public void Dispose()
