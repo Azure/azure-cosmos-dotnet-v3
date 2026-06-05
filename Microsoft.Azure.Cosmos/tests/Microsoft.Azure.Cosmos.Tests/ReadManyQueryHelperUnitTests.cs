@@ -274,6 +274,64 @@ namespace Microsoft.Azure.Cosmos.Tests
                 $"JSON '{json}' must surface as a {expectedElementType.Name}.");
         }
 
+        [TestMethod]
+        public async Task ReadStreamAsCosmosElementAsync_DoesNotDisposeCallerOwnedMemoryStream()
+        {
+            // Contract pin: when the caller hands us a MemoryStream we MUST NOT dispose it
+            // — the caller owns its lifetime (in the point-read path the outer
+            // `using (pointReadResponse)` is responsible for disposing
+            // ResponseMessage.Content). A disposed MemoryStream surfaces CanRead == false
+            // and throws ObjectDisposedException on subsequent reads, so checking both is
+            // a robust way to confirm the helper kept its hands off.
+            byte[] body = Encoding.UTF8.GetBytes(SampleDocumentJson);
+            MemoryStream ms = new MemoryStream(body);
+
+            try
+            {
+                CosmosElement result = await ReadManyQueryHelper.ReadStreamAsCosmosElementAsync(
+                    stream: ms,
+                    cancellationToken: CancellationToken.None);
+
+                AssertElementMatchesSampleDocument(result);
+
+                Assert.IsTrue(ms.CanRead, "caller-owned MemoryStream must still be readable after the helper returns; the helper must not dispose it.");
+                Assert.AreEqual(body.Length, ms.Length, "caller-owned MemoryStream content must remain intact after the helper returns.");
+
+                ms.Position = 0;
+                int firstByte = ms.ReadByte();
+                Assert.AreEqual(body[0], (byte)firstByte, "caller-owned MemoryStream must still support Read after the helper returns (i.e., it must not have been disposed).");
+            }
+            finally
+            {
+                ms.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public async Task ReadStreamAsCosmosElementAsync_DoesNotDisposeCallerOwnedNonMemoryStream()
+        {
+            // Contract pin: the caller's non-MemoryStream input is also not the helper's
+            // to dispose — the internal CopyToAsync destination is owned by the helper,
+            // but the source stream is the caller's responsibility.
+            byte[] body = Encoding.UTF8.GetBytes(SampleDocumentJson);
+            ChunkedReadOnlyStream nonMs = new ChunkedReadOnlyStream(body, chunkSize: 8);
+
+            try
+            {
+                CosmosElement result = await ReadManyQueryHelper.ReadStreamAsCosmosElementAsync(
+                    stream: nonMs,
+                    cancellationToken: CancellationToken.None);
+
+                AssertElementMatchesSampleDocument(result);
+
+                Assert.IsTrue(nonMs.CanRead, "caller-owned non-MemoryStream must still be readable after the helper returns; the helper must not dispose it.");
+            }
+            finally
+            {
+                nonMs.Dispose();
+            }
+        }
+
         // -----------------------------------------------------------------
         //  TryGetContainerRidFromDocument — exhaustive matrix
         // -----------------------------------------------------------------

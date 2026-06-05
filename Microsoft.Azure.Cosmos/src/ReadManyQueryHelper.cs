@@ -603,24 +603,41 @@ namespace Microsoft.Azure.Cosmos
                 return null;
             }
 
-            using (MemoryStream memoryStream = stream as MemoryStream ?? new MemoryStream())
+            // When the caller hands us a MemoryStream, it owns the buffer's lifetime
+            // (in the point-read path the outer `using (pointReadResponse)` already
+            // disposes ResponseMessage.Content). We must NOT dispose it ourselves —
+            // doing so would be a contract violation now that this helper is internal
+            // and visible to other call sites. TryGetBuffer / ToArray are position-
+            // independent, so we read the full underlying buffer without touching the
+            // caller's Position.
+            if (stream is MemoryStream callerMemoryStream)
             {
-                if (!(stream is MemoryStream))
-                {
-                    await stream.CopyToAsync(memoryStream, bufferSize: 81920, cancellationToken);
-                }
-
-                if (memoryStream.Length == 0)
-                {
-                    return null;
-                }
-
-                ReadOnlyMemory<byte> buffer = memoryStream.TryGetBuffer(out ArraySegment<byte> segment)
-                    ? new ReadOnlyMemory<byte>(segment.Array, segment.Offset, segment.Count)
-                    : memoryStream.ToArray();
-
-                return CosmosElement.CreateFromBuffer(buffer);
+                return ReadManyQueryHelper.ReadFromMemoryStreamBuffer(callerMemoryStream);
             }
+
+            // Non-MemoryStream: copy into an owned MemoryStream that we DO dispose.
+            // CopyToAsync reads from the source's current Position to EOF (the standard
+            // stream contract). The helper-owned MemoryStream lives entirely within
+            // this `using` block.
+            using (MemoryStream ownedMemoryStream = new MemoryStream())
+            {
+                await stream.CopyToAsync(ownedMemoryStream, bufferSize: 81920, cancellationToken);
+                return ReadManyQueryHelper.ReadFromMemoryStreamBuffer(ownedMemoryStream);
+            }
+        }
+
+        private static CosmosElement ReadFromMemoryStreamBuffer(MemoryStream memoryStream)
+        {
+            if (memoryStream.Length == 0)
+            {
+                return null;
+            }
+
+            ReadOnlyMemory<byte> buffer = memoryStream.TryGetBuffer(out ArraySegment<byte> segment)
+                ? new ReadOnlyMemory<byte>(segment.Array, segment.Offset, segment.Count)
+                : memoryStream.ToArray();
+
+            return CosmosElement.CreateFromBuffer(buffer);
         }
 
         private void CancelCancellationToken(CancellationToken cancellationToken)
