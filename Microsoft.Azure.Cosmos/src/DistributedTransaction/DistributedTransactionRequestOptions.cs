@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos
     /// <see cref="RequestOptions"/> that apply to an operation within a <see cref="DistributedWriteTransaction"/>
     /// or <see cref="DistributedReadTransaction"/>.
     /// </summary>
-#if INTERNAL
+#if PREVIEW
     public
 #else
     internal

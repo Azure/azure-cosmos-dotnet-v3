@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http;
     using System.Net.Security;
     using System.Security.Cryptography.X509Certificates;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
@@ -605,12 +606,40 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         /// <remarks>
         /// When the time elapses, the attempt is cancelled and an error is returned. Longer timeouts will delay retries and failures.
+        /// <para>
+        /// The supplied <see cref="TimeSpan"/> is preserved unchanged on this property. At the
+        /// transport boundary the value is converted to whole seconds:
+        /// </para>
+        /// <list type="bullet">
+        /// <item>
+        /// Values in [<see cref="TimeSpan.Zero"/>, 1 second) are treated as 0, causing the
+        /// configured <see cref="RequestTimeout"/> to be used as the open-connection timeout.
+        /// </item>
+        /// <item>
+        /// Values greater than or equal to 1 second are rounded up to the nearest whole second
+        /// (for example, 2.3 seconds becomes 3 seconds).
+        /// </item>
+        /// </list>
+        /// Negative values are not recommended and will emit a warning trace. They are preserved
+        /// on this property for backward compatibility. At the transport boundary they are converted
+        /// to whole seconds via truncation (e.g. −5.7 s → −5) and ultimately reach the
+        /// <c>TransportClient.Options.OpenTimeout</c> getter, which returns
+        /// <see cref="RequestTimeout"/> for any value that is not greater than
+        /// <see cref="TimeSpan.Zero"/>.
         /// </remarks>
         public TimeSpan? OpenTcpConnectionTimeout
         {
             get => this.openTcpConnectionTimeout;
             set
             {
+                if (value.HasValue && value.Value < TimeSpan.Zero)
+                {
+                    DefaultTrace.TraceWarning(
+                        "OpenTcpConnectionTimeout value {0} is negative. Negative values are not recommended; "
+                        + "the TransportClient will fall back to the configured RequestTimeout.",
+                        value.Value);
+                }
+
                 this.openTcpConnectionTimeout = value;
                 this.ValidateDirectTCPSettings();
             }

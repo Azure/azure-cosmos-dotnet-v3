@@ -22,15 +22,33 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class DistributedReadTransactionCoreTests
     {
-        private static readonly string Database = "testDb";
-        private static readonly string Collection = "testColl";
+        private const string DatabaseName = "testDb";
+        private const string ContainerName = "testColl";
         private static readonly CosmosPK TestPartitionKey = new CosmosPK("pk1");
         private static readonly string ItemId = "item-1";
+        private static readonly CosmosClient SharedMockClient = new Mock<CosmosClient>().Object;
 
         private DistributedReadTransactionCore CreateTransaction()
         {
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+            mockContext.Setup(c => c.Client).Returns(DistributedReadTransactionCoreTests.SharedMockClient);
             return new DistributedReadTransactionCore(mockContext.Object);
+        }
+
+        private static Cosmos.Container BuildMockContainer(
+            string databaseId = DatabaseName,
+            string containerId = ContainerName,
+            CosmosClient client = null)
+        {
+            Mock<Cosmos.Database> databaseMock = new Mock<Cosmos.Database>();
+            databaseMock.Setup(d => d.Id).Returns(databaseId);
+            databaseMock.Setup(d => d.Client).Returns(client ?? DistributedReadTransactionCoreTests.SharedMockClient);
+
+            Mock<Cosmos.Container> containerMock = new Mock<Cosmos.Container>();
+            containerMock.Setup(c => c.Id).Returns(containerId);
+            containerMock.Setup(c => c.Database).Returns(databaseMock.Object);
+
+            return containerMock.Object;
         }
 
         #region Constructor validation
@@ -46,43 +64,87 @@ namespace Microsoft.Azure.Cosmos.Tests
         #region ReadItem argument validation
 
         [TestMethod]
-        public void ReadItem_NullDatabase_ThrowsArgumentNullException()
+        public void ReadItem_NullContainer_ThrowsArgumentNullException()
         {
             DistributedReadTransactionCore txn = this.CreateTransaction();
             Assert.ThrowsException<ArgumentNullException>(() =>
-                txn.ReadItem(null, Collection, TestPartitionKey, ItemId));
+                txn.ReadItem(null, TestPartitionKey, ItemId));
         }
 
         [TestMethod]
-        public void ReadItem_EmptyDatabase_ThrowsArgumentNullException()
+        public void ReadItem_NullContainerId_ThrowsArgumentException()
         {
             DistributedReadTransactionCore txn = this.CreateTransaction();
-            Assert.ThrowsException<ArgumentNullException>(() =>
-                txn.ReadItem(string.Empty, Collection, TestPartitionKey, ItemId));
+            Assert.ThrowsException<ArgumentException>(() =>
+                txn.ReadItem(BuildMockContainer(containerId: null), TestPartitionKey, ItemId));
         }
 
         [TestMethod]
-        public void ReadItem_WhitespaceDatabase_ThrowsArgumentNullException()
+        public void ReadItem_EmptyContainerId_ThrowsArgumentException()
         {
             DistributedReadTransactionCore txn = this.CreateTransaction();
-            Assert.ThrowsException<ArgumentNullException>(() =>
-                txn.ReadItem("   ", Collection, TestPartitionKey, ItemId));
+            Assert.ThrowsException<ArgumentException>(() =>
+                txn.ReadItem(BuildMockContainer(containerId: string.Empty), TestPartitionKey, ItemId));
         }
 
         [TestMethod]
-        public void ReadItem_NullCollection_ThrowsArgumentNullException()
+        public void ReadItem_WhitespaceContainerId_ThrowsArgumentException()
         {
             DistributedReadTransactionCore txn = this.CreateTransaction();
-            Assert.ThrowsException<ArgumentNullException>(() =>
-                txn.ReadItem(Database, null, TestPartitionKey, ItemId));
+            Assert.ThrowsException<ArgumentException>(() =>
+                txn.ReadItem(BuildMockContainer(containerId: "   "), TestPartitionKey, ItemId));
         }
 
         [TestMethod]
-        public void ReadItem_EmptyCollection_ThrowsArgumentNullException()
+        public void ReadItem_NullDatabase_ThrowsArgumentException()
         {
             DistributedReadTransactionCore txn = this.CreateTransaction();
-            Assert.ThrowsException<ArgumentNullException>(() =>
-                txn.ReadItem(Database, string.Empty, TestPartitionKey, ItemId));
+            Mock<Cosmos.Container> containerMock = new Mock<Cosmos.Container>();
+            containerMock.Setup(c => c.Id).Returns(ContainerName);
+            containerMock.Setup(c => c.Database).Returns((Cosmos.Database)null);
+
+            Assert.ThrowsException<ArgumentException>(() =>
+                txn.ReadItem(containerMock.Object, TestPartitionKey, ItemId));
+        }
+
+        [TestMethod]
+        public void ReadItem_NullDatabaseId_ThrowsArgumentException()
+        {
+            DistributedReadTransactionCore txn = this.CreateTransaction();
+            Assert.ThrowsException<ArgumentException>(() =>
+                txn.ReadItem(BuildMockContainer(databaseId: null), TestPartitionKey, ItemId));
+        }
+
+        [TestMethod]
+        public void ReadItem_EmptyDatabaseId_ThrowsArgumentException()
+        {
+            DistributedReadTransactionCore txn = this.CreateTransaction();
+            Assert.ThrowsException<ArgumentException>(() =>
+                txn.ReadItem(BuildMockContainer(databaseId: string.Empty), TestPartitionKey, ItemId));
+        }
+
+        [TestMethod]
+        public void ReadItem_WhitespaceDatabaseId_ThrowsArgumentException()
+        {
+            DistributedReadTransactionCore txn = this.CreateTransaction();
+            Assert.ThrowsException<ArgumentException>(() =>
+                txn.ReadItem(BuildMockContainer(databaseId: "   "), TestPartitionKey, ItemId));
+        }
+
+        [TestMethod]
+        public void ReadItem_DifferentCosmosClient_ThrowsArgumentException()
+        {
+            DistributedReadTransactionCore txn = this.CreateTransaction();
+            CosmosClient differentClient = new Mock<CosmosClient>().Object;
+            Assert.ThrowsException<ArgumentException>(() =>
+                txn.ReadItem(BuildMockContainer(client: differentClient), TestPartitionKey, ItemId));
+        }
+
+        [TestMethod]
+        public void ReadItem_SameCosmosClient_Succeeds()
+        {
+            DistributedReadTransactionCore txn = this.CreateTransaction();
+            txn.ReadItem(BuildMockContainer(), TestPartitionKey, ItemId);
         }
 
         [TestMethod]
@@ -90,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             DistributedReadTransactionCore txn = this.CreateTransaction();
             Assert.ThrowsException<ArgumentNullException>(() =>
-                txn.ReadItem(Database, Collection, TestPartitionKey, null));
+                txn.ReadItem(BuildMockContainer(), TestPartitionKey, null));
         }
 
         [TestMethod]
@@ -98,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             DistributedReadTransactionCore txn = this.CreateTransaction();
             Assert.ThrowsException<ArgumentNullException>(() =>
-                txn.ReadItem(Database, Collection, TestPartitionKey, string.Empty));
+                txn.ReadItem(BuildMockContainer(), TestPartitionKey, string.Empty));
         }
 
         [TestMethod]
@@ -106,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             DistributedReadTransactionCore txn = this.CreateTransaction();
             Assert.ThrowsException<ArgumentNullException>(() =>
-                txn.ReadItem(Database, Collection, TestPartitionKey, "   "));
+                txn.ReadItem(BuildMockContainer(), TestPartitionKey, "   "));
         }
 
         #endregion
@@ -117,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void ReadItem_ValidArgs_ReturnsThisForChaining()
         {
             DistributedReadTransactionCore txn = this.CreateTransaction();
-            DistributedReadTransaction result = txn.ReadItem(Database, Collection, TestPartitionKey, ItemId);
+            DistributedReadTransaction result = txn.ReadItem(BuildMockContainer(), TestPartitionKey, ItemId);
             Assert.AreSame(txn, result);
         }
 
@@ -125,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void ReadItem_BuildsOperationWithReadType()
         {
             DistributedReadTransactionCore txn = this.CreateTransaction();
-            txn.ReadItem(Database, Collection, TestPartitionKey, ItemId);
+            txn.ReadItem(BuildMockContainer(), TestPartitionKey, ItemId);
 
             IReadOnlyList<DistributedTransactionOperation> ops = GetOperations(txn);
             Assert.AreEqual(1, ops.Count);
@@ -136,11 +198,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void ReadItem_BuildsOperationWithCorrectFields()
         {
             DistributedReadTransactionCore txn = this.CreateTransaction();
-            txn.ReadItem(Database, Collection, TestPartitionKey, ItemId);
+            txn.ReadItem(BuildMockContainer(), TestPartitionKey, ItemId);
 
             DistributedTransactionOperation op = GetOperations(txn)[0];
-            Assert.AreEqual(Database, op.Database);
-            Assert.AreEqual(Collection, op.Container);
+            Assert.AreEqual(DatabaseName, op.Database);
+            Assert.AreEqual(ContainerName, op.Container);
             Assert.AreEqual(ItemId, op.Id);
             Assert.AreEqual(0, op.OperationIndex);
         }
@@ -149,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void ReadItem_HasNoResourceBody()
         {
             DistributedReadTransactionCore txn = this.CreateTransaction();
-            txn.ReadItem(Database, Collection, TestPartitionKey, ItemId);
+            txn.ReadItem(BuildMockContainer(), TestPartitionKey, ItemId);
 
             DistributedTransactionOperation op = GetOperations(txn)[0];
             Assert.IsTrue(op.ResourceBody.IsEmpty);
@@ -160,9 +222,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void MultipleReadItems_CorrectOperationIndices()
         {
             DistributedReadTransactionCore txn = this.CreateTransaction();
-            txn.ReadItem(Database, Collection, TestPartitionKey, "id-0")
-                .ReadItem(Database, Collection, TestPartitionKey, "id-1")
-                .ReadItem(Database, Collection, TestPartitionKey, "id-2");
+            txn.ReadItem(BuildMockContainer(), TestPartitionKey, "id-0")
+                .ReadItem(BuildMockContainer(), TestPartitionKey, "id-1")
+                .ReadItem(BuildMockContainer(), TestPartitionKey, "id-2");
 
             IReadOnlyList<DistributedTransactionOperation> ops = GetOperations(txn);
             Assert.AreEqual(3, ops.Count);
@@ -176,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             DistributedReadTransactionCore txn = this.CreateTransaction();
             DistributedTransactionRequestOptions options = new DistributedTransactionRequestOptions();
-            txn.ReadItem(Database, Collection, TestPartitionKey, ItemId, options);
+            txn.ReadItem(BuildMockContainer(), TestPartitionKey, ItemId, options);
 
             DistributedTransactionOperation op = GetOperations(txn)[0];
             Assert.AreSame(options, op.RequestOptions);
@@ -206,7 +268,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .ReturnsAsync(BuildReadSuccessResponse(1));
 
             DistributedReadTransaction tx = new DistributedReadTransactionCore(contextMock.Object)
-                .ReadItem(Database, Collection, TestPartitionKey, ItemId);
+                .ReadItem(BuildMockContainer(), TestPartitionKey, ItemId);
 
             DistributedTransactionResponse response = await tx.CommitTransactionAsync(CancellationToken.None);
             Assert.IsTrue(response.IsSuccessStatusCode);
@@ -236,7 +298,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .ReturnsAsync(BuildReadErrorResponse(HttpStatusCode.ServiceUnavailable));
 
             DistributedReadTransaction tx = new DistributedReadTransactionCore(contextMock.Object)
-                .ReadItem(Database, Collection, TestPartitionKey, ItemId);
+                .ReadItem(BuildMockContainer(), TestPartitionKey, ItemId);
 
             // First commit returns a server error — instance is still consumed.
             DistributedTransactionResponse response = await tx.CommitTransactionAsync(CancellationToken.None);
@@ -277,7 +339,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     });
 
             DistributedReadTransaction tx = new DistributedReadTransactionCore(contextMock.Object)
-                .ReadItem(Database, Collection, TestPartitionKey, ItemId);
+                .ReadItem(BuildMockContainer(), TestPartitionKey, ItemId);
 
             const int RacerCount = 16;
             using ManualResetEventSlim gate = new ManualResetEventSlim(initialState: false);
@@ -329,6 +391,9 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Mock<CosmosClientContext> contextMock = new Mock<CosmosClientContext>();
             contextMock
+                .Setup(c => c.Client)
+                .Returns(DistributedReadTransactionCoreTests.SharedMockClient);
+            contextMock
                 .Setup(c => c.OperationHelperAsync<DistributedTransactionResponse>(
                     It.IsAny<string>(),
                     It.IsAny<string>(),
@@ -351,7 +416,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     });
 
             DistributedReadTransactionCore txn = new DistributedReadTransactionCore(contextMock.Object);
-            txn.ReadItem(Database, Collection, TestPartitionKey, ItemId);
+            txn.ReadItem(BuildMockContainer(), TestPartitionKey, ItemId);
 
             await txn.CommitTransactionAsync(CancellationToken.None);
 
@@ -379,6 +444,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             containerProps.PartitionKeyPath = "/pk";
 
             Mock<CosmosClientContext> contextMock = new Mock<CosmosClientContext>();
+
+            contextMock
+                .Setup(c => c.Client)
+                .Returns(DistributedReadTransactionCoreTests.SharedMockClient);
 
             contextMock
                 .Setup(c => c.DocumentClient)
