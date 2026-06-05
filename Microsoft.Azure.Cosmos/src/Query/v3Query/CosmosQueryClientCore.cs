@@ -240,19 +240,21 @@ namespace Microsoft.Azure.Cosmos
             PartitionKeyDefinition partitionKeyDefinition,
             FeedRangeInternal feedRangeInternal,
             bool forceRefresh,
-            ITrace trace)
+            ITrace trace,
+            CancellationToken cancellationToken = default)
         {
             using (ITrace childTrace = trace.StartChild("Get Overlapping Feed Ranges", TraceComponent.Routing, Tracing.TraceLevel.Info))
             {
                 IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
-                List<Range<string>> providedRanges = await feedRangeInternal.GetEffectiveRangesAsync(routingMapProvider, collectionResourceId, partitionKeyDefinition, trace);
+                List<Range<string>> providedRanges = await feedRangeInternal.GetEffectiveRangesAsync(routingMapProvider, collectionResourceId, partitionKeyDefinition, trace, cancellationToken: cancellationToken);
 
                 List<PartitionKeyRange> ranges = await this.GetTargetPartitionKeyRangesAsync(
                     resourceLink,
                     collectionResourceId,
                     providedRanges,
                     forceRefresh,
-                    childTrace);
+                    childTrace,
+                    cancellationToken);
 
                 return QueryRangeUtils.LimitPartitionKeyRangesToProvidedRanges(ranges, providedRanges, this.clientContext.ClientOptions.UseLengthAwareRangeComparer);
             }
@@ -263,7 +265,8 @@ namespace Microsoft.Azure.Cosmos
             string collectionResourceId,
             IReadOnlyList<Range<string>> providedRanges,
             bool forceRefresh,
-            ITrace trace)
+            ITrace trace,
+            CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(collectionResourceId))
             {
@@ -281,7 +284,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
 
-                List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges, getPKRangesTrace);
+                List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges, getPKRangesTrace, forceRefresh: false);
                 if (ranges == null && PathsHelper.IsNameBased(resourceLink))
                 {
                     // Refresh the cache and don't try to re-resolve collection as it is not clear what already

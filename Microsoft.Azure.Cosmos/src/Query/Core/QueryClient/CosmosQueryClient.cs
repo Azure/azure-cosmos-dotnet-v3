@@ -92,14 +92,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             Documents.PartitionKeyDefinition partitionKeyDefinition,
             FeedRangeInternal feedRangeInternal,
             bool forceRefresh,
-            ITrace trace);
+            ITrace trace,
+            CancellationToken cancellationToken = default);
 
         public abstract Task<List<Documents.PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(
             string resourceLink,
             string collectionResourceId,
             IReadOnlyList<Documents.Routing.Range<string>> providedRanges,
             bool forceRefresh,
-            ITrace trace);
+            ITrace trace,
+            CancellationToken cancellationToken = default);
 
         public abstract bool BypassQueryParsing();
 

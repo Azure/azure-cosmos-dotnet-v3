@@ -167,6 +167,31 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         }
 
         [TestMethod]
+        public async Task FeedRangeEPK_GetEffectiveRangesAsync_WithCancelledToken_ThrowsOperationCanceledException()
+        {
+            Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("AA", "BB", true, false);
+            FeedRangeEpk feedRangeEpk = new FeedRangeEpk(range);
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+                () => feedRangeEpk.GetEffectiveRangesAsync(Mock.Of<IRoutingMapProvider>(), null, null, NoOpTrace.Singleton, cancellationToken: cts.Token));
+        }
+
+        [TestMethod]
+        public async Task FeedRangePK_GetEffectiveRangesAsync_WithCancelledToken_ThrowsOperationCanceledException()
+        {
+            Documents.PartitionKeyDefinition partitionKeyDefinition = new Documents.PartitionKeyDefinition();
+            partitionKeyDefinition.Paths.Add("/id");
+            FeedRangePartitionKey feedRangePartitionKey = new FeedRangePartitionKey(new PartitionKey("test"));
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+                () => feedRangePartitionKey.GetEffectiveRangesAsync(Mock.Of<IRoutingMapProvider>(), null, partitionKeyDefinition, NoOpTrace.Singleton, cancellationToken: cts.Token));
+        }
+
+        [TestMethod]
         public void FeedRangeEPK_ToJsonFromJson()
         {
             Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("AA", "BB", true, false);

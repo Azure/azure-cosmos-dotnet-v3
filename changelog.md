@@ -19,18 +19,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
-- [5600](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5600) HPK: Adds id to partition key when "/id" is the last path in partition key definition.
+#### Breaking Changes
+
+#### Bugs Fixed
+
+#### Other Changes
+
+### <a name="3.62.0-preview.0"/> [3.62.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.62.0-preview.0) - 2026-6-1
+
+#### Features Added
+
 - [5838](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5838) EmbeddingGenerator: Adds ICosmosEmbeddingGenerator client-wide configuration (preview)
+- [5911](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5911) DistributedTransaction: Adds `DistributedReadTransaction` and `DistributedWriteTransaction` APIs (with `CosmosClient.CreateDistributedReadTransaction` / `CreateDistributedWriteTransaction`) for atomic read and write operations across partitions and containers (preview)
+
+### <a name="3.61.0"/> [3.61.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.61.0) - 2026-6-1
+
+#### Features Added
+
+- [5815](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5815) Read Consistency Strategy: Adds hub region header for LastCommittedSingleWriteRegion strategy.
+- [5848](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5848) VectorEmbeddingPolicy: Adds EmbeddingSource block to Embedding model
+- [5868](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5868) Diagnostics: Adds hedging detection API (`CosmosDiagnostics.HedgingStarted`, `GetRequestedRegions`, `GetRespondedRegions`) along with the new `RequestedRegion` struct and `RequestedRegionReason` enum so callers can observe per-operation hedging behavior. `RequestedRegionReason.Unknown` (= 0) is the default sentinel for `default(RequestedRegion).Reason` and is never emitted by the SDK; `RequestedRegionReason.CircuitBreakerProbe` and `RequestedRegionReason.TransportRetry` are reserved for the future and not yet populated by this SDK; see issue [#5867](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5867).
+- [5600](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5600) HPK: Adds id to partition key when "/id" is the last path in partition key definition.
 
 #### Breaking Changes
 
 #### Bugs Fixed
 
 - [5827](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5827) ChangeFeedEstimator: Change feed estimator threw `ArgumentNullException` when an inmemory lease container was being used. Update validations so in-memory lease containers work with change feed estimator
+- [5913](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5913) CancellationToken: Fixes operation-level `CancellationToken` being ignored during the gateway HTTP retry loop in `CosmosHttpClientCore`. Inter-attempt `Task.Delay` backoffs now honor the caller's token, so per-operation gateway requests surface `OperationCanceledException` within the caller's deadline instead of holding the delay past it. Background metadata refreshes (which pass `CancellationToken.None` to the same path) are unaffected. Also adds an entry-point `ThrowIfCancellationRequested` to `FeedRangeInternal.GetEffectiveRangesAsync` so an already-cancelled caller fails fast.
+- [5910](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5910) Upgraded Direct package to 3.43.2.
+- [5910](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5910) Direct: Fixed RNTBD thread-pool starvation by making `Dispatcher.OnIdleTimer` asynchronous (ports public [PR 5817](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5817))
 
 #### Other Changes
 
 - [#5887](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5887) Direct: Documents that `MaxTcpConnectionsPerEndpoint` accepts any positive value to allow customer control of the connection pool size; values of 16 or greater remain recommended.
+- [5913](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5913) Cancellation: Operation-level `CancellationToken` is now plumbed through and honored on the caller's call stack across `ContainerCore.GetFeedRangesAsync`, `FeedRange.GetEffectiveRangesAsync`, and query pagination (`NetworkAttachedDocumentContainer`, `CosmosQueryClientCore`, `FeedRangeCompositeContinuation.HandleSplitAsync`). The shared `PartitionKeyRangeCache` metadata refresh task is intentionally NOT per-caller cancellable (it is shared across all concurrent callers via `AsyncCacheNonBlocking`), and retry policies remain reliant on `BackoffRetryUtility`'s built-in cancellation honor (which already checks the token before each attempt and during backoff delays) — these were deliberately left unchanged to preserve cross-region failover side-effects performed during exception classification.
 
 ### <a name="3.61.0-preview.0"/> [3.61.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.61.0-preview.0) - 2026-5-18
 
@@ -43,6 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
+- [5873](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5873) Direct: Fixes silent truncation of `OpenTcpConnectionTimeout`. Sub-second values in [0, 1s) are now explicitly normalized to 0 and fractional values ≥ 1 second are rounded up to the nearest whole second (for example, 2.3s becomes 3s). Negative values emit a warning trace but are left unchanged for backward compatibility.
 - [5783](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5783) Container: Fixes SemanticRerankAsync TypeLoadException in derived classes
 
 ### <a name="3.60.0"/> [3.60.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.60.0) - 2026-5-18
