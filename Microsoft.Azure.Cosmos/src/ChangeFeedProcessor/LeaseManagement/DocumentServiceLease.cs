@@ -75,5 +75,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         /// Gets or sets the ChangeFeedMode.
         /// </summary>
         public abstract string Mode { get; set; }
+
+        /// <summary>
+        /// Gets or sets the start time used for change feed requests.
+        /// When set, the If-Modified-Since header is sent alongside the continuation token
+        /// to ensure documents are returned after this time even after partition merges.
+        /// </summary>
+        public virtual DateTime? StartTime { get; set; }
     }
 }

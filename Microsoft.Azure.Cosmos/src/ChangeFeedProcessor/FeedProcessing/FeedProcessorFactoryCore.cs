@@ -31,16 +31,26 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             if (observer == null) throw new ArgumentNullException(nameof(observer));
             if (lease == null) throw new ArgumentNullException(nameof(lease));
 
+            if (this.changeFeedProcessorOptions.IsStartTimeUserExplicit)
+            {
+                lease.StartTime = this.changeFeedProcessorOptions.StartTime;
+            }
+
+            string startContinuation = !string.IsNullOrEmpty(lease.ContinuationToken) ?
+                    lease.ContinuationToken :
+                    this.changeFeedProcessorOptions.StartContinuation;
+
+            DateTime? effectiveStartTime = lease.StartTime 
+                ?? (string.IsNullOrEmpty(startContinuation) ? this.changeFeedProcessorOptions.StartTime : null);
+
             ProcessorOptions options = new ProcessorOptions
             {
-                StartContinuation = !string.IsNullOrEmpty(lease.ContinuationToken) ?
-                    lease.ContinuationToken :
-                    this.changeFeedProcessorOptions.StartContinuation,
+                StartContinuation = startContinuation,
                 LeaseToken = lease.CurrentLeaseToken,
                 FeedPollDelay = this.changeFeedProcessorOptions.FeedPollDelay,
                 MaxItemCount = this.changeFeedProcessorOptions.MaxItemCount,
                 StartFromBeginning = this.changeFeedProcessorOptions.StartFromBeginning,
-                StartTime = this.changeFeedProcessorOptions.StartTime,
+                StartTime = effectiveStartTime,
                 FeedRange = lease.FeedRange,
             };
 
@@ -51,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 continuationToken: options.StartContinuation,
                 maxItemCount: options.MaxItemCount,
                 container: this.container,
-                startTime: options.StartTime,
+                startTime: effectiveStartTime,
                 startFromBeginning: options.StartFromBeginning);
 
             return new FeedProcessorCore(observer, iterator, options, checkpointer);

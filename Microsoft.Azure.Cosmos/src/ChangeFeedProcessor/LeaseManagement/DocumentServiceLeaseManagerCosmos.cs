@@ -106,6 +106,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                     }
                     serverLease.Owner = this.options.HostName;
                     serverLease.Properties = lease.Properties;
+
+                    // Persist user-explicit start time on the lease during acquisition
+                    // to ensure it survives restarts even for partitions that never checkpoint.
+                    if (this.options.IsStartTimeUserExplicit)
+                    {
+                        serverLease.StartTime = this.options.StartTime;
+                    }
+
                     return serverLease;
                 }).ConfigureAwait(false);
         }
