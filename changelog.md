@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [5648](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5648) Hub Region Caching: Caches discovered hub region per partition on successful response during 403/3 discovery chain, enabling subsequent requests to skip the discovery and route directly to the cached hub.
 - [#5549](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5549) Adds AAD token revocation (CAE / Emergency) transparent retry handling
 
+- [5931](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5931) ChangeFeed: Add support for StartTime for merged partitions
+
 #### Breaking Changes
 
 #### Bugs Fixed

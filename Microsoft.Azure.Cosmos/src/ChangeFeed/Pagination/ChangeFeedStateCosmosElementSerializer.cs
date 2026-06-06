@@ -14,10 +14,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
     {
         private const string TypePropertyName = "type";
         private const string ValuePropertyName = "value";
+        private const string StartTimePropertyName = "startTime";
 
         private const string BeginningTypeValue = "beginning";
         private const string TimeTypeValue = "time";
         private const string ContinuationTypeValue = "continuation";
+        private const string ContinuationAndStartTimeTypeValue = "continuationAndStartTime";
         private const string NowTypeValue = "now";
 
         public static TryCatch<ChangeFeedState> MonadicFromCosmosElement(CosmosElement cosmosElement)
@@ -81,7 +83,64 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                                     $"expected change feed state to have a string value property: {cosmosElement}"));
                         }
 
-                        state = ChangeFeedState.Continuation(valuePropertyValue);
+                        // startTime is an optional field on a continuation token. When present, the state
+                        // also carries a start time so If-Modified-Since can be sent alongside the
+                        // continuation token (post-merge filtering). Keeping it optional on the existing
+                        // "continuation" type - rather than introducing a new type - preserves backward
+                        // compatibility: an older SDK that predates this feature simply ignores the
+                        // unknown startTime field instead of failing to parse the token.
+                        if (cosmosObject.TryGetValue(StartTimePropertyName, out CosmosString continuationStartTimePropertyValue))
+                        {
+                            if (!DateTime.TryParse(
+                                continuationStartTimePropertyValue.Value,
+                                CultureInfo.InvariantCulture,
+                                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal | DateTimeStyles.AllowWhiteSpaces,
+                                out DateTime continuationStartTimeUtc))
+                            {
+                                return TryCatch<ChangeFeedState>.FromException(
+                                    new FormatException(
+                                        $"failed to parse start time value: {cosmosElement}"));
+                            }
+
+                            state = ChangeFeedState.ContinuationAndStartTime(valuePropertyValue, continuationStartTimeUtc);
+                        }
+                        else
+                        {
+                            state = ChangeFeedState.Continuation(valuePropertyValue);
+                        }
+                    }
+                    break;
+
+                case ContinuationAndStartTimeTypeValue:
+                    {
+                        // Legacy type kept for defensive backward compatibility. New tokens serialize as
+                        // the "continuation" type with an optional startTime field (see above).
+                        if (!cosmosObject.TryGetValue(ValuePropertyName, out CosmosString valuePropertyValue))
+                        {
+                            return TryCatch<ChangeFeedState>.FromException(
+                                new FormatException(
+                                    $"expected change feed state to have a string value property: {cosmosElement}"));
+                        }
+
+                        if (!cosmosObject.TryGetValue(StartTimePropertyName, out CosmosString startTimePropertyValue))
+                        {
+                            return TryCatch<ChangeFeedState>.FromException(
+                                new FormatException(
+                                    $"expected change feed state to have a string startTime property: {cosmosElement}"));
+                        }
+
+                        if (!DateTime.TryParse(
+                            startTimePropertyValue.Value,
+                            CultureInfo.InvariantCulture,
+                            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal | DateTimeStyles.AllowWhiteSpaces,
+                            out DateTime startTimeUtc))
+                        {
+                            return TryCatch<ChangeFeedState>.FromException(
+                                new FormatException(
+                                    $"failed to parse start time value: {cosmosElement}"));
+                        }
+
+                        state = ChangeFeedState.ContinuationAndStartTime(valuePropertyValue, startTimeUtc);
                     }
                     break;
 
@@ -157,6 +216,25 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                     {
                         { TypePropertyName, ContinuationTypeValueSingleton },
                         { ValuePropertyName, changeFeedStateContinuation.ContinuationToken }
+                    });
+            }
+
+            public CosmosElement Transform(ChangeFeedStateContinuationAndStartTime changeFeedStateContinuationAndStartTime)
+            {
+                // Serialize as the existing "continuation" type plus an optional startTime field so that
+                // older SDKs (which don't understand a dedicated continuationAndStartTime type) can still
+                // parse the token and simply ignore the extra startTime, rather than throwing.
+                return CosmosObject.Create(
+                    new Dictionary<string, CosmosElement>()
+                    {
+                        { TypePropertyName, ContinuationTypeValueSingleton },
+                        { ValuePropertyName, changeFeedStateContinuationAndStartTime.ContinuationToken },
+                        {
+                            StartTimePropertyName,
+                            CosmosString.Create(changeFeedStateContinuationAndStartTime.StartTime.ToString(
+                                "o",
+                                CultureInfo.InvariantCulture))
+                        }
                     });
             }
 

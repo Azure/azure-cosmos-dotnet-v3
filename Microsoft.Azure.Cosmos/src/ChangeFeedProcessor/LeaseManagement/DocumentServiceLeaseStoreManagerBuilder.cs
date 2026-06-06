@@ -23,7 +23,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             ContainerInternal leaseContainer,
             string leaseContainerPrefix,
             string instanceName,
-            ChangeFeedMode changeFeedMode)
+            ChangeFeedMode changeFeedMode,
+            DateTime? startTime = null,
+            bool isStartTimeUserExplicit = false)
         {
             ContainerProperties containerProperties = await leaseContainer.GetCachedContainerPropertiesAsync(forceRefresh: false, NoOpTrace.Singleton, cancellationToken: default);
 
@@ -60,7 +62,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 .WithLeaseContainer(leaseContainer)
                 .WithRequestOptionsFactory(requestOptionsFactory)
                 .WithHostName(instanceName)
-                .WithChangeFeedMode(changeFeedMode);
+                .WithChangeFeedMode(changeFeedMode)
+                .WithStartTime(startTime, isStartTimeUserExplicit);
 
             return leaseStoreManagerBuilder.Build();
         }
@@ -103,6 +106,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         private DocumentServiceLeaseStoreManagerBuilder WithChangeFeedMode(ChangeFeedMode changeFeedMode)
         {
             this.options.Mode = changeFeedMode ?? throw new ArgumentNullException(nameof(changeFeedMode));
+            return this;
+        }
+
+        private DocumentServiceLeaseStoreManagerBuilder WithStartTime(DateTime? startTime, bool isUserExplicit)
+        {
+            this.options.StartTime = startTime;
+            this.options.IsStartTimeUserExplicit = isUserExplicit;
             return this;
         }
 
