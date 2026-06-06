@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// on a replica before returning a read result).
         /// Maps to <see cref="Microsoft.Azure.Documents.OperationType.Head"/>.
         /// </summary>
-        MetadataRequest,
+        MetadataBarrierRequest,
 
         /// <summary>
         /// All operation types. Default value.

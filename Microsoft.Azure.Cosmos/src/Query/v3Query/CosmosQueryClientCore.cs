@@ -253,8 +253,7 @@ namespace Microsoft.Azure.Cosmos
                     collectionResourceId,
                     providedRanges,
                     forceRefresh,
-                    childTrace,
-                    cancellationToken);
+                    childTrace);
 
                 return QueryRangeUtils.LimitPartitionKeyRangesToProvidedRanges(ranges, providedRanges, this.clientContext.ClientOptions.UseLengthAwareRangeComparer);
             }
@@ -265,8 +264,7 @@ namespace Microsoft.Azure.Cosmos
             string collectionResourceId,
             IReadOnlyList<Range<string>> providedRanges,
             bool forceRefresh,
-            ITrace trace,
-            CancellationToken cancellationToken = default)
+            ITrace trace)
         {
             if (string.IsNullOrEmpty(collectionResourceId))
             {
@@ -284,7 +282,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
 
-                List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges, getPKRangesTrace, forceRefresh: false);
+                List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges, getPKRangesTrace);
                 if (ranges == null && PathsHelper.IsNameBased(resourceLink))
                 {
                     // Refresh the cache and don't try to re-resolve collection as it is not clear what already

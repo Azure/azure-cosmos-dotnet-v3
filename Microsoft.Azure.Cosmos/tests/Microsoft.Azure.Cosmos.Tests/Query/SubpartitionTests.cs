@@ -350,7 +350,7 @@
                 throw new NotImplementedException();
             }
 
-            public override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(string resourceLink, string collectionResourceId, IReadOnlyList<Documents.Routing.Range<string>> providedRanges, bool forceRefresh, ITrace trace, CancellationToken cancellationToken = default)
+            public override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(string resourceLink, string collectionResourceId, IReadOnlyList<Documents.Routing.Range<string>> providedRanges, bool forceRefresh, ITrace trace)
             {
                 return Task.FromResult(this.targetPartitionKeyRanges.ToList());
             }

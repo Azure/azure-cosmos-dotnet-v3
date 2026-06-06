@@ -192,6 +192,17 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         }
 
         [TestMethod]
+        public async Task FeedRangePKRangeId_GetEffectiveRangesAsync_WithCancelledToken_ThrowsOperationCanceledException()
+        {
+            FeedRangePartitionKeyRange feedRangePartitionKeyRange = new FeedRangePartitionKeyRange(Guid.NewGuid().ToString());
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+                () => feedRangePartitionKeyRange.GetEffectiveRangesAsync(Mock.Of<IRoutingMapProvider>(), null, null, NoOpTrace.Singleton, cancellationToken: cts.Token));
+        }
+
+        [TestMethod]
         public void FeedRangeEPK_ToJsonFromJson()
         {
             Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("AA", "BB", true, false);

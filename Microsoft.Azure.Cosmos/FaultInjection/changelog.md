@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### <a name="unreleased-faultinjection"/> Unreleased
 
 #### Features Added
-- FaultInjection: Adds `FaultInjectionServerErrorType.LeaseNotFound` (410/1022) for injecting the lease-handoff failure mode observed during partition merge cutovers, and `FaultInjectionOperationType.MetadataRequest` for targeting consistency-barrier `Head/Collection` requests.
+- [#5913](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5913) FaultInjection: Adds `FaultInjectionServerErrorType.LeaseNotFound` (410/1022), `FaultInjectionServerErrorType.ResponseHeaderOverride`, and `FaultInjectionOperationType.MetadataBarrierRequest` for targeting consistency-barrier `Head/Collection` requests
 
 #### Breaking Changes
 

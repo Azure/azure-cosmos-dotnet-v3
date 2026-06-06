@@ -31,6 +31,14 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <summary>
         /// Constructor for FaultInjectionServerErrorResultInternal
         /// </summary>
+        /// <param name="serverErrorType"></param>
+        /// <param name="times"></param>
+        /// <param name="delay"></param>
+        /// <param name="suppressServiceRequest"></param>
+        /// <param name="injectionRate"></param>
+        /// <param name="applicationContext"></param>
+        /// <param name="globalEndpointManager"></param>
+        /// <param name="headerOverrides"></param>
         public FaultInjectionServerErrorResultInternal(
             FaultInjectionServerErrorType serverErrorType,
             int times,

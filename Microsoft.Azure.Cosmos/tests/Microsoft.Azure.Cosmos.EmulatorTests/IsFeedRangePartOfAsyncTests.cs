@@ -296,6 +296,32 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 expectedMessage: $"The provided string, '<xml />', for 'y', does not represent any known format.");
         }
 
+        /// <summary>
+        /// Regression: passing a pre-cancelled token to <c>Container.IsFeedRangePartOfAsync</c>
+        /// must surface <c>OperationCanceledException</c> from the entry-point
+        /// <c>ThrowIfCancellationRequested</c> inside <c>FeedRangeInternal.GetEffectiveRangesAsync</c>,
+        /// without first issuing the routing/metadata work the method would otherwise do.
+        /// </summary>
+        [TestMethod]
+        public async Task GivenCancelledTokenIsFeedRangePartOfAsyncThrowsOperationCanceledException()
+        {
+            if (!this.TestContext.TryGetContainerContexts(out List<ContainerContext> containerContexts))
+            {
+                Assert.Fail("ContainerContexts do not exist in TestContext.Properties.");
+            }
+
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            ContainerContext containerContext = containerContexts.First(c => !c.IsHierarchicalPartition);
+
+            await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+                () => containerContext.Container.IsFeedRangePartOfAsync(
+                    new FeedRangeEpk(new Documents.Routing.Range<string>("", "FFFFFFFFFFFFFFFF", true, false)),
+                    FeedRange.FromPartitionKey(new PartitionKey("WA")),
+                    cancellationToken: cts.Token));
+        }
+
         private async Task GivenInvalidYFeedRangeExpectsArgumentExceptionIsFeedRangePartOfAsyncTestAsync<TExceeption>(
             FeedRange feedRange,
             string expectedMessage)

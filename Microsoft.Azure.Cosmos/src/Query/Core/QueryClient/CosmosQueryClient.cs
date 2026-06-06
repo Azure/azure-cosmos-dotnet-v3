@@ -100,8 +100,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             string collectionResourceId,
             IReadOnlyList<Documents.Routing.Range<string>> providedRanges,
             bool forceRefresh,
-            ITrace trace,
-            CancellationToken cancellationToken = default);
+            ITrace trace);
 
         public abstract bool BypassQueryParsing();
 

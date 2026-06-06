@@ -2016,7 +2016,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         //      reports a fresh LSN but a stale GlobalCommittedLSN. The quorum picks
         //      the fresh LSN as the barrier target; the replica's reported GCLSN is
         //      below it, so the SDK enters the barrier loop.
-        //   2. Gone on MetadataRequest — every barrier Head/Collection poll fails for
+        //   2. Gone on MetadataBarrierRequest — every barrier Head/Collection poll fails for
         //      60s. The barrier loop retries.
         //
         // With the barrier loop spinning, the user's 5s CancellationToken should
@@ -2027,7 +2027,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         [Timeout(300000)]
         [Owner("tomasvaron")]
         [Description("CancellationToken must be honored between barrier (Head/Collection) requests")]
-        public async Task FaultInjectionMetadataRequestDelay_HonorsCancellationToken()
+        public async Task FaultInjectionMetadataBarrierRequestDelay_HonorsCancellationToken()
         {
             const int cancellationBudgetSeconds = 5;
             const int gracePeriodSeconds = 2;
@@ -2069,7 +2069,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             FaultInjectionRule barrierFailureRule = new FaultInjectionRuleBuilder(
                 id: barrierFailureRuleId,
                 condition: new FaultInjectionConditionBuilder()
-                    .WithOperationType(FaultInjectionOperationType.MetadataRequest)
+                    .WithOperationType(FaultInjectionOperationType.MetadataBarrierRequest)
                     .WithConnectionType(FaultInjectionConnectionType.Direct)
                     .Build(),
                 result: FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.Gone)
