@@ -2783,7 +2783,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 options.StartTime = timestamps[1];
                 options.RequestContinuation = lsns[0].ToString();
                 accumulator = await this.ReadChangeFeedToEnd(client, coll.SelfLink, options);
-                Assert.AreEqual("doc2.", accumulator);
+                Assert.AreEqual(string.Empty, accumulator);
             }
             finally
             {
