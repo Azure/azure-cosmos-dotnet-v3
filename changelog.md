@@ -46,14 +46,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Bugs Fixed
 
 - [5827](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5827) ChangeFeedEstimator: Change feed estimator threw `ArgumentNullException` when an inmemory lease container was being used. Update validations so in-memory lease containers work with change feed estimator
-- [5913](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5913) CancellationToken: Fixes operation-level `CancellationToken` being ignored during the gateway HTTP retry loop in `CosmosHttpClientCore`. Inter-attempt `Task.Delay` backoffs now honor the caller's token, so per-operation gateway requests surface `OperationCanceledException` within the caller's deadline instead of holding the delay past it. Background metadata refreshes (which pass `CancellationToken.None` to the same path) are unaffected. Also adds an entry-point `ThrowIfCancellationRequested` to `FeedRangeInternal.GetEffectiveRangesAsync` so an already-cancelled caller fails fast.
+- [5913](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5913) CancellationToken: Fixes operation-level `CancellationToken` being ignored during the gateway HTTP retry loop in `CosmosHttpClientCore`. Inter-attempt `Task.Delay` backoffs now honor the caller's token so per-operation requests surface `OperationCanceledException` within the caller's deadline. Also adds an entry-point `ThrowIfCancellationRequested` to `FeedRangeInternal.GetEffectiveRangesAsync` so an already-cancelled caller fails fast.
 - [5910](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5910) Upgraded Direct package to 3.43.2.
 - [5910](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5910) Direct: Fixed RNTBD thread-pool starvation by making `Dispatcher.OnIdleTimer` asynchronous (ports public [PR 5817](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5817))
 
 #### Other Changes
 
 - [#5887](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5887) Direct: Documents that `MaxTcpConnectionsPerEndpoint` accepts any positive value to allow customer control of the connection pool size; values of 16 or greater remain recommended.
-- [5913](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5913) Cancellation: Operation-level `CancellationToken` is now plumbed through and honored on the caller's call stack across `ContainerCore.GetFeedRangesAsync`, `FeedRange.GetEffectiveRangesAsync`, and query pagination (`NetworkAttachedDocumentContainer`, `CosmosQueryClientCore`, `FeedRangeCompositeContinuation.HandleSplitAsync`). The shared `PartitionKeyRangeCache` metadata refresh task is intentionally NOT per-caller cancellable (it is shared across all concurrent callers via `AsyncCacheNonBlocking`), and retry policies remain reliant on `BackoffRetryUtility`'s built-in cancellation honor (which already checks the token before each attempt and during backoff delays) — these were deliberately left unchanged to preserve cross-region failover side-effects performed during exception classification.
 
 ### <a name="3.61.0-preview.0"/> [3.61.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.61.0-preview.0) - 2026-5-18
 

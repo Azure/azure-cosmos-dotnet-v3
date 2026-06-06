@@ -315,11 +315,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ContainerContext containerContext = containerContexts.First(c => !c.IsHierarchicalPartition);
 
-            await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+            OperationCanceledException ex = await Assert.ThrowsExceptionAsync<CosmosOperationCanceledException>(
                 () => containerContext.Container.IsFeedRangePartOfAsync(
                     new FeedRangeEpk(new Documents.Routing.Range<string>("", "FFFFFFFFFFFFFFFF", true, false)),
                     FeedRange.FromPartitionKey(new PartitionKey("WA")),
                     cancellationToken: cts.Token));
+
+            Assert.IsInstanceOfType(ex, typeof(OperationCanceledException));
+            Assert.AreEqual(cts.Token, ex.CancellationToken);
         }
 
         private async Task GivenInvalidYFeedRangeExpectsArgumentExceptionIsFeedRangePartOfAsyncTestAsync<TExceeption>(
