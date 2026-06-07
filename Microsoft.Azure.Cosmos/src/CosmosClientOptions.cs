@@ -568,16 +568,14 @@ namespace Microsoft.Azure.Cosmos
         /// Range.LengthAwareMinComparer/LengthAwareMaxComparer.
         /// Setting the value to false will disable length-aware range comparator and switch to using the regular 
         /// Range.MinComparer/MaxComparer.
+        /// Can be controlled via the AZURE_COSMOS_USE_LENGTH_AWARE_RANGE_COMPARATOR environment variable.
         /// </summary>
         /// <value>
-        /// The default value is true.
+        /// Defaults to true (false for INTERNAL builds). Reads from ConfigurationManager which
+        /// respects the AZURE_COSMOS_USE_LENGTH_AWARE_RANGE_COMPARATOR environment variable.
         /// </value>
         internal bool UseLengthAwareRangeComparer { get; set; } =
-#if !INTERNAL
-            true;
-#else
-            false;
-#endif
+            ConfigurationManager.IsLengthAwareRangeComparatorEnabled();
 
         /// <summary>
         /// (Direct/TCP) Controls the amount of idle time after which unused connections are closed.

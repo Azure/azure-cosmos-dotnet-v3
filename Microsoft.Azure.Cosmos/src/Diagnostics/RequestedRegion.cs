@@ -83,21 +83,5 @@ namespace Microsoft.Azure.Cosmos
         {
             return $"{this.RegionName}:{this.Reason}";
         }
-
-        /// <summary>
-        /// Equality operator.
-        /// </summary>
-        /// <param name="left">The left operand.</param>
-        /// <param name="right">The right operand.</param>
-        /// <returns><c>true</c> if the two values are equal; otherwise <c>false</c>.</returns>
-        public static bool operator ==(RequestedRegion left, RequestedRegion right) => left.Equals(right);
-
-        /// <summary>
-        /// Inequality operator.
-        /// </summary>
-        /// <param name="left">The left operand.</param>
-        /// <param name="right">The right operand.</param>
-        /// <returns><c>true</c> if the two values are not equal; otherwise <c>false</c>.</returns>
-        public static bool operator !=(RequestedRegion left, RequestedRegion right) => !left.Equals(right);
     }
 }
