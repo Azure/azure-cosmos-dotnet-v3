@@ -1610,7 +1610,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("ThinClient")]
-        public async Task ReadItem_WithExcludeRegions_OnThinClient_PinsToNonExcludedReadRegion()
+        public async Task CreateItem_WithExcludeRegions_OnThinClient_PinsToNonExcludedReadRegion()
         {
             const string CentralUs = "Central US";
             const string EastUs2 = "East US 2";
@@ -1622,7 +1622,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
             string connectionString = Environment.GetEnvironmentVariable("COSMOSDB_THINCLIENT");
-           
+
             if (string.IsNullOrEmpty(connectionString))
             {
                 Assert.Fail("Set environment variable COSMOSDB_THINCLIENT to run the test");
@@ -1640,7 +1640,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new CosmosClientOptions
                 {
                     ConnectionMode = ConnectionMode.Gateway,
-                    ApplicationPreferredRegions = new List<string> {CentralUs, EastUs2 },
+                    ApplicationPreferredRegions = new List<string> { CentralUs, EastUs2 },
                     Serializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions),
                 });
 
@@ -1656,30 +1656,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Id = Guid.NewGuid().ToString(),
                     Pk = Guid.NewGuid().ToString(),
-                    Other = "exclude-regions read fixture",
+                    Other = "exclude-regions create fixture",
                 };
-                ItemResponse<TestObject> createResponse = await cosmosContainer.CreateItemAsync(seed, new PartitionKey(seed.Pk));
-
                 await Task.Delay(TimeSpan.FromSeconds(30));
 
-                ItemResponse<TestObject> readResponse = await cosmosContainer.ReadItemAsync<TestObject>(
-                    seed.Id,
+
+                ItemResponse<TestObject> createResponse = await cosmosContainer.CreateItemAsync(
+                    seed,
                     new PartitionKey(seed.Pk),
                     new ItemRequestOptions
                     {
                         ExcludeRegions = excludeRegions,
                     });
 
-                string readDiagnostics = readResponse.Diagnostics.ToString();
+                string createDiagnostics = createResponse.Diagnostics.ToString();
 
-                Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
-                Assert.AreEqual(seed.Id, readResponse.Resource.Id);
+                Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+                Assert.AreEqual(seed.Id, createResponse.Resource.Id);
                 foreach (string excludedRegion in excludeRegions)
                 {
                     string excludedHost = excludedRegion.Replace(" ", string.Empty).ToLowerInvariant() + ".documents.azure.com:10650";
                     Assert.IsFalse(
-                        readDiagnostics.Contains(excludedHost),
-                        $"Read with ExcludeRegions=[{string.Join(",", excludeRegions)}] must not route to '{excludedHost}'.");
+                        createDiagnostics.Contains(excludedHost),
+                        $"Create with ExcludeRegions=[{string.Join(",", excludeRegions)}] must not route to '{excludedHost}'.");
                 }
             }
             finally
