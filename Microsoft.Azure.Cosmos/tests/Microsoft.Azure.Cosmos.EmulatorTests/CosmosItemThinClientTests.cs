@@ -689,6 +689,54 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("ThinClient")]
+        public async Task ReadItem_WithHedgingAndExcludeRegions_OnThinClient_Succeeds()
+        {
+            CosmosClientOptions hedgingClientOptions = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                ApplicationPreferredRegions = PreferredRegions,
+                Serializer = this.cosmosSystemTextJsonSerializer,
+                AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
+                    threshold: TimeSpan.FromMilliseconds(100),
+                    thresholdStep: TimeSpan.FromMilliseconds(50)),
+            };
+
+            using CosmosClient hedgingClient = new CosmosClient(this.connectionString, hedgingClientOptions);
+            Container hedgingContainer = hedgingClient.GetContainer(this.database.Id, this.container.Id);
+            await Task.Delay(TimeSpan.FromSeconds(30));
+            TestObject seed = new TestObject
+            {
+                Id = Guid.NewGuid().ToString(),
+                Pk = "pk_hedging",
+                Other = "hedging composition fixture",
+            };
+            await hedgingContainer.CreateItemAsync(seed, new PartitionKey(seed.Pk));
+
+            ItemResponse<TestObject> readResponse = await hedgingContainer.ReadItemAsync<TestObject>(
+                seed.Id,
+                new PartitionKey(seed.Pk),
+                new ItemRequestOptions
+                {
+                    ExcludeRegions = new List<string>(ExcludeRegions),
+                });
+
+            string diagnostics = readResponse.Diagnostics.ToString();
+            Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
+            Assert.AreEqual(seed.Id, readResponse.Resource.Id);
+            Assert.IsTrue(
+                diagnostics.Contains("|F4"),
+                "Read should route through the thin client pipeline (|F4 user agent token).");
+            foreach (string excludedRegion in ExcludeRegions)
+            {
+                string excludedHost = excludedRegion.Replace(" ", string.Empty).ToLowerInvariant() + ".documents.azure.com:10650";
+                Assert.IsFalse(
+                    diagnostics.Contains(excludedHost),
+                    $"Hedged read with ExcludeRegions=[{string.Join(",", ExcludeRegions)}] must not route to '{excludedHost}'.");
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("ThinClient")]
         public async Task ReplaceItemsTest()
         {
             string pk = "pk_replace";
