@@ -65,13 +65,14 @@ namespace Microsoft.Azure.Cosmos
                 operationName: $"{nameof(DistributedReadTransaction)}.{nameof(CommitTransactionAsync)}",
                 containerName: null,
                 databaseName: null,
-                operationType: OperationType.CommitDistributedTransaction,
+                operationType: OperationType.Read,
                 requestOptions: null,
                 task: (trace) =>
                 {
                     DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                         operations: this.operations,
-                        clientContext: this.clientContext);
+                        clientContext: this.clientContext,
+                        operationType: OperationType.Read);
 
                     return committer.CommitTransactionAsync(trace, cancellationToken);
                 },

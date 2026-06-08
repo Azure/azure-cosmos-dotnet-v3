@@ -381,7 +381,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         #region OperationHelperAsync wiring
 
         [TestMethod]
-        [Description("Verifies CommitTransactionAsync routes through OperationHelperAsync with the qualified operationName, the read-specific OTel constant, the CommitDistributedTransaction operation type, and TraceComponent.Batch.")]
+        [Description("Verifies CommitTransactionAsync routes through OperationHelperAsync with the qualified operationName, the read-specific OTel constant, the Read operation type, and TraceComponent.Batch.")]
         public async Task CommitTransactionAsync_RoutesThroughOperationHelper_WithExpectedWiring()
         {
             string capturedOperationName = null;
@@ -421,9 +421,46 @@ namespace Microsoft.Azure.Cosmos.Tests
             await txn.CommitTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual($"{nameof(DistributedReadTransaction)}.{nameof(DistributedReadTransaction.CommitTransactionAsync)}", capturedOperationName);
-            Assert.AreEqual(OperationType.CommitDistributedTransaction, capturedOperationType);
+            Assert.AreEqual(OperationType.Read, capturedOperationType);
             Assert.AreEqual(TraceComponent.Batch, capturedTraceComponent);
             Assert.AreEqual(OpenTelemetryConstants.Operations.CommitDistributedReadTransaction, capturedOTelOperationName);
+        }
+
+        [TestMethod]
+        [Description("End-to-end: verifies the wire request issued by the DistributedTransactionCommitter for a read transaction uses ResourceType.DistributedTransactionBatch and OperationType.Read (not CommitDistributedTransaction).")]
+        public async Task CommitAsync_SendsCorrectOperationAndResourceType()
+        {
+            ResourceType capturedResourceType = default;
+            OperationType capturedOperationType = default;
+
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
+            contextMock
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<CosmosPK?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns<string, ResourceType, OperationType, RequestOptions, ContainerInternal, CosmosPK?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
+                    (uri, resType, opType, opts, container, pk, itemId, stream, enricher, trace, ct) =>
+                    {
+                        capturedResourceType = resType;
+                        capturedOperationType = opType;
+                        return Task.FromResult(BuildReadSuccessResponse(1));
+                    });
+
+            await new DistributedReadTransactionCore(contextMock.Object)
+                .ReadItem(BuildMockContainer(), TestPartitionKey, ItemId)
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.AreEqual(ResourceType.DistributedTransactionBatch, capturedResourceType);
+            Assert.AreEqual(OperationType.Read, capturedOperationType);
         }
 
         #endregion
