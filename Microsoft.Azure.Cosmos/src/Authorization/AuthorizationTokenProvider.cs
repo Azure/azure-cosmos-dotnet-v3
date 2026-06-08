@@ -52,12 +52,6 @@ namespace Microsoft.Azure.Cosmos
             AuthorizationTokenType tokenType,
             ITrace trace);
 
-        public abstract ValueTask AddInferenceAuthorizationHeaderAsync(
-            INameValueCollection headersCollection,
-            Uri requestAddress,
-            string verb,
-            AuthorizationTokenType tokenType);
-
         public abstract void TraceUnauthorized(
             DocumentClientException dce,
             string authorizationToken,

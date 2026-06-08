@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http;
     using System.Net.Security;
     using System.Security.Cryptography.X509Certificates;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
@@ -244,11 +245,19 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <remarks>
         /// This setting is only applicable in Gateway mode.
-        /// The SDK sets EnableMultipleHttp2Connections = true on the underlying SocketsHttpHandler,
-        /// allowing additional HTTP/2 TCP connections to be opened when the maximum concurrent streams
-        /// limit on an existing connection is reached. This property controls the upper bound on the
-        /// total number of connections per server endpoint.
-        /// When using a custom <see cref="HttpClientFactory"/>, set EnableMultipleHttp2Connections
+        /// The SDK sets the following on the underlying SocketsHttpHandler:
+        /// <list type="bullet">
+        /// <item><description>EnableMultipleHttp2Connections = true — allows additional HTTP/2 TCP connections
+        /// to be opened when the maximum concurrent streams limit on an existing connection is reached.</description></item>
+        /// <item><description>KeepAlivePingDelay = 1 second — sends HTTP/2 PING frames after 1 second
+        /// of inactivity to detect broken connections in the pool.</description></item>
+        /// <item><description>KeepAlivePingTimeout = 2 seconds — marks a connection as dead if no PONG
+        /// response is received within 2 seconds.</description></item>
+        /// <item><description>KeepAlivePingPolicy = Always — sends pings even for idle connections, which
+        /// is critical for detecting broken connections that remain in the pool.</description></item>
+        /// </list>
+        /// This property controls the upper bound on the total number of connections per server endpoint.
+        /// When using a custom <see cref="HttpClientFactory"/>, configure these properties
         /// directly on your SocketsHttpHandler for equivalent behavior.
         /// </remarks>
         /// <example>
@@ -268,7 +277,10 @@ namespace Microsoft.Azure.Cosmos
         /// SocketsHttpHandler handler = new SocketsHttpHandler
         /// {
         ///     MaxConnectionsPerServer = 100,
-        ///     EnableMultipleHttp2Connections = true
+        ///     EnableMultipleHttp2Connections = true,
+        ///     KeepAlivePingDelay = TimeSpan.FromSeconds(1),
+        ///     KeepAlivePingTimeout = TimeSpan.FromSeconds(2),
+        ///     KeepAlivePingPolicy = HttpKeepAlivePingPolicy.Always
         /// };
         /// CosmosClientOptions options = new CosmosClientOptions()
         /// {
@@ -305,6 +317,24 @@ namespace Microsoft.Azure.Cosmos
         /// <value>Default value is 6 seconds.</value>
         /// <seealso cref="CosmosClientBuilder.WithRequestTimeout(TimeSpan)"/>
         public TimeSpan RequestTimeout { get; set; }
+
+        /// <summary>
+        /// Gets or sets the request timeout for inference service operations (e.g., semantic reranking).
+        /// The number specifies the time to wait for a response from the inference service before the request is cancelled.
+        /// This is a single-attempt timeout with no retries.
+        /// </summary>
+        /// <value>Default value is 5 seconds.</value>
+        /// <remarks>
+        /// This timeout is specific to inference service operations and is separate from the standard <see cref="RequestTimeout"/>.
+        /// If the request does not complete within the specified duration, a <see cref="CosmosException"/> with status 408 (Request Timeout) is thrown.
+        /// No retries are attempted on timeout.
+        /// </remarks>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        TimeSpan InferenceRequestTimeout { get; set; } = InferenceService.DefaultInferenceRequestTimeout;
 
         /// <summary>
         /// The SDK does a background refresh based on the time interval set to refresh the token credentials.
@@ -375,6 +405,18 @@ namespace Microsoft.Azure.Cosmos
         internal
 #endif
         ReadConsistencyStrategy? ReadConsistencyStrategy { get; set; }
+
+        /// <summary>
+        /// Gets or sets the client-wide default <see cref="ICosmosEmbeddingGenerator"/> used to generate
+        /// query-time vector embeddings for hybrid and vector-search queries.
+        /// </summary>
+        [JsonIgnore]
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        ICosmosEmbeddingGenerator EmbeddingGenerator { get; set; }
 
         /// <summary>
         /// Sets the priority level for requests created using cosmos client.
@@ -474,6 +516,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        [JsonConverter(typeof(ClientOptionJsonConverter))]
         public System.Text.Json.JsonSerializerOptions UseSystemTextJsonSerializerWithOptions
         {
             get => this.stjSerializerOptions;
@@ -525,16 +568,14 @@ namespace Microsoft.Azure.Cosmos
         /// Range.LengthAwareMinComparer/LengthAwareMaxComparer.
         /// Setting the value to false will disable length-aware range comparator and switch to using the regular 
         /// Range.MinComparer/MaxComparer.
+        /// Can be controlled via the AZURE_COSMOS_USE_LENGTH_AWARE_RANGE_COMPARATOR environment variable.
         /// </summary>
         /// <value>
-        /// The default value is true.
+        /// Defaults to true (false for INTERNAL builds). Reads from ConfigurationManager which
+        /// respects the AZURE_COSMOS_USE_LENGTH_AWARE_RANGE_COMPARATOR environment variable.
         /// </value>
         internal bool UseLengthAwareRangeComparer { get; set; } =
-#if !INTERNAL
-            true;
-#else
-            false;
-#endif
+            ConfigurationManager.IsLengthAwareRangeComparatorEnabled();
 
         /// <summary>
         /// (Direct/TCP) Controls the amount of idle time after which unused connections are closed.
@@ -563,12 +604,40 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         /// <remarks>
         /// When the time elapses, the attempt is cancelled and an error is returned. Longer timeouts will delay retries and failures.
+        /// <para>
+        /// The supplied <see cref="TimeSpan"/> is preserved unchanged on this property. At the
+        /// transport boundary the value is converted to whole seconds:
+        /// </para>
+        /// <list type="bullet">
+        /// <item>
+        /// Values in [<see cref="TimeSpan.Zero"/>, 1 second) are treated as 0, causing the
+        /// configured <see cref="RequestTimeout"/> to be used as the open-connection timeout.
+        /// </item>
+        /// <item>
+        /// Values greater than or equal to 1 second are rounded up to the nearest whole second
+        /// (for example, 2.3 seconds becomes 3 seconds).
+        /// </item>
+        /// </list>
+        /// Negative values are not recommended and will emit a warning trace. They are preserved
+        /// on this property for backward compatibility. At the transport boundary they are converted
+        /// to whole seconds via truncation (e.g. −5.7 s → −5) and ultimately reach the
+        /// <c>TransportClient.Options.OpenTimeout</c> getter, which returns
+        /// <see cref="RequestTimeout"/> for any value that is not greater than
+        /// <see cref="TimeSpan.Zero"/>.
         /// </remarks>
         public TimeSpan? OpenTcpConnectionTimeout
         {
             get => this.openTcpConnectionTimeout;
             set
             {
+                if (value.HasValue && value.Value < TimeSpan.Zero)
+                {
+                    DefaultTrace.TraceWarning(
+                        "OpenTcpConnectionTimeout value {0} is negative. Negative values are not recommended; "
+                        + "the TransportClient will fall back to the configured RequestTimeout.",
+                        value.Value);
+                }
+
                 this.openTcpConnectionTimeout = value;
                 this.ValidateDirectTCPSettings();
             }
@@ -601,7 +670,7 @@ namespace Microsoft.Azure.Cosmos
         /// Together with MaxRequestsPerTcpConnection, this setting limits the number of requests that are simultaneously sent to a single Cosmos DB back-end(MaxRequestsPerTcpConnection x MaxTcpConnectionPerEndpoint).
         /// </summary>
         /// <value>
-        /// The default value is 65,535. Value must be greater than or equal to 16.
+        /// The default value is 65,535. Any positive value is accepted, allowing applications to constrain the connection pool size when needed; values of 16 or greater are recommended.
         /// </value>
         public int? MaxTcpConnectionsPerEndpoint
         {
@@ -1372,14 +1441,19 @@ namespace Microsoft.Azure.Cosmos
                     return;
                 }
 
-                CosmosJsonSerializerWrapper cosmosJsonSerializerWrapper = value as CosmosJsonSerializerWrapper;
-                if (value is CosmosJsonSerializerWrapper)
+                if (value is System.Text.Json.JsonSerializerOptions)
                 {
-                    writer.WriteValue(cosmosJsonSerializerWrapper.InternalJsonSerializer.GetType().ToString());
+                    writer.WriteValue(value.GetType().ToString());
+                    return;
                 }
 
-                CosmosSerializer cosmosSerializer = value as CosmosSerializer;
-                if (cosmosSerializer is CosmosSerializer)
+                if (value is CosmosJsonSerializerWrapper cosmosJsonSerializerWrapper)
+                {
+                    writer.WriteValue(cosmosJsonSerializerWrapper.InternalJsonSerializer.GetType().ToString());
+                    return;
+                }
+
+                if (value is CosmosSerializer cosmosSerializer)
                 {
                     writer.WriteValue(cosmosSerializer.GetType().ToString());
                 }

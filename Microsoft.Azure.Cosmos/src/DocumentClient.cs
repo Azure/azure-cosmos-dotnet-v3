@@ -927,7 +927,24 @@ namespace Microsoft.Azure.Cosmos
 
                 if (connectionPolicy.OpenTcpConnectionTimeout.HasValue)
                 {
-                    this.openConnectionTimeoutInSeconds = (int)connectionPolicy.OpenTcpConnectionTimeout.Value.TotalSeconds;
+                    // Values in [TimeSpan.Zero, 1 second) become 0 (use RequestTimeout).
+                    // Values >= 1 second round up to the nearest whole second, clamped to int.MaxValue.
+                    // Negative values are truncated via (int)TotalSeconds, preserving pre-PR behavior.
+                    TimeSpan openTcpConnectionTimeout = connectionPolicy.OpenTcpConnectionTimeout.Value;
+
+                    if (openTcpConnectionTimeout < TimeSpan.Zero)
+                    {
+                        this.openConnectionTimeoutInSeconds = (int)openTcpConnectionTimeout.TotalSeconds;
+                    }
+                    else if (openTcpConnectionTimeout < TimeSpan.FromSeconds(1))
+                    {
+                        this.openConnectionTimeoutInSeconds = 0;
+                    }
+                    else
+                    {
+                        double ceilingSeconds = Math.Ceiling(openTcpConnectionTimeout.TotalSeconds);
+                        this.openConnectionTimeoutInSeconds = ceilingSeconds > int.MaxValue ? int.MaxValue : (int)ceilingSeconds;
+                    }
                 }
 
                 if (connectionPolicy.MaxRequestsPerTcpConnection.HasValue)
@@ -1403,6 +1420,12 @@ namespace Microsoft.Azure.Cosmos
             if (this.cosmosAuthorization != null)
             {
                 this.cosmosAuthorization.Dispose();
+            }
+
+            if (this.PartitionKeyRangeLocation != null)
+            {
+                (this.PartitionKeyRangeLocation as IDisposable)?.Dispose();
+                this.PartitionKeyRangeLocation = null;
             }
 
             if (this.GlobalEndpointManager != null)
@@ -6782,6 +6805,9 @@ namespace Microsoft.Azure.Cosmos
                     remoteCertificateValidationCallback: this.remoteCertificateValidationCallback,
                     distributedTracingOptions: distributedTracingOptions,
                     enableChannelMultiplexing: ConfigurationManager.IsTcpChannelMultiplexingEnabled(),
+                    dnsResolutionFunction: ConfigurationManager.IsTcpDnsDotSuffixEnabled()
+                        ? DnsDotSuffixHelper.ResolveHostAsync
+                        : null,
                     chaosInterceptor: this.chaosInterceptor);
 
                 if (this.transportClientHandlerFactory != null)
