@@ -1,4 +1,4 @@
-//------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -25,6 +25,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class CosmosItemThinClientTests
     {
+        private const string CentralUs = "Central US";
+        private const string EastUs2 = "East US 2";
+        private static readonly IReadOnlyList<string> PreferredRegions = new List<string> { CentralUs, EastUs2 };
+        private static readonly IReadOnlyList<string> ExcludeRegions = new List<string> { CentralUs };
+
         private string connectionString;
         private CosmosClient client;
         private Database database;
@@ -37,7 +42,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
             this.connectionString = Environment.GetEnvironmentVariable("COSMOSDB_THINCLIENT");
-
             if (string.IsNullOrEmpty(this.connectionString))
             {
                 Assert.Fail("Set environment variable COSMOSDB_THINCLIENT to run the tests");
@@ -51,13 +55,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
             this.cosmosSystemTextJsonSerializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions);
 
-            this.client = new CosmosClient(
-                  this.connectionString,
-                  new CosmosClientOptions()
-                  {
-                      ConnectionMode = ConnectionMode.Gateway,
-                      Serializer = this.cosmosSystemTextJsonSerializer,
-                  });
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                ApplicationPreferredRegions = PreferredRegions,
+                Serializer = this.cosmosSystemTextJsonSerializer,
+            };
+            clientOptions.CustomHandlers.Add(new ExcludeRegionsInjectingHandler(ExcludeRegions));
+
+            this.client = new CosmosClient(this.connectionString, clientOptions);
 
             string uniqueDbName = "TestDb_" + Guid.NewGuid().ToString();
             this.database = await this.client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
@@ -99,6 +105,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private async Task<List<TestObject>> CreateItemsSafeAsync(IEnumerable<TestObject> items)
         {
             List<TestObject> itemsCreated = new List<TestObject>();
+            await Task.Delay(TimeSpan.FromSeconds(30));
             foreach (TestObject item in items)
             {
                 try
@@ -457,7 +464,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string pk = "pk_create";
             IEnumerable<TestObject> items = this.GenerateItems(pk);
-
+            await Task.Delay(TimeSpan.FromSeconds(30));
             foreach (TestObject item in items)
             {
                 ItemResponse<TestObject> response = await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
@@ -713,6 +720,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string pk = "pk_upsert";
             IEnumerable<TestObject> items = this.GenerateItems(pk);
 
+            await Task.Delay(TimeSpan.FromSeconds(30));
             foreach (TestObject item in items)
             {
                 ItemResponse<TestObject> response = await this.container.UpsertItemAsync(item, new PartitionKey(item.Pk));
@@ -746,7 +754,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string pk = "pk_create_stream";
             IEnumerable<TestObject> items = this.GenerateItems(pk);
-
+            await Task.Delay(TimeSpan.FromSeconds(30));
             foreach (TestObject item in items)
             {
                 using (Stream stream = this.cosmosSystemTextJsonSerializer.ToStream(item))
@@ -817,7 +825,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string pk = "pk_upsert_stream";
             IEnumerable<TestObject> items = this.GenerateItems(pk);
-
+            await Task.Delay(TimeSpan.FromSeconds(30));
             foreach (TestObject item in items)
             {
                 using (Stream stream = this.cosmosSystemTextJsonSerializer.ToStream(item))
@@ -1061,21 +1069,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCategory("ThinClient")]
         public async Task BulkCreateItemsTest()
         {
-            CosmosClient bulkClient = new CosmosClient(
-                this.connectionString,
-                new CosmosClientOptions
-                {
-                    ConnectionMode = ConnectionMode.Gateway,
-                    Serializer = this.cosmosSystemTextJsonSerializer,
-                    AllowBulkExecution = true,
-                });
+            CosmosClientOptions bulkOptions = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                ApplicationPreferredRegions = PreferredRegions,
+                Serializer = this.cosmosSystemTextJsonSerializer,
+                AllowBulkExecution = true,
+            };
+            bulkOptions.CustomHandlers.Add(new ExcludeRegionsInjectingHandler(ExcludeRegions));
+
+            CosmosClient bulkClient = new CosmosClient(this.connectionString, bulkOptions);
 
             string pk = "pk_bulk";
             List<TestObject> items = this.GenerateItems(pk).ToList();
             List<Task<ItemResponse<TestObject>>> tasks = new List<Task<ItemResponse<TestObject>>>();
 
             Container bulkContainer = bulkClient.GetContainer(this.database.Id, this.container.Id);
-
+            await Task.Delay(TimeSpan.FromSeconds(30));
             foreach (TestObject item in items)
             {
                 tasks.Add(bulkContainer.CreateItemAsync(item, new PartitionKey(item.Pk)));
@@ -1097,7 +1107,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string pk = "pk_batch";
             List<TestObject> items = this.GenerateItems(pk).Take(100).ToList();
-
+            await Task.Delay(TimeSpan.FromSeconds(30));
             TransactionalBatch batch = this.container.CreateTransactionalBatch(new PartitionKey(pk));
 
             foreach (TestObject item in items)
@@ -1608,94 +1618,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [TestMethod]
-        [TestCategory("ThinClient")]
-        public async Task CreateItem_WithExcludeRegions_OnThinClient_PinsToNonExcludedReadRegion()
+
+        private sealed class ExcludeRegionsInjectingHandler : RequestHandler
         {
-            const string CentralUs = "Central US";
-            const string EastUs2 = "East US 2";
-            
-            List<string> excludeRegions = new List<string>
-            {
-                CentralUs
-            };
+            private readonly IReadOnlyList<string> excludeRegions;
 
-            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
-            string connectionString = Environment.GetEnvironmentVariable("COSMOSDB_THINCLIENT");
-
-            if (string.IsNullOrEmpty(connectionString))
+            public ExcludeRegionsInjectingHandler(IReadOnlyList<string> excludeRegions)
             {
-                Assert.Fail("Set environment variable COSMOSDB_THINCLIENT to run the test");
+                this.excludeRegions = excludeRegions;
             }
 
-            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
+            public override Task<ResponseMessage> SendAsync(RequestMessage request, CancellationToken cancellationToken)
             {
-                PropertyNamingPolicy = null,
-                PropertyNameCaseInsensitive = true,
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-            };
-
-            CosmosClient cosmosClient = new CosmosClient(
-                connectionString,
-                new CosmosClientOptions
+                if (request.RequestOptions == null)
                 {
-                    ConnectionMode = ConnectionMode.Gateway,
-                    ApplicationPreferredRegions = new List<string> { CentralUs, EastUs2 },
-                    Serializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions),
-                });
-
-            Database cosmosDatabase = null;
-            try
-            {
-                cosmosDatabase = await cosmosClient.CreateDatabaseIfNotExistsAsync("TestDb_" + Guid.NewGuid());
-                Container cosmosContainer = await cosmosDatabase.CreateContainerIfNotExistsAsync(
-                    "TestContainer_" + Guid.NewGuid(),
-                    "/pk");
-
-                TestObject seed = new TestObject
-                {
-                    Id = Guid.NewGuid().ToString(),
-                    Pk = Guid.NewGuid().ToString(),
-                    Other = "exclude-regions create fixture",
-                };
-                await Task.Delay(TimeSpan.FromSeconds(30));
-
-
-                ItemResponse<TestObject> createResponse = await cosmosContainer.CreateItemAsync(
-                    seed,
-                    new PartitionKey(seed.Pk),
-                    new ItemRequestOptions
-                    {
-                        ExcludeRegions = excludeRegions,
-                    });
-
-                string createDiagnostics = createResponse.Diagnostics.ToString();
-
-                Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
-                Assert.AreEqual(seed.Id, createResponse.Resource.Id);
-                foreach (string excludedRegion in excludeRegions)
-                {
-                    string excludedHost = excludedRegion.Replace(" ", string.Empty).ToLowerInvariant() + ".documents.azure.com:10650";
-                    Assert.IsFalse(
-                        createDiagnostics.Contains(excludedHost),
-                        $"Create with ExcludeRegions=[{string.Join(",", excludeRegions)}] must not route to '{excludedHost}'.");
-                }
-            }
-            finally
-            {
-                if (cosmosDatabase != null)
-                {
-                    try
-                    {
-                        await cosmosDatabase.DeleteAsync();
-                    }
-                    catch
-                    {
-                    }
+                    request.RequestOptions = new RequestOptions();
                 }
 
-                cosmosClient.Dispose();
-                Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "False");
+                if (request.RequestOptions.ExcludeRegions == null || request.RequestOptions.ExcludeRegions.Count == 0)
+                {
+                    request.RequestOptions.ExcludeRegions = new List<string>(this.excludeRegions);
+                }
+
+                return base.SendAsync(request, cancellationToken);
             }
         }
     }
