@@ -433,14 +433,17 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Gets the boolean value indicating if length-aware range comparator is enabled.
-        /// Default: true for preview , false for GA.
+        /// Default: true for GA and Preview builds, false for INTERNAL builds.
+        /// Can be overridden via the AZURE_COSMOS_USE_LENGTH_AWARE_RANGE_COMPARATOR environment variable.
+        /// Setting the environment variable to false disables length-aware range comparator across all
+        /// usage sites (TryCombine, QueryRangeUtils, PartitionRoutingHelper).
         /// </summary>
         /// <returns>A boolean flag indicating if length-aware range comparator is enabled.</returns>
         public static bool IsLengthAwareRangeComparatorEnabled()
         {
-            bool defaultValue = false;
-#if PREVIEW && !INTERNAL
-            defaultValue = true;
+            bool defaultValue = true;
+#if INTERNAL
+            defaultValue = false;
 #endif
             return ConfigurationManager
                     .GetEnvironmentVariable(
