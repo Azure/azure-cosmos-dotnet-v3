@@ -27,24 +27,28 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly IReadOnlyList<DistributedTransactionOperation> operations;
         private readonly CosmosClientContext clientContext;
+        private readonly OperationType operationType;
         private readonly TimeSpan retryBaseDelay;
         private readonly Func<TimeSpan, CancellationToken, Task> delayProvider;
 
         public DistributedTransactionCommitter(
             IReadOnlyList<DistributedTransactionOperation> operations,
-            CosmosClientContext clientContext)
-            : this(operations, clientContext, DistributedTransactionCommitter.DefaultRetryBaseDelay)
+            CosmosClientContext clientContext,
+            OperationType operationType)
+            : this(operations, clientContext, operationType, DistributedTransactionCommitter.DefaultRetryBaseDelay)
         {
         }
 
         internal DistributedTransactionCommitter(
             IReadOnlyList<DistributedTransactionOperation> operations,
             CosmosClientContext clientContext,
+            OperationType operationType,
             TimeSpan retryBaseDelay,
             Func<TimeSpan, CancellationToken, Task> delayProvider = null)
         {
             this.operations = operations ?? throw new ArgumentNullException(nameof(operations));
             this.clientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
+            this.operationType = operationType;
             this.retryBaseDelay = retryBaseDelay;
             this.delayProvider = delayProvider ?? Task.Delay;
         }
@@ -153,7 +157,7 @@ namespace Microsoft.Azure.Cosmos
                     ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
                         resourceUri: DistributedTransactionCommitter.ResourceUri,
                         resourceType: ResourceType.DistributedTransactionBatch,
-                        operationType: OperationType.CommitDistributedTransaction,
+                        operationType: this.operationType,
                         requestOptions: null,
                         cosmosContainerCore: null,
                         partitionKey: null,
