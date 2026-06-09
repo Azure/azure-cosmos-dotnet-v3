@@ -744,11 +744,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                 // Validate SDKSupportedCapabilities includes ChangeFeedWithStartTimePostMerge on the first request
                 string sdkCapabilities = firstCapturedRequest.Headers[Microsoft.Azure.Documents.HttpConstants.HttpHeaders.SDKSupportedCapabilities];
                 Assert.IsNotNull(sdkCapabilities, "SDKSupportedCapabilities header should be present on the first change feed request.");
-                ulong firstCapabilitiesValue = ulong.Parse(sdkCapabilities);
+                ulong capabilitiesValue = ulong.Parse(sdkCapabilities);
                 ulong changeFeedWithStartTimePostMergeFlag = (ulong)Microsoft.Azure.Documents.SDKSupportedCapabilities.ChangeFeedWithStartTimePostMerge;
                 Assert.IsTrue(
-                    (firstCapabilitiesValue & changeFeedWithStartTimePostMergeFlag) == changeFeedWithStartTimePostMergeFlag,
-                    $"SDKSupportedCapabilities header should include ChangeFeedWithStartTimePostMerge flag on first request. Actual value: {firstCapabilitiesValue}");
+                    (capabilitiesValue & changeFeedWithStartTimePostMergeFlag) == changeFeedWithStartTimePostMergeFlag,
+                    $"SDKSupportedCapabilities header should include ChangeFeedWithStartTimePostMerge flag on first request. Actual value: {capabilitiesValue}");
 
                 while (feedIterator.HasMoreResults)
                 {
@@ -759,19 +759,19 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                     {
                         Assert.IsTrue(headerHandler.CapturedRequests.Count > 0, "Expected at least one request in the second read.");
 
-                        RequestMessage secondCapturedRequest = headerHandler.CapturedRequests[0];
-                        ifNoneMatch = secondCapturedRequest.Headers.IfNoneMatch;
+                        RequestMessage capturedRequest = headerHandler.CapturedRequests[0];
+                        ifNoneMatch = capturedRequest.Headers.IfNoneMatch;
                         Assert.IsNotNull(ifNoneMatch, "If-None-Match (etag) header should be set on subsequent change feed requests as the continuation.");
                         Assert.AreNotEqual("*", ifNoneMatch, "If-None-Match should be a specific etag, not '*'.");
 
                         // The If-Modified-Since should still be present on subsequent requests (for merge handling)
-                        ifModifiedSince = secondCapturedRequest.Headers[Microsoft.Azure.Documents.HttpConstants.HttpHeaders.IfModifiedSince];
+                        ifModifiedSince = capturedRequest.Headers[Microsoft.Azure.Documents.HttpConstants.HttpHeaders.IfModifiedSince];
                         Assert.IsNotNull(ifModifiedSince, "If-Modified-Since should still be present on subsequent requests for start time based change feed.");
 
                         // Validate that SDKSupportedCapabilities header includes ChangeFeedWithStartTimePostMerge
-                        sdkCapabilities = secondCapturedRequest.Headers[Microsoft.Azure.Documents.HttpConstants.HttpHeaders.SDKSupportedCapabilities];
+                        sdkCapabilities = capturedRequest.Headers[Microsoft.Azure.Documents.HttpConstants.HttpHeaders.SDKSupportedCapabilities];
                         Assert.IsNotNull(sdkCapabilities, "SDKSupportedCapabilities header should be present on change feed requests.");
-                        ulong capabilitiesValue = ulong.Parse(sdkCapabilities);
+                        capabilitiesValue = ulong.Parse(sdkCapabilities);
                         Assert.IsTrue(
                             (capabilitiesValue & changeFeedWithStartTimePostMergeFlag) == changeFeedWithStartTimePostMergeFlag,
                             $"SDKSupportedCapabilities header should include ChangeFeedWithStartTimePostMerge flag. Actual value: {capabilitiesValue}");

@@ -762,7 +762,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
                 if (filteredChanges.Count == 0)
                 {
-                    ChangeFeedState notModifiedResponseState = new ChangeFeedStateTime(DateTime.UtcNow);
+                    ChangeFeedState notModifiedResponseState;
+                    if (feedRangeState.State is ChangeFeedStateContinuationAndStartTime composite)
+                    {
+                        notModifiedResponseState = composite; // preserve as-is
+                    }
+                    else
+                    {
+                        notModifiedResponseState = new ChangeFeedStateTime(DateTime.UtcNow);
+                    }
+
                     return Task.FromResult(
                     TryCatch<ChangeFeedPage>.FromResult(
                         new ChangeFeedNotModifiedPage(
