@@ -600,6 +600,185 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        [TestMethod]
+        public async Task TokenCredentialCache_ThrowsObjectDisposed_AfterDispose()
+        {
+            TestTokenCredential testTokenCredential = new TestTokenCredential(() => new ValueTask<AccessToken>(this.AccessToken));
+            TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential, TimeSpan.MaxValue);
+
+            tokenCredentialCache.Dispose();
+
+            await Assert.ThrowsExceptionAsync<ObjectDisposedException>(
+                () => tokenCredentialCache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton).AsTask());
+        }
+
+        [DataTestMethod]
+        [DataRow(HttpStatusCode.Unauthorized)]
+        [DataRow(HttpStatusCode.Forbidden)]
+        public async Task TokenCredentialCache_DoesNotRetry_OnUnauthorizedOrForbidden(HttpStatusCode statusCode)
+        {
+            int callCount = 0;
+            Mock<TokenCredential> mockCredential = new Mock<TokenCredential>();
+            mockCredential
+                .Setup(c => c.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
+                .Returns<TokenRequestContext, CancellationToken>((ctx, ct) =>
+                {
+                    callCount++;
+                    if (callCount == 1)
+                    {
+                        throw new global::Azure.RequestFailedException((int)statusCode, "authorization failure");
+                    }
+
+                    return new ValueTask<AccessToken>(new AccessToken("recovered-token", DateTimeOffset.UtcNow.AddHours(1)));
+                });
+
+            using TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(mockCredential.Object, TimeSpan.MaxValue);
+            using ITrace trace = Cosmos.Tracing.Trace.GetRootTrace("test");
+
+            global::Azure.RequestFailedException thrown = await Assert.ThrowsExceptionAsync<global::Azure.RequestFailedException>(
+                () => tokenCredentialCache.GetTokenAuthorizationHeaderAsync(trace).AsTask());
+
+            Assert.AreEqual((int)statusCode, thrown.Status);
+            Assert.AreEqual(1, callCount, "A 401/403 from the credential must not be retried within a single refresh.");
+
+            // The cached auth state is cleared on 401/403, so the next request re-invokes the credential and recovers.
+            string header = await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(trace);
+            Assert.AreEqual(AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature("recovered-token"), header);
+            Assert.AreEqual(2, callCount);
+        }
+
+        [TestMethod]
+        public async Task TokenCredentialCache_Throws_WhenCredentialReturnsExpiredToken()
+        {
+            TestTokenCredential testTokenCredential = new TestTokenCredential(
+                () => new ValueTask<AccessToken>(new AccessToken("expired-token", DateTimeOffset.UtcNow - TimeSpan.FromMinutes(5))));
+
+            using TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential, TimeSpan.MaxValue);
+            using ITrace trace = Cosmos.Tracing.Trace.GetRootTrace("test");
+
+            await Assert.ThrowsExceptionAsync<ArgumentOutOfRangeException>(
+                () => tokenCredentialCache.GetTokenAuthorizationHeaderAsync(trace).AsTask());
+
+            // The already-expired guard sits inside the retry loop, so the credential is invoked once per retry (2).
+            Assert.AreEqual(2, testTokenCredential.NumTimesInvoked);
+        }
+
+        [TestMethod]
+        public async Task TokenCredentialCache_MapsCancellation_ToFailedToGetAadTokenSubStatus()
+        {
+            TestTokenCredential testTokenCredential = new TestTokenCredential(
+                () => throw new OperationCanceledException("token fetch cancelled"));
+
+            using TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential, TimeSpan.MaxValue);
+            using ITrace trace = Cosmos.Tracing.Trace.GetRootTrace("test");
+
+            CosmosException ce = await Assert.ThrowsExceptionAsync<CosmosException>(
+                () => tokenCredentialCache.GetTokenAuthorizationHeaderAsync(trace).AsTask());
+
+            Assert.AreEqual(HttpStatusCode.RequestTimeout, ce.StatusCode);
+            Assert.AreEqual((int)SubStatusCodes.FailedToGetAadToken, ce.SubStatusCode);
+        }
+
+        [TestMethod]
+        public void GenerateAadAuthorizationSignature_ProducesExpectedFormat()
+        {
+            string token = "sample.jwt.token";
+
+            string signature = AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(token);
+
+            // The header is URL-encoded; decoding it back must yield the documented AAD signature structure.
+            string decoded = Uri.UnescapeDataString(signature);
+            Assert.AreEqual($"type=aad&ver=1.0&sig={token}", decoded);
+        }
+
+        [TestMethod]
+        public async Task AddAuthorizationHeaderAsync_AddsAuthorizationHeader()
+        {
+            TestTokenCredential testTokenCredential = new TestTokenCredential(() => new ValueTask<AccessToken>(this.AccessToken));
+            using AuthorizationTokenProvider provider = new AuthorizationTokenProviderTokenCredential(
+                testTokenCredential,
+                CosmosAuthorizationTests.AccountEndpoint,
+                backgroundTokenCredentialRefreshInterval: TimeSpan.MaxValue,
+                AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
+
+            StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
+            await provider.AddAuthorizationHeaderAsync(
+                headers,
+                CosmosAuthorizationTests.AccountEndpoint,
+                "GET",
+                AuthorizationTokenType.PrimaryMasterKey);
+
+            string authorizationHeader = headers[HttpConstants.HttpHeaders.Authorization];
+            Assert.IsFalse(string.IsNullOrEmpty(authorizationHeader), "Authorization header should be populated.");
+            Assert.AreEqual(
+                AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(this.AccessToken.Token),
+                authorizationHeader);
+        }
+
+        [TestMethod]
+        [Timeout(30000)]
+        public async Task TokenCredentialCache_MaxValueInterval_DisablesBackgroundRefresh()
+        {
+            TestTokenCredential testTokenCredential = new TestTokenCredential(
+                () => new ValueTask<AccessToken>(new AccessToken("token", DateTimeOffset.MaxValue)));
+
+            using TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential, TimeSpan.MaxValue);
+            using ITrace trace = Cosmos.Tracing.Trace.GetRootTrace("test");
+
+            await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(trace);
+            Assert.AreEqual(1, testTokenCredential.NumTimesInvoked);
+
+            // Give any background loop a chance to run. With TimeSpan.MaxValue the loop must exit without refreshing.
+            await Task.Delay(TimeSpan.FromSeconds(2));
+            Assert.AreEqual(1, testTokenCredential.NumTimesInvoked, "TimeSpan.MaxValue should disable the background refresh loop.");
+        }
+
+        [TestMethod]
+        public async Task TokenCredentialCache_UsesFallbackScope_OnNextRequest_AfterAadsts500011()
+        {
+            string previous = Environment.GetEnvironmentVariable("AZURE_COSMOS_AAD_SCOPE_OVERRIDE");
+            Environment.SetEnvironmentVariable("AZURE_COSMOS_AAD_SCOPE_OVERRIDE", null);
+
+            try
+            {
+                const string accountScope = "https://test-account.documents.azure.com/.default";
+                const string fallbackScope = "https://cosmos.azure.com/.default";
+                List<string> requestedScopes = new List<string>();
+
+                Mock<TokenCredential> mockCredential = new Mock<TokenCredential>();
+                mockCredential
+                    .Setup(c => c.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
+                    .Returns<TokenRequestContext, CancellationToken>((ctx, ct) =>
+                    {
+                        string scope = ctx.Scopes[0];
+                        requestedScopes.Add(scope);
+
+                        if (string.Equals(scope, accountScope, StringComparison.OrdinalIgnoreCase))
+                        {
+                            throw new global::Azure.RequestFailedException("AADSTS500011: The resource principal named was not found.");
+                        }
+
+                        return new ValueTask<AccessToken>(new AccessToken("fallback-token", DateTimeOffset.UtcNow.AddHours(1)));
+                    });
+
+                using TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(mockCredential.Object, TimeSpan.MaxValue);
+                using ITrace trace = Cosmos.Tracing.Trace.GetRootTrace("test");
+
+                string header = await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(trace);
+
+                Assert.AreEqual(
+                    AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature("fallback-token"),
+                    header);
+                Assert.AreEqual(2, requestedScopes.Count, "Expected an account-scope attempt followed by a fallback-scope retry.");
+                Assert.AreEqual(accountScope, requestedScopes[0]);
+                Assert.AreEqual(fallbackScope, requestedScopes[1]);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_AAD_SCOPE_OVERRIDE", previous);
+            }
+        }
+
         private TokenCredentialCache CreateTokenCredentialCache(
             TokenCredential tokenCredential)
         {

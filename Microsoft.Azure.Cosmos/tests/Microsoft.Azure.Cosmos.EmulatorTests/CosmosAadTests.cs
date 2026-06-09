@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using global::Azure.Core;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.IdentityModel.Tokens;
+    using Microsoft.Azure.Cosmos.Fluent;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
 
     [TestClass]
@@ -442,6 +443,133 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.AreEqual(1, accountScopeCount, "Account scope must be used exactly once.");
             Assert.AreEqual(0, cosmosScopeCount, "Cosmos scope must not be used (no fallback).");
+        }
+
+        [TestMethod]
+        public async Task Aad_InitializeOverloads_Authenticate()
+        {
+            string databaseId = Guid.NewGuid().ToString();
+            string containerId = Guid.NewGuid().ToString();
+            (string endpoint, string authKey) = TestCommon.GetAccountInfo();
+
+            using CosmosClient setupClient = TestCommon.CreateCosmosClient();
+            Database database = await setupClient.CreateDatabaseAsync(databaseId);
+
+            try
+            {
+                await database.CreateContainerAsync(containerId, "/id");
+
+                List<(string, string)> containers = new List<(string, string)>
+                {
+                    (databaseId, containerId)
+                };
+
+                CosmosClientOptions clientOptions = new CosmosClientOptions
+                {
+                    ConnectionMode = ConnectionMode.Gateway
+                };
+
+                // CosmosClient.CreateAndInitializeAsync (TokenCredential overload)
+                LocalEmulatorTokenCredential createInitCredential = new LocalEmulatorTokenCredential(
+                    expectedScope: "https://127.0.0.1/.default",
+                    masterKey: authKey);
+                using (CosmosClient createAndInitClient = await CosmosClient.CreateAndInitializeAsync(
+                    endpoint,
+                    createInitCredential,
+                    containers,
+                    clientOptions))
+                {
+                    await this.RunAadCrudAsync(createAndInitClient, databaseId, containerId);
+                }
+
+                // CosmosClientBuilder.BuildAndInitializeAsync (TokenCredential)
+                LocalEmulatorTokenCredential buildInitCredential = new LocalEmulatorTokenCredential(
+                    expectedScope: "https://127.0.0.1/.default",
+                    masterKey: authKey);
+                CosmosClientBuilder builder = new CosmosClientBuilder(endpoint, buildInitCredential)
+                    .WithConnectionModeGateway();
+                using (CosmosClient buildAndInitClient = await builder.BuildAndInitializeAsync(containers))
+                {
+                    await this.RunAadCrudAsync(buildAndInitClient, databaseId, containerId);
+                }
+            }
+            finally
+            {
+                await database.DeleteStreamAsync();
+            }
+        }
+
+        [TestMethod]
+        public async Task Aad_TokenExpiringMidOperation_RefreshesTransparently()
+        {
+            int getAadTokenCount = 0;
+            void GetAadTokenCallBack(TokenRequestContext context, CancellationToken token)
+            {
+                getAadTokenCount++;
+            }
+
+            string databaseId = Guid.NewGuid().ToString();
+            string containerId = Guid.NewGuid().ToString();
+            (string endpoint, string authKey) = TestCommon.GetAccountInfo();
+
+            using CosmosClient setupClient = TestCommon.CreateCosmosClient();
+            Database database = await setupClient.CreateDatabaseAsync(databaseId);
+
+            try
+            {
+                await database.CreateContainerAsync(containerId, "/id");
+
+                LocalEmulatorTokenCredential credential = new LocalEmulatorTokenCredential(
+                    expectedScope: "https://127.0.0.1/.default",
+                    masterKey: authKey,
+                    getTokenCallback: GetAadTokenCallBack);
+
+                CosmosClientOptions clientOptions = new CosmosClientOptions
+                {
+                    ConnectionMode = ConnectionMode.Gateway,
+                    TokenCredentialBackgroundRefreshInterval = TimeSpan.FromSeconds(1)
+                };
+
+                using CosmosClient aadClient = new CosmosClient(endpoint, credential, clientOptions);
+                Container container = aadClient.GetContainer(databaseId, containerId);
+
+                // First operation uses the initial token.
+                ToDoActivity first = ToDoActivity.CreateRandomToDoActivity();
+                await container.CreateItemAsync(first, new PartitionKey(first.id));
+                int tokenCountAfterFirstOperation = getAadTokenCount;
+
+                // Wait for the background refresh interval to elapse so the token is refreshed mid-session.
+                await Task.Delay(TimeSpan.FromSeconds(1.5));
+                Assert.IsTrue(
+                    getAadTokenCount > tokenCountAfterFirstOperation,
+                    "The token should have been refreshed in the background after the refresh interval elapsed.");
+
+                // A subsequent operation after the refresh still succeeds with the refreshed token.
+                ToDoActivity second = ToDoActivity.CreateRandomToDoActivity();
+                await container.CreateItemAsync(second, new PartitionKey(second.id));
+                ItemResponse<ToDoActivity> readResponse = await container.ReadItemAsync<ToDoActivity>(
+                    second.id,
+                    new PartitionKey(second.id));
+                Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
+            }
+            finally
+            {
+                await database.DeleteStreamAsync();
+            }
+        }
+
+        private async Task RunAadCrudAsync(CosmosClient client, string databaseId, string containerId)
+        {
+            Container container = client.GetContainer(databaseId, containerId);
+
+            ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
+            ItemResponse<ToDoActivity> createResponse = await container.CreateItemAsync(item, new PartitionKey(item.id));
+            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+
+            ItemResponse<ToDoActivity> readResponse = await container.ReadItemAsync<ToDoActivity>(item.id, new PartitionKey(item.id));
+            Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
+
+            await container.DeleteItemAsync<ToDoActivity>(item.id, new PartitionKey(item.id));
         }
     }
 }
