@@ -20,9 +20,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
     ///
     /// Each method mirrors the SDK binary branch exactly
     /// (ReadAll -&gt; TryCreateFromBuffer -&gt; transcode -&gt; deserialize):
-    ///   Old    = JsonSerializer.Deserialize&lt;T&gt;(cosmosObject.ToString())          // UTF-16 string
-    ///   New    = WriteTo(JsonWriter Text) + Deserialize&lt;T&gt;(ReadOnlySpan&lt;byte&gt;)   // PR #5908
-    ///   Pooled = WriteTo(JsonWriter Text, pooled) + Deserialize + Dispose         // this prototype
+    ///   Before = JsonSerializer.Deserialize&lt;T&gt;(cosmosObject.ToString())                       // UTF-16 string
+    ///   After  = WriteTo(JsonWriter Text, pooled) + Deserialize&lt;T&gt;(ReadOnlySpan&lt;byte&gt;) + Dispose
     /// </summary>
     [Config(typeof(SdkBenchmarkConfiguration))]
     public class StjBinaryPooledBenchmark
@@ -60,22 +59,14 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
             this.cosmosObject = CosmosObject.CreateFromBuffer(binaryBuffer);
         }
 
-        [Benchmark(Description = "Binary_Old (ToString -> Deserialize<string>)", Baseline = true)]
+        [Benchmark(Description = "Before (ToString -> Deserialize<string>)", Baseline = true)]
         public object Binary_Old()
         {
             string text = this.cosmosObject.ToString();
             return System.Text.Json.JsonSerializer.Deserialize<FamilyRoot>(text, Options);
         }
 
-        [Benchmark(Description = "Binary_New (WriteTo -> Deserialize<ReadOnlySpan<byte>>)")]
-        public object Binary_New()
-        {
-            IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
-            this.cosmosObject.WriteTo(jsonWriter);
-            return System.Text.Json.JsonSerializer.Deserialize<FamilyRoot>(jsonWriter.GetResult().Span, Options);
-        }
-
-        [Benchmark(Description = "Binary_Pooled (WriteTo pooled -> Deserialize -> Dispose)")]
+        [Benchmark(Description = "After (WriteTo pooled -> Deserialize<ReadOnlySpan<byte>> -> Dispose)")]
         public object Binary_Pooled()
         {
             using JsonWriter jsonWriter = (JsonWriter)JsonWriter.Create(JsonSerializationFormat.Text, pooled: true);
