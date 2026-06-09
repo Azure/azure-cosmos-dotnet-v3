@@ -604,7 +604,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task TokenCredentialCache_ThrowsObjectDisposed_AfterDispose()
         {
             TestTokenCredential testTokenCredential = new TestTokenCredential(() => new ValueTask<AccessToken>(this.AccessToken));
-            TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential, TimeSpan.MaxValue);
+            using TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential, TimeSpan.MaxValue);
 
             tokenCredentialCache.Dispose();
 
@@ -659,7 +659,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             await Assert.ThrowsExceptionAsync<ArgumentOutOfRangeException>(
                 () => tokenCredentialCache.GetTokenAuthorizationHeaderAsync(trace).AsTask());
 
-            // The already-expired guard sits inside the retry loop, so the credential is invoked once per retry (2).
+            // The expired-token guard sits inside the retry loop (totalRetryCount = 2 iterations),
+            // so the credential is invoked on the initial attempt plus one retry = 2 total invocations.
             Assert.AreEqual(2, testTokenCredential.NumTimesInvoked);
         }
 
@@ -728,9 +729,16 @@ namespace Microsoft.Azure.Cosmos.Tests
             await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(trace);
             Assert.AreEqual(1, testTokenCredential.NumTimesInvoked);
 
-            // Give any background loop a chance to run. With TimeSpan.MaxValue the loop must exit without refreshing.
-            await Task.Delay(TimeSpan.FromSeconds(2));
-            Assert.AreEqual(1, testTokenCredential.NumTimesInvoked, "TimeSpan.MaxValue should disable the background refresh loop.");
+            // With TimeSpan.MaxValue the background refresh loop must exit immediately without ever
+            // refreshing. Poll over a bounded window and assert the credential is never invoked again;
+            // polling also catches an erroneous refresh that fires partway through the window, which a
+            // single end-of-wait check would miss.
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            while (stopwatch.Elapsed < TimeSpan.FromSeconds(3))
+            {
+                Assert.AreEqual(1, testTokenCredential.NumTimesInvoked, "TimeSpan.MaxValue should disable the background refresh loop.");
+                await Task.Delay(200);
+            }
         }
 
         [TestMethod]
