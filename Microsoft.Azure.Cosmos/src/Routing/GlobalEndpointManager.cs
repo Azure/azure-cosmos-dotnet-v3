@@ -814,8 +814,22 @@ namespace Microsoft.Azure.Cosmos.Routing
                     // the previously-honored state (rather than against an implicit false baseline).
                     bool latestDisableHedging = accountProperties.DisableCrossRegionalHedging
                         ?? this.lastKnownDisableCrossRegionalHedging;
+
+                    bool previousDisableHedging = this.lastKnownDisableCrossRegionalHedging;
                     this.lastKnownDisableCrossRegionalHedging = latestDisableHedging;
-                    this.OnEnablePartitionLevelFailoverConfigChanged?.Invoke(latestPpafEnabled, latestDisableHedging);
+                    try
+                    {
+                        this.OnEnablePartitionLevelFailoverConfigChanged?.Invoke(latestPpafEnabled, latestDisableHedging);
+                    }
+                    catch
+                    {
+                        // Restore the baseline so the next refresh re-detects and retries the missed
+                        // transition rather than diffing against an already-advanced value and going silent.
+                        // The subscriber reverts its own cached flag in tandem (see
+                        // DocumentClient.UpdatePartitionLevelFailoverConfigWithAccountRefresh).
+                        this.lastKnownDisableCrossRegionalHedging = previousDisableHedging;
+                        throw;
+                    }
                 }
 
                 GlobalEndpointManager.ParseThinClientLocationsFromAdditionalProperties(accountProperties);

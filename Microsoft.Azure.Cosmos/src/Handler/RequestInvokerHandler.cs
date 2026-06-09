@@ -137,6 +137,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
             // Gateway-driven operator override has absolute precedence over any request-level or
             // client-level AvailabilityStrategy. See spec.md → "Gateway flag disables all hedging
             // when true" and tasks.md item 4.1.
+            //
+            // Note: this flag read and the ConnectionPolicy.AvailabilityStrategy read below are not a single
+            // atomic snapshot. The only guarantee is one-directional — a true flag always suppresses hedging
+            // for this request; the reverse is not symmetric, which is fine because the kill-switch only needs
+            // to win when true.
             if (this.client.DocumentClient.IsHedgingDisabledByGateway)
             {
                 return null;

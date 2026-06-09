@@ -214,6 +214,13 @@ namespace Microsoft.Azure.Cosmos
         // write, which is exactly what the "atomic kill-switch" contract requires. The lock continues to
         // serialize the multi-field (flag + stashed strategy + ConnectionPolicy.AvailabilityStrategy)
         // mutation sequence on the refresh / init-stash paths.
+        //
+        // Consistency note: the per-request path (RequestInvokerHandler.AvailabilityStrategy) reads this
+        // volatile flag and then separately reads ConnectionPolicy.AvailabilityStrategy. Those two reads are
+        // NOT a single atomic snapshot. The only guarantee is one-directional: when the volatile read
+        // observes true, hedging is off for that request. The reverse (flag false ⇒ a strategy is
+        // necessarily applied) is not guaranteed across the two reads — which is acceptable because the
+        // kill-switch only needs to win when true.
         private volatile bool disableCrossRegionalHedging;
 
         // When the gateway disable flag is true, the customer's explicit AvailabilityStrategy
@@ -6928,7 +6935,10 @@ namespace Microsoft.Azure.Cosmos
                 lock (this.hedgingStrategyLock)
                 {
                     this.disableCrossRegionalHedging = accountProperties.DisableCrossRegionalHedging ?? false;
-                    if (this.disableCrossRegionalHedging && this.ConnectionPolicy.AvailabilityStrategy != null)
+                    if (this.disableCrossRegionalHedging
+                        && this.ConnectionPolicy.AvailabilityStrategy != null
+                        && !(this.ConnectionPolicy.AvailabilityStrategy is CrossRegionHedgingAvailabilityStrategy sdkDefaultAtInit
+                            && sdkDefaultAtInit.IsSDKDefaultStrategyForPPAF))
                     {
                         this.customerConfiguredAvailabilityStrategy = this.ConnectionPolicy.AvailabilityStrategy;
                         this.ConnectionPolicy.AvailabilityStrategy = null;
@@ -6977,29 +6987,43 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
-            if (this.ConnectionPolicy.EnablePartitionLevelFailover
-                && this.ConnectionPolicy.AvailabilityStrategy == null)
+            lock (this.hedgingStrategyLock)
             {
-                // The default threshold is the minimum value of 1 second and a fraction (currently it's half) of
-                // the request timeout value provided by the end customer.
-                double defaultThresholdInMillis;
-                
-                if (this.ConnectionPolicy.RequestTimeout.TotalMilliseconds == 0)
+                // Re-check under the lock: a refresh-driven UpdatePartitionLevelFailoverConfigWithAccountRefresh
+                // may have set the flag true between the cheap volatile early-return above and acquiring the
+                // lock. Reading the flag and installing the SDK-default strategy must be atomic against that
+                // reconcile so we never leave disableCrossRegionalHedging==true with a non-null
+                // AvailabilityStrategy. The lock is reentrant, so the call from
+                // ApplyHedgingStrategyForCurrentState (which already holds it) is unaffected.
+                if (this.disableCrossRegionalHedging)
                 {
-                    // If the request timeout is 0, we will use the default hedging theshold value
-                    defaultThresholdInMillis = DocumentClient.DefaultHedgingThresholdInMilliseconds;
-                    DefaultTrace.TraceWarning("DocumentClient: Request timeout is set to 0, which is not a valid value. Falling back to default hedging threshold of {0} ms", defaultThresholdInMillis);
-                }
-                else
-                {
-                    defaultThresholdInMillis = Math.Min(
-                        DocumentClient.DefaultHedgingThresholdInMilliseconds,
-                        this.ConnectionPolicy.RequestTimeout.TotalMilliseconds / 2);
+                    return;
                 }
 
-                this.ConnectionPolicy.AvailabilityStrategy = AvailabilityStrategy.SDKDefaultCrossRegionHedgingStrategyForPPAF(
-                    threshold: TimeSpan.FromMilliseconds(defaultThresholdInMillis),
-                    thresholdStep: TimeSpan.FromMilliseconds(DocumentClient.DefaultHedgingThresholdStepInMilliseconds));
+                if (this.ConnectionPolicy.EnablePartitionLevelFailover
+                    && this.ConnectionPolicy.AvailabilityStrategy == null)
+                {
+                    // The default threshold is the minimum value of 1 second and a fraction (currently it's half) of
+                    // the request timeout value provided by the end customer.
+                    double defaultThresholdInMillis;
+
+                    if (this.ConnectionPolicy.RequestTimeout.TotalMilliseconds == 0)
+                    {
+                        // If the request timeout is 0, we will use the default hedging theshold value
+                        defaultThresholdInMillis = DocumentClient.DefaultHedgingThresholdInMilliseconds;
+                        DefaultTrace.TraceWarning("DocumentClient: Request timeout is set to 0, which is not a valid value. Falling back to default hedging threshold of {0} ms", defaultThresholdInMillis);
+                    }
+                    else
+                    {
+                        defaultThresholdInMillis = Math.Min(
+                            DocumentClient.DefaultHedgingThresholdInMilliseconds,
+                            this.ConnectionPolicy.RequestTimeout.TotalMilliseconds / 2);
+                    }
+
+                    this.ConnectionPolicy.AvailabilityStrategy = AvailabilityStrategy.SDKDefaultCrossRegionHedgingStrategyForPPAF(
+                        threshold: TimeSpan.FromMilliseconds(defaultThresholdInMillis),
+                        thresholdStep: TimeSpan.FromMilliseconds(DocumentClient.DefaultHedgingThresholdStepInMilliseconds));
+                }
             }
         }
 
@@ -7036,6 +7060,12 @@ namespace Microsoft.Azure.Cosmos
                     return;
                 }
 
+                // Capture the kill-switch flag so it can be reverted if the reconcile below throws; otherwise
+                // the GEM re-fire (which reverts its own baseline) would be short-circuited by the no-op guard
+                // above and the missed hedging transition would never retry. Scoped to the hedging flag —
+                // PPAF-enablement recovery is tracked separately.
+                bool previousDisableCrossRegionalHedging = this.disableCrossRegionalHedging;
+
                 if (ppafEnablementChanged)
                 {
                     DefaultTrace.TraceInformation(
@@ -7070,22 +7100,33 @@ namespace Microsoft.Azure.Cosmos
                 // at least one of (ppafEnablementChanged, hedgingFlagChanged) is true, so this call
                 // is never wasted. The gateway disable flag has the highest precedence — when true,
                 // hedging is OFF regardless of any explicit or default configuration.
-                this.ApplyHedgingStrategyForCurrentState();
-
-                if (ppafEnablementChanged)
+                try
                 {
-                    // Step 4: Update the user agent features. Hedging-flag-only changes do not affect the
-                    // PPAF-related user-agent feature flags.
-                    this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
+                    this.ApplyHedgingStrategyForCurrentState();
 
-                    DefaultTrace.TraceInformation("DocumentClient: Successfully updated PPAF configuration dynamically");
+                    if (ppafEnablementChanged)
+                    {
+                        // Step 4: Update the user agent features. Hedging-flag-only changes do not affect the
+                        // PPAF-related user-agent feature flags.
+                        this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
+
+                        DefaultTrace.TraceInformation("DocumentClient: Successfully updated PPAF configuration dynamically");
+                    }
+
+                    if (hedgingFlagChanged)
+                    {
+                        DefaultTrace.TraceInformation(
+                            "DocumentClient: Successfully reconciled hedging strategy dynamically (disableCrossRegionalHedging={0})",
+                            latestDisableCrossRegionalHedging);
+                    }
                 }
-
-                if (hedgingFlagChanged)
+                catch
                 {
-                    DefaultTrace.TraceInformation(
-                        "DocumentClient: Successfully reconciled hedging strategy dynamically (disableCrossRegionalHedging={0})",
-                        latestDisableCrossRegionalHedging);
+                    // Revert the kill-switch flag so the GEM re-fire (which reverts its own baseline) is not
+                    // short-circuited by the no-op guard above; the next refresh re-detects and retries the
+                    // missed hedging transition rather than going permanently silent.
+                    this.disableCrossRegionalHedging = previousDisableCrossRegionalHedging;
+                    throw;
                 }
             }
         }
@@ -7100,8 +7141,9 @@ namespace Microsoft.Azure.Cosmos
         /// 2. Customer explicitly configured a strategy: keep / restore that strategy.
         /// 3. PPAF enabled with no explicit strategy: apply SDK default PPAF hedging.
         /// 4. PPAF disabled: clear any SDK-default strategy that we previously installed.
-        /// Caller must hold <see cref="hedgingStrategyLock"/>; the entry-point lock is reentrant so this
-        /// method also acquires it for direct invocations from tests / future callers.
+        /// Acquires <see cref="hedgingStrategyLock"/>. Safe to call recursively from
+        /// <see cref="UpdatePartitionLevelFailoverConfigWithAccountRefresh"/> (which already holds it)
+        /// because monitor locks are reentrant on the same thread.
         /// </remarks>
         private void ApplyHedgingStrategyForCurrentState()
         {
@@ -7135,6 +7177,9 @@ namespace Microsoft.Azure.Cosmos
                                     "AvailabilityStrategy while a previously-stashed customer strategy is still held; " +
                                     "the current strategy will be cleared without being stashed. This may indicate a " +
                                     "re-entrant code path.");
+                                System.Diagnostics.Debug.Fail(
+                                    "DocumentClient.ApplyHedgingStrategyForCurrentState reached the re-entrant " +
+                                    "duplicate-strategy branch; this path is expected to be unreachable in production.");
                             }
                         }
 
@@ -7163,6 +7208,17 @@ namespace Microsoft.Azure.Cosmos
                         DefaultTrace.TraceInformation(
                             "DocumentClient: Hedging re-enabled — applied SDK default PPAF hedging strategy");
                     }
+                    else
+                    {
+                        // No strategy was installed (e.g. a concurrent flag flip, or PPAF still disabled).
+                        // Trace the observed state so an operator toggling the kill-switch true -> false always
+                        // has a positive record of where the SDK landed, instead of a silent no-op.
+                        DefaultTrace.TraceWarning(
+                            "DocumentClient: Hedging re-enable installed no strategy (PPAF={0}, existingStrategy={1}, disableCrossRegionalHedging={2})",
+                            this.ConnectionPolicy.EnablePartitionLevelFailover,
+                            this.ConnectionPolicy.AvailabilityStrategy?.GetType().Name ?? "null",
+                            this.disableCrossRegionalHedging);
+                    }
                     return;
                 }
 
@@ -7189,6 +7245,12 @@ namespace Microsoft.Azure.Cosmos
         /// path before its lock release is visible here. Taking a monitor on every request would impose
         /// uncontended-but-non-zero cost on the SDK hot path (steady-state benchmarks would not surface
         /// the regression).
+        /// <para>
+        /// This read and the subsequent <see cref="ConnectionPolicy.AvailabilityStrategy"/> read in the
+        /// handler are not a single atomic snapshot. The only cross-read guarantee is one-directional: when
+        /// this returns <c>true</c>, hedging is off for the request. The reverse is not symmetric, which is
+        /// acceptable because the kill-switch only needs to win when true.
+        /// </para>
         /// </remarks>
         internal bool IsHedgingDisabledByGateway => this.disableCrossRegionalHedging;
 

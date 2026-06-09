@@ -53,6 +53,22 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(props.DisableCrossRegionalHedging.GetValueOrDefault());
         }
 
+        /// <summary>
+        /// Pins the exact JSON property name used on the wire. The key <c>disableCrossRegionalHedging</c>
+        /// is the contract with the Gateway; renaming it (even with a lockstep update to the ordering-only
+        /// serializer tests) would silently break wire-binding. This serialize round-trip fails loudly if
+        /// the key ever changes without a coordinated server-side rename.
+        /// </summary>
+        [TestMethod]
+        public void DisableCrossRegionalHedging_SerializesWithExactJsonKey()
+        {
+            AccountProperties props = new AccountProperties { DisableCrossRegionalHedging = true };
+            string json = JsonConvert.SerializeObject(props);
+            Assert.IsTrue(
+                json.Contains("\"disableCrossRegionalHedging\":true"),
+                "JSON property name is the wire contract with Gateway and must not change without a coordinated server-side rename.");
+        }
+
         [TestMethod]
         public void InitializePartitionLevelFailoverWithDefaultHedging_FlagTrue_SkipsApplyingDefaultStrategy()
         {
@@ -303,7 +319,64 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.IsNull(
                 resolved,
-                "Gateway operator override must take absolute precedence over per-request AvailabilityStrategy");
+                "Gateway operator override (set via the test-only setter) must take absolute precedence " +
+                "over per-request AvailabilityStrategy — this validates the handler short-circuit in isolation");
+        }
+
+        /// <summary>
+        /// Companion to <see cref="RequestInvokerHandler_FlagTrue_PerRequestStrategy_ReturnsNull"/> that
+        /// drives the flag through the <em>production</em> reconcile path
+        /// (<see cref="DocumentClient.UpdatePartitionLevelFailoverConfigWithAccountRefresh(bool, bool)"/>)
+        /// rather than the test-only setter, then asserts the per-request precedence end-to-end:
+        /// <see cref="RequestInvokerHandler.AvailabilityStrategy(RequestMessage)"/> MUST return <c>null</c>
+        /// even with a per-request strategy supplied. Keeping <c>latestIsEnabled == current</c> avoids the
+        /// PPAF-enablement path (<c>SetIsPPAFEnabled</c>) that would NRE on a never-opened mock client.
+        /// </summary>
+        [TestMethod]
+        public void RequestInvokerHandler_FlagDrivenByRefreshCallback_PerRequestStrategy_ReturnsNull()
+        {
+            using CosmosClient mockCosmosClient = MockCosmosUtil.CreateMockCosmosClient();
+            DocumentClient dc = mockCosmosClient.DocumentClient;
+            dc.ConnectionPolicy.EnablePartitionLevelFailover = true;
+            dc.ConnectionPolicy.AvailabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                threshold: TimeSpan.FromMilliseconds(500),
+                thresholdStep: TimeSpan.FromMilliseconds(100));
+
+            // Drive the flag through the REAL production callback. latestIsEnabled == current
+            // (EnablePartitionLevelFailover already true) so ppafEnablementChanged is false and we avoid the
+            // SetIsPPAFEnabled path; hedgingFlagChanged is true so the reconcile stashes + clears the strategy.
+            dc.UpdatePartitionLevelFailoverConfigWithAccountRefresh(
+                latestIsEnabled: true,
+                latestDisableCrossRegionalHedging: true);
+
+            Assert.IsTrue(dc.DisableCrossRegionalHedgingForTests, "Refresh callback must have published the flag");
+
+            RequestInvokerHandler handler = new RequestInvokerHandler(
+                mockCosmosClient,
+                requestedClientConsistencyLevel: null,
+                requestedClientReadConsistencyStrategy: null,
+                requestedClientPriorityLevel: null,
+                requestedClientThroughputBucket: null);
+
+            using RequestMessage request = new RequestMessage(
+                HttpMethod.Get,
+                new Uri("/dbs/testdb/colls/testcontainer/docs/testId", UriKind.Relative))
+            {
+                ResourceType = ResourceType.Document,
+                OperationType = OperationType.Read,
+                RequestOptions = new RequestOptions
+                {
+                    AvailabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                        threshold: TimeSpan.FromMilliseconds(500),
+                        thresholdStep: TimeSpan.FromMilliseconds(100))
+                }
+            };
+
+            AvailabilityStrategyInternal resolved = handler.AvailabilityStrategy(request);
+
+            Assert.IsNull(
+                resolved,
+                "Gateway override driven through the production reconcile path must suppress per-request hedging");
         }
 
         /// <summary>
