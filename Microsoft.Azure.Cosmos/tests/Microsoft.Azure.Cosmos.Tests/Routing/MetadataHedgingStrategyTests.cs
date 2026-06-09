@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Routing;
+    using static Microsoft.Azure.Cosmos.Routing.MetadataHedgingStrategy;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -437,13 +438,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [Owner("dkunda")]
         public async Task ExecuteAsync_BudgetExhausted_FallsBackToPrimaryOnly()
         {
-            MetadataHedgingOptions options = new MetadataHedgingOptions
-            {
-                PerClientConcurrencyBudget = 1,
-            };
             using MetadataHedgingStrategy strategy = BuildStrategy(
                 threshold: TimeSpan.FromMilliseconds(50),
-                options: options);
+                perClientConcurrencyBudget: 1);
 
             DocumentServiceRequest req1 = BuildCollectionReadRequest();
             DocumentServiceRequest req2 = BuildCollectionReadRequest();
@@ -515,13 +512,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             // Regression guard for design §5.12 — ensures the SendOneAsync
             // Task.Yield boundary prevents deep synchronous stacks when many
             // hedges fire and cancel one another concurrently.
-            MetadataHedgingOptions options = new MetadataHedgingOptions
-            {
-                PerClientConcurrencyBudget = 50,
-            };
             using MetadataHedgingStrategy strategy = BuildStrategy(
                 threshold: TimeSpan.FromMilliseconds(5),
-                options: options);
+                perClientConcurrencyBudget: 50);
 
             List<Task<MetadataHedgingResult>> tasks = new List<Task<MetadataHedgingResult>>();
             for (int i = 0; i < 50; i++)
@@ -660,7 +653,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             bool killSwitchOn = false,
             bool ppafEnabled = true,
             TimeSpan? threshold = null,
-            MetadataHedgingOptions options = null)
+            int perClientConcurrencyBudget = MetadataHedgingStrategy.DefaultPerClientConcurrencyBudget)
         {
             gem ??= BuildEndpointManagerMock(new[] { PrimaryEndpoint, HedgeEndpoint }).Object;
             return new MetadataHedgingStrategy(
@@ -669,7 +662,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 isPpafEnabled: () => ppafEnabled,
                 customerOptIn: customerOptIn,
                 threshold: threshold ?? TimeSpan.FromMilliseconds(100),
-                options: options ?? new MetadataHedgingOptions());
+                perClientConcurrencyBudget: perClientConcurrencyBudget);
         }
 
         private static Mock<IGlobalEndpointManager> BuildEndpointManagerMock(
@@ -804,7 +797,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             using MetadataHedgingStrategy strategy = MetadataHedgingStrategy.CreateIfEnabled(
                 enableMetadataHedgingForColdStart: null,
-                options: null,
                 globalEndpointManager: BuildEndpointManagerMock(new[] { PrimaryEndpoint, HedgeEndpoint }).Object,
                 isPpafEnabled: () => true);
 
@@ -817,7 +809,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             MetadataHedgingStrategy strategy = MetadataHedgingStrategy.CreateIfEnabled(
                 enableMetadataHedgingForColdStart: false,
-                options: null,
                 globalEndpointManager: BuildEndpointManagerMock(new[] { PrimaryEndpoint }).Object,
                 isPpafEnabled: () => true);
 
@@ -830,37 +821,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             using MetadataHedgingStrategy strategy = MetadataHedgingStrategy.CreateIfEnabled(
                 enableMetadataHedgingForColdStart: true,
-                options: null,
                 globalEndpointManager: BuildEndpointManagerMock(new[] { PrimaryEndpoint, HedgeEndpoint }).Object,
                 isPpafEnabled: () => true);
 
             Assert.IsNotNull(strategy);
             Assert.AreEqual(
                 HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance.FirstAttemptTimeout
-                    + MetadataHedgingOptions.DefaultThresholdStep,
+                    + MetadataHedgingStrategy.DefaultThresholdStep,
                 strategy.Threshold);
-            Assert.AreEqual(MetadataHedgingOptions.DefaultPerClientConcurrencyBudget, strategy.PerClientConcurrencyBudget);
-        }
-
-        [TestMethod]
-        [Owner("dkunda")]
-        public void CreateIfEnabled_ExplicitTrue_HonorsCustomerThresholdAndBudget()
-        {
-            MetadataHedgingOptions options = new MetadataHedgingOptions
-            {
-                Threshold = TimeSpan.FromMilliseconds(750),
-                PerClientConcurrencyBudget = 16,
-            };
-
-            using MetadataHedgingStrategy strategy = MetadataHedgingStrategy.CreateIfEnabled(
-                enableMetadataHedgingForColdStart: true,
-                options: options,
-                globalEndpointManager: BuildEndpointManagerMock(new[] { PrimaryEndpoint, HedgeEndpoint }).Object,
-                isPpafEnabled: () => true);
-
-            Assert.IsNotNull(strategy);
-            Assert.AreEqual(TimeSpan.FromMilliseconds(750), strategy.Threshold);
-            Assert.AreEqual(16, strategy.PerClientConcurrencyBudget);
+            Assert.AreEqual(MetadataHedgingStrategy.DefaultPerClientConcurrencyBudget, strategy.PerClientConcurrencyBudget);
         }
 
         private static IGlobalEndpointManager BuildMockGlobalEndpointManager()

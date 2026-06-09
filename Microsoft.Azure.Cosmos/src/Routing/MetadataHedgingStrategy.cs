@@ -5,10 +5,12 @@
 namespace Microsoft.Azure.Cosmos.Routing
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.ObjectModel;
     using System.Diagnostics;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
     using System.Runtime.ExceptionServices;
     using System.Threading;
     using System.Threading.Tasks;
@@ -30,6 +32,19 @@ namespace Microsoft.Azure.Cosmos.Routing
     {
         internal const string TraceDatumKey = "Metadata Hedge Context";
 
+        /// <summary>
+        /// Per-client concurrency budget for in-flight metadata hedges
+        /// (design §5.11). Not customer-configurable.
+        /// </summary>
+        internal const int DefaultPerClientConcurrencyBudget = 8;
+
+        /// <summary>
+        /// Added to <c>HttpTimeoutPolicy.FirstAttemptTimeout</c> to derive the
+        /// fixed hedge threshold (today 1&#160;s + 500&#160;ms = 1.5&#160;s).
+        /// Not customer-configurable. See design §5.1 / §5.9.
+        /// </summary>
+        internal static readonly TimeSpan DefaultThresholdStep = TimeSpan.FromMilliseconds(500);
+
         private readonly IGlobalEndpointManager globalEndpointManager;
         private readonly Func<bool> isHedgingDisabledByGateway;
         private readonly Func<bool> isPpafEnabled;
@@ -45,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             Func<bool> isPpafEnabled,
             bool? customerOptIn,
             TimeSpan threshold,
-            MetadataHedgingOptions options)
+            int perClientConcurrencyBudget = DefaultPerClientConcurrencyBudget)
         {
             this.globalEndpointManager = globalEndpointManager ?? throw new ArgumentNullException(nameof(globalEndpointManager));
             this.isHedgingDisabledByGateway = isHedgingDisabledByGateway ?? (() => false);
@@ -58,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             this.threshold = threshold;
-            this.perClientConcurrencyBudget = Math.Max(1, options?.PerClientConcurrencyBudget ?? MetadataHedgingOptions.DefaultPerClientConcurrencyBudget);
+            this.perClientConcurrencyBudget = Math.Max(1, perClientConcurrencyBudget);
             this.hedgeBudget = new SemaphoreSlim(this.perClientConcurrencyBudget, this.perClientConcurrencyBudget);
         }
 
@@ -85,18 +100,18 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <summary>
         /// Builds the strategy from the customer-supplied
         /// <see cref="CosmosClientOptions.EnableMetadataHedgingForColdStart"/>
-        /// tri-state and optional <see cref="MetadataHedgingOptions"/>. Returns
-        /// <c>null</c> only when the customer explicitly disabled hedging
-        /// (<c>false</c>). When the property is <c>true</c> or left <c>null</c>
-        /// the strategy is created and the per-request eligibility check
-        /// resolves the effective opt-in against the live PPAF state (a
-        /// <c>null</c> property follows PPAF; an explicit <c>true</c> enables
-        /// hedging even when PPAF is disabled). The Gateway kill-switch is
-        /// hard-wired to <c>false</c> in Phase 1; see design §5.1.
+        /// tri-state. Returns <c>null</c> only when the customer explicitly
+        /// disabled hedging (<c>false</c>). When the property is <c>true</c> or
+        /// left <c>null</c> the strategy is created and the per-request
+        /// eligibility check resolves the effective opt-in against the live PPAF
+        /// state (a <c>null</c> property follows PPAF; an explicit <c>true</c>
+        /// enables hedging even when PPAF is disabled). The hedge threshold is a
+        /// fixed SDK-derived value (<c>FirstAttemptTimeout + 500&#160;ms</c>,
+        /// today 1.5&#160;s) and is not customer-configurable. The Gateway
+        /// kill-switch is hard-wired to <c>false</c> in Phase 1; see design §5.1.
         /// </summary>
         internal static MetadataHedgingStrategy CreateIfEnabled(
             bool? enableMetadataHedgingForColdStart,
-            MetadataHedgingOptions options,
             IGlobalEndpointManager globalEndpointManager,
             Func<bool> isPpafEnabled)
         {
@@ -106,10 +121,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return null;
             }
 
-            MetadataHedgingOptions effectiveOptions = options ?? new MetadataHedgingOptions();
-            TimeSpan threshold = effectiveOptions.Threshold
-                ?? (HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance.FirstAttemptTimeout
-                    + MetadataHedgingOptions.DefaultThresholdStep);
+            // Fixed, SDK-derived threshold. Not customer-configurable so the
+            // 1.5s (FirstAttemptTimeout + 500ms) contract is always honored.
+            TimeSpan threshold = HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance.FirstAttemptTimeout
+                + DefaultThresholdStep;
 
             return new MetadataHedgingStrategy(
                 globalEndpointManager: globalEndpointManager,
@@ -117,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 isPpafEnabled: isPpafEnabled,
                 customerOptIn: enableMetadataHedgingForColdStart,
                 threshold: threshold,
-                options: effectiveOptions);
+                perClientConcurrencyBudget: DefaultPerClientConcurrencyBudget);
         }
 
         internal int AvailableBudget => this.hedgeBudget.CurrentCount;
@@ -470,7 +485,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         /// <summary>
         /// Per-branch acceptable-winner predicate composed over
-        /// <see cref="RetryUtility.IsRegionalFailure"/>. A 401 / plain 403
+        /// <see cref="IsRegionalFailure"/>. A 401 / plain 403
         /// from the hedge branch is rejected — see design §5.13.
         /// </summary>
         internal static bool IsAcceptableWinner(DocumentServiceResponse response, HedgeBranch branch)
@@ -480,7 +495,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return false;
             }
 
-            if (RetryUtility.IsRegionalFailure(
+            if (IsRegionalFailure(
                 statusCode: response.StatusCode,
                 subStatus: response.SubStatusCode,
                 exception: null,
@@ -632,6 +647,225 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Returns <c>true</c> iff the response or exception represents a regional failure
+        /// that should advance a metadata retry/hedge to a different preferred location.
+        ///
+        /// Single source of truth for the failure-class list shared by
+        /// <see cref="MetadataRequestThrottleRetryPolicy"/> and the cold-start
+        /// metadata hedging strategy (see
+        /// <c>docs/PPAF_Metadata_Hedging_ColdStart_Design.md</c> §5.7.2).
+        /// </summary>
+        /// <param name="statusCode">HTTP status code from the response, or <c>null</c> if no
+        /// response was produced (transport-level failure).</param>
+        /// <param name="subStatus">Cosmos sub-status code from the response.</param>
+        /// <param name="exception">Exception observed instead of (or in addition to) the
+        /// response, or <c>null</c>.</param>
+        /// <param name="callerToken">The caller-supplied cancellation token. Used to
+        /// distinguish a user-initiated cancellation (not a regional failure) from a
+        /// non-user cancellation surfaced by the HTTP timeout policy (regional failure).</param>
+        internal static bool IsRegionalFailure(
+            HttpStatusCode? statusCode,
+            SubStatusCodes subStatus,
+            Exception exception,
+            CancellationToken callerToken)
+        {
+            if (exception is HttpRequestException)
+            {
+                return true;
+            }
+
+            if (exception is OperationCanceledException && !callerToken.IsCancellationRequested)
+            {
+                return true;
+            }
+
+            if (statusCode == null)
+            {
+                return false;
+            }
+
+            switch (statusCode.Value)
+            {
+                case HttpStatusCode.ServiceUnavailable:
+                case HttpStatusCode.InternalServerError:
+                    return true;
+                case HttpStatusCode.Gone:
+                    return subStatus == SubStatusCodes.LeaseNotFound;
+                case HttpStatusCode.Forbidden:
+                    return subStatus == SubStatusCodes.DatabaseAccountNotFound;
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// Reason a metadata hedge was not dispatched. Recorded in
+        /// <see cref="MetadataHedgeDiagnostics"/> for supportability.
+        /// </summary>
+        internal enum MetadataHedgeSkipReason
+        {
+            None,
+            OptInDisabled,
+            PpafDisabled,
+            GatewayKillSwitchOn,
+            SingleRegion,
+            NotColdStart,
+            ResourceTypeNotSupported,
+            NotFirstReadFeedPage,
+            BudgetExhausted,
+            AlreadyHedgedThisOperation,
+            ExcludedRegionLeavesNoTarget,
+            AuthModeNotEligibleForHedge,
+        }
+
+        /// <summary>
+        /// Identifies the branch (primary or hedge) that produced a candidate
+        /// metadata-hedge winner. Used to compose the per-branch overlay in
+        /// <see cref="IsAcceptableWinner"/>.
+        /// </summary>
+        internal enum HedgeBranch
+        {
+            Primary,
+            Hedge,
+        }
+
+        /// <summary>
+        /// Output of <see cref="EvaluateEligibility"/>.
+        /// </summary>
+        internal readonly struct MetadataHedgeEligibility
+        {
+            public bool IsEligible { get; }
+
+            public MetadataHedgeSkipReason SkipReason { get; }
+
+            public MetadataHedgeEligibility(bool isEligible, MetadataHedgeSkipReason skipReason)
+            {
+                this.IsEligible = isEligible;
+                this.SkipReason = skipReason;
+            }
+
+            public static MetadataHedgeEligibility Eligible() => new MetadataHedgeEligibility(true, MetadataHedgeSkipReason.None);
+
+            public static MetadataHedgeEligibility Skip(MetadataHedgeSkipReason reason) => new MetadataHedgeEligibility(false, reason);
+        }
+
+        /// <summary>
+        /// Result of <see cref="ExecuteAsync"/>.
+        /// </summary>
+        internal readonly struct MetadataHedgingResult
+        {
+            public DocumentServiceResponse Response { get; }
+
+            public Uri WinningEndpoint { get; }
+
+            public string WinningRegion { get; }
+
+            public bool HedgeFired { get; }
+
+            public MetadataHedgeDiagnostics Diagnostics { get; }
+
+            public MetadataHedgingResult(
+                DocumentServiceResponse response,
+                Uri winningEndpoint,
+                string winningRegion,
+                bool hedgeFired,
+                MetadataHedgeDiagnostics diagnostics)
+            {
+                this.Response = response;
+                this.WinningEndpoint = winningEndpoint;
+                this.WinningRegion = winningRegion;
+                this.HedgeFired = hedgeFired;
+                this.Diagnostics = diagnostics;
+            }
+        }
+
+        /// <summary>
+        /// Diagnostic record attached to the request's trace. Fields populated by
+        /// the orchestration thread for the eligibility / winner outcome;
+        /// <see cref="LoserOutcome"/> / <see cref="HedgeOutcome"/> may be updated
+        /// later from the background-cleanup continuation and are read/written via
+        /// <see cref="Volatile"/>.
+        /// </summary>
+        internal sealed class MetadataHedgeDiagnostics
+        {
+            private string hedgeOutcome;
+            private string loserOutcome;
+
+            public bool Eligible { get; set; }
+
+            public MetadataHedgeSkipReason SkipReason { get; set; }
+
+            public string ResourceType { get; set; }
+
+            public string PrimaryRegion { get; set; }
+
+            public string HedgeRegion { get; set; }
+
+            public double ThresholdMs { get; set; }
+
+            public double? HedgeFiredElapsedMs { get; set; }
+
+            public string WinningRegion { get; set; }
+
+            public int TotalAttempts { get; set; }
+
+            public string HedgeOutcome
+            {
+                get => Volatile.Read(ref this.hedgeOutcome);
+                set => Volatile.Write(ref this.hedgeOutcome, value);
+            }
+
+            public string LoserOutcome
+            {
+                get => Volatile.Read(ref this.loserOutcome);
+                set => Volatile.Write(ref this.loserOutcome, value);
+            }
+        }
+
+        /// <summary>
+        /// Per-logical-operation context shared between
+        /// <see cref="MetadataHedgingStrategy"/> and
+        /// <c>MetadataRequestThrottleRetryPolicy</c>. Carries the cold-start signal,
+        /// the dedupe set, the winner, the &quot;hedged this operation&quot; latch,
+        /// and the first-page flag for PK-range pagination. See
+        /// <c>docs/PPAF_Metadata_Hedging_ColdStart_Design.md</c> §5.2 / §6.1.
+        /// </summary>
+        internal sealed class MetadataHedgingContext
+        {
+            private Uri winningEndpoint;
+            private int hasHedgedThisOperation;
+
+            public bool IsColdStart { get; set; }
+
+            public bool IsFirstReadFeedPage { get; set; } = true;
+
+            public ConcurrentDictionary<string, byte> AttemptedEndpoints { get; }
+                = new ConcurrentDictionary<string, byte>();
+
+            public Uri WinningEndpoint => Volatile.Read(ref this.winningEndpoint);
+
+            public bool HasHedgedThisOperation => Volatile.Read(ref this.hasHedgedThisOperation) == 1;
+
+            /// <summary>
+            /// Single-publication of the winning endpoint. Late loser continuations
+            /// that try to re-publish observe a non-null existing value and leave it
+            /// intact.
+            /// </summary>
+            internal void RecordWinner(Uri endpoint)
+            {
+                Interlocked.CompareExchange(ref this.winningEndpoint, endpoint, null);
+            }
+
+            /// <summary>
+            /// Returns <c>true</c> if this caller is the first to mark the operation
+            /// as having dispatched a hedge. Subsequent callers (across
+            /// <c>BackoffRetryUtility</c> retries) observe <c>false</c> and skip.
+            /// </summary>
+            internal bool TryMarkHedgedThisOperation()
+                => Interlocked.Exchange(ref this.hasHedgedThisOperation, 1) == 0;
         }
     }
 }

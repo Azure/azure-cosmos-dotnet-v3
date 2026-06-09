@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
+    using static Microsoft.Azure.Cosmos.Routing.MetadataHedgingStrategy;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -142,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             // while the first's loser (primary) is still being awaited by BackgroundCleanupAsync.
             MetadataHedgingStrategy strategy = BuildStrategy(
                 threshold: TimeSpan.FromMilliseconds(50),
-                options: new MetadataHedgingOptions { PerClientConcurrencyBudget = 1 });
+                perClientConcurrencyBudget: 1);
 
             // Gate keeps the primary (loser) in flight, holding the budget.
             ManualResetEventSlim primaryRelease = new ManualResetEventSlim(false);
@@ -274,7 +275,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
         private static MetadataHedgingStrategy BuildStrategy(
             TimeSpan? threshold = null,
-            MetadataHedgingOptions options = null)
+            int perClientConcurrencyBudget = MetadataHedgingStrategy.DefaultPerClientConcurrencyBudget)
         {
             return new MetadataHedgingStrategy(
                 globalEndpointManager: BuildEndpointManagerMock().Object,
@@ -282,7 +283,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 isPpafEnabled: () => true,
                 customerOptIn: true,
                 threshold: threshold ?? TimeSpan.FromMilliseconds(100),
-                options: options ?? new MetadataHedgingOptions());
+                perClientConcurrencyBudget: perClientConcurrencyBudget);
         }
 
         private static Mock<IGlobalEndpointManager> BuildEndpointManagerMock()

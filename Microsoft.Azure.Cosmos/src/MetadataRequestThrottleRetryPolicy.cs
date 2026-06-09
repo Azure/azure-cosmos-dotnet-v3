@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos
         /// hedge has already attempted. See
         /// <c>docs/PPAF_Metadata_Hedging_ColdStart_Design.md</c> §5.7.4.
         /// </summary>
-        private MetadataHedgingContext hedgeContext;
+        private MetadataHedgingStrategy.MetadataHedgingContext hedgeContext;
 
         /// <summary>
         /// The constructor to initialize an instance of <see cref="MetadataRequestThrottleRetryPolicy"/>.
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos
                 return this.throttlingRetryPolicy.ShouldRetryAsync(exception, cancellationToken);
             }
 
-            if (RetryUtility.IsRegionalFailure(
+            if (MetadataHedgingStrategy.IsRegionalFailure(
                 statusCode: statusCode,
                 subStatus: subStatus,
                 exception: null,
@@ -202,7 +202,7 @@ namespace Microsoft.Azure.Cosmos
                 return this.throttlingRetryPolicy.ShouldRetryAsync(responseMessage, cancellationToken);
             }
 
-            if (RetryUtility.IsRegionalFailure(
+            if (MetadataHedgingStrategy.IsRegionalFailure(
                 statusCode: statusCode,
                 subStatus: subStatus,
                 exception: null,
@@ -251,7 +251,7 @@ namespace Microsoft.Azure.Cosmos
         /// is <c>null</c>. See
         /// <c>docs/PPAF_Metadata_Hedging_ColdStart_Design.md</c> §5.7.3.
         /// </summary>
-        internal void AttachHedgeContext(MetadataHedgingContext context)
+        internal void AttachHedgeContext(MetadataHedgingStrategy.MetadataHedgingContext context)
         {
             this.hedgeContext = context;
         }

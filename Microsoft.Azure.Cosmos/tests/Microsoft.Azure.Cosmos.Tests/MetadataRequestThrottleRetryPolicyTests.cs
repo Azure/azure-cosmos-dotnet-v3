@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using static Microsoft.Azure.Cosmos.MetadataRequestThrottleRetryPolicy;
+    using static Microsoft.Azure.Cosmos.Routing.MetadataHedgingStrategy;
 
     /// <summary>
     /// Unit tests for <see cref="MetadataRequestThrottleRetryPolicy"/>.
@@ -278,7 +279,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             HttpStatusCode status = (HttpStatusCode)statusCodeInt;
             SubStatusCodes subStatus = (SubStatusCodes)subStatusInt;
             // Arrange — confirm the policy now routes regional-failure classification through
-            // RetryUtility.IsRegionalFailure (single source of truth, §5.7.2) and preserves
+            // MetadataHedgingStrategy.IsRegionalFailure (single source of truth, §5.7.2) and preserves
             // the existing 4-case set.
             Uri endpointA = new("https://default-endpoint-region1.net/");
             Uri endpointB = new("https://default-endpoint-region2.net/");

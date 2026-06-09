@@ -279,7 +279,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                         if (this.metadataHedgingStrategy != null)
                         {
-                            MetadataHedgingContext hedgeContext = new MetadataHedgingContext
+                            MetadataHedgingStrategy.MetadataHedgingContext hedgeContext = new MetadataHedgingStrategy.MetadataHedgingContext
                             {
                                 IsColdStart = isColdStart,
                             };
@@ -288,7 +288,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                             try
                             {
-                                MetadataHedgingResult hedgeResult = await this.metadataHedgingStrategy.ExecuteAsync(
+                                MetadataHedgingStrategy.MetadataHedgingResult hedgeResult = await this.metadataHedgingStrategy.ExecuteAsync(
                                     request,
                                     sendToEndpoint: MetadataHedgingStrategy.StoreModelSender(this.storeModel),
                                     hedgeContext: hedgeContext,

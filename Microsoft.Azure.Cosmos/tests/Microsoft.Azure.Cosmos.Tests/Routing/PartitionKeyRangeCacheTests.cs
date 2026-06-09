@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
+    using static Microsoft.Azure.Cosmos.Routing.MetadataHedgingStrategy;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -211,8 +212,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 isHedgingDisabledByGateway: () => false,
                 isPpafEnabled: () => true,
                 customerOptIn: true,
-                threshold: threshold ?? TimeSpan.FromMilliseconds(50),
-                options: new MetadataHedgingOptions());
+                threshold: threshold ?? TimeSpan.FromMilliseconds(50));
         }
 
         private static Mock<IGlobalEndpointManager> BuildEndpointManagerMock()

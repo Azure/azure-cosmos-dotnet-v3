@@ -6979,7 +6979,6 @@ namespace Microsoft.Azure.Cosmos
         {
             return Cosmos.Routing.MetadataHedgingStrategy.CreateIfEnabled(
                 enableMetadataHedgingForColdStart: this.enableMetadataHedgingForColdStart,
-                options: null,
                 globalEndpointManager: this.GlobalEndpointManager,
                 isPpafEnabled: () => this.ConnectionPolicy.EnablePartitionLevelFailover);
         }

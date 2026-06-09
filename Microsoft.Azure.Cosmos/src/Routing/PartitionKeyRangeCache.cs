@@ -220,7 +220,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     maxRetryAttemptsOnThrottledRequests: retryOptions.MaxRetryAttemptsOnThrottledRequests,
                     maxRetryWaitTimeInSeconds: retryOptions.MaxRetryWaitTimeInSeconds);
 
-            MetadataHedgingContext hedgeContext = new MetadataHedgingContext
+            MetadataHedgingStrategy.MetadataHedgingContext hedgeContext = new MetadataHedgingStrategy.MetadataHedgingContext
             {
                 IsColdStart = previousRoutingMap == null,
                 IsFirstReadFeedPage = true,
@@ -305,7 +305,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                                                                                 ITrace trace,
                                                                                 IClientSideRequestStatistics clientSideRequestStatistics,
                                                                                 IDocumentClientRetryPolicy retryPolicy,
-                                                                                MetadataHedgingContext hedgeContext,
+                                                                                MetadataHedgingStrategy.MetadataHedgingContext hedgeContext,
                                                                                 CancellationToken cancellationToken)
         {
             using (ITrace childTrace = trace.StartChild("Read PartitionKeyRange Change Feed", TraceComponent.Transport, Tracing.TraceLevel.Info))
@@ -369,7 +369,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         {
                             if (this.metadataHedgingStrategy != null && hedgeContext != null && hedgeContext.IsFirstReadFeedPage)
                             {
-                                MetadataHedgingResult hedgeResult = await this.metadataHedgingStrategy.ExecuteAsync(
+                                MetadataHedgingStrategy.MetadataHedgingResult hedgeResult = await this.metadataHedgingStrategy.ExecuteAsync(
                                     request,
                                     sendToEndpoint: MetadataHedgingStrategy.StoreModelSender(this.storeModel),
                                     hedgeContext: hedgeContext,
