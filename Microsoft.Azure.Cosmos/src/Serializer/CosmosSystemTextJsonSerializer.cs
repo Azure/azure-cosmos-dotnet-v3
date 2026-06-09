@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
 
                             if (CosmosObject.TryCreateFromBuffer(content, out CosmosObject cosmosObject))
                             {
-                                IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+                                using JsonWriter jsonWriter = (JsonWriter)JsonWriter.Create(JsonSerializationFormat.Text, pooled: true);
                                 cosmosObject.WriteTo(jsonWriter);
                                 return System.Text.Json.JsonSerializer.Deserialize<T>(jsonWriter.GetResult().Span, this.jsonSerializerOptions);
                             }
