@@ -314,6 +314,57 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
         [TestMethod]
         [Owner("dkunda")]
+        public async Task ExecuteAsync_PrimaryFailsFastBeforeThreshold_HedgeFiresImmediately_HedgeWins()
+        {
+            // A deliberately large threshold guarantees the hedge timer never elapses on
+            // its own. The only way the hedge can fire is the fast-fail fall-through: the
+            // primary returns a non-acceptable (503) regional failure before the threshold,
+            // so the strategy must dispatch the hedge immediately rather than wait.
+            using MetadataHedgingStrategy strategy = BuildStrategy(threshold: TimeSpan.FromMilliseconds(500));
+            DocumentServiceRequest req = BuildCollectionReadRequest();
+            MetadataHedgingContext ctx = NewColdStartContext();
+            TrackedResponse primaryResp = NewTrackedResponse(HttpStatusCode.ServiceUnavailable);
+            TrackedResponse hedgeResp = NewTrackingOkResponse();
+
+            MetadataHedgingResult result = await strategy.ExecuteAsync(
+                req,
+                async (r, u, ct) =>
+                {
+                    if (u.Equals(PrimaryEndpoint))
+                    {
+                        // Primary fails fast (regional failure) well before the threshold.
+                        return primaryResp;
+                    }
+
+                    await Task.Delay(5, CancellationToken.None).ConfigureAwait(false);
+                    return hedgeResp;
+                },
+                ctx,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.IsTrue(result.HedgeFired, "a degraded primary that fails fast must trigger the hedge, not bypass it");
+            Assert.AreSame(hedgeResp, result.Response);
+            Assert.AreEqual(HedgeEndpoint, result.WinningEndpoint);
+            Assert.AreEqual(HedgeRegion, result.WinningRegion);
+
+            // The hedge fired on the fast-fail path, so the recorded elapsed time is BELOW
+            // the threshold (the timer was cancelled, not awaited) — guards the histogram
+            // invariant for this branch.
+            Assert.IsTrue(result.Diagnostics.HedgeFiredElapsedMs.HasValue, "hedge-fired elapsed should be recorded");
+            Assert.IsTrue(
+                result.Diagnostics.HedgeFiredElapsedMs.Value < result.Diagnostics.ThresholdMs,
+                $"hedge-fired elapsed ({result.Diagnostics.HedgeFiredElapsedMs.Value}ms) should be below threshold ({result.Diagnostics.ThresholdMs}ms) on the fast-fail path");
+
+            // The primary's 503 is the loser and must be disposed by background cleanup;
+            // the winning hedge response must NOT be disposed.
+            await WaitForAsync(() => primaryResp.DisposeCount == 1, TimeSpan.FromSeconds(2));
+            Assert.AreEqual(1, primaryResp.DisposeCount, "primary 503 response should be disposed by background cleanup");
+            Assert.AreEqual(0, hedgeResp.DisposeCount, "winning hedge response must NOT be disposed");
+        }
+
+        [TestMethod]
+        [Owner("dkunda")]
         public async Task ExecuteAsync_PrimaryAndHedge_RouteIndependentClonesToDistinctEndpoints()
         {
             using MetadataHedgingStrategy strategy = BuildStrategy(threshold: TimeSpan.FromMilliseconds(30));

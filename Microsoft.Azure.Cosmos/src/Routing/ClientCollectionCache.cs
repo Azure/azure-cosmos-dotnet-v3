@@ -290,15 +290,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             {
                                 MetadataHedgingResult hedgeResult = await this.metadataHedgingStrategy.ExecuteAsync(
                                     request,
-                                    sendToEndpoint: async (req, targetEndpoint, ct) =>
-                                    {
-                                        if (targetEndpoint != null)
-                                        {
-                                            req.RequestContext.RouteToLocation(targetEndpoint);
-                                        }
-
-                                        return await this.storeModel.ProcessMessageAsync(req);
-                                    },
+                                    sendToEndpoint: MetadataHedgingStrategy.StoreModelSender(this.storeModel),
                                     hedgeContext: hedgeContext,
                                     trace: childTrace,
                                     cancellationToken: cancellationToken);

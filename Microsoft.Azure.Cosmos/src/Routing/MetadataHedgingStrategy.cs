@@ -140,6 +140,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                 throw new ArgumentNullException(nameof(hedgeContext));
             }
 
+            // A live strategy is only constructed when hedging is enabled
+            // (see CreateIfEnabled), so customerOptIn is never false here in
+            // production — this guard is defense-in-depth for direct (test) construction.
             if (this.customerOptIn == false)
             {
                 return MetadataHedgeEligibility.Skip(MetadataHedgeSkipReason.OptInDisabled);
@@ -442,6 +445,27 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             this.disposed = true;
             this.hedgeBudget.Dispose();
+        }
+
+        /// <summary>
+        /// Builds the region-targeted send delegate consumed by
+        /// <see cref="ExecuteAsync"/>: route the (already-cloned) request to the
+        /// supplied target endpoint, then dispatch it through the store model.
+        /// Shared by <c>ClientCollectionCache</c> and <c>PartitionKeyRangeCache</c>
+        /// so the safety-critical region-routing logic lives in exactly one place.
+        /// </summary>
+        internal static Func<DocumentServiceRequest, Uri, CancellationToken, Task<DocumentServiceResponse>> StoreModelSender(
+            IStoreModel storeModel)
+        {
+            return (request, targetEndpoint, ct) =>
+            {
+                if (targetEndpoint != null)
+                {
+                    request.RequestContext.RouteToLocation(targetEndpoint);
+                }
+
+                return storeModel.ProcessMessageAsync(request);
+            };
         }
 
         /// <summary>

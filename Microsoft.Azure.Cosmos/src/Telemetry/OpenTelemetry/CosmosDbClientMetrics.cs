@@ -272,7 +272,9 @@ namespace Microsoft.Azure.Cosmos
                 public const string HedgeAuthReject = "azure.cosmosdb.client.metadata_hedging.hedge_auth_reject";
 
                 /// <summary>
-                /// Distribution of hedge-fired elapsed time (always greater than or equal to threshold).
+                /// Distribution of hedge-fired elapsed time, measured from operation start to
+                /// hedge dispatch. Usually at or above the threshold, but can be below it when
+                /// the primary fails fast (regional failure) and the hedge fires immediately.
                 /// </summary>
                 public const string HedgeFiredElapsed = "azure.cosmosdb.client.metadata_hedging.hedge_fired_elapsed";
             }
