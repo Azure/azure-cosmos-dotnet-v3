@@ -515,9 +515,14 @@ namespace Microsoft.Azure.Cosmos
                 // the container RID from the document's _rid field. A document's resource
                 // ID encodes the parent container's RID hierarchically (see CollectionCache
                 // and NetworkAttachedDocumentContainer for the canonical pattern), so we
-                // avoid an extra ContainerCore.GetCachedRIDAsync hop. On the failure paths
-                // above, the synthetic header's containerRid is non-load-bearing and is
-                // left null.
+                // avoid an extra ContainerCore.GetCachedRIDAsync hop. If the derivation
+                // fails (malformed _rid, non-document element) the synthetic header's
+                // containerRid is non-load-bearing on this code path — but
+                // BuildSyntheticQueryResponseHeaders below coerces null to string.Empty
+                // before storing it, so any downstream consumer that realizes the
+                // Lazy<MemoryStream> via QueryResponse.Content (e.g. diagnostics,
+                // logging, middleware) will not hit a latent NRE inside
+                // CosmosElementSerializer.ToStream's WriteStringValue(null) call.
                 CosmosElement element = await ReadManyQueryHelper.ReadStreamAsCosmosElementAsync(
                     pointReadResponse.Content,
                     cancellationToken);
@@ -548,7 +553,22 @@ namespace Microsoft.Azure.Cosmos
         /// without this, the stream overload's combined ResponseMessage would surface
         /// SubStatusCode=Unknown for those failures.
         /// </summary>
-        private static CosmosQueryResponseMessageHeaders BuildSyntheticQueryResponseHeaders(
+        /// <remarks>
+        /// <paramref name="containerRid"/> is coerced to <see cref="string.Empty"/>
+        /// when null. <see cref="QueryResponse.CreateSuccess"/> captures the header's
+        /// <c>ContainerRid</c> inside a <c>Lazy&lt;MemoryStream&gt;</c> that, on
+        /// realization via <see cref="ResponseMessage.Content"/>, calls
+        /// <c>CosmosElementSerializer.ToStream</c> → <c>IJsonWriter.WriteStringValue(containerRid)</c>.
+        /// A null value would throw <see cref="ArgumentNullException"/> deep inside
+        /// UTF-8 encoding (<c>Encoding.UTF8.GetByteCount(null)</c>). Today's callers in
+        /// <c>CombineStreamsFromQueryResponses</c> read <c>.CosmosElements</c> directly
+        /// and never materialize <c>.Content</c>, so the latent NRE has no observable
+        /// effect — but coercing here lets any future diagnostic / logging /
+        /// middleware path realize the stream safely. The coerced empty string is
+        /// non-load-bearing on the failure / 404 / malformed-_rid branches that pass
+        /// null in the first place.
+        /// </remarks>
+        internal static CosmosQueryResponseMessageHeaders BuildSyntheticQueryResponseHeaders(
             ResponseMessage pointReadResponse,
             string containerRid)
         {
@@ -556,7 +576,7 @@ namespace Microsoft.Azure.Cosmos
                 continauationToken: null,
                 disallowContinuationTokenMessage: null,
                 resourceType: Documents.ResourceType.Document,
-                containerRid: containerRid)
+                containerRid: containerRid ?? string.Empty)
             {
                 RequestCharge = pointReadResponse.Headers?.RequestCharge ?? 0,
                 ActivityId = pointReadResponse.Headers?.ActivityId,

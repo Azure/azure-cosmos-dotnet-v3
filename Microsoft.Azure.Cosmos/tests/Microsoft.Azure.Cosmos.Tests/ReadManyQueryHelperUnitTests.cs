@@ -10,11 +10,12 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
-    /// Unit tests for the two <c>internal static</c> helpers that the ReadMany
+    /// Unit tests for the three <c>internal static</c> helpers that the ReadMany
     /// point-read fast path (PR #5905) leans on:
     ///
     ///   * <c>ReadManyQueryHelper.ReadStreamAsCosmosElementAsync</c> — converts a
@@ -27,6 +28,13 @@ namespace Microsoft.Azure.Cosmos.Tests
     ///     parent container's RID from a document's <c>_rid</c> field, mirroring
     ///     the canonical extraction used by <c>CollectionCache</c> and
     ///     <c>NetworkAttachedDocumentContainer</c>.
+    ///
+    ///   * <c>ReadManyQueryHelper.BuildSyntheticQueryResponseHeaders</c> — shapes
+    ///     the <see cref="CosmosQueryResponseMessageHeaders"/> handed to
+    ///     <c>QueryResponse.CreateSuccess</c> / <c>QueryResponse.CreateFailure</c>
+    ///     on the per-partition fast-path branches; pins the null-containerRid
+    ///     coalesce that protects the captured <c>Lazy&lt;MemoryStream&gt;</c>
+    ///     from a latent NRE on downstream realization.
     ///
     /// The .NET <see cref="Stream"/> API has subtle gotchas around
     /// <see cref="MemoryStream.TryGetBuffer(out ArraySegment{byte})"/> success vs.
@@ -391,6 +399,142 @@ namespace Microsoft.Azure.Cosmos.Tests
                 ExpectedContainerRid,
                 containerRid,
                 "container RID extraction must match the canonical ResourceId.Parse(...).DocumentCollectionId.ToString() derivation used by CollectionCache and NetworkAttachedDocumentContainer.");
+        }
+
+        // -----------------------------------------------------------------
+        //  BuildSyntheticQueryResponseHeaders — null-safety + field forwarding
+        //
+        //  The point-read fast path passes containerRid: null on the 404/Unknown
+        //  and !IsSuccessStatusCode branches (ReadManyQueryHelper.cs lines 491 and
+        //  506), and may also pass null on the success path when
+        //  TryGetContainerRidFromDocument fails to derive a RID from a malformed
+        //  _rid. QueryResponse.CreateSuccess captures the resulting ContainerRid
+        //  inside a Lazy<MemoryStream>. If anything ever realizes that stream via
+        //  QueryResponse.Content (diagnostics, logging, future middleware), the
+        //  call chain CosmosElementSerializer.ToStream → IJsonWriter.WriteStringValue(null)
+        //  → Encoding.UTF8.GetByteCount(null) throws ArgumentNullException deep in
+        //  the JSON serializer. The helper coerces null → string.Empty so the
+        //  latent NRE cannot fire on any code path.
+        // -----------------------------------------------------------------
+
+        [TestMethod]
+        public void BuildSyntheticQueryResponseHeaders_NullContainerRid_IsCoercedToEmptyString()
+        {
+            ResponseMessage pointReadResponse = new ResponseMessage(System.Net.HttpStatusCode.NotFound);
+
+            CosmosQueryResponseMessageHeaders headers = ReadManyQueryHelper.BuildSyntheticQueryResponseHeaders(
+                pointReadResponse: pointReadResponse,
+                containerRid: null);
+
+            Assert.IsNotNull(headers.ContainerRid, "null containerRid must be coerced to a non-null sentinel so downstream Lazy<MemoryStream> realization is safe.");
+            Assert.AreEqual(string.Empty, headers.ContainerRid, "null containerRid must be coerced to string.Empty (not any other sentinel) so JSON-serialized output remains shaped like the wire {\"_rid\":\"\",...} envelope on synthetic failure responses.");
+        }
+
+        [TestMethod]
+        public void BuildSyntheticQueryResponseHeaders_NullContainerRid_QueryResponseContentMaterializationDoesNotThrow()
+        {
+            // Repro the exact chain described on the PR review:
+            //   QueryResponse.CreateSuccess → Lazy<MemoryStream> capturing headers.ContainerRid
+            //   → ResponseMessage.Content getter → CosmosElementSerializer.ToStream(null, ...)
+            //   → IJsonWriter.WriteStringValue(null) → Encoding.UTF8.GetByteCount(null)
+            //   → ArgumentNullException
+            // Without the null-coalesce inside BuildSyntheticQueryResponseHeaders, the
+            // assertion below catches the NRE; with the coalesce in place, the body is
+            // a well-formed JSON envelope with _rid="" and an empty Documents array.
+            ResponseMessage pointReadResponse = new ResponseMessage(System.Net.HttpStatusCode.NotFound);
+
+            CosmosQueryResponseMessageHeaders headers = ReadManyQueryHelper.BuildSyntheticQueryResponseHeaders(
+                pointReadResponse: pointReadResponse,
+                containerRid: null);
+
+            QueryResponse queryResponse = QueryResponse.CreateSuccess(
+                result: Array.Empty<CosmosElement>(),
+                count: 0,
+                responseHeaders: headers,
+                serializationOptions: null,
+                trace: NoOpTrace.Singleton);
+
+            using (queryResponse)
+            {
+                Stream content = queryResponse.Content;
+
+                Assert.IsNotNull(content, "QueryResponse.Content must materialize the Lazy<MemoryStream> rather than surface null on the 404/Unknown branch.");
+
+                // Round-trip the realized stream to confirm it is a valid JSON envelope —
+                // a partial / truncated write would also raise here.
+                using StreamReader reader = new StreamReader(content, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true);
+                string body = reader.ReadToEnd();
+
+                Assert.IsTrue(body.Contains("\"_rid\":\"\""), $"realized envelope must contain an empty _rid field (coerced from null), got: {body}");
+                Assert.IsTrue(body.Contains("\"_count\":0"), $"realized envelope must report a zero count on the empty 404/Unknown branch, got: {body}");
+            }
+        }
+
+        [TestMethod]
+        public void BuildSyntheticQueryResponseHeaders_NonNullContainerRid_IsPreservedExactly()
+        {
+            ResponseMessage pointReadResponse = new ResponseMessage(System.Net.HttpStatusCode.OK);
+
+            CosmosQueryResponseMessageHeaders headers = ReadManyQueryHelper.BuildSyntheticQueryResponseHeaders(
+                pointReadResponse: pointReadResponse,
+                containerRid: ExpectedContainerRid);
+
+            Assert.AreEqual(ExpectedContainerRid, headers.ContainerRid, "a non-null containerRid must flow through unmodified — coercion must only fire on null inputs.");
+        }
+
+        [TestMethod]
+        public void BuildSyntheticQueryResponseHeaders_EmptyContainerRid_IsPreservedExactly()
+        {
+            // Empty-string in must remain empty-string out — the coalesce semantics are
+            // strictly null → empty, not "falsey → empty". This pins the boundary so a
+            // future refactor cannot silently widen the coalesce to e.g. IsNullOrWhiteSpace.
+            ResponseMessage pointReadResponse = new ResponseMessage(System.Net.HttpStatusCode.OK);
+
+            CosmosQueryResponseMessageHeaders headers = ReadManyQueryHelper.BuildSyntheticQueryResponseHeaders(
+                pointReadResponse: pointReadResponse,
+                containerRid: string.Empty);
+
+            Assert.AreEqual(string.Empty, headers.ContainerRid, "an explicitly-empty containerRid must round-trip unchanged.");
+        }
+
+        [TestMethod]
+        public void BuildSyntheticQueryResponseHeaders_ForwardsRequestChargeActivityIdAndSubStatusCode_FromUpstream()
+        {
+            // The helper exists precisely to mirror the wire response's SubStatusCode (so
+            // non-404 failures surface their real diagnostic signal on the combined
+            // ResponseMessage), and to forward RequestCharge and ActivityId so the
+            // synthetic response is observationally equivalent to a direct
+            // ReadItemStreamAsync call. Pin all three.
+            string activityId = Guid.NewGuid().ToString();
+            ResponseMessage pointReadResponse = new ResponseMessage(System.Net.HttpStatusCode.Gone);
+            pointReadResponse.Headers.RequestCharge = 12.5;
+            pointReadResponse.Headers.ActivityId = activityId;
+            pointReadResponse.Headers.SubStatusCode = SubStatusCodes.PartitionKeyRangeGone;
+
+            CosmosQueryResponseMessageHeaders headers = ReadManyQueryHelper.BuildSyntheticQueryResponseHeaders(
+                pointReadResponse: pointReadResponse,
+                containerRid: null);
+
+            Assert.AreEqual(12.5, headers.RequestCharge, "RequestCharge must be forwarded so per-partition RU consumption rolls up into the combined ReadMany response.");
+            Assert.AreEqual(activityId, headers.ActivityId, "ActivityId must be forwarded so request tracing on the synthetic response matches the upstream call.");
+            Assert.AreEqual(SubStatusCodes.PartitionKeyRangeGone, headers.SubStatusCode, "SubStatusCode must mirror the wire value so non-404 failures (e.g. 410/PartitionKeyRangeGone) surface the same diagnostic signal as a direct ReadItemStreamAsync call.");
+        }
+
+        [TestMethod]
+        public void BuildSyntheticQueryResponseHeaders_MissingUpstreamSubStatusCode_DefaultsToUnknown()
+        {
+            // A fresh ResponseMessage has SubStatusCode defaulting to Unknown via the
+            // Headers initializer chain; the helper's null-coalesce on SubStatusCode is
+            // belt-and-suspenders. Pin the default so a regression that flips it to e.g.
+            // BadRequest or Conflict gets caught.
+            ResponseMessage pointReadResponse = new ResponseMessage(System.Net.HttpStatusCode.OK);
+
+            CosmosQueryResponseMessageHeaders headers = ReadManyQueryHelper.BuildSyntheticQueryResponseHeaders(
+                pointReadResponse: pointReadResponse,
+                containerRid: ExpectedContainerRid);
+
+            Assert.AreEqual(SubStatusCodes.Unknown, headers.SubStatusCode, "an upstream response without an explicit SubStatusCode must surface as SubStatusCodes.Unknown on the synthetic header.");
+            Assert.AreEqual(0d, headers.RequestCharge, "an upstream response without an explicit RequestCharge must surface as 0 RU on the synthetic header.");
         }
 
         // -----------------------------------------------------------------
