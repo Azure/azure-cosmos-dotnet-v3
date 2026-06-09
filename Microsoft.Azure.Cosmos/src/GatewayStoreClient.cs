@@ -132,6 +132,26 @@ namespace Microsoft.Azure.Cosmos
                         clientSideRequestStatistics: requestStatistics,
                         serializerSettings: serializerSettings);
                 }
+                else if (request != null
+                    && request.ResourceType == ResourceType.DistributedTransactionBatch)
+                {
+                    // For DTC responses, preserve the response body (operationResponses JSON) so the caller can parse per-op statuses.
+                    // If there is no response body, fall back to throwing to preserve detailed error context.
+                    INameValueCollection headers = GatewayStoreClient.ExtractResponseHeaders(responseMessage);
+                    Stream contentStream = await GatewayStoreClient.BufferContentIfAvailableAsync(responseMessage);
+
+                    if (contentStream == null || contentStream.Length == 0)
+                    {
+                        throw await GatewayStoreClient.CreateDocumentClientExceptionAsync(responseMessage, requestStatistics);
+                    }
+
+                    return new DocumentServiceResponse(
+                        body: contentStream,
+                        headers: headers,
+                        statusCode: responseMessage.StatusCode,
+                        clientSideRequestStatistics: requestStatistics,
+                        serializerSettings: serializerSettings);
+                }
                 else
                 {
                     throw await GatewayStoreClient.CreateDocumentClientExceptionAsync(responseMessage, requestStatistics);

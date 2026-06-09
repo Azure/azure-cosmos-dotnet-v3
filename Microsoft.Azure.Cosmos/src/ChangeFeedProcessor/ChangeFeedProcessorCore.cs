@@ -46,6 +46,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 throw new ArgumentNullException(nameof(leaseContainer));
             }
 
+            if (leaseContainer == null && customDocumentServiceLeaseStoreManager?.LeaseContainer == null)
+            {
+                throw new ArgumentNullException(nameof(customDocumentServiceLeaseStoreManager), "The provided DocumentServiceLeaseStoreManager has a null LeaseContainer.");
+            }
+
             this.documentServiceLeaseStoreManager = customDocumentServiceLeaseStoreManager;
             this.leaseContainer = leaseContainer;
             this.instanceName = instanceName ?? throw new ArgumentNullException("InstanceName is required for the processor to initialize.");

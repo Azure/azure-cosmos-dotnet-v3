@@ -277,6 +277,36 @@ namespace Microsoft.Azure.Cosmos
                 : this.globalEndpointManager.ResolveServiceEndpoint(request);
 
             request.RequestContext.RouteToLocation(this.locationEndpoint);
+
+            // Hedging-Detection API: tag the upcoming dispatch reason on Properties so that
+            // the downstream dispatch site (TransportHandler / GatewayStoreModel) can append
+            // a RequestedRegion entry with the correct reason. Only override when this is a
+            // genuine retry attempt — first-attempt dispatches default to Initial (set by
+            // the dispatch site), and hedge-arm dispatches have their Hedging reason set by
+            // CrossRegionHedgingAvailabilityStrategy before reaching this policy.
+            //
+            // Hedging preservation invariant: when a hedge arm itself triggers a retry (e.g.
+            // 410 Gone / 449), this method is re-entered with retryContext != null on the
+            // same cloned RequestMessage. The Hedging value previously seeded by
+            // CrossRegionHedgingAvailabilityStrategy.CloneAndSendAsync must NOT be silently
+            // overwritten with OperationRetry / RegionFailover, otherwise the hedge origin
+            // is lost from the GetRequestedRegions() sequence. Preserve the existing value
+            // if it is already Hedging.
+            if (this.retryContext != null && request.Properties != null)
+            {
+                bool alreadyTaggedAsHedging =
+                    request.Properties.TryGetValue(Tracing.HedgingDetectionState.DispatchReasonPropertyKey, out object existingReasonObj)
+                    && existingReasonObj is RequestedRegionReason existingReason
+                    && existingReason == RequestedRegionReason.Hedging;
+
+                if (!alreadyTaggedAsHedging)
+                {
+                    RequestedRegionReason reason = this.retryContext.RetryRequestOnPreferredLocations
+                        ? RequestedRegionReason.RegionFailover
+                        : RequestedRegionReason.OperationRetry;
+                    request.Properties[Tracing.HedgingDetectionState.DispatchReasonPropertyKey] = reason;
+                }
+            }
         }
 
         private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
@@ -692,14 +722,14 @@ namespace Microsoft.Azure.Cosmos
 
             bool isCoordinatorRetriable =
                 statusCodeValue == (int)HttpStatusCode.RequestTimeout
-                || (statusCodeValue == (int)StatusCodes.RetryWith && subStatusCodeValue == DistributedTransactionConstants.DtcCoordinatorRaceConflict)
-                || (statusCodeValue == (int)StatusCodes.TooManyRequests && subStatusCodeValue == DistributedTransactionConstants.DtcLedgerThrottled);
+                || (statusCodeValue == (int)StatusCodes.RetryWith && subStatusCode == SubStatusCodes.DtcCoordinatorRaceConflict)
+                || (statusCodeValue == (int)StatusCodes.TooManyRequests && subStatusCode == SubStatusCodes.RUBudgetExceeded);
 
             bool isInfraFailure =
                 statusCodeValue == (int)HttpStatusCode.InternalServerError
-                && (subStatusCodeValue == DistributedTransactionConstants.DtcLedgerFailure
-                    || subStatusCodeValue == DistributedTransactionConstants.DtcAccountConfigFailure
-                    || subStatusCodeValue == DistributedTransactionConstants.DtcDispatchFailure);
+                && (subStatusCode == SubStatusCodes.DtcLedgerFailure
+                    || subStatusCode == SubStatusCodes.DtcAccountConfigFailure
+                    || subStatusCode == SubStatusCodes.DtcDispatchFailure);
 
             // Body-bearing response carries per-op isRetriable in JSON. The outer DistributedTransactionCommitter
             // loop owns retry; defer to avoid inner×outer amplification.
