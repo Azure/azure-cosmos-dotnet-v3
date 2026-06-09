@@ -282,7 +282,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                             MetadataHedgingContext hedgeContext = new MetadataHedgingContext
                             {
                                 IsColdStart = isColdStart,
-                                ResourceType = ResourceType.Collection,
                             };
 
                             (retryPolicyInstance as MetadataRequestThrottleRetryPolicy)?.AttachHedgeContext(hedgeContext);

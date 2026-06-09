@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System;
     using System.Collections.Concurrent;
     using System.Threading;
-    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Per-logical-operation context shared between
@@ -20,12 +19,9 @@ namespace Microsoft.Azure.Cosmos.Routing
     internal sealed class MetadataHedgingContext
     {
         private Uri winningEndpoint;
-        private string winningRegion;
         private int hasHedgedThisOperation;
 
         public bool IsColdStart { get; set; }
-
-        public ResourceType ResourceType { get; set; }
 
         public bool IsFirstReadFeedPage { get; set; } = true;
 
@@ -34,19 +30,16 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public Uri WinningEndpoint => Volatile.Read(ref this.winningEndpoint);
 
-        public string WinningRegion => Volatile.Read(ref this.winningRegion);
-
         public bool HasHedgedThisOperation => Volatile.Read(ref this.hasHedgedThisOperation) == 1;
 
         /// <summary>
-        /// Single-publication of the winning endpoint and region. Late loser
-        /// continuations that try to re-publish observe a non-null existing
-        /// value and leave it intact.
+        /// Single-publication of the winning endpoint. Late loser continuations
+        /// that try to re-publish observe a non-null existing value and leave it
+        /// intact.
         /// </summary>
-        internal void RecordWinner(Uri endpoint, string region)
+        internal void RecordWinner(Uri endpoint)
         {
             Interlocked.CompareExchange(ref this.winningEndpoint, endpoint, null);
-            Interlocked.CompareExchange(ref this.winningRegion, region, null);
         }
 
         /// <summary>

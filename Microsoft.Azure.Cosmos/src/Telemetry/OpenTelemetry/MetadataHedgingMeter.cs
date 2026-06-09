@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
+    using System.Collections.Generic;
     using System.Diagnostics.Metrics;
 
     /// <summary>
@@ -49,38 +50,38 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal static void RecordFire(string primaryRegion, string hedgeRegion, double elapsedMs)
         {
             FiresCounter.Add(1,
-                new System.Collections.Generic.KeyValuePair<string, object>("primary_region", primaryRegion ?? "unknown"),
-                new System.Collections.Generic.KeyValuePair<string, object>("hedge_region", hedgeRegion ?? "unknown"));
+                new KeyValuePair<string, object>("primary_region", primaryRegion ?? "unknown"),
+                new KeyValuePair<string, object>("hedge_region", hedgeRegion ?? "unknown"));
 
             HedgeFiredElapsedHistogram.Record(elapsedMs / 1000.0,
-                new System.Collections.Generic.KeyValuePair<string, object>("primary_region", primaryRegion ?? "unknown"),
-                new System.Collections.Generic.KeyValuePair<string, object>("hedge_region", hedgeRegion ?? "unknown"));
+                new KeyValuePair<string, object>("primary_region", primaryRegion ?? "unknown"),
+                new KeyValuePair<string, object>("hedge_region", hedgeRegion ?? "unknown"));
         }
 
         internal static void RecordHedgeWin(string hedgeRegion)
         {
             HedgeWinsCounter.Add(1,
-                new System.Collections.Generic.KeyValuePair<string, object>("hedge_region", hedgeRegion ?? "unknown"));
+                new KeyValuePair<string, object>("hedge_region", hedgeRegion ?? "unknown"));
         }
 
         internal static void RecordBudgetExhausted(string resourceType)
         {
             BudgetExhaustedCounter.Add(1,
-                new System.Collections.Generic.KeyValuePair<string, object>("resource_type", resourceType ?? "unknown"));
+                new KeyValuePair<string, object>("resource_type", resourceType ?? "unknown"));
         }
 
         internal static void RecordLateLoser(string loserRegion, string loserOutcome)
         {
             LateLoserCounter.Add(1,
-                new System.Collections.Generic.KeyValuePair<string, object>("loser_region", loserRegion ?? "unknown"),
-                new System.Collections.Generic.KeyValuePair<string, object>("loser_outcome", loserOutcome ?? "unknown"));
+                new KeyValuePair<string, object>("loser_region", loserRegion ?? "unknown"),
+                new KeyValuePair<string, object>("loser_outcome", loserOutcome ?? "unknown"));
         }
 
         internal static void RecordHedgeAuthReject(string hedgeRegion, int statusCode)
         {
             HedgeAuthRejectCounter.Add(1,
-                new System.Collections.Generic.KeyValuePair<string, object>("hedge_region", hedgeRegion ?? "unknown"),
-                new System.Collections.Generic.KeyValuePair<string, object>("status_code", statusCode));
+                new KeyValuePair<string, object>("hedge_region", hedgeRegion ?? "unknown"),
+                new KeyValuePair<string, object>("status_code", statusCode));
         }
     }
 }

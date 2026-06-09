@@ -24,8 +24,9 @@ namespace Microsoft.Azure.Cosmos
         public const int DefaultPerClientConcurrencyBudget = 8;
 
         /// <summary>
-        /// Default step between hedge branches. Reserved for future use when
-        /// <see cref="MaxHedgeBranchesPerAttempt"/> &gt; 1.
+        /// Added to <c>HttpTimeoutPolicy.FirstAttemptTimeout</c> to derive the
+        /// default hedge <see cref="Threshold"/> when the caller does not supply
+        /// one. Default: 500&#160;ms.
         /// </summary>
         public static readonly TimeSpan DefaultThresholdStep = TimeSpan.FromMilliseconds(500);
 
@@ -36,18 +37,6 @@ namespace Microsoft.Azure.Cosmos
         /// 1.5&#160;s).
         /// </summary>
         public TimeSpan? Threshold { get; set; }
-
-        /// <summary>
-        /// Reserved for future use when <see cref="MaxHedgeBranchesPerAttempt"/>
-        /// &gt; 1. Default: 500&#160;ms.
-        /// </summary>
-        public TimeSpan? ThresholdStep { get; set; }
-
-        /// <summary>
-        /// Maximum simultaneous hedge branches per attempt. Default: 1.
-        /// Values &gt; 1 are reserved for a future release.
-        /// </summary>
-        public int MaxHedgeBranchesPerAttempt { get; set; } = 1;
 
         /// <summary>
         /// Per-client cap on in-flight metadata hedges. Default: 8.

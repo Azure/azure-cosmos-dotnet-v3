@@ -150,7 +150,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             MetadataHedgingContext hedgeContext = new()
             {
                 IsColdStart = true,
-                ResourceType = ResourceType.Collection,
             };
             hedgeContext.AttemptedEndpoints.TryAdd(endpointA.AbsoluteUri, 0);
             hedgeContext.AttemptedEndpoints.TryAdd(endpointB.AbsoluteUri, 0);
@@ -199,7 +198,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             MetadataHedgingContext hedgeContext = new()
             {
                 IsColdStart = true,
-                ResourceType = ResourceType.Collection,
             };
             hedgeContext.AttemptedEndpoints.TryAdd(endpointA.AbsoluteUri, 0);
             hedgeContext.AttemptedEndpoints.TryAdd(endpointB.AbsoluteUri, 0);

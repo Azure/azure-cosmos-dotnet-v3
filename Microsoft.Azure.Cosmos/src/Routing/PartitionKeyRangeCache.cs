@@ -223,7 +223,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             MetadataHedgingContext hedgeContext = new MetadataHedgingContext
             {
                 IsColdStart = previousRoutingMap == null,
-                ResourceType = ResourceType.PartitionKeyRange,
                 IsFirstReadFeedPage = true,
             };
 
@@ -368,7 +367,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     {
                         try
                         {
-                            if (this.metadataHedgingStrategy != null && hedgeContext != null)
+                            if (this.metadataHedgingStrategy != null && hedgeContext != null && hedgeContext.IsFirstReadFeedPage)
                             {
                                 MetadataHedgingResult hedgeResult = await this.metadataHedgingStrategy.ExecuteAsync(
                                     request,
@@ -388,6 +387,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                                 return hedgeResult.Response;
                             }
 
+                            // Continuation pages (2..N) are already pinned to the winning
+                            // region above, so skip the hedge orchestration entirely.
                             return await this.storeModel.ProcessMessageAsync(request);
                         }
                         catch (DocumentClientException ex)

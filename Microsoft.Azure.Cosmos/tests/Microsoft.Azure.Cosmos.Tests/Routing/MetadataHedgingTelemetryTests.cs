@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             MetadataHedgingStrategy strategy = BuildStrategy(threshold: TimeSpan.FromMilliseconds(50));
             DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read, ResourceType.Collection, AuthorizationTokenType.PrimaryMasterKey);
-            MetadataHedgingContext ctx = NewColdStartContext(ResourceType.Collection);
+            MetadataHedgingContext ctx = NewColdStartContext();
 
             MetadataHedgingResult result = await strategy.ExecuteAsync(
                 request,
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             MetadataHedgingStrategy strategy = BuildStrategy();
             DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read, ResourceType.Collection, AuthorizationTokenType.PrimaryMasterKey);
-            MetadataHedgingContext ctx = NewColdStartContext(ResourceType.Collection);
+            MetadataHedgingContext ctx = NewColdStartContext();
             ctx.IsColdStart = false;
 
             MetadataHedgingResult result = await strategy.ExecuteAsync(
@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
                         return NewOkResponse();
                     },
-                    NewColdStartContext(ResourceType.Collection),
+                    NewColdStartContext(),
                     NoOpTrace.Singleton,
                     CancellationToken.None);
 
@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 MetadataHedgingResult secondResult = await strategy.ExecuteAsync(
                     DocumentServiceRequest.Create(OperationType.Read, ResourceType.Collection, AuthorizationTokenType.PrimaryMasterKey),
                     sendToEndpoint: (req, uri, ct) => Task.FromResult(NewOkResponse()),
-                    NewColdStartContext(ResourceType.Collection),
+                    NewColdStartContext(),
                     NoOpTrace.Singleton,
                     CancellationToken.None);
 
@@ -297,12 +297,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             return mock;
         }
 
-        private static MetadataHedgingContext NewColdStartContext(ResourceType resourceType)
+        private static MetadataHedgingContext NewColdStartContext()
         {
             return new MetadataHedgingContext
             {
                 IsColdStart = true,
-                ResourceType = resourceType,
                 IsFirstReadFeedPage = true,
             };
         }

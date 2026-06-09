@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             using MetadataHedgingStrategy strategy = BuildStrategy(customerOptIn: false);
             DocumentServiceRequest req = BuildCollectionReadRequest();
-            MetadataHedgingContext ctx = NewColdStartContext(ResourceType.Collection);
+            MetadataHedgingContext ctx = NewColdStartContext();
 
             MetadataHedgeEligibility result = strategy.EvaluateEligibility(req, ctx);
 
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             using MetadataHedgingStrategy strategy = BuildStrategy(killSwitchOn: true);
             DocumentServiceRequest req = BuildCollectionReadRequest();
-            MetadataHedgingContext ctx = NewColdStartContext(ResourceType.Collection);
+            MetadataHedgingContext ctx = NewColdStartContext();
 
             MetadataHedgeEligibility result = strategy.EvaluateEligibility(req, ctx);
 
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             using MetadataHedgingStrategy strategy = BuildStrategy(customerOptIn: null, ppafEnabled: false);
             DocumentServiceRequest req = BuildCollectionReadRequest();
-            MetadataHedgingContext ctx = NewColdStartContext(ResourceType.Collection);
+            MetadataHedgingContext ctx = NewColdStartContext();
 
             MetadataHedgeEligibility result = strategy.EvaluateEligibility(req, ctx);
 
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             using MetadataHedgingStrategy strategy = BuildStrategy(customerOptIn: null, ppafEnabled: true);
             DocumentServiceRequest req = BuildCollectionReadRequest();
-            MetadataHedgingContext ctx = NewColdStartContext(ResourceType.Collection);
+            MetadataHedgingContext ctx = NewColdStartContext();
 
             MetadataHedgeEligibility result = strategy.EvaluateEligibility(req, ctx);
 
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             using MetadataHedgingStrategy strategy = BuildStrategy(customerOptIn: true, ppafEnabled: false);
             DocumentServiceRequest req = BuildCollectionReadRequest();
-            MetadataHedgingContext ctx = NewColdStartContext(ResourceType.Collection);
+            MetadataHedgingContext ctx = NewColdStartContext();
 
             MetadataHedgeEligibility result = strategy.EvaluateEligibility(req, ctx);
 
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             using MetadataHedgingStrategy strategy = BuildStrategy();
             DocumentServiceRequest req = BuildCollectionReadRequest();
-            MetadataHedgingContext ctx = NewColdStartContext(ResourceType.Collection);
+            MetadataHedgingContext ctx = NewColdStartContext();
             ctx.IsColdStart = false;
 
             MetadataHedgeEligibility result = strategy.EvaluateEligibility(req, ctx);
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             using MetadataHedgingStrategy strategy = BuildStrategy();
             DocumentServiceRequest req = BuildCollectionReadRequest();
-            MetadataHedgingContext ctx = NewColdStartContext(ResourceType.Collection);
+            MetadataHedgingContext ctx = NewColdStartContext();
             ctx.TryMarkHedgedThisOperation();
 
             MetadataHedgeEligibility result = strategy.EvaluateEligibility(req, ctx);
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             using MetadataHedgingStrategy strategy = BuildStrategy();
             DocumentServiceRequest req = DocumentServiceRequest.Create(
                 OperationType.Read, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
-            MetadataHedgingContext ctx = NewColdStartContext(ResourceType.Document);
+            MetadataHedgingContext ctx = NewColdStartContext();
 
             MetadataHedgeEligibility result = strategy.EvaluateEligibility(req, ctx);
 
@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             using MetadataHedgingStrategy strategy = BuildStrategy();
             DocumentServiceRequest req = DocumentServiceRequest.Create(
                 OperationType.ReadFeed, ResourceType.PartitionKeyRange, AuthorizationTokenType.PrimaryMasterKey);
-            MetadataHedgingContext ctx = NewColdStartContext(ResourceType.PartitionKeyRange);
+            MetadataHedgingContext ctx = NewColdStartContext();
             ctx.IsFirstReadFeedPage = false;
 
             MetadataHedgeEligibility result = strategy.EvaluateEligibility(req, ctx);
@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             Mock<IGlobalEndpointManager> gem = BuildEndpointManagerMock(new[] { PrimaryEndpoint });
             using MetadataHedgingStrategy strategy = BuildStrategy(gem.Object);
             DocumentServiceRequest req = BuildCollectionReadRequest();
-            MetadataHedgingContext ctx = NewColdStartContext(ResourceType.Collection);
+            MetadataHedgingContext ctx = NewColdStartContext();
 
             MetadataHedgeEligibility result = strategy.EvaluateEligibility(req, ctx);
 
@@ -185,7 +185,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 applicableEndpoints: new[] { PrimaryEndpoint });
             using MetadataHedgingStrategy strategy = BuildStrategy(gem.Object);
             DocumentServiceRequest req = BuildCollectionReadRequest();
-            MetadataHedgingContext ctx = NewColdStartContext(ResourceType.Collection);
+            MetadataHedgingContext ctx = NewColdStartContext();
 
             MetadataHedgeEligibility result = strategy.EvaluateEligibility(req, ctx);
 
@@ -199,7 +199,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             using MetadataHedgingStrategy strategy = BuildStrategy();
             DocumentServiceRequest req = BuildCollectionReadRequest();
-            MetadataHedgingContext ctx = NewColdStartContext(ResourceType.Collection);
+            MetadataHedgingContext ctx = NewColdStartContext();
 
             MetadataHedgeEligibility result = strategy.EvaluateEligibility(req, ctx);
 
@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             using MetadataHedgingStrategy strategy = BuildStrategy(customerOptIn: false);
             DocumentServiceRequest req = BuildCollectionReadRequest();
-            MetadataHedgingContext ctx = NewColdStartContext(ResourceType.Collection);
+            MetadataHedgingContext ctx = NewColdStartContext();
             int callCount = 0;
 
             MetadataHedgingResult result = await strategy.ExecuteAsync(
@@ -244,7 +244,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             using MetadataHedgingStrategy strategy = BuildStrategy(threshold: TimeSpan.FromSeconds(5));
             DocumentServiceRequest req = BuildCollectionReadRequest();
-            MetadataHedgingContext ctx = NewColdStartContext(ResourceType.Collection);
+            MetadataHedgingContext ctx = NewColdStartContext();
             int callCount = 0;
 
             MetadataHedgingResult result = await strategy.ExecuteAsync(
@@ -275,7 +275,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             using MetadataHedgingStrategy strategy = BuildStrategy(threshold: TimeSpan.FromMilliseconds(30));
             DocumentServiceRequest req = BuildCollectionReadRequest();
-            MetadataHedgingContext ctx = NewColdStartContext(ResourceType.Collection);
+            MetadataHedgingContext ctx = NewColdStartContext();
             TrackedResponse primaryResp = NewTrackingOkResponse();
             TrackedResponse hedgeResp = NewTrackingOkResponse();
             TaskCompletionSource<DocumentServiceResponse> primaryGate = new TaskCompletionSource<DocumentServiceResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -314,6 +314,62 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
         [TestMethod]
         [Owner("dkunda")]
+        public async Task ExecuteAsync_PrimaryAndHedge_RouteIndependentClonesToDistinctEndpoints()
+        {
+            using MetadataHedgingStrategy strategy = BuildStrategy(threshold: TimeSpan.FromMilliseconds(30));
+            DocumentServiceRequest req = BuildCollectionReadRequest();
+            MetadataHedgingContext ctx = NewColdStartContext();
+
+            DocumentServiceRequest primaryBranchRequest = null;
+            DocumentServiceRequest hedgeBranchRequest = null;
+            TaskCompletionSource<DocumentServiceResponse> primaryGate =
+                new TaskCompletionSource<DocumentServiceResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            MetadataHedgingResult result = await strategy.ExecuteAsync(
+                req,
+                async (r, u, ct) =>
+                {
+                    // Mirror the production caller: each branch routes the request it
+                    // was handed. With a shared request this would race; with per-branch
+                    // clones each routing is independent.
+                    r.RequestContext.RouteToLocation(u);
+
+                    if (u.Equals(PrimaryEndpoint))
+                    {
+                        primaryBranchRequest = r;
+
+                        // Slow primary: stays pending until the hedge wins and cancels it.
+                        using (ct.Register(() => primaryGate.TrySetResult(NewOkResponse())))
+                        {
+                            return await primaryGate.Task.ConfigureAwait(false);
+                        }
+                    }
+
+                    hedgeBranchRequest = r;
+                    await Task.Delay(5, CancellationToken.None).ConfigureAwait(false);
+                    return NewOkResponse();
+                },
+                ctx,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.IsTrue(result.HedgeFired);
+            Assert.AreEqual(HedgeEndpoint, result.WinningEndpoint);
+
+            // The concurrent branches must each operate on an independent request clone,
+            // not the shared original — otherwise one branch's RouteToLocation overwrites
+            // the other's target region (no hedge benefit + corrupted region telemetry).
+            Assert.IsNotNull(primaryBranchRequest);
+            Assert.IsNotNull(hedgeBranchRequest);
+            Assert.AreNotSame(primaryBranchRequest, hedgeBranchRequest, "primary and hedge must use distinct request clones");
+            Assert.AreNotSame(req, primaryBranchRequest, "primary branch must not send the caller's original request");
+            Assert.AreNotSame(req, hedgeBranchRequest, "hedge branch must not send the caller's original request");
+            Assert.AreEqual(PrimaryEndpoint, primaryBranchRequest.RequestContext.LocationEndpointToRoute, "primary clone must stay routed to the primary endpoint");
+            Assert.AreEqual(HedgeEndpoint, hedgeBranchRequest.RequestContext.LocationEndpointToRoute, "hedge clone must stay routed to the hedge endpoint");
+        }
+
+        [TestMethod]
+        [Owner("dkunda")]
         public async Task ExecuteAsync_HedgeReturns401_PrimaryLateOk_PrimaryWinsAndAuth401Recorded()
         {
             await AssertHedgeAuthRejection(HttpStatusCode.Unauthorized, "Auth401");
@@ -340,8 +396,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
             DocumentServiceRequest req1 = BuildCollectionReadRequest();
             DocumentServiceRequest req2 = BuildCollectionReadRequest();
-            MetadataHedgingContext ctx1 = NewColdStartContext(ResourceType.Collection);
-            MetadataHedgingContext ctx2 = NewColdStartContext(ResourceType.Collection);
+            MetadataHedgingContext ctx1 = NewColdStartContext();
+            MetadataHedgingContext ctx2 = NewColdStartContext();
 
             TrackedResponse primary1 = NewTrackingOkResponse();
             TrackedResponse hedge1 = NewTrackingOkResponse();
@@ -420,7 +476,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             for (int i = 0; i < 50; i++)
             {
                 DocumentServiceRequest req = BuildCollectionReadRequest();
-                MetadataHedgingContext ctx = NewColdStartContext(ResourceType.Collection);
+                MetadataHedgingContext ctx = NewColdStartContext();
                 tasks.Add(strategy.ExecuteAsync(
                     req,
                     async (r, u, ct) =>
@@ -517,7 +573,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             using MetadataHedgingStrategy strategy = BuildStrategy(threshold: TimeSpan.FromMilliseconds(30));
             DocumentServiceRequest req = BuildCollectionReadRequest();
-            MetadataHedgingContext ctx = NewColdStartContext(ResourceType.Collection);
+            MetadataHedgingContext ctx = NewColdStartContext();
             TrackedResponse hedgeResp = NewTrackedResponse(hedgeStatus);
             TrackedResponse primaryResp = NewTrackingOkResponse();
 
@@ -582,12 +638,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             return mock;
         }
 
-        private static MetadataHedgingContext NewColdStartContext(ResourceType resourceType)
+        private static MetadataHedgingContext NewColdStartContext()
         {
             return new MetadataHedgingContext
             {
                 IsColdStart = true,
-                ResourceType = resourceType,
                 IsFirstReadFeedPage = true,
             };
         }

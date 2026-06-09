@@ -22,9 +22,9 @@ namespace Microsoft.Azure.Cosmos.Routing
     /// <c>ClientCollectionCache</c> and <c>PartitionKeyRangeCache</c>.
     /// </summary>
     /// <remarks>
-    /// Design: <c>docs/PPAF_Metadata_Hedging_ColdStart_Design.md</c>.
-    /// This type is currently introduced unwired by Stage 1 of the staged
-    /// implementation plan; Stage 3 and Stage 4 wire it into the caches.
+    /// Design: <c>docs/PPAF_Metadata_Hedging_ColdStart_Design.md</c>. Wired into
+    /// <c>ClientCollectionCache</c> and <c>PartitionKeyRangeCache</c> for
+    /// cold-start metadata cache reads.
     /// </remarks>
     internal sealed class MetadataHedgingStrategy : IDisposable
     {
@@ -292,7 +292,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     timerCts.Cancel();
                     diag.TotalAttempts = 1;
                     diag.WinningRegion = diag.PrimaryRegion;
-                    hedgeContext.RecordWinner(primaryEndpoint, diag.PrimaryRegion);
+                    hedgeContext.RecordWinner(primaryEndpoint);
                     trace?.AddDatum(TraceDatumKey, diag);
                     return new MetadataHedgingResult(primaryTask.Result, primaryEndpoint, diag.PrimaryRegion, hedgeFired: false, diag);
                 }
@@ -306,7 +306,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     diag.WinningRegion = diag.PrimaryRegion;
                     CosmosDbEventSource.MetadataHedgeSkipped(diag.SkipReason.ToString(), diag.ResourceType);
                     DocumentServiceResponse primaryLate = await ObserveWinningTaskAsync(primaryTask);
-                    hedgeContext.RecordWinner(primaryEndpoint, diag.PrimaryRegion);
+                    hedgeContext.RecordWinner(primaryEndpoint);
                     trace?.AddDatum(TraceDatumKey, diag);
                     return new MetadataHedgingResult(primaryLate, primaryEndpoint, diag.PrimaryRegion, hedgeFired: false, diag);
                 }
@@ -375,7 +375,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 diag.WinningRegion = winningRegion;
                 diag.TotalAttempts = 2;
-                hedgeContext.RecordWinner(winningEndpoint, winningRegion);
+                hedgeContext.RecordWinner(winningEndpoint);
 
                 double totalElapsedMs = sw.Elapsed.TotalMilliseconds;
                 if (winner == primaryTask)
@@ -405,6 +405,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                 loserCts.Cancel();
 
                 string loserRegion = (loser == primaryTask) ? diag.PrimaryRegion : diag.HedgeRegion;
+
+                // Seed a non-null placeholder so a trace serialized before the
+                // background cleanup completes reads "Pending" rather than null.
+                diag.LoserOutcome = "Pending";
 
                 // Fire-and-forget cleanup. Awaits the loser, disposes its response body
                 // and CTS, and updates diag.LoserOutcome. Swallows OCE and any other
@@ -461,17 +465,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return false;
             }
 
-            if (branch == HedgeBranch.Hedge)
+            if (branch == HedgeBranch.Hedge
+                && (response.StatusCode == HttpStatusCode.Unauthorized
+                    || response.StatusCode == HttpStatusCode.Forbidden))
             {
-                if (response.StatusCode == HttpStatusCode.Unauthorized)
-                {
-                    return false;
-                }
-
-                if (response.StatusCode == HttpStatusCode.Forbidden)
-                {
-                    return false;
-                }
+                return false;
             }
 
             return true;
@@ -494,9 +492,16 @@ namespace Microsoft.Azure.Cosmos.Routing
             Uri targetEndpoint,
             CancellationToken ct)
         {
+            // Clone per branch. The primary and hedge sends run concurrently and the
+            // caller's send delegate routes via RouteToLocation; sharing one
+            // DocumentServiceRequest would let one branch overwrite the other's target
+            // region (no hedge benefit + corrupted region telemetry). DocumentServiceRequest.Clone
+            // produces an independent RequestContext. Supported metadata reads are
+            // body-less GET / ReadFeed, so the clone owns no stream to dispose.
+            DocumentServiceRequest branchRequest = request.Clone();
             try
             {
-                return await send(request, targetEndpoint, ct).ConfigureAwait(false);
+                return await send(branchRequest, targetEndpoint, ct).ConfigureAwait(false);
             }
             catch
             {
@@ -583,7 +588,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             DocumentServiceResponse response = await sendToEndpoint(request, primaryEndpoint, cancellationToken);
             diag.TotalAttempts = 1;
             diag.WinningRegion = diag.PrimaryRegion;
-            hedgeContext.RecordWinner(primaryEndpoint, diag.PrimaryRegion);
+            hedgeContext.RecordWinner(primaryEndpoint);
             trace?.AddDatum(TraceDatumKey, diag);
             return new MetadataHedgingResult(response, primaryEndpoint, diag.PrimaryRegion, hedgeFired: false, diag);
         }
