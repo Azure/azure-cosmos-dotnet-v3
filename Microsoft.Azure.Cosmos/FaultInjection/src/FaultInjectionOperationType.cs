@@ -79,13 +79,21 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         MetadataQueryPlan,
 
         /// <summary>
-        /// Metadata / barrier HEAD requests (e.g., consistency-barrier
-        /// <c>Head</c> against the <c>Collection</c> resource the SDK issues under
-        /// Strong / Bounded-Staleness consistency to verify <c>GlobalCommittedLSN</c>
-        /// on a replica before returning a read result).
-        /// Maps to <see cref="Microsoft.Azure.Documents.OperationType.Head"/>.
+        /// All <c>Head</c> requests targeting the <c>Collection</c> resource
+        /// (maps to <see cref="Microsoft.Azure.Documents.OperationType.Head"/>
+        /// + <see cref="Microsoft.Azure.Documents.ResourceType.Collection"/>).
+        /// <para>
+        /// The SDK issues this operation for several distinct purposes — most
+        /// notably the consistency-barrier <c>Head</c> the read path performs
+        /// under Strong / Bounded-Staleness to verify <c>GlobalCommittedLSN</c>
+        /// on a replica, but also container-existence checks and some
+        /// metadata bootstrap calls. Rules that target this enum value will
+        /// match every Head/Collection request — narrow the match further
+        /// with <c>WithConnectionType(Direct)</c> or
+        /// <c>WithRegion(...)</c> when only the barrier path is desired.
+        /// </para>
         /// </summary>
-        MetadataBarrierRequest,
+        MetadataHeadCollection,
 
         /// <summary>
         /// All operation types. Default value.

@@ -355,7 +355,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 FaultInjectionOperationType.MetadataPartitionKeyRange => OperationType.ReadFeed,
                 FaultInjectionOperationType.MetadataRefreshAddresses => OperationType.Invalid,
                 FaultInjectionOperationType.MetadataQueryPlan => OperationType.QueryPlan,
-                FaultInjectionOperationType.MetadataBarrierRequest => OperationType.Head,
+                FaultInjectionOperationType.MetadataHeadCollection => OperationType.Head,
                 _ => throw new ArgumentException($"FaultInjectionOperationType: {faultInjectionOperationType} is not supported"),
             };
         }
@@ -378,7 +378,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 FaultInjectionOperationType.MetadataPartitionKeyRange => ResourceType.PartitionKeyRange,
                 FaultInjectionOperationType.MetadataRefreshAddresses => ResourceType.Address,
                 FaultInjectionOperationType.MetadataQueryPlan => ResourceType.Document,
-                FaultInjectionOperationType.MetadataBarrierRequest => ResourceType.Collection,
+                FaultInjectionOperationType.MetadataHeadCollection => ResourceType.Collection,
                 _ => throw new ArgumentException($"FaultInjectionOperationType: {faultInjectionOperationType} is not supported"),
             };
         }

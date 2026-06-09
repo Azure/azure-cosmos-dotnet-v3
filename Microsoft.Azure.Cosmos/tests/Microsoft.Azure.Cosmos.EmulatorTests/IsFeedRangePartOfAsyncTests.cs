@@ -298,9 +298,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         /// <summary>
         /// Regression: passing a pre-cancelled token to <c>Container.IsFeedRangePartOfAsync</c>
-        /// must surface <c>OperationCanceledException</c> from the entry-point
-        /// <c>ThrowIfCancellationRequested</c> inside <c>FeedRangeInternal.GetEffectiveRangesAsync</c>,
-        /// without first issuing the routing/metadata work the method would otherwise do.
+        /// must surface <c>OperationCanceledException</c> end-to-end (wrapped as
+        /// <c>CosmosOperationCanceledException</c> by the container surface) and the surfaced
+        /// exception's <c>CancellationToken</c> must match the caller's token.
         /// </summary>
         [TestMethod]
         public async Task GivenCancelledTokenIsFeedRangePartOfAsyncThrowsOperationCanceledException()
@@ -321,7 +321,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     FeedRange.FromPartitionKey(new PartitionKey("WA")),
                     cancellationToken: cts.Token));
 
-            Assert.IsInstanceOfType(ex, typeof(OperationCanceledException));
             Assert.AreEqual(cts.Token, ex.CancellationToken);
         }
 

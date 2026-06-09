@@ -1880,8 +1880,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 .Build();
             readLeaseNotFoundRule.Disable();
 
-            // 2) Secondary region: long delay on every Query/Read parks the failed-over request well past the CT.
-            const int secondaryDelaySeconds = 120;
+            // 2) Secondary region: a long delay on every Query/Read parks the failed-over request
+            //    well past the CT. 30s is enough to dwarf the 5s CT used below while keeping this
+            //    test comfortably under the MSTest default timeout.
+            const int secondaryDelaySeconds = 30;
             string secondaryQueryDelayRuleId = "secondaryQueryDelayRule-" + Guid.NewGuid();
             FaultInjectionRule secondaryQueryDelayRule = new FaultInjectionRuleBuilder(
                 id: secondaryQueryDelayRuleId,
@@ -2016,7 +2018,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         //      reports a fresh LSN but a stale GlobalCommittedLSN. The quorum picks
         //      the fresh LSN as the barrier target; the replica's reported GCLSN is
         //      below it, so the SDK enters the barrier loop.
-        //   2. Gone on MetadataBarrierRequest — every barrier Head/Collection poll fails for
+        //   2. Gone on MetadataHeadCollection — every barrier Head/Collection poll fails for
         //      60s. The barrier loop retries.
         //
         // With the barrier loop spinning, the user's 5s CancellationToken should
@@ -2027,7 +2029,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         [Timeout(300000)]
         [Owner("tomasvaron")]
         [Description("CancellationToken must be honored between barrier (Head/Collection) requests")]
-        public async Task FaultInjectionMetadataBarrierRequestDelay_HonorsCancellationToken()
+        public async Task FaultInjectionMetadataHeadCollectionDelay_HonorsCancellationToken()
         {
             const int cancellationBudgetSeconds = 5;
             const int gracePeriodSeconds = 2;
@@ -2069,7 +2071,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             FaultInjectionRule barrierFailureRule = new FaultInjectionRuleBuilder(
                 id: barrierFailureRuleId,
                 condition: new FaultInjectionConditionBuilder()
-                    .WithOperationType(FaultInjectionOperationType.MetadataBarrierRequest)
+                    .WithOperationType(FaultInjectionOperationType.MetadataHeadCollection)
                     .WithConnectionType(FaultInjectionConnectionType.Direct)
                     .Build(),
                 result: FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.Gone)
@@ -2169,10 +2171,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             // anyway as part of quorum read; either path validates the CT-honor contract.
             if (barrierHits == 0)
             {
-                Assert.Inconclusive(
+                Assert.Fail(
                     $"Barrier (Head/Collection) failure rule never fired. Header override hits: {overrideHits}, "
                     + $"barrier failure hits: {barrierHits}. The SDK did not invoke WaitForReadBarrierNewAsync; "
-                    + $"the test cannot conclude CT-honor behavior in the barrier loop.");
+                    + $"the test cannot validate CT-honor behavior in the barrier loop.");
             }
 
             // The contract: once the operation-level CancellationToken expires, the SDK should
