@@ -8,24 +8,37 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
     using System.Text;
     using System.Text.Json;
     using BenchmarkDotNet.Attributes;
+    using BenchmarkDotNet.Columns;
+    using BenchmarkDotNet.Configs;
+    using BenchmarkDotNet.Jobs;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Tests.Json;
 
     /// <summary>
-    /// A/B/C micro-benchmark for the binary read path of
+    /// Before/after micro-benchmark for the binary read path of
     /// <c>CosmosSystemTextJsonSerializer.FromStream</c>, isolating the
-    /// transcode-buffer allocation. Uses the team's <see cref="SdkBenchmarkConfiguration"/>
-    /// (Op/s throughput, percentiles, MemoryDiagnoser + ThreadingDiagnoser).
+    /// transcode-buffer allocation. MediumRun + MemoryDiagnoser, with an
+    /// Op/s column (throughput; higher = less CPU per operation).
     ///
     /// Each method mirrors the SDK binary branch exactly
     /// (ReadAll -&gt; TryCreateFromBuffer -&gt; transcode -&gt; deserialize):
     ///   Before = JsonSerializer.Deserialize&lt;T&gt;(cosmosObject.ToString())                       // UTF-16 string
     ///   After  = WriteTo(JsonWriter Text, pooled) + Deserialize&lt;T&gt;(ReadOnlySpan&lt;byte&gt;) + Dispose
     /// </summary>
-    [Config(typeof(SdkBenchmarkConfiguration))]
+    [Config(typeof(MediumRunConfig))]
+    [MemoryDiagnoser]
     public class StjBinaryPooledBenchmark
     {
+        private class MediumRunConfig : ManualConfig
+        {
+            public MediumRunConfig()
+            {
+                this.AddJob(Job.MediumRun);
+                this.AddColumn(StatisticColumn.OperationsPerSecond);
+            }
+        }
+
         private static readonly JsonSerializerOptions Options = new ()
         {
             PropertyNameCaseInsensitive = true,
