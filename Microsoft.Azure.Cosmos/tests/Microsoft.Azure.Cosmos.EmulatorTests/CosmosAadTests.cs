@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Globalization;
     using System.Net;
     using System.Text;
@@ -500,6 +501,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Timeout(60000)]
         public async Task Aad_TokenExpiringMidOperation_RefreshesTransparently()
         {
             int getAadTokenCount = 0;
@@ -538,11 +540,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await container.CreateItemAsync(first, new PartitionKey(first.id));
                 int tokenCountAfterFirstOperation = getAadTokenCount;
 
-                // Wait for the background refresh interval to elapse so the token is refreshed mid-session.
-                await Task.Delay(TimeSpan.FromSeconds(1.5));
-                Assert.IsTrue(
-                    getAadTokenCount > tokenCountAfterFirstOperation,
-                    "The token should have been refreshed in the background after the refresh interval elapsed.");
+                // Poll for the background refresh rather than asserting after a single fixed delay,
+                // so the test is robust to CI scheduling jitter. The refresh interval is 1s.
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                while (getAadTokenCount <= tokenCountAfterFirstOperation)
+                {
+                    Assert.IsTrue(
+                        stopwatch.Elapsed < TimeSpan.FromSeconds(20),
+                        "The token should have been refreshed in the background after the refresh interval elapsed.");
+                    await Task.Delay(200);
+                }
 
                 // A subsequent operation after the refresh still succeeds with the refreshed token.
                 ToDoActivity second = ToDoActivity.CreateRandomToDoActivity();

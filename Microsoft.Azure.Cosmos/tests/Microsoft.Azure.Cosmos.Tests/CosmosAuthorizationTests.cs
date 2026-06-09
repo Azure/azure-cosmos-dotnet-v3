@@ -734,6 +734,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [DoNotParallelize]
         public async Task TokenCredentialCache_UsesFallbackScope_OnNextRequest_AfterAadsts500011()
         {
             string previous = Environment.GetEnvironmentVariable("AZURE_COSMOS_AAD_SCOPE_OVERRIDE");
