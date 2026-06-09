@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
+- [5583](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5583) LINQ: Fixes `.Any()` on `Dictionary`/`IDictionary`/`IReadOnlyDictionary` properties returning no results by wrapping dictionary access with `OBJECTTOARRAY()` so dictionary entries (and predicates on `KeyValuePair.Key`/`Value`) are iterated correctly.
+- [5298](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5298) LINQ: Fixes constant folding for closure-captured variables inside MemberInitExpression (resolves #1664). Previously, the recursion that partially evaluates expressions terminated whenever it encountered a `MemberInitExpression` node, so captured variables inside object initializers were not folded, producing invalid translated SQL.
+
 #### Other Changes
 
 ### <a name="3.62.0-preview.0"/> [3.62.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.62.0-preview.0) - 2026-6-1
