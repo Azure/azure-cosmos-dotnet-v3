@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Bugs Fixed
 
 - [5909](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5909) Json: Fixes a denial-of-service vulnerability where a crafted binary-JSON response payload could crash the client process with an unrecoverable `StackOverflowException`. The decoder and re-serializer paths now enforce the existing 256-level nesting cap, surface a catchable `JsonMaxNestingExceededException` / `InsufficientExecutionStackException` / `JsonInvalidTokenException` instead of terminating the host, and reject malformed reference-string redirects up front. Note: the existing 256-deep writer nesting check (`JsonObjectState.Push`) now throws `JsonMaxNestingExceededException` instead of `InvalidOperationException`, so a single `catch` covers both reader and writer paths.
+- [5298](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5298) LINQ: Fixes constant folding for closure-captured variables inside MemberInitExpression (resolves #1664). Previously, the recursion that partially evaluates expressions terminated whenever it encountered a `MemberInitExpression` node, so captured variables inside object initializers were not folded, producing invalid translated SQL.
 
 #### Other Changes
 
