@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
     using BenchmarkDotNet.Attributes;
     using BenchmarkDotNet.Columns;
     using BenchmarkDotNet.Configs;
-    using BenchmarkDotNet.Diagnosers;
     using BenchmarkDotNet.Jobs;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
@@ -22,12 +21,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
     /// transcode-buffer allocation. MediumRun + MemoryDiagnoser, with an
     /// Op/s column (throughput; higher = less CPU per operation).
     ///
-    /// CPU hardware counters (cycles, cache misses, branch mispredictions) are
-    /// also collected. These require an ELEVATED (Administrator) console on
-    /// Windows; run from an admin shell, otherwise the counter columns are
-    /// silently omitted. (Hardware counters are x86/x64 only - they are not
-    /// available on Arm64 hosts.)
-    ///
     /// Each method mirrors the SDK binary branch exactly
     /// (ReadAll -&gt; TryCreateFromBuffer -&gt; transcode -&gt; deserialize):
     ///   Before = JsonSerializer.Deserialize&lt;T&gt;(cosmosObject.ToString())                       // UTF-16 string
@@ -35,11 +28,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
     /// </summary>
     [Config(typeof(MediumRunConfig))]
     [MemoryDiagnoser]
-    [HardwareCounters(
-        HardwareCounter.TotalCycles,
-        HardwareCounter.CacheMisses,
-        HardwareCounter.BranchInstructions,
-        HardwareCounter.BranchMispredictions)]
     public class StjBinaryPooledBenchmark
     {
         private class MediumRunConfig : ManualConfig
