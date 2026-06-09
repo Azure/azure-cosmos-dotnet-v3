@@ -155,6 +155,25 @@ namespace Microsoft.Azure.Cosmos
         internal const int MaxAttemptsHardCap = 200;
 
         /// <summary>
+        /// Number of detached metadata reads that are currently still running in the
+        /// background <i>after</i> their caller cancelled (i.e. the caller already surfaced
+        /// <see cref="OperationCanceledException"/> on the response path while the detached
+        /// task was left to complete its retry/failover decision). This is an observability
+        /// signal for the known fan-out behavior documented on this type: under concurrent
+        /// caller cancellation (e.g. a regional outage where many caller tokens trip on the
+        /// same HTTP-ladder boundary) the <c>AsyncCache</c> dedup is weakened and multiple
+        /// background reads for the same metadata can run at once. Surfacing a live count in
+        /// traces makes that amplification visible in production without changing behavior.
+        /// </summary>
+        private static long liveDetachedBackgroundReads;
+
+        /// <summary>
+        /// Current count of caller-abandoned detached metadata reads still running in the
+        /// background. See <see cref="liveDetachedBackgroundReads"/>.
+        /// </summary>
+        internal static long LiveDetachedBackgroundReads => Interlocked.Read(ref liveDetachedBackgroundReads);
+
+        /// <summary>
         /// Returns the configured SDK-internal hard deadline for the detached attempt.
         /// Reads from <see cref="ConfigurationManager.MetadataDetachedHardDeadlineInSeconds"/>;
         /// see <see cref="ConfigurationManager.GetMetadataDetachedHardDeadline"/> for the default
@@ -316,12 +335,33 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
+            // Cancel/complete race: Task.WhenAny may have selected the cancellation TCS at
+            // the same instant the detached task completed successfully. Prefer returning the
+            // valid result over discarding it and surfacing OCE. (Status check is used rather
+            // than IsCompletedSuccessfully, which is unavailable on netstandard2.0.)
+            if (detachedTask.Status == TaskStatus.RanToCompletion)
+            {
+                return detachedTask.GetAwaiter().GetResult();
+            }
+
             // Caller cancelled before the detached attempt completed. Leave the detached
             // task running so any internal retry policy can complete its decision and
             // its side-effects (LocationCache marking, session-container clearing, etc.)
             // take hold. We do NOT cancel detachedCts here.
+            //
+            // Track the now-orphaned background read for observability: increment on
+            // abandonment, decrement when it eventually completes. This makes the documented
+            // fan-out-under-concurrent-cancellation behavior visible in production telemetry.
+            long liveCount = Interlocked.Increment(ref liveDetachedBackgroundReads);
+            Task unusedDecrement = detachedTask.ContinueWith(
+                _ => Interlocked.Decrement(ref liveDetachedBackgroundReads),
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+
             DefaultTrace.TraceInformation(
-                "MetadataDetachedExecutor: caller token cancelled while detached metadata read in-flight; leaving background read to complete.");
+                "MetadataDetachedExecutor: caller token cancelled while detached metadata read in-flight; leaving background read to complete. Live caller-abandoned detached reads: {0}.",
+                liveCount);
 
             // Honor the caller token. ThrowIfCancellationRequested is preferred over
             // constructing a fresh OCE: it correctly carries the cancelled token and is
@@ -338,6 +378,18 @@ namespace Microsoft.Azure.Cosmos
             IDocumentClientRetryPolicy retryPolicy,
             CancellationToken detachedToken)
         {
+            // Drift guard: this loop intentionally mirrors the relevant subset of
+            // Cosmos.Direct's BackoffRetryUtility<T>.ExecuteAsync (the canonical helper used
+            // via TaskHelper.InlineIfPossible elsewhere) MINUS its iteration-top
+            // ThrowIfCancellationRequested — removing that preemption point is the entire fix
+            // (see the type <summary>). What is mirrored: capture the operation exception ->
+            // consult ShouldRetryAsync -> honor ShouldRetryResult.ShouldRetry /
+            // ExceptionToThrow / BackoffTime. What is intentionally NOT reproduced because no
+            // current call site (ClientCollectionCache.GetBy{Rid,Name}Async) uses it:
+            // ShouldRetryResult.PolicyArg1 propagation and the inBackoffAlternateCallbackMethod
+            // overload. If a future call site needs those, or BackoffRetryUtility's behavior
+            // changes in a way these sites depend on, prefer reusing the canonical utility
+            // behind the detach boundary over extending this copy.
             int attemptCount = 0;
             ExceptionDispatchInfo lastCapturedException = null;
             while (true)
@@ -383,6 +435,25 @@ namespace Microsoft.Azure.Cosmos
                     // backoff-catch termination logic.
                     previousException.Throw();
                     throw; // unreachable
+                }
+                catch (OperationCanceledException) when (
+                    detachedToken.IsCancellationRequested
+                    && previousException == null)
+                {
+                    // First attempt tripped the SDK-internal hard deadline (detachedToken),
+                    // not a caller cancellation — the caller's token never enters this scope.
+                    // There is no prior underlying failure to surface, and consulting the
+                    // retry policy adds no value here: a well-behaved ClientRetryPolicy returns
+                    // NoRetry for OCE, while a misbehaving custom policy that retried on OCE
+                    // would spin against an already-tripped deadline up to MaxAttemptsHardCap.
+                    // Trace the hard-deadline trip so it is distinguishable from a caller
+                    // cancellation in diagnostics, then surface it as terminal. (The same OCE
+                    // would otherwise flow through the general catch + ShouldRetryAsync(NoRetry)
+                    // path; this branch just skips the unnecessary — and potentially unsafe —
+                    // policy round-trip and adds the distinguishing trace.)
+                    DefaultTrace.TraceWarning(
+                        "MetadataDetachedExecutor: SDK-internal hard deadline tripped on the first attempt before any underlying failure was captured; surfacing cancellation without consulting the retry policy.");
+                    throw;
                 }
                 catch (Exception ex)
                 {

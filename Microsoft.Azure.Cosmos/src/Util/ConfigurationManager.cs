@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Threading;
+    using Microsoft.Azure.Cosmos.Core.Trace;
 
     internal static class ConfigurationManager
     {
@@ -292,6 +294,10 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The hard deadline as a <see cref="TimeSpan"/>.</returns>
         internal static TimeSpan GetMetadataDetachedHardDeadline()
         {
+            // Intentionally read (and re-parse) the environment variable on every call rather
+            // than caching: the value is overridable at runtime and the read is unit-tested to
+            // reflect the current environment. The per-call cost is a single env-var lookup on
+            // a metadata-cache-miss path and is negligible relative to the network read it bounds.
             int seconds = ConfigurationManager
                 .GetEnvironmentVariable(
                     variable: MetadataDetachedHardDeadlineInSeconds,
@@ -299,8 +305,31 @@ namespace Microsoft.Azure.Cosmos
             int clamped = Math.Min(
                 Math.Max(seconds, MinMetadataDetachedHardDeadlineInSeconds),
                 MaxMetadataDetachedHardDeadlineInSeconds);
+
+            // A user-supplied value outside [Min, Max] is a misconfiguration: clamp it (per the
+            // field docs) but emit a one-time warning so the clamp is visible in diagnostics
+            // instead of being applied silently. The flag keeps the warning off the hot path
+            // after the first occurrence.
+            if (clamped != seconds
+                && Interlocked.CompareExchange(ref metadataDetachedHardDeadlineClampWarned, 1, 0) == 0)
+            {
+                DefaultTrace.TraceWarning(
+                    "ConfigurationManager: {0}={1}s is outside the supported range [{2}, {3}]s and was clamped to {4}s.",
+                    MetadataDetachedHardDeadlineInSeconds,
+                    seconds,
+                    MinMetadataDetachedHardDeadlineInSeconds,
+                    MaxMetadataDetachedHardDeadlineInSeconds,
+                    clamped);
+            }
+
             return TimeSpan.FromSeconds(clamped);
         }
+
+        /// <summary>
+        /// Guard so the <see cref="GetMetadataDetachedHardDeadline"/> clamp warning is emitted
+        /// at most once per process (this method runs on every metadata-cache miss).
+        /// </summary>
+        private static int metadataDetachedHardDeadlineClampWarned;
 
         /// <summary>
         /// Gets the AAD scope value to override.
