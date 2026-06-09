@@ -86,26 +86,17 @@ namespace Microsoft.Azure.Cosmos
             SemaphoreSlim semaphore = new SemaphoreSlim(this.maxConcurrency, this.maxConcurrency);
             List<Task<List<ResponseMessage>>> tasks = new List<Task<List<ResponseMessage>>>();
 
-            // When a caller sets IfMatchEtag / IfNoneMatchEtag on the ReadMany call, the
-            // multi-id query path effectively ignores them (the per-document precondition
-            // has no place to land on a multi-doc SELECT), but the single-doc point read
-            // honors them strictly. To avoid same-input/different-outcome behavior driven
-            // purely by hash-bucketing (one (id, pk) per physical partition would hit the
-            // fast path and surface a 304/412 that the query path would never produce),
-            // skip the fast path whenever either ETag header is set and let everything
-            // route through the query path uniformly. Java sidesteps the issue at the API
-            // boundary by not exposing ETag on CosmosReadManyRequestOptions at all.
-            bool readManyEtagSet = !string.IsNullOrEmpty(readManyRequestOptions?.IfMatchEtag)
-                                 || !string.IsNullOrEmpty(readManyRequestOptions?.IfNoneMatchEtag);
-
             foreach (KeyValuePair<PartitionKeyRange, List<(string, PartitionKey)>> entry in partitionKeyRangeItemMap)
             {
                 // Per-partition optimization: when a physical partition has exactly one
                 // requested (id, partitionKey) tuple, issue a point read instead of a query.
                 // A point read on a small (<32 KB) document is ~1 RU, while any query pays
                 // a fixed cover charge (~2.82 RU). Matches the existing Java and Python
-                // SDK behavior.
-                if (entry.Value.Count == 1 && !readManyEtagSet)
+                // SDK behavior. IfMatchEtag / IfNoneMatchEtag are intentionally stripped
+                // by ConvertToItemRequestOptions, so this branch is safe to take regardless
+                // of whether the caller set them -- the wire-level behavior matches the
+                // query path's existing silent-ignore.
+                if (entry.Value.Count == 1)
                 {
                     await semaphore.WaitAsync();
 
