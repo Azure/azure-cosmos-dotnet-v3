@@ -685,7 +685,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                 await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
 
                 await monitoredContainer.CreateItemAsync<ToDoActivity>(
-                    new ToDoActivity { id = "1", pk = "1", description = "AVAD cold-start regression test for #5846." },
+                    new ToDoActivity { id = "1", pk = "1", description = "AVAD cold-start regression test for #5846.", ttl = -1 },
                     partitionKey: new PartitionKey("1"));
 
                 bool received = docDelivered.WaitOne(TimeSpan.FromSeconds(30));
