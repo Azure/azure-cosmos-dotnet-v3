@@ -502,12 +502,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [Timeout(60000)]
-        public async Task Aad_TokenExpiringMidOperation_RefreshesTransparently()
+        public async Task Aad_BackgroundRefresh_KeepsOperationsWorking()
         {
             int getAadTokenCount = 0;
             void GetAadTokenCallBack(TokenRequestContext context, CancellationToken token)
             {
-                getAadTokenCount++;
+                // Incremented from the SDK background refresh thread and read from the test thread.
+                Interlocked.Increment(ref getAadTokenCount);
             }
 
             string databaseId = Guid.NewGuid().ToString();
@@ -535,15 +536,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 using CosmosClient aadClient = new CosmosClient(endpoint, credential, clientOptions);
                 Container container = aadClient.GetContainer(databaseId, containerId);
 
-                // First operation uses the initial token.
+                // First operation acquires the initial token.
                 ToDoActivity first = ToDoActivity.CreateRandomToDoActivity();
                 await container.CreateItemAsync(first, new PartitionKey(first.id));
-                int tokenCountAfterFirstOperation = getAadTokenCount;
+                int tokenCountAfterFirstOperation = Volatile.Read(ref getAadTokenCount);
 
-                // Poll for the background refresh rather than asserting after a single fixed delay,
-                // so the test is robust to CI scheduling jitter. The refresh interval is 1s.
+                // The 1s background refresh interval should cause the credential to be invoked again on the
+                // background thread. Poll for that rather than asserting after a single fixed delay, so the
+                // test is robust to CI scheduling jitter.
                 Stopwatch stopwatch = Stopwatch.StartNew();
-                while (getAadTokenCount <= tokenCountAfterFirstOperation)
+                while (Volatile.Read(ref getAadTokenCount) <= tokenCountAfterFirstOperation)
                 {
                     Assert.IsTrue(
                         stopwatch.Elapsed < TimeSpan.FromSeconds(20),
@@ -551,7 +553,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     await Task.Delay(200);
                 }
 
-                // A subsequent operation after the refresh still succeeds with the refreshed token.
+                // A subsequent operation after the background refresh still succeeds with the refreshed token.
                 ToDoActivity second = ToDoActivity.CreateRandomToDoActivity();
                 await container.CreateItemAsync(second, new PartitionKey(second.id));
                 ItemResponse<ToDoActivity> readResponse = await container.ReadItemAsync<ToDoActivity>(

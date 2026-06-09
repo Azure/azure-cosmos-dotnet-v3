@@ -742,8 +742,47 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [Timeout(30000)]
+        public async Task TokenCredentialCache_RefreshesToken_WhenCachedTokenIsExpired()
+        {
+            // The first call returns a token that is valid at fetch time but expires shortly after.
+            // This forces the following request to miss the cache and re-acquire a token on the request
+            // path (the on-demand refresh branch in GetTokenAuthorizationHeaderAsync), independent of the
+            // background refresh loop.
+            int invocation = 0;
+            TestTokenCredential testTokenCredential = new TestTokenCredential(() =>
+            {
+                invocation++;
+                return invocation == 1
+                    ? new ValueTask<AccessToken>(new AccessToken("short-lived-token", DateTimeOffset.UtcNow + TimeSpan.FromSeconds(2)))
+                    : new ValueTask<AccessToken>(new AccessToken("refreshed-token", DateTimeOffset.UtcNow + TimeSpan.FromHours(1)));
+            });
+
+            // TimeSpan.MaxValue disables the background refresh loop, isolating the on-demand refresh path.
+            using TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential, TimeSpan.MaxValue);
+            using ITrace trace = Cosmos.Tracing.Trace.GetRootTrace("test");
+
+            string firstHeader = await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(trace);
+            Assert.AreEqual(
+                AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature("short-lived-token"),
+                firstHeader);
+            Assert.AreEqual(1, testTokenCredential.NumTimesInvoked);
+
+            // Wait until the cached token is past its expiry.
+            await Task.Delay(TimeSpan.FromSeconds(3));
+
+            // The cached token is now expired, so the request path must acquire a fresh token rather than
+            // serve the stale cached header.
+            string secondHeader = await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(trace);
+            Assert.AreEqual(
+                AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature("refreshed-token"),
+                secondHeader);
+            Assert.AreEqual(2, testTokenCredential.NumTimesInvoked);
+        }
+
+        [TestMethod]
         [DoNotParallelize]
-        public async Task TokenCredentialCache_UsesFallbackScope_OnNextRequest_AfterAadsts500011()
+        public async Task TokenCredentialCache_UsesFallbackScope_WithinRetryLoop_AfterAadsts500011()
         {
             string previous = Environment.GetEnvironmentVariable("AZURE_COSMOS_AAD_SCOPE_OVERRIDE");
             Environment.SetEnvironmentVariable("AZURE_COSMOS_AAD_SCOPE_OVERRIDE", null);
