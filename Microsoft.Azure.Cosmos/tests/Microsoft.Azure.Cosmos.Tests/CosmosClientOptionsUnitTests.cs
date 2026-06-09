@@ -922,6 +922,191 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void OpenTcpConnectionTimeoutNegativeTimeSpanPassesThroughWithWarning()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+            };
+
+            // Negative values are passed through unchanged (warning is logged but value is preserved).
+            options.OpenTcpConnectionTimeout = TimeSpan.FromMilliseconds(-1);
+            Assert.AreEqual(TimeSpan.FromMilliseconds(-1), options.OpenTcpConnectionTimeout,
+                "Negative value should be preserved unchanged on the property.");
+
+            options.OpenTcpConnectionTimeout = TimeSpan.FromSeconds(-30);
+            Assert.AreEqual(TimeSpan.FromSeconds(-30), options.OpenTcpConnectionTimeout,
+                "Negative value should be preserved unchanged on the property.");
+        }
+
+        [TestMethod]
+        public void OpenTcpConnectionTimeoutZeroIsAllowedAndRoundTripsThroughConnectionPolicy()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                OpenTcpConnectionTimeout = TimeSpan.Zero,
+            };
+
+            ConnectionPolicy policy = options.GetConnectionPolicy(clientId: 0);
+            Assert.AreEqual(TimeSpan.Zero, policy.OpenTcpConnectionTimeout);
+        }
+
+        [TestMethod]
+        public void OpenTcpConnectionTimeoutSubSecondNormalizesToZeroInRntbdConfig()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                OpenTcpConnectionTimeout = TimeSpan.FromMilliseconds(500),
+            };
+
+            ConnectionPolicy policy = options.GetConnectionPolicy(clientId: 0);
+            CosmosClientBuilder builder = new CosmosClientBuilder(
+                accountEndpoint: AccountEndpoint,
+                authKeyOrResourceToken: MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+            CosmosClient cosmosClient = builder.Build(new MockDocumentClient(connectionPolicy: policy));
+
+            Microsoft.Azure.Cosmos.Tracing.TraceData.RntbdConnectionConfig tcpConfig =
+                cosmosClient.ClientConfigurationTraceDatum.RntbdConnectionConfig;
+
+            Assert.AreEqual(
+                0,
+                tcpConfig.ConnectionTimeout,
+                "Sub-second OpenTcpConnectionTimeout must surface as 0 seconds (fall back to request timeout).");
+        }
+
+        [TestMethod]
+        public void OpenTcpConnectionTimeoutExactlyOneSecondPreservedInRntbdConfig()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                OpenTcpConnectionTimeout = TimeSpan.FromSeconds(1),
+            };
+
+            ConnectionPolicy policy = options.GetConnectionPolicy(clientId: 0);
+            CosmosClientBuilder builder = new CosmosClientBuilder(
+                accountEndpoint: AccountEndpoint,
+                authKeyOrResourceToken: MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+            CosmosClient cosmosClient = builder.Build(new MockDocumentClient(connectionPolicy: policy));
+
+            Microsoft.Azure.Cosmos.Tracing.TraceData.RntbdConnectionConfig tcpConfig =
+                cosmosClient.ClientConfigurationTraceDatum.RntbdConnectionConfig;
+
+            Assert.AreEqual(1, tcpConfig.ConnectionTimeout);
+        }
+
+        [TestMethod]
+        public void OpenTcpConnectionTimeoutWholeSecondsPreservedInRntbdConfig()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                OpenTcpConnectionTimeout = TimeSpan.FromSeconds(7),
+            };
+
+            ConnectionPolicy policy = options.GetConnectionPolicy(clientId: 0);
+            CosmosClientBuilder builder = new CosmosClientBuilder(
+                accountEndpoint: AccountEndpoint,
+                authKeyOrResourceToken: MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+            CosmosClient cosmosClient = builder.Build(new MockDocumentClient(connectionPolicy: policy));
+
+            Microsoft.Azure.Cosmos.Tracing.TraceData.RntbdConnectionConfig tcpConfig =
+                cosmosClient.ClientConfigurationTraceDatum.RntbdConnectionConfig;
+
+            Assert.AreEqual(7, tcpConfig.ConnectionTimeout);
+        }
+
+        [TestMethod]
+        public void OpenTcpConnectionTimeoutFractionalRoundsUpInRntbdConfig()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                OpenTcpConnectionTimeout = TimeSpan.FromSeconds(2.5),
+            };
+
+            ConnectionPolicy policy = options.GetConnectionPolicy(clientId: 0);
+            CosmosClientBuilder builder = new CosmosClientBuilder(
+                accountEndpoint: AccountEndpoint,
+                authKeyOrResourceToken: MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+            CosmosClient cosmosClient = builder.Build(new MockDocumentClient(connectionPolicy: policy));
+
+            Microsoft.Azure.Cosmos.Tracing.TraceData.RntbdConnectionConfig tcpConfig =
+                cosmosClient.ClientConfigurationTraceDatum.RntbdConnectionConfig;
+
+            Assert.AreEqual(
+                3,
+                tcpConfig.ConnectionTimeout,
+                "Fractional OpenTcpConnectionTimeout (>= 1s) rounds up to the nearest whole second at the transport boundary.");
+        }
+
+        [TestMethod]
+        public void OpenTcpConnectionTimeoutJustOverOneSecondRoundsUpInRntbdConfig()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                OpenTcpConnectionTimeout = TimeSpan.FromMilliseconds(1001),
+            };
+
+            ConnectionPolicy policy = options.GetConnectionPolicy(clientId: 0);
+            CosmosClientBuilder builder = new CosmosClientBuilder(
+                accountEndpoint: AccountEndpoint,
+                authKeyOrResourceToken: MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+            CosmosClient cosmosClient = builder.Build(new MockDocumentClient(connectionPolicy: policy));
+
+            Microsoft.Azure.Cosmos.Tracing.TraceData.RntbdConnectionConfig tcpConfig =
+                cosmosClient.ClientConfigurationTraceDatum.RntbdConnectionConfig;
+
+            Assert.AreEqual(
+                2,
+                tcpConfig.ConnectionTimeout,
+                "1.001s rounds up to 2s at the transport boundary.");
+        }
+
+        [TestMethod]
+        public void OpenTcpConnectionTimeoutFractionalPreservedOnConnectionPolicyTimeSpan()
+        {
+            TimeSpan customerSupplied = TimeSpan.FromSeconds(2.5);
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                OpenTcpConnectionTimeout = customerSupplied,
+            };
+
+            Assert.AreEqual(
+                customerSupplied,
+                options.OpenTcpConnectionTimeout,
+                "CosmosClientOptions preserves the supplied TimeSpan unchanged.");
+
+            ConnectionPolicy policy = options.GetConnectionPolicy(clientId: 0);
+            Assert.AreEqual(
+                customerSupplied,
+                policy.OpenTcpConnectionTimeout,
+                "ConnectionPolicy preserves the supplied TimeSpan unchanged.");
+        }
+
+        [TestMethod]
+        public void WithConnectionModeDirectNegativeOpenTcpTimeoutPassesThroughUnchanged()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+            };
+
+            // Negative values are preserved on the property and round-trip through ConnectionPolicy.
+            options.OpenTcpConnectionTimeout = TimeSpan.FromSeconds(-1);
+            Assert.AreEqual(TimeSpan.FromSeconds(-1), options.OpenTcpConnectionTimeout,
+                "Negative openTcpConnectionTimeout should be preserved unchanged.");
+
+            ConnectionPolicy policy = options.GetConnectionPolicy(clientId: 0);
+            Assert.AreEqual(TimeSpan.FromSeconds(-1), policy.OpenTcpConnectionTimeout,
+                "Negative value should round-trip through ConnectionPolicy unchanged.");
+        }
+
+        [TestMethod]
         public void VerifyHttpClientFactoryBlockedWithConnectionLimit()
         {
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
