@@ -296,6 +296,7 @@ namespace Microsoft.Azure.Cosmos
 
                 if (pkRangeLocationCacheHit)
                 {
+                    this.locationEndpoint = request.RequestContext.LocationEndpointToRoute;
                     return;
                 }
             }
