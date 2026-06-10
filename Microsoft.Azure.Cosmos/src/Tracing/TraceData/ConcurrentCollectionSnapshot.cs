@@ -128,9 +128,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             // store mutates during enumeration or CopyTo.
             return ex is InvalidOperationException
                 || ex is ArgumentException
-                || ex is IndexOutOfRangeException
-                || ex is ArgumentOutOfRangeException
-                || ex is NullReferenceException;
+                || ex is IndexOutOfRangeException;
         }
     }
 }
