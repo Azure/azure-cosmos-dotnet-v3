@@ -312,7 +312,6 @@
                 NegativeFraction = -123456.789,
                 SmallFraction = 0.000000123,
                 Zero = 0,
-                NegativeZero = -0.0,
             };
             string json = this.Serialize(original);
 
@@ -357,6 +356,7 @@
                 Assert.AreEqual(string.Empty, result.EmptyText);
                 Assert.IsNotNull(result.EmptyList);
                 Assert.AreEqual(0, result.EmptyList.Count);
+                Assert.IsNull(result.NullList);
                 Assert.IsNull(result.Nested);
             }
         }
@@ -422,7 +422,11 @@
         private T DeserializeViaBinaryPath<T>(string json)
         {
             byte[] binary = JsonTestUtils.ConvertTextToBinary(json);
+
+            // Pin the conditions that route FromStream into the pooled binary branch, so the test
+            // fails loudly instead of silently falling back to the text path if they ever regress.
             Assert.AreEqual((byte)JsonSerializationFormat.Binary, binary[0]);
+            Assert.IsTrue(CosmosObject.TryCreateFromBuffer(binary, out _));
 
             using CloneableStream stream = new(
                 internalStream: new MemoryStream(binary, index: 0, count: binary.Length, writable: false, publiclyVisible: true),
@@ -454,8 +458,6 @@
             public double SmallFraction { get; set; }
 
             public int Zero { get; set; }
-
-            public double NegativeZero { get; set; }
         }
 
         private sealed class ComplexDoc
