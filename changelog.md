@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Fixed
 
-- [5942](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5942) Diagnostics: Fixes `InvalidOperationException` ("Collection was modified; enumeration operation may not execute.") that could be thrown while serializing request diagnostics during cross-region request hedging. The contacted-replica, failed-replica and contacted-region collections are now updated through thread-safe immutable snapshots so concurrent readers never observe a collection mid-mutation.
+- [5944](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5944) Diagnostics: Fixes `InvalidOperationException` ("Collection was modified; enumeration operation may not execute.") that could be thrown while serializing request diagnostics during cross-region request hedging. The contacted-replica, failed-replica and contacted-region collections are now updated through thread-safe immutable snapshots so concurrent readers never observe a collection mid-mutation.
 
 ### <a name="3.58.0-preview.0"/> [3.58.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.58.0-preview.0) - 2026-1-15
 
