@@ -807,4 +807,3 @@ namespace Microsoft.Azure.Cosmos
         }
     }
 }
-
