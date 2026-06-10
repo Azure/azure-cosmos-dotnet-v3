@@ -138,9 +138,16 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         private static bool IsTransientConcurrencyException(Exception ex)
         {
             // List<T> / HashSet<T> / Dictionary<,> throw one of these when their backing
-            // store mutates during enumeration or index access.
+            // store mutates during enumeration or index access:
+            //   - InvalidOperationException: enumeration observed a version mismatch.
+            //   - ArgumentOutOfRangeException: the List<T> indexer's bounds check failed
+            //     because Count shrank between reads.
+            //   - IndexOutOfRangeException: the backing array was reallocated to a smaller
+            //     buffer between reading Count and indexing into it.
+            // Plain ArgumentException is intentionally NOT caught: it is not a concurrency
+            // signal, and swallowing it would mask genuine argument-validation bugs.
             return ex is InvalidOperationException
-                || ex is ArgumentException
+                || ex is ArgumentOutOfRangeException
                 || ex is IndexOutOfRangeException;
         }
     }
