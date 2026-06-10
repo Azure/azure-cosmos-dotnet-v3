@@ -76,7 +76,7 @@ This is structurally the same as the `ArgumentNullException: request` hedging ra
 
 ## Fix approach
 
-The mutating threads live in the Direct package; we cannot wrap their writes in a lock from v3. The fix is therefore applied at the **read site**: every place that enumerates one of the three unsafe collections takes a **defensive snapshot with retry on transient concurrency exceptions** before iterating. The snapshot copies into a fresh array, retrying up to five times if `List<T>.CopyTo` or the indexer raises one of the transient exceptions (`InvalidOperationException`, `ArgumentException`, `IndexOutOfRangeException`, `ArgumentOutOfRangeException`, `NullReferenceException`) that indicate the source mutated mid-copy. After max retries the helper returns an empty snapshot, so diagnostics serialization can fail soft (drop the property) instead of bubbling an exception out of `Diagnostics.ToString()` and into customer code.
+The mutating threads live in the Direct package; we cannot wrap their writes in a lock from v3. The fix is therefore applied at the **read site**: every place that enumerates one of the three unsafe collections takes a **defensive snapshot with retry on transient concurrency exceptions** before iterating. The snapshot copies into a fresh array, retrying up to five times if the indexer or enumerator raises one of the transient exceptions (`InvalidOperationException`, `ArgumentException`, `IndexOutOfRangeException`) that indicate the source mutated mid-copy. After max retries the helper returns an empty snapshot, so diagnostics serialization can fail soft (drop the property) instead of bubbling an exception out of `Diagnostics.ToString()` and into customer code.
 
 ### Why not change the property types?
 

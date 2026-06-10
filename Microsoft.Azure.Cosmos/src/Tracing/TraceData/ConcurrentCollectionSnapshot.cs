@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         private static bool IsTransientConcurrencyException(Exception ex)
         {
             // List<T> / HashSet<T> / Dictionary<,> throw one of these when their backing
-            // store mutates during enumeration or CopyTo.
+            // store mutates during enumeration or index access.
             return ex is InvalidOperationException
                 || ex is ArgumentException
                 || ex is IndexOutOfRangeException;
