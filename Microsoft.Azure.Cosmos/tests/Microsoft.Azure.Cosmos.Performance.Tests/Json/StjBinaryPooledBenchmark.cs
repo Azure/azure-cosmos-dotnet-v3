@@ -1,7 +1,3 @@
-// ----------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
-// ----------------------------------------------------------------
-
 namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
 {
     using System.IO;
@@ -15,21 +11,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Tests.Json;
 
-    /// <summary>
-    /// Before/after micro-benchmark for both read paths of
-    /// <c>CosmosSystemTextJsonSerializer.FromStream</c>. MediumRun +
-    /// MemoryDiagnoser, with an Op/s column (throughput; higher = less CPU
-    /// per operation).
-    ///
-    /// Each method mirrors the SDK branch exactly:
-    ///   Binary_Old = JsonSerializer.Deserialize&lt;T&gt;(cosmosObject.ToString())                       // UTF-16 string
-    ///   Binary_New = WriteTo(JsonWriter Text, pooled) + Deserialize&lt;T&gt;(ReadOnlySpan&lt;byte&gt;) + Dispose // span + ArrayPool
-    ///   Text_Old   = new StreamReader(stream).ReadToEnd() + Deserialize&lt;T&gt;(string)                  // UTF-16 string
-    ///   Text_New   = Deserialize&lt;T&gt;(stream)                                                          // streamed, no buffer
-    ///
-    /// Note: the text path has no transcode buffer, so there is nothing to pool;
-    /// its "New" is the stream optimization only.
-    /// </summary>
+    // Before/after benchmark for both read paths
     [Config(typeof(MediumRunConfig))]
     [MemoryDiagnoser]
     public class StjBinaryPooledBenchmark
@@ -80,14 +62,14 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
             this.cosmosObject = CosmosObject.CreateFromBuffer(binaryBuffer);
         }
 
-        [Benchmark(Description = "Binary Before")]
+        [Benchmark(Description = "STJ + Binary before")]
         public object Binary_Old()
         {
             string text = this.cosmosObject.ToString();
             return System.Text.Json.JsonSerializer.Deserialize<FamilyRoot>(text, Options);
         }
 
-        [Benchmark(Description = "Binary After")]
+        [Benchmark(Description = "STJ + Binary after")]
         public object Binary_Pooled()
         {
             using JsonWriter jsonWriter = (JsonWriter)JsonWriter.Create(JsonSerializationFormat.Text, pooled: true);
@@ -95,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
             return System.Text.Json.JsonSerializer.Deserialize<FamilyRoot>(jsonWriter.GetResult().Span, Options);
         }
 
-        [Benchmark(Description = "Text Before")]
+        [Benchmark(Description = "STJ before")]
         public object Text_Old()
         {
             using MemoryStream stream = new (this.textUtf8, writable: false);
@@ -103,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
             return System.Text.Json.JsonSerializer.Deserialize<FamilyRoot>(reader.ReadToEnd(), Options);
         }
 
-        [Benchmark(Description = "Text After")]
+        [Benchmark(Description = "STJ after")]
         public object Text_New()
         {
             using MemoryStream stream = new (this.textUtf8, writable: false);
