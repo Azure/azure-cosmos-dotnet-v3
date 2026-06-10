@@ -292,6 +292,9 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             }
         }
 
+        // Null/default arguments are intentionally accepted by the single-item Record* methods below to
+        // preserve the prior behavior of the raw collections (which allowed Add(default)); callers are
+        // responsible for any null filtering they require.
         public void RecordContactedReplica(TransportAddressUri contactedReplica)
         {
             ImmutableInterlocked.Update(
@@ -307,8 +310,11 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 return;
             }
 
-            // The write path sets the full replica list before issuing the request, so this replaces
-            // (rather than appends to) the current snapshot to avoid accumulating entries across retries.
+            // Invariant: the write path always replaces the full replica list before the request is issued,
+            // and read-path appends (RecordContactedReplica) happen afterwards. Because of this
+            // replace-before-append ordering it is safe to use Interlocked.Exchange here. If a caller ever
+            // needs to append before replacing, this must be changed to a CAS merge to avoid dropping the
+            // appended entries.
             Interlocked.Exchange(ref this.contactedReplicas, ImmutableList.CreateRange(contactedReplicas));
         }
 
