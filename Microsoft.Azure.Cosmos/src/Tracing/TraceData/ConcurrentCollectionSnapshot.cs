@@ -58,20 +58,12 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                     }
 
                     T[] buffer = new T[count];
-                    int written = 0;
-                    for (int i = 0; i < count && i < buffer.Length; i++)
+                    for (int i = 0; i < count; i++)
                     {
-                        buffer[written++] = source[i];
+                        buffer[i] = source[i];
                     }
 
-                    if (written == buffer.Length)
-                    {
-                        return buffer;
-                    }
-
-                    T[] trimmed = new T[written];
-                    Array.Copy(buffer, trimmed, written);
-                    return trimmed;
+                    return buffer;
                 }
                 catch (Exception ex) when (IsTransientConcurrencyException(ex))
                 {
