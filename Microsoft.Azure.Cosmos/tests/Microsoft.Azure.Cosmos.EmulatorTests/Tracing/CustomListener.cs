@@ -358,7 +358,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
             if (CustomListener.CollectedEvents != null && CustomListener.CollectedEvents.Count > 0)
             {
-                outputList.AddRange(CustomListener.CollectedEvents);
+                // CollectedEvents is a ConcurrentBag, whose enumeration order is not deterministic, and
+                // diagnostic events (e.g. Exception, ThresholdViolation, OnMetadataHedgeSkipped) can be
+                // emitted from concurrent paths such as metadata cache reads. Order them deterministically
+                // - mirroring how the operation/network activities above are ordered - so the baseline
+                // comparison does not flake on event interleaving.
+                outputList.AddRange(CustomListener.CollectedEvents.OrderBy(collectedEvent => collectedEvent, StringComparer.Ordinal));
             }
 
             return outputList;
