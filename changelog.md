@@ -57,6 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Other Changes
 
 - [#5887](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5887) Direct: Documents that `MaxTcpConnectionsPerEndpoint` accepts any positive value to allow customer control of the connection pool size; values of 16 or greater remain recommended.
+- [#5905](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5905) ReadMany: Adds point-read fast path for single-tuple partitions. When the items requested in a single `ReadManyItems[Stream]Async` call resolve to a physical partition with only one `(id, partitionKey)` tuple, the SDK now issues a point read for that tuple instead of a parameterized query. This reduces RU and latency for sparse multi-partition lookups (closes [#4369](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4369)) and aligns the .NET SDK with the existing Java and Python SDK behavior.
 
 ### <a name="3.61.0-preview.0"/> [3.61.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.61.0-preview.0) - 2026-5-18
 
