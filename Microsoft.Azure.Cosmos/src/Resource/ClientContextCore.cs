@@ -555,6 +555,9 @@ namespace Microsoft.Azure.Cosmos
                 return openTelemetry?.OperationName;
             };
 
+            // === BUG-DIAGNOSTIC LOG (activityid-bug-diagnostic-logging branch) ===
+            Guid diagScopeId = Guid.NewGuid();
+            Console.Error.WriteLine($"[DIAG][ClientContextCore:567] ActivityScope created with GUID={diagScopeId} for operation={operationType}");
             using (OpenTelemetryCoreRecorder recorder = isOtelCompatibleOperation ? 
                                 OpenTelemetryRecorderFactory.CreateRecorder(
                                     getOperationName: getOperationName,
@@ -564,7 +567,7 @@ namespace Microsoft.Azure.Cosmos
                                     requestOptions: requestOptions,
                                     trace: trace,
                                     clientContext: this.isDisposed ? null : this) : default)
-            using (new ActivityScope(Guid.NewGuid()))
+            using (new ActivityScope(diagScopeId))
             {
                 try
                 {
