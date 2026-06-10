@@ -7,10 +7,12 @@ namespace Microsoft.Azure.Documents
     using Microsoft.Azure.Documents.Rntbd;
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Diagnostics;
     using System.Globalization;
     using System.Net.Http;
     using System.Text;
+    using System.Threading;
 
     internal sealed class ClientSideRequestStatistics : IClientSideRequestStatistics
     {
@@ -32,6 +34,13 @@ namespace Microsoft.Azure.Documents
         private Dictionary<string, AddressResolutionStatistics> addressResolutionStatistics;
         private Lazy<List<HttpResponseStatistics>> httpResponseStatisticsList;
         private SystemUsageHistory systemUsageHistory;
+
+        // These collections are read (e.g. during diagnostics serialization) on a different thread than the
+        // store-reader paths that mutate them under cross-region request hedging. They are stored as immutable
+        // snapshots and updated via atomic swaps so concurrent readers never observe a collection mid-mutation.
+        private ImmutableList<TransportAddressUri> contactedReplicas = ImmutableList<TransportAddressUri>.Empty;
+        private ImmutableHashSet<TransportAddressUri> failedReplicas = ImmutableHashSet<TransportAddressUri>.Empty;
+        private ImmutableHashSet<(string, Uri)> regionsContacted = ImmutableHashSet<(string, Uri)>.Empty;
 
         static ClientSideRequestStatistics()
         {
@@ -71,17 +80,14 @@ namespace Microsoft.Azure.Documents
             this.responseStatisticsList = new List<StoreResponseStatistics>();
             this.supplementalResponseStatisticsList = new List<StoreResponseStatistics>();
             this.addressResolutionStatistics = new Dictionary<string, AddressResolutionStatistics>();
-            this.ContactedReplicas = new List<TransportAddressUri>();
-            this.FailedReplicas = new HashSet<TransportAddressUri>();
-            this.RegionsContacted = new HashSet<(string, Uri)>();
             this.httpResponseStatisticsList = new Lazy<List<HttpResponseStatistics>>();
         }
 
-        public List<TransportAddressUri> ContactedReplicas { get; set; }
+        public IReadOnlyList<TransportAddressUri> ContactedReplicas => this.contactedReplicas;
 
-        public HashSet<TransportAddressUri> FailedReplicas { get; private set; }
+        public IReadOnlyCollection<TransportAddressUri> FailedReplicas => this.failedReplicas;
 
-        public HashSet<(string, Uri)> RegionsContacted { get; private set; }
+        public IReadOnlyCollection<(string, Uri)> RegionsContacted => this.regionsContacted;
 
 
         public TimeSpan? RequestLatency
@@ -155,7 +161,7 @@ namespace Microsoft.Azure.Documents
             {
                 if (locationEndpoint != null)
                 {
-                    this.RegionsContacted.Add((regionName, locationEndpoint));
+                    this.RecordRegionContacted(regionName, locationEndpoint);
                 }
 
                 if (responseStatistics.RequestOperationType == OperationType.Head || responseStatistics.RequestOperationType == OperationType.HeadFeed)
@@ -167,6 +173,42 @@ namespace Microsoft.Azure.Documents
                     this.responseStatisticsList.Add(responseStatistics);
                 }
             }
+        }
+
+        public void RecordContactedReplica(TransportAddressUri contactedReplica)
+        {
+            ImmutableInterlocked.Update(
+                ref this.contactedReplicas,
+                static (replicas, replica) => replicas.Add(replica),
+                contactedReplica);
+        }
+
+        public void RecordContactedReplicas(IReadOnlyList<TransportAddressUri> contactedReplicas)
+        {
+            if (contactedReplicas == null)
+            {
+                return;
+            }
+
+            // The write path sets the full replica list before issuing the request, so this replaces
+            // (rather than appends to) the current snapshot to avoid accumulating entries across retries.
+            Interlocked.Exchange(ref this.contactedReplicas, ImmutableList.CreateRange(contactedReplicas));
+        }
+
+        public void RecordFailedReplica(TransportAddressUri failedReplica)
+        {
+            ImmutableInterlocked.Update(
+                ref this.failedReplicas,
+                static (replicas, replica) => replicas.Add(replica),
+                failedReplica);
+        }
+
+        public void RecordRegionContacted(string regionName, Uri locationEndpoint)
+        {
+            ImmutableInterlocked.Update(
+                ref this.regionsContacted,
+                static (regions, region) => regions.Add(region),
+                (regionName, locationEndpoint));
         }
 
         public void RecordException(
