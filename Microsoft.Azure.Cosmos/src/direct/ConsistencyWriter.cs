@@ -209,7 +209,7 @@ Sequence of steps:
 
                 // the transportclient relies on this contacted replicas being present *before* the request is made
                 // TODO: Can we not rely on this inversion of dependencies.
-                request.RequestContext.ClientRequestStatistics.ContactedReplicas = partitionPerProtocolAddress.ReplicaTransportAddressUris.ToList();
+                request.RequestContext.ClientRequestStatistics.RecordContactedReplicas(partitionPerProtocolAddress.ReplicaTransportAddressUris);
 
                 TransportAddressUri primaryUri = partitionPerProtocolAddress.GetPrimaryAddressUri(request);
                 this.LastWriteAddress = primaryUri.ToString();

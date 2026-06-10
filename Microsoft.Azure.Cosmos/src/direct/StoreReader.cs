@@ -307,12 +307,12 @@ namespace Microsoft.Azure.Documents
 
                         if (storeResponse != null)
                         {
-                            entity.RequestContext.ClientRequestStatistics.ContactedReplicas.Add(targetUri);
+                            entity.RequestContext.ClientRequestStatistics.RecordContactedReplica(targetUri);
                         }
 
                         if (storeException != null && storeException.InnerException is TransportException)
                         {
-                            entity.RequestContext.ClientRequestStatistics.FailedReplicas.Add(targetUri);
+                            entity.RequestContext.ClientRequestStatistics.RecordFailedReplica(targetUri);
                         }
 
                         entity.RequestContext.ClientRequestStatistics.RecordResponse(
