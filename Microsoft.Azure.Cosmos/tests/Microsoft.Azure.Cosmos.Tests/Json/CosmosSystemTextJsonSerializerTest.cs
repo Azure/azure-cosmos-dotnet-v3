@@ -7,6 +7,7 @@
     using System.Reflection;
     using System.Text.Json;
     using Microsoft.Azure.Cosmos.Tests.Poco.STJ;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -240,5 +241,40 @@
             Assert.AreSame(memoryStream, result);
         }
 
+        [TestMethod]
+        public void TestFromStreamBinaryFormat()
+        {
+            // Arrange - build a binary-encoded CloneableStream to exercise the pooled binary read path.
+            BinaryRoundTripDoc original = new() { Id = "abc", Name = "widget", Count = 42 };
+            string json;
+            using (Stream textStream = this.stjSerializer.ToStream(original))
+            using (StreamReader reader = new(textStream))
+            {
+                json = reader.ReadToEnd();
+            }
+
+            byte[] binary = JsonTestUtils.ConvertTextToBinary(json);
+            using CloneableStream binaryStream = new(
+                internalStream: new MemoryStream(binary, index: 0, count: binary.Length, writable: false, publiclyVisible: true),
+                allowUnsafeDataAccess: true);
+
+            // Act.
+            BinaryRoundTripDoc result = this.stjSerializer.FromStream<BinaryRoundTripDoc>(binaryStream);
+
+            // Assert - binary path yields the same object as the text path.
+            Assert.IsNotNull(result);
+            Assert.AreEqual(original.Id, result.Id);
+            Assert.AreEqual(original.Name, result.Name);
+            Assert.AreEqual(original.Count, result.Count);
+        }
+
+        private sealed class BinaryRoundTripDoc
+        {
+            public string Id { get; set; }
+
+            public string Name { get; set; }
+
+            public int Count { get; set; }
+        }
     }
 }

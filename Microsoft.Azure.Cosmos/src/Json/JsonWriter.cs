@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <param name="writeOptions">The write options the control the write behavior.</param>
         /// <param name="initialCapacity">Initial capacity to help avoid intermediary allocations.</param>
         /// <param name="jsonStringDictionary">The dictionary to use for user string encoding.</param>
-        /// <param name="pooled">Whether the writer should rent its internal buffer from the shared <see cref="System.Buffers.ArrayPool{T}"/>. When true, the writer must be disposed and the result of GetResult must not be used after disposal. Only honored for the text format.</param>
+        /// <param name="pooled">Whether to rent the internal buffer from the shared <see cref="System.Buffers.ArrayPool{T}"/>. When true, the writer must be disposed and the GetResult span is invalid after disposal. Text format only.</param>
         /// <returns>A JsonWriter that can write in a particular JsonSerializationFormat</returns>
         public static IJsonWriter Create(
             JsonSerializationFormat jsonSerializationFormat,
@@ -256,10 +256,7 @@ namespace Microsoft.Azure.Cosmos.Json
         public abstract ReadOnlyMemory<byte> GetResult();
 
         /// <summary>
-        /// Releases any pooled buffer held by this writer. Writers created with
-        /// <c>pooled: true</c> return their rented buffer to the shared
-        /// <see cref="System.Buffers.ArrayPool{T}"/>; otherwise this is a no-op.
-        /// The result of <see cref="GetResult"/> must not be used after disposal.
+        /// Returns any pooled buffer to the shared <see cref="System.Buffers.ArrayPool{T}"/>; otherwise a no-op.
         /// </summary>
         public virtual void Dispose()
         {
