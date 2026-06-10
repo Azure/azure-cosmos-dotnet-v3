@@ -1,6 +1,7 @@
 ﻿namespace Microsoft.Azure.Cosmos.Tests.Tracing
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
     using System.Net.Http;
@@ -196,6 +197,103 @@
             await mutationTask;
         }
 
+        [TestMethod]
+        public void SnapshotListReturnsEmptyForNull()
+        {
+            IReadOnlyList<int> snapshot = ConcurrentCollectionSnapshot.SnapshotList<int>(null);
+
+            Assert.IsNotNull(snapshot);
+            Assert.AreEqual(0, snapshot.Count);
+        }
+
+        [TestMethod]
+        public void SnapshotListCopiesAllElementsInOrder()
+        {
+            List<string> source = new List<string> { "a", "b", "c" };
+
+            IReadOnlyList<string> snapshot = ConcurrentCollectionSnapshot.SnapshotList(source);
+
+            CollectionAssert.AreEqual(source, snapshot.ToList());
+            // The snapshot must be a defensive copy, not the same reference.
+            Assert.AreNotSame(source, snapshot);
+        }
+
+        [TestMethod]
+        public void SnapshotListRetriesAndSucceedsOnTransientConcurrencyException()
+        {
+            FlakyReadOnlyList<int> source = new FlakyReadOnlyList<int>(new[] { 1, 2, 3 }, throwAttempts: 2);
+
+            IReadOnlyList<int> snapshot = ConcurrentCollectionSnapshot.SnapshotList(source);
+
+            CollectionAssert.AreEqual(new[] { 1, 2, 3 }, snapshot.ToList());
+            Assert.AreEqual(3, source.Attempts, "Expected two failed attempts followed by a successful one.");
+        }
+
+        [TestMethod]
+        public void SnapshotListReturnsEmptyAfterMaxAttempts()
+        {
+            FlakyReadOnlyList<int> source = new FlakyReadOnlyList<int>(new[] { 1, 2, 3 }, throwAttempts: int.MaxValue);
+
+            IReadOnlyList<int> snapshot = ConcurrentCollectionSnapshot.SnapshotList(source);
+
+            Assert.AreEqual(0, snapshot.Count);
+            Assert.AreEqual(5, source.Attempts, "Expected the helper to give up after the max retry count.");
+        }
+
+        [TestMethod]
+        public void SnapshotCollectionReturnsEmptyForNull()
+        {
+            IReadOnlyList<int> snapshot = ConcurrentCollectionSnapshot.SnapshotCollection<int>(null);
+
+            Assert.IsNotNull(snapshot);
+            Assert.AreEqual(0, snapshot.Count);
+        }
+
+        [TestMethod]
+        public void SnapshotCollectionCopiesHashSetElements()
+        {
+            HashSet<int> source = new HashSet<int> { 1, 2, 3 };
+
+            IReadOnlyList<int> snapshot = ConcurrentCollectionSnapshot.SnapshotCollection(source);
+
+            CollectionAssert.AreEquivalent(source.ToList(), snapshot.ToList());
+        }
+
+        [TestMethod]
+        public void SnapshotCollectionUsesReadOnlyListFastPath()
+        {
+            // A List<T> is IReadOnlyList<T>; SnapshotCollection should route to SnapshotList
+            // (index copy) and still return every element in order.
+            List<string> source = new List<string> { "x", "y", "z" };
+
+            IReadOnlyList<string> snapshot = ConcurrentCollectionSnapshot.SnapshotCollection((IEnumerable<string>)source);
+
+            CollectionAssert.AreEqual(source, snapshot.ToList());
+            Assert.AreNotSame(source, snapshot);
+        }
+
+        [TestMethod]
+        public void SnapshotCollectionRetriesAndSucceedsOnTransientConcurrencyException()
+        {
+            FlakyEnumerable<int> source = new FlakyEnumerable<int>(new[] { 1, 2, 3 }, throwAttempts: 2);
+
+            IReadOnlyList<int> snapshot = ConcurrentCollectionSnapshot.SnapshotCollection(source);
+
+            CollectionAssert.AreEqual(new[] { 1, 2, 3 }, snapshot.ToList());
+            Assert.AreEqual(3, source.Attempts, "Expected two failed attempts followed by a successful one.");
+        }
+
+        [TestMethod]
+        public void SnapshotCollectionReturnsEmptyAfterMaxAttempts()
+        {
+            FlakyEnumerable<int> source = new FlakyEnumerable<int>(new[] { 1, 2, 3 }, throwAttempts: int.MaxValue);
+
+            IReadOnlyList<int> snapshot = ConcurrentCollectionSnapshot.SnapshotCollection(source);
+
+            Assert.AreEqual(0, snapshot.Count);
+            Assert.AreEqual(5, source.Attempts, "Expected the helper to give up after the max retry count.");
+        }
+
         private async Task ConcurrentUpdateTestHelper<T>(
             Action<ClientSideRequestStatisticsTraceDatum, CancellationToken> backgroundUpdater,
             Func<ClientSideRequestStatisticsTraceDatum, IEnumerable<T>> getList)
@@ -288,6 +386,88 @@
                     DateTime.MinValue,
                     DateTime.MaxValue);
             }
+        }
+
+        /// <summary>
+        /// An <see cref="IReadOnlyList{T}"/> whose indexer throws a transient concurrency
+        /// exception on the first <paramref name="throwAttempts"/> copy passes, then succeeds.
+        /// Used to exercise the retry path of <see cref="ConcurrentCollectionSnapshot.SnapshotList{T}"/>.
+        /// </summary>
+        private sealed class FlakyReadOnlyList<T> : IReadOnlyList<T>
+        {
+            private readonly IReadOnlyList<T> items;
+            private readonly int throwAttempts;
+
+            public FlakyReadOnlyList(IReadOnlyList<T> items, int throwAttempts)
+            {
+                this.items = items;
+                this.throwAttempts = throwAttempts;
+            }
+
+            public int Attempts { get; private set; }
+
+            public int Count
+            {
+                get
+                {
+                    // Read once at the start of each copy pass.
+                    this.Attempts++;
+                    return this.items.Count;
+                }
+            }
+
+            public T this[int index]
+            {
+                get
+                {
+                    if (this.Attempts <= this.throwAttempts)
+                    {
+                        throw new InvalidOperationException("Collection was modified; enumeration operation may not execute.");
+                    }
+
+                    return this.items[index];
+                }
+            }
+
+            public IEnumerator<T> GetEnumerator() => this.items.GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => this.items.GetEnumerator();
+        }
+
+        /// <summary>
+        /// An <see cref="IEnumerable{T}"/> (not an <see cref="IReadOnlyList{T}"/> or
+        /// <see cref="ICollection{T}"/>) whose enumeration throws a transient concurrency
+        /// exception on the first <paramref name="throwAttempts"/> passes, then succeeds.
+        /// Used to exercise the retry path of <see cref="ConcurrentCollectionSnapshot.SnapshotCollection{T}"/>.
+        /// </summary>
+        private sealed class FlakyEnumerable<T> : IEnumerable<T>
+        {
+            private readonly IReadOnlyList<T> items;
+            private readonly int throwAttempts;
+
+            public FlakyEnumerable(IReadOnlyList<T> items, int throwAttempts)
+            {
+                this.items = items;
+                this.throwAttempts = throwAttempts;
+            }
+
+            public int Attempts { get; private set; }
+
+            public IEnumerator<T> GetEnumerator()
+            {
+                int attempt = ++this.Attempts;
+                foreach (T item in this.items)
+                {
+                    if (attempt <= this.throwAttempts)
+                    {
+                        throw new InvalidOperationException("Collection was modified; enumeration operation may not execute.");
+                    }
+
+                    yield return item;
+                }
+            }
+
+            IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
         }
     }
 }
