@@ -40,6 +40,14 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         /// Returns a defensive snapshot of <paramref name="source"/>.
         /// Safe to call while another thread mutates the underlying collection.
         /// </summary>
+        /// <remarks>
+        /// The copy is by index, so under concurrent mutation the snapshot may capture a
+        /// <c>null</c> or stale element without throwing: <see cref="List{T}"/> sets its
+        /// size before writing the new slot and clears reference slots via
+        /// <see cref="Array.Clear(Array, int, int)"/>, so a bounds-valid index can briefly
+        /// observe <c>default(T)</c>. Callers must therefore null-guard each element rather
+        /// than assume a clean, fully-populated snapshot.
+        /// </remarks>
         public static IReadOnlyList<T> SnapshotList<T>(IReadOnlyList<T> source)
         {
             if (source == null)
