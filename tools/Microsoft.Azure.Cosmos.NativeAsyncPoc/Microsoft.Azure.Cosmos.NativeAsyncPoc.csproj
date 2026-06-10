@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Standalone .NET 8 console proof-of-concept that consumes the
+    azure_data_cosmos_native_async_poc Rust cdylib via P/Invoke.
+
+    Validates the async-FFI hypothesis from the host language's
+    perspective: completion-queue receive loop + TaskCompletionSource
+    dispatch, mirroring the Rntbd2 ReceiveLoop pattern used inside
+    Microsoft.Azure.Cosmos.Direct.
+
+    NOT shipped. NOT referenced from Microsoft.Azure.Cosmos.csproj.
+    Lives under tools/ for an explicit "POC only" signal.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Microsoft.Azure.Cosmos.NativeAsyncPoc</RootNamespace>
+    <AssemblyName>Microsoft.Azure.Cosmos.NativeAsyncPoc</AssemblyName>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <PocArtifactDir Condition="'$(PocArtifactDir)' == ''">Q:\src\.poc-artifacts\cosmos_async_poc\</PocArtifactDir>
+  </PropertyGroup>
+
+  <!--
+    The native DLL is published into Q:\src\.poc-artifacts\cosmos_async_poc\
+    by Phase 3 of the POC. Copy it next to the executable so the default
+    AssemblyDirectory search path finds it without a custom resolver.
+  -->
+  <ItemGroup>
+    <Content Include="$(PocArtifactDir)cosmos_async_poc.dll"
+             Condition="Exists('$(PocArtifactDir)cosmos_async_poc.dll')">
+      <Link>cosmos_async_poc.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <Target Name="ValidatePocArtifact" BeforeTargets="Build">
+    <Error Condition="!Exists('$(PocArtifactDir)cosmos_async_poc.dll')"
+           Text="cosmos_async_poc.dll not found at '$(PocArtifactDir)'. Run Phase 3 publish step first." />
+  </Target>
+</Project>
