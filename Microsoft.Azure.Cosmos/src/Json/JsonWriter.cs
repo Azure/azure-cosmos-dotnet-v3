@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Json
 #else
     internal
 #endif
-    abstract partial class JsonWriter : IJsonWriter, IDisposable
+    abstract partial class JsonWriter : IJsonWriter
     {
         private const int MaxStackAlloc = 4 * 1024;
 

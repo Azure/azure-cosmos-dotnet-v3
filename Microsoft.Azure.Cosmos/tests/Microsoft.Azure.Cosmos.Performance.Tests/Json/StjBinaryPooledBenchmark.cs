@@ -1,3 +1,7 @@
+// ----------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// ----------------------------------------------------------------
+
 namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
 {
     using System.IO;
@@ -72,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
         [Benchmark(Description = "STJ + Binary after")]
         public object Binary_Pooled()
         {
-            using JsonWriter jsonWriter = (JsonWriter)JsonWriter.Create(JsonSerializationFormat.Text, pooled: true);
+            using IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text, pooled: true);
             this.cosmosObject.WriteTo(jsonWriter);
             return System.Text.Json.JsonSerializer.Deserialize<FamilyRoot>(jsonWriter.GetResult().Span, Options);
         }
