@@ -23,7 +23,11 @@ namespace Microsoft.Azure.Cosmos
         private const int RetryIntervalInMS = 1000; // Once we detect failover wait for 1 second before retrying request.
         private const int MaxRetryCount = 120;
         private const int MaxServiceUnavailableRetryCount = 1;
+#if !INTERNAL
         private const int MaxSessionTokenRetryCount = 2;
+#else
+        private const int MaxSessionTokenRetryCount = 1;
+#endif
 
         // ----- DTX (Distributed Transaction) inner-loop retry constants -----
         // The outer loop (DistributedTransactionCommitter) handles body-bearing isRetriable failures.
@@ -39,6 +43,9 @@ namespace Microsoft.Azure.Cosmos
         private readonly GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private readonly bool enableEndpointDiscovery;
         private readonly bool isThinClientEnabled;
+#if !INTERNAL
+        private readonly bool isHubRegionProcessingEnabled;
+#endif
         private int failoverRetryCount;
 
         private int sessionTokenRetryCount;
@@ -62,7 +69,8 @@ namespace Microsoft.Azure.Cosmos
             GlobalPartitionEndpointManager partitionKeyRangeLocationCache,
             RetryOptions retryOptions,
             bool enableEndpointDiscovery,
-            bool isThinClientEnabled)
+            bool isThinClientEnabled,
+            bool isHubRegionProcessingEnabled = true)
         {
             this.throttlingRetry = new ResourceThrottleRetryPolicy(
                 retryOptions.MaxRetryAttemptsOnThrottledRequests,
@@ -77,6 +85,9 @@ namespace Microsoft.Azure.Cosmos
             this.canUseMultipleWriteLocations = false;
             this.isMultiMasterWriteRequest = false;
             this.isThinClientEnabled = isThinClientEnabled;
+#if !INTERNAL
+            this.isHubRegionProcessingEnabled = isHubRegionProcessingEnabled;
+#endif
         }
 
         /// <summary> 
@@ -99,7 +110,7 @@ namespace Microsoft.Azure.Cosmos
 
                 // In the event of the routing gateway having outage on region A, mark the partition as unavailable assuming that the
                 // partition has been failed over to region B, when per partition automatic failover is enabled.
-                this.TryMarkEndpointUnavailableForPkRange(isSystemResourceUnavailableForWrite: false);
+                this.TryMarkEndpointUnavailableForPkRange(shouldMarkEndpointUnavailableForPkRange: false);
 
                 // Mark both read and write requests because it gateway exception.
                 // This means all requests going to the region will fail.
@@ -249,6 +260,7 @@ namespace Microsoft.Azure.Cosmos
                     request.RequestContext.RouteToLocation(this.retryContext.RetryLocationIndex, this.retryContext.RetryRequestOnPreferredLocations);
                 }
             }
+
 #if !INTERNAL
             // Initialize CrossRegionAvailabilityContext from Properties if not already set.
             // In hedging scenarios, Properties carries the shared context instance injected by
@@ -261,16 +273,35 @@ namespace Microsoft.Azure.Cosmos
                 this.crossRegionAvailabilityContext = sharedCtx;
             }
 
-            // If previous attempt failed with 404/1002, add the hub-region-processing-only header to all subsequent retry attempts.
-            // Also check the shared context — another hedged request may have already set the flag.
-            if (this.addHubRegionProcessingOnlyHeader
-                || this.crossRegionAvailabilityContext?.ShouldAddHubRegionProcessingOnlyHeader == true)
+            // Hub-region cache + header handling for single-master reads.
+            // On a retry (sessionTokenRetryCount > 0), check the per-partition hub cache. On HIT,
+            // route directly to the cached hub URI — the warm-cache fast path (2 wires instead of
+            // discovery). The hub-region-processing-only header is attached only when the cold-cache
+            // flag is set (after 2 × 404/1002, or propagated via the shared hedge context), so it
+            // never appears on wire 1 or on a warm-cache wire 2.
+            bool hubHeaderFlagSet = this.addHubRegionProcessingOnlyHeader
+                || this.crossRegionAvailabilityContext?.ShouldAddHubRegionProcessingOnlyHeader == true;
+
+            if (this.isHubRegionProcessingEnabled
+                && request.IsReadOnlyRequest
+                && (this.sessionTokenRetryCount > 0 || hubHeaderFlagSet))
             {
-                request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
+                bool pkRangeLocationCacheHit = this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(
+                    request, checkHubRegionOverrideInCache: true);
+
+                if (hubHeaderFlagSet)
+                {
+                    request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
+                }
+
+                if (pkRangeLocationCacheHit)
+                {
+                    this.locationEndpoint = request.RequestContext.LocationEndpointToRoute;
+                    return;
+                }
             }
 #endif
             // Resolve the endpoint for the request and pin the resolution to the resolved endpoint
-            // This enables marking the endpoint unavailability on endpoint failover/unreachability
             this.locationEndpoint = this.isThinClientEnabled
                 && GatewayStoreModel.IsThinClientRoutable(this.globalEndpointManager, request)
                 ? this.globalEndpointManager.ResolveThinClientEndpoint(request)
@@ -335,17 +366,21 @@ namespace Microsoft.Azure.Cosmos
                 if (!this.isDtxRequest)
                 {
                     // Mark the partition key range as unavailable to retry future request on a new region.
-                    this.TryMarkEndpointUnavailableForPkRange(isSystemResourceUnavailableForWrite: false);
+                    this.TryMarkEndpointUnavailableForPkRange(shouldMarkEndpointUnavailableForPkRange: false);
                 }
             }
 
-            // Received 403.3 on write region, initiate the endpoint rediscovery
+            // Received 403.3 on write region or a read region, initiate the endpoint rediscovery
             if (statusCode == HttpStatusCode.Forbidden
                 && subStatusCode == SubStatusCodes.WriteForbidden)
             {
-                // It's a write forbidden so it safe to retry
-                if (this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
-                     this.documentServiceRequest))
+                // A 403.3 can be returned for both read or write requests. The read request will return a 403.3 only when
+                // the region, with the hub region processing only header determines that it is not the current hub region
+                // for the partition. In either of the case, we mark the endpoint unavailable for the partition key range.
+                // If we exhaust all the region level mark down for the partition key range, then we will mark the endpoint
+                // unavailable for writes in that region.
+                if (this.TryMarkEndpointUnavailableForPkRange(
+                    shouldMarkEndpointUnavailableForPkRange: true))
                 {
                     return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
                 }
@@ -379,6 +414,8 @@ namespace Microsoft.Azure.Cosmos
                     return retryResult;
                 }
 
+                // Note: This can be triggered by the read requests as well. In that case, we will set the isReadRequest to
+                // false to ensure that we mark the endpoint unavailable for writes only.
                 return await this.ShouldRetryOnEndpointFailureAsync(
                     isReadRequest: false,
                     markBothReadAndWriteAsUnavailable: false,
@@ -507,7 +544,6 @@ namespace Microsoft.Azure.Cosmos
                 if (this.canUseMultipleWriteLocations)
                 {
                     ReadOnlyCollection<Uri> endpoints = this.globalEndpointManager.GetApplicableEndpoints(request, this.isReadRequest);
-
                     if (this.sessionTokenRetryCount > endpoints.Count)
                     {
                         // When use multiple write locations is true and the request has been tried 
@@ -528,11 +564,13 @@ namespace Microsoft.Azure.Cosmos
                 else
                 {
 #if !INTERNAL
-                    // Hub region discovery: only for single-master accounts.
-                    // In single-master, after 2× 404/1002 (ReadSessionNotAvailable), attach the
-                    // x-ms-cosmos-hub-region-processing-only header so the backend routes the
-                    // next retry to the partition-set level hub (primary) replica in the write region.
-                    if (this.sessionTokenRetryCount >= MaxSessionTokenRetryCount)
+                    // Hub region discovery: only for single-master accounts AND read-only requests.
+                    // The hub-region-processing-only header is meaningful only on reads (the backend
+                    // routes reads to the partition's hub based on this header); writes already go to
+                    // the write region by default and the header has no defined semantics for them.
+                    if (this.isHubRegionProcessingEnabled
+                        && request.IsReadOnlyRequest
+                        && this.sessionTokenRetryCount >= MaxSessionTokenRetryCount)
                     {
                         this.addHubRegionProcessingOnlyHeader = true;
 
@@ -544,23 +582,19 @@ namespace Microsoft.Azure.Cosmos
                             this.crossRegionAvailabilityContext.ShouldAddHubRegionProcessingOnlyHeader = true;
                         }
                     }
+#endif
 
                     if (this.sessionTokenRetryCount > MaxSessionTokenRetryCount)
                     {
-                        // Hub region header was set at count == MaxSessionTokenRetryCount and the
-                        // request was retried with it. If the hub still returns 404/1002, stop.
                         return ShouldRetryResult.NoRetry();
                     }
-#else
-                    if (this.sessionTokenRetryCount > 1)
-                    {
-                        // When cannot use multiple write locations, then don't retry the request if
-                        // we have already tried this request on the write location.
-                        return ShouldRetryResult.NoRetry();
-                    }
-#endif
                     else
                     {
+                        // Single-master 404/1002 retry. Set retryContext to the write region as
+                        // a fallback. OnBeforeSendRequest will do a cache lookup first: warm cache
+                        // HIT routes wire 2 to the cached hub (no header); MISS falls through to
+                        // this fallback (write region, no header) until the 2 × 404/1002 threshold
+                        // triggers the hub-region-processing-only header on the next wire.
                         this.retryContext = new RetryContext
                         {
                             RetryLocationIndex = 0,
@@ -643,14 +677,15 @@ namespace Microsoft.Azure.Cosmos
         /// Attempts to mark the endpoint associated with the current partition key range as unavailable
         /// which will influence future routing decisions.
         /// </summary>
-        /// <param name="isSystemResourceUnavailableForWrite">A boolean flag indicating if the system resource was unavailable. If true,
-        /// the endpoint will be marked unavailable for the pk-range of a multi master write request, bypassing the circuit breaker check.</param>
+        /// <param name="shouldMarkEndpointUnavailableForPkRange">A boolean flag indicating if the endpoint should be marked as unavailable for the pk-range. If true,
+        /// the endpoint will be marked unavailable is either 1) for the pk-range of a multi master write request, bypassing the circuit breaker check
+        /// or 2) for the pk-range when a read request received a 403.3 with the hub region header.</param>
         /// <returns>A boolean flag indicating whether the endpoint was marked as unavailable.</returns>
         private bool TryMarkEndpointUnavailableForPkRange(
-            bool isSystemResourceUnavailableForWrite)
+            bool shouldMarkEndpointUnavailableForPkRange)
         {
             if (this.documentServiceRequest != null
-                && (isSystemResourceUnavailableForWrite
+                && (shouldMarkEndpointUnavailableForPkRange
                 || this.IsRequestEligibleForPerPartitionAutomaticFailover()
                 || this.IsRequestEligibleForPartitionLevelCircuitBreaker()))
             {

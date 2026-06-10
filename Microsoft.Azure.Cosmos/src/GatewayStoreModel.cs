@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
 
                     if (isPPAFEnabled)
                     {
-                        this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request);
+                        this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request, false);
                     }
                 }
 
