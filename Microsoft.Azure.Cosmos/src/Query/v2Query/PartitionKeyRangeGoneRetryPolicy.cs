@@ -9,18 +9,20 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     internal class PartitionKeyRangeGoneRetryPolicy : IDocumentClientRetryPolicy
     {
+        private const int MaxRetryCount = 10;
         private readonly CollectionCache collectionCache;
         private readonly IDocumentClientRetryPolicy nextRetryPolicy;
         private readonly PartitionKeyRangeCache partitionKeyRangeCache;
         private readonly string collectionLink;
         private readonly ITrace trace;
-        private bool retried;
+        private int retryCount;
 
         public PartitionKeyRangeGoneRetryPolicy(
             CollectionCache collectionCache,
@@ -106,12 +108,25 @@ namespace Microsoft.Azure.Cosmos
             }
 
             if (statusCode == HttpStatusCode.Gone
-                && subStatusCode == SubStatusCodes.PartitionKeyRangeGone)
+                && (subStatusCode == SubStatusCodes.PartitionKeyRangeGone
+                    || subStatusCode == SubStatusCodes.CompletingSplit
+                    || subStatusCode == SubStatusCodes.CompletingPartitionMigration))
             {
-                if (this.retried)
+                this.retryCount++;
+                if (this.retryCount > MaxRetryCount)
                 {
+                    DefaultTrace.TraceWarning(
+                        "PartitionKeyRangeGoneRetryPolicy: exhausted the maximum of {0} retries on 410/{1}; not retrying.",
+                        MaxRetryCount,
+                        (int)subStatusCode.Value);
                     return ShouldRetryResult.NoRetry();
                 }
+
+                DefaultTrace.TraceInformation(
+                    "PartitionKeyRangeGoneRetryPolicy: refreshing the routing map and retrying on 410/{0} (attempt {1} of {2}).",
+                    (int)subStatusCode.Value,
+                    this.retryCount,
+                    MaxRetryCount);
 
                 using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                     OperationType.Read,
@@ -138,7 +153,6 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
 
-                this.retried = true;
                 return ShouldRetryResult.RetryAfter(TimeSpan.FromSeconds(0));
             }
 

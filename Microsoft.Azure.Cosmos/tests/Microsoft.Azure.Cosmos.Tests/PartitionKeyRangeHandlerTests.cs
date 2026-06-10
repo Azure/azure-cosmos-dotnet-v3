@@ -690,6 +690,98 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public async Task PartitionKeyRangeGoneRetryPolicyRetriesUpToMaxOnPartitionKeyRangeGone()
+        {
+            ITrace trace = Trace.GetRootTrace("TestTrace");
+            PartitionKeyRangeGoneRetryPolicy policy = CreateRetryPolicyWithEmptyRoutingMap(trace);
+
+            for (int i = 0; i < 10; i++)
+            {
+                ShouldRetryResult shouldRetryResult = await policy.ShouldRetryAsync(
+                    new DocumentClientException("partition gone", HttpStatusCode.Gone, SubStatusCodes.PartitionKeyRangeGone),
+                    default);
+                Assert.IsTrue(shouldRetryResult.ShouldRetry, $"Attempt {i} should retry (within max retry budget).");
+                Assert.AreEqual(0, shouldRetryResult.BackoffTime.Ticks);
+            }
+
+            ShouldRetryResult afterMax = await policy.ShouldRetryAsync(
+                new DocumentClientException("partition gone", HttpStatusCode.Gone, SubStatusCodes.PartitionKeyRangeGone),
+                default);
+            Assert.IsFalse(afterMax.ShouldRetry, "Should stop retrying after the max retry budget is exhausted.");
+        }
+
+        [TestMethod]
+        public async Task PartitionKeyRangeGoneRetryPolicyRetriesOnCompletingSplit()
+        {
+            ITrace trace = Trace.GetRootTrace("TestTrace");
+            PartitionKeyRangeGoneRetryPolicy policy = CreateRetryPolicyWithEmptyRoutingMap(trace);
+
+            ShouldRetryResult shouldRetryResult = await policy.ShouldRetryAsync(
+                new DocumentClientException("completing split", HttpStatusCode.Gone, SubStatusCodes.CompletingSplit),
+                default);
+
+            Assert.IsTrue(shouldRetryResult.ShouldRetry, "410/CompletingSplit (1007) must be retried after refreshing the routing map.");
+            Assert.AreEqual(0, shouldRetryResult.BackoffTime.Ticks);
+        }
+
+        [TestMethod]
+        public async Task PartitionKeyRangeGoneRetryPolicyRetriesOnCompletingPartitionMigration()
+        {
+            ITrace trace = Trace.GetRootTrace("TestTrace");
+            PartitionKeyRangeGoneRetryPolicy policy = CreateRetryPolicyWithEmptyRoutingMap(trace);
+
+            ShouldRetryResult shouldRetryResult = await policy.ShouldRetryAsync(
+                new DocumentClientException("completing migration", HttpStatusCode.Gone, SubStatusCodes.CompletingPartitionMigration),
+                default);
+
+            Assert.IsTrue(shouldRetryResult.ShouldRetry, "410/CompletingPartitionMigration (1008) must be retried after refreshing the routing map.");
+            Assert.AreEqual(0, shouldRetryResult.BackoffTime.Ticks);
+        }
+
+        private static PartitionKeyRangeGoneRetryPolicy CreateRetryPolicyWithEmptyRoutingMap(ITrace trace)
+        {
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition();
+            partitionKeyDefinition.Paths.Add("pk");
+
+            const string collectionRid = "DvZRAOvLgDM=";
+            ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId(collectionRid);
+            containerProperties.Id = "TestContainer";
+            containerProperties.PartitionKey = partitionKeyDefinition;
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+            mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
+
+            using GlobalEndpointManager endpointManager = new(mockDocumentClient.Object, new ConnectionPolicy());
+
+            Mock<Common.CollectionCache> collectionCache = new Mock<Common.CollectionCache>(MockBehavior.Strict, false);
+            collectionCache.Setup(c => c.ResolveCollectionAsync(It.IsAny<DocumentServiceRequest>(), It.IsAny<CancellationToken>(), trace))
+                .ReturnsAsync(containerProperties);
+
+            // An empty range list makes TryCreateCompleteRoutingMap return null, which makes the
+            // policy skip the force-refresh lookup — keeping the mock surface minimal while still
+            // exercising the retry-budget and sub-status branches.
+            CollectionRoutingMap collectionRoutingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(new List<Tuple<PartitionKeyRange, ServiceIdentity>>(), collectionRid, false);
+            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(
+                MockBehavior.Strict,
+                new Mock<ICosmosAuthorizationTokenProvider>().Object,
+                new Mock<IStoreModel>().Object,
+                collectionCache.Object,
+                endpointManager,
+                false,
+                false);
+            partitionKeyRangeCache.Setup(c => c.TryLookupAsync(collectionRid, null, It.IsAny<DocumentServiceRequest>(), trace))
+                .ReturnsAsync(collectionRoutingMap);
+
+            string collectionLink = "dbs/DvZRAA==/colls/DvZRAOvLgDM=/";
+            return new PartitionKeyRangeGoneRetryPolicy(
+                collectionCache.Object,
+                partitionKeyRangeCache.Object,
+                collectionLink,
+                null,
+                trace);
+        }
+
+        [TestMethod]
         public async Task InvalidPartitionRetryPolicyWithNextRetryPolicy()
         {
             using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
