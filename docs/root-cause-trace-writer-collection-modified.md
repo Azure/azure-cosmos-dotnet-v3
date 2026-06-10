@@ -112,7 +112,7 @@ The getter returns the raw `List<T>` / `HashSet<T>` reference, so any lock taken
 | [TraceSummary.cs](../Microsoft.Azure.Cosmos/src/Tracing/TraceSummary.cs) | `UpdateRegionContacted` snapshots `RegionsContacted` before `UnionWith`. |
 | [TraceData/SummaryDiagnostics.cs](../Microsoft.Azure.Cosmos/src/Tracing/TraceData/SummaryDiagnostics.cs) | `AggregateRegionsContacted` snapshots its input before the `foreach`. |
 
-The properties themselves and the JSON/text wire format are unchanged. There is no observable behavior change other than the elimination of the race.
+The properties themselves and the JSON/text wire format are unchanged. In the common case there is no observable behavior change other than the elimination of the race. The one exception is the rare worst case where a collection mutates on every one of the five copy attempts: the affected property then falls back to an empty snapshot (it is dropped from the serialized output, and can momentarily under-report `GetContactedRegions()`) rather than throwing. That fallback is logged at verbose level via `DefaultTrace` so the drop is diagnosable.
 
 ### 3. Regression tests
 

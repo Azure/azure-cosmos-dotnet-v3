@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 {
     using System;
     using System.Collections.Generic;
+    using Microsoft.Azure.Cosmos.Core.Trace;
 
     /// <summary>
     /// Helper for taking a defensive snapshot of a collection that may be mutated
@@ -79,6 +80,12 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 }
             }
 
+            // Every attempt observed concurrent mutation. Fall back to an empty snapshot so
+            // serialization never throws — but record it: an empty result here silently drops
+            // diagnostics data (e.g. it can under-report GetContactedRegions()).
+            DefaultTrace.TraceVerbose(
+                "ConcurrentCollectionSnapshot.SnapshotList gave up after {0} attempts; returning empty snapshot.",
+                MaxAttempts);
             return Array.Empty<T>();
         }
 
@@ -119,6 +126,12 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 }
             }
 
+            // Every attempt observed concurrent mutation. Fall back to an empty snapshot so
+            // serialization never throws — but record it: an empty result here silently drops
+            // diagnostics data (e.g. it can under-report GetContactedRegions()).
+            DefaultTrace.TraceVerbose(
+                "ConcurrentCollectionSnapshot.SnapshotCollection gave up after {0} attempts; returning empty snapshot.",
+                MaxAttempts);
             return Array.Empty<T>();
         }
 
