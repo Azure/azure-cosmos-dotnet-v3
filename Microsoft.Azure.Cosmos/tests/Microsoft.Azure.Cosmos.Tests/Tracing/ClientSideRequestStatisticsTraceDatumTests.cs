@@ -147,6 +147,11 @@
                 {
                     string json = new CosmosTraceDiagnostics(trace).ToString();
                     Assert.IsNotNull(json);
+
+                    // Also exercise the text-writer Visit path, whose snapshot call sites are
+                    // not reached by CosmosTraceDiagnostics.ToString() (JSON only).
+                    string text = TraceWriter.TraceToText(trace);
+                    Assert.IsNotNull(text);
                 }
             }
             finally
