@@ -970,12 +970,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return this.ResponseFactory.CreateItemFeedResponse<T>(responseMessage);
         }
 
+#if ENCRYPTIONPREVIEW || SDKPROJECTREF
         public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
             CancellationToken cancellationToken = default)
         {
             return this.container.GetPartitionKeyRangesAsync(feedRange, cancellationToken);
         }
+#endif
 
         public override Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
                Cosmos.PartitionKey partitionKey,
@@ -988,12 +990,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 cancellationToken);
         }
 
+#if ENCRYPTIONPREVIEW || SDKPROJECTREF
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(string processorName, ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate)
         {
             return this.container.GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(
                 processorName,
                 onChangesDelegate);
         }
+#endif
 
 #if SDKPROJECTREF
         public override Task<bool> IsFeedRangePartOfAsync(
