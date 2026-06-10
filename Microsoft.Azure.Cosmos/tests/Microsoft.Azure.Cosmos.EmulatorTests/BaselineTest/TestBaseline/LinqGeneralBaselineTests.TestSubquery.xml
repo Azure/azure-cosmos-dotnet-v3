@@ -712,6 +712,39 @@ JOIN (
   </Result>
   <Result>
     <Input>
+      <Description><![CDATA[Select(new(param1, param2))]]></Description>
+      <Expression><![CDATA[query.Select(f => new ConstructorBoundDto(f.FamilyId, f.Int))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"StringValue": root["FamilyId"], "IntValue": root["Int"]} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(new(param1, param2){ member 1 })]]></Description>
+      <Expression><![CDATA[query.Select(f => new ConstructorBoundDto(f.FamilyId, f.Int) {SecondStringValue = f.Id})]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"SecondStringValue": root["id"], "StringValue": root["FamilyId"], "IntValue": root["Int"]} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(new(param1, Count){ member 1 })]]></Description>
+      <Expression><![CDATA[query.Select(f => new ConstructorBoundDto(f.FamilyId, f.Children.Count()) {SecondStringValue = f.Id})]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"SecondStringValue": root["id"], "StringValue": root["FamilyId"], "IntValue": ARRAY_LENGTH(root["Children"])} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description><![CDATA[Select(new)]]></Description>
       <Expression><![CDATA[query.Select(f => new [] {f.Children.Count(), f.Children.Sum(c => c.Grade)})]]></Expression>
     </Input>

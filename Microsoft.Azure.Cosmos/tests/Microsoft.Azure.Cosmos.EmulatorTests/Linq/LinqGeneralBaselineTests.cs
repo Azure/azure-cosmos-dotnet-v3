@@ -58,6 +58,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             public string City;
         }
 
+        public record ConstructorBoundDto(string StringValue, int IntValue)
+        {
+            public string SecondStringValue { get; set; }
+        }
+
         public class NoMemberExampleClass
         {
             public NoMemberExampleClass(string stringValue)
@@ -410,6 +415,20 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput(
                 "Select(new array)", b => getQuery(b)
                 .Select(f => new int[] { f.Children.Count(), f.Children.Sum(c => c.Grade) })));
+
+            // New constructor binding
+
+            inputs.Add(new LinqTestInput(
+                "Select(new(param1, param2))", b => getQuery(b)
+                .Select(f => new ConstructorBoundDto(f.FamilyId, f.Int))));
+
+            inputs.Add(new LinqTestInput(
+                "Select(new(param1, param2){ member 1 })", b => getQuery(b)
+                .Select(f => new ConstructorBoundDto(f.FamilyId, f.Int) { SecondStringValue = f.Id })));
+
+            inputs.Add(new LinqTestInput(
+                "Select(new(param1, Count){ member 1 })", b => getQuery(b)
+                .Select(f => new ConstructorBoundDto(f.FamilyId, f.Children.Count()) { SecondStringValue = f.Id })));
 
             // New + member init
 
