@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Globalization;
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Utf8;
@@ -58,6 +59,10 @@ namespace Microsoft.Azure.Cosmos.Json
             IJsonStringDictionary jsonStringDictionary = null,
             bool pooled = false)
         {
+            Debug.Assert(
+                !pooled || jsonSerializationFormat == JsonSerializationFormat.Text,
+                "Buffer pooling is only supported for the Text format.");
+
             return jsonSerializationFormat switch
             {
                 JsonSerializationFormat.Text => new JsonTextWriter(initialCapacity, pooled),
