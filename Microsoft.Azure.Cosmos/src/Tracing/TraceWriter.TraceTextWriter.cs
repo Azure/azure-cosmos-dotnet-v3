@@ -376,6 +376,10 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     }
 
                     stringBuilder.AppendLine("Regions Contacted");
+                    // BUG (pre-existing): this section iterates ContactedReplicas instead of
+                    // RegionsContacted (note the element type also differs). Preserved as-is
+                    // because fixing it changes text-writer output and needs its own PR with
+                    // baseline updates. Tracked in the "Out of scope" list of PR #5942.
                     foreach (Documents.TransportAddressUri regionContacted in contactedReplicasSnapshot)
                     {
                         stringBuilder.AppendLine($"{space}{regionContacted?.ToString() ?? "<null>"}");
