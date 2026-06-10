@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -452,8 +452,12 @@ namespace Microsoft.Azure.Cosmos
                     isSystemResourceUnavailableForWrite: false);
             }
 
-            // Recieved 500 status code or lease not found
-            if ((statusCode == HttpStatusCode.InternalServerError && this.isReadRequest)
+            // Recieved 500 status code or lease not found.
+            // DTX requests (including read DTX whose IsReadOnlyRequest is true) defer to the
+            // DTX-specific retry classifier below so the dedicated 500/5411-5413 budget applies
+            // instead of generic endpoint-unavailable retry.
+            // Note: 410/1022 (LeaseNotFound) is not emitted by DTX coordinator; this branch never hit for DTX.
+            if ((statusCode == HttpStatusCode.InternalServerError && this.isReadRequest && !this.isDtxRequest)
                 || (statusCode == HttpStatusCode.Gone && subStatusCode == SubStatusCodes.LeaseNotFound))
             {
                 return this.ShouldRetryOnUnavailableEndpointStatusCodes();

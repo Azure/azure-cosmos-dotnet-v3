@@ -301,7 +301,8 @@ namespace Microsoft.Azure.Cosmos
                 {
                     DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                         operations: this.operations,
-                        clientContext: this.clientContext);
+                        clientContext: this.clientContext,
+                        operationType: OperationType.CommitDistributedTransaction);
 
                     return committer.CommitTransactionAsync(trace, cancellationToken);
                 },

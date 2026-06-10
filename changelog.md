@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Breaking Changes
 
 #### Bugs Fixed
+- [#5930](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5930) DistributedTransaction: Fixes operation type on the wire for `DistributedReadTransaction.CommitTransactionAsync` to be a read operation (previously sent as `CommitDistributedTransaction`). `DistributedWriteTransaction.CommitTransactionAsync` continues to send `CommitDistributedTransaction`.
 
 - [5583](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5583) LINQ: Fixes `.Any()` on `Dictionary`/`IDictionary`/`IReadOnlyDictionary` properties returning no results by wrapping dictionary access with `OBJECTTOARRAY()` so dictionary entries (and predicates on `KeyValuePair.Key`/`Value`) are iterated correctly.
 - [5298](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5298) LINQ: Fixes constant folding for closure-captured variables inside MemberInitExpression (resolves #1664). Previously, the recursion that partially evaluates expressions terminated whenever it encountered a `MemberInitExpression` node, so captured variables inside object initializers were not folded, producing invalid translated SQL.
