@@ -4,7 +4,7 @@
 |---|---|
 | Symptom | `System.InvalidOperationException: Collection was modified; enumeration operation may not execute.` thrown from `TraceWriter.TraceJsonWriter.WriteJsonUriArrayWithDuplicatesCounted` |
 | Surface call site | `CosmosOpenTelemetryExtensions.LogCosmosDiagnostics` → `TraceWriter.TraceJsonWriter.WriteTrace` → `Visit(ClientSideRequestStatisticsTraceDatum)` |
-| Reporter | Eric Shi (livesite), account `gs-public-scus-rgloc-sp0-s1`, container `StorePool0Store1CosmosDbResourceGroupLocation3` |
+| Reporter | Internal livesite report (account and container identifiers redacted) |
 | Affected SDK window | Surfaced in 3.56 → 3.58 with cross-region read hedging enabled; class of bug is pre-existing |
 | Severity | Customer-observable exception in diagnostics serialization (can be re-thrown into the caller depending on host) |
 
