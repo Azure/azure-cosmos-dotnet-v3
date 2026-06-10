@@ -95,6 +95,107 @@
             Assert.IsNotNull(clientSideRequestStatistics.RegionsContacted);
         }
 
+        /// <summary>
+        /// Reproduces the cross-region read hedging race that caused
+        /// `InvalidOperationException: Collection was modified; enumeration operation may
+        /// not execute.` in `TraceWriter.TraceJsonWriter.Visit(ClientSideRequestStatisticsTraceDatum)`.
+        /// `ContactedReplicas`, `FailedReplicas`, and `RegionsContacted` are exposed as
+        /// raw `List`/`HashSet`; the Direct-package store-reader paths mutate them while
+        /// the diagnostics tree is serialized for OTel logging on another thread.
+        /// </summary>
+        [TestMethod]
+        [Timeout(20000)]
+        public async Task ConcurrentSerializationOfMutableCollectionsDoesNotThrow()
+        {
+            using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(
+                DateTime.UtcNow,
+                Trace.GetRootTrace(nameof(ConcurrentSerializationOfMutableCollectionsDoesNotThrow)));
+
+            ITrace trace = Trace.GetRootTrace("test");
+            trace.AddDatum("stats", datum);
+
+            Task mutationTask = Task.Run(() =>
+            {
+                int i = 0;
+                while (!cancellationTokenSource.Token.IsCancellationRequested)
+                {
+                    TransportAddressUri replica = new TransportAddressUri(new Uri($"rntbd://host{i % 32}/replica/{i}"));
+                    datum.ContactedReplicas.Add(replica);
+                    datum.FailedReplicas.Add(replica);
+                    datum.RegionsContacted.Add(($"region-{i % 8}", new Uri($"https://region{i % 8}.documents.azure.com")));
+
+                    // Periodically trim to keep memory bounded while still racing.
+                    if (i % 2048 == 0)
+                    {
+                        datum.ContactedReplicas.Clear();
+                        datum.FailedReplicas.Clear();
+                        datum.RegionsContacted.Clear();
+                    }
+
+                    i++;
+                }
+            });
+
+            // Serialize the diagnostics tree repeatedly while the background task mutates
+            // the underlying collections. Before the fix this throws within ~100 iterations.
+            try
+            {
+                for (int i = 0; i < 5000; i++)
+                {
+                    string json = new CosmosTraceDiagnostics(trace).ToString();
+                    Assert.IsNotNull(json);
+                }
+            }
+            finally
+            {
+                cancellationTokenSource.Cancel();
+            }
+
+            await mutationTask;
+        }
+
+        [TestMethod]
+        [Timeout(20000)]
+        public async Task ConcurrentTraceSummaryAggregationDoesNotThrow()
+        {
+            using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(
+                DateTime.UtcNow,
+                Trace.GetRootTrace(nameof(ConcurrentTraceSummaryAggregationDoesNotThrow)));
+
+            Task mutationTask = Task.Run(() =>
+            {
+                int i = 0;
+                while (!cancellationTokenSource.Token.IsCancellationRequested)
+                {
+                    datum.RegionsContacted.Add(($"region-{i % 8}", new Uri($"https://region{i % 8}.documents.azure.com")));
+                    if (i % 1024 == 0)
+                    {
+                        datum.RegionsContacted.Clear();
+                    }
+                    i++;
+                }
+            });
+
+            try
+            {
+                TraceSummary summary = new TraceSummary();
+                for (int i = 0; i < 5000; i++)
+                {
+                    summary.UpdateRegionContacted(datum);
+                }
+            }
+            finally
+            {
+                cancellationTokenSource.Cancel();
+            }
+
+            await mutationTask;
+        }
+
         private async Task ConcurrentUpdateTestHelper<T>(
             Action<ClientSideRequestStatisticsTraceDatum, CancellationToken> backgroundUpdater,
             Func<ClientSideRequestStatisticsTraceDatum, IEnumerable<T>> getList)

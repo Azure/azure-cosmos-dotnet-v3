@@ -75,9 +75,16 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     return;
                 }
 
+                // RegionsContacted is a raw HashSet that may be mutated concurrently by
+                // Direct-package store-reader paths (e.g. under cross-region read hedging).
+                // Snapshot it before UnionWith to avoid `InvalidOperationException:
+                // Collection was modified` during enumeration.
+                IReadOnlyList<(string, Uri)> regionsContactedSnapshot =
+                    ConcurrentCollectionSnapshot.SnapshotCollection(clientSideRequestStatisticsTraceDatum.RegionsContacted);
+
                 lock (this.regionContactedInternal)
                 {
-                    this.regionContactedInternal.UnionWith(clientSideRequestStatisticsTraceDatum.RegionsContacted);
+                    this.regionContactedInternal.UnionWith(regionsContactedSnapshot);
                 }
             }
         }

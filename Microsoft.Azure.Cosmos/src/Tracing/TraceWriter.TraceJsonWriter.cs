@@ -199,10 +199,23 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteFieldName("Id");
                 this.jsonWriter.WriteStringValue("AggregatedClientSideRequestStatistics");
 
-                this.WriteJsonUriArrayWithDuplicatesCounted("ContactedReplicas", clientSideRequestStatisticsTraceDatum.ContactedReplicas);
+                // Snapshot the three collections that are exposed as raw mutable List/HashSet
+                // on ClientSideRequestStatisticsTraceDatum. They can be mutated concurrently
+                // by Direct-package store-reader paths (e.g. under cross-region read hedging)
+                // while the diagnostics tree is being serialized for OTel logging — otherwise
+                // we hit `InvalidOperationException: Collection was modified` on the foreach
+                // below. See ConcurrentCollectionSnapshot for details.
+                IReadOnlyList<TransportAddressUri> contactedReplicasSnapshot =
+                    ConcurrentCollectionSnapshot.SnapshotList(clientSideRequestStatisticsTraceDatum.ContactedReplicas);
+                IReadOnlyList<(string, Uri)> regionsContactedSnapshot =
+                    ConcurrentCollectionSnapshot.SnapshotCollection(clientSideRequestStatisticsTraceDatum.RegionsContacted);
+                IReadOnlyList<TransportAddressUri> failedReplicasSnapshot =
+                    ConcurrentCollectionSnapshot.SnapshotCollection(clientSideRequestStatisticsTraceDatum.FailedReplicas);
 
-                this.WriteRegionsContactedArray("RegionsContacted", clientSideRequestStatisticsTraceDatum.RegionsContacted);
-                this.WriteJsonUriArray("FailedReplicas", clientSideRequestStatisticsTraceDatum.FailedReplicas);
+                this.WriteJsonUriArrayWithDuplicatesCounted("ContactedReplicas", contactedReplicasSnapshot);
+
+                this.WriteRegionsContactedArray("RegionsContacted", regionsContactedSnapshot);
+                this.WriteJsonUriArray("FailedReplicas", failedReplicasSnapshot);
 
                 clientSideRequestStatisticsTraceDatum.WriteAddressCachRefreshContent(this.jsonWriter);
 

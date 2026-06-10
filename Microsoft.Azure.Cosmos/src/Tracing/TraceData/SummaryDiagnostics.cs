@@ -64,7 +64,12 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
         private void AggregateRegionsContacted(HashSet<(string, Uri)> regionsContacted)
         {
-            foreach ((string name, Uri uri) in regionsContacted)
+            // Defensive snapshot — see ConcurrentCollectionSnapshot. The Direct-package
+            // request paths can mutate `regionsContacted` concurrently while we walk the
+            // trace tree under cross-region read hedging.
+            IReadOnlyList<(string, Uri)> snapshot =
+                ConcurrentCollectionSnapshot.SnapshotCollection(regionsContacted);
+            foreach ((string name, Uri uri) in snapshot)
             {
                 this.AllRegionsContacted.Value.Add(uri);
                 this.AllRegionsNameContacted.Value.Add(name);

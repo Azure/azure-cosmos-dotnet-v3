@@ -342,7 +342,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                     stringBuilder.AppendLine("Contacted Replicas");
                     Dictionary<Documents.TransportAddressUri, int> uriAndCounts = new Dictionary<Documents.TransportAddressUri, int>();
-                    foreach (Documents.TransportAddressUri uri in clientSideRequestStatisticsTraceDatum.ContactedReplicas)
+                    // Snapshot the underlying List/HashSet defensively — the Direct-package
+                    // store-reader paths can mutate these collections in parallel under
+                    // cross-region read hedging while we serialize diagnostics.
+                    IReadOnlyList<Documents.TransportAddressUri> contactedReplicasSnapshot =
+                        ConcurrentCollectionSnapshot.SnapshotList(clientSideRequestStatisticsTraceDatum.ContactedReplicas);
+                    foreach (Documents.TransportAddressUri uri in contactedReplicasSnapshot)
                     {
                         if (uri == null)
                         {
@@ -363,13 +368,15 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     }
 
                     stringBuilder.AppendLine("Failed to Contact Replicas");
-                    foreach (Documents.TransportAddressUri failedToContactReplica in clientSideRequestStatisticsTraceDatum.FailedReplicas)
+                    IReadOnlyList<Documents.TransportAddressUri> failedReplicasSnapshot =
+                        ConcurrentCollectionSnapshot.SnapshotCollection(clientSideRequestStatisticsTraceDatum.FailedReplicas);
+                    foreach (Documents.TransportAddressUri failedToContactReplica in failedReplicasSnapshot)
                     {
                         stringBuilder.AppendLine($"{space}{failedToContactReplica?.ToString() ?? "<null>"}");
                     }
 
                     stringBuilder.AppendLine("Regions Contacted");
-                    foreach (Documents.TransportAddressUri regionContacted in clientSideRequestStatisticsTraceDatum.ContactedReplicas)
+                    foreach (Documents.TransportAddressUri regionContacted in contactedReplicasSnapshot)
                     {
                         stringBuilder.AppendLine($"{space}{regionContacted?.ToString() ?? "<null>"}");
                     }
