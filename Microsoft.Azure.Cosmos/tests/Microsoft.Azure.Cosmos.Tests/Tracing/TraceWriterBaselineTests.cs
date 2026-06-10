@@ -340,8 +340,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                         TransportAddressUri uri1 = new TransportAddressUri(new Uri("http://someUri1.com"));
                         TransportAddressUri uri2 = new TransportAddressUri(new Uri("http://someUri2.com"));
 
-                        datum.ContactedReplicas.Add(uri1);
-                        datum.ContactedReplicas.Add(uri2);
+                        datum.RecordContactedReplica(uri1);
+                        datum.RecordContactedReplica(uri2);
 
                         ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics mockStatistics = new ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics(
                             DateTime.MinValue,
@@ -351,11 +351,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                         TraceWriterBaselineTests.GetPrivateField<Dictionary<string, AddressResolutionStatistics>>(datum, "endpointToAddressResolutionStats").Add("asdf", mockStatistics);
                         TraceWriterBaselineTests.GetPrivateField<Dictionary<string, AddressResolutionStatistics>>(datum, "endpointToAddressResolutionStats").Add("asdf2", mockStatistics);
 
-                        datum.FailedReplicas.Add(uri1);
-                        datum.FailedReplicas.Add(uri2);
+                        datum.RecordFailedReplica(uri1);
+                        datum.RecordFailedReplica(uri2);
 
-                        datum.RegionsContacted.Add(("local", uri1.Uri));
-                        datum.RegionsContacted.Add(("local", uri2.Uri));
+                        datum.RecordRegionContacted("local", uri1.Uri);
+                        datum.RecordRegionContacted("local", uri2.Uri);
 
                         TraceWriterBaselineTests.SetEndRequestTime(datum, DateTime.MaxValue);
 
@@ -383,14 +383,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                     using (rootTrace = TraceForBaselineTesting.GetRootTrace())
                     {
                         ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue, rootTrace);
-                        datum.ContactedReplicas.Add(default);
+                        datum.RecordContactedReplica(default);
 
                         TraceWriterBaselineTests.GetPrivateField<Dictionary<string, AddressResolutionStatistics>>(datum, "endpointToAddressResolutionStats").Add("asdf", default);
                         TraceWriterBaselineTests.GetPrivateField<Dictionary<string, AddressResolutionStatistics>>(datum, "endpointToAddressResolutionStats").Add("asdf2", default);
 
-                        datum.FailedReplicas.Add(default);
+                        datum.RecordFailedReplica(default);
 
-                        datum.RegionsContacted.Add(default);
+                        datum.RecordRegionContacted(default, default);
 
                         TraceWriterBaselineTests.SetEndRequestTime(datum, default);
 
