@@ -87,7 +87,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             Assert.AreEqual(HedgeRegion, diag.HedgeRegion);
             Assert.AreEqual(HedgeRegion, diag.WinningRegion);
             Assert.IsTrue(diag.ThresholdMs > 0);
-            Assert.IsTrue(diag.HedgeFiredElapsedMs.HasValue && diag.HedgeFiredElapsedMs.Value >= diag.ThresholdMs);
+
+            // HedgeFiredElapsedMs is measured by a high-resolution Stopwatch, while the hedge
+            // fires when the Task.Delay(threshold) system timer completes. On platforms running
+            // at the default ~15.6 ms timer resolution (common on CI agents) the timer can fire
+            // up to one tick earlier than the Stopwatch reads the threshold, so allow a small
+            // tolerance to keep this assertion deterministic.
+            const double TimerToleranceMs = 25;
+            Assert.IsTrue(
+                diag.HedgeFiredElapsedMs.HasValue
+                    && diag.HedgeFiredElapsedMs.Value >= diag.ThresholdMs - TimerToleranceMs,
+                $"HedgeFiredElapsedMs ({diag.HedgeFiredElapsedMs}) should be >= ThresholdMs ({diag.ThresholdMs}) within {TimerToleranceMs} ms tolerance.");
             Assert.AreEqual(2, diag.TotalAttempts);
 
             strategy.Dispose();
