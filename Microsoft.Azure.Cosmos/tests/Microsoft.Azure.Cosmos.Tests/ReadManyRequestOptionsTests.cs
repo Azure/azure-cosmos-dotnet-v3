@@ -150,9 +150,16 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         // Properties copied by BOTH ConvertToItemRequestOptions and
         // ConvertToQueryRequestOptions. The expected baseline.
+        //
+        // Note: ReadConsistencyStrategy is internal in non-PREVIEW builds and
+        // public in PREVIEW builds (see #if PREVIEW gate in ReadManyRequestOptions.cs).
+        // Classifying it here means the reflection enumeration finds it on PREVIEW
+        // CI builds; in non-PREVIEW it is invisible to GetProperties(Public) but
+        // remains accessible to nameof(...) via the test project's InternalsVisibleTo.
         private static readonly HashSet<string> MappedOnBothMappers = new HashSet<string>(StringComparer.Ordinal)
         {
             nameof(ReadManyRequestOptions.ConsistencyLevel),
+            nameof(ReadManyRequestOptions.ReadConsistencyStrategy),
             nameof(ReadManyRequestOptions.SessionToken),
             nameof(RequestOptions.Properties),
             nameof(RequestOptions.AddRequestHeaders),
@@ -175,11 +182,21 @@ namespace Microsoft.Azure.Cosmos.Tests
         // classification decision, and (b) future engineers see the gap explicitly
         // rather than discovering it through silent degradation. Mapping each of
         // these is a separate scope from PR #5905.
+        //
+        // ThroughputBucket, OperationMetricsOptions, and NetworkMetricsOptions are
+        // PREVIEW-only public (#if PREVIEW on RequestOptions.cs lines 128, 220, 230);
+        // they exist as inherited public members on PREVIEW CI builds and are
+        // invisible to GetProperties(Public) on non-PREVIEW builds. nameof(...) works
+        // on internal members via the test project's InternalsVisibleTo regardless of
+        // build flavor, so listing them here is safe and necessary in BOTH builds.
         private static readonly HashSet<string> NotMappedByEither_PreExistingGap = new HashSet<string>(StringComparer.Ordinal)
         {
             nameof(RequestOptions.PriorityLevel),
             nameof(RequestOptions.CosmosThresholdOptions),
             nameof(RequestOptions.AvailabilityStrategy),
+            nameof(RequestOptions.ThroughputBucket),
+            nameof(RequestOptions.OperationMetricsOptions),
+            nameof(RequestOptions.NetworkMetricsOptions),
         };
 
         [TestMethod]
