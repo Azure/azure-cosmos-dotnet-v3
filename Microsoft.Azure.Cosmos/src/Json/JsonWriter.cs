@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <param name="writeOptions">The write options the control the write behavior.</param>
         /// <param name="initialCapacity">Initial capacity to help avoid intermediary allocations.</param>
         /// <param name="jsonStringDictionary">The dictionary to use for user string encoding.</param>
-        /// <param name="pooled">Whether to rent the internal buffer from the shared <see cref="System.Buffers.ArrayPool{T}"/>. When true, the writer must be disposed and the GetResult span is invalid after disposal. Text format only.</param>
+        /// <param name="pooled">Whether to rent the internal buffer from the shared <see cref="System.Buffers.ArrayPool{T}"/>. When true, the writer must be disposed and the GetResult span is invalid after the next write or disposal. Text format only.</param>
         /// <returns>A JsonWriter that can write in a particular JsonSerializationFormat</returns>
         public static IJsonWriter Create(
             JsonSerializationFormat jsonSerializationFormat,
