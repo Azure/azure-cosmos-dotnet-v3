@@ -6,6 +6,8 @@
     using System.Linq;
     using System.Reflection;
     using System.Text.Json;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Tests.Poco.STJ;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -241,11 +243,13 @@
             Assert.AreSame(memoryStream, result);
         }
 
-        [TestMethod]
-        public void TestFromStreamBinaryFormat()
+        [DataTestMethod]
+        [DataRow(3)]      // small payload: single rented buffer, no Resize
+        [DataRow(2000)]   // large payload: forces JsonMemoryWriter.Resize (pooled rent/copy/return)
+        public void TestFromStreamBinaryFormat(int nameLength)
         {
             // Arrange - build a binary-encoded CloneableStream to exercise the pooled binary read path.
-            BinaryRoundTripDoc original = new() { Id = "abc", Name = "widget", Count = 42 };
+            BinaryRoundTripDoc original = new() { Id = "abc", Name = new string('x', nameLength), Count = 42 };
             string json;
             using (Stream textStream = this.stjSerializer.ToStream(original))
             using (StreamReader reader = new(textStream))
@@ -254,6 +258,12 @@
             }
 
             byte[] binary = JsonTestUtils.ConvertTextToBinary(json);
+
+            // Pin the conditions that route FromStream into the pooled binary branch, so the test
+            // fails loudly instead of silently falling back to the text path if they ever regress.
+            Assert.AreEqual((byte)JsonSerializationFormat.Binary, binary[0]);
+            Assert.IsTrue(CosmosObject.TryCreateFromBuffer(binary, out _));
+
             using CloneableStream binaryStream = new(
                 internalStream: new MemoryStream(binary, index: 0, count: binary.Length, writable: false, publiclyVisible: true),
                 allowUnsafeDataAccess: true);

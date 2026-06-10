@@ -256,7 +256,7 @@ namespace Microsoft.Azure.Cosmos.Json
         public abstract ReadOnlyMemory<byte> GetResult();
 
         /// <summary>
-        /// Returns any pooled buffer to the shared <see cref="System.Buffers.ArrayPool{T}"/>; otherwise a no-op.
+        /// Releases the rented buffer back to the shared <see cref="System.Buffers.ArrayPool{T}"/>. Does nothing when not pooled.
         /// </summary>
         public virtual void Dispose()
         {
