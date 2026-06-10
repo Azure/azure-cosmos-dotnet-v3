@@ -10,6 +10,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     {
         internal virtual byte[] Encrypt(DataEncryptionKey encryptionKey, TypeMarker typeMarker, byte[] plainText, int plainTextLength)
         {
+            // DataEncryptionKey implementations written against the original abstract surface
+            // (array-based EncryptData only) cannot pre-compute the ciphertext size; route
+            // them through the array-based API.
+            if (!encryptionKey.ProvidesEncryptByteCount())
+            {
+                return EncryptLegacy(encryptionKey, typeMarker, plainText, plainTextLength);
+            }
+
             int encryptedTextLength = encryptionKey.GetEncryptByteCount(plainTextLength) + 1;
 
             byte[] encryptedText = new byte[encryptedTextLength];
@@ -33,6 +41,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
         internal virtual (byte[], int) Encrypt(DataEncryptionKey encryptionKey, TypeMarker typeMarker, byte[] plainText, int plainTextLength, ArrayPoolManager arrayPoolManager)
         {
+            if (!encryptionKey.ProvidesEncryptByteCount())
+            {
+                byte[] legacyEncryptedText = EncryptLegacy(encryptionKey, typeMarker, plainText, plainTextLength);
+                return (legacyEncryptedText, legacyEncryptedText.Length);
+            }
+
             int encryptedTextLength = encryptionKey.GetEncryptByteCount(plainTextLength) + 1;
 
             byte[] encryptedText = arrayPoolManager.Rent(encryptedTextLength);
@@ -52,6 +66,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
 
             return (encryptedText, encryptedTextLength);
+        }
+
+        private static byte[] EncryptLegacy(DataEncryptionKey encryptionKey, TypeMarker typeMarker, byte[] plainText, int plainTextLength)
+        {
+            byte[] exactPlainText = new byte[plainTextLength];
+            Buffer.BlockCopy(plainText, 0, exactPlainText, 0, plainTextLength);
+
+            byte[] cipherText = encryptionKey.EncryptData(exactPlainText)
+                ?? throw new InvalidOperationException($"{nameof(DataEncryptionKey)} returned null cipherText from {nameof(DataEncryptionKey.EncryptData)}.");
+
+            byte[] encryptedText = new byte[cipherText.Length + 1];
+            encryptedText[0] = (byte)typeMarker;
+            Buffer.BlockCopy(cipherText, 0, encryptedText, 1, cipherText.Length);
+            return encryptedText;
         }
 
         internal virtual (byte[] plainText, int plainTextLength) Decrypt(DataEncryptionKey encryptionKey, byte[] cipherText, int cipherTextLength, ArrayPoolManager arrayPoolManager)

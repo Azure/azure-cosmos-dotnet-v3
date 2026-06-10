@@ -193,22 +193,22 @@
         "Int32 DecryptData(Byte[], Int32, Int32, Byte[], Int32)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Int32 DecryptData(Byte[], Int32, Int32, Byte[], Int32);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Int32 DecryptData(Byte[], Int32, Int32, Byte[], Int32);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Int32 EncryptData(Byte[], Int32, Int32, Byte[], Int32)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Int32 EncryptData(Byte[], Int32, Int32, Byte[], Int32);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Int32 EncryptData(Byte[], Int32, Int32, Byte[], Int32);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Int32 GetDecryptByteCount(Int32)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Int32 GetDecryptByteCount(Int32);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Int32 GetDecryptByteCount(Int32);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Int32 GetEncryptByteCount(Int32)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Int32 GetEncryptByteCount(Int32);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Int32 GetEncryptByteCount(Int32);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey.Create(System.Byte[], System.String)": {
           "Type": "Method",
@@ -1311,7 +1311,7 @@
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey] GetEncryptionKeyAsync(System.String, System.String, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey] GetEncryptionKeyAsync(System.String, System.String, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey] GetEncryptionKeyAsync(System.String, System.String, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Threading.Tasks.Task`1[System.Byte[]] DecryptAsync(Byte[], System.String, System.String, System.Threading.CancellationToken)": {
           "Type": "Method",

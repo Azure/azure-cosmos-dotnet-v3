@@ -12,10 +12,27 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// </summary>
     public abstract class DataEncryptionKey
     {
+        private bool? providesEncryptByteCount;
+
         /// <summary>
         /// Gets raw key bytes of the data encryption key.
         /// </summary>
         public abstract byte[] RawKey { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether this instance overrides <see cref="GetEncryptByteCount"/>
+        /// and therefore supports the SDK's buffer-based encryption path. Implementations written
+        /// against earlier package versions (array-based members only) are routed through
+        /// <see cref="EncryptData(byte[])"/>/<see cref="DecryptData(byte[])"/> instead.
+        /// </summary>
+        internal bool ProvidesEncryptByteCount()
+        {
+            this.providesEncryptByteCount ??= this.GetType()
+                .GetMethod(nameof(this.GetEncryptByteCount), new[] { typeof(int) })?
+                .DeclaringType != typeof(DataEncryptionKey);
+
+            return this.providesEncryptByteCount.Value;
+        }
 
         /// <summary>
         /// Gets Encryption algorithm to be used with this data encryption key.
@@ -37,15 +54,39 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="plainTextLength">Number of bytes in the plainText array to use as input.</param>
         /// <param name="output">Output buffer to write the encrypted data to.</param>
         /// <param name="outputOffset">Offset in the output array at which to begin writing data to.</param>
-        /// <returns>Encrypted value.</returns>
-        public abstract int EncryptData(byte[] plainText, int plainTextOffset, int plainTextLength, byte[] output, int outputOffset);
+        /// <returns>Number of encrypted bytes written to <paramref name="output"/>.</returns>
+        /// <remarks>
+        /// The default implementation delegates to <see cref="EncryptData(byte[])"/>, copying the
+        /// input and output. Override for an allocation-free implementation.
+        /// </remarks>
+        public virtual int EncryptData(byte[] plainText, int plainTextOffset, int plainTextLength, byte[] output, int outputOffset)
+        {
+            ArgumentValidation.ThrowIfNull(plainText);
+            ArgumentValidation.ThrowIfNull(output);
+
+            byte[] input = new byte[plainTextLength];
+            Buffer.BlockCopy(plainText, plainTextOffset, input, 0, plainTextLength);
+
+            byte[] cipherText = this.EncryptData(input) ?? throw new InvalidOperationException($"{nameof(this.EncryptData)} returned null cipherText.");
+            Buffer.BlockCopy(cipherText, 0, output, outputOffset, cipherText.Length);
+            return cipherText.Length;
+        }
 
         /// <summary>
         /// Calculate size of input after encryption.
         /// </summary>
         /// <param name="plainTextLength">Input data size.</param>
         /// <returns>Size of input when encrypted.</returns>
-        public abstract int GetEncryptByteCount(int plainTextLength);
+        /// <remarks>
+        /// The default implementation throws <see cref="NotSupportedException"/>; the exact
+        /// ciphertext size cannot be predicted for an arbitrary algorithm. Override this member
+        /// (together with the buffer-based <see cref="EncryptData(byte[], int, int, byte[], int)"/>)
+        /// to enable the SDK's buffer-based encryption paths.
+        /// </remarks>
+        public virtual int GetEncryptByteCount(int plainTextLength)
+        {
+            throw new NotSupportedException($"This {nameof(DataEncryptionKey)} implementation does not support buffer-based encryption. Override {nameof(this.GetEncryptByteCount)} to enable it.");
+        }
 
         /// <summary>
         /// Decrypts the cipherText with a data encryption key.
@@ -62,15 +103,38 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="cipherTextLength">Number of bytes in the cipherText array to use as input.</param>
         /// <param name="output">Output buffer to write the decrypted data to.</param>
         /// <param name="outputOffset">Offset in the output array at which to begin writing data to.</param>
-        /// <returns>Plain text.</returns>
-        public abstract int DecryptData(byte[] cipherText, int cipherTextOffset, int cipherTextLength, byte[] output, int outputOffset);
+        /// <returns>Number of decrypted bytes written to <paramref name="output"/>.</returns>
+        /// <remarks>
+        /// The default implementation delegates to <see cref="DecryptData(byte[])"/>, copying the
+        /// input and output. Override for an allocation-free implementation.
+        /// </remarks>
+        public virtual int DecryptData(byte[] cipherText, int cipherTextOffset, int cipherTextLength, byte[] output, int outputOffset)
+        {
+            ArgumentValidation.ThrowIfNull(cipherText);
+            ArgumentValidation.ThrowIfNull(output);
+
+            byte[] input = new byte[cipherTextLength];
+            Buffer.BlockCopy(cipherText, cipherTextOffset, input, 0, cipherTextLength);
+
+            byte[] plainText = this.DecryptData(input) ?? throw new InvalidOperationException($"{nameof(this.DecryptData)} returned null plainText.");
+            Buffer.BlockCopy(plainText, 0, output, outputOffset, plainText.Length);
+            return plainText.Length;
+        }
 
         /// <summary>
         /// Calculate upper bound size of the input after decryption.
         /// </summary>
         /// <param name="cipherTextLength">Input data size.</param>
         /// <returns>Upper bound size of the input when decrypted.</returns>
-        public abstract int GetDecryptByteCount(int cipherTextLength);
+        /// <remarks>
+        /// The default implementation returns <paramref name="cipherTextLength"/>, a safe upper
+        /// bound for non-compressing ciphers (plaintext never exceeds ciphertext). Override for an
+        /// exact bound.
+        /// </remarks>
+        public virtual int GetDecryptByteCount(int cipherTextLength)
+        {
+            return cipherTextLength;
+        }
 
         /// <summary>
         /// Generates raw data encryption key bytes suitable for use with the provided encryption algorithm.
