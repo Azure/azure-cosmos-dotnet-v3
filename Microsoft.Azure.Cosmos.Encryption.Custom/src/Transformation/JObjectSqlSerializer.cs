@@ -38,6 +38,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     (buffer, length) = SerializeFixed(SqlBoolSerializer);
                     return (TypeMarker.Boolean, buffer, length);
                 case JTokenType.Float:
+                    double doubleValue = propertyValue.ToObject<double>();
+                    if (double.IsNaN(doubleValue) || double.IsInfinity(doubleValue))
+                    {
+                        // Non-finite doubles are not representable in JSON and would decrypt
+                        // to a quoted string (silent type change); reject at encryption time,
+                        // matching the Stream processor.
+                        throw new InvalidOperationException("Unsupported Number type: non-finite floating-point values cannot be encrypted.");
+                    }
+
                     (buffer, length) = SerializeFixed(SqlDoubleSerializer);
                     return (TypeMarker.Double, buffer, length);
                 case JTokenType.Integer:

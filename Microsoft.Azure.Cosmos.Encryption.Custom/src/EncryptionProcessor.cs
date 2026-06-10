@@ -247,9 +247,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Debug.Assert(diagnosticsContext != null);
             input.Position = 0;
 
-            EncryptionPropertiesWrapper properties = await PooledJsonSerializer.DeserializeFromStreamAsync<EncryptionPropertiesWrapper>(input, cancellationToken: cancellationToken);
+            // EncryptionPropertiesStreamReader returns null both when _ei is absent and when
+            // its value is not a JSON object (not a valid envelope) - matching the Newtonsoft
+            // path's pass-through semantics for non-envelope _ei values.
+            EncryptionProperties encryptionProperties = await EncryptionPropertiesStreamReader.ReadAsync(input, PooledJsonSerializer.SerializerOptions, cancellationToken);
             input.Position = 0;
-            if (properties?.EncryptionProperties == null)
+            if (encryptionProperties == null)
             {
                 return (input, null);
             }
@@ -257,7 +260,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             PooledMemoryStream ms = new ();
             try
             {
-                DecryptionContext context = await MdeEncryptionProcessor.DecryptStreamAsync(input, ms, encryptor, properties.EncryptionProperties, diagnosticsContext, cancellationToken);
+                DecryptionContext context = await MdeEncryptionProcessor.DecryptStreamAsync(input, ms, encryptor, encryptionProperties, diagnosticsContext, cancellationToken);
                 if (context == null)
                 {
                     // CRITICAL: Must dispose PooledMemoryStream to prevent memory leak

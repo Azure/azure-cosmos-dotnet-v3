@@ -120,8 +120,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         public async Task Decrypt_Skips_EncryptionInfo_Block()
         {
             // Arrange
-            // Build a document that already has _ei. (Encryptor will append another one during encryption; we want to ensure decryptor skips only the encrypted one at top-level.)
-            var doc = new { id = "1", _ei = new { ignore = true }, SensitiveStr = "abc" };
+            var doc = new { id = "1", SensitiveStr = "abc" };
             string[] paths = new[] { "/SensitiveStr" };
             EncryptionOptions options = CreateOptions(paths);
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
@@ -137,6 +136,42 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             Assert.IsFalse(root.TryGetProperty(Constants.EncryptedInfo, out _));
             Assert.AreEqual("abc", root.GetProperty("SensitiveStr").GetString());
             Assert.AreEqual(1, ctx.DecryptionInfoList.Count);
+        }
+
+        [TestMethod]
+        public async Task Decrypt_NestedEiNamedProperty_PassesThrough()
+        {
+            // Arrange
+            // A NESTED user property named _ei is plain data; only the top-level _ei metadata
+            // block is skipped by the decryptor.
+            var doc = new { id = "1", SensitiveStr = "abc", Wrapper = new { _ei = "user data" } };
+            string[] paths = new[] { "/SensitiveStr" };
+            EncryptionOptions options = CreateOptions(paths);
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+            // Act
+            MemoryStream output = new();
+            _ = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+
+            // Assert
+            output.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(output);
+            JsonElement root = jd.RootElement;
+            Assert.IsFalse(root.TryGetProperty(Constants.EncryptedInfo, out _), "top-level _ei metadata must be removed");
+            Assert.AreEqual("user data", root.GetProperty("Wrapper").GetProperty(Constants.EncryptedInfo).GetString(), "nested _ei-named user property must pass through");
+        }
+
+        [TestMethod]
+        public async Task Encrypt_DocumentWithPreexistingEi_Throws()
+        {
+            // Arrange
+            // Encrypting an already encrypted (or _ei-bearing) document must fail rather than
+            // emit duplicate _ei keys (parity with the Newtonsoft path's JObject.Add throw).
+            var doc = new { id = "1", _ei = new { ignore = true }, SensitiveStr = "abc" };
+            EncryptionOptions options = CreateOptions(new[] { "/SensitiveStr" });
+
+            // Act + Assert
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => EncryptRawAsync(doc, options));
         }
 
         [TestMethod]

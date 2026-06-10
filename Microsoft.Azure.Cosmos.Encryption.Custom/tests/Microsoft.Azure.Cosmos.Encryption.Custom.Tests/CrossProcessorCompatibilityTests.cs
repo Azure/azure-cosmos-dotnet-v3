@@ -106,10 +106,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         /// controlled by the test (not by a serializer).
         /// </summary>
         /// <param name="includeNullsInsideEncryptedContainers">
-        /// When true (default) the encrypted NestedObj/ArrPrim values contain JSON nulls,
-        /// which triggers KNOWN FAILURE FINDING-1 on the Stream encrypt path (see
-        /// roundtrip-report.md). Tests that probe orthogonal concerns (state contamination,
-        /// envelope shape) pass false to keep their signal independent of that known bug.
+        /// When true (default) the encrypted NestedObj/ArrPrim values contain JSON nulls.
+        /// Historically (FINDING-1, fixed) this corrupted _ep on the Stream encrypt path;
+        /// both variants are kept so the null-free shape stays covered too.
         /// </param>
         private static string BuildEdgeCaseJson(bool includeNullsInsideEncryptedContainers = true)
         {
@@ -343,11 +342,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             JsonProcessor decryptProcessor = ResolveJsonProcessor(decryptProcessorValue);
             string scenario = $"Encrypt:{encryptProcessor}->Decrypt:{decryptProcessor}";
 
-            // FINDING-1 (see KnownFailure_Finding1_* tests): the Stream encrypt path corrupts
-            // _ep when an encrypted object/array contains a JSON null, so Stream-encrypt rows
-            // use the null-free document variant to keep the rest of the matrix signal clean.
-            bool includeNullsInsideEncryptedContainers = encryptProcessor == JsonProcessor.Newtonsoft;
-            string original = BuildEdgeCaseJson(includeNullsInsideEncryptedContainers);
+            // FINDING-1 is fixed: nulls inside encrypted containers round-trip on every path.
+            string original = BuildEdgeCaseJson(includeNullsInsideEncryptedContainers: true);
 
             MemoryStream encrypted = await EncryptToMemoryAsync(original, encryptProcessor, EdgeCasePathsToEncrypt);
 
@@ -395,10 +391,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         {
             string scenario = $"Encrypt:{encryptProcessor}->Decrypt:preview08";
 
-            // FINDING-1: Stream-encrypt rows use the null-free variant (a null inside an
-            // encrypted container corrupts _ep and crashes the preview08 decryptor - that
-            // known failure is pinned by KnownFailure_Finding1_Preview08Decrypt).
-            string original = BuildEdgeCaseJson(includeNullsInsideEncryptedContainers: encryptProcessor == JsonProcessor.Newtonsoft);
+            // FINDING-1 is fixed: the full document (incl. nulls inside encrypted containers)
+            // must downgrade-decrypt losslessly regardless of the encrypting processor.
+            string original = BuildEdgeCaseJson(includeNullsInsideEncryptedContainers: true);
 
             MemoryStream encrypted = await EncryptToMemoryAsync(original, encryptProcessor, EdgeCasePathsToEncrypt);
 
@@ -420,8 +415,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [TestMethod]
         public async Task Switching_InterleavedAcrossProcessors_NoStateContamination()
         {
-            // Null-free variant: this test probes shared-state contamination, which must not
-            // be conflated with FINDING-1 (nulls inside encrypted containers on Stream path).
             string original = BuildEdgeCaseJson(includeNullsInsideEncryptedContainers: false);
             JsonProcessor[] processors = { JsonProcessor.Newtonsoft, JsonProcessor.Stream };
 
@@ -472,8 +465,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [TestMethod]
         public async Task EnvelopeShape_IdenticalAcrossProcessors()
         {
-            // Null-free variant: FINDING-1 corrupts the Stream-side _ep with null entries
-            // when encrypted containers hold nulls; that is pinned by KnownFailure_Finding1_*.
+            // Null-free variant keeps the ciphertext byte-comparison deterministic for the
+            // container payloads regardless of writer null-formatting details.
             string original = BuildEdgeCaseJson(includeNullsInsideEncryptedContainers: false);
 
             MemoryStream newtonsoftPayload = await EncryptToMemoryAsync(original, JsonProcessor.Newtonsoft, EdgeCasePathsToEncrypt);
@@ -593,8 +586,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         {
             string scenario = $"Encrypt:{encryptProcessor}->reordered _ei->preview08";
 
-            // FINDING-1: Stream rows need the null-free variant (see KnownFailure_Finding1_*).
-            string original = BuildEdgeCaseJson(includeNullsInsideEncryptedContainers: encryptProcessor == JsonProcessor.Newtonsoft);
+            string original = BuildEdgeCaseJson(includeNullsInsideEncryptedContainers: true);
 
             MemoryStream encrypted = await EncryptToMemoryAsync(original, encryptProcessor, EdgeCasePathsToEncrypt);
             string encryptedJson = Encoding.UTF8.GetString(encrypted.ToArray());
@@ -628,10 +620,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         // ---- Escape-sequence fidelity ---------------------------------------------------------
         //
-        // Directly-encrypted string values are unescaped via Utf8JsonReader.CopyString on the
-        // Stream path, so escape fidelity through the crypto path itself works on all
-        // processors and is verified here. Escape handling of NON-encrypted positions on the
-        // Stream path is broken (FINDING-2) and pinned by the KnownFailure_Finding2_* tests.
+        // Escape fidelity is verified for directly-encrypted values, pass-through positions,
+        // and values nested inside encrypted containers, on every processor combination
+        // (FINDING-2 is fixed; dedicated regressions below).
 
         private const string EscapeProbeValue = "a\"b\\c\nd\te\rf\bg\fh\u0001i\u001Fj/k";
 
@@ -654,8 +645,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         {
             get
             {
-                // Newtonsoft-encrypt rows only: Stream-encrypt rows fail on escapes nested
-                // inside encrypted containers (FINDING-2c, pinned separately).
                 yield return new object[] { (int)JsonProcessor.Newtonsoft, (int)JsonProcessor.Newtonsoft };
 #if NET8_0_OR_GREATER
                 yield return new object[] { (int)JsonProcessor.Newtonsoft, (int)JsonProcessor.Stream };
@@ -673,13 +662,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             JsonProcessor decryptProcessor = ResolveJsonProcessor(decryptProcessorValue);
             string scenario = $"escape probe Encrypt:{encryptProcessor}->Decrypt:{decryptProcessor}";
 
-            // Only the directly-encrypted string property for Stream-encrypt rows; container
-            // payloads with nested escapes are corrupted by the Stream encryptor (FINDING-2c).
-            bool streamEncrypt = encryptProcessor != JsonProcessor.Newtonsoft;
-            string original = streamEncrypt
-                ? "{\"id\":\"escape-probe\",\"PlainStr\":\"escape free passthrough\",\"EncStr\":" + JsonConvert.ToString(EscapeProbeValue) + "}"
-                : BuildEscapeProbeJson();
-            List<string> paths = streamEncrypt ? new List<string> { "/EncStr" } : EscapeProbePaths;
+            string original = BuildEscapeProbeJson();
+            List<string> paths = EscapeProbePaths;
 
             MemoryStream encrypted = await EncryptToMemoryAsync(original, encryptProcessor, paths);
 
@@ -705,25 +689,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
 #if NET8_0_OR_GREATER
-        // ---- KNOWN FAILURES: real product findings, kept failing on purpose --------------------
+        // ---- Regression tests for the formerly-known Stream-path findings ----------------------
         //
-        // Each test below asserts the CORRECT (baseline-compatible) behavior and currently
-        // FAILS against HEAD. Per the compatibility-verification charter these stay in place
-        // as executable documentation of the findings; product-code fixes are out of scope.
-        // Full root-cause analysis: .worktree\compat-analysis-reports\roundtrip-report.md.
+        // These tests originally pinned product defects as deliberately failing
+        // KnownFailure_* tests (see .worktree\compat-analysis-reports\roundtrip-report.md).
+        // The defects are fixed; the tests now serve as their permanent regressions.
 
         /// <summary>
-        /// FINDING-1 (severity HIGH): StreamProcessor.Encryptor.cs - the JsonTokenType.Null
-        /// case unconditionally clears encryptPropertyName, even while buffering an encryption
-        /// payload. A JSON null INSIDE an encrypted object/array therefore wipes the pending
-        /// path: _ep receives a JSON null entry instead of the container path, and the
-        /// container remains undecryptable by every decryptor (HEAD Newtonsoft throws
-        /// NullReferenceException on path.Substring, preview08 likewise; HEAD Stream leaves
-        /// the property as base64). The Newtonsoft encrypt path handles the same document
-        /// correctly.
+        /// Regression for FINDING-1: a JSON null INSIDE an encrypted object/array must not
+        /// wipe the pending encryption path. _ep must record the container paths.
+        /// (Root cause was StreamProcessor.Encryptor.cs unconditionally clearing
+        /// encryptPropertyName on the Null token, even while buffering a payload.)
         /// </summary>
         [TestMethod]
-        public async Task KnownFailure_Finding1_NullInsideEncryptedContainer_CorruptsEncryptedPaths()
+        public async Task StreamEncrypt_NullInsideEncryptedContainer_RecordsContainerPathsInEp()
         {
             string json = "{\"id\":\"f1\",\"EncObj\":{\"a\":1,\"b\":null,\"c\":2},\"EncArr\":[1,null,2]}";
 
@@ -744,14 +723,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         /// <summary>
-        /// FINDING-2a (severity HIGH): StreamProcessor.Encryptor.cs writes non-encrypted
-        /// string values with writer.WriteStringValue(reader.ValueSpan). ValueSpan is the RAW
-        /// (still escaped) token text, which Utf8JsonWriter re-escapes - double-escaping every
-        /// passthrough string that contains escape sequences (quotes, backslashes, control
-        /// chars, \uXXXX). The persisted document is corrupted at encryption time.
+        /// Regression for FINDING-2a: passthrough strings containing escape sequences must
+        /// survive Stream encryption unchanged. (Root cause was re-emitting the raw escaped
+        /// ValueSpan through the escaping Utf8JsonWriter - double-escaping.)
         /// </summary>
         [TestMethod]
-        public async Task KnownFailure_Finding2a_StreamEncrypt_DoubleEscapesPassthroughStrings()
+        public async Task StreamEncrypt_PassthroughStringsWithEscapes_AreNotDoubleEscaped()
         {
             string json = "{\"id\":\"f2a\",\"Plain\":" + JsonConvert.ToString(EscapeProbeValue) + ",\"Enc\":\"x\"}";
 
@@ -765,13 +742,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         /// <summary>
-        /// FINDING-2b (severity HIGH): StreamProcessor.Decryptor.cs has the same defect on
-        /// the decrypt side - passthrough strings are written from the raw escaped span and
-        /// get double-escaped when decrypting with JsonProcessor.Stream, corrupting documents
-        /// that were encrypted correctly (here: by the Newtonsoft path).
+        /// Regression for FINDING-2b: passthrough strings containing escape sequences must
+        /// survive Stream decryption unchanged (same raw-span defect on the decrypt side).
         /// </summary>
         [TestMethod]
-        public async Task KnownFailure_Finding2b_StreamDecrypt_DoubleEscapesPassthroughStrings()
+        public async Task StreamDecrypt_PassthroughStringsWithEscapes_AreNotDoubleEscaped()
         {
             string json = "{\"id\":\"f2b\",\"Plain\":" + JsonConvert.ToString(EscapeProbeValue) + ",\"Enc\":\"x\"}";
 
@@ -787,13 +762,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         /// <summary>
-        /// FINDING-2c (severity HIGH): the same raw-span defect applies while the Stream
-        /// encryptor buffers an encrypted object/array payload: nested strings containing
-        /// escape sequences are double-escaped INSIDE the ciphertext, so every decryptor
-        /// (including preview08) reproduces the corrupted value.
+        /// Regression for FINDING-2c: strings with escape sequences nested inside an encrypted
+        /// object/array must round-trip unchanged (the raw-span defect previously corrupted
+        /// them INSIDE the ciphertext, visible to every decryptor including preview08).
         /// </summary>
         [TestMethod]
-        public async Task KnownFailure_Finding2c_StreamEncrypt_DoubleEscapesStringsInsideEncryptedContainers()
+        public async Task StreamEncrypt_EscapedStringsInsideEncryptedContainers_RoundTripUnchanged()
         {
             string json = "{\"id\":\"f2c\",\"EncObj\":{\"inner\":" + JsonConvert.ToString(EscapeProbeValue) + "}}";
 
@@ -809,14 +783,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         /// <summary>
-        /// FINDING-3 (severity MEDIUM): StreamProcessor.Encryptor.cs matches property names
-        /// against the paths-to-encrypt table at EVERY depth. While buffering an encrypted
-        /// container payload, a NESTED property whose name matches another path-to-encrypt
-        /// overwrites encryptPropertyName, so _ep records the wrong path for the container
-        /// (duplicate of the nested name, container path missing).
+        /// Regression for FINDING-3: path matching is gated to top-level properties, so a
+        /// NESTED property sharing a path-to-encrypt's name must not corrupt _ep.
         /// </summary>
         [TestMethod]
-        public async Task KnownFailure_Finding3_NestedNameCollision_RecordsWrongPathInEp()
+        public async Task StreamEncrypt_NestedNameCollision_RecordsCorrectPathsInEp()
         {
             string json = "{\"id\":\"f3\",\"A\":{\"B\":1},\"B\":2}";
 
@@ -837,15 +808,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         /// <summary>
-        /// FINDING-4 (severity MEDIUM): StreamProcessor.Decryptor.cs matches encrypted-path
-        /// names at EVERY depth, so a nested plaintext property whose name matches an
-        /// encrypted top-level path is treated as ciphertext. With non-base64 content the
-        /// decryptor throws; with coincidentally valid base64 it would silently corrupt data.
-        /// The Newtonsoft decryptor (HEAD and preview08) only touches top-level properties
-        /// and handles this document correctly.
+        /// Regression for FINDING-4: the Stream decryptor must only treat TOP-LEVEL properties
+        /// listed in _ep as ciphertext; a nested plaintext property sharing an encrypted path's
+        /// name passes through untouched (matching the JObject decryptors).
         /// </summary>
         [TestMethod]
-        public async Task KnownFailure_Finding4_StreamDecrypt_NestedNameCollision_TreatsPlaintextAsCiphertext()
+        public async Task StreamDecrypt_NestedNameCollision_PassesNestedPlaintextThrough()
         {
             string json = "{\"id\":\"f4\",\"Sec\":\"top secret\",\"Obj\":{\"Sec\":\"plain nested!\"}}";
 
@@ -863,17 +831,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 #endif
 
 #if NET8_0_OR_GREATER
-        // ---- Characterization: numbers beyond long range -------------------------------------
+        // ---- Regression: numbers beyond long range --------------------------------------------
 
         /// <summary>
-        /// Characterization test (documented divergence, see roundtrip-report.md): a JSON
-        /// integer literal that overflows Int64 is REJECTED by the Newtonsoft encrypt path
-        /// (JToken.ToObject&lt;long&gt; overflows) but silently encrypted as a double (with
-        /// precision loss) by the Stream encrypt path. This test pins the current behavior
-        /// of both paths so any silent change is caught.
+        /// Regression test for FINDING-5 / wire F-5: a JSON integer literal that overflows
+        /// Int64 must be REJECTED by BOTH encrypt paths instead of being silently encrypted
+        /// as a precision-coerced double. The Newtonsoft path throws OverflowException
+        /// (JToken.ToObject&lt;long&gt;); the Stream path throws InvalidOperationException.
         /// </summary>
         [TestMethod]
-        public async Task Characterization_IntegerBeyondLongRange_DivergesBetweenProcessors()
+        public async Task Encrypt_IntegerBeyondLongRange_RejectedByBothProcessors()
         {
             string json = "{\"id\":\"big-int\",\"Big\":9223372036854775808}";
             List<string> paths = new List<string> { "/Big" };
@@ -884,15 +851,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 using MemoryStream ms = await EncryptToMemoryAsync(json, JsonProcessor.Newtonsoft, paths);
             });
 
-            // Stream path: silently coerces to double (TypeMarker.Double) and round-trips
-            // the coerced value, not the original integer text.
-            MemoryStream encrypted = await EncryptToMemoryAsync(json, JsonProcessor.Stream, paths);
+            // Stream path: also rejects (previously coerced silently to a lossy double).
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(async () =>
+            {
+                using MemoryStream ms = await EncryptToMemoryAsync(json, JsonProcessor.Stream, paths);
+            });
+
+            // Decimal/scientific literals beyond Int64 still take the double path on Stream.
+            string sciJson = "{\"id\":\"big-sci\",\"Big\":9.3e18}";
+            MemoryStream encrypted = await EncryptToMemoryAsync(sciJson, JsonProcessor.Stream, paths);
             (string decrypted, DecryptionContext context) = await DecryptToStringAsync(encrypted, JsonProcessor.Stream);
             Assert.IsNotNull(context);
 
             using JsonDocument doc = JsonDocument.Parse(decrypted);
-            double roundTripped = doc.RootElement.GetProperty("Big").GetDouble();
-            Assert.AreEqual(9223372036854775808d, roundTripped, "Stream path must preserve the coerced double value");
+            Assert.AreEqual(9.3e18, doc.RootElement.GetProperty("Big").GetDouble(), "scientific literal must round-trip via double");
         }
 #endif
 

@@ -166,14 +166,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             return new ChunkOutcome(ScanResult.NeedMore, safeConsumed, safeState, null);
                         }
 
-                        if (reader.TokenType == JsonTokenType.Null)
-                        {
-                            return new ChunkOutcome(ScanResult.Found, reader.BytesConsumed, reader.CurrentState, null);
-                        }
-
                         if (reader.TokenType != JsonTokenType.StartObject)
                         {
-                            throw new InvalidOperationException("Encryption properties metadata was malformed (_ei value was not a JSON object).");
+                            // Null or any non-object value: not a valid encryption envelope.
+                            // Treat the document as not encrypted (pass through), matching the
+                            // Newtonsoft processor and the originally released behavior.
+                            return new ChunkOutcome(ScanResult.Found, reader.BytesConsumed, reader.CurrentState, null);
                         }
 
                         long objectStart = reader.TokenStartIndex;

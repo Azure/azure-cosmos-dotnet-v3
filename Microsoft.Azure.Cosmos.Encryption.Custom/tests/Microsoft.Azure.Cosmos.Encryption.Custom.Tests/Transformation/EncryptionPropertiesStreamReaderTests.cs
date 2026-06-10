@@ -104,13 +104,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         }
 
         [TestMethod]
-        public async Task ReadAsync_WhenEiIsNotObject_Throws()
+        public async Task ReadAsync_WhenEiIsNotObject_ReturnsNull()
         {
+            // A non-object _ei value is not a valid encryption envelope; the document is
+            // treated as not encrypted (pass-through), matching the Newtonsoft processor
+            // and the originally released behavior.
             string json = /*lang=json,strict*/ @"{""_ei"":""notAnObject""}";
             await using MemoryStream stream = new (Encoding.UTF8.GetBytes(json));
 
-            await Assert.ThrowsExceptionAsync<InvalidOperationException>(
-                async () => await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None));
+            EncryptionProperties result = await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None);
+
+            Assert.IsNull(result);
+            Assert.AreEqual(0, stream.Position, "stream must be rewound for pass-through");
         }
 
         [TestMethod]

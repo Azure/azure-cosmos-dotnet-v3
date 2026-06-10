@@ -26,6 +26,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         {
             List<string> pathsEncrypted = new (encryptionOptions.PathsToEncrypt is ICollection<string> c ? c.Count : 0);
 
+            if (!encryptor.ProvidesDataEncryptionKeyAccess())
+            {
+                throw new NotSupportedException($"JsonProcessor.Stream requires an {nameof(Custom.Encryptor)} implementation that overrides {nameof(Custom.Encryptor.GetEncryptionKeyAsync)}. Use the Newtonsoft JSON processor with this {nameof(Custom.Encryptor)}.");
+            }
+
             using ArrayPoolManager arrayPoolManager = new ();
 
             DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionOptions.DataEncryptionKeyId, encryptionOptions.EncryptionAlgorithm, cancellationToken);
@@ -200,25 +205,31 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                             break;
                         case JsonTokenType.PropertyName:
-                            string matchedPath = null;
-                            for (int i = 0; i < encryptedPathsTable.Length; i++)
+                            // Only top-level (root object) property names participate in
+                            // PathsToEncrypt matching, mirroring the JObject processor which
+                            // only ever touches root-level properties. Matching at deeper
+                            // depths (or while an encryption payload is being buffered) would
+                            // corrupt the _ep bookkeeping and encrypt nested look-alikes.
+                            if (reader.CurrentDepth == 1 && encryptionPayloadWriter == null && encryptPropertyName == null)
                             {
-                                if (reader.ValueTextEquals(encryptedPathsTable[i].nameBytes))
+                                if (reader.ValueTextEquals(this.encryptionPropertiesNameBytes))
                                 {
-                                    matchedPath = encryptedPathsTable[i].fullPath;
-                                    break;
+                                    throw new InvalidOperationException($"Input document contains a top-level '{Constants.EncryptedInfo}' property. Encrypting an already encrypted document is not supported.");
+                                }
+
+                                for (int i = 0; i < encryptedPathsTable.Length; i++)
+                                {
+                                    if (reader.ValueTextEquals(encryptedPathsTable[i].nameBytes))
+                                    {
+                                        encryptPropertyName = encryptedPathsTable[i].fullPath;
+                                        break;
+                                    }
                                 }
                             }
 
-                            if (matchedPath != null)
-                            {
-                                encryptPropertyName = matchedPath;
-                            }
-
-                            currentWriter.WritePropertyName(reader.ValueSpan);
+                            WritePropertyNameVerbatim(currentWriter, ref reader, arrayPoolManager);
                             break;
-                        case JsonTokenType.Comment: // Skipped via reader options
-                            currentWriter.WriteCommentValue(reader.ValueSpan);
+                        case JsonTokenType.Comment: // Unreachable: comments are skipped via reader options (JsonCommentHandling.Skip).
                             break;
                         case JsonTokenType.String:
                             if (encryptPropertyName != null && encryptionPayloadWriter == null)
@@ -231,7 +242,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             }
                             else
                             {
-                                currentWriter.WriteStringValue(reader.ValueSpan);
+                                WriteStringValueVerbatim(currentWriter, ref reader, arrayPoolManager);
                             }
 
                             break;
@@ -279,7 +290,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             break;
                         case JsonTokenType.Null:
                             currentWriter.WriteNullValue();
-                            encryptPropertyName = null;
+
+                            // Only reset the pending path when the null IS the value of the
+                            // to-be-encrypted top-level property (null values are not
+                            // encrypted and are excluded from _ep, matching the Newtonsoft
+                            // path). A null INSIDE a buffered encryption payload must not
+                            // wipe the path of the container being encrypted.
+                            if (encryptionPayloadWriter == null)
+                            {
+                                encryptPropertyName = null;
+                            }
+
                             break;
                     }
                 }
@@ -341,6 +362,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             if (System.Buffers.Text.Utf8Parser.TryParse(utf8bytes, out long longValue, out int consumedLong) && consumedLong == utf8bytes.Length)
             {
                 return Serialize(longValue, arrayPoolManager);
+            }
+
+            // An integral literal (no fraction or exponent) that failed the long parse is out
+            // of Int64 range; reject it instead of silently encrypting a precision-coerced
+            // double, matching the Newtonsoft path which throws for such literals.
+            if (utf8bytes.IndexOfAny((byte)'.', (byte)'e', (byte)'E') < 0)
+            {
+                throw new InvalidOperationException("Unsupported Number type: integer literal is outside the Int64 range.");
             }
 
             if (System.Buffers.Text.Utf8Parser.TryParse(utf8bytes, out double doubleValue, out int consumedDouble) && consumedDouble == utf8bytes.Length)
