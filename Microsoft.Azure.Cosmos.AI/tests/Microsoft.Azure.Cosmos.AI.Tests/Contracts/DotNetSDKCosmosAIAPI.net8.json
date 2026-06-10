@@ -1,0 +1,44 @@
+{
+  "Subclasses": {},
+  "Members": {
+    "Boolean Equals(System.Object)": {
+      "Type": "Method",
+      "Attributes": [],
+      "MethodInfo": "Boolean Equals(System.Object);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+    },
+    "Int32 GetHashCode()": {
+      "Type": "Method",
+      "Attributes": [],
+      "MethodInfo": "Int32 GetHashCode();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+    },
+    "System.Boolean System.Object.Equals(System.Object, System.Object)": {
+      "Type": "Method",
+      "Attributes": [],
+      "MethodInfo": "System.Boolean System.Object.Equals(System.Object, System.Object);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+    },
+    "System.Boolean System.Object.ReferenceEquals(System.Object, System.Object)": {
+      "Type": "Method",
+      "Attributes": [],
+      "MethodInfo": "System.Boolean System.Object.ReferenceEquals(System.Object, System.Object);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+    },
+    "System.String ToString()": {
+      "Type": "Method",
+      "Attributes": [],
+      "MethodInfo": "System.String ToString();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+    },
+    "System.Type GetType()[System.Runtime.CompilerServices.NullableContextAttribute((Byte)1)]-[System.Runtime.CompilerServices.IntrinsicAttribute()]": {
+      "Type": "Method",
+      "Attributes": [
+        "IntrinsicAttribute",
+        "NullableContextAttribute"
+      ],
+      "MethodInfo": "System.Type GetType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+    },
+    "Void .ctor()": {
+      "Type": "Constructor",
+      "Attributes": [],
+      "MethodInfo": "Void .ctor()"
+    }
+  },
+  "NestedTypes": {}
+}
