@@ -256,7 +256,7 @@ namespace Microsoft.Azure.Cosmos.Json
         public abstract ReadOnlyMemory<byte> GetResult();
 
         /// <summary>
-        /// Releases any pooled buffers held by this writer. Writers created with
+        /// Releases any pooled buffer held by this writer. Writers created with
         /// <c>pooled: true</c> return their rented buffer to the shared
         /// <see cref="System.Buffers.ArrayPool{T}"/>; otherwise this is a no-op.
         /// The result of <see cref="GetResult"/> must not be used after disposal.

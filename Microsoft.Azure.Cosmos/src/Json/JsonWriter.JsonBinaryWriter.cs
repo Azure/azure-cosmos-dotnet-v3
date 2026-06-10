@@ -269,6 +269,12 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             private readonly JsonBinaryMemoryWriter binaryWriter;
 
+            /// <inheritdoc />
+            public override void Dispose()
+            {
+                this.binaryWriter.Dispose();
+            }
+
             /// <summary>
             /// With binary encoding all the JSON elements are length prefixed,
             /// unfortunately the caller of this class only provides what tokens to write.
