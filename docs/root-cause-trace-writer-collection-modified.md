@@ -118,7 +118,7 @@ The properties themselves and the JSON/text wire format are unchanged. There is 
 
 [Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Tracing/ClientSideRequestStatisticsTraceDatumTests.cs](../Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Tracing/ClientSideRequestStatisticsTraceDatumTests.cs) adds two stress tests:
 
-- `ConcurrentSerializationOfMutableCollectionsDoesNotThrow` — background thread continuously `Add`s and periodically `Clear`s `ContactedReplicas`, `FailedReplicas`, `RegionsContacted`; main thread serializes the trace 5000 times via `CosmosTraceDiagnostics.ToString()`. Reproduces the original `InvalidOperationException` reliably without the fix.
+- `ConcurrentSerializationOfMutableCollectionsDoesNotThrow` — background thread continuously `Add`s and periodically `Clear`s `ContactedReplicas`, `FailedReplicas`, `RegionsContacted`; main thread serializes the trace hundreds of times via `CosmosTraceDiagnostics.ToString()`. Reproduces the original `InvalidOperationException` reliably without the fix.
 - `ConcurrentTraceSummaryAggregationDoesNotThrow` — same race against `TraceSummary.UpdateRegionContacted` / `UnionWith`.
 
 Both tests have a 20s timeout, mirroring the existing `ConcurrentUpdate*` tests in the same file.

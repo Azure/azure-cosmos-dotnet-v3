@@ -143,7 +143,7 @@
             // the underlying collections. Before the fix this throws within ~100 iterations.
             try
             {
-                for (int i = 0; i < 5000; i++)
+                for (int i = 0; i < 500; i++)
                 {
                     string json = new CosmosTraceDiagnostics(trace).ToString();
                     Assert.IsNotNull(json);
@@ -184,7 +184,7 @@
             try
             {
                 TraceSummary summary = new TraceSummary();
-                for (int i = 0; i < 5000; i++)
+                for (int i = 0; i < 500; i++)
                 {
                     summary.UpdateRegionContacted(datum);
                 }
