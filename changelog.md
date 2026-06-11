@@ -53,10 +53,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [5827](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5827) ChangeFeedEstimator: Change feed estimator threw `ArgumentNullException` when an inmemory lease container was being used. Update validations so in-memory lease containers work with change feed estimator
 - [5910](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5910) Upgraded Direct package to 3.43.2.
 - [5910](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5910) Direct: Fixed RNTBD thread-pool starvation by making `Dispatcher.OnIdleTimer` asynchronous (ports public [PR 5817](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5817))
+- [5927](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5927) ThinClient: Fixes mid-flight fallback to gateway when the service stops advertising thin-client endpoints. Previously the SDK kept routing to stale thin-client URIs and required a client restart to recover.
 
 #### Other Changes
 
 - [#5887](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5887) Direct: Documents that `MaxTcpConnectionsPerEndpoint` accepts any positive value to allow customer control of the connection pool size; values of 16 or greater remain recommended.
+- [#5905](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5905) ReadMany: Adds point-read fast path for single-tuple partitions. When the items requested in a single `ReadManyItems[Stream]Async` call resolve to a physical partition with only one `(id, partitionKey)` tuple, the SDK now issues a point read for that tuple instead of a parameterized query. This reduces RU and latency for sparse multi-partition lookups (closes [#4369](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4369)) and aligns the .NET SDK with the existing Java and Python SDK behavior.
 
 ### <a name="3.61.0-preview.0"/> [3.61.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.61.0-preview.0) - 2026-5-18
 
