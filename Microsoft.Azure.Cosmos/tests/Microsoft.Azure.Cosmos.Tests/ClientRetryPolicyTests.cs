@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
     using System.Reflection;
     using System.Collections.Concurrent;
     using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
@@ -2104,6 +2105,60 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             Assert.IsTrue(
                 rootTrace.Summary.HedgingDetectionState.HedgingStarted,
                 "HedgingStarted must be true after a Hedging entry has been appended.");
+        }
+
+        /// <summary>
+        /// Verifies that the same instance resolves a thin-client endpoint while
+        /// the service is advertising thin locations, and then resolves a non-thin gateway
+        /// endpoint on the next dispatch after the service withdraws those locations on
+        /// an account refresh. Regressions that pin the dispatch decision to the init-time
+        /// feature flag would continue stamping the thin-client URI.
+        /// </summary>
+        [TestMethod]
+        [Owner("aavasthy")]
+        public void ThinClient_OnBeforeSendRequest_AfterServiceWithdrawsThinLocations_FallsBackToGatewayEndpoint()
+        {
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: false);
+
+            // Phase 1: service advertises thin-client locations.
+            TestUtils.EnableThinClientLocationsForTest(endpointManager);
+
+            ClientRetryPolicy retryPolicy = new(
+                globalEndpointManager: endpointManager,
+                partitionKeyRangeLocationCache: this.partitionKeyRangeLocationCache,
+                retryOptions: new RetryOptions(),
+                enableEndpointDiscovery: true,
+                isThinClientEnabled: true);
+
+            DocumentServiceRequest thinPhaseRequest = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            retryPolicy.OnBeforeSendRequest(thinPhaseRequest);
+
+            Uri thinPhaseEndpoint = thinPhaseRequest.RequestContext.LocationEndpointToRoute;
+            Assert.IsNotNull(thinPhaseEndpoint, "OnBeforeSendRequest must stamp LocationEndpointToRoute.");
+            CollectionAssert.Contains(
+                endpointManager.ThinClientReadEndpoints.ToList(),
+                thinPhaseEndpoint,
+                "While the service advertises thin-client read locations, the resolved endpoint must come from ThinClientReadEndpoints.");
+
+            // Phase 2: service withdraws thin-client locations on the next account refresh.
+            TestUtils.DisableThinClientLocationsForTest(endpointManager);
+
+            DocumentServiceRequest gatewayPhaseRequest = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            retryPolicy.OnBeforeSendRequest(gatewayPhaseRequest);
+
+            Uri gatewayPhaseEndpoint = gatewayPhaseRequest.RequestContext.LocationEndpointToRoute;
+            Assert.IsNotNull(gatewayPhaseEndpoint, "OnBeforeSendRequest must stamp LocationEndpointToRoute on the second dispatch.");
+            CollectionAssert.DoesNotContain(
+                endpointManager.ThinClientReadEndpoints.ToList(),
+                gatewayPhaseEndpoint,
+                "After the service withdraws thin-client locations, the resolved endpoint must NOT come from ThinClientReadEndpoints.");
+            Assert.AreNotEqual(
+                thinPhaseEndpoint,
+                gatewayPhaseEndpoint,
+                "The resolved endpoint must change between the thin-advertised and thin-withdrawn phases.");
         }
 
         private static DocumentServiceRequest CreateDtxRequest()
