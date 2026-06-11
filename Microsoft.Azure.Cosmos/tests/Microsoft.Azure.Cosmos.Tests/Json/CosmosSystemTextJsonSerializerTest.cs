@@ -5,8 +5,12 @@
     using System.IO;
     using System.Linq;
     using System.Reflection;
+    using System.Text;
     using System.Text.Json;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Tests.Poco.STJ;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -240,5 +244,261 @@
             Assert.AreSame(memoryStream, result);
         }
 
+        [DataTestMethod]
+        [DataRow(3)]      // small payload: single rented buffer, no Resize
+        [DataRow(2000)]   // large payload: forces JsonMemoryWriter.Resize (pooled rent/copy/return)
+        public void TestFromStreamBinaryFormat(int nameLength)
+        {
+            // Arrange - build a binary-encoded CloneableStream to exercise the pooled binary read path.
+            BinaryRoundTripDoc original = new() { Id = "abc", Name = new string('x', nameLength), Count = 42 };
+            string json;
+            using (Stream textStream = this.stjSerializer.ToStream(original))
+            using (StreamReader reader = new(textStream))
+            {
+                json = reader.ReadToEnd();
+            }
+
+            byte[] binary = JsonTestUtils.ConvertTextToBinary(json);
+
+            // Pin the conditions that route FromStream into the pooled binary branch, so the test
+            // fails loudly instead of silently falling back to the text path if they ever regress.
+            Assert.AreEqual((byte)JsonSerializationFormat.Binary, binary[0]);
+            Assert.IsTrue(CosmosObject.TryCreateFromBuffer(binary, out _));
+
+            using CloneableStream binaryStream = new(
+                internalStream: new MemoryStream(binary, index: 0, count: binary.Length, writable: false, publiclyVisible: true),
+                allowUnsafeDataAccess: true);
+
+            // Act.
+            BinaryRoundTripDoc result = this.stjSerializer.FromStream<BinaryRoundTripDoc>(binaryStream);
+
+            // Assert - binary path yields the same object as the text path.
+            Assert.IsNotNull(result);
+            Assert.AreEqual(original.Id, result.Id);
+            Assert.AreEqual(original.Name, result.Name);
+            Assert.AreEqual(original.Count, result.Count);
+        }
+
+        [DataTestMethod]
+        [DataRow("ascii simple value")]
+        [DataRow("")]
+        [DataRow("quotes \" backslash \\ and slash /")]
+        [DataRow("whitespace\ttab\r\nnewline")]
+        [DataRow("accents: café ñ über Ångström")]
+        [DataRow("cjk: 日本語 中文 한국어")]
+        [DataRow("emoji surrogate pairs: \uD83D\uDE00\uD83C\uDF89\uD835\uDD4F")]
+        [DataRow("control chars: \u0001\u0002\u001F end")]
+        [DataRow("literal escape sequence text: \\u0041 \\n \\t")]
+        public void TestStringValueRoundTripAcrossFormats(string value)
+        {
+            StringHolder original = new() { Value = value };
+            string json = this.Serialize(original);
+
+            Assert.AreEqual(value, this.DeserializeViaTextPath<StringHolder>(json).Value);
+            Assert.AreEqual(value, this.DeserializeViaBinaryPath<StringHolder>(json).Value);
+        }
+
+        [TestMethod]
+        public void TestNumericEdgeCasesAcrossFormats()
+        {
+            NumberHolder original = new()
+            {
+                MaxLong = long.MaxValue,
+                MinLong = long.MinValue,
+                MaxInt = int.MaxValue,
+                MinInt = int.MinValue,
+                MaxDouble = double.MaxValue,
+                MinDouble = double.MinValue,
+                NegativeFraction = -123456.789,
+                SmallFraction = 0.000000123,
+                Zero = 0,
+            };
+            string json = this.Serialize(original);
+
+            foreach (NumberHolder result in new[]
+            {
+                this.DeserializeViaTextPath<NumberHolder>(json),
+                this.DeserializeViaBinaryPath<NumberHolder>(json),
+            })
+            {
+                Assert.AreEqual(original.MaxLong, result.MaxLong);
+                Assert.AreEqual(original.MinLong, result.MinLong);
+                Assert.AreEqual(original.MaxInt, result.MaxInt);
+                Assert.AreEqual(original.MinInt, result.MinInt);
+                Assert.AreEqual(original.MaxDouble, result.MaxDouble);
+                Assert.AreEqual(original.MinDouble, result.MinDouble);
+                Assert.AreEqual(original.NegativeFraction, result.NegativeFraction);
+                Assert.AreEqual(original.SmallFraction, result.SmallFraction);
+                Assert.AreEqual(original.Zero, result.Zero);
+            }
+        }
+
+        [TestMethod]
+        public void TestNullAndEmptyAcrossFormats()
+        {
+            ComplexDoc original = new()
+            {
+                NullText = null,
+                EmptyText = string.Empty,
+                EmptyList = new List<int>(),
+                NullList = null,
+                Nested = null,
+            };
+            string json = this.Serialize(original);
+
+            foreach (ComplexDoc result in new[]
+            {
+                this.DeserializeViaTextPath<ComplexDoc>(json),
+                this.DeserializeViaBinaryPath<ComplexDoc>(json),
+            })
+            {
+                Assert.IsNull(result.NullText);
+                Assert.AreEqual(string.Empty, result.EmptyText);
+                Assert.IsNotNull(result.EmptyList);
+                Assert.AreEqual(0, result.EmptyList.Count);
+                Assert.IsNull(result.NullList);
+                Assert.IsNull(result.Nested);
+            }
+        }
+
+        [TestMethod]
+        public void TestComprehensiveRoundTripAcrossFormats()
+        {
+            ComplexDoc original = new()
+            {
+                NullText = null,
+                EmptyText = string.Empty,
+                Text = "mixed café 日本語 \uD83D\uDE00 \"quote\" \\slash\\",
+                Flag = true,
+                When = new DateTime(2026, 6, 10, 13, 45, 59, DateTimeKind.Utc),
+                Identifier = Guid.Parse("3f7686c0-8cca-5292-e25a-511be5205e05"),
+                Numbers = new List<int> { -1, 0, 1, int.MaxValue, int.MinValue },
+                EmptyList = new List<int>(),
+                Nested = new Address { City = "Seattle", Zip = "98052" },
+                Addresses = new List<Address>
+                {
+                    new() { City = "Redmond", Zip = "98052" },
+                    new() { City = "São Paulo", Zip = "01000" },
+                },
+            };
+            string json = this.Serialize(original);
+
+            foreach (ComplexDoc result in new[]
+            {
+                this.DeserializeViaTextPath<ComplexDoc>(json),
+                this.DeserializeViaBinaryPath<ComplexDoc>(json),
+            })
+            {
+                Assert.IsNull(result.NullText);
+                Assert.AreEqual(original.EmptyText, result.EmptyText);
+                Assert.AreEqual(original.Text, result.Text);
+                Assert.AreEqual(original.Flag, result.Flag);
+                Assert.AreEqual(original.When, result.When);
+                Assert.AreEqual(original.Identifier, result.Identifier);
+                CollectionAssert.AreEqual(original.Numbers, result.Numbers);
+                Assert.AreEqual(0, result.EmptyList.Count);
+                Assert.AreEqual(original.Nested.City, result.Nested.City);
+                Assert.AreEqual(original.Nested.Zip, result.Nested.Zip);
+                Assert.AreEqual(original.Addresses.Count, result.Addresses.Count);
+                Assert.AreEqual(original.Addresses[1].City, result.Addresses[1].City);
+            }
+        }
+
+        private string Serialize<T>(T value)
+        {
+            using Stream stream = this.stjSerializer.ToStream(value);
+            using StreamReader reader = new(stream);
+            return reader.ReadToEnd();
+        }
+
+        // A plain (non-CloneableStream) MemoryStream routes FromStream through the text DeserializeStream path.
+        private T DeserializeViaTextPath<T>(string json)
+        {
+            using MemoryStream stream = new(Encoding.UTF8.GetBytes(json), writable: false);
+            return this.stjSerializer.FromStream<T>(stream);
+        }
+
+        // A binary-format CloneableStream routes FromStream through the pooled binary transcode path.
+        private T DeserializeViaBinaryPath<T>(string json)
+        {
+            byte[] binary = JsonTestUtils.ConvertTextToBinary(json);
+
+            // Pin the conditions that route FromStream into the pooled binary branch, so the test
+            // fails loudly instead of silently falling back to the text path if they ever regress.
+            Assert.AreEqual((byte)JsonSerializationFormat.Binary, binary[0]);
+            Assert.IsTrue(CosmosObject.TryCreateFromBuffer(binary, out _));
+
+            using CloneableStream stream = new(
+                internalStream: new MemoryStream(binary, index: 0, count: binary.Length, writable: false, publiclyVisible: true),
+                allowUnsafeDataAccess: true);
+            return this.stjSerializer.FromStream<T>(stream);
+        }
+
+        private sealed class StringHolder
+        {
+            public string Value { get; set; }
+        }
+
+        private sealed class NumberHolder
+        {
+            public long MaxLong { get; set; }
+
+            public long MinLong { get; set; }
+
+            public int MaxInt { get; set; }
+
+            public int MinInt { get; set; }
+
+            public double MaxDouble { get; set; }
+
+            public double MinDouble { get; set; }
+
+            public double NegativeFraction { get; set; }
+
+            public double SmallFraction { get; set; }
+
+            public int Zero { get; set; }
+        }
+
+        private sealed class ComplexDoc
+        {
+            public string Text { get; set; }
+
+            public string EmptyText { get; set; }
+
+            public string NullText { get; set; }
+
+            public bool Flag { get; set; }
+
+            public DateTime When { get; set; }
+
+            public Guid Identifier { get; set; }
+
+            public List<int> Numbers { get; set; }
+
+            public List<int> EmptyList { get; set; }
+
+            public List<int> NullList { get; set; }
+
+            public Address Nested { get; set; }
+
+            public List<Address> Addresses { get; set; }
+        }
+
+        private sealed class Address
+        {
+            public string City { get; set; }
+
+            public string Zip { get; set; }
+        }
+
+        private sealed class BinaryRoundTripDoc
+        {
+            public string Id { get; set; }
+
+            public string Name { get; set; }
+
+            public int Count { get; set; }
+        }
     }
 }

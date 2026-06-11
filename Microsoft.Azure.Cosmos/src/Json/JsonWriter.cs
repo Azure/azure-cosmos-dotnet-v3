@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Globalization;
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Utf8;
@@ -49,16 +50,22 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <param name="writeOptions">The write options the control the write behavior.</param>
         /// <param name="initialCapacity">Initial capacity to help avoid intermediary allocations.</param>
         /// <param name="jsonStringDictionary">The dictionary to use for user string encoding.</param>
+        /// <param name="pooled">Whether to rent the internal buffer from the shared <see cref="System.Buffers.ArrayPool{T}"/>. When true, the writer must be disposed and the GetResult span is invalid after the next write or disposal. Text format only.</param>
         /// <returns>A JsonWriter that can write in a particular JsonSerializationFormat</returns>
         public static IJsonWriter Create(
             JsonSerializationFormat jsonSerializationFormat,
             JsonWriteOptions writeOptions = JsonWriteOptions.None,
             int initialCapacity = 256,
-            IJsonStringDictionary jsonStringDictionary = null)
+            IJsonStringDictionary jsonStringDictionary = null,
+            bool pooled = false)
         {
+            Debug.Assert(
+                !pooled || jsonSerializationFormat == JsonSerializationFormat.Text,
+                "Buffer pooling is only supported for the Text format.");
+
             return jsonSerializationFormat switch
             {
-                JsonSerializationFormat.Text => new JsonTextWriter(initialCapacity),
+                JsonSerializationFormat.Text => new JsonTextWriter(initialCapacity, pooled),
                 JsonSerializationFormat.Binary => new JsonBinaryWriter(
                     enableNumberArrays: writeOptions.HasFlag(JsonWriteOptions.EnableNumberArrays),
                     enableUint64Values: writeOptions.HasFlag(JsonWriteOptions.EnableUInt64Values),
@@ -252,5 +259,12 @@ namespace Microsoft.Azure.Cosmos.Json
 
         /// <inheritdoc />
         public abstract ReadOnlyMemory<byte> GetResult();
+
+        /// <summary>
+        /// Releases the rented buffer back to the shared <see cref="System.Buffers.ArrayPool{T}"/>. Does nothing when not pooled.
+        /// </summary>
+        public virtual void Dispose()
+        {
+        }
     }
 }

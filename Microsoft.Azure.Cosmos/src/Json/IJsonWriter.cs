@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Json
 #else
     internal
 #endif
-    interface IJsonWriter
+    interface IJsonWriter : IDisposable
     {
         /// <summary>
         /// Gets the SerializationFormat of the JsonWriter.

@@ -94,10 +94,16 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <summary>
             /// Initializes a new instance of the JsonTextWriter class.
             /// </summary>
-            public JsonTextWriter(int initialCapacity = 256)
+            public JsonTextWriter(int initialCapacity = 256, bool pooled = false)
             {
                 this.firstValue = true;
-                this.jsonTextMemoryWriter = new JsonTextMemoryWriter(initialCapacity);
+                this.jsonTextMemoryWriter = new JsonTextMemoryWriter(initialCapacity, pooled);
+            }
+
+            /// <inheritdoc />
+            public override void Dispose()
+            {
+                this.jsonTextMemoryWriter.Dispose();
             }
 
             /// <inheritdoc />
@@ -543,8 +549,8 @@ namespace Microsoft.Azure.Cosmos.Json
                 private static readonly StandardFormat doubleFormat = new StandardFormat(
                     symbol: 'R');
 
-                public JsonTextMemoryWriter(int initialCapacity = 256)
-                    : base(initialCapacity)
+                public JsonTextMemoryWriter(int initialCapacity = 256, bool pooled = false)
+                    : base(initialCapacity, pooled)
                 {
                 }
 

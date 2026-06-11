@@ -5,14 +5,20 @@
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
+    using System.Buffers;
 
-    internal abstract class JsonMemoryWriter
+    internal abstract class JsonMemoryWriter : IDisposable
     {
         protected byte[] buffer;
 
-        protected JsonMemoryWriter(int initialCapacity = 256)
+        private readonly bool pooled;
+
+        protected JsonMemoryWriter(int initialCapacity = 256, bool pooled = false)
         {
-            this.buffer = new byte[initialCapacity];
+            this.pooled = pooled;
+            this.buffer = pooled
+                ? ArrayPool<byte>.Shared.Rent(initialCapacity)
+                : new byte[initialCapacity];
         }
 
         public int Position
@@ -53,7 +59,27 @@ namespace Microsoft.Azure.Cosmos.Json
 
             long newLength = minNewSize * 2;
             newLength = Math.Min(newLength, int.MaxValue);
-            Array.Resize(ref this.buffer, (int)newLength);
+
+            if (this.pooled)
+            {
+                byte[] newBuffer = ArrayPool<byte>.Shared.Rent((int)newLength);
+                Array.Copy(this.buffer, newBuffer, this.Position);
+                ArrayPool<byte>.Shared.Return(this.buffer);
+                this.buffer = newBuffer;
+            }
+            else
+            {
+                Array.Resize(ref this.buffer, (int)newLength);
+            }
+        }
+
+        public void Dispose()
+        {
+            if (this.pooled && this.buffer != null)
+            {
+                ArrayPool<byte>.Shared.Return(this.buffer);
+                this.buffer = null;
+            }
         }
     }
 }
