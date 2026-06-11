@@ -742,6 +742,52 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             AssertExcludedRegionsNotInDiagnostics(diagnostics);
         }
 
+        /// <summary>
+        /// When every preferred region is excluded,
+        /// <see cref="LocationCache.ResolveThinClientEndpoint"/> falls back to the primary thin
+        /// client write endpoint instead of failing the request. The operation must succeed and
+        /// route through the thin client pipeline.
+        /// </summary>
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task CreateItem_WithAllPreferredRegionsExcluded_OnThinClient_FallsBackToPrimaryWriteRegion()
+        {
+            List<string> allPreferredRegionsExcluded = new List<string>(PreferredRegions);
+
+            CosmosClientOptions fallbackClientOptions = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                ApplicationPreferredRegions = PreferredRegions,
+                Serializer = this.cosmosSystemTextJsonSerializer,
+            };
+
+            using CosmosClient fallbackClient = new CosmosClient(this.connectionString, fallbackClientOptions);
+            Container fallbackContainer = fallbackClient.GetContainer(this.database.Id, this.container.Id);
+            await Task.Delay(TimeSpan.FromSeconds(30));
+
+            TestObject seed = new TestObject
+            {
+                Id = Guid.NewGuid().ToString(),
+                Pk = "pk_fallback",
+                Other = "all-preferred-excluded fallback fixture",
+            };
+
+            ItemResponse<TestObject> createResponse = await fallbackContainer.CreateItemAsync(
+                seed,
+                new PartitionKey(seed.Pk),
+                new ItemRequestOptions
+                {
+                    ExcludeRegions = allPreferredRegionsExcluded,
+                });
+
+            string diagnostics = createResponse.Diagnostics.ToString();
+            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+            Assert.AreEqual(seed.Id, createResponse.Resource.Id);
+            Assert.IsTrue(
+                diagnostics.Contains("|F4"),
+                "Create should route through the thin client pipeline (|F4 user agent token).");
+        }
+
         [TestMethod]
         [TestCategory("ThinClient")]
         public async Task ReplaceItemsTest()
