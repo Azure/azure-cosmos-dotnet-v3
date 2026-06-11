@@ -100,6 +100,193 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
+        public void ToTraceSafeString_CosmosException_OmitsDiagnostics_KeepsIdentity()
+        {
+            // Regression for #5945: a trace-safe summary of a CosmosException must NOT pull in the
+            // diagnostics serialization that CosmosException.Message appends for failure status codes.
+            HttpStatusCode[] criticalStatusCodes = new[]
+            {
+                HttpStatusCode.RequestTimeout,
+                HttpStatusCode.InternalServerError,
+                HttpStatusCode.ServiceUnavailable,
+            };
+
+            string diagnosticString = new Diagnostics.CosmosTraceDiagnostics(NoOpTrace.Singleton).ToString();
+
+            foreach (HttpStatusCode statusCode in criticalStatusCodes)
+            {
+                CosmosException cosmosException = new CosmosException(
+                    statusCode: statusCode,
+                    message: "Test",
+                    stackTrace: null,
+                    headers: null,
+                    trace: NoOpTrace.Singleton,
+                    error: null,
+                    innerException: null);
+
+                string traceSafe = cosmosException.ToTraceSafeString();
+
+                // Message includes diagnostics for these status codes (contract preserved)...
+                Assert.IsTrue(
+                    cosmosException.Message.Contains("; Diagnostics:"),
+                    $"Precondition: Message should include diagnostics for {statusCode}.");
+
+                // ...but the trace-safe summary must not.
+                Assert.IsFalse(
+                    traceSafe.Contains("Diagnostics"),
+                    $"ToTraceSafeString must not include diagnostics for {statusCode}.");
+                Assert.IsFalse(
+                    traceSafe.Contains(diagnosticString),
+                    $"ToTraceSafeString must not include the serialized diagnostics for {statusCode}.");
+
+                // The summary must still carry the actionable identity fields.
+                Assert.IsTrue(traceSafe.Contains(statusCode.ToString()), "Missing status code name.");
+                Assert.IsTrue(traceSafe.Contains(((int)statusCode).ToString()), "Missing numeric status code.");
+                Assert.IsTrue(traceSafe.Contains(cosmosException.SubStatusCode.ToString()), "Missing sub status code.");
+            }
+        }
+
+        [TestMethod]
+        public void ToTraceSafeString_CosmosException_DoesNotAccessDiagnosticsOrMessage()
+        {
+            // Strong regression for #5945: prove the trace-safe summary never touches the
+            // diagnostics serialization path. The spy is built via the internal ctor and a 503
+            // status code, so its lazy Message resolves through GetMessageHelper -> this.Diagnostics;
+            // the overridden Diagnostics getter throws, so reading Message (or Diagnostics) would
+            // throw. ToTraceSafeString must do neither.
+            Headers headers = new Headers
+            {
+                SubStatusCode = (SubStatusCodes)1234,
+                ActivityId = "activity-5945",
+            };
+
+            DiagnosticsThrowingCosmosException spy = new DiagnosticsThrowingCosmosException(
+                statusCode: HttpStatusCode.ServiceUnavailable,
+                message: "Test",
+                stackTrace: null,
+                headers: headers,
+                trace: NoOpTrace.Singleton,
+                error: null,
+                innerException: null);
+
+            string traceSafe = spy.ToTraceSafeString();
+
+            Assert.IsTrue(traceSafe.Contains("ServiceUnavailable"));
+            Assert.IsTrue(traceSafe.Contains("1234"));
+            Assert.IsTrue(traceSafe.Contains("activity-5945"));
+            Assert.IsFalse(spy.DiagnosticsAccessed, "ToTraceSafeString must not access Diagnostics.");
+
+            // Sanity: confirm the spy is wired so that the diagnostics-serializing Message path
+            // really would throw for this status code (i.e. the assertion above is meaningful).
+            Assert.ThrowsException<InvalidOperationException>(() => _ = spy.Message);
+            Assert.IsTrue(spy.DiagnosticsAccessed);
+        }
+
+        [TestMethod]
+        public void ToTraceSafeString_NonCosmosException_ReturnsMessage()
+        {
+            Exception exception = new InvalidOperationException("plain message");
+            Assert.AreEqual("plain message", exception.ToTraceSafeString());
+        }
+
+        [TestMethod]
+        public void ToTraceSafeString_Null_ReturnsNull()
+        {
+            Exception exception = null;
+            Assert.IsNull(exception.ToTraceSafeString());
+        }
+
+        [TestMethod]
+        public void ToTraceSafeString_AggregateException_UnwrapsInnerWithoutSerializingDiagnostics()
+        {
+            // Regression for #5945: faulted Task.Exception (an AggregateException) is passed to this
+            // helper from a ContinueWith continuation in AsyncCacheNonBlocking. AggregateException.Message
+            // eagerly concatenates each inner exception's Message, so a naive fallback to Message would
+            // re-trigger the CosmosException diagnostics serialization. The helper must unwrap instead.
+            string diagnosticString = new Diagnostics.CosmosTraceDiagnostics(NoOpTrace.Singleton).ToString();
+
+            CosmosException cosmosException = new CosmosException(
+                statusCode: HttpStatusCode.ServiceUnavailable,
+                message: "Test",
+                stackTrace: null,
+                headers: null,
+                trace: NoOpTrace.Singleton,
+                error: null,
+                innerException: null);
+
+            // Single inner exception unwraps to the inner CosmosException summary.
+            AggregateException single = new AggregateException(cosmosException);
+            string singleTraceSafe = single.ToTraceSafeString();
+            Assert.IsFalse(singleTraceSafe.Contains("Diagnostics"), "Single-inner aggregate must omit diagnostics.");
+            Assert.IsFalse(singleTraceSafe.Contains(diagnosticString));
+            Assert.IsTrue(singleTraceSafe.Contains("ServiceUnavailable"));
+
+            // Multiple inner exceptions still avoid the diagnostics path and list each summary.
+            AggregateException multiple = new AggregateException(cosmosException, new InvalidOperationException("plain"));
+            string multipleTraceSafe = multiple.ToTraceSafeString();
+            Assert.IsFalse(multipleTraceSafe.Contains("Diagnostics"), "Multi-inner aggregate must omit diagnostics.");
+            Assert.IsFalse(multipleTraceSafe.Contains(diagnosticString));
+            Assert.IsTrue(multipleTraceSafe.Contains("ServiceUnavailable"));
+            Assert.IsTrue(multipleTraceSafe.Contains("plain"));
+        }
+
+        [TestMethod]
+        public void ToTraceSafeString_AggregateException_DoesNotAccessDiagnostics()
+        {
+            // Strong regression for #5945: even when the CosmosException is wrapped in an
+            // AggregateException (as a faulted Task surfaces it), the helper must never touch the
+            // diagnostics serialization path.
+            Headers headers = new Headers
+            {
+                SubStatusCode = (SubStatusCodes)1234,
+                ActivityId = "activity-5945",
+            };
+
+            DiagnosticsThrowingCosmosException spy = new DiagnosticsThrowingCosmosException(
+                statusCode: HttpStatusCode.ServiceUnavailable,
+                message: "Test",
+                stackTrace: null,
+                headers: headers,
+                trace: NoOpTrace.Singleton,
+                error: null,
+                innerException: null);
+
+            AggregateException aggregate = new AggregateException(spy);
+
+            string traceSafe = aggregate.ToTraceSafeString();
+
+            Assert.IsTrue(traceSafe.Contains("ServiceUnavailable"));
+            Assert.IsTrue(traceSafe.Contains("activity-5945"));
+            Assert.IsFalse(spy.DiagnosticsAccessed, "ToTraceSafeString must not access Diagnostics through an AggregateException.");
+        }
+
+        private sealed class DiagnosticsThrowingCosmosException : CosmosException
+        {
+            public DiagnosticsThrowingCosmosException(
+                HttpStatusCode statusCode,
+                string message,
+                string stackTrace,
+                Headers headers,
+                ITrace trace,
+                Documents.Error error,
+                Exception innerException)
+                : base(statusCode, message, stackTrace, headers, trace, error, innerException)
+            {
+            }
+
+            public bool DiagnosticsAccessed { get; private set; }
+
+            public override CosmosDiagnostics Diagnostics
+            {
+                get
+                {
+                    this.DiagnosticsAccessed = true;
+                    throw new InvalidOperationException("Diagnostics must not be accessed by trace-safe logging (#5945).");
+                }
+            }
+        }
+
+        [TestMethod]
         public void VerifyNullHeaderLogic()
         {
             string testMessage = "Test" + Guid.NewGuid().ToString();
