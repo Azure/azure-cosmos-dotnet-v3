@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
-    using System.Collections.Generic;
     using System.IO;
     using System.Net;
     using System.Text.Json;
@@ -29,41 +28,66 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 throughput: 400);
             database = db.Database;
 
-            if (db.StatusCode == HttpStatusCode.Created)
+            // Ensure the containers exist regardless of whether the database was just created or
+            // already existed. Relying solely on db.StatusCode == Created caused tests to fail with
+            // a 404 on warm-up reads when the database existed but had never been seeded (for example
+            // on a fresh account where a prior run created the database but failed before seeding).
+            ContainerResponse containerResponse = await database.CreateContainerIfNotExistsAsync(
+                id: MultiRegionSetupHelpers.containerName,
+                partitionKeyPath: "/pk",
+                throughput: 400);
+            container = containerResponse.Container;
+
+            ContainerResponse changeFeedContainerResponse = await database.CreateContainerIfNotExistsAsync(
+                id: MultiRegionSetupHelpers.changeFeedContainerName,
+                partitionKeyPath: "/partitionKey",
+                throughput: 400);
+            changeFeedContainer = changeFeedContainerResponse.Container;
+
+            // Seed the documents the tests warm up against. Upsert makes this idempotent so an
+            // existing-but-unseeded container is repaired instead of silently skipped.
+            bool seeded = await MultiRegionSetupHelpers.EnsureSeedItemsAsync(container);
+
+            if (db.StatusCode == HttpStatusCode.Created
+                || containerResponse.StatusCode == HttpStatusCode.Created
+                || changeFeedContainerResponse.StatusCode == HttpStatusCode.Created
+                || seeded)
             {
-                container = await database.CreateContainerIfNotExistsAsync(
-                    id: MultiRegionSetupHelpers.containerName,
-                    partitionKeyPath: "/pk",
-                    throughput: 400);
-                changeFeedContainer = await database.CreateContainerIfNotExistsAsync(
-                    id: MultiRegionSetupHelpers.changeFeedContainerName,
-                    partitionKeyPath: "/partitionKey",
-                    throughput: 400);
-
-                List<Task> tasks = new List<Task>()
-                {
-                    container.CreateItemAsync<CosmosIntegrationTestObject>(
-                        new CosmosIntegrationTestObject { Id = "testId", Pk = "pk" }),
-                    container.CreateItemAsync<CosmosIntegrationTestObject>(
-                        new CosmosIntegrationTestObject { Id = "testId2", Pk = "pk2" }),
-                    container.CreateItemAsync<CosmosIntegrationTestObject>(
-                        new CosmosIntegrationTestObject { Id = "testId3", Pk = "pk3" }),
-                    container.CreateItemAsync<CosmosIntegrationTestObject>(
-                        new CosmosIntegrationTestObject { Id = "testId4", Pk = "pk4" })
-                };
-
-                await Task.WhenAll(tasks);
-
                 //Must Ensure the data is replicated to all regions
                 await Task.Delay(60000);
-
-                return (database, container, changeFeedContainer);
             }
 
-            container = database.GetContainer(MultiRegionSetupHelpers.containerName);
-            changeFeedContainer = database.GetContainer(MultiRegionSetupHelpers.changeFeedContainerName);
-
             return (database, container, changeFeedContainer);
+        }
+
+        private static async Task<bool> EnsureSeedItemsAsync(Container container)
+        {
+            (string id, string pk)[] seedItems = new[]
+            {
+                ("testId", "pk"),
+                ("testId2", "pk2"),
+                ("testId3", "pk3"),
+                ("testId4", "pk4")
+            };
+
+            bool createdAny = false;
+            foreach ((string id, string pk) in seedItems)
+            {
+                using (ResponseMessage response = await container.ReadItemStreamAsync(id, new PartitionKey(pk)))
+                {
+                    if (response.StatusCode == HttpStatusCode.OK)
+                    {
+                        continue;
+                    }
+                }
+
+                await container.UpsertItemAsync<CosmosIntegrationTestObject>(
+                    new CosmosIntegrationTestObject { Id = id, Pk = pk },
+                    new PartitionKey(pk));
+                createdAny = true;
+            }
+
+            return createdAny;
         }
 
         internal class CosmosIntegrationTestObject
