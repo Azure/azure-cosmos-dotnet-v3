@@ -587,10 +587,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Direct,
-                ApplicationPreferredRegions = isPreferredLocationsEmpty ? new List<string>() :new List<string>() { region1, region2 },
+                ApplicationPreferredRegions = isPreferredLocationsEmpty ? new List<string>() : new List<string>() { region1, region2 },
                 AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
-                        threshold: TimeSpan.FromMilliseconds(200),
-                        thresholdStep: TimeSpan.FromMilliseconds(50)),
+                       // Threshold is intentionally aggressive: for single-master read 404/1002,
+                       // ClientRetryPolicy.ShouldRetryOnSessionNotAvailable retries wire 2 to the
+                       // WRITE region (RetryLocationIndex = 0, RetryRequestOnPreferredLocations = false).
+                       // When the write region differs from region1 and has no fault, wire 2 succeeds
+                       // in ~50-100ms — beating any threshold >= 50ms. Use 10ms to guarantee the hedge
+                       // timer fires before primary's wire-2 retry can complete, so the hedge arm is
+                       // dispatched (requestNumber > 0) and HedgeContext is stamped in diagnostics.
+                       threshold: TimeSpan.FromMilliseconds(10),
+                       thresholdStep: TimeSpan.FromMilliseconds(10)),
                 Serializer = this.cosmosSystemTextJsonSerializer
             };
 
