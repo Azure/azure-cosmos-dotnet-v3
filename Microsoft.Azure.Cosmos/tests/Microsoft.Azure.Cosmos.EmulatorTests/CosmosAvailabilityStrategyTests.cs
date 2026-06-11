@@ -596,8 +596,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                        // in ~50-100ms — beating any threshold >= 50ms. Use 10ms to guarantee the hedge
                        // timer fires before primary's wire-2 retry can complete, so the hedge arm is
                        // dispatched (requestNumber > 0) and HedgeContext is stamped in diagnostics.
-                       threshold: TimeSpan.FromMilliseconds(10),
-                       thresholdStep: TimeSpan.FromMilliseconds(10)),
+                       threshold: TimeSpan.FromMilliseconds(100),
+                       thresholdStep: TimeSpan.FromMilliseconds(50)),
                 Serializer = this.cosmosSystemTextJsonSerializer
             };
 

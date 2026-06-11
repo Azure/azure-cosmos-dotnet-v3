@@ -739,6 +739,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(
                 diagnostics.Contains("|F4"),
                 "Read should route through the thin client pipeline (|F4 user agent token).");
+            Assert.IsTrue(
+                diagnostics.Contains($"\"Hedge Context\":[\"{EastUs2}\"]"),
+                $"Diagnostics should contain Hedge Context with only the non-excluded preferred region ('{EastUs2}'). Diagnostics: {diagnostics}");
             AssertExcludedRegionsNotInDiagnostics(diagnostics);
         }
 

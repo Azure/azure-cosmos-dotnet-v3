@@ -982,14 +982,17 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         /// <summary>
         /// Resolves the applicable thin client endpoints for a request, honoring per-request
-        /// <see cref="DocumentServiceRequestContext.ExcludeRegions"/>. Mirrors the gateway
-        /// path in <see cref="GetApplicableEndpoints(DocumentServiceRequest, bool)"/>.
+        /// <see cref="DocumentServiceRequestContext.ExcludeRegions"/>. Uses the same preferred-
+        /// location filter as the gateway path in <see cref="GetApplicableEndpoints(DocumentServiceRequest, bool)"/>,
+        /// differing only in which fallback endpoint is selected.
         /// </summary>
         /// <remarks>
-        /// When all preferred regions are excluded, falls back to the first thin client write
-        /// endpoint (which itself falls back to <see cref="defaultEndpoint"/> at initialization
-        /// time). This keeps requests on the thin client routing path rather than dropping back
-        /// to the gateway endpoint and breaking thin client port semantics.
+        /// When all preferred regions are excluded, this method always falls back to the first
+        /// thin client write endpoint (<c>snapshot.ThinClientWriteEndpoints[0]</c>) for both reads
+        /// and writes. This deliberately diverges from the gateway path's fallback selection
+        /// (which uses <see cref="defaultEndpoint"/>, or <c>WriteEndpoints[0]</c> under PPAF for
+        /// reads) because <see cref="defaultEndpoint"/> resolves to the gateway port (443) and
+        /// would break thin client port semantics if used here.
         /// </remarks>
         private ReadOnlyCollection<Uri> GetApplicableThinClientEndpoints(
             DocumentServiceRequest request,
