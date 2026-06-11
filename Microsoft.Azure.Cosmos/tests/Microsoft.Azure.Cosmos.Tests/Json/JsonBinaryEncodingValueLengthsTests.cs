@@ -26,6 +26,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         private const byte Arr1TypeMarker = 0xE1;
         private const byte Obj0TypeMarker = 0xE8;
         private const byte Obj1TypeMarker = 0xE9;
+        private const byte NullTypeMarker = 0xD0;
 
         [TestMethod]
         [Owner("tvaron")]
@@ -54,12 +55,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         [Owner("tvaron")]
         public void DepthAtCapThrows()
         {
-            // Exactly JsonMaxNestingDepth nested Arr1 levels must trip the
-            // guard. The outermost Arr1 is processed at depth 0; each nested
-            // call increments depth, and the guard fires when GetValueLength
-            // is entered with depth >= JsonMaxNestingDepth (i.e., when
-            // attempting to process the content inside the 256th Arr1).
-            byte[] payload = BuildArr1ChainPayload(nestingDepth: JsonObjectState.JsonMaxNestingDepth);
+            // JsonMaxNestingDepth + 1 nested Arr1 levels must trip the guard.
+            // The outermost Arr1 is processed at depth 0; each nested call
+            // increments depth, and the guard fires when GetValueLength is
+            // entered with depth > JsonMaxNestingDepth -- mirroring
+            // JsonObjectState.Push, which permits 256 simultaneous open
+            // containers and rejects the 257th.
+            byte[] payload = BuildArr1ChainPayload(nestingDepth: JsonObjectState.JsonMaxNestingDepth + 1);
 
             Assert.ThrowsException<JsonMaxNestingExceededException>(
                 () => JsonBinaryEncoding.GetValueLength(payload.AsSpan(start: 1)));
@@ -69,10 +71,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         [Owner("tvaron")]
         public void DepthJustBelowCapStillDecodes()
         {
-            // JsonMaxNestingDepth - 1 nested Arr1 levels plus the terminating
-            // Arr0 must still decode successfully so legitimate (deep but
-            // bounded) documents are not broken by the guard.
-            int safeDepth = JsonObjectState.JsonMaxNestingDepth - 1;
+            // JsonMaxNestingDepth nested Arr1 levels plus the terminating Arr0
+            // must still decode successfully so legitimate (deep but bounded)
+            // documents that the streaming writer permits are not broken by
+            // the decoder guard. JsonObjectState.Push allows N = 256
+            // simultaneous open containers, so the decoder accepts the same.
+            int safeDepth = JsonObjectState.JsonMaxNestingDepth;
             byte[] payload = BuildArr1ChainPayload(nestingDepth: safeDepth);
 
             int length = JsonBinaryEncoding.GetValueLength(payload.AsSpan(start: 1));
@@ -156,9 +160,44 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         [Owner("tvaron")]
         public void DepthAtCapObj1Throws()
         {
-            // Mirror of DepthAtCapThrows for the Obj1 (0xE9) code path. The
-            // guard fires before the malformed bottom of the chain is reached.
-            byte[] payload = BuildObj1ChainPayload(nestingDepth: JsonObjectState.JsonMaxNestingDepth);
+            // Mirror of DepthAtCapThrows for the Obj1 (0xE9) code path.
+            // JsonMaxNestingDepth + 1 nested Obj1 levels must trip the guard
+            // (the writer's Push permits 256 simultaneous open objects and
+            // rejects the 257th, so the decoder mirrors that bound).
+            byte[] payload = BuildObj1ChainPayload(nestingDepth: JsonObjectState.JsonMaxNestingDepth + 1);
+
+            Assert.ThrowsException<JsonMaxNestingExceededException>(
+                () => JsonBinaryEncoding.GetValueLength(payload.AsSpan(start: 1)));
+        }
+
+        [TestMethod]
+        [Owner("tvaron")]
+        public void DepthAtCapWithScalarLeafStillDecodes()
+        {
+            // 256 nested Arr1 frames with a scalar leaf at the bottom must
+            // decode (writer/reader parity for scalar-leaf payloads at the
+            // streaming cap). JsonObjectState.Push permits a scalar inside
+            // 256 simultaneously-open containers, and the binary decoder
+            // accepts the same.
+            byte[] payload = BuildArr1ChainWithScalarLeaf(
+                nestingDepth: JsonObjectState.JsonMaxNestingDepth,
+                scalarMarker: NullTypeMarker);
+
+            int length = JsonBinaryEncoding.GetValueLength(payload.AsSpan(start: 1));
+
+            // Each Arr1 contributes 1 byte, plus the 1-byte Null leaf.
+            Assert.AreEqual(JsonObjectState.JsonMaxNestingDepth + 1, length);
+        }
+
+        [TestMethod]
+        [Owner("tvaron")]
+        public void DepthAboveCapWithScalarLeafThrows()
+        {
+            // One frame deeper than the writer permits -- 257 nested Arr1
+            // frames with a scalar leaf -- must throw at the leaf frame.
+            byte[] payload = BuildArr1ChainWithScalarLeaf(
+                nestingDepth: JsonObjectState.JsonMaxNestingDepth + 1,
+                scalarMarker: NullTypeMarker);
 
             Assert.ThrowsException<JsonMaxNestingExceededException>(
                 () => JsonBinaryEncoding.GetValueLength(payload.AsSpan(start: 1)));
@@ -517,6 +556,23 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             }
 
             payload[payload.Length - 1] = Arr0TypeMarker;
+            return payload;
+        }
+
+        private static byte[] BuildArr1ChainWithScalarLeaf(int nestingDepth, byte scalarMarker)
+        {
+            // Layout: 0x80 (binary format) | nestingDepth * 0xE1 | <scalar>
+            // Used to exercise the scalar-leaf boundary -- the writer permits a
+            // 1-byte scalar inside up to JsonMaxNestingDepth simultaneously-open
+            // containers, so the decoder must accept the same.
+            byte[] payload = new byte[1 + nestingDepth + 1];
+            payload[0] = BinaryFormatMarker;
+            for (int i = 0; i < nestingDepth; i++)
+            {
+                payload[1 + i] = Arr1TypeMarker;
+            }
+
+            payload[payload.Length - 1] = scalarMarker;
             return payload;
         }
 

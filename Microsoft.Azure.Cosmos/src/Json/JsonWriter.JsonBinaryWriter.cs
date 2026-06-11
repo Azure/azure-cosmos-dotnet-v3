@@ -1851,7 +1851,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// The binary writer's invariant (enforced by
             /// <see cref="FixReferenceStringOffsets"/>) is that every reference
             /// string in a well-formed buffer points to a single non-reference
-            /// string value (StrL1/2/4, StrEncLen, StrUsr, StrBase64). In a
+            /// string value (StrL1/2/4, StrEncLen, StrUsr). In a
             /// well-formed buffer the dereference is always exactly one hop deep.
             ///
             /// On a hostile / corrupted buffer the target byte could be another

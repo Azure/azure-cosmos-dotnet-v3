@@ -16,8 +16,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
     ///
     /// The binary writer's <c>FixReferenceStringOffsets</c> guarantees that
     /// every reference string in a well-formed buffer points to a real string
-    /// literal (StrL1/2/4, encoded-length string, dictionary-encoded string,
-    /// or base64 string). On a hostile / corrupted buffer a reference can
+    /// literal (StrL1/2/4, encoded-length string, dictionary-encoded string).
+    /// On a hostile / corrupted buffer a reference can
     /// point at another reference, which without a guard would let an
     /// attacker construct an arbitrarily deep chain or a cycle that drives
     /// the recursive re-writer into an unrecoverable

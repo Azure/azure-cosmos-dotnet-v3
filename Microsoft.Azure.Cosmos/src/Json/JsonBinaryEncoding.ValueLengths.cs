@@ -193,13 +193,19 @@ namespace Microsoft.Azure.Cosmos.Json
 
             private static long GetValueLength(ReadOnlySpan<byte> buffer, int depth)
             {
-                // Guard against malicious payloads that nest Arr1 (0xE1) / Obj1 (0xE9)
-                // type markers deeply enough to exhaust the CLR stack. The cap matches
-                // the streaming reader's JsonObjectState.JsonMaxNestingDepth so the
-                // binary navigator path enforces the same nesting policy as the rest
-                // of the JSON stack. Both paths allow exactly N = 256 levels before
-                // throwing JsonMaxNestingExceededException.
-                if (depth >= JsonObjectState.JsonMaxNestingDepth)
+                // Guard against malicious payloads that nest Arr1 (0xE1) / Obj1
+                // (0xE9) type markers deeply enough to exhaust the CLR stack.
+                // The cap matches the streaming writer's
+                // JsonObjectState.JsonMaxNestingDepth so the binary navigator
+                // path enforces the same nesting policy as the rest of the JSON
+                // stack. The depth counter is incremented per recursive frame,
+                // which corresponds to one container open or one Arr1/Obj1
+                // child slot. JsonObjectState.Push permits N = 256 simultaneous
+                // open containers (it rejects the 257th), so the guard mirrors
+                // that bound: depth > N throws JsonMaxNestingExceededException.
+                // A scalar leaf at depth = N is permitted (writer/reader
+                // round-trip parity for N-deep documents).
+                if (depth > JsonObjectState.JsonMaxNestingDepth)
                 {
                     throw new JsonMaxNestingExceededException();
                 }
