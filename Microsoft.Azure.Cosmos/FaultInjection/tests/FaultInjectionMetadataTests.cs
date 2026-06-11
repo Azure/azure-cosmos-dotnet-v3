@@ -149,11 +149,18 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 // Validate the response delay rule was injected into the address refresh metadata call.
                 this.ValidateRuleHit(delayRule, 1);
 
-                // Metadata calls (address refresh) are issued over HTTP with a request timeout and are
-                // transparently retried by the SDK. The injected delay therefore surfaces as a timed-out and
-                // retried metadata request rather than as added end-to-end latency on the operation, so the
-                // wall-clock time of the operation is not a reliable signal. Validate instead that the rule
-                // was applied and the operation still succeeds despite the injected delay.
+                // Metadata calls (address refresh) route through HttpTimeoutPolicyControlPlaneRetriableHotPath,
+                // whose first attempt times out after 1s. The injected delay (> 1s) therefore surfaces as a
+                // timed-out metadata request that the SDK transparently retries, rather than as added
+                // end-to-end latency on the operation, so the wall-clock time of the operation is not a
+                // reliable signal (a sub-1s delay that avoids the timeout would be swamped by connection and
+                // cross-region latency and is equally unreliable). Validate the delay's effect deterministically
+                // instead: the rule was applied, the injected delay forced at least one failed/retried metadata
+                // request (GetFailedRequestCount, which is 0 when no fault is applied), and the operation still
+                // succeeds despite the injected delay.
+                Assert.IsTrue(
+                    response.Diagnostics.GetFailedRequestCount() >= 1,
+                    "Expected the injected metadata response delay to produce at least one failed/retried request.");
                 Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
             }
             finally
@@ -444,11 +451,18 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 // Validate the response delay rule was injected into the partition key range metadata call.
                 this.ValidateRuleHit(delayRule, 1);
 
-                // Metadata calls (partition key range refresh) are issued over HTTP with a request timeout and
-                // are transparently retried by the SDK. The injected delay therefore surfaces as a timed-out and
-                // retried metadata request rather than as added end-to-end latency on the operation, so the
-                // wall-clock time of the operation is not a reliable signal. Validate instead that the rule
-                // was applied and the operation still succeeds despite the injected delay.
+                // Metadata calls (partition key range refresh) route through HttpTimeoutPolicyControlPlaneRetriableHotPath,
+                // whose first attempt times out after 1s. The injected delay (> 1s) therefore surfaces as a
+                // timed-out metadata request that the SDK transparently retries, rather than as added
+                // end-to-end latency on the operation, so the wall-clock time of the operation is not a
+                // reliable signal (a sub-1s delay that avoids the timeout would be swamped by connection and
+                // cross-region latency and is equally unreliable). Validate the delay's effect deterministically
+                // instead: the rule was applied, the injected delay forced at least one failed/retried metadata
+                // request (GetFailedRequestCount, which is 0 when no fault is applied), and the operation still
+                // succeeds despite the injected delay.
+                Assert.IsTrue(
+                    response.Diagnostics.GetFailedRequestCount() >= 1,
+                    "Expected the injected metadata response delay to produce at least one failed/retried request.");
                 Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
             }
             finally
@@ -509,11 +523,18 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 // Validate the response delay rule was injected into the collection (container) metadata read.
                 this.ValidateRuleHit(delayRule, 1);
 
-                // Metadata calls (collection read) are issued over HTTP with a request timeout and are
-                // transparently retried by the SDK. The injected delay therefore surfaces as a timed-out and
-                // retried metadata request rather than as added end-to-end latency on the operation, so the
-                // wall-clock time of the operation is not a reliable signal. Validate instead that the rule
-                // was applied and the operation still succeeds despite the injected delay.
+                // Metadata calls (collection read) route through HttpTimeoutPolicyControlPlaneRetriableHotPath,
+                // whose first attempt times out after 1s. The injected delay (> 1s) therefore surfaces as a
+                // timed-out metadata request that the SDK transparently retries, rather than as added
+                // end-to-end latency on the operation, so the wall-clock time of the operation is not a
+                // reliable signal (a sub-1s delay that avoids the timeout would be swamped by connection and
+                // cross-region latency and is equally unreliable). Validate the delay's effect deterministically
+                // instead: the rule was applied, the injected delay forced at least one failed/retried metadata
+                // request (GetFailedRequestCount, which is 0 when no fault is applied), and the operation still
+                // succeeds despite the injected delay.
+                Assert.IsTrue(
+                    response.Diagnostics.GetFailedRequestCount() >= 1,
+                    "Expected the injected metadata response delay to produce at least one failed/retried request.");
                 Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
             }
             finally
