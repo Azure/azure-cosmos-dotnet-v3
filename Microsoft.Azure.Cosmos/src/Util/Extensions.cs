@@ -259,9 +259,11 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="exception">The exception to summarize. May be null.</param>
         /// <returns>
         /// For a <see cref="CosmosException"/>, a short summary containing the exception type,
-        /// status code, sub status code, and activity id (no diagnostics). For any other
-        /// exception, its <see cref="Exception.Message"/>. Null when <paramref name="exception"/>
-        /// is null.
+        /// status code, sub status code, and activity id (no diagnostics). For an
+        /// <see cref="AggregateException"/>, a summary built by recursively applying this helper to
+        /// its inner exceptions (so a wrapped <see cref="CosmosException"/> is never serialized via
+        /// the aggregate's <see cref="Exception.Message"/>). For any other exception, its
+        /// <see cref="Exception.Message"/>. Null when <paramref name="exception"/> is null.
         /// </returns>
         internal static string ToTraceSafeString(this Exception exception)
         {
@@ -281,6 +283,37 @@ namespace Microsoft.Azure.Cosmos
                     (int)cosmosException.StatusCode,
                     cosmosException.SubStatusCode,
                     cosmosException.ActivityId ?? string.Empty);
+            }
+
+            // AggregateException.Message eagerly concatenates every inner exception's Message, which
+            // would re-trigger the CosmosException diagnostics serialization this helper exists to
+            // avoid (e.g. a faulted Task.Exception passed from a ContinueWith continuation). Summarize
+            // the inner exceptions through this same safe path instead of touching Message.
+            if (exception is AggregateException aggregateException)
+            {
+                System.Collections.ObjectModel.ReadOnlyCollection<Exception> innerExceptions = aggregateException.InnerExceptions;
+                if (innerExceptions.Count == 1)
+                {
+                    return innerExceptions[0].ToTraceSafeString();
+                }
+
+                StringBuilder builder = new StringBuilder();
+                builder.AppendFormat(
+                    CultureInfo.InvariantCulture,
+                    "AggregateException ({0} inner exception(s): ",
+                    innerExceptions.Count);
+                for (int i = 0; i < innerExceptions.Count; i++)
+                {
+                    if (i > 0)
+                    {
+                        builder.Append("; ");
+                    }
+
+                    builder.Append(innerExceptions[i].ToTraceSafeString());
+                }
+
+                builder.Append(')');
+                return builder.ToString();
             }
 
             return exception.Message;
