@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Other Changes
 
+- [5945](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5945) Diagnostics: Fixes internal background-refresh failure logging (address/endpoint caches) to no longer eagerly serialize the full `CosmosException` diagnostics tree when the trace sink is a no-op, reducing CPU/allocations on failover and hedging hot paths. `CosmosException.Message` and `ToString()` are unchanged and continue to include diagnostics for the affected status codes.
+
 ### <a name="3.62.0-preview.0"/> [3.62.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.62.0-preview.0) - 2026-6-1
 
 #### Features Added

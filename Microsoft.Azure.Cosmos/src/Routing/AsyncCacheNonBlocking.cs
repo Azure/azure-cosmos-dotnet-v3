@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
                             "AsyncCacheNonBlocking Failed GetAsync. key: {0}, tryRemoved: {1}, Exception: {2}",
                             key,
                             removed,
-                            e.Message);
+                            e.ToTraceSafeString());
                     }
 
                     if (this.enableAsyncCacheExceptionNoSharing)
@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos
                 DefaultTrace.TraceError(
                             "AsyncCacheNonBlocking Failed GetAsync with key: {0}, Exception: {1}",
                             key.ToString(),
-                            e.Message);
+                            e.ToTraceSafeString());
 
                 // Remove the failed task from the dictionary so future requests can send other calls..
                 this.values.TryRemove(key, out _);
@@ -220,7 +220,7 @@ namespace Microsoft.Azure.Cosmos
 
                 Task continuationTask = backgroundRefreshTask
                     .ContinueWith(
-                        task => DefaultTrace.TraceVerbose("Failed to refresh addresses in the background with exception: {0}", task.Exception.Message),
+                        task => DefaultTrace.TraceVerbose("Failed to refresh addresses in the background with exception: {0}", task.Exception.ToTraceSafeString()),
                         TaskContinuationOptions.OnlyOnFaulted);
             }
         }
@@ -262,7 +262,7 @@ namespace Microsoft.Azure.Cosmos
                         key,
                         operationName,
                         removed,
-                        ex.Message);
+                        ex.ToTraceSafeString());
                 }
 
                 throw;

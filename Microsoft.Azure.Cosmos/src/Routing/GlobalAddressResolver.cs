@@ -299,7 +299,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         pkRange.Id,
                         collectionRid,
                         originalFailedLocation,
-                        ex.Message);
+                        ex.ToTraceSafeString());
                 }
             }
         }

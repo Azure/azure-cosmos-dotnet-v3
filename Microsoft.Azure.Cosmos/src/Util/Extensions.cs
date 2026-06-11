@@ -249,5 +249,41 @@ namespace Microsoft.Azure.Cosmos
                 exception = exception.InnerException;
             }
         }
+
+        /// <summary>
+        /// Builds a lightweight, allocation-cheap summary of an exception suitable for trace/log
+        /// call sites. Unlike <see cref="CosmosException.Message"/>, this never serializes the
+        /// diagnostics tree for the critical failure status codes, so it is safe to pass eagerly
+        /// into <see cref="DefaultTrace"/> calls even when the trace sink is a no-op.
+        /// </summary>
+        /// <param name="exception">The exception to summarize. May be null.</param>
+        /// <returns>
+        /// For a <see cref="CosmosException"/>, a short summary containing the exception type,
+        /// status code, sub status code, and activity id (no diagnostics). For any other
+        /// exception, its <see cref="Exception.Message"/>. Null when <paramref name="exception"/>
+        /// is null.
+        /// </returns>
+        internal static string ToTraceSafeString(this Exception exception)
+        {
+            if (exception == null)
+            {
+                return null;
+            }
+
+            // Only CosmosException couples Message to a full diagnostics serialization. For every
+            // other exception type Message is cheap, so preserve the existing log content.
+            if (exception is CosmosException cosmosException)
+            {
+                return string.Format(
+                    CultureInfo.InvariantCulture,
+                    "CosmosException (StatusCode: {0} ({1}); SubStatusCode: {2}; ActivityId: {3})",
+                    cosmosException.StatusCode,
+                    (int)cosmosException.StatusCode,
+                    cosmosException.SubStatusCode,
+                    cosmosException.ActivityId ?? string.Empty);
+            }
+
+            return exception.Message;
+        }
     }
 }
