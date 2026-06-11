@@ -122,6 +122,8 @@ Copyright (C) 2019 CosmosBenchmark
   --resultsdatabase                 Database to publish results to
   --resultscontainer                Container to publish results to
   --applicationpreferredregions     List of comma seperated preferred regions
+  --aad                             Authenticate to the Cosmos workload account with AAD / managed identity (DefaultAzureCredential) instead of a master key (-k). No committed keys (M6/SE-5).
+  --workload-managed-identity-client-id  Optional user-assigned managed identity client id used with --aad. When omitted, DefaultAzureCredential (system-assigned identity / az login) is used.
   --duration                        Continuous run duration in ISO-8601 format (e.g. PT8H). When set, the workload loops until the deadline instead of stopping after ItemCount operations. Reuses --MetricsReportingIntervalInSec.
   --sdk-version                     SDK version under test used to tag per-window result rows. Defaults to the loaded Microsoft.Azure.Cosmos assembly version (never the benchmark-harness commit).
   --sdk-source-ref                  SDK source ref (branch/tag/commit) under test used to tag result rows. Defaults to the COSMOS_PERF_BUILT_SDK_REF environment variable.
@@ -142,7 +144,7 @@ per-operation rows to a Grafana-readable backend:
 
 ```
 dotnet run -c Release -- \
-    -e <cosmos-endpoint> -k <key> -w FeedRangeQuery \
+    -e <cosmos-endpoint> --aad -w FeedRangeQueryV3 --WorkloadName FeedRangeQuery \
     --duration PT8H \
     --MetricsReportingIntervalInSec 300 \
     --metrics-sink adx \
@@ -150,12 +152,15 @@ dotnet run -c Release -- \
     --sdk-version 3.46.0
 ```
 
+The workload account authenticates with AAD / managed identity via `--aad` (no master key);
+pass `-k <key>` instead for key-based auth. The ADX sink authenticates with AAD / managed identity
+by default (no committed keys). All of these flags default off, so existing count-based usage is
+unchanged.
+
 Each window emits one row per operation into the dedicated `DotNetPerf.PerfResults` table with
 latency percentiles (`p50_ms`/`p90_ms`/`p99_ms`/`mean_ms`), `count`, `errors`, `ru_per_sec`, the
 SDK version/commit under test, and .NET runtime metrics (`gc_gen{0,1,2}_count`, `gc_heap_bytes`,
-`threadpool_thread_count`, `threadpool_queue_length`, `cpu_percent`, `memory_bytes`). The ADX sink
-authenticates with AAD / managed identity by default (no committed keys). All of these flags
-default off, so existing count-based usage is unchanged.
+`threadpool_thread_count`, `threadpool_queue_length`, `cpu_percent`, `memory_bytes`).
 
 In addition to the four existing point operations (`CreateItem`, `UpsertItem`, `ReadItem`,
 `QueryItems`), two feed-range operations are available: `FeedRangeQuery` (a query scoped to a single

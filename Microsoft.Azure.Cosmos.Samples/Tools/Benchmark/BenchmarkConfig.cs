@@ -10,6 +10,7 @@ namespace CosmosBenchmark
     using System.Linq;
     using System.Reflection;
     using System.Runtime;
+    using Azure.Identity;
     using CommandLine;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Documents.Client;
@@ -28,9 +29,15 @@ namespace CosmosBenchmark
         [Option('e', Required = true, HelpText = "Cosmos account end point")]
         public string EndPoint { get; set; }
 
-        [Option('k', Required = true, HelpText = "Cosmos account master key")]
+        [Option('k', Required = false, HelpText = "Cosmos account master key. Optional when --aad is set (AAD / managed-identity auth).")]
         [JsonIgnore]
         public string Key { get; set; }
+
+        [Option("aad", Required = false, HelpText = "Authenticate to the Cosmos workload account with AAD / managed identity (DefaultAzureCredential) instead of a master key. No committed keys (M6/SE-5).")]
+        public bool UseAadAuth { get; set; }
+
+        [Option("workload-managed-identity-client-id", Required = false, HelpText = "Optional user-assigned managed identity client id used with --aad. When omitted, DefaultAzureCredential (system-assigned identity / az login) is used.")]
+        public string WorkloadManagedIdentityClientId { get; set; }
 
         [Option("isthinclientenabled", Required = false, HelpText = "ThinClient enabled")]
         public string IsThinClientEnabledRaw { get; set; }
@@ -293,6 +300,11 @@ namespace CosmosBenchmark
                 .WithParsed<BenchmarkConfig>(e => options = e)
                 .WithNotParsed<BenchmarkConfig>(e => BenchmarkConfig.HandleParseError(e));
 
+            if (!options.UseAadAuth && string.IsNullOrWhiteSpace(options.Key))
+            {
+                throw new ArgumentException("Either -k (Cosmos account master key) or --aad (AAD / managed-identity auth) must be provided.");
+            }
+
             if (options.PublishResults)
             {
                 if (string.IsNullOrEmpty(options.ResultsContainer)
@@ -350,14 +362,45 @@ namespace CosmosBenchmark
                 clientOptions.ConsistencyLevel = (Microsoft.Azure.Cosmos.ConsistencyLevel)Enum.Parse(typeof(Microsoft.Azure.Cosmos.ConsistencyLevel), this.ConsistencyLevel, ignoreCase: true);
             }
 
+            if (this.UseAadAuth)
+            {
+                return new Microsoft.Azure.Cosmos.CosmosClient(
+                            this.EndPoint,
+                            this.CreateWorkloadTokenCredential(),
+                            clientOptions);
+            }
+
             return new Microsoft.Azure.Cosmos.CosmosClient(
                         this.EndPoint,
                         this.Key,
                         clientOptions);
         }
 
+        /// <summary>
+        /// Builds the AAD token credential used for the Cosmos workload account when --aad is set:
+        /// a user-assigned managed identity when a client id is supplied, otherwise
+        /// DefaultAzureCredential (system-assigned identity / az login). No committed keys (M6/SE-5).
+        /// </summary>
+        private Azure.Core.TokenCredential CreateWorkloadTokenCredential()
+        {
+            return string.IsNullOrWhiteSpace(this.WorkloadManagedIdentityClientId)
+                ? new DefaultAzureCredential()
+                : new DefaultAzureCredential(new DefaultAzureCredentialOptions
+                {
+                    ManagedIdentityClientId = this.WorkloadManagedIdentityClientId
+                });
+        }
+
         internal DocumentClient CreateDocumentClient(string accountKey)
         {
+            if (this.UseAadAuth)
+            {
+                // The V2 DocumentClient path is master-key only in this tool; AAD / managed-identity
+                // is supported via the V3 CosmosClient. V2 workloads under --aad are rejected in
+                // the benchmark factory with a clear error.
+                return null;
+            }
+
             Microsoft.Azure.Documents.ConsistencyLevel? consistencyLevel = null;
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
             {

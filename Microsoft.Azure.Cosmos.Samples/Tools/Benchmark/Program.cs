@@ -322,6 +322,13 @@ namespace CosmosBenchmark
             }
             else if (benchmarkTypeName.Name.EndsWith("V2BenchmarkOperation"))
             {
+                if (documentClient == null)
+                {
+                    throw new NotSupportedException(
+                        $"Workload type {config.WorkloadType} uses the V2 DocumentClient, which requires master-key auth (-k). " +
+                        "Use a V3 workload (the six tracked operations are all V3) when running with --aad.");
+                }
+
                 ci = benchmarkTypeName.GetConstructor(new Type[] { typeof(Microsoft.Azure.Documents.Client.DocumentClient), typeof(string), typeof(string), typeof(string), typeof(string) });
                 ctorArguments = new object[]
                     {
