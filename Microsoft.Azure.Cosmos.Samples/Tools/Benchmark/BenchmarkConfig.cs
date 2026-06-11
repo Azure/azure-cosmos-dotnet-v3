@@ -8,6 +8,7 @@ namespace CosmosBenchmark
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Reflection;
     using System.Runtime;
     using CommandLine;
     using Microsoft.Azure.Cosmos.Telemetry;
@@ -157,6 +158,99 @@ namespace CosmosBenchmark
 
         [Option(Required = false, HelpText = "List of comma separated preferred regions.")]
         public string ApplicationPreferredRegions { get; set; } = null;
+
+        [Option("duration", Required = false, HelpText = "Continuous run duration in ISO-8601 format (e.g. PT8H). When set, the workload loops until the deadline instead of stopping after ItemCount operations.")]
+        public string Duration { get; set; } = null;
+
+        [Option("sdk-version", Required = false, HelpText = "SDK version under test used to tag result rows. Defaults to the loaded Microsoft.Azure.Cosmos assembly version.")]
+        public string SdkVersion { get; set; } = null;
+
+        [Option("sdk-source-ref", Required = false, HelpText = "SDK source ref (branch/tag/commit) under test used to tag result rows. Defaults to the COSMOS_PERF_BUILT_SDK_REF environment variable.")]
+        public string SdkSourceRef { get; set; } = null;
+
+        [Option("metrics-sink", Required = false, HelpText = "Per-window metrics sink: none (default), console, or adx (Azure Data Explorer).")]
+        public string MetricsSink { get; set; } = "none";
+
+        [Option("adx-metrics-uri", Required = false, HelpText = "Azure Data Explorer ingestion URI for the metrics sink (e.g. https://ingest-<cluster>.<region>.kusto.windows.net).")]
+        public string AdxMetricsUri { get; set; } = null;
+
+        [Option("adx-metrics-database", Required = false, HelpText = "Azure Data Explorer database for the metrics sink.")]
+        public string AdxMetricsDatabase { get; set; } = "DotNetPerf";
+
+        [Option("adx-metrics-table", Required = false, HelpText = "Azure Data Explorer table for the metrics sink.")]
+        public string AdxMetricsTable { get; set; } = "PerfResults";
+
+        [Option("adx-managed-identity-client-id", Required = false, HelpText = "Optional user-assigned managed identity client id used to authenticate the Azure Data Explorer metrics sink. When omitted, DefaultAzureCredential (system-assigned identity / az login) is used.")]
+        public string AdxManagedIdentityClientId { get; set; } = null;
+
+        /// <summary>
+        /// The continuous-run duration parsed from <see cref="Duration"/>, or null for count-based runs.
+        /// </summary>
+        [JsonIgnore]
+        internal TimeSpan? RunDuration => string.IsNullOrWhiteSpace(this.Duration)
+            ? (TimeSpan?)null
+            : System.Xml.XmlConvert.ToTimeSpan(this.Duration);
+
+        /// <summary>
+        /// Indicates whether the benchmark runs in continuous (duration-based) mode.
+        /// </summary>
+        [JsonIgnore]
+        internal bool IsDurationMode => this.RunDuration.HasValue;
+
+        /// <summary>
+        /// The parsed metrics sink type. Defaults to <see cref="MetricsSinkType.None"/>.
+        /// </summary>
+        [JsonIgnore]
+        internal MetricsSinkType MetricsSinkType => Enum.TryParse(this.MetricsSink, ignoreCase: true, out MetricsSinkType parsed)
+            ? parsed
+            : MetricsSinkType.None;
+
+        /// <summary>
+        /// Resolves the SDK version to tag result rows with: the explicit --sdk-version, else the
+        /// loaded Microsoft.Azure.Cosmos assembly version. Never the benchmark-harness commit.
+        /// </summary>
+        internal string ResolveSdkVersion()
+        {
+            if (!string.IsNullOrWhiteSpace(this.SdkVersion))
+            {
+                return this.SdkVersion;
+            }
+
+            try
+            {
+                System.Reflection.Assembly cosmosAssembly = typeof(Microsoft.Azure.Cosmos.CosmosClient).Assembly;
+                string informational = cosmosAssembly
+                    .GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()?
+                    .InformationalVersion;
+
+                if (!string.IsNullOrWhiteSpace(informational))
+                {
+                    // Strip any build metadata suffix (e.g. "3.46.0+abcdef").
+                    int plusIndex = informational.IndexOf('+');
+                    return plusIndex > 0 ? informational.Substring(0, plusIndex) : informational;
+                }
+
+                return cosmosAssembly.GetName().Version?.ToString();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Resolves the SDK source ref to tag result rows with: the explicit --sdk-source-ref, else
+        /// the COSMOS_PERF_BUILT_SDK_REF environment variable (baked in at container build time).
+        /// </summary>
+        internal string ResolveSdkSourceRef()
+        {
+            if (!string.IsNullOrWhiteSpace(this.SdkSourceRef))
+            {
+                return this.SdkSourceRef;
+            }
+
+            return Environment.GetEnvironmentVariable("COSMOS_PERF_BUILT_SDK_REF");
+        }
 
         internal int GetTaskCount(int containerThroughput)
         {
