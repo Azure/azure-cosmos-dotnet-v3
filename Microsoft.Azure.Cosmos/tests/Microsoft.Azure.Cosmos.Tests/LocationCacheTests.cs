@@ -1926,6 +1926,86 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             Assert.AreEqual("https://writelocation.documents.azure.com/", cache.WriteEndpoints[0].AbsoluteUri);
         }
 
+        /// <summary>
+        /// Regression test for the thin-client kill-switch: <see cref="LocationCache.HasThinClientReadLocations"/>
+        /// and <see cref="LocationCache.HasThinClientWriteLocations"/> must each track the most
+        /// recent <see cref="LocationCache.OnDatabaseAccountRead"/> snapshot — independently per
+        /// direction — so the SDK falls back to plain gateway on the very next request when the
+        /// service withdraws thin-client locations, with no client restart. Mirrors Java SDK
+        /// <c>GlobalEndpointManager.hasThinClientReadLocations</c>, extended with an independent
+        /// write flag because .NET dispatches reads vs writes through separate gates.
+        /// </summary>
+        [TestMethod]
+        public void HasThinClientLocationsTracksRefreshesPerDirection()
+        {
+            LocationCache cache = new LocationCache(
+                preferredLocations: new ReadOnlyCollection<string>(new List<string>()),
+                defaultEndpoint: new Uri("https://default.documents.azure.com"),
+                enableEndpointDiscovery: true,
+                connectionLimit: 50,
+                useMultipleWriteLocations: false);
+
+            // Initial state — before any account read: both flags must be false.
+            Assert.IsFalse(cache.HasThinClientReadLocations);
+            Assert.IsFalse(cache.HasThinClientWriteLocations);
+
+            // Service advertises both directions → both flags true.
+            cache.OnDatabaseAccountRead(BuildAccountProperties(
+                thinClientReadEndpoint: "https://thin-read.documents.azure.com:10650/",
+                thinClientWriteEndpoint: "https://thin-write.documents.azure.com:10650/"));
+            Assert.IsTrue(cache.HasThinClientReadLocations);
+            Assert.IsTrue(cache.HasThinClientWriteLocations);
+
+            // Service withdraws reads only → reads flip false, writes stay true (proves
+            // independence: a regression that aliased the two flags would fail here).
+            cache.OnDatabaseAccountRead(BuildAccountProperties(
+                thinClientReadEndpoint: null,
+                thinClientWriteEndpoint: "https://thin-write.documents.azure.com:10650/"));
+            Assert.IsFalse(cache.HasThinClientReadLocations);
+            Assert.IsTrue(cache.HasThinClientWriteLocations);
+
+            // Service withdraws everything (kill-switch fully engaged) → both flags false.
+            cache.OnDatabaseAccountRead(BuildAccountProperties(
+                thinClientReadEndpoint: null,
+                thinClientWriteEndpoint: null));
+            Assert.IsFalse(cache.HasThinClientReadLocations);
+            Assert.IsFalse(cache.HasThinClientWriteLocations);
+
+            // Service re-advertises both directions → both flags come back true (re-engagement).
+            cache.OnDatabaseAccountRead(BuildAccountProperties(
+                thinClientReadEndpoint: "https://thin-read.documents.azure.com:10650/",
+                thinClientWriteEndpoint: "https://thin-write.documents.azure.com:10650/"));
+            Assert.IsTrue(cache.HasThinClientReadLocations);
+            Assert.IsTrue(cache.HasThinClientWriteLocations);
+        }
+
+        private static AccountProperties BuildAccountProperties(
+            string thinClientReadEndpoint,
+            string thinClientWriteEndpoint)
+        {
+            static Collection<AccountRegion> ToCollection(string endpoint)
+            {
+                return endpoint == null
+                ? new Collection<AccountRegion>()
+                : new Collection<AccountRegion> { new AccountRegion { Name = "region1", Endpoint = endpoint } };
+            }
+
+            return new AccountProperties
+            {
+                ReadLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "region1", Endpoint = "https://read.documents.azure.com" }
+                },
+                WriteLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "region1", Endpoint = "https://write.documents.azure.com" }
+                },
+                ThinClientReadableLocationsInternal = ToCollection(thinClientReadEndpoint),
+                ThinClientWritableLocationsInternal = ToCollection(thinClientWriteEndpoint),
+                EnableMultipleWriteLocations = false
+            };
+        }
+
 
         private ReadOnlyCollection<Uri> GetApplicableRegions(bool isReadRequest, bool useMultipleWriteLocations, bool usesPreferredLocations, List<string> excludeRegions, bool isDefaultEndpointARegionalEndpoint)
         {

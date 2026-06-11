@@ -232,8 +232,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             IAddressResolver resolver = this.GetAddressResolver(request);
             PartitionAddressInformation partitionAddressInformation = await resolver.ResolveAsync(request, forceRefresh, cancellationToken);
-
-            if (!this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(request))
+            if (!this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(request, checkHubRegionOverrideInCache: false))
             {
                 return partitionAddressInformation;
             }

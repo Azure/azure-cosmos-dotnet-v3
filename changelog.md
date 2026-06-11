@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
+- [5583](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5583) LINQ: Fixes `.Any()` on `Dictionary`/`IDictionary`/`IReadOnlyDictionary` properties returning no results by wrapping dictionary access with `OBJECTTOARRAY()` so dictionary entries (and predicates on `KeyValuePair.Key`/`Value`) are iterated correctly.
+- [5298](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5298) LINQ: Fixes constant folding for closure-captured variables inside MemberInitExpression (resolves #1664). Previously, the recursion that partially evaluates expressions terminated whenever it encountered a `MemberInitExpression` node, so captured variables inside object initializers were not folded, producing invalid translated SQL.
+
 #### Other Changes
 
 ### <a name="3.62.0-preview.0"/> [3.62.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.62.0-preview.0) - 2026-6-1
@@ -31,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [5838](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5838) EmbeddingGenerator: Adds ICosmosEmbeddingGenerator client-wide configuration (preview)
 - [5911](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5911) DistributedTransaction: Adds `DistributedReadTransaction` and `DistributedWriteTransaction` APIs (with `CosmosClient.CreateDistributedReadTransaction` / `CreateDistributedWriteTransaction`) for atomic read and write operations across partitions and containers (preview)
+- [5648](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5648) Hub Region Caching: Caches discovered hub region per partition on successful response during 403/3 discovery chain, enabling subsequent requests to skip the discovery and route directly to the cached hub.
 
 ### <a name="3.61.0"/> [3.61.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.61.0) - 2026-6-1
 
@@ -50,10 +54,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [5827](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5827) ChangeFeedEstimator: Change feed estimator threw `ArgumentNullException` when an inmemory lease container was being used. Update validations so in-memory lease containers work with change feed estimator
 - [5910](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5910) Upgraded Direct package to 3.43.2.
 - [5910](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5910) Direct: Fixed RNTBD thread-pool starvation by making `Dispatcher.OnIdleTimer` asynchronous (ports public [PR 5817](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5817))
+- [5927](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5927) ThinClient: Fixes mid-flight fallback to gateway when the service stops advertising thin-client endpoints. Previously the SDK kept routing to stale thin-client URIs and required a client restart to recover.
 
 #### Other Changes
 
 - [#5887](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5887) Direct: Documents that `MaxTcpConnectionsPerEndpoint` accepts any positive value to allow customer control of the connection pool size; values of 16 or greater remain recommended.
+- [#5905](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5905) ReadMany: Adds point-read fast path for single-tuple partitions. When the items requested in a single `ReadManyItems[Stream]Async` call resolve to a physical partition with only one `(id, partitionKey)` tuple, the SDK now issues a point read for that tuple instead of a parameterized query. This reduces RU and latency for sparse multi-partition lookups (closes [#4369](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4369)) and aligns the .NET SDK with the existing Java and Python SDK behavior.
 
 ### <a name="3.61.0-preview.0"/> [3.61.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.61.0-preview.0) - 2026-5-18
 

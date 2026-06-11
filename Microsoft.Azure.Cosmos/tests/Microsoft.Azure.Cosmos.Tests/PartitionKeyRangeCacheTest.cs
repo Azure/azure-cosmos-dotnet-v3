@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Collections.Generic;
     using System.IO;
     using System.Net;
+    using System.Reflection;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -256,6 +257,111 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Assert.AreEqual(HttpStatusCode.ServiceUnavailable, cosmosException.StatusCode);
                     Assert.AreEqual(SubStatusCodes.TransportGenerated503, cosmosException.Headers.SubStatusCode);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Regression bar for PR #5866 (cold-start callsite).
+        ///
+        /// <see cref="PartitionKeyRangeCache.GetRoutingMapForCollectionAsync"/> has two
+        /// sister callsites that materialize a <see cref="CollectionRoutingMap"/>:
+        ///   * <c>previousRoutingMap == null</c> (cold-start) calls <c>TryCreateCompleteRoutingMap(...)</c>.
+        ///   * <c>previousRoutingMap != null</c> (refresh) calls <c>previousRoutingMap.TryCombine(...)</c>.
+        ///
+        /// PR #5551 wired the refresh callsite to <c>this.useLengthAwareRangeComparer</c>
+        /// but left the cold-start callsite with a literal <c>false</c>, so the first
+        /// routing map for every container in every <see cref="CosmosClient"/> was always
+        /// built with the regular <c>Range&lt;string&gt;.MinComparer/MaxComparer</c>
+        /// regardless of the env var or <see cref="CosmosClientOptions.UseLengthAwareRangeComparer"/>.
+        /// This test pins the cold-start callsite to consume the configured value.
+        /// </summary>
+        [DataTestMethod]
+        [DataRow(true, "LengthAwareMinComparer", "LengthAwareMaxComparer", DisplayName = "useLengthAwareRangeComparer=true bakes LengthAware comparers into cold-start CollectionRoutingMap")]
+        [DataRow(false, "MinComparer", "MaxComparer", DisplayName = "useLengthAwareRangeComparer=false bakes regular comparers into cold-start CollectionRoutingMap")]
+        [Owner("amudumba")]
+        public async Task GetRoutingMapForCollectionAsync_ColdStart_PropagatesUseLengthAwareRangeComparerToCollectionRoutingMap(
+            bool useLengthAwareRangeComparer,
+            string expectedMinComparerTypeName,
+            string expectedMaxComparerTypeName)
+        {
+            string eTag = "483";
+            string authToken = "token!";
+            string containerRId = "kjhsAA==";
+            string singlePkCollectionCache = "{\"_rid\":\"3FIlAOzjvyg=\",\"PartitionKeyRanges\":[{\"_rid\":\"3FIlAOzjvygCAAAAAAAAUA==\",\"id\":\"0\",\"_etag\":\"\\\"00005565-0000-0800-0000-621fd98a0000\\\"\",\"minInclusive\":\"\",\"maxExclusive\":\"FF\",\"ridPrefix\":0,\"_self\":\"dbs/3FIlAA==/colls/3FIlAOzjvyg=/pkranges/3FIlAOzjvygCAAAAAAAAUA==/\",\"throughputFraction\":1,\"status\":\"splitting\",\"parents\":[],\"_ts\":1646254474,\"_lsn\":44}],\"_count\":1}";
+            byte[] singlePkCollectionCacheByte = Encoding.UTF8.GetBytes(singlePkCollectionCache);
+
+            using (ITrace trace = Trace.GetRootTrace(this.TestContext.TestName, TraceComponent.Unknown, TraceLevel.Info))
+            {
+                Mock<IStoreModel> mockStoreModel = new();
+                Mock<CollectionCache> mockCollectionCache = new(false);
+                Mock<ICosmosAuthorizationTokenProvider> mockTokenProvider = new();
+                NameValueCollectionWrapper headers = new()
+                {
+                    [HttpConstants.HttpHeaders.ETag] = eTag,
+                };
+
+                Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+                mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
+
+                using GlobalEndpointManager endpointManager = new(mockDocumentClient.Object, new ConnectionPolicy());
+
+                mockStoreModel.SetupSequence(x => x.ProcessMessageAsync(It.IsAny<DocumentServiceRequest>(), It.IsAny<CancellationToken>()))
+                     .ReturnsAsync(new DocumentServiceResponse(new MemoryStream(singlePkCollectionCacheByte),
+                            new StoreResponseNameValueCollection()
+                            {
+                                ETag = eTag,
+                            },
+                            HttpStatusCode.OK))
+                     .ReturnsAsync(new DocumentServiceResponse(null, headers, HttpStatusCode.NotModified, null));
+
+                mockTokenProvider.Setup(x => x.GetUserAuthorizationTokenAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<INameValueCollection>(), It.IsAny<AuthorizationTokenType>(), It.IsAny<ITrace>()))
+                    .Returns(new ValueTask<string>(authToken));
+
+                // Act 1: drive a cold-start lookup (previousRoutingMap == null branch in GetRoutingMapForCollectionAsync).
+                PartitionKeyRangeCache partitionKeyRangeCache = new(
+                    mockTokenProvider.Object,
+                    mockStoreModel.Object,
+                    mockCollectionCache.Object,
+                    endpointManager,
+                    useLengthAwareRangeComparer: useLengthAwareRangeComparer,
+                    enableAsyncCacheExceptionNoSharing: false);
+
+                IReadOnlyList<PartitionKeyRange> ranges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+                    containerRId,
+                    FeedRangeEpk.FullRange.Range,
+                    trace,
+                    forceRefresh: false);
+                Assert.IsNotNull(ranges, "Cold-start lookup should return overlapping ranges.");
+
+                // Act 2: re-read the cached map (cache hit, previousValue: null) so we can inspect the baked-in comparers.
+                CollectionRoutingMap cachedMap = await partitionKeyRangeCache.TryLookupAsync(
+                    collectionRid: containerRId,
+                    previousValue: null,
+                    request: null,
+                    trace: trace);
+                Assert.IsNotNull(cachedMap, "Cached CollectionRoutingMap should exist after cold-start lookup.");
+
+                // Assert: the (MinComparer, MaxComparer) tuple baked into the CollectionRoutingMap
+                // ctor reflects the useLengthAwareRangeComparer wired into PartitionKeyRangeCache.
+                FieldInfo comparersField = typeof(CollectionRoutingMap).GetField(
+                    "comparers",
+                    BindingFlags.NonPublic | BindingFlags.Instance);
+                Assert.IsNotNull(comparersField, "CollectionRoutingMap.comparers private field must exist.");
+
+                object comparers = comparersField.GetValue(cachedMap);
+                Type tupleType = comparers.GetType();
+
+                object minComparer = tupleType.GetField("Item1").GetValue(comparers);
+                object maxComparer = tupleType.GetField("Item2").GetValue(comparers);
+
+                Assert.AreEqual(
+                    expectedMinComparerTypeName,
+                    minComparer.GetType().Name,
+                    $"Cold-start routing map should bake {expectedMinComparerTypeName} when PartitionKeyRangeCache.useLengthAwareRangeComparer={useLengthAwareRangeComparer}.");
+                Assert.AreEqual(
+                    expectedMaxComparerTypeName,
+                    maxComparer.GetType().Name,
+                    $"Cold-start routing map should bake {expectedMaxComparerTypeName} when PartitionKeyRangeCache.useLengthAwareRangeComparer={useLengthAwareRangeComparer}.");
             }
         }
     }

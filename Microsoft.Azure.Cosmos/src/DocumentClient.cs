@@ -1086,19 +1086,23 @@ namespace Microsoft.Azure.Cosmos
             this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
             this.InitializePartitionLevelFailoverWithDefaultHedging();
 
+            bool isHubRegionProcessingEnabled = ConfigurationManager.IsHubRegionProcessingEnabled();
+
             this.PartitionKeyRangeLocation =
                 new GlobalPartitionEndpointManagerCore(
                         this.GlobalEndpointManager,
                         this.ConnectionPolicy.EnablePartitionLevelFailover,
                         this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker,
-                        this.isThinClientEnabled);
+                        this.isThinClientEnabled,
+                        isHubRegionProcessingEnabled);
 
             this.retryPolicy = new RetryPolicy(
                 globalEndpointManager: this.GlobalEndpointManager,
                 connectionPolicy: this.ConnectionPolicy,
                 partitionKeyRangeLocationCache: this.PartitionKeyRangeLocation,
                 isThinClientEnabled: this.isThinClientEnabled,
-                this.cosmosAuthorization);
+                isHubRegionProcessingEnabled: isHubRegionProcessingEnabled,
+                authorizationTokenProvider: this.cosmosAuthorization);
 
             this.ResetSessionTokenRetryPolicy = this.retryPolicy;
 
