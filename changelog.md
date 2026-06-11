@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Other Changes
 
+- [5956](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5956) Routing: Fixes `CollectionRoutingMap.GetRangeByEffectivePartitionKey` to use the configured (length-aware-by-default) comparer instead of a hard-coded ordinal comparer, so it agrees with `GetOverlappingRanges` for a short/partial effective partition key on a zero-padded range boundary. This is a defense-in-depth correctness fix; current SDK callers pass full-length effective partition keys, for which the ordinal and length-aware comparers are equivalent, so there is no behavior change for existing workloads.
+
 ### <a name="3.62.0-preview.0"/> [3.62.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.62.0-preview.0) - 2026-6-1
 
 #### Features Added
