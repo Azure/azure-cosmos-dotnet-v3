@@ -369,6 +369,10 @@ namespace Microsoft.Azure.Documents
                 // retry re-resolves to the new child/parent range instead of repeatedly resolving the
                 // stale (now-gone) range. Without this, the routing map stays stale and the 410/1002
                 // bubbles up to the caller (see GitHub issue #5924).
+                // Unlike the CompletingPartitionMigration (1008) branch above, ForceMasterRefresh is not
+                // set: a split/merge only changes the collection's partition-key-range topology, it does
+                // not move the partition between master-tracked service identities, so the master cache
+                // does not need to be refreshed.
                 GoneAndRetryWithRequestRetryPolicy<TResponse>.ClearRequestContext(request);
                 request.ForceCollectionRoutingMapRefresh = true;
                 forceRefreshAddressCache = false;
