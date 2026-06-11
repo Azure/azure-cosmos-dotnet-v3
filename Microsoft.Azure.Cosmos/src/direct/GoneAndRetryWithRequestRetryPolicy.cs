@@ -149,7 +149,8 @@ namespace Microsoft.Azure.Documents
                 !(exception is RetryWithException) &&
                 !(GoneAndRetryWithRequestRetryPolicy<TResponse>.IsPartitionIsMigrating(response, exception) && (request.ServiceIdentity == null || request.ServiceIdentity.IsMasterService)) &&
                 !(GoneAndRetryWithRequestRetryPolicy<TResponse>.IsInvalidPartition(response, exception) && (request.PartitionKeyRangeIdentity == null || request.PartitionKeyRangeIdentity.CollectionRid == null)) &&
-                !(GoneAndRetryWithRequestRetryPolicy<TResponse>.IsPartitionKeySplitting(response, exception) && request.ServiceIdentity == null))
+                !(GoneAndRetryWithRequestRetryPolicy<TResponse>.IsPartitionKeySplitting(response, exception) && request.ServiceIdentity == null) &&
+                !GoneAndRetryWithRequestRetryPolicy<TResponse>.IsPartitionKeyRangeGone(response, exception))
             {
                 // Have caller propagate original exception / response.
                 this.durationTimer.Stop();
@@ -359,6 +360,17 @@ namespace Microsoft.Azure.Documents
                 GoneAndRetryWithRequestRetryPolicy<TResponse>.ClearRequestContext(request);
                 request.ForceCollectionRoutingMapRefresh = true;
                 request.ForceMasterRefresh = true;
+                forceRefreshAddressCache = false;
+            }
+            else if (GoneAndRetryWithRequestRetryPolicy<TResponse>.IsPartitionKeyRangeGone(response, exception))
+            {
+                // A 410/1002 PartitionKeyRangeGone means the targeted partition key range no longer
+                // exists because a split/merge completed. Force a collection-routing-map refresh so the
+                // retry re-resolves to the new child/parent range instead of repeatedly resolving the
+                // stale (now-gone) range. Without this, the routing map stays stale and the 410/1002
+                // bubbles up to the caller (see GitHub issue #5924).
+                GoneAndRetryWithRequestRetryPolicy<TResponse>.ClearRequestContext(request);
+                request.ForceCollectionRoutingMapRefresh = true;
                 forceRefreshAddressCache = false;
             }
             else if (GoneAndRetryWithRequestRetryPolicy<TResponse>.IsInvalidPartition(response, exception))
