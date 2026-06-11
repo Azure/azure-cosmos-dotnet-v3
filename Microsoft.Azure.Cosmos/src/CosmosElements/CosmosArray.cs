@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
@@ -46,6 +47,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public bool Equals(CosmosArray cosmosArray)
         {
+            // Guard against stack exhaustion on deeply-nested input. Converts an
+            // otherwise-uncatchable StackOverflowException into a catchable
+            // InsufficientExecutionStackException.
+            RuntimeHelpers.EnsureSufficientExecutionStack();
+
             if (this.Count != cosmosArray.Count)
             {
                 return false;
@@ -65,6 +71,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public override int GetHashCode()
         {
+            // Guard against stack exhaustion on deeply-nested input. Converts an
+            // otherwise-uncatchable StackOverflowException into a catchable
+            // InsufficientExecutionStackException.
+            RuntimeHelpers.EnsureSufficientExecutionStack();
+
             uint hash = HashSeed;
 
             // Incorporate all the array items into the hash.
