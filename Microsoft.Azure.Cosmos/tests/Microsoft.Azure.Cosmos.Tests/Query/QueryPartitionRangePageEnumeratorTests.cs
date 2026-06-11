@@ -60,7 +60,6 @@
             await implementation.TestSplitAsync();
         }
 
-        [TestClass]
         private sealed class Implementation : PartitionRangeEnumeratorTests<QueryPage, QueryState>
         {
             public Implementation()
@@ -68,7 +67,6 @@
             {
             }
 
-            [TestMethod]
             public async Task TestSplitAsync()
             {
                 int numItems = 100;

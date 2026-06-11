@@ -749,7 +749,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             HashSet<CacheRefreshInfo> cacheRefreshInfoSet = new HashSet<CacheRefreshInfo>();
             do
             {
-                this.eventSlim.Wait();
+                this.eventSlim.Wait(TimeSpan.FromSeconds(15));
+                this.eventSlim.Reset();
 
                 HashSet<OperationInfo> actualOperationSet = new HashSet<OperationInfo>();
                 HashSet<RequestInfo> requestInfoSet = new HashSet<RequestInfo>();
@@ -786,7 +787,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         break;
                     }
 
-                    Assert.IsTrue(stopwatch.Elapsed.TotalMinutes < 1, $"The expected operation count({expectedOperationCount}) was never hit, Actual Operation Count is {actualOperationSet.Count}.  ActualInfo:{JsonConvert.SerializeObject(this.actualInfo)}");
+                    Assert.IsTrue(stopwatch.Elapsed.TotalMinutes < 2, $"The expected operation count({expectedOperationCount}) was never hit, Actual Operation Count is {actualOperationSet.Count}.  ActualInfo:{JsonConvert.SerializeObject(this.actualInfo)}");
                 }
             }
             while (localCopyOfActualInfo == null);

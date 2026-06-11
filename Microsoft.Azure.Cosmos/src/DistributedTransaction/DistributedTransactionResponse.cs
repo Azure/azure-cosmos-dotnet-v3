@@ -12,21 +12,20 @@ namespace Microsoft.Azure.Cosmos
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Represents the response for a distributed transaction operation.
     /// </summary>
-#if INTERNAL
+#if PREVIEW
     public
 #else
     internal
 #endif
     class DistributedTransactionResponse : IReadOnlyList<DistributedTransactionOperationResult>, IDisposable
     {
-        private const string IdempotencyTokenHeader = "x-ms-dtc-operation-id";
-
         private List<DistributedTransactionOperationResult> results;
         private bool isDisposed;
 
@@ -37,9 +36,8 @@ namespace Microsoft.Azure.Cosmos
             Headers headers,
             IReadOnlyList<DistributedTransactionOperation> operations,
             CosmosSerializerCore serializer,
-            ITrace trace,
             Guid idempotencyToken,
-            string serverDiagnostics = null)
+            bool isRetriable = false)
         {
             this.Headers = headers;
             this.StatusCode = statusCode;
@@ -47,9 +45,8 @@ namespace Microsoft.Azure.Cosmos
             this.ErrorMessage = errorMessage;
             this.Operations = operations;
             this.SerializerCore = serializer;
-            this.Trace = trace;
             this.IdempotencyToken = idempotencyToken;
-            this.ServerDiagnostics = serverDiagnostics;
+            this.IsRetriable = isRetriable;
         }
 
         /// <summary>
@@ -80,6 +77,47 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Gets the result of the operation at the provided index in the transaction — the returned result
+        /// has a <see cref="DistributedTransactionOperationResult{T}.Resource"/> of type <typeparamref name="T"/>.
+        /// </summary>
+        /// <typeparam name="T">The type to which the resource body should be deserialized.</typeparam>
+        /// <param name="index">Zero-based index of the operation in the transaction whose result is returned.</param>
+        /// <returns>
+        /// A <see cref="DistributedTransactionOperationResult{T}"/> whose <c>Resource</c> is the deserialized item,
+        /// or <c>default(<typeparamref name="T"/>)</c> when the server did not return a body for that operation.
+        /// </returns>
+        /// <remarks>
+        /// The underlying <see cref="DistributedTransactionOperationResult.ResourceStream"/> is left intact and
+        /// remains readable after this call, so this method may be invoked multiple times (with the same or
+        /// different <typeparamref name="T"/>) for the same index, and direct access via the indexer continues
+        /// to work afterwards.
+        /// </remarks>
+        public virtual DistributedTransactionOperationResult<T> GetOperationResultAtIndex<T>(int index)
+        {
+            this.ThrowIfDisposed();
+
+            DistributedTransactionOperationResult result = this[index];
+
+            T resource = default;
+            if (result.ResourceStream != null)
+            {
+                if (this.SerializerCore == null)
+                {
+                    throw new InvalidOperationException(
+                        "A serializer is required to deserialize the operation resource but none was set on this response.");
+                }
+
+                // CosmosSerializer.FromStream<T> takes ownership of (and disposes) its input stream.
+                // Create an independent snapshot so this method is safe to call multiple times and
+                // the caller can still access ResourceStream directly.
+                using Stream snapshot = DistributedTransactionOperationResult.CreateSnapshot(result.ResourceStream);
+                resource = this.SerializerCore.FromStream<T>(snapshot);
+            }
+
+            return new DistributedTransactionOperationResult<T>(result, resource);
+        }
+
+        /// <summary>
         /// Gets the headers associated with the distributed transaction response.
         /// </summary>
         public virtual Headers Headers { get; }
@@ -105,7 +143,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual bool IsSuccessStatusCode => (int)this.StatusCode >= 200 && (int)this.StatusCode <= 299;
 
         /// <summary>
-        /// Gets the error message associated with the distributed transaction response, if any.
+        /// Gets the error message associated with the distributed transaction response.
         /// </summary>
         public virtual string ErrorMessage { get; }
 
@@ -120,17 +158,28 @@ namespace Microsoft.Azure.Cosmos
         public virtual Guid IdempotencyToken { get; }
 
         /// <summary>
-        /// Gets the server-side diagnostic information for the transaction.
+        /// Gets a value indicating whether the transaction is safe to retry with the same idempotency token.
         /// </summary>
-        public virtual string ServerDiagnostics { get; }
+        public virtual bool IsRetriable { get; }
+
+        /// <summary>
+        /// Gets the diagnostic string from the coordinator describing the transaction outcome
+        /// </summary>
+        public virtual string DiagnosticString { get; private set; }
+
+        /// <summary>
+        /// Gets the client-side diagnostics for the distributed transaction, covering the full
+        /// retry loop and per-attempt spans (address resolution, network, retries, latency).
+        /// </summary>
+        /// <remarks>Non-null when the response is returned from <c>CommitTransactionAsync</c>. The SDK sets this property
+        /// before returning; callers should treat it as non-null in normal usage but guard defensively in edge cases.</remarks>
+        public virtual CosmosDiagnostics Diagnostics { get; internal set; }
 
         internal virtual SubStatusCodes SubStatusCode { get; }
 
         internal virtual CosmosSerializerCore SerializerCore { get; }
 
         internal IReadOnlyList<DistributedTransactionOperation> Operations { get; }
-
-        internal ITrace Trace { get; }
 
         /// <summary>
         /// Returns an enumerator that iterates through the operation results.
@@ -167,16 +216,15 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage responseMessage,
             DistributedTransactionServerRequest serverRequest,
             CosmosSerializerCore serializer,
-            Guid requestIdempotencyToken,
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            using (ITrace createResponseTrace = trace.StartChild("Create Distributed Transaction Response", TraceComponent.Batch, TraceLevel.Info))
+            using (trace.StartChild("Create Distributed Transaction Response", TraceComponent.Batch, TraceLevel.Info))
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                // Extract idempotency token from response headers, fallback to request token if not present
-                Guid idempotencyToken = GetIdempotencyTokenFromHeaders(responseMessage.Headers, requestIdempotencyToken);
+                // Extract idempotency token from response headers, fallback to the request token if absent.
+                Guid idempotencyToken = GetIdempotencyTokenFromHeaders(responseMessage.Headers, serverRequest.IdempotencyToken);
 
                 DistributedTransactionResponse response = null;
                 MemoryStream memoryStream = null;
@@ -202,7 +250,6 @@ namespace Microsoft.Azure.Cosmos
                             serverRequest,
                             serializer,
                             idempotencyToken,
-                            createResponseTrace,
                             cancellationToken);
                     }
 
@@ -214,27 +261,31 @@ namespace Microsoft.Azure.Cosmos
                         responseMessage.Headers,
                         serverRequest.Operations,
                         serializer,
-                        createResponseTrace,
                         idempotencyToken);
 
                     // Validate results count matches operations count
                     if (response.results == null || response.results.Count != serverRequest.Operations.Count)
                     {
+                        DefaultTrace.TraceWarning(
+                            $"DTC response: result count ({response.results?.Count ?? 0}) differs from " +
+                            $"operation count ({serverRequest.Operations.Count}).");
+
                         if (responseMessage.IsSuccessStatusCode)
                         {
-                            // Server should guarantee results count equals operations count on success
+                            SubStatusCodes wireSubStatusCode = responseMessage.Headers.SubStatusCode;
+                            response.Dispose();
+
                             return new DistributedTransactionResponse(
                                 HttpStatusCode.InternalServerError,
-                                SubStatusCodes.Unknown,
+                                wireSubStatusCode,
                                 ClientResources.InvalidServerResponse,
                                 responseMessage.Headers,
                                 serverRequest.Operations,
                                 serializer,
-                                createResponseTrace,
                                 idempotencyToken);
                         }
 
-                        response.CreateAndPopulateResults(serverRequest.Operations, createResponseTrace);
+                        response.CreateAndPopulateResults(serverRequest.Operations);
                     }
 
                     return response;
@@ -272,7 +323,7 @@ namespace Microsoft.Azure.Cosmos
         private static Guid GetIdempotencyTokenFromHeaders(Headers headers, Guid fallbackToken)
         {
             if (headers != null &&
-                headers.TryGetValue(IdempotencyTokenHeader, out string tokenValue) &&
+                headers.TryGetValue(HttpConstants.HttpHeaders.IdempotencyToken, out string tokenValue) &&
                 Guid.TryParse(tokenValue, out Guid idempotencyToken))
             {
                 return idempotencyToken;
@@ -295,38 +346,83 @@ namespace Microsoft.Azure.Cosmos
             DistributedTransactionServerRequest serverRequest,
             CosmosSerializerCore serializer,
             Guid idempotencyToken,
-            ITrace trace,
             CancellationToken cancellationToken)
         {
             List<DistributedTransactionOperationResult> results = new List<DistributedTransactionOperationResult>();
+            bool isRetriable = false;
+            string diagnosticString = null;
 
+            JsonDocument responseJson;
             try
             {
-                using (JsonDocument responseJson = await JsonDocument.ParseAsync(content, cancellationToken: cancellationToken))
-                {
-                    JsonElement root = responseJson.RootElement;
+                responseJson = await JsonDocument.ParseAsync(content, cancellationToken: cancellationToken);
+            }
+            catch (JsonException jsonEx)
+            {
+                DefaultTrace.TraceWarning(
+                    "DistributedTransactionResponse: failed to parse response body: {0}",
+                    jsonEx.Message);
 
-                    // Parse operation results from "operationResponses" array
-                    if (root.TryGetProperty("operationResponses", out JsonElement operationResponses) &&
-                        operationResponses.ValueKind == JsonValueKind.Array)
+                if (responseMessage.IsSuccessStatusCode)
+                {
+                    return CreateDeserializationFailureResponse(responseMessage, serverRequest, serializer, idempotencyToken);
+                }
+
+                return null;
+            }
+
+            using (responseJson)
+            {
+                JsonElement root = responseJson.RootElement;
+
+                if (DistributedTransactionOperationResult.TryGetProperty(root, DistributedTransactionSerializer.IsRetriable, out JsonElement isRetriableElement) &&
+                    isRetriableElement.ValueKind == JsonValueKind.True)
+                {
+                    isRetriable = true;
+                }
+
+                if (DistributedTransactionOperationResult.TryGetProperty(root, DistributedTransactionSerializer.DiagnosticString, out JsonElement diagnosticStringElement) &&
+                    diagnosticStringElement.ValueKind == JsonValueKind.String)
+                {
+                    diagnosticString = diagnosticStringElement.GetString();
+                }
+
+                // Parse operation results from "operationResponses" array.
+                if (DistributedTransactionOperationResult.TryGetProperty(root, DistributedTransactionSerializer.OperationResponses, out JsonElement operationResponses) &&
+                    operationResponses.ValueKind == JsonValueKind.Array)
+                {
+                    try
                     {
                         foreach (JsonElement operationElement in operationResponses.EnumerateArray())
                         {
                             cancellationToken.ThrowIfCancellationRequested();
 
                             DistributedTransactionOperationResult operationResult = DistributedTransactionOperationResult.FromJson(operationElement);
-                            operationResult.Trace = trace;
-                            operationResult.SessionToken ??= responseMessage.Headers.Session;
-                            operationResult.ActivityId = responseMessage.Headers.ActivityId;
                             results.Add(operationResult);
                         }
                     }
+                    catch (JsonException jsonEx)
+                    {
+                        DefaultTrace.TraceWarning(
+                            "DistributedTransactionResponse: per-operation parse failed; forcing isRetriable=false. {0}",
+                            jsonEx.Message);
+
+                        // Dispose any resource streams allocated for the partially-parsed operations
+                        // before discarding them.
+                        foreach (DistributedTransactionOperationResult partial in results)
+                        {
+                            partial.ResourceStream?.Dispose();
+                        }
+
+                        results.Clear();
+                        isRetriable = false;
+
+                        if (responseMessage.IsSuccessStatusCode)
+                        {
+                            return CreateDeserializationFailureResponse(responseMessage, serverRequest, serializer, idempotencyToken);
+                        }
+                    }
                 }
-            }
-            catch (JsonException)
-            {
-                // If JSON parsing fails, return null to fall back to default response
-                return null;
             }
 
             HttpStatusCode finalStatusCode = responseMessage.StatusCode;
@@ -347,23 +443,35 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
+            // Incorporate the coordinator's diagnosticString into the error message so it
+            // surfaces in response.ErrorMessage and any exception message the caller builds.
+            // Only merge on error responses — success responses must keep ErrorMessage null.
+            string effectiveErrorMessage = responseMessage.ErrorMessage;
+            bool isSuccessStatus = (int)finalStatusCode >= 200 && (int)finalStatusCode <= 299;
+            if (!isSuccessStatus && !string.IsNullOrWhiteSpace(diagnosticString))
+            {
+                effectiveErrorMessage = string.IsNullOrWhiteSpace(effectiveErrorMessage)
+                    ? diagnosticString
+                    : $"{effectiveErrorMessage} ({diagnosticString})";
+            }
+
             return new DistributedTransactionResponse(
                 finalStatusCode,
                 finalSubStatusCode,
-                responseMessage.ErrorMessage,
+                effectiveErrorMessage,
                 responseMessage.Headers,
                 serverRequest.Operations,
                 serializer,
-                trace,
-                idempotencyToken)
+                idempotencyToken,
+                isRetriable)
             {
-                results = results
+                results = results,
+                DiagnosticString = diagnosticString
             };
         }
 
         private void CreateAndPopulateResults(
-            IReadOnlyList<DistributedTransactionOperation> operations,
-            ITrace trace)
+            IReadOnlyList<DistributedTransactionOperation> operations)
         {
             this.results = new List<DistributedTransactionOperationResult>(operations.Count);
 
@@ -372,11 +480,31 @@ namespace Microsoft.Azure.Cosmos
                 this.results.Add(new DistributedTransactionOperationResult(this.StatusCode)
                 {
                     SubStatusCode = this.SubStatusCode,
-                    SessionToken = this.Headers?.Session,
-                    ActivityId = this.ActivityId,
-                    Trace = trace
                 });
             }
+        }
+
+        /// <summary>
+        /// Builds an InternalServerError response indicating the server replied with success but
+        /// the SDK could not deserialize the response payload. Mirrors TransactionalBatch behavior.
+        /// </summary>
+        private static DistributedTransactionResponse CreateDeserializationFailureResponse(
+            ResponseMessage responseMessage,
+            DistributedTransactionServerRequest serverRequest,
+            CosmosSerializerCore serializer,
+            Guid idempotencyToken)
+        {
+            DistributedTransactionResponse failedResponse = new DistributedTransactionResponse(
+                HttpStatusCode.InternalServerError,
+                SubStatusCodes.Unknown,
+                ClientResources.ServerResponseDeserializationFailure,
+                responseMessage.Headers,
+                serverRequest.Operations,
+                serializer,
+                idempotencyToken);
+
+            failedResponse.CreateAndPopulateResults(serverRequest.Operations);
+            return failedResponse;
         }
     }
 }
