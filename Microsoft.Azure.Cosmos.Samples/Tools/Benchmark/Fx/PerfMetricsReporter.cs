@@ -117,13 +117,16 @@ namespace CosmosBenchmark
 
             OperationWindowSnapshot snapshot = this.aggregator.SnapshotAndReset(windowSeconds);
 
+            // Capture runtime metrics every window so GC/CPU deltas stay window-aligned, even when
+            // an empty window is skipped below.
+            RuntimeMetricsSnapshot runtime = this.runtimeCollector.Capture();
+
             // Skip emitting empty windows (no successes and no errors) to avoid noise rows.
             if (snapshot.Count == 0 && snapshot.Errors == 0)
             {
                 return;
             }
 
-            RuntimeMetricsSnapshot runtime = this.runtimeCollector.Capture();
             PerfResultsRecord record = PerfResultsRecord.Build(
                 timestampUtc: DateTime.UtcNow,
                 runContext: this.runContext,
