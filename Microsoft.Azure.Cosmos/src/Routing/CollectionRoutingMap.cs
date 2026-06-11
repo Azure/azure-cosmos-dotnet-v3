@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             int index = this.orderedRanges.BinarySearch(
                 new Range<string>(effectivePartitionKeyValue, effectivePartitionKeyValue, true, true),
-                Range<string>.MinComparer.Instance);
+                this.comparers.MinComparer);
 
             if (index < 0)
             {
