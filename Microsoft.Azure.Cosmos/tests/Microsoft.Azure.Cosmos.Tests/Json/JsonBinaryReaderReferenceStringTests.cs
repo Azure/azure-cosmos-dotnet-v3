@@ -43,6 +43,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         private const byte StrL1TypeMarker = 0xC0;
         private const byte StrR1TypeMarker = 0xC3;
         private const byte StrR2TypeMarker = 0xC4;
+        private const byte StrR3TypeMarker = 0xC5;
         private const byte StrR4TypeMarker = 0xC6;
 
         [TestMethod]
@@ -136,6 +137,34 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
         [TestMethod]
         [Owner("nalutripician")]
+        public void StrR3RedirectingToStrR3_Reader_IsRejected()
+        {
+            // 3-byte reference variant: StrR3 -> StrR3 -> StrL1 "x". Layout:
+            //   [0] 0x80
+            //   [1] ArrL1
+            //   [2] 11
+            //   [3] StrL1, [4] 1, [5] 'x'
+            //   [6] StrR3, [7..9] 10,0,0   24-bit offset = 10 -> another StrR3
+            //   [10] StrR3, [11..13] 3,0,0 24-bit offset = 3 -> the StrL1
+            byte[] payload = new byte[]
+            {
+                BinaryFormatMarker,
+                ArrL1TypeMarker,
+                11,
+                StrL1TypeMarker,
+                1, (byte)'x',
+                StrR3TypeMarker, 10, 0, 0,
+                StrR3TypeMarker, 3, 0, 0,
+            };
+
+            Assert.ThrowsException<JsonInvalidTokenException>(
+                () => ReadStringElementViaCosmos(payload, index: 1));
+            Assert.ThrowsException<JsonInvalidTokenException>(
+                () => ReadAllStringsViaJsonReader(payload));
+        }
+
+        [TestMethod]
+        [Owner("nalutripician")]
         public void StrR4RedirectingToStrR4_Reader_IsRejected()
         {
             // 4-byte reference variant: StrR4 -> StrR4 -> StrL1 "x". Layout:
@@ -207,6 +236,34 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
             Assert.ThrowsException<JsonInvalidTokenException>(
                 () => ReadStringElementViaCosmos(payload, index: 0));
+            Assert.ThrowsException<JsonInvalidTokenException>(
+                () => ReadAllStringsViaJsonReader(payload));
+        }
+
+        [TestMethod]
+        [Owner("nalutripician")]
+        public void StrR1RedirectingToNonStringMarker_Reader_IsRejected()
+        {
+            // The writer invariant guarantees an StrR offset always resolves to
+            // a string literal. A hostile buffer that aims the offset at a
+            // non-string marker (here: the ArrL1 marker at [1]) exercises the
+            // !IsString branch of the guard and must be rejected. Layout:
+            //   [0] 0x80
+            //   [1] ArrL1
+            //   [2] 4
+            //   [3] StrL1, [4] 0   empty string literal so element[0] is valid
+            //   [5] StrR1, [6] 1   offset = 1 -> ArrL1 marker (not a string)
+            byte[] payload = new byte[]
+            {
+                BinaryFormatMarker,
+                ArrL1TypeMarker,
+                4,
+                StrL1TypeMarker, 0,
+                StrR1TypeMarker, 1,
+            };
+
+            Assert.ThrowsException<JsonInvalidTokenException>(
+                () => ReadStringElementViaCosmos(payload, index: 1));
             Assert.ThrowsException<JsonInvalidTokenException>(
                 () => ReadAllStringsViaJsonReader(payload));
         }
