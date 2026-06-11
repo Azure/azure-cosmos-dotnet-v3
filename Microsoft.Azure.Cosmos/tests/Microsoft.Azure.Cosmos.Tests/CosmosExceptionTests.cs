@@ -150,15 +150,24 @@ namespace Microsoft.Azure.Cosmos
         public void ToTraceSafeString_CosmosException_DoesNotAccessDiagnosticsOrMessage()
         {
             // Strong regression for #5945: prove the trace-safe summary never touches the
-            // diagnostics serialization path. The spy throws if Diagnostics is accessed; because
-            // CosmosException.Message resolves through this.Diagnostics, accessing Message would
-            // also throw. ToTraceSafeString must do neither.
+            // diagnostics serialization path. The spy is built via the internal ctor and a 503
+            // status code, so its lazy Message resolves through GetMessageHelper -> this.Diagnostics;
+            // the overridden Diagnostics getter throws, so reading Message (or Diagnostics) would
+            // throw. ToTraceSafeString must do neither.
+            Headers headers = new Headers
+            {
+                SubStatusCode = (SubStatusCodes)1234,
+                ActivityId = "activity-5945",
+            };
+
             DiagnosticsThrowingCosmosException spy = new DiagnosticsThrowingCosmosException(
-                message: "Test",
                 statusCode: HttpStatusCode.ServiceUnavailable,
-                subStatusCode: 1234,
-                activityId: "activity-5945",
-                requestCharge: 0);
+                message: "Test",
+                stackTrace: null,
+                headers: headers,
+                trace: NoOpTrace.Singleton,
+                error: null,
+                innerException: null);
 
             string traceSafe = spy.ToTraceSafeString();
 
@@ -166,6 +175,11 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsTrue(traceSafe.Contains("1234"));
             Assert.IsTrue(traceSafe.Contains("activity-5945"));
             Assert.IsFalse(spy.DiagnosticsAccessed, "ToTraceSafeString must not access Diagnostics.");
+
+            // Sanity: confirm the spy is wired so that the diagnostics-serializing Message path
+            // really would throw for this status code (i.e. the assertion above is meaningful).
+            Assert.ThrowsException<InvalidOperationException>(() => _ = spy.Message);
+            Assert.IsTrue(spy.DiagnosticsAccessed);
         }
 
         [TestMethod]
@@ -185,12 +199,14 @@ namespace Microsoft.Azure.Cosmos
         private sealed class DiagnosticsThrowingCosmosException : CosmosException
         {
             public DiagnosticsThrowingCosmosException(
-                string message,
                 HttpStatusCode statusCode,
-                int subStatusCode,
-                string activityId,
-                double requestCharge)
-                : base(message, statusCode, subStatusCode, activityId, requestCharge)
+                string message,
+                string stackTrace,
+                Headers headers,
+                ITrace trace,
+                Documents.Error error,
+                Exception innerException)
+                : base(statusCode, message, stackTrace, headers, trace, error, innerException)
             {
             }
 

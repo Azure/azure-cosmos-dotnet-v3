@@ -220,7 +220,7 @@ namespace Microsoft.Azure.Cosmos
 
                 Task continuationTask = backgroundRefreshTask
                     .ContinueWith(
-                        task => DefaultTrace.TraceVerbose("Failed to refresh addresses in the background with exception: {0}", task.Exception.ToTraceSafeString()),
+                        task => DefaultTrace.TraceVerbose("Failed to refresh addresses in the background with exception: {0}", task.Exception?.ToTraceSafeString()),
                         TaskContinuationOptions.OnlyOnFaulted);
             }
         }
