@@ -154,12 +154,30 @@ namespace Microsoft.Azure.Documents
                 request.Headers[HttpConstants.HttpHeaders.ClientRetryAttemptCount] = contextArguments.ClientRetryCount.ToString(CultureInfo.InvariantCulture);
                 request.Headers[HttpConstants.HttpHeaders.RemainingTimeInMsOnClientRequest] = contextArguments.RemainingTimeInMsOnClientRequest.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
 
-                return await this.InvokeAsync(
-                    request,
-                    new TimeoutHelper(contextArguments.RemainingTimeInMsOnClientRequest, cancellationToken),
-                    contextArguments.IsInRetry,
-                    contextArguments.ForceRefresh || this.ForceAddressRefresh,
-                    cancellationToken);
+                // Reset per-attempt state for scale-up detection
+                request.RequestContext.MaxCurrentReplicaSetSizeFromResponse = -1;
+                request.RequestContext.PerformedBackgroundAddressRefresh = false;
+
+                try
+                {
+                    return await this.InvokeAsync(
+                        request,
+                        new TimeoutHelper(contextArguments.RemainingTimeInMsOnClientRequest, cancellationToken),
+                        contextArguments.IsInRetry,
+                        contextArguments.ForceRefresh || this.ForceAddressRefresh,
+                        cancellationToken);
+                }
+                finally
+                {
+                    // Centralized scale-up detection: fires on both success
+                    // and exception paths so CRSS check runs even when
+                    // retrying after GoneException. StoreReader and
+                    // ConsistencyWriter stash the max CRSS observed across
+                    // all replica responses on RequestContext.
+                    this.addressSelector.RefreshAddressesIfReplicaSetSizeChanged(
+                        request,
+                        request.RequestContext.MaxCurrentReplicaSetSizeFromResponse);
+                }
             };
 
             Func<GoneAndRetryRequestRetryPolicyContext, Task<StoreResponse>> inBackoffFuncDelegate = null;

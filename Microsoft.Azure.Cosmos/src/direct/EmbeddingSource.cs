@@ -6,6 +6,9 @@ namespace Microsoft.Azure.Documents
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Globalization;
+    using System.Linq;
     using System.Runtime.Serialization;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
@@ -15,23 +18,40 @@ namespace Microsoft.Azure.Documents
     /// </summary>
     internal sealed class EmbeddingSource : JsonSerializable
     {
+        private Collection<string> sourcePaths;
+
         public EmbeddingSource() 
         {
         }
 
         /// <summary>
-        /// Gets or sets the source path of the embedding source.
+        /// Gets or sets the source paths of the embedding source.
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.SourcePath)]
-        public string SourcePath
+        [JsonProperty(PropertyName = Constants.Properties.SourcePaths)]
+        public Collection<string> SourcePaths
         {
             get
             {
-                return base.GetValue<string>(Constants.Properties.SourcePath);
+                if (this.sourcePaths == null)
+                {
+                    this.sourcePaths = base.GetValue<Collection<string>>(Constants.Properties.SourcePaths);
+                    if (this.sourcePaths == null)
+                    {
+                        this.sourcePaths = new Collection<string>();
+                    }
+                }
+
+                return this.sourcePaths;
             }
             set
             {
-                base.SetValue(Constants.Properties.SourcePath, value);
+                if (value == null)
+                {
+                    throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, "SourcePaths"));
+                }
+
+                this.sourcePaths = value;
+                base.SetValue(Constants.Properties.SourcePaths, this.sourcePaths);
             }
         }
 
@@ -113,7 +133,8 @@ namespace Microsoft.Azure.Documents
                 return false;
             }
 
-            return this.SourcePath == other.SourcePath &&
+            return ((this.SourcePaths == null && other.SourcePaths == null) || 
+                    (this.SourcePaths != null && other.SourcePaths != null && Enumerable.SequenceEqual(this.SourcePaths, other.SourcePaths))) &&
                    this.AuthType == other.AuthType &&
                    this.DeploymentName == other.DeploymentName &&
                    this.Endpoint == other.Endpoint &&
@@ -124,7 +145,12 @@ namespace Microsoft.Azure.Documents
         public override int GetHashCode()
         {
             int hashCode = 1265339359;
-            hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.SourcePath);
+
+            foreach (string sourcePath in this.SourcePaths)
+            {
+                hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(sourcePath);
+            }
+
             hashCode = (hashCode * -1521134295) + this.AuthType.GetHashCode();
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.DeploymentName);
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Endpoint);

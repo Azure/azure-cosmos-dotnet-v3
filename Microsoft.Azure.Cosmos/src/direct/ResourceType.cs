@@ -87,6 +87,8 @@ namespace Microsoft.Azure.Documents
         // Distributed transaction resource type
         DistributedTransactionBatch = 168,
 
+        HistoricalPartitionKeyRange = 173,
+
         // These names make it unclear what they map to in ResourceType.
         Key = -2,
         Media = -3,

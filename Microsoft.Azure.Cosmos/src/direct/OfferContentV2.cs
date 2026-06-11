@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Documents
         private Collection<PhysicalPartitionThroughputInfo> physicalPartitionThroughputInfo;
         private ThroughputDistributionPolicyType? throughputDistributionPolicy;
         private Collection<ThroughputBucket> throughputBuckets;
+        private HotPartitionKeyRateLimitingPolicy hotPartitionKeyRateLimitingPolicy;
         private int? offerTargetThroughput;
         private int? partitionCount;
 #endif
@@ -95,6 +96,12 @@ namespace Microsoft.Azure.Documents
                     this.ThroughputBuckets = throughputBuckets;
                 }
 
+                HotPartitionKeyRateLimitingPolicy hpkPolicy = content.HotPartitionKeyRateLimitingPolicy;
+                if (hpkPolicy != null)
+                {
+                    this.HotPartitionKeyRateLimitingPolicy = hpkPolicy;
+                }
+
                 int? offerTargetThroughput = content.OfferTargetThroughput;
                 if (offerTargetThroughput.HasValue)
                 {
@@ -145,6 +152,12 @@ namespace Microsoft.Azure.Documents
                     this.ThroughputBuckets = throughputBuckets;
                 }
 
+                HotPartitionKeyRateLimitingPolicy hpkPolicy = content.HotPartitionKeyRateLimitingPolicy;
+                if (hpkPolicy != null)
+                {
+                    this.HotPartitionKeyRateLimitingPolicy = hpkPolicy;
+                }
+
                 int? offerTargetThroughput = content.OfferTargetThroughput;
                 if (offerTargetThroughput.HasValue)
                 {
@@ -186,6 +199,12 @@ namespace Microsoft.Azure.Documents
                 {
                     this.ThroughputBuckets = throughputBuckets;
                 }
+
+                HotPartitionKeyRateLimitingPolicy hpkPolicy = content.HotPartitionKeyRateLimitingPolicy;
+                if (hpkPolicy != null)
+                {
+                    this.HotPartitionKeyRateLimitingPolicy = hpkPolicy;
+                }
             }
 
             if (offerAutopilotSettings != null)
@@ -199,7 +218,7 @@ namespace Microsoft.Azure.Documents
         /// </summary>
         /// <param name="offerAutopilotSettings">offer autopilot settings</param>
         /// <param name="throughputBuckets">offer autopilot settings</param>
-        internal OfferContentV2(OfferContentV2 content, AutopilotSettings offerAutopilotSettings, Collection<ThroughputBucket> throughputBuckets)
+        internal OfferContentV2(OfferContentV2 content, AutopilotSettings offerAutopilotSettings, Collection<ThroughputBucket> throughputBuckets, HotPartitionKeyRateLimitingPolicy hpkPolicy)
         {
             if (offerAutopilotSettings != null)
             {
@@ -209,6 +228,11 @@ namespace Microsoft.Azure.Documents
             if (throughputBuckets != null)
             {
                 this.ThroughputBuckets = throughputBuckets;
+            }
+
+            if (hpkPolicy != null)
+            {
+                this.HotPartitionKeyRateLimitingPolicy = hpkPolicy;
             }
         }
 
@@ -277,7 +301,8 @@ namespace Microsoft.Azure.Documents
             AutopilotSettings autopilotSettings,
             OfferMinimumThroughputParameters minThroughputParameters,
             ThroughputDistributionPolicyType? throughputDistributionPolicy,
-            Collection<ThroughputBucket> throughputBuckets)
+            Collection<ThroughputBucket> throughputBuckets,
+            HotPartitionKeyRateLimitingPolicy hpkPolicy)
         {
             this.OfferThroughput = contentV2.OfferThroughput;
             this.OfferIsRUPerMinuteThroughputEnabled = offerEnableRUPerMinuteThroughput;
@@ -301,6 +326,11 @@ namespace Microsoft.Azure.Documents
             if (throughputBuckets != null)
             {
                 this.ThroughputBuckets = throughputBuckets;
+            }
+
+            if (hpkPolicy != null)
+            {
+                this.HotPartitionKeyRateLimitingPolicy = hpkPolicy;
             }
 
             int? offerTargetThroughput = contentV2.OfferTargetThroughput;
@@ -328,6 +358,7 @@ namespace Microsoft.Azure.Documents
             double? backgroundTaskMaxAllowedThroughputPercent = null,
             ThroughputDistributionPolicyType? throughputDistributionPolicy = null,
             Collection<ThroughputBucket> throughputBuckets = null,
+            HotPartitionKeyRateLimitingPolicy hpkPolicy = null,
             Collection<PhysicalPartitionThroughputInfo> physicalPartitionThroughputInfo = null,
             int? offerTargetThroughput = null,
             int? partitionCount = null)
@@ -359,6 +390,11 @@ namespace Microsoft.Azure.Documents
             this.PhysicalPartitionThroughputInfo = physicalPartitionThroughputInfo ?? source.PhysicalPartitionThroughputInfo;
             this.OfferTargetThroughput = offerTargetThroughput ?? source.OfferTargetThroughput;
             this.PartitionCount = partitionCount ?? source.PartitionCount;
+            HotPartitionKeyRateLimitingPolicy resolvedHpkPolicy = hpkPolicy ?? source.HotPartitionKeyRateLimitingPolicy;
+            if (resolvedHpkPolicy != null)
+            {
+                this.HotPartitionKeyRateLimitingPolicy = resolvedHpkPolicy;
+            }
         }
 
         /// <summary>
@@ -374,6 +410,7 @@ namespace Microsoft.Azure.Documents
             double? bgTaskMaxAllowedThroughputPercent,
             ThroughputDistributionPolicyType? throughputDistributionPolicy,
             Collection<ThroughputBucket> throughputBuckets,
+            HotPartitionKeyRateLimitingPolicy hpkPolicy = null,
             int? offerTargetThroughput = null,
             int? partitionCount = null)
         {
@@ -404,6 +441,11 @@ namespace Microsoft.Azure.Documents
             if (throughputBuckets != null)
             {
                 this.ThroughputBuckets = throughputBuckets;
+            }
+
+            if (hpkPolicy != null)
+            {
+                this.HotPartitionKeyRateLimitingPolicy = hpkPolicy;
             }
 
             if (offerTargetThroughput.HasValue)
@@ -437,6 +479,12 @@ namespace Microsoft.Azure.Documents
                 if (throughputBuckets != null)
                 {
                     this.ThroughputBuckets = throughputBuckets;
+                }
+
+                HotPartitionKeyRateLimitingPolicy hpkPolicy = content.HotPartitionKeyRateLimitingPolicy;
+                if (hpkPolicy != null)
+                {
+                    this.HotPartitionKeyRateLimitingPolicy = hpkPolicy;
                 }
 
                 int? offerTargetThroughput = content.OfferTargetThroughput;
@@ -689,6 +737,26 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        [JsonProperty(PropertyName = Constants.Properties.HotPartitionKeyRateLimitingPolicy, DefaultValueHandling = DefaultValueHandling.Ignore, NullValueHandling = NullValueHandling.Ignore)]
+        internal HotPartitionKeyRateLimitingPolicy HotPartitionKeyRateLimitingPolicy
+        {
+            get
+            {
+                if (this.hotPartitionKeyRateLimitingPolicy == null)
+                {
+                    this.hotPartitionKeyRateLimitingPolicy = base.GetObject<HotPartitionKeyRateLimitingPolicy>(
+                        Constants.Properties.HotPartitionKeyRateLimitingPolicy);
+                }
+
+                return this.hotPartitionKeyRateLimitingPolicy;
+            }
+            set
+            {
+                this.hotPartitionKeyRateLimitingPolicy = value;
+                base.SetObject(Constants.Properties.HotPartitionKeyRateLimitingPolicy, value);
+            }
+        }
+
         /// <summary>
         /// Represents target max throughput offer should operate at once offer is no longer in pending state.
         /// </summary>
@@ -753,6 +821,11 @@ namespace Microsoft.Azure.Documents
             if (this.physicalPartitionThroughputInfo != null)
             {
                 this.SetObjectCollection(Constants.Properties.PhysicalPartitionThroughputInfo, this.physicalPartitionThroughputInfo);
+            }
+            if (this.hotPartitionKeyRateLimitingPolicy != null)
+            {
+                this.hotPartitionKeyRateLimitingPolicy.OnSave();
+                this.SetObject(Constants.Properties.HotPartitionKeyRateLimitingPolicy, this.hotPartitionKeyRateLimitingPolicy);
             }
         }
 #endif

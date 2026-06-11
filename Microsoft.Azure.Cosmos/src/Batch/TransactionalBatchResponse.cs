@@ -361,6 +361,7 @@ namespace Microsoft.Azure.Cosmos
 
             HttpStatusCode responseStatusCode = responseMessage.StatusCode;
             SubStatusCodes responseSubStatusCode = responseMessage.Headers.SubStatusCode;
+            string responseErrorMessage = responseMessage.ErrorMessage;
 
             // Promote the operation error status as the Batch response error status if we have a MultiStatus response
             // to provide users with status codes they are used to.
@@ -373,6 +374,16 @@ namespace Microsoft.Azure.Cosmos
                     {
                         responseStatusCode = result.StatusCode;
                         responseSubStatusCode = result.SubStatusCode;
+
+                        if (result.ResourceStream != null)
+                        {
+                            using (StreamReader reader = new StreamReader(result.ResourceStream, encoding: System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
+                            {
+                                responseErrorMessage = reader.ReadToEnd();
+                                result.ResourceStream.Position = 0;
+                            }
+                        }
+
                         break;
                     }
                 }
@@ -381,7 +392,7 @@ namespace Microsoft.Azure.Cosmos
             TransactionalBatchResponse response = new TransactionalBatchResponse(
                 responseStatusCode,
                 responseSubStatusCode,
-                responseMessage.ErrorMessage,
+                responseErrorMessage,
                 responseMessage.Headers,
                 trace,
                 serverRequest.Operations,

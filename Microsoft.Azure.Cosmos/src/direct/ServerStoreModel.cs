@@ -66,14 +66,32 @@ namespace Microsoft.Azure.Documents
             }
 
             string requestConsistencyLevelHeaderValue = request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel];
+            string requestReadConsistencyStrategyHeaderValue = request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy];
 
             request.RequestContext.OriginalRequestConsistencyLevel = null;
+            request.RequestContext.ReadConsistencyStrategy = null;
+
+            if (!string.IsNullOrEmpty(requestReadConsistencyStrategyHeaderValue)
+                && !string.Equals(requestReadConsistencyStrategyHeaderValue, "Default", StringComparison.OrdinalIgnoreCase))
+            {
+                // Enum.TryParse accepts arbitrary numeric strings (e.g. "99") so IsDefined is required.
+                if (!Enum.TryParse<ReadConsistencyStrategy>(requestReadConsistencyStrategyHeaderValue, ignoreCase: true, out ReadConsistencyStrategy requestReadConsistencyStrategy)
+                    || !Enum.IsDefined(typeof(ReadConsistencyStrategy), requestReadConsistencyStrategy))
+                {
+                    throw new BadRequestException(
+                        string.Format(CultureInfo.CurrentUICulture,
+                        RMResources.InvalidHeaderValue,
+                        requestReadConsistencyStrategyHeaderValue,
+                        HttpConstants.HttpHeaders.ReadConsistencyStrategy));
+                }
+
+                request.RequestContext.ReadConsistencyStrategy = requestReadConsistencyStrategy;
+                requestConsistencyLevelHeaderValue = null;
+            }
 
             if (!string.IsNullOrEmpty(requestConsistencyLevelHeaderValue))
             {
-                ConsistencyLevel requestConsistencyLevel;
-
-                if (!Enum.TryParse<ConsistencyLevel>(requestConsistencyLevelHeaderValue, out requestConsistencyLevel))
+                if (!Enum.TryParse<ConsistencyLevel>(requestConsistencyLevelHeaderValue, out ConsistencyLevel requestConsistencyLevel))
                 {
                     throw new BadRequestException(
                         string.Format(CultureInfo.CurrentUICulture,
@@ -100,7 +118,6 @@ namespace Microsoft.Azure.Documents
             {
                 return this.storeClient.ProcessMessageAsync(request, cancellationToken);
             }
-
         }
 
         /// <inheritdoc/>>
@@ -119,7 +136,6 @@ namespace Microsoft.Azure.Documents
             DocumentServiceRequest request,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-
             DocumentServiceResponse response = await this.storeClient.ProcessMessageAsync(request, cancellationToken);
             this.receivedResponse?.Invoke(this, new ReceivedResponseEventArgs(request, response));
             return response;
@@ -127,7 +143,7 @@ namespace Microsoft.Azure.Documents
 
         public void Dispose()
         {
-            
+
         }
     }
 }

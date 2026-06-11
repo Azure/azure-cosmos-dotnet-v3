@@ -245,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(
                     tuples.Where(tuple => !goneRanges.Contains(tuple.Item1.Id)),
                     string.Empty,
-                    false,
+                    this.useLengthAwareRangeComparer,
                     changeFeedNextIfNoneMatch);
             }
             else

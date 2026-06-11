@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -16,6 +16,11 @@ namespace Microsoft.Azure.Documents
 
         public TimeoutHelper TimeoutHelper { get; set; }
 
+        /// <summary>
+        /// Read consistency strategy for this request (resolved from headers or request options).
+        /// This setting overrides ConsistencyLevel when set to a value other than Default.
+        /// </summary>
+        public ReadConsistencyStrategy? ReadConsistencyStrategy { get; set; }
         public RequestChargeTracker RequestChargeTracker { get; set; }
 
         public bool ForceRefreshAddressCache { get; set; }
@@ -26,6 +31,28 @@ namespace Microsoft.Azure.Documents
         /// request already completed one.
         /// </summary>
         public int LastPartitionAddressInformationHashCode { get; set; }
+
+        /// <summary>
+        /// Per-partition target replica set size from address resolution.
+        /// Can be null when per-service TRSS fetch is not enabled on the account.
+        /// Set in AddressSelector.ResolveAddressesAsync.
+        /// </summary>
+        public int? ResolvedPartitionTargetReplicaSetSize { get; set; }
+
+        /// <summary>
+        /// Replica address count for the resolved protocol from address resolution.
+        /// Filtered to only the protocol used by this AddressSelector (e.g. TCP),
+        /// not all protocols. Set in AddressSelector.ResolveAddressesAsync.
+        /// </summary>
+        public int ResolvedReplicaAddressCountPerProtocol { get; set; }
+
+        /// <summary>
+        /// Max CurrentReplicaSetSize observed across all replica responses
+        /// in the current request attempt. -1 when no primary was contacted.
+        /// Set in StoreReader and ConsistencyWriter, consumed by
+        /// ReplicatedResourceClient for centralized scale-up detection.
+        /// </summary>
+        public int MaxCurrentReplicaSetSizeFromResponse { get; set; } = -1;
 
         /// <summary>
         /// Non thread safe.
@@ -44,6 +71,26 @@ namespace Microsoft.Azure.Documents
         /// If a failover occurs and the region endpoint changes, the request is failed.
         /// </summary>
         public Uri GlobalStrongWriteEndpoint { get; set; }
+
+        /// <summary>
+        /// When set, forces the ConsistencyWriter to use
+        /// NRegionSynchronousCommit barrier for this request,
+        /// provided all other preconditions are met.
+        /// </summary>
+        public bool ApplyNRegionSynchronousCommit { get; set; }
+
+        /// <summary>
+        /// Indicates whether the original Routing Gateway request completed mTLS authorization.
+        /// </summary>
+        public bool IsMutualTlsAuthorized { get; set; }
+
+        /// <summary>
+        /// Per-request override for <c>FederationConfiguration.EnablePreserveObsoleteRoutingMapOnRefreshFailure</c>
+        /// consumed by <c>CollectionRoutingMapCacheV2</c>. Same semantics as the federation flag
+        /// (<c>true</c> = drop, <c>false</c> = preserve). When null, the cache falls back to the
+        /// federation flag.
+        /// </summary>
+        public bool? EnablePreserveObsoleteRoutingMapOnRefreshFailureOverride { get; set; }
 
         /// <summary>
         /// Cache the write storeResult in context during global strong or less than strong consistency writes
@@ -255,6 +302,10 @@ namespace Microsoft.Azure.Documents
             requestContext.LastPartitionAddressInformationHashCode = this.LastPartitionAddressInformationHashCode;
             requestContext.ExcludeRegions = this.ExcludeRegions;
             requestContext.GlobalStrongWriteEndpoint = this.GlobalStrongWriteEndpoint;
+            requestContext.ApplyNRegionSynchronousCommit = this.ApplyNRegionSynchronousCommit;
+            requestContext.IsMutualTlsAuthorized = this.IsMutualTlsAuthorized;
+            requestContext.EnablePreserveObsoleteRoutingMapOnRefreshFailureOverride = this.EnablePreserveObsoleteRoutingMapOnRefreshFailureOverride;
+            requestContext.ReadConsistencyStrategy = this.ReadConsistencyStrategy;
 
             return requestContext;
         }

@@ -525,6 +525,11 @@ namespace Microsoft.Azure.Documents.Client
         internal bool BypassSoftDeletionBlocking { get; set; }
 
         /// <summary>
+        /// Gets or sets the <see cref="IsSoftDeletePurgeOperation"/>, Indicates whether the operation is a purge (permanent delete) of a soft-deleted resource.
+        /// </summary>
+        internal bool IsSoftDeletePurgeOperation { get; set; }
+
+        /// <summary>
         /// Gets or sets the <see cref="IsStrongConsistencyStoreClient"/>, Inidicates whether the request is coming from strong consistency store client.
         /// </summary>
         internal bool IsStrongConsistencyStoreClient { get; set; }
@@ -533,6 +538,12 @@ namespace Microsoft.Azure.Documents.Client
         /// Gets or sets the <see cref="ShouldProcessOnlyInHubRegion"/>, Indicates whether the request should retry in the current hub region.
         /// </summary>
         internal bool ShouldProcessOnlyInHubRegion { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="ReadConsistencyStrategy"/> for read operations.
+        /// When set, this takes precedence over ConsistencyLevel for determining read behavior.
+        /// </summary>
+        internal ReadConsistencyStrategy? ReadConsistencyStrategy { get; set; }
 
         /// <summary>
         ///  Gets or sets the <see cref="PopulateBYOKEncryptionProgress"/> for document collection read requests.

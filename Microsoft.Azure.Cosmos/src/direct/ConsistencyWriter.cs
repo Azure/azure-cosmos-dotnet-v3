@@ -278,6 +278,9 @@ Sequence of steps:
                                 CultureInfo.InvariantCulture,
                                 out result) && result == 1)
                             {
+                                // This may fire alongside the CRSS-based refresh in
+                                // ReplicatedResourceClient. Duplicate refreshes are
+                                // coalesced by AsyncCacheNonBlocking.
                                 this.addressSelector.StartBackgroundAddressRefresh(request);
                             }
                         }
@@ -291,7 +294,17 @@ Sequence of steps:
                     throw new InternalServerErrorException();
                 }
 
+                // Stash CRSS for centralized scale-up detection
+                // in ReplicatedResourceClient.
+                if (storeResult.Target.CurrentReplicaSetSize
+                    > request.RequestContext.MaxCurrentReplicaSetSizeFromResponse)
+                {
+                    request.RequestContext.MaxCurrentReplicaSetSizeFromResponse =
+                        storeResult.Target.CurrentReplicaSetSize;
+                }
+
                 BarrierType barrierType = this.ComputeBarrierType(storeResult, request);
+
                 if (barrierType == BarrierType.None)
                 {
                     // If barrier is not performed, we can return the store result directly.
@@ -368,13 +381,13 @@ Sequence of steps:
         /// 1. After receiving response from primary of write region, look at GlobalCommittedLsn and LSN headers.
         ///     2. If GlobalCommittedLSN = LSN, return response to caller
         ///      3. If GlobalCommittedLSN &lt; LSN, cache LSN in request as SelectedGlobalCommittedLSN, and issue barrier requests against any/all replicas.
-        ///      4. Each barrier response will contain its own LSN and GlobalCommittedLSN, check for any response that satisfies GlobalCommittedLSN &gt;= SelectedGlobalCommittedLSN
+        ///      4. Each barrier response will contain its own LSN and GlobalCommittedLSN, check for any response that satisfies GlobalCommittedLSN >= SelectedGlobalCommittedLSN
         ///      5. Return to caller on success.
         ///  For less than Strong Accounts and If EnableNRegionSynchronousCommit is enabled for the account:
         ///      1. After receiving response from primary of write region, look at GlobalCommittedLsn and LSN headers.
         ///      2. If GlobalNRegionCommittedGLSN = LSN, return response to caller
         ///      3. If GlobalNRegionCommittedGLSN &lt; LSN &amp;&amp; storeResponse.NumberOFReadRegions &gt; 0 , cache LSN in request as SelectedGlobalNRegionCommittedGLSN, and issue barrier requests against any/all replicas.
-        ///      4. Each barrier response will contain its own LSN and GlobalNRegionCommittedGLSN, check for any response that satisfies GlobalNRegionCommittedGLSN &gt;= SelectedGlobalNRegionCommittedGLSN
+        ///      4. Each barrier response will contain its own LSN and GlobalNRegionCommittedGLSN, check for any response that satisfies GlobalNRegionCommittedGLSN >= SelectedGlobalNRegionCommittedGLSN
         ///      5. Return to caller on success.
         /// </summary>
         /// <param name="storeResult"></param>
@@ -766,7 +779,7 @@ Sequence of steps:
             {
                 return BarrierType.GlobalStrongWrite;
             }
-            else if (this.ShouldPerformWriteBarrierForLessThanStrong(storeResult.Target))
+            else if (this.ShouldPerformWriteBarrierForLessThanStrong(storeResult.Target, request))
             {
                 return BarrierType.NRegionSynchronousCommit;
             }
@@ -777,11 +790,12 @@ Sequence of steps:
         /// <summary>
         /// Determines whether a write barrier should be performed for single-master accounts with less than strong consistency
         /// and the N-Region Synchronous Commit feature enabled. Returns true if the account's default consistency
-        /// is less than strong, the store result contains a valid GlobalNRegionCommittedGLSN, the feature is enabled,
-        /// and there are read regions present.
+        /// is less than strong, the store result contains a valid GlobalNRegionCommittedGLSN, the feature is enabled
+        /// (either at account level or via per-request ApplyNRegionSynchronousCommit), and there are read regions present.
         /// </summary>
         internal bool ShouldPerformWriteBarrierForLessThanStrong(
-            StoreResult storeResult)
+            StoreResult storeResult,
+            DocumentServiceRequest request)
         {
             IServiceConfigurationReaderVnext serviceConfigurationReaderVNext = this.serviceConfigReader as IServiceConfigurationReaderVnext;
             bool enableNRegionSynchronousCommit = false;
@@ -789,6 +803,28 @@ Sequence of steps:
             if (serviceConfigurationReaderVNext != null)
             {
                 enableNRegionSynchronousCommit = serviceConfigurationReaderVNext.EnableNRegionSynchronousCommit;
+            }
+
+            // Per-request override: if the request context has the
+            // force flag set, treat it as if the account-level flag
+            // is enabled. All other preconditions still apply.
+            if (!enableNRegionSynchronousCommit
+                && request?.RequestContext?.ApplyNRegionSynchronousCommit == true &&
+                ReplicatedResourceClient.IsMasterResource(request.ResourceType))
+            {
+                enableNRegionSynchronousCommit = true;
+                DefaultTrace.TraceInformation("ConsistencyWriter: NRegionSynchronousCommit enabled via per-request override (ApplyNRegionSynchronousCommit header). OperationType: {0}, ResourceType: {1}, DatabaseAccountId: {2}",
+                    request.OperationType.ToOperationTypeString(),
+                    request.ResourceType.ToResourceTypeString(),
+                    this.serviceConfigReader.DatabaseAccountId);
+            }
+
+            if (enableNRegionSynchronousCommit)
+            {
+                DefaultTrace.TraceInformation("ConsistencyWriter: EnableNRegionSynchronousCommit is enabled. GlobalNRegionCommittedGLSN: {0}, NumberOfReadRegions: {1}, UseMultipleWriteLocations: {2}",
+                    storeResult.GlobalNRegionCommittedGLSN,
+                    storeResult.NumberOfReadRegions,
+                    this.useMultipleWriteLocations);
             }
 
             return this.serviceConfigReader.DefaultConsistencyLevel != ConsistencyLevel.Strong

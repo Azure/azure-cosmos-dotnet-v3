@@ -58,7 +58,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                 owner.ServiceEndpoint,
                 connectionPolicy.EnableEndpointDiscovery,
                 connectionPolicy.MaxConnectionLimit,
-                connectionPolicy.UseMultipleWriteLocations);
+                connectionPolicy.UseMultipleWriteLocations,
+                isPartitionLevelFailoverEnabled: () => connectionPolicy.EnablePartitionLevelFailover);
 
             this.owner = owner;
             this.defaultEndpoint = owner.ServiceEndpoint;
@@ -108,6 +109,10 @@ namespace Microsoft.Azure.Cosmos.Routing
         public ReadOnlyCollection<Uri> ThinClientReadEndpoints => this.locationCache.ThinClientReadEndpoints;
 
         public ReadOnlyCollection<Uri> ThinClientWriteEndpoints => this.locationCache.ThinClientWriteEndpoints;
+
+        public bool HasThinClientReadLocations => this.locationCache.HasThinClientReadLocations;
+
+        public bool HasThinClientWriteLocations => this.locationCache.HasThinClientWriteLocations;
 
         public int PreferredLocationCount
         {

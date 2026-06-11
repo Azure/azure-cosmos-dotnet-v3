@@ -118,13 +118,12 @@ namespace Microsoft.Azure.Cosmos
 
                     if (isPPAFEnabled)
                     {
-                        this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request);
+                        this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request, false);
                     }
                 }
 
-                bool canUseThinClient =
-                    this.thinClientStoreClient != null &&
-                    GatewayStoreModel.IsOperationSupportedByThinClient(request);
+                bool canUseThinClient = this.thinClientStoreClient != null
+                    && IsThinClientRoutable(this.endpointManager, request);
 
                 Uri physicalAddress = ThinClientStoreClient.IsFeedRequest(request.OperationType)
                         ? this.GetFeedUri(request)
@@ -325,7 +324,8 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Master resource operations don't require session token.
-            if (GatewayStoreModel.IsMasterOperation(request.ResourceType, request.OperationType))
+            if (GatewayStoreModel.IsMasterOperation(request.ResourceType, request.OperationType) 
+                || DistributedTransactionConstants.IsDistributedTransactionRequest(request.OperationType, request.ResourceType))
             {
                 if (!string.IsNullOrEmpty(request.Headers[HttpConstants.HttpHeaders.SessionToken]))
                 {
@@ -562,7 +562,18 @@ namespace Microsoft.Azure.Cosmos
                 || request.OperationType == OperationType.Upsert
                 || request.OperationType == OperationType.Replace
                 || request.OperationType == OperationType.Delete
-                || request.OperationType == OperationType.Query))
+                || request.OperationType == OperationType.Query
+                || request.OperationType == OperationType.QueryPlan))
+            {
+                return true;
+            }
+
+            // LatestVersion (Incremental) ChangeFeed on documents.
+            // AllVersionsAndDeletes (FullFidelity) is excluded because it requires
+            // split-handling logic in Compute Gateway (UseGatewayMode is set by ChangeFeedModeFullFidelity).
+            if (request.ResourceType == ResourceType.Document
+                && request.OperationType == OperationType.ReadFeed
+                && GatewayStoreModel.IsLatestVersionChangeFeedRequest(request))
             {
                 return true;
             }
@@ -575,6 +586,45 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Returns true if the request is currently eligible for thin-client dispatch:
+        /// the operation type is supported AND the service is still advertising thin-client
+        /// endpoints for the request's direction. When either condition is false the dispatch
+        /// falls back to the regular gateway path on the very next request without a client
+        /// restart.
+        /// </summary>
+        internal static bool IsThinClientRoutable(IGlobalEndpointManager endpointManager, DocumentServiceRequest request)
+        {
+            return IsOperationSupportedByThinClient(request)
+                && (request.IsReadOnlyRequest
+                    ? endpointManager.HasThinClientReadLocations
+                    : endpointManager.HasThinClientWriteLocations);
+        }
+
+        /// <summary>
+        /// Read-direction variant of <see cref="IsThinClientRoutable"/> for failover walks
+        /// (PLCB / PPAF) that traverse thin-client READ endpoints regardless of the original
+        /// request direction.
+        /// </summary>
+        internal static bool IsThinClientReadRoutable(IGlobalEndpointManager endpointManager, DocumentServiceRequest request)
+        {
+            return IsOperationSupportedByThinClient(request)
+                && endpointManager.HasThinClientReadLocations;
+        }
+
+        /// <summary>
+        /// Determines if the request is a LatestVersion (Incremental) change feed request that can
+        /// be routed to the thin client. Returns true only when the A-IM header is exactly
+        /// <c>HttpConstants.A_IMHeaderValues.IncrementalFeed</c>. Any other value — including
+        /// Full-Fidelity Feed (AllVersionsAndDeletes) or an unknown future mode — falls back to
+        /// Compute Gateway so that new modes are not accidentally routed to the thin client.
+        /// </summary>
+        internal static bool IsLatestVersionChangeFeedRequest(DocumentServiceRequest request)
+        {
+            string aImHeaderValue = request.Headers[HttpConstants.HttpHeaders.A_IM];
+            return string.Equals(aImHeaderValue, HttpConstants.A_IMHeaderValues.IncrementalFeed, StringComparison.OrdinalIgnoreCase);
         }
         private async Task<AccountProperties> GetDatabaseAccountPropertiesAsync()
         {

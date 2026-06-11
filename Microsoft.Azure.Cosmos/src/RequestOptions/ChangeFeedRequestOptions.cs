@@ -37,6 +37,25 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Gets or sets the <see cref="ReadConsistencyStrategy"/> for the request.
+        /// </summary>
+        /// <remarks>
+        /// When set, this takes precedence over the account's default consistency level for change feed operations.
+        /// The <see cref="ReadConsistencyStrategy.GlobalStrong"/> strategy is only valid
+        /// for accounts configured with Strong consistency.
+        /// </remarks>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        ReadConsistencyStrategy? ReadConsistencyStrategy
+        {
+            get => this.BaseReadConsistencyStrategy;
+            set => this.BaseReadConsistencyStrategy = value;
+        }
+
+        /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
         /// <param name="request">The <see cref="RequestMessage"/></param>

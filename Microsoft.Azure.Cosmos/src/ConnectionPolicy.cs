@@ -447,6 +447,14 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         /// <remarks>
         /// When the time elapses, the attempt is cancelled and an error is returned. Longer timeouts will delay retries and failures.
+        /// The supplied <see cref="TimeSpan"/> is preserved unchanged on this property. At the transport boundary,
+        /// values in [<see cref="TimeSpan.Zero"/>, 1 second) are treated as 0 (use <see cref="RequestTimeout"/>)
+        /// and values greater than or equal to 1 second are rounded up to the nearest whole second
+        /// (for example, 2.3 seconds becomes 3 seconds).
+        /// Negative values are not recommended and will emit a warning trace. They are preserved
+        /// on this property for backward compatibility; at the transport boundary they are truncated
+        /// to whole seconds and the <c>TransportClient.Options.OpenTimeout</c> getter returns
+        /// <see cref="RequestTimeout"/> for any stored value that is not greater than <see cref="TimeSpan.Zero"/>.
         /// </remarks>
         public TimeSpan? OpenTcpConnectionTimeout
         {
@@ -477,7 +485,7 @@ namespace Microsoft.Azure.Cosmos
         /// Together with MaxRequestsPerTcpConnection, this setting limits the number of requests that are simultaneously sent to a single Cosmos DB back-end(MaxRequestsPerTcpConnection x MaxTcpConnectionPerEndpoint).
         /// </summary>
         /// <value>
-        /// The default value is 65,535. Value must be greater than or equal to 16.
+        /// The default value is 65,535. Any positive value is accepted, allowing applications to constrain the connection pool size when needed; values of 16 or greater are recommended.
         /// </value>
         public int? MaxTcpConnectionsPerEndpoint
         {

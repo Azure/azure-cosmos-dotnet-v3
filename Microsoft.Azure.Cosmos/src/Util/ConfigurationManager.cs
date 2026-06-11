@@ -79,6 +79,14 @@ namespace Microsoft.Azure.Cosmos
         internal static readonly string HybridSearchQueryPlanOptimizationDisabled = "AZURE_COSMOS_HYBRID_SEARCH_QUERYPLAN_OPTIMIZATION_DISABLED";
 
         /// <summary>
+        /// A read-only string containing the environment variable name for enabling hub region processing for read requests.
+        /// When enabled (default), the SDK attaches a hub region header to read requests that encounter repeated 404/1002
+        /// (ReadSessionNotAvailable) errors, allowing the hub region to process the request directly. When disabled, the
+        /// SDK falls back to the original retry behavior without hub region header attachment.
+        /// </summary>
+        internal static readonly string HubRegionProcessingEnabled = "AZURE_COSMOS_HUB_REGION_PROCESSING_ENABLED";
+
+        /// <summary>
         /// Environment variable name to enable distributed query gateway mode.
         /// </summary>
         internal static readonly string DistributedQueryGatewayModeEnabled = "AZURE_COSMOS_DISTRIBUTED_QUERY_GATEWAY_ENABLED";
@@ -124,6 +132,32 @@ namespace Microsoft.Azure.Cosmos
         /// Setting the value to false will disable length aware range comparator and switch to using the regular Range.MinComparer/MaxComparer.
         /// </summary>
         internal static readonly string UseLengthAwareRangeComparator = "AZURE_COSMOS_USE_LENGTH_AWARE_RANGE_COMPARATOR";
+
+        /// <summary>
+        /// Environment variable name to enable DNS dot-suffix (FQDN trailing dot) for
+        /// Direct mode TCP connections. When enabled, appends a trailing '.' to hostnames
+        /// before DNS resolution to bypass Kubernetes ndots search-domain expansion.
+        /// See: https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5730
+        /// </summary>
+        internal static readonly string TcpDnsDotSuffixEnabled = "AZURE_COSMOS_TCP_DNS_DOT_SUFFIX_ENABLED";
+
+        /// <summary>
+        /// Environment variable to override the HTTP/2 PING keep-alive delay (in seconds).
+        /// After this many seconds of inactivity on an HTTP/2 connection, a PING frame is sent
+        /// to detect broken connections in the pool. Default: 1 second.
+        /// </summary>
+        internal static readonly string Http2KeepAlivePingDelayInSeconds = "AZURE_COSMOS_HTTP2_KEEPALIVE_PING_DELAY_IN_SECONDS";
+
+        /// <summary>
+        /// Environment variable to override the HTTP/2 PING keep-alive timeout (in seconds).
+        /// If no PONG response is received within this time, the connection is marked dead. Default: 2 seconds.
+        /// </summary>
+        internal static readonly string Http2KeepAlivePingTimeoutInSeconds = "AZURE_COSMOS_HTTP2_KEEPALIVE_PING_TIMEOUT_IN_SECONDS";
+
+        /// <summary>
+        /// Environment variable name to enable deterministic lease-id partition key values for Change Feed lease creation.
+        /// </summary>
+        internal static readonly string ChangeFeedLeaseIdAsPartitionKeyEnabled = "AZURE_COSMOS_CHANGE_FEED_LEASE_ID_AS_PARTITION_KEY_ENABLED";
 
         public static T GetEnvironmentVariable<T>(string variable, T defaultValue)
         {
@@ -191,6 +225,18 @@ namespace Microsoft.Azure.Cosmos
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.ThinClientModeEnabled,
                         defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating whether Change Feed lease creation should use lease id as the partition key value.
+        /// </summary>
+        /// <returns>A boolean flag indicating if deterministic lease-id partition key behavior is enabled.</returns>
+        public static bool IsChangeFeedLeaseIdAsPartitionKeyEnabled()
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.ChangeFeedLeaseIdAsPartitionKeyEnabled,
+                        defaultValue: true);
         }
 
         /// <summary>
@@ -387,19 +433,56 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Gets the boolean value indicating if length-aware range comparator is enabled.
-        /// Default: true for preview , false for GA.
+        /// Default: true for GA and Preview builds, false for INTERNAL builds.
+        /// Can be overridden via the AZURE_COSMOS_USE_LENGTH_AWARE_RANGE_COMPARATOR environment variable.
+        /// Setting the environment variable to false disables length-aware range comparator across all
+        /// usage sites (TryCombine, QueryRangeUtils, PartitionRoutingHelper).
         /// </summary>
         /// <returns>A boolean flag indicating if length-aware range comparator is enabled.</returns>
         public static bool IsLengthAwareRangeComparatorEnabled()
         {
-            bool defaultValue = false;
-#if PREVIEW && !INTERNAL
-            defaultValue = true;
+            bool defaultValue = true;
+#if INTERNAL
+            defaultValue = false;
 #endif
             return ConfigurationManager
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.UseLengthAwareRangeComparator,
                         defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating if DNS dot-suffix (FQDN trailing dot) is enabled
+        /// for Direct mode TCP connections. When enabled, appends a trailing '.' to hostnames
+        /// before DNS resolution, causing the resolver to treat them as absolute (fully qualified)
+        /// names and skip search-domain expansion. This avoids unnecessary DNS lookups on Kubernetes
+        /// where ndots:5 causes multiple failed search-domain attempts for Cosmos DB endpoints.
+        /// Default: false (opt-in).
+        /// </summary>
+        /// <returns>A boolean flag indicating if TCP DNS dot-suffix is enabled.</returns>
+        public static bool IsTcpDnsDotSuffixEnabled()
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.TcpDnsDotSuffixEnabled,
+                        defaultValue: false);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating if hub region processing is enabled for read requests
+        /// encountering repeated 404/1002 (ReadSessionNotAvailable) errors on single-master accounts.
+        /// When enabled, the SDK attaches a hub region header to route read requests to the hub region
+        /// for authoritative partition resolution. When disabled, the SDK falls back to the original
+        /// retry behavior (route to write region and give up after two 404/1002 attempts).
+        /// Default: true.
+        /// </summary>
+        /// <returns>A boolean flag indicating if hub region processing is enabled.</returns>
+        public static bool IsHubRegionProcessingEnabled()
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.HubRegionProcessingEnabled,
+                        defaultValue: true);
         }
     }
 }

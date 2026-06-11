@@ -100,6 +100,7 @@ namespace Microsoft.Azure.Documents
             public const string SchemaHash = "x-ms-schema-hash";
             public const string SchemaId = "x-ms-schema-id";
             public const string PopulateLogStoreInfo = "x-ms-cosmos-populate-logstoreinfo";
+            public const string PopulateEsanMigrationStatus = "x-ms-cosmos-populate-esan-migration-status";
             public const string ForceSideBySideIndexMigration = "x-ms-cosmos-force-sidebyside-indexmigration";
             public const string CollectionChildResourceNameLimitInBytes = "x-ms-cosmos-collection-child-resourcename-limit";
             public const string CollectionChildResourceContentLimitInKB = "x-ms-cosmos-collection-child-contentlength-resourcelimit";
@@ -119,6 +120,7 @@ namespace Microsoft.Azure.Documents
             public const string RetriableWriteRequestStartTimestamp = "x-ms-cosmos-retriable-write-request-start-timestamp";
             public const string AddResourcePropertiesToResponse = "x-ms-cosmos-add-resource-properties-to-response";
             public const string SkipRefreshDatabaseAccountConfigs = "x-ms-cosmos-skip-refresh-databaseaccountconfig";
+            public const string RefreshOnlyFabricServiceLevelConfigs = "x-ms-cosmos-internal-refresh-only-fabric-service-level-configs";
             public const string ReplicaConfirmedChecksum = "x-ms-cosmos-replica-confirmed-checksum";
             public const string ReplicaTentativeChecksum = "x-ms-cosmos-replica-tentative-checksum";
             public const string IntendedCollectionRid = "x-ms-cosmos-intended-collection-rid";
@@ -175,12 +177,17 @@ namespace Microsoft.Azure.Documents
             public const string AllowBarrierRequestWhenRWStatusRevoked = "x-ms-cosmos-internal-allow-barrier-request-when-rwstatus-revoked";
             public const string IsEmbeddingGeneratorRequest = "x-ms-cosmos-internal-is-embedding-generator-request";
             public const string BypassSoftDeletionBlocking = "x-ms-cosmos-internal-bypass-softdeletion-blocking";
+            public const string IsSoftDeletePurgeOperation = "x-ms-cosmos-internal-is-softdelete-purge-operation";
             public const string IsStrongConsistencyStoreClient = "x-ms-cosmos-is-strong-consistency-store-client";
             public const string ShouldProcessOnlyInHubRegion = "x-ms-cosmos-hub-region-processing-only";
+            public const string ReadConsistencyStrategy = "x-ms-cosmos-read-consistency-strategy";
+            public const string ConflictResolvedTimestamp = "x-ms-cosmos-conflict-resolved-timestamp";
             public const string PopulateGlobalEpochRecordCount = "x-ms-cosmosdb-populate-global-epoch-record-count";
             public const string PopulateCanFailoverManagerAccessDocumentStore = "x-ms-cosmosdb-populate-can-failover-manager-access-document-store";
             public const string PopulateGloballyAcceptedFailoverPolicy = "x-ms-cosmos-populate-globally-accepted-failover-policy";
             public const string PopulateGlobalStateWriteQuorumRegionsSet = "x-ms-cosmosdb-populate-global-state-write-quorum-regions-set";
+            public const string PopulateCachedWriteRegion = "x-ms-cosmos-populate-cached-write-region";
+            public const string IsCollectionRename = "x-ms-cosmos-is-collection-rename";
         }
 
         public const int DefaultFabricNameResolutionTimeoutInSeconds = 10;

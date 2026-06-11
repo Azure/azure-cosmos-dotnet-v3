@@ -870,12 +870,17 @@ namespace Microsoft.Azure.Documents
 
                 case StatusCodes.Forbidden:
                     errorMessage = TransportClient.GetErrorResponse(storeResponse, RMResources.Forbidden, out responseHeaders);
+                    uint forbiddenSubStatus = TransportClient.GetExceptionSubStatus(responseHeaders, errorMessage, physicalAddress);
                     exception = new ForbiddenException(
                         string.Format(CultureInfo.CurrentUICulture,
                             RMResources.ExceptionMessage,
                             errorMessage),
                         responseHeaders,
                         physicalAddress);
+                    if (forbiddenSubStatus != 0)
+                    {
+                        exception.Headers[WFConstants.BackendHeaders.SubStatus] = forbiddenSubStatus.ToString(CultureInfo.InvariantCulture);
+                    }
                     break;
 
                 case StatusCodes.NotFound:

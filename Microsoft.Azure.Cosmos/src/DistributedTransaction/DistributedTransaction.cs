@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents a distributed transaction that will be performed across partitions and/or collections. 
     /// </summary>
-#if INTERNAL
+#if PREVIEW
     public
 #else
     internal
@@ -21,8 +21,16 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Commits the distributed transaction.
         /// </summary>
+        /// <remarks>
+        /// This method is single-use: it can only be called once per transaction instance.
+        /// If the call fails for any reason (including transient network failures or cancellation),
+        /// the transaction instance is permanently consumed. To retry, construct a new transaction
+        /// with the same operations.
+        /// </remarks>
         /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A <see cref="Task{TResult}"/> containing a <see cref="DistributedTransactionResponse"/> that represents the result of the transaction.</returns>
-        public abstract Task<DistributedTransactionResponse> CommitTransactionAsync(CancellationToken cancellationToken);
+        /// <exception cref="InvalidOperationException">Thrown if <see cref="CommitTransactionAsync"/> has already been called on this instance.</exception>
+        /// <exception cref="OperationCanceledException">Thrown if <paramref name="cancellationToken"/> is cancelled before or during the commit.</exception>
+        public abstract Task<DistributedTransactionResponse> CommitTransactionAsync(CancellationToken cancellationToken = default);
     }
 }

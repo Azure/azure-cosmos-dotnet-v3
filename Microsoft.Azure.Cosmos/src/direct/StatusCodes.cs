@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 using System;
@@ -35,6 +35,10 @@ namespace Microsoft.Azure.Documents
         FailedDependency = 424,
         TooManyRequests = 429,
         RetryWith = 449,
+
+        // Distributed Transaction (DTx) status codes
+        TransactionAborted = 452, // Transaction was aborted
+        DtcOperationRolledBack = 453, // Per-operation: was prepared, then rolled back
 
         InternalServerError = 500,
         BadGateway = 502,
@@ -145,11 +149,20 @@ namespace Microsoft.Azure.Documents
         RequestNotSupportedOnPPAFEnabledCosmosDBAccountUserError = 3516,
         CrossRegionLongTermProtectionNotAllowedUserError = 3517,
         RestoreNotSupportedOnServerlessCosmosDBAccountUserError = 3518,
-        IncrementalBackupNotYetSupportedUserError = 3519,
-        IncrementalBackupRestoreNotYetSupportedUserError = 3520,
+        IncrementalBackupNotEnabledServerError = 3519,
+        IncrementalBackupRestoreNotEnabledServerError = 3520,
+        WriteRegionChangedSinceLastBackupUserError = 3521,
+        BackupTooOldForIncrementalBackupUserError = 3522,
+        InvalidPreviousRecoveryPointInBackupUserError = 3523,
+        InvalidFullBackupCountClientError = 3524,
+        InvalidRecoveryPointsClientError = 3525,
+        RequestNotSupportedOnEmptyCosmosDBAccountUserError = 3526,
+        RequestNotSupportedOnHPKCollectionUserError = 3527,
 
         // 503: Service Unavailable due to region being out of capacity for bindable partitions
         InsufficientBindablePartitions = 1007,
+        NoCandidateFederationsFound = 1008,
+        AccountDoesntHaveAllocationAccessInTheRegion = 1009,
         ComputeFederationNotFound = 1012,
         OperationPaused = 9001,
         InsufficientCapacity = 9003,
@@ -190,6 +203,7 @@ namespace Microsoft.Azure.Documents
         AccountAlreadyinTargetGateway = 2100,
         CanNotAcquireLogStoreStorageAccountLoadBalanceLock = 2101,
         CannotCompleteFalseProgressReconciliationMaxConflictSizeReached = 2104,
+        EtagMismatchAcrossMasterAndServer = 2105,
 
         //412: PreConditionFailed migration substatus codes
         PartitionMigrationCancelledForPendingUserOperation = 2006,
@@ -270,9 +284,16 @@ namespace Microsoft.Azure.Documents
         PartitionMigrationFailureMitigationTargetNotBound = 2093,
         PartitionMigrationAttemptedBeforeCooldown = 2094,
         PartitionMigrationSourceServiceDeleted = 2095,
+        PartitionMigrationCanNotProceedForOfflineFailedRegionalDatabaseAccount = 2096,
+        PartitionMigrationSetNamingServicePropertiesForPPAFAtSourceTookTooLong = 2097,
+        MasterPartitionMigrationIsDisabledInTheRegion = 2098,
+        ServerPartitionMigrationIsDisabledInTheRegion = 2099,
+        PartitionMigrationIsDisabledOnTheSubscription = 2106,
+        PartitionMigrationCannotProceedAsHeartbeatManagementIsOutOfSync = 2107,
 
         // 412: PreconditionFailed codes for PartitionMigration from backend
         MismatchingCollectionRidsOnMigratePartitionDuringMigration = 5325,
+        PartitionNotInMigratingStatusForMigratePartitionRequest = 5326,
 
         // 412: PreConditionFailed Cross SubRegion Migration SubStatus Codes
         CrossSubRegionMigrationIsDisabledOnTheRegionalAccount = 2200,
@@ -288,6 +309,10 @@ namespace Microsoft.Azure.Documents
         SoftDeleteOperationFailedWithExceptionInjection = 1307,
         NullSoftDeletionMetadata = 1308,
         InvalidSoftDeletionMetadata = 1309,
+        MergeBlockedForSoftDeletedResource = 1310,
+
+        // 412: PreConditionFailed PartitionMigration substatus codes
+        MasterPartitionMigrationOperationFailedWithExceptionInjection = 1311,
 
         // 500: InternalServerError
         ConfigurationNameNotEmpty = 3001,
@@ -310,6 +335,7 @@ namespace Microsoft.Azure.Documents
         SystemResourceUnavailable = 3092,
         ThrottleDueToTransportBufferUsage = 3103,
         TooManyThroughputBucketUpdates = 3213,
+        TooManyHotPartitionKeyRateLimitingPolicyUpdates = 3215,
         MicrosoftFabricCUBudgetExceeded = 3300,
 
         // Key Vault Access Client Error Code
@@ -360,6 +386,7 @@ namespace Microsoft.Azure.Documents
         AadTokenMissingObjectIdentifier = 5011,
 
         SasTokenAuthDisabled = 5012,
+        AadTokenRevoked = 5013,
 
         // 401 : Unauthorized Exception (CosmosDB-side errors start with 52)
         AadTokenInvalidSigningKey = 5200,
@@ -386,6 +413,35 @@ namespace Microsoft.Azure.Documents
         NspInvalidEvalResult = 5311,
         NspNotInitiated = 5312,
         NspOperationNotSupported = 5313,
+        NspS2SServiceTagDenied = 5314,
+
+        // 503 Service Unavailable. S2S network configuration failure (upstream conversion of 403 NspS2SServiceTagDenied).
+        S2SNetworkConfigFailure = 5315,
+
+        // 449 Retry With. DTx coordinator race conflict.
+        DtcCoordinatorRaceConflict = 5352,
+
+        // DTx coordinator → SDK sub-status codes (54xx range, reserved for transactions)
+        DtcParseFailure = 5405, // 400: JSON payload parse error
+        DtcFeatureDisabled = 5406, // 400: DTx not enabled for account
+        DtcMaxOperationsExceeded = 5407, // 400: Too many operations in batch
+        DtcMissingIdempotencyToken = 5408, // 400: No idempotency token provided
+        DtcInvalidAccountName = 5409, // 400: Account name invalid or empty
+        DtcInvalidOperation = 5410, // 400: Invalid operation/resource type
+        DtcLedgerFailure = 5411, // 500: Ledger create/read/update failed
+        DtcAccountConfigFailure = 5412, // 500: Account configuration unavailable
+        DtcDispatchFailure = 5413, // 500: Backend dispatch infrastructure error
+        DtcHlcClockSkewAborted = 5421, // 452: Transaction aborted because backend HLC physical timestamp exceeded configured skew from coordinator wall clock
+        DtcRetryOperationsMismatch = 5422, // 400: Retry request operations do not match stored transaction participants
+
+        // DTx per-operation sub-status codes (on 453 DtcOperationRolledBack)
+        DtcOperationRolledBack = 5415, // 453: Was prepared, then rolled back
+
+        // DTx backend → coordinator sub-status codes (internal protocol)
+        DtcNothingToAbort = 5417, // 200: No prepared state to abort
+        DtcTransactionAlreadyAborted = 5418, // 409: Prepare rejected, abort tombstone exists
+        DtcTransactionAlreadyCommitted = 5419, // 409: Prepare rejected, commit record exists
+        DtcCommitAlreadyApplied = 5420, // 2xx: Duplicate commit, idempotent success
 
         // 200 OK. List feed throttled response.
         ListResourceFeedThrottled = 5500,
@@ -412,7 +468,7 @@ namespace Microsoft.Azure.Documents
         AddRegionUpsertIntentNotApplied = 8004,
         RemoveReadRegionUpsertIntentNotApplied = 8005,
         RemoveReadRegionTopologyValidationFailed = 8006,
-        PrepareForEntityDeletionTopologyValidationFailed = 8007,
+        PrepareForContainerDeletionTopologyValidationFailed = 8007,
 
         // SDK Codes (Client)
         // IMPORTANT - keep these consistent with Java SDK as well
@@ -424,6 +480,7 @@ namespace Microsoft.Azure.Documents
         Channel_Closed = 20006,
         MalformedContinuationToken = 20007,
         // EndToEndOperationCancelled = 20008 - cancellation by e2e retry policy - currently only applicable in Java
+        DnsResolutionFailed = 20009,
 
         // SubStatusCodes for Client generated 500 -currently only applicable in java
         // MISSING_PARTITION_KEY_RANGE_ID_IN_CONTEXT = 20902;
@@ -473,6 +530,7 @@ namespace Microsoft.Azure.Documents
         ThinProxy_TopologyClientBadRequest = 13006,
         ThinProxy_InvalidRequestBytes =  13007,
         ThinProxy_Generated401 = 13008,
+        ThinProxy_Generated403 = 13021,
         ThinProxy_Generated408 = 13009,
         ThinProxy_RequestThrottled = 13010,
         ThinProxy_Generated500 = 13011,
@@ -480,6 +538,11 @@ namespace Microsoft.Azure.Documents
         ThinProxy_QueryPlanParsingError = 13013,
         ThinProxy_QueryPlanCompilationError = 13014,
         ThinProxy_QueryPlanUnexpectedError = 13015,
+        ThinProxy_DtcMaxOperationsExceeded = 13016,
+        ThinProxy_DtcRequestBodyTooLarge = 13017,
+        ThinProxy_DtcHierarchicalPartitionKeyNotSupported = 13018,
+        ThinProxy_DtcResponseBodyTooLargeWithFailedOutcome = 13019,
+        ThinProxy_DtcResponseBodyTooLargeWithSuccessfulOutcome = 13020,
         #endregion
     }
 

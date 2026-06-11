@@ -58,7 +58,51 @@ namespace Microsoft.Azure.Documents
             PartitionAddressInformation partitionAddressInformation =
                 await this.addressResolver.ResolveAsync(request, forceAddressRefresh, CancellationToken.None);
 
-            return partitionAddressInformation.Get(this.protocol);
+            request.RequestContext.ResolvedPartitionTargetReplicaSetSize = partitionAddressInformation.PartitionTargetReplicaSetSize;
+
+            PerProtocolPartitionAddressInformation perProtocolAddresses = partitionAddressInformation.Get(this.protocol);
+
+            // Use the per-protocol replica count rather than AllAddresses.Count.
+            // AllAddresses includes addresses for ALL protocols (e.g. TCP + HTTPS),
+            // which inflates the count on the gateway and prevents the CRSS gate
+            // from detecting scale-up events.
+            request.RequestContext.ResolvedReplicaAddressCountPerProtocol = perProtocolAddresses.ReplicaTransportAddressUris.Count;
+
+            return perProtocolAddresses;
+        }
+
+        /// <summary>
+        /// Triggers a background address refresh if the backend-reported
+        /// CurrentReplicaSetSize exceeds both the resolved address count
+        /// and the per-partition target, indicating a scale-up from a
+        /// previously reduced replica set size.
+        /// </summary>
+        internal void RefreshAddressesIfReplicaSetSizeChanged(
+            DocumentServiceRequest request,
+            int currentReplicaSetSizeFromResponse)
+        {
+            // Already refreshed by a prior replica response or GoneException
+            // handler within this request — skip to avoid duplicate refreshes.
+            if (request.RequestContext.PerformedBackgroundAddressRefresh)
+            {
+                return;
+            }
+
+            int? resolvedPartitionTargetReplicaSetSize = request.RequestContext.ResolvedPartitionTargetReplicaSetSize;
+
+            if (resolvedPartitionTargetReplicaSetSize.HasValue
+                && currentReplicaSetSizeFromResponse > request.RequestContext.ResolvedReplicaAddressCountPerProtocol
+                && currentReplicaSetSizeFromResponse > resolvedPartitionTargetReplicaSetSize.Value)
+            {
+                DefaultTrace.TraceInformation(
+                    "CRSS scale-up detected: currentReplicaSetSize={0}, resolvedAddressCount={1}, partitionTargetReplicaSetSize={2}",
+                    currentReplicaSetSizeFromResponse,
+                    request.RequestContext.ResolvedReplicaAddressCountPerProtocol,
+                    resolvedPartitionTargetReplicaSetSize);
+
+                this.StartBackgroundAddressRefresh(request);
+                request.RequestContext.PerformedBackgroundAddressRefresh = true;
+            }
         }
 
         public void StartBackgroundAddressRefresh(DocumentServiceRequest request)

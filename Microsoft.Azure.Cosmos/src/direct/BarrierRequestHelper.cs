@@ -43,7 +43,8 @@ namespace Microsoft.Azure.Documents
                 }
             }
 
-            if (request.RequestAuthorizationTokenType == AuthorizationTokenType.Invalid)
+            if (request.RequestAuthorizationTokenType == AuthorizationTokenType.Invalid &&
+                !request.RequestContext.IsMutualTlsAuthorized)
             {
                 string message = "AuthorizationTokenType not set for the read request";
                 Debug.Assert(false, message);
@@ -135,6 +136,7 @@ namespace Microsoft.Azure.Documents
                         resourceId: null);
                     break;
 
+                case AuthorizationTokenType.Invalid when request.RequestContext.IsMutualTlsAuthorized:
                 case AuthorizationTokenType.AadToken:
                 case AuthorizationTokenType.ResourceToken:
                     barrierLsnRequest.Headers[HttpConstants.HttpHeaders.Authorization] = request.Headers[HttpConstants.HttpHeaders.Authorization];
@@ -164,6 +166,10 @@ namespace Microsoft.Azure.Documents
             if (request.Headers[WFConstants.BackendHeaders.CollectionRid] != null)
             {
                 barrierLsnRequest.Headers[WFConstants.BackendHeaders.CollectionRid] = request.Headers[WFConstants.BackendHeaders.CollectionRid];
+            }
+            if (request.Headers[HttpConstants.HttpHeaders.SDKSupportedCapabilities] != null)
+            {
+                barrierLsnRequest.Headers[HttpConstants.HttpHeaders.SDKSupportedCapabilities] = request.Headers[HttpConstants.HttpHeaders.SDKSupportedCapabilities];
             }
 
             if (includeRegionContext)
