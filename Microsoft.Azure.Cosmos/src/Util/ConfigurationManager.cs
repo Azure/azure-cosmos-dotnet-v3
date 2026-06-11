@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Threading;
+    using Microsoft.Azure.Cosmos.Core.Trace;
 
     internal static class ConfigurationManager
     {
@@ -159,6 +161,56 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal static readonly string ChangeFeedLeaseIdAsPartitionKeyEnabled = "AZURE_COSMOS_CHANGE_FEED_LEASE_ID_AS_PARTITION_KEY_ENABLED";
 
+        /// <summary>
+        /// Environment variable to override the SDK-internal hard deadline (in seconds) bounding the
+        /// detached metadata-read operation in <see cref="MetadataDetachedExecutor"/>. This is a defensive
+        /// upper bound on background work in the metadata-cache path; it is independent of the caller's
+        /// CancellationToken. Default is 300 seconds (5 minutes).
+        /// </summary>
+        internal static readonly string MetadataDetachedHardDeadlineInSeconds = "AZURE_COSMOS_METADATA_DETACHED_HARD_DEADLINE_SECONDS";
+
+        /// <summary>
+        /// Default hard deadline for the detached metadata-read executor. Derivation:
+        /// the executor wraps <c>ClientCollectionCache.ReadCollectionAsync</c>
+        /// (collection metadata reads), which per <c>HttpTimeoutPolicy.GetTimeoutPolicy</c>
+        /// (the <c>IsMetaData &amp;&amp; IsReadOnlyRequest</c> branch) routes to
+        /// <c>HttpTimeoutPolicyControlPlaneRetriableHotPath</c> with ladder
+        /// (1 s, 0) → (5 s, 1 s) → (65 s, 0) — 71 s of timeouts plus 1 s inter-attempt
+        /// delay ≈ 72 s/region. A typical cross-region failover sweep visits ~3-5 regions
+        /// before settling, so ~3-5 × 72 ≈ 215 s to 360 s of wall time, plus
+        /// <c>ClientRetryPolicy.RetryIntervalInMS = 1000 ms</c> per failover. 300 s covers
+        /// the common-case multi-region failover with margin. This is NOT a tight bound on
+        /// <c>ClientRetryPolicy.MaxRetryCount = 120</c> — pathological failover ping-pong is
+        /// bounded by <see cref="MetadataDetachedExecutor.MaxAttemptsHardCap"/> and by the
+        /// policy's own counter; the time deadline targets realistic failover duration,
+        /// not the theoretical worst case.
+        /// Note: account reads via <c>GatewayAccountReader</c> use the slower
+        /// <c>HttpTimeoutPolicyControlPlaneRead</c> ladder (5+10+20 = 35 s/region) instead,
+        /// but the executor does not wrap that path today.
+        /// </summary>
+        internal static readonly int DefaultMetadataDetachedHardDeadlineInSeconds = 300;
+
+        /// <summary>
+        /// Lower bound (in seconds) clamped onto user-supplied <see cref="MetadataDetachedHardDeadlineInSeconds"/>
+        /// values to prevent pathologically short deadlines from defeating the cross-region failover.
+        /// </summary>
+        internal static readonly int MinMetadataDetachedHardDeadlineInSeconds = 30;
+
+        /// <summary>
+        /// Upper bound (in seconds) clamped onto user-supplied <see cref="MetadataDetachedHardDeadlineInSeconds"/>
+        /// values. Two reasons for this cap:
+        /// <list type="bullet">
+        ///   <item>The <c>CancellationTokenSource</c> constructor that takes a <see cref="TimeSpan"/>
+        ///   throws <see cref="ArgumentOutOfRangeException"/> when the delay exceeds <c>uint.MaxValue - 1</c>
+        ///   milliseconds (~49.7 days). An unbounded user value would break every metadata-cache read.</item>
+        ///   <item>No legitimate metadata-read budget exceeds 24 hours; a value larger than this
+        ///   indicates a misconfiguration that we should clamp and trace rather than honor.</item>
+        /// </list>
+        /// 86400 seconds (24 h) is ~288× the documented 300 s default and far beyond any realistic
+        /// cross-region failover sequence.
+        /// </summary>
+        internal static readonly int MaxMetadataDetachedHardDeadlineInSeconds = 86400;
+
         public static T GetEnvironmentVariable<T>(string variable, T defaultValue)
         {
             string value = Environment.GetEnvironmentVariable(variable);
@@ -238,6 +290,54 @@ namespace Microsoft.Azure.Cosmos
                         variable: ConfigurationManager.ChangeFeedLeaseIdAsPartitionKeyEnabled,
                         defaultValue: true);
         }
+
+        /// <summary>
+        /// Returns the SDK-internal hard deadline used by <see cref="MetadataDetachedExecutor"/> to bound
+        /// detached metadata-read operations. Reads <see cref="MetadataDetachedHardDeadlineInSeconds"/>
+        /// from the environment and clamps it into the closed interval
+        /// [<see cref="MinMetadataDetachedHardDeadlineInSeconds"/>, <see cref="MaxMetadataDetachedHardDeadlineInSeconds"/>].
+        /// Falls back to <see cref="DefaultMetadataDetachedHardDeadlineInSeconds"/> when the environment
+        /// variable is unset.
+        /// </summary>
+        /// <returns>The hard deadline as a <see cref="TimeSpan"/>.</returns>
+        internal static TimeSpan GetMetadataDetachedHardDeadline()
+        {
+            // Intentionally read (and re-parse) the environment variable on every call rather
+            // than caching: the value is overridable at runtime and the read is unit-tested to
+            // reflect the current environment. The per-call cost is a single env-var lookup on
+            // a metadata-cache-miss path and is negligible relative to the network read it bounds.
+            int seconds = ConfigurationManager
+                .GetEnvironmentVariable(
+                    variable: MetadataDetachedHardDeadlineInSeconds,
+                    defaultValue: DefaultMetadataDetachedHardDeadlineInSeconds);
+            int clamped = Math.Min(
+                Math.Max(seconds, MinMetadataDetachedHardDeadlineInSeconds),
+                MaxMetadataDetachedHardDeadlineInSeconds);
+
+            // A user-supplied value outside [Min, Max] is a misconfiguration: clamp it (per the
+            // field docs) but emit a one-time warning so the clamp is visible in diagnostics
+            // instead of being applied silently. The flag keeps the warning off the hot path
+            // after the first occurrence.
+            if (clamped != seconds
+                && Interlocked.CompareExchange(ref metadataDetachedHardDeadlineClampWarned, 1, 0) == 0)
+            {
+                DefaultTrace.TraceWarning(
+                    "ConfigurationManager: {0}={1}s is outside the supported range [{2}, {3}]s and was clamped to {4}s.",
+                    MetadataDetachedHardDeadlineInSeconds,
+                    seconds,
+                    MinMetadataDetachedHardDeadlineInSeconds,
+                    MaxMetadataDetachedHardDeadlineInSeconds,
+                    clamped);
+            }
+
+            return TimeSpan.FromSeconds(clamped);
+        }
+
+        /// <summary>
+        /// Guard so the <see cref="GetMetadataDetachedHardDeadline"/> clamp warning is emitted
+        /// at most once per process (this method runs on every metadata-cache miss).
+        /// </summary>
+        private static int metadataDetachedHardDeadlineClampWarned;
 
         /// <summary>
         /// Gets the AAD scope value to override.
