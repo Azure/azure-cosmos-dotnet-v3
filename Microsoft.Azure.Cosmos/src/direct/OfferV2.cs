@@ -1,10 +1,11 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
 namespace Microsoft.Azure.Documents
 {
     using Newtonsoft.Json;
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
 
@@ -124,7 +125,7 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// Initializes a Resource offer with the given autopilot settings and Throughput buckets, from a reference Offer object for the Azure Cosmos DB service.
         /// </summary>
-        internal OfferV2(Offer offer, AutopilotSettings autopilotSettings, Collection<ThroughputBucket> throughputBuckets)
+        internal OfferV2(Offer offer, AutopilotSettings autopilotSettings, Collection<ThroughputBucket> throughputBuckets, HotPartitionKeyRateLimitingPolicy hpkPolicy)
             : base(offer)
         {
             this.OfferType = string.Empty;
@@ -136,7 +137,7 @@ namespace Microsoft.Azure.Documents
                 contentV2 = ((OfferV2)offer).Content;
             }
 
-            this.Content = new OfferContentV2(contentV2, autopilotSettings, throughputBuckets);
+            this.Content = new OfferContentV2(contentV2, autopilotSettings, throughputBuckets, hpkPolicy ?? contentV2.HotPartitionKeyRateLimitingPolicy);
         }
 
         /// <summary>
@@ -202,7 +203,8 @@ namespace Microsoft.Azure.Documents
             bool? offerIsAutoScaleV1Enabled,
             AutopilotSettings autopilotSettings,
             OfferMinimumThroughputParameters minimumThroughputParameters,
-            Collection<ThroughputBucket> throughputBuckets)
+            Collection<ThroughputBucket> throughputBuckets,
+            HotPartitionKeyRateLimitingPolicy hpkPolicy = null)
             : base(offer)
         {
             this.OfferType = string.Empty;
@@ -218,7 +220,8 @@ namespace Microsoft.Azure.Documents
                 autopilotSettings,
                 minimumThroughputParameters,
                 contentV2.ThroughputDistributionPolicy,
-                throughputBuckets);
+                throughputBuckets,
+                hpkPolicy ?? contentV2.HotPartitionKeyRateLimitingPolicy);
         }
 
         /// <summary>
@@ -235,6 +238,7 @@ namespace Microsoft.Azure.Documents
             double? bgTaskMaxAllowedThroughputPercent,
             ThroughputDistributionPolicyType? throughputDistributionPolicy,
             Collection<ThroughputBucket> throughputBuckets,
+            HotPartitionKeyRateLimitingPolicy hpkPolicy,
             int? offerTargetThroughput = null,
             int? partitionCount = null)
             : base(offer)
@@ -251,6 +255,7 @@ namespace Microsoft.Azure.Documents
                 bgTaskMaxAllowedThroughputPercent,
                 throughputDistributionPolicy,
                 throughputBuckets,
+                hpkPolicy,
                 offerTargetThroughput,
                 partitionCount);
         }
@@ -315,12 +320,48 @@ namespace Microsoft.Azure.Documents
                        (this.Content.OfferIsAutoScaleEnabled.GetValueOrDefault(false) == offer.Content.OfferIsAutoScaleEnabled.GetValueOrDefault(false)) &&
                        (this.Content.ThroughputDistributionPolicy == offer.Content.ThroughputDistributionPolicy) &&
                        (this.Content.BackgroundTaskMaxAllowedThroughputPercent.GetValueOrDefault(0.0) == offer.Content.BackgroundTaskMaxAllowedThroughputPercent.GetValueOrDefault(0.0) &&
-                       (ThroughputBucket.Equals(this.Content.ThroughputBuckets, offer.Content.ThroughputBuckets)));
+                       (ThroughputBucket.Equals(this.Content.ThroughputBuckets, offer.Content.ThroughputBuckets)) &&
+                       (HotPartitionKeyRateLimitingPolicy.Equals(this.Content.HotPartitionKeyRateLimitingPolicy, offer.Content.HotPartitionKeyRateLimitingPolicy)));
 #endif
             }
 
             return false;
         }
+
+        /// <summary>
+        /// Returns set of offer content field names that differ between this offer and the given offer.
+        /// </summary>
+#if !DOCDBCLIENT
+        public HashSet<string> GetChangedFields(OfferV2 offer)
+        {
+            HashSet<string> changedFields = new HashSet<string>();
+
+            if (offer == null) return changedFields;
+
+            OfferContentV2 thisContent = this.Content;
+            OfferContentV2 otherContent = offer.Content;
+
+            if (thisContent == null || otherContent == null) return changedFields;
+
+            var checks = new (string propertyName, bool isChanged)[]
+            {
+                (Constants.Properties.OfferThroughput, this.GetOfferThroughput(false) != offer.GetOfferThroughput(false)),
+                (Constants.Properties.OfferIsRUPerMinuteThroughputEnabled, thisContent.OfferIsRUPerMinuteThroughputEnabled != otherContent.OfferIsRUPerMinuteThroughputEnabled),
+                (Constants.Properties.OfferIsAutoScaleEnabled, thisContent.OfferIsAutoScaleEnabled.GetValueOrDefault(false) != otherContent.OfferIsAutoScaleEnabled.GetValueOrDefault(false)),
+                (Constants.Properties.ThroughputDistributionPolicy, thisContent.ThroughputDistributionPolicy != otherContent.ThroughputDistributionPolicy),
+                (Constants.Properties.BackgroundTaskMaxAllowedThroughputPercent, thisContent.BackgroundTaskMaxAllowedThroughputPercent.GetValueOrDefault(0.0) != otherContent.BackgroundTaskMaxAllowedThroughputPercent.GetValueOrDefault(0.0)),
+                (Constants.Properties.ThroughputBuckets, !ThroughputBucket.Equals(thisContent.ThroughputBuckets, otherContent.ThroughputBuckets)),
+                (Constants.Properties.HotPartitionKeyRateLimitingPolicy, !HotPartitionKeyRateLimitingPolicy.Equals(thisContent.HotPartitionKeyRateLimitingPolicy, otherContent.HotPartitionKeyRateLimitingPolicy)),
+            };
+
+            foreach (var (propertyName, isChanged) in checks)
+            {
+                if (isChanged) changedFields.Add(propertyName);
+            }
+
+            return changedFields;
+        }
+#endif
 
 #if !DOCDBCLIENT
         internal bool IsAutoScaleEnabled()

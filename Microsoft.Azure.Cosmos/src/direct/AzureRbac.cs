@@ -20,10 +20,16 @@ namespace Microsoft.Azure.Documents
 
         public AzureRbac(
             string id,
-            byte[] data)
+            byte[] data,
+            long azureRbacVersion = default)
         {
             this.Id = id;
             this.Data = data;
+
+            if (azureRbacVersion != default)
+            {
+                this.AzureRbacVersion = azureRbacVersion;
+            }
         }
 
         /// <summary>
@@ -56,6 +62,21 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        /// <summary>
+        /// Version as datetime ticks for the Azure RBAC resource.
+        /// </summary>
+        public long AzureRbacVersion
+        {
+            get
+            {
+                return base.GetValue<long>(AzureRbac.SerializationConstants.AzureRbacVersion);
+            }
+            internal set
+            {
+                base.SetValue(AzureRbac.SerializationConstants.AzureRbacVersion, value);
+            }
+        }
+
         internal override void Validate()
         {
             base.Validate();
@@ -83,6 +104,11 @@ namespace Microsoft.Azure.Documents
                 return false;
             }
 
+            if (a.AzureRbacVersion != b.AzureRbacVersion)
+            {
+                return false;
+            }
+
             if (a.Data == null || b.Data == null)
             {
                 return a.Data == null && b.Data == null;
@@ -94,6 +120,7 @@ namespace Microsoft.Azure.Documents
         private static class SerializationConstants
         {
             public const string Data = "data";
+            public const string AzureRbacVersion = "azureRbacVersion";
         }
 
         internal static class SerializationErrors

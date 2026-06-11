@@ -211,6 +211,9 @@ namespace Microsoft.Azure.Documents
         // FedURL/accounts/{id}/dbs/{id}/colls/{id}/pkranges
         public const string FederationEndpoint_PartitionKeyRanges_Root = FederationEndpoint_Root + "/" + PartitionKeyRanges_Root;
 
+        // /dbs/{id}/colls/{id}/historicalpkranges
+        public const string HistoricalPartitionKeyRangesPathSegment = "historicalpkranges";
+
         // /dbs/{id}/colls/{id}/pkranges/{id}/presplitaction
         public const string PartitionKeyRangePreSplitSegment = "presplitaction";
         public const string PartitionKeyRangePreSplit_Root = PartitionKeyRange_Root + "/" + PartitionKeyRangePreSplitSegment + "/";
@@ -229,6 +232,9 @@ namespace Microsoft.Azure.Documents
         // /databaseAccount
         public const string DatabaseAccountSegment = "databaseaccount";
         public const string DatabaseAccount_Root = Root + "/" + DatabaseAccountSegment + "/";
+
+        // /distributedtransactionbatch
+        public const string DistributedTransactionBatchSegment = "distributedtransactionbatch";
 
         // /storageauthtoken
         public const string StorageAuthTokenPathSegment = "storageauthtoken";
@@ -412,6 +418,9 @@ namespace Microsoft.Azure.Documents
         public const string ClientConfigPathSegment = "clientconfigs";
         public const string ClientConfig_Root = Root + ClientConfigPathSegment;
         public const string FederationEndpoint_ClientConfig_Root = FederationEndpoint_Root + ClientConfig_Root;
+
+        // /operations/dtc - Distributed Transaction Coordinator
+        public const string Operations_Dtc = "dtc";
 
 
         // /encryptionscopes/{id}

@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly bool isThinClientEnabled;
         private static readonly string sessionConsistencyAsString = ConsistencyLevel.Session.ToString();
         private readonly GlobalPartitionEndpointManager globalPartitionEndpointManager;
-        private readonly ISessionContainer sessionContainer;
+        protected internal readonly ISessionContainer sessionContainer;
         private readonly DocumentClientEventSource eventSource;
         private readonly IChaosInterceptor chaosInterceptor;
 
@@ -39,8 +39,8 @@ namespace Microsoft.Azure.Cosmos
         private GatewayStoreClient gatewayStoreClient;
 
         // Caches to resolve the PartitionKeyRange from request. For Session Token Optimization.
-        private PartitionKeyRangeCache partitionKeyRangeCache;
-        private ClientCollectionCache clientCollectionCache;
+        protected internal PartitionKeyRangeCache partitionKeyRangeCache;
+        protected internal ClientCollectionCache clientCollectionCache;
 
         public GatewayStoreModel(
              GlobalEndpointManager endpointManager,
@@ -425,7 +425,7 @@ namespace Microsoft.Azure.Cosmos
                 || this.globalPartitionEndpointManager.IsPartitionLevelAutomaticFailoverEnabled();
         }
 
-        private static async Task<Tuple<bool, PartitionKeyRange>> TryResolvePartitionKeyRangeAsync(
+        internal static async Task<Tuple<bool, PartitionKeyRange>> TryResolvePartitionKeyRangeAsync(
             DocumentServiceRequest request,
             ISessionContainer sessionContainer,
             PartitionKeyRangeCache partitionKeyRangeCache,

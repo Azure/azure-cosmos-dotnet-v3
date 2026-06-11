@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Documents
         private const int defaultMaximumBackoffTimeForRetryWithInMilliseconds = 1000;
         private const int defaultRandomSaltForRetryWithInMilliseconds = 5;
 
-        private const int minFailedReplicaCountToConsiderConnectivityIssue = 3;
+        private const int defaultTargetReplicaSetSize = 4;
 
         private readonly int maximumBackoffTimeInMilliSeconds;
         private readonly int maximumBackoffTimeInMillisecondsForRetryWith;
@@ -280,7 +280,7 @@ namespace Microsoft.Azure.Documents
                             }
                             else if (this.detectConnectivityIssues &&
                                     request.RequestContext.ClientRequestStatistics != null &&
-                                    request.RequestContext.ClientRequestStatistics.FailedReplicas.Count >= GoneAndRetryWithRequestRetryPolicy<TResponse>.minFailedReplicaCountToConsiderConnectivityIssue)
+                                    request.RequestContext.ClientRequestStatistics.FailedReplicas.Count >= GoneAndRetryWithRequestRetryPolicy<TResponse>.GetMinFailedReplicaCount(request))
                             {
                                 exceptionToThrow = new ServiceUnavailableException(
                                     string.Format(
@@ -480,6 +480,14 @@ namespace Microsoft.Azure.Documents
             return exception is ArchivalPartitionNotPresentException
                   || (response?.StatusCode == HttpStatusCode.Gone &&
                      (response?.SubStatusCode == SubStatusCodes.ArchivalPartitionNotPresent));
+        }
+
+        private static int GetMinFailedReplicaCount(DocumentServiceRequest request)
+        {
+            int targetReplicaSetSize = request.RequestContext.ResolvedPartitionTargetReplicaSetSize
+                ?? defaultTargetReplicaSetSize;
+
+            return Math.Max(targetReplicaSetSize - 1, 1);
         }
 
         private static void ClearRequestContext(DocumentServiceRequest request)

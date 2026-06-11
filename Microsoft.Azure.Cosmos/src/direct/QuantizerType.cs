@@ -24,5 +24,11 @@ namespace Microsoft.Azure.Documents
         /// </summary>
         [EnumMember(Value = "spherical")]
         Spherical,
+
+        /// <summary>
+        /// Represents MeanPool Quantizer
+        /// </summary>
+        [EnumMember(Value = "meanpool")]
+        MeanPool,
     }
 }

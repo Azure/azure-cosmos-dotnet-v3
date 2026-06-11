@@ -305,6 +305,15 @@ namespace Microsoft.Azure.Documents
                         StoreResult storeResult = disposableStoreResult.Target;
                         entity.RequestContext.RequestChargeTracker.AddCharge(storeResult.RequestCharge);
 
+                        // Stash max CRSS for centralized scale-up detection
+                        // in ReplicatedResourceClient.
+                        if (storeResult.CurrentReplicaSetSize
+                            > entity.RequestContext.MaxCurrentReplicaSetSizeFromResponse)
+                        {
+                            entity.RequestContext.MaxCurrentReplicaSetSizeFromResponse =
+                                storeResult.CurrentReplicaSetSize;
+                        }
+
                         if (storeResponse != null)
                         {
                             entity.RequestContext.ClientRequestStatistics.ContactedReplicas.Add(targetUri);

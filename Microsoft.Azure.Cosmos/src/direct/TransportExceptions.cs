@@ -37,58 +37,40 @@ namespace Microsoft.Azure.Documents.Rntbd
         }
 
         internal static GoneException GetGoneException(
-            Uri targetAddress, Guid activityId, Exception inner = null, TransportRequestStats transportRequestStats = null)
+            Uri targetAddress, Guid activityId, Exception inner = null,
+            TransportRequestStats transportRequestStats = null)
         {
             Trace.CorrelationManager.ActivityId = activityId;
+            SubStatusCodes subStatusCode = SubStatusCodes.TransportGenerated410;
+
+            if(inner != null && 
+                inner is TransportException transportEx &&
+                TransportException.IsDNSException(transportEx.ErrorCode))
+            {
+                subStatusCode = SubStatusCodes.DnsResolutionFailed;
+            }
 
             GoneException ex;
-            if (inner == null)
+            if (TransportExceptions.AddSourceIpAddressInNetworkExceptionMessage)
             {
-                if (TransportExceptions.AddSourceIpAddressInNetworkExceptionMessage)
-                {
-                    ex = new GoneException(
-                        string.Format(CultureInfo.CurrentUICulture,
-                            RMResources.ExceptionMessage,
-                            RMResources.Gone),
-                        inner,
-                        SubStatusCodes.TransportGenerated410,
-                            targetAddress,
-                        TransportExceptions.LocalIpv4Address);
-                }
-                else
-                {
-                    ex = new GoneException(
-                        string.Format(CultureInfo.CurrentUICulture,
-                            RMResources.ExceptionMessage,
-                            RMResources.Gone),
-                        inner,
-                        SubStatusCodes.TransportGenerated410,
-                        targetAddress);
-                }
+                ex = new GoneException(
+                    string.Format(CultureInfo.CurrentUICulture,
+                        RMResources.ExceptionMessage,
+                        RMResources.Gone),
+                    inner,
+                    subStatusCode,
+                    targetAddress,
+                    TransportExceptions.LocalIpv4Address);
             }
             else
             {
-                if (TransportExceptions.AddSourceIpAddressInNetworkExceptionMessage)
-                {
-                    ex = new GoneException(
-                        string.Format(CultureInfo.CurrentUICulture,
-                            RMResources.ExceptionMessage,
-                            RMResources.Gone),
-                        inner,
-                        SubStatusCodes.TransportGenerated410,
-                        targetAddress,
-                        TransportExceptions.LocalIpv4Address);
-                }
-                else
-                {
-                    ex = new GoneException(
-                        string.Format(CultureInfo.CurrentUICulture,
-                            RMResources.ExceptionMessage,
-                            RMResources.Gone),
-                        inner,
-                        SubStatusCodes.TransportGenerated410,
-                        targetAddress);
-                }
+                ex = new GoneException(
+                    string.Format(CultureInfo.CurrentUICulture,
+                        RMResources.ExceptionMessage,
+                        RMResources.Gone),
+                    inner,
+                    subStatusCode,
+                    targetAddress);
             }
 
             ex.Headers.Set(HttpConstants.HttpHeaders.ActivityId, activityId.ToString());

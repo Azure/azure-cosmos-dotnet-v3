@@ -331,12 +331,14 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportSerialization.AddMergeStaticIdIfPresent(request, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.MaxPollingIntervalMilliseconds, requestHeaders.MaxPollingIntervalMilliseconds, rntbdRequest.maxPollingIntervalMilliseconds, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.PopulateLogStoreInfo, requestHeaders.PopulateLogStoreInfo, rntbdRequest.populateLogStoreInfo, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.PopulateEsanMigrationStatus, requestHeaders.PopulateEsanMigrationStatus, rntbdRequest.populateEsanMigrationStatus, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.MergeCheckPointGLSN, requestHeaders.MergeCheckPointGLSN, rntbdRequest.mergeCheckpointGLSNKeyName, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.PopulateUnflushedMergeEntryCount, requestHeaders.PopulateUnflushedMergeEntryCount, rntbdRequest.populateUnflushedMergeEntryCount, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.AddResourcePropertiesToResponse, requestHeaders.AddResourcePropertiesToResponse, rntbdRequest.addResourcePropertiesToResponse, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.SystemRestoreOperation, requestHeaders.SystemRestoreOperation, rntbdRequest.systemRestoreOperation, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.ChangeFeedStartFullFidelityIfNoneMatch, requestHeaders.ChangeFeedStartFullFidelityIfNoneMatch, rntbdRequest.changeFeedStartFullFidelityIfNoneMatch, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.SkipRefreshDatabaseAccountConfigs, requestHeaders.SkipRefreshDatabaseAccountConfigs, rntbdRequest.skipRefreshDatabaseAccountConfigs, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.RefreshOnlyFabricServiceLevelConfigs, requestHeaders.RefreshOnlyFabricServiceLevelConfigs, rntbdRequest.refreshOnlyFabricServiceLevelConfigs, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.IntendedCollectionRid, requestHeaders.IntendedCollectionRid, rntbdRequest.intendedCollectionRid, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.UseArchivalPartition, requestHeaders.UseArchivalPartition, rntbdRequest.useArchivalPartition, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.CollectionTruncate, requestHeaders.CollectionTruncate, rntbdRequest.collectionTruncate, rntbdRequest);
@@ -390,19 +392,26 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.AllowBarrierRequestWhenRWStatusRevoked, requestHeaders.AllowBarrierRequestWhenRWStatusRevoked, rntbdRequest.allowBarrierRequestWhenRWStatusRevoked, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.IsEmbeddingGeneratorRequest, requestHeaders.IsEmbeddingGeneratorRequest, rntbdRequest.isEmbeddingGeneratorRequest, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.BypassSoftDeletionBlocking, requestHeaders.BypassSoftDeletionBlocking, rntbdRequest.bypassSoftDeletionBlocking, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.IsSoftDeletePurgeOperation, requestHeaders.IsSoftDeletePurgeOperation, rntbdRequest.isSoftDeletePurgeOperation, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.IsStrongConsistencyStoreClient, requestHeaders.IsStrongConsistencyStoreClient, rntbdRequest.isStrongConsistencyStoreClient, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion, requestHeaders.ShouldProcessOnlyInHubRegion, rntbdRequest.shouldProcessOnlyInHubRegion, rntbdRequest);
+            TransportSerialization.AddReadConsistencyStrategyHeader(requestHeaders, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.PopulateGlobalEpochRecordCount, requestHeaders.PopulateGlobalEpochRecordCount, rntbdRequest.populateGlobalEpochRecordCount, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.PopulateCanFailoverManagerAccessDocumentStore, requestHeaders.PopulateCanFailoverManagerAccessDocumentStore, rntbdRequest.populateCanFailoverManagerAccessDocumentStore, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.PopulateGloballyAcceptedFailoverPolicy, requestHeaders.PopulateGloballyAcceptedFailoverPolicy, rntbdRequest.populateGloballyAcceptedFailoverPolicy, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.PopulateGlobalStateWriteQuorumRegionsSet, requestHeaders.PopulateGlobalStateWriteQuorumRegionsSet, rntbdRequest.populateGlobalStateWriteQuorumRegionsSet, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.DistributedTransactionId, requestHeaders.DistributedTransactionId, rntbdRequest.distributedTransactionId, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.RetriggerDTX, requestHeaders.RetriggerDTX, rntbdRequest.retriggerDTX, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.HybridLogicalClockTimestamp, requestHeaders.HybridLogicalClockTimestamp, rntbdRequest.hybridLogicalClockTimestamp, rntbdRequest);
-
+            TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.ShouldCheckInflightDtx, requestHeaders.ShouldCheckInflightDtx, rntbdRequest.shouldCheckInflightDtx, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.PopulateCachedWriteRegion, requestHeaders.PopulateCachedWriteRegion, rntbdRequest.populateCachedWriteRegion, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.IdempotencyToken, requestHeaders.IdempotencyToken, rntbdRequest.idempotencyToken, rntbdRequest);
             // will be null in case of direct, which is fine - BE will use the value from the connection context message.
             // When this is used in Gateway, the header value will be populated with the proxied HTTP request's header, and
             // BE will respect the per-request value.
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.Version, requestHeaders.Version, rntbdRequest.clientVersion, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.SupportedQueryFeatures, requestHeaders.SupportedQueryFeatures, rntbdRequest.supportedQueryFeatures, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.QueryVersion, requestHeaders.QueryVersion, rntbdRequest.queryVersion, rntbdRequest);
 
             int metadataLength = (sizeof(uint) + sizeof(ushort) + sizeof(ushort) + BytesSerializer.GetSizeOfGuid());
             int headerAndMetadataLength = metadataLength;
@@ -785,6 +794,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                 return RntbdConstants.RntbdResourceType.AzureRbac;
             case ResourceType.DistributedTransactionBatch:
                 return RntbdConstants.RntbdResourceType.DistributedTransactionBatch;
+            case ResourceType.HistoricalPartitionKeyRange:
+                return RntbdConstants.RntbdResourceType.HistoricalPartitionKeyRange;
 #if !COSMOSCLIENT
             case ResourceType.Module:
                 return RntbdConstants.RntbdResourceType.Module;
@@ -1283,6 +1294,16 @@ namespace Microsoft.Azure.Documents.Rntbd
 
                 rntbdRequest.consistencyLevel.value.valueByte = (byte) rntbdConsistencyLevel;
                 rntbdRequest.consistencyLevel.isPresent = true;
+            }
+        }
+
+        private static void AddReadConsistencyStrategyHeader(RequestNameValueCollection requestHeaders, RntbdConstants.Request rntbdRequest)
+        {
+            if (!string.IsNullOrEmpty(requestHeaders.ReadConsistencyStrategy)
+                && Enum.TryParse<ReadConsistencyStrategy>(requestHeaders.ReadConsistencyStrategy, true, out ReadConsistencyStrategy strategy))
+            {
+                rntbdRequest.readConsistencyStrategy.value.valueByte = (byte)strategy;
+                rntbdRequest.readConsistencyStrategy.isPresent = true;
             }
         }
 
@@ -2211,38 +2232,155 @@ namespace Microsoft.Azure.Documents.Rntbd
             if (requestHeaders.SupportedSerializationFormats != null)
             {
                 RntbdConstants.RntbdSupportedSerializationFormats rntbdSupportedSerializationFormats = RntbdConstants.RntbdSupportedSerializationFormats.None;
+                RntbdConstants.RntbdSupportedSerializationFeatures rntbdSupportedSerializationFeatures = RntbdConstants.RntbdSupportedSerializationFeatures.None;
 
                 // Making empty header value check consistent with http request. If header value is empty throw exception.
-                if (requestHeaders.SupportedSerializationFormats.Length == 0 || !Enum.TryParse<SupportedSerializationFormats>(requestHeaders.SupportedSerializationFormats, true, out SupportedSerializationFormats supportedSerializationFormats))
+                if (requestHeaders.SupportedSerializationFormats.Length == 0)
                 {
                     throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidEnumValue,
                         requestHeaders.SupportedSerializationFormats, nameof(SupportedSerializationFormats)));
                 }
 
-                if(supportedSerializationFormats.HasFlag(SupportedSerializationFormats.JsonText))
-                {
-                    rntbdSupportedSerializationFormats |= RntbdConstants.RntbdSupportedSerializationFormats.JsonText;
-                }
-
-                if(supportedSerializationFormats.HasFlag(SupportedSerializationFormats.CosmosBinary))
-                {
-                    rntbdSupportedSerializationFormats |= RntbdConstants.RntbdSupportedSerializationFormats.CosmosBinary;
-                }
-
-                if (supportedSerializationFormats.HasFlag(SupportedSerializationFormats.HybridRow))
-                {
-                    rntbdSupportedSerializationFormats |= RntbdConstants.RntbdSupportedSerializationFormats.HybridRow;
-                }
-
-                if((supportedSerializationFormats & 
-                    ~(SupportedSerializationFormats.JsonText | SupportedSerializationFormats.CosmosBinary | SupportedSerializationFormats.HybridRow)) != SupportedSerializationFormats.None)
-                {
-                    throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidEnumValue,
-                            requestHeaders.SupportedSerializationFormats, nameof(SupportedSerializationFormats)));
-                }
+                TransportSerialization.ParseSupportedSerializationFormatsHeader(
+                    requestHeaders.SupportedSerializationFormats,
+                    out rntbdSupportedSerializationFormats,
+                    out rntbdSupportedSerializationFeatures);
 
                 rntbdRequest.supportedSerializationFormats.value.valueByte = (byte)rntbdSupportedSerializationFormats;
                 rntbdRequest.supportedSerializationFormats.isPresent = true;
+
+                if (rntbdSupportedSerializationFeatures != RntbdConstants.RntbdSupportedSerializationFeatures.None)
+                {
+                    rntbdRequest.supportedSerializationFeatures.value.valueUShort = (ushort)rntbdSupportedSerializationFeatures;
+                    rntbdRequest.supportedSerializationFeatures.isPresent = true;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Parses the SupportedSerializationFormats header value, supporting the
+        /// extended format where binary features are appended with '+' delimiters.
+        /// Examples: "JsonText,CosmosBinary", "JsonText,CosmosBinary+Base64Strings+UInt64"
+        /// </summary>
+        internal static void ParseSupportedSerializationFormatsHeader(
+            string headerValue,
+            out RntbdConstants.RntbdSupportedSerializationFormats formats,
+            out RntbdConstants.RntbdSupportedSerializationFeatures features)
+        {
+            formats = RntbdConstants.RntbdSupportedSerializationFormats.None;
+            features = RntbdConstants.RntbdSupportedSerializationFeatures.None;
+
+            int startIndex = 0;
+            int length = headerValue.Length;
+
+            for (int i = 0; i <= length; i++)
+            {
+                if ((i == length) || (headerValue[i] == ','))
+                {
+                    TransportSerialization.ParseSingleSerializationFormatEntry(headerValue, startIndex, i, ref formats, ref features);
+                    startIndex = i + 1;
+                }
+            }
+
+            if (formats == RntbdConstants.RntbdSupportedSerializationFormats.None)
+            {
+                throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidEnumValue,
+                    headerValue, nameof(SupportedSerializationFormats)));
+            }
+        }
+
+        private static void ParseSingleSerializationFormatEntry(
+            string headerValue,
+            int startIndex,
+            int endIndex,
+            ref RntbdConstants.RntbdSupportedSerializationFormats formats,
+            ref RntbdConstants.RntbdSupportedSerializationFeatures features)
+        {
+            // Find the first '+' within [startIndex, endIndex)
+            int plusIndex = -1;
+            for (int i = startIndex; i < endIndex; i++)
+            {
+                if (headerValue[i] == '+')
+                {
+                    plusIndex = i;
+                    break;
+                }
+            }
+
+            // Extract the format name (before the first '+' or the whole segment)
+            int formatEndIndex = plusIndex >= 0 ? plusIndex : endIndex;
+            string formatName = headerValue.Substring(startIndex, formatEndIndex - startIndex).Trim();
+
+            if (string.Equals(formatName, nameof(SupportedSerializationFormats.JsonText), StringComparison.OrdinalIgnoreCase))
+            {
+                if (plusIndex >= 0)
+                {
+                    throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidEnumValue,
+                        headerValue, nameof(SupportedSerializationFormats)));
+                }
+
+                formats |= RntbdConstants.RntbdSupportedSerializationFormats.JsonText;
+            }
+            else if (string.Equals(formatName, nameof(SupportedSerializationFormats.CosmosBinary), StringComparison.OrdinalIgnoreCase))
+            {
+                formats |= RntbdConstants.RntbdSupportedSerializationFormats.CosmosBinary;
+
+                // Parse feature extensions after '+'
+                if (plusIndex >= 0)
+                {
+                    TransportSerialization.ParseFeatureExtensions(headerValue, plusIndex + 1, endIndex, ref features);
+                }
+            }
+            else if (string.Equals(formatName, nameof(SupportedSerializationFormats.HybridRow), StringComparison.OrdinalIgnoreCase))
+            {
+                if (plusIndex >= 0)
+                {
+                    throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidEnumValue,
+                        headerValue, nameof(SupportedSerializationFormats)));
+                }
+
+                formats |= RntbdConstants.RntbdSupportedSerializationFormats.HybridRow;
+            }
+            else
+            {
+                throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidEnumValue,
+                    headerValue, nameof(SupportedSerializationFormats)));
+            }
+        }
+
+        private static void ParseFeatureExtensions(
+            string headerValue,
+            int startIndex,
+            int endIndex,
+            ref RntbdConstants.RntbdSupportedSerializationFeatures features)
+        {
+            int featureStart = startIndex;
+            for (int i = startIndex; i <= endIndex; i++)
+            {
+                if (i == endIndex || headerValue[i] == '+')
+                {
+                    string featureName = headerValue.Substring(featureStart, i - featureStart).Trim();
+
+                    if (string.Equals(featureName, nameof(SupportedSerializationFeatures.Base64Strings), StringComparison.OrdinalIgnoreCase))
+                    {
+                        features |= RntbdConstants.RntbdSupportedSerializationFeatures.Base64Strings;
+                    }
+                    else if (string.Equals(featureName, nameof(SupportedSerializationFeatures.NumberArrays), StringComparison.OrdinalIgnoreCase))
+                    {
+                        features |= RntbdConstants.RntbdSupportedSerializationFeatures.NumberArrays;
+                    }
+                    else if (string.Equals(featureName, nameof(SupportedSerializationFeatures.UInt64), StringComparison.OrdinalIgnoreCase))
+                    {
+                        features |= RntbdConstants.RntbdSupportedSerializationFeatures.UInt64;
+                    }
+                    else
+                    {
+                        throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidEnumValue,
+                            headerValue, nameof(SupportedSerializationFeatures)));
+                    }
+
+                    featureStart = i + 1;
+                }
             }
         }
 

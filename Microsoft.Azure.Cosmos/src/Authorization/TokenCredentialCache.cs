@@ -130,6 +130,32 @@ namespace Microsoft.Azure.Cosmos
             return refreshed.AuthorizationHeader;
         }
 
+        internal async ValueTask<string> GetTokenAsync(ITrace trace)
+        {
+            if (this.isDisposed)
+            {
+                throw new ObjectDisposedException("TokenCredentialCache");
+            }
+
+            // Use the cached token if it is still valid
+            AuthState? snapshot = this.authState;
+            if (snapshot != null &&
+                DateTime.UtcNow < snapshot.Token.ExpiresOn)
+            {
+                return snapshot.Token.Token;
+            }
+
+            AuthState refreshed = await this.GetNewTokenAsync(trace);
+
+            if (!this.isBackgroundTaskRunning)
+            {
+                // This is a background thread so no need to await
+                Task backgroundThread = Task.Run(this.StartBackgroundTokenRefreshLoop);
+            }
+
+            return refreshed.Token.Token;
+        }
+
         public void Dispose()
         {
             if (this.isDisposed)

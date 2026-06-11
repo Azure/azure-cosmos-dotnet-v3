@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -600,6 +600,9 @@ namespace Microsoft.Azure.Documents
                 case Paths.PartitionKeyRangesPathSegment:
                     return ResourceType.PartitionKeyRange;
 
+                case Paths.HistoricalPartitionKeyRangesPathSegment:
+                    return ResourceType.HistoricalPartitionKeyRange;
+
                 case Paths.MediaPathSegment:
                     return ResourceType.Media;
 
@@ -686,6 +689,9 @@ namespace Microsoft.Azure.Documents
                 case ResourceType.PartitionKeyRange:
                     return Paths.PartitionKeyRangesPathSegment;
 
+                case ResourceType.HistoricalPartitionKeyRange:
+                    return Paths.HistoricalPartitionKeyRangesPathSegment;
+
                 case ResourceType.Media:
                     return Paths.Medias_Root;
 
@@ -721,6 +727,9 @@ namespace Microsoft.Azure.Documents
 
                 case ResourceType.AzureRbac:
                     return Paths.AzureRbacPathSegment;
+                
+                case ResourceType.DistributedTransactionBatch:
+                    return Paths.DistributedTransactionBatchSegment;
 
 #if !COSMOSCLIENT
                 case ResourceType.MasterPartition:
@@ -915,6 +924,7 @@ namespace Microsoft.Azure.Documents
                 ResourceType.AuthPolicyElement => Paths.AuthPolicyElementsPathSegment + "/" + resourceName,
                 ResourceType.EncryptionScope => Paths.EncryptionScopesPathSegment + "/" + resourceName,
                 ResourceType.AzureRbac => Paths.AzureRbacPathSegment + "/" + resourceName,
+                ResourceType.HistoricalPartitionKeyRange => Paths.HistoricalPartitionKeyRangesPathSegment + "/" + resourceName,
                 _ => null
             };
         }
@@ -1034,6 +1044,10 @@ namespace Microsoft.Azure.Documents
             else if (resourceType == ResourceType.PartitionKeyRange)
             {
                 return resourceFullName + "/" + Paths.PartitionKeyRangesPathSegment;
+            }
+            else if (resourceType == ResourceType.HistoricalPartitionKeyRange)
+            {
+                return resourceFullName + "/" + Paths.HistoricalPartitionKeyRangesPathSegment;
             }
             else if (resourceType == ResourceType.Schema)
             {
@@ -1242,6 +1256,23 @@ namespace Microsoft.Azure.Documents
                 return Paths.DatabasesPathSegment + "/" + partitionKeyRangeId.DatabaseId.ToString() + "/" +
                     Paths.CollectionsPathSegment + "/" + partitionKeyRangeId.DocumentCollectionId.ToString() + "/" +
                     Paths.PartitionKeyRangesPathSegment + "/" + partitionKeyRangeId.PartitionKeyRangeId.ToString();
+            }
+            else if (isFeed && resourceType == ResourceType.HistoricalPartitionKeyRange)
+            {
+                ResourceId documentCollectionId = ResourceId.Parse(ownerOrResourceId);
+
+                return
+                    Paths.DatabasesPathSegment + "/" + documentCollectionId.DatabaseId.ToString() + "/" +
+                    Paths.CollectionsPathSegment + "/" + documentCollectionId.DocumentCollectionId.ToString() + "/" +
+                    Paths.HistoricalPartitionKeyRangesPathSegment;
+            }
+            else if (resourceType == ResourceType.HistoricalPartitionKeyRange)
+            {
+                ResourceId historicalPartitionKeyRangeId = ResourceId.Parse(ownerOrResourceId);
+
+                return Paths.DatabasesPathSegment + "/" + historicalPartitionKeyRangeId.DatabaseId.ToString() + "/" +
+                    Paths.CollectionsPathSegment + "/" + historicalPartitionKeyRangeId.DocumentCollectionId.ToString() + "/" +
+                    Paths.HistoricalPartitionKeyRangesPathSegment + "/" + historicalPartitionKeyRangeId.ToString();
             }
             else if (isFeed && resourceType == ResourceType.Attachment)
             {
@@ -1452,6 +1483,10 @@ namespace Microsoft.Azure.Documents
             {
                 return Paths.AzureRbacPathSegment + "/" + ownerOrResourceId.ToString();
             }
+            else if (resourceType == ResourceType.DistributedTransactionBatch)
+            {
+                return Paths.OperationsPathSegment + "/" + Paths.Operations_Dtc;
+            }
 #if !COSMOSCLIENT
             else if (isFeed && resourceType == ResourceType.MasterPartition)
             {
@@ -1485,7 +1520,7 @@ namespace Microsoft.Azure.Documents
             {
                 return Paths.VectorClockPathSegment + "/" + ownerOrResourceId;
             }
-            else if (isFeed && resourceType ==  ResourceType.StorageAuthToken)
+            else if (isFeed && resourceType == ResourceType.StorageAuthToken)
             {
                 return Paths.StorageAuthTokenPathSegment;
             }
@@ -1607,6 +1642,7 @@ namespace Microsoft.Azure.Documents
                    resourcePathSegment.Equals(Paths.DatabaseAccountSegment, StringComparison.OrdinalIgnoreCase) ||
                    resourcePathSegment.Equals(Paths.TopologyPathSegment, StringComparison.OrdinalIgnoreCase) ||
                    resourcePathSegment.Equals(Paths.PartitionKeyRangesPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                    resourcePathSegment.Equals(Paths.HistoricalPartitionKeyRangesPathSegment, StringComparison.OrdinalIgnoreCase) ||
                    resourcePathSegment.Equals(Paths.PartitionKeyRangePreSplitSegment, StringComparison.OrdinalIgnoreCase) ||
                    resourcePathSegment.Equals(Paths.PartitionKeyRangePostSplitSegment, StringComparison.OrdinalIgnoreCase) ||
                    resourcePathSegment.Equals(Paths.SchemasPathSegment, StringComparison.OrdinalIgnoreCase) ||
@@ -1624,7 +1660,8 @@ namespace Microsoft.Azure.Documents
                    resourcePathSegment.Equals(Paths.SystemDocumentsPathSegment, StringComparison.OrdinalIgnoreCase) ||
                    resourcePathSegment.Equals(Paths.EncryptionScopesPathSegment, StringComparison.OrdinalIgnoreCase) ||
                    resourcePathSegment.Equals(Paths.RetriableWriteCachedResponsePathSegment, StringComparison.OrdinalIgnoreCase) ||
-                   resourcePathSegment.Equals(Paths.AzureRbacPathSegment, StringComparison.OrdinalIgnoreCase);
+                   resourcePathSegment.Equals(Paths.AzureRbacPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.DistributedTransactionBatchSegment, StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool IsRootOperation(in StringSegment operationSegment, in StringSegment operationTypeSegment)
@@ -1675,7 +1712,8 @@ namespace Microsoft.Azure.Documents
                    operationTypeSegment.Equals(Paths.Operations_MasterInitiatedProgressCoordination, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetAadGroups, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_MetadataCheckAccess, StringComparison.OrdinalIgnoreCase)||
-                   operationTypeSegment.Equals(Paths.Operations_GetAzureRbacAccessCheck, StringComparison.OrdinalIgnoreCase);
+                   operationTypeSegment.Equals(Paths.Operations_GetAzureRbacAccessCheck, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.Operations_Dtc, StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool IsTopLevelOperationOperation(in StringSegment replicaSegment, in StringSegment addressSegment)
@@ -1842,6 +1880,7 @@ namespace Microsoft.Azure.Documents
                 resourceType == ResourceType.Attachment ||
                 resourceType == ResourceType.Document ||
                 resourceType == ResourceType.PartitionKeyRange ||
+                resourceType == ResourceType.HistoricalPartitionKeyRange ||
                 resourceType == ResourceType.Schema ||
                 resourceType == ResourceType.PartitionedSystemDocument ||
                 resourceType == ResourceType.SystemDocument)
@@ -1866,6 +1905,10 @@ namespace Microsoft.Azure.Documents
                 else if (resourceType == ResourceType.PartitionKeyRange)
                 {
                     segments.Add(Paths.PartitionKeyRangesPathSegment);
+                }
+                else if (resourceType == ResourceType.HistoricalPartitionKeyRange)
+                {
+                    segments.Add(Paths.HistoricalPartitionKeyRangesPathSegment);
                 }
                 else if(resourceType == ResourceType.PartitionedSystemDocument)
                 {

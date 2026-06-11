@@ -121,13 +121,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             set;
         }
 
-        [JsonProperty("hasNonStreamingOrderBy")]
-        public bool HasNonStreamingOrderBy
-        {
-            get;
-            set;
-        }
-
         public bool HasDCount => this.DCountInfo != null;
 
         public bool HasDistinct => this.DistinctType != DistinctQueryType.None;
