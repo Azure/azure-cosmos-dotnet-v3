@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Breaking Changes
 
 #### Bugs Fixed
+- [#5930](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5930) DistributedTransaction: Fixes operation type on the wire for `DistributedReadTransaction.CommitTransactionAsync` to be a read operation (previously sent as `CommitDistributedTransaction`). `DistributedWriteTransaction.CommitTransactionAsync` continues to send `CommitDistributedTransaction`.
 
 - [5909](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5909) Json: Fixes a denial-of-service vulnerability where a crafted binary-JSON response payload could crash the client process with an unrecoverable `StackOverflowException`. The decoder and re-serializer paths now enforce the existing 256-level nesting cap, surface a catchable `JsonMaxNestingExceededException` / `InsufficientExecutionStackException` / `JsonInvalidTokenException` instead of terminating the host, and reject malformed reference-string redirects up front. Note: the existing 256-deep writer nesting check (`JsonObjectState.Push`) now throws `JsonMaxNestingExceededException` instead of `InvalidOperationException`, so a single `catch` covers both reader and writer paths.
 - [5583](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5583) LINQ: Fixes `.Any()` on `Dictionary`/`IDictionary`/`IReadOnlyDictionary` properties returning no results by wrapping dictionary access with `OBJECTTOARRAY()` so dictionary entries (and predicates on `KeyValuePair.Key`/`Value`) are iterated correctly.

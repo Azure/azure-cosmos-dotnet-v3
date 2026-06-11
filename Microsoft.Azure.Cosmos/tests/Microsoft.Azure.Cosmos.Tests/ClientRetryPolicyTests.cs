@@ -1627,6 +1627,75 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             Assert.IsTrue(result.ShouldRetry, $"DTX 500/{subStatusCode} transient infra failure must be retried.");
         }
 
+        [DataTestMethod]
+        [DataRow((int)SubStatusCodes.DtcLedgerFailure, DisplayName = "500/5411 LedgerFailure - read DTX")]
+        [DataRow((int)SubStatusCodes.DtcAccountConfigFailure, DisplayName = "500/5412 AccountConfigFailure - read DTX")]
+        [DataRow((int)SubStatusCodes.DtcDispatchFailure, DisplayName = "500/5413 DispatchFailure - read DTX")]
+        public async Task ReadDtxRequest_500_InfraFailure_ShouldRetry(int subStatusCode)
+        {
+            // Regression guard: read DTX uses OperationType.Read, which sets isReadRequest=true.
+            // Without the !isDtxRequest guard in ClientRetryPolicy, the generic read-500 branch
+            // would short-circuit to ShouldRetryOnUnavailableEndpointStatusCodes (returns
+            // RetryAfter(TimeSpan.Zero)) and skip ShouldRetryDtxRequest, bypassing the DTX-specific
+            // infra failure budget and sub-status handling. We discriminate by asserting that the
+            // backoff is non-zero (DTX path applies ComputeBackoff >= 100ms base) — the generic
+            // endpoint-unavailable path always returns TimeSpan.Zero.
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            ClientRetryPolicy policy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+            DocumentServiceRequest request = ClientRetryPolicyTests.CreateReadDtxRequest();
+            policy.OnBeforeSendRequest(request);
+
+            ResponseMessage response = new ResponseMessage(HttpStatusCode.InternalServerError);
+            response.Headers.SubStatusCodeLiteral = subStatusCode.ToString();
+
+            ShouldRetryResult result = await policy.ShouldRetryAsync(response, CancellationToken.None);
+
+            Assert.IsTrue(result.ShouldRetry, $"Read DTX 500/{subStatusCode} transient infra failure must be retried.");
+            Assert.IsTrue(result.BackoffTime > TimeSpan.Zero, $"Read DTX 500/{subStatusCode} must go through ShouldRetryDtxRequest (non-zero ComputeBackoff), not generic endpoint-unavailable retry (TimeSpan.Zero). Actual BackoffTime={result.BackoffTime}.");
+        }
+
+        [TestMethod]
+        public async Task ReadDtxRequest_408_ShouldRetry()
+        {
+            // Regression guard: read DTX 408 must fall through to ShouldRetryDtxRequest, not the
+            // generic read endpoint failover path. Discriminator is the same — DTX path uses
+            // 1s RetryIntervalInMS while ShouldRetryOnUnavailableEndpointStatusCodes returns
+            // TimeSpan.Zero. We also verify the DTX 10-call budget by replaying past it.
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            ClientRetryPolicy policy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+            DocumentServiceRequest request = ClientRetryPolicyTests.CreateReadDtxRequest();
+            policy.OnBeforeSendRequest(request);
+
+            ResponseMessage response = new ResponseMessage(HttpStatusCode.RequestTimeout);
+
+            ShouldRetryResult firstResult = await policy.ShouldRetryAsync(response, CancellationToken.None);
+            Assert.IsTrue(firstResult.ShouldRetry, "Read DTX 408 must be retried — idempotency token guarantees safety.");
+            Assert.IsTrue(firstResult.BackoffTime > TimeSpan.Zero, $"Read DTX 408 must go through ShouldRetryDtxRequest (non-zero RetryIntervalInMS), not generic endpoint-unavailable retry (TimeSpan.Zero). Actual BackoffTime={firstResult.BackoffTime}.");
+
+            // DTX budget = 10 for 408. We already consumed one; replay 9 more and the 11th must be denied.
+            const int budget = 10;
+            for (int i = 1; i < budget; i++)
+            {
+                ShouldRetryResult retryResult = await policy.ShouldRetryAsync(response, CancellationToken.None);
+                Assert.IsTrue(retryResult.ShouldRetry, $"Read DTX 408 retry {i + 1} of {budget} should be allowed.");
+            }
+
+            ShouldRetryResult finalResult = await policy.ShouldRetryAsync(response, CancellationToken.None);
+            Assert.IsFalse(finalResult.ShouldRetry, $"Read DTX retry budget is exhausted after {budget} retries; the next call must be denied.");
+        }
+
         [TestMethod]
         public async Task NonDtxWriteRequest_408_ShouldNotRetry()
         {
@@ -2165,6 +2234,14 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         {
             return DocumentServiceRequest.Create(
                 OperationType.CommitDistributedTransaction,
+                ResourceType.DistributedTransactionBatch,
+                AuthorizationTokenType.PrimaryMasterKey);
+        }
+
+        private static DocumentServiceRequest CreateReadDtxRequest()
+        {
+            return DocumentServiceRequest.Create(
+                OperationType.Read,
                 ResourceType.DistributedTransactionBatch,
                 AuthorizationTokenType.PrimaryMasterKey);
         }
