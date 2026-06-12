@@ -8,6 +8,8 @@ The `AvailabilityStrategy` operates on the `RequestInvokerHandler` level meaning
 
 > **Note:** Hedging requires at least two available regions. If only a single region endpoint is available, the SDK will skip hedging and send the request normally.
 
+> **Related:** For cold-start metadata cache population on PPAF-enabled multi-region accounts, the SDK also supports a separate, internal cross-region hedging path scoped to the Collection and PartitionKeyRange caches. See [PPAF Metadata Hedging for Cold-Start Cache Population](./PPAF_Metadata_Hedging_ColdStart_Design.md). This is independent of the data-plane `AvailabilityStrategy` documented here; the two surfaces do not interfere.
+
 ## APIs
 
 ### Enable `AvailabilityStrategy` at client level

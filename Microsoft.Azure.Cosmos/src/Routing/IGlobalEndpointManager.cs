@@ -29,6 +29,8 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         Uri ResolveServiceEndpoint(DocumentServiceRequest request);
 
+        ReadOnlyCollection<Uri> GetApplicableEndpoints(DocumentServiceRequest request, bool isReadRequest);
+
         string GetLocation(Uri endpoint);
 
         void MarkEndpointUnavailableForRead(Uri endpoint);

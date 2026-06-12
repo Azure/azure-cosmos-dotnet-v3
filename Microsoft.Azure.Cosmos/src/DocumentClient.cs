@@ -125,12 +125,15 @@ namespace Microsoft.Azure.Cosmos
         private readonly bool IsLocalQuorumConsistency = false;
         private readonly bool isReplicaAddressValidationEnabled;
         private readonly bool enableAsyncCacheExceptionNoSharing;
+        private readonly bool? enableMetadataHedgingForColdStart;
 
         //Fault Injection
         private readonly IChaosInterceptorFactory chaosInterceptorFactory;
         private readonly IChaosInterceptor chaosInterceptor;
 
         private bool isChaosInterceptorInititalized = false;
+
+        private Cosmos.Routing.MetadataHedgingStrategy metadataHedgingStrategy;
 
         //Auth
         internal readonly AuthorizationTokenProvider cosmosAuthorization;
@@ -459,6 +462,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="chaosInterceptorFactory">This is the chaos interceptor used for fault injection</param>
         /// <param name="enableAsyncCacheExceptionNoSharing">A boolean flag indicating if stack trace optimization is enabled.</param>
         /// <param name="useLengthAwareRangeComparer">A boolean flag indicating if length-aware range comparators should be used for EPK range comparisons.</param>
+        /// <param name="enableMetadataHedgingForColdStart">Customer-supplied tri-state opt-in for cold-start cross-region metadata cache hedging (PPAF). See <c>docs/PPAF_Metadata_Hedging_ColdStart_Design.md</c>.</param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -489,7 +493,8 @@ namespace Microsoft.Azure.Cosmos
                               CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null,
                               IChaosInterceptorFactory chaosInterceptorFactory = null,
                               bool enableAsyncCacheExceptionNoSharing = true,
-                              bool useLengthAwareRangeComparer = false)
+                              bool useLengthAwareRangeComparer = false,
+                              bool? enableMetadataHedgingForColdStart = null)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -518,6 +523,7 @@ namespace Microsoft.Azure.Cosmos
             this.chaosInterceptorFactory = chaosInterceptorFactory;
             this.chaosInterceptor = chaosInterceptorFactory?.CreateInterceptor(this);
             this.UseLengthAwareRangeComparer = useLengthAwareRangeComparer;
+            this.enableMetadataHedgingForColdStart = enableMetadataHedgingForColdStart;
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
@@ -697,8 +703,17 @@ namespace Microsoft.Azure.Cosmos
                     tokenProvider: this, 
                     retryPolicy: this.retryPolicy,
                     telemetryToServiceHelper: this.telemetryToServiceHelper,
-                    enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
-                this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.enableAsyncCacheExceptionNoSharing);
+                    enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing,
+                    metadataHedgingStrategy: this.metadataHedgingStrategy,
+                    globalEndpointManager: this.GlobalEndpointManager);
+                this.partitionKeyRangeCache = new PartitionKeyRangeCache(
+                    authorizationTokenProvider: this,
+                    storeModel: this.GatewayStoreModel,
+                    collectionCache: this.collectionCache,
+                    endpointManager: this.GlobalEndpointManager,
+                    useLengthAwareRangeComparer: this.UseLengthAwareRangeComparer,
+                    enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing,
+                    metadataHedgingStrategy: this.metadataHedgingStrategy);
 
                 DefaultTrace.TraceWarning("Exception occurred while OpenAsync. Exception Message: {0}", ex.Message);
             }
@@ -1131,14 +1146,25 @@ namespace Microsoft.Azure.Cosmos
 
             this.GatewayStoreModel = gatewayStoreModel;
 
+            this.metadataHedgingStrategy = this.CreateMetadataHedgingStrategyIfEnabled();
+
             this.collectionCache = new ClientCollectionCache(
                     sessionContainer: this.sessionContainer, 
                     storeModel: this.GatewayStoreModel, 
                     tokenProvider: this, 
                     retryPolicy: this.retryPolicy,
                     telemetryToServiceHelper: this.telemetryToServiceHelper,
-                    enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
-            this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.UseLengthAwareRangeComparer, this.enableAsyncCacheExceptionNoSharing);
+                    enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing,
+                    metadataHedgingStrategy: this.metadataHedgingStrategy,
+                    globalEndpointManager: this.GlobalEndpointManager);
+            this.partitionKeyRangeCache = new PartitionKeyRangeCache(
+                authorizationTokenProvider: this,
+                storeModel: this.GatewayStoreModel,
+                collectionCache: this.collectionCache,
+                endpointManager: this.GlobalEndpointManager,
+                useLengthAwareRangeComparer: this.UseLengthAwareRangeComparer,
+                enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing,
+                metadataHedgingStrategy: this.metadataHedgingStrategy);
             this.ResetSessionTokenRetryPolicy = new ResetSessionTokenRetryPolicyFactory(this.sessionContainer, this.collectionCache, this.retryPolicy);
 
             gatewayStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
@@ -1460,6 +1486,12 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.initTaskCache.Dispose();
                 this.initTaskCache = null;
+            }
+
+            if (this.metadataHedgingStrategy != null)
+            {
+                this.metadataHedgingStrategy.Dispose();
+                this.metadataHedgingStrategy = null;
             }
 
             DefaultTrace.TraceInformation("DocumentClient with id {0} disposed.", this.traceId);
@@ -6957,6 +6989,14 @@ namespace Microsoft.Azure.Cosmos
                     threshold: TimeSpan.FromMilliseconds(defaultThresholdInMillis),
                     thresholdStep: TimeSpan.FromMilliseconds(DocumentClient.DefaultHedgingThresholdStepInMilliseconds));
             }
+        }
+
+        private Cosmos.Routing.MetadataHedgingStrategy CreateMetadataHedgingStrategyIfEnabled()
+        {
+            return Cosmos.Routing.MetadataHedgingStrategy.CreateIfEnabled(
+                enableMetadataHedgingForColdStart: this.enableMetadataHedgingForColdStart,
+                globalEndpointManager: this.GlobalEndpointManager,
+                isPpafEnabled: () => this.ConnectionPolicy.EnablePartitionLevelFailover);
         }
 
         private void UpdatePartitionLevelFailoverConfigWithAccountRefresh(

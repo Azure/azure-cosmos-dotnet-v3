@@ -27,6 +27,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly IRetryPolicyFactory retryPolicy;
         private readonly ISessionContainer sessionContainer;
         private readonly TelemetryToServiceHelper telemetryToServiceHelper;
+        private readonly MetadataHedgingStrategy metadataHedgingStrategy;
+        private readonly IGlobalEndpointManager globalEndpointManager;
 
         public ClientCollectionCache(
             ISessionContainer sessionContainer,
@@ -35,6 +37,27 @@ namespace Microsoft.Azure.Cosmos.Routing
             IRetryPolicyFactory retryPolicy,
             TelemetryToServiceHelper telemetryToServiceHelper,
             bool enableAsyncCacheExceptionNoSharing = true)
+            : this(
+                sessionContainer,
+                storeModel,
+                tokenProvider,
+                retryPolicy,
+                telemetryToServiceHelper,
+                enableAsyncCacheExceptionNoSharing,
+                metadataHedgingStrategy: null,
+                globalEndpointManager: null)
+        {
+        }
+
+        public ClientCollectionCache(
+            ISessionContainer sessionContainer,
+            IStoreModel storeModel,
+            ICosmosAuthorizationTokenProvider tokenProvider,
+            IRetryPolicyFactory retryPolicy,
+            TelemetryToServiceHelper telemetryToServiceHelper,
+            bool enableAsyncCacheExceptionNoSharing,
+            MetadataHedgingStrategy metadataHedgingStrategy,
+            IGlobalEndpointManager globalEndpointManager)
             : base(enableAsyncCacheExceptionNoSharing)
         {
             this.storeModel = storeModel ?? throw new ArgumentNullException("storeModel");
@@ -42,12 +65,24 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.retryPolicy = retryPolicy;
             this.sessionContainer = sessionContainer;
             this.telemetryToServiceHelper = telemetryToServiceHelper;
+            this.metadataHedgingStrategy = metadataHedgingStrategy;
+            this.globalEndpointManager = globalEndpointManager;
         }
 
         protected override Task<ContainerProperties> GetByRidAsync(string apiVersion,
                                                     string collectionRid,
                                                     ITrace trace,
                                                     IClientSideRequestStatistics clientSideRequestStatistics,
+                                                    CancellationToken cancellationToken)
+        {
+            return this.GetByRidAsync(apiVersion, collectionRid, trace, clientSideRequestStatistics, isColdStart: false, cancellationToken);
+        }
+
+        protected override Task<ContainerProperties> GetByRidAsync(string apiVersion,
+                                                    string collectionRid,
+                                                    ITrace trace,
+                                                    IClientSideRequestStatistics clientSideRequestStatistics,
+                                                    bool isColdStart,
                                                     CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -59,6 +94,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                       retryPolicyInstance,
                       trace,
                       clientSideRequestStatistics,
+                      isColdStart,
                       cancellationToken),
                   retryPolicyInstance,
                   cancellationToken);
@@ -70,12 +106,22 @@ namespace Microsoft.Azure.Cosmos.Routing
                                                 IClientSideRequestStatistics clientSideRequestStatistics,
                                                 CancellationToken cancellationToken)
         {
+            return this.GetByNameAsync(apiVersion, resourceAddress, trace, clientSideRequestStatistics, isColdStart: false, cancellationToken);
+        }
+
+        protected override Task<ContainerProperties> GetByNameAsync(string apiVersion,
+                                                string resourceAddress,
+                                                ITrace trace,
+                                                IClientSideRequestStatistics clientSideRequestStatistics,
+                                                bool isColdStart,
+                                                CancellationToken cancellationToken)
+        {
             cancellationToken.ThrowIfCancellationRequested();
             IDocumentClientRetryPolicy retryPolicyInstance = new ClearingSessionContainerClientRetryPolicy(
                 this.sessionContainer, this.retryPolicy.GetRequestPolicy());
             return TaskHelper.InlineIfPossible(
                 () => this.ReadCollectionAsync(
-                    resourceAddress, retryPolicyInstance, trace, clientSideRequestStatistics, cancellationToken),
+                    resourceAddress, retryPolicyInstance, trace, clientSideRequestStatistics, isColdStart, cancellationToken),
                 retryPolicyInstance,
                 cancellationToken);
         }
@@ -192,6 +238,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             IDocumentClientRetryPolicy retryPolicyInstance,
             ITrace trace,
             IClientSideRequestStatistics clientSideRequestStatistics,
+            bool isColdStart,
             CancellationToken cancellationToken)
         {
             using (ITrace childTrace = trace.StartChild("Read Collection", TraceComponent.Transport, TraceLevel.Info))
@@ -230,27 +277,42 @@ namespace Microsoft.Azure.Cosmos.Routing
                     {
                         retryPolicyInstance?.OnBeforeSendRequest(request);
 
+                        if (this.metadataHedgingStrategy != null)
+                        {
+                            MetadataHedgingStrategy.MetadataHedgingContext hedgeContext = new MetadataHedgingStrategy.MetadataHedgingContext
+                            {
+                                IsColdStart = isColdStart,
+                            };
+
+                            (retryPolicyInstance as MetadataRequestThrottleRetryPolicy)?.AttachHedgeContext(hedgeContext);
+
+                            try
+                            {
+                                MetadataHedgingStrategy.MetadataHedgingResult hedgeResult = await this.metadataHedgingStrategy.ExecuteAsync(
+                                    request,
+                                    sendToEndpoint: MetadataHedgingStrategy.StoreModelSender(this.storeModel),
+                                    hedgeContext: hedgeContext,
+                                    trace: childTrace,
+                                    cancellationToken: cancellationToken);
+
+                                using (DocumentServiceResponse response = hedgeResult.Response)
+                                {
+                                    return this.MaterializeContainerProperties(response, request, collectionLink);
+                                }
+                            }
+                            catch (DocumentClientException ex)
+                            {
+                                childTrace.AddDatum("Exception Message", ex.Message);
+                                throw;
+                            }
+                        }
+
                         try
                         {
                             using (DocumentServiceResponse response =
                                 await this.storeModel.ProcessMessageAsync(request))
                             {
-                                ContainerProperties containerProperties = CosmosResource.FromStream<ContainerProperties>(response);
-                                
-                                this.telemetryToServiceHelper.GetCollector().CollectCacheInfo(
-                                     ClientCollectionCache.TelemetrySourceName,
-                                     () => new TelemetryInformation
-                                     {
-                                         RegionsContactedList = response.RequestStats.RegionsContacted,
-                                         RequestLatency = response.RequestStats.RequestLatency,
-                                         StatusCode = response.StatusCode,
-                                         OperationType = request.OperationType,
-                                         ResourceType = request.ResourceType,
-                                         SubStatusCode = response.SubStatusCode,
-                                         CollectionLink = collectionLink
-                                     });
-
-                                return containerProperties;
+                                return this.MaterializeContainerProperties(response, request, collectionLink);
                             }
                         }
                         catch (DocumentClientException ex)
@@ -261,6 +323,29 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
                 }
             }
+        }
+
+        private ContainerProperties MaterializeContainerProperties(
+            DocumentServiceResponse response,
+            DocumentServiceRequest request,
+            string collectionLink)
+        {
+            ContainerProperties containerProperties = CosmosResource.FromStream<ContainerProperties>(response);
+
+            this.telemetryToServiceHelper.GetCollector().CollectCacheInfo(
+                 ClientCollectionCache.TelemetrySourceName,
+                 () => new TelemetryInformation
+                 {
+                     RegionsContactedList = response.RequestStats.RegionsContacted,
+                     RequestLatency = response.RequestStats.RequestLatency,
+                     StatusCode = response.StatusCode,
+                     OperationType = request.OperationType,
+                     ResourceType = request.ResourceType,
+                     SubStatusCode = response.SubStatusCode,
+                     CollectionLink = collectionLink,
+                 });
+
+            return containerProperties;
         }
     }
 }

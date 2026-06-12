@@ -878,6 +878,25 @@ namespace Microsoft.Azure.Cosmos
         public AvailabilityStrategy AvailabilityStrategy { get; set; }
 
         /// <summary>
+        /// Tri-state opt-in / kill-switch for cold-start metadata cache hedging.
+        /// </summary>
+        /// <remarks>
+        /// When left <c>null</c> (the default), cold-start metadata hedging follows the
+        /// account's PPAF (Per-Partition Automatic Failover) state: it is enabled by
+        /// default when PPAF is enabled and disabled when PPAF is disabled.
+        /// When set to <c>true</c>, the SDK proactively dispatches a hedged cross-region
+        /// request for the first-time population of the Collection and PartitionKeyRange
+        /// metadata caches if the primary region's response has not arrived within the
+        /// SDK-derived default threshold — even when PPAF is disabled. When set to
+        /// <c>false</c>, metadata hedging is suppressed regardless of the PPAF state.
+        /// The Gateway-controlled <c>disableCrossRegionalHedging</c> account flag, when
+        /// set, takes precedence over this property. The hedging threshold and all other
+        /// tuning knobs are SDK-derived defaults and are not customer-configurable.
+        /// See <c>docs/PPAF_Metadata_Hedging_ColdStart_Design.md</c> §5.1.
+        /// </remarks>
+        internal bool? EnableMetadataHedgingForColdStart { get; set; }
+
+        /// <summary>
         /// Provides SessionTokenMismatchRetryPolicy optimization through customer supplied region switch hints,
         /// which guide SDK-internal retry policies on how early to fallback to the next applicable region.
         /// With a single-write-region account the next applicable region is the write-region, with a 
