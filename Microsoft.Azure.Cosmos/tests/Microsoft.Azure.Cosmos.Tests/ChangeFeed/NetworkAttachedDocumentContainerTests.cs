@@ -163,5 +163,61 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 It.IsAny<CancellationToken>()
                 ), Times.Once);
         }
+
+        /// <summary>
+        /// Pins the fix at <c>NetworkAttachedDocumentContainer.MonadicGetChildRangeAsync</c> (the
+        /// line-145 call site): the caller-supplied <see cref="CancellationToken"/> must be
+        /// propagated verbatim to <see cref="CosmosQueryClient.GetTargetPartitionKeyRangeByFeedRangeAsync"/>,
+        /// not silently replaced with <c>default</c>.
+        /// </summary>
+        [TestMethod]
+        [Owner("tvaron3")]
+        public async Task MonadicGetChildRangeAsync_PropagatesCancellationToken()
+        {
+            const string resourceId = "resourceId";
+            Mock<CosmosClientContext> context = new ();
+            Mock<ContainerInternal> container = new ();
+            ContainerProperties containerProperties = new ("c", "/pk");
+            container.Setup(c => c.ClientContext).Returns(context.Object);
+            container.Setup(c => c.GetCachedRIDAsync(false, It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(resourceId);
+            container.Setup(c => c.LinkUri).Returns("dbs/db/colls/c");
+            context.Setup(c => c.GetCachedContainerPropertiesAsync(It.IsAny<string>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(containerProperties);
+
+            using CancellationTokenSource cts = new ();
+            CancellationToken expected = cts.Token;
+            CancellationToken observed = default;
+
+            Mock<CosmosQueryClient> client = new ();
+            client
+                .Setup(c => c.GetTargetPartitionKeyRangeByFeedRangeAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Documents.PartitionKeyDefinition>(),
+                    It.IsAny<FeedRangeInternal>(),
+                    It.IsAny<bool>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns<string, string, Documents.PartitionKeyDefinition, FeedRangeInternal, bool, ITrace, CancellationToken>(
+                    (_, _, _, _, _, _, ct) =>
+                    {
+                        observed = ct;
+                        return Task.FromResult(new System.Collections.Generic.List<Documents.PartitionKeyRange>());
+                    });
+
+            NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new (
+                container.Object,
+                client.Object,
+                Guid.NewGuid());
+
+            TryCatch<System.Collections.Generic.List<FeedRangeEpk>> result = await networkAttachedDocumentContainer.MonadicGetChildRangeAsync(
+                feedRange: FeedRangeEpk.FullRange,
+                trace: NoOpTrace.Singleton,
+                cancellationToken: expected);
+
+            Assert.IsTrue(result.Succeeded);
+            Assert.AreEqual(expected, observed, "CancellationToken passed to MonadicGetChildRangeAsync was not propagated to GetTargetPartitionKeyRangeByFeedRangeAsync.");
+        }
     }
 }

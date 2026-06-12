@@ -53,6 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Bugs Fixed
 
 - [5827](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5827) ChangeFeedEstimator: Change feed estimator threw `ArgumentNullException` when an inmemory lease container was being used. Update validations so in-memory lease containers work with change feed estimator
+- [5913](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5913) CancellationToken: Fixes operation-level `CancellationToken` being ignored during the gateway HTTP retry loop in `CosmosHttpClientCore`. Inter-attempt `Task.Delay` backoffs now honor the caller's token so per-operation requests surface `OperationCanceledException` within the caller's deadline. Also adds an entry-point `ThrowIfCancellationRequested` to `FeedRangeInternal.GetEffectiveRangesAsync` so an already-cancelled caller fails fast.
 - [5910](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5910) Upgraded Direct package to 3.43.2.
 - [5910](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5910) Direct: Fixed RNTBD thread-pool starvation by making `Dispatcher.OnIdleTimer` asynchronous (ports public [PR 5817](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5817))
 - [5927](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5927) ThinClient: Fixes mid-flight fallback to gateway when the service stops advertising thin-client endpoints. Previously the SDK kept routing to stale thin-client URIs and required a client restart to recover.
