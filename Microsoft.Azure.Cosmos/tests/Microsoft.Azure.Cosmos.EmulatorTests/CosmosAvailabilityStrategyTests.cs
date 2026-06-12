@@ -593,11 +593,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                        // ClientRetryPolicy.ShouldRetryOnSessionNotAvailable retries wire 2 to the
                        // WRITE region (RetryLocationIndex = 0, RetryRequestOnPreferredLocations = false).
                        // When the write region differs from region1 and has no fault, wire 2 succeeds
-                       // in ~50-100ms — beating any threshold >= 50ms. Use 10ms to guarantee the hedge
-                       // timer fires before primary's wire-2 retry can complete, so the hedge arm is
-                       // dispatched (requestNumber > 0) and HedgeContext is stamped in diagnostics.
-                       threshold: TimeSpan.FromMilliseconds(100),
-                       thresholdStep: TimeSpan.FromMilliseconds(50)),
+                       // in ~50-100ms — beating any threshold >= 50ms.
+                       threshold: TimeSpan.FromMilliseconds(50),
+                       thresholdStep: TimeSpan.FromMilliseconds(20)),
                 Serializer = this.cosmosSystemTextJsonSerializer
             };
 
