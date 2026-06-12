@@ -42,6 +42,18 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<AccountProperties> GetDatabaseAccountAsync(Uri serviceEndpoint)
         {
+            if (!string.IsNullOrEmpty(this.connectionPolicy.CurrentLocation))
+            {
+                string sanitizedRegion = GatewayAccountReader.SanitizeRegionName(this.connectionPolicy.CurrentLocation);
+                if (!string.IsNullOrEmpty(sanitizedRegion))
+                {
+                    serviceEndpoint = GatewayAccountReader.AppendQueryParameter(
+                        serviceEndpoint,
+                        Constants.RegionProximity.SourceRegionQueryParam,
+                        sanitizedRegion);
+                }
+            }
+
             INameValueCollection headers = new RequestNameValueCollection();
             await this.cosmosAuthorization.AddAuthorizationHeaderAsync(
                 headersCollection: headers,
@@ -98,6 +110,27 @@ namespace Microsoft.Azure.Cosmos
                                                 trace: trace);
                 }
             }
+        }
+
+        /// <summary>
+        /// Sanitizes a region name for use as a query parameter value, matching the server-side StringUtil.SanitizeString rule
+        /// </summary>
+        internal static string SanitizeRegionName(string location)
+        {
+            if (string.IsNullOrEmpty(location))
+            {
+                return string.Empty;
+            }
+            return location.Replace(" ", string.Empty).ToLowerInvariant();
+        }
+
+        internal static Uri AppendQueryParameter(Uri uri, string paramName, string paramValue)
+        {
+            UriBuilder builder = new UriBuilder(uri);
+            string newParam = $"{paramName}={Uri.EscapeDataString(paramValue)}";
+            string existingQuery = builder.Query?.TrimStart('?') ?? string.Empty;
+            builder.Query = string.IsNullOrEmpty(existingQuery) ? newParam : $"{existingQuery}&{newParam}";
+            return builder.Uri;
         }
 
         public async Task<AccountProperties> InitializeReaderAsync()

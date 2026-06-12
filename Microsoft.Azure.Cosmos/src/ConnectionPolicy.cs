@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http;
     using System.Net.Security;
     using System.Security.Cryptography.X509Certificates;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
@@ -61,9 +62,18 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="location">The current region that this client is running in. E.g. "East US" </param>
         public void SetCurrentLocation(string location)
         {
+            this.CurrentLocation = location;
+
             if (!RegionProximityUtil.SourceRegionToTargetRegionsRTTInMs.ContainsKey(location))
             {
-                throw new ArgumentException($"ApplicationRegion configuration '{location}' is not a valid Azure region or the current SDK version does not recognize it. If the value represents a valid region, make sure you are using the latest SDK version.");
+                // Region is not in the static table. The SDK will rely on the server-provided
+                // regionProximity list (returned in GetDatabaseAccount) once the first account
+                // read completes. PreferredLocations will be empty for bootstrap.
+                DefaultTrace.TraceWarning(
+                    "ApplicationRegion configuration '{0}' is not recognized in the static region table. " +
+                    "The SDK will use server-provided region proximity data if available.",
+                    location);
+                return;
             }
 
             List<string> proximityBasedPreferredLocations = RegionProximityUtil.GeneratePreferredRegionList(location);
@@ -308,6 +318,31 @@ namespace Microsoft.Azure.Cosmos
             get
             {
                 return this.accountInitializationCustomEndpoints;
+            }
+        }
+
+        /// <summary>
+        /// Gets the current location (region) that this client is configured to run in,
+        /// as set by <see cref="SetCurrentLocation"/>. Used to send region proximity hints
+        /// to the server during account discovery.
+        /// </summary>
+        internal string CurrentLocation { get; private set; }
+
+        /// <summary>
+        /// Gets the regions ordered by proximity to the account's location.
+        /// This is populated from the account properties response during initialization and background refresh.
+        /// </summary>
+        internal Collection<string> RegionProximity { get; private set; } = new Collection<string>();
+
+        /// <summary>
+        /// Sets the region proximity list from account properties.
+        /// </summary>
+        /// <param name="regionProximity">The region proximity list from account properties.</param>
+        internal void SetRegionProximity(Collection<string> regionProximity)
+        {
+            if (regionProximity != null && regionProximity.Count > 0)
+            {
+                this.RegionProximity = regionProximity;
             }
         }
 
