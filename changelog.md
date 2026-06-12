@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### <a name="unreleased"/> Unreleased
 
 #### Features Added
+- [5931](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5931) ChangeFeed: Add support for StartTime for merged partitions
 
 #### Breaking Changes
 

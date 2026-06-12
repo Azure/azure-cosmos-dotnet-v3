@@ -407,6 +407,84 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             Assert.AreEqual("doc5.doc6.doc7.doc8.doc9.", accumulator);
         }
 
+        [TestMethod]
+        public async Task TestWithStartTime_ValidatesEtagInHeaders()
+        {
+            ChangeFeedHeaderValidationHandler headerHandler = new ChangeFeedHeaderValidationHandler();
+
+            int partitionKey = 0;
+
+            foreach (int id in Enumerable.Range(0, 10))
+            {
+                await this.Container.CreateItemAsync<dynamic>(new { id = $"doc{id}", pk = partitionKey });
+            }
+
+            // Inject validating handler
+            CosmosClient client = this.GetClient();
+            RequestHandler currentInnerHandler = client.RequestHandler.InnerHandler;
+            client.RequestHandler.InnerHandler = headerHandler;
+            headerHandler.InnerHandler = currentInnerHandler;
+
+            try
+            {
+                DateTime startTime = DateTime.UtcNow.AddMinutes(-5);
+                string expectedIfModifiedSince = startTime.ToString("r", System.Globalization.CultureInfo.InvariantCulture);
+
+                ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
+
+                int processedDocCount = 0;
+                ChangeFeedProcessor processor = this.Container
+                    .GetChangeFeedProcessorBuilder("test", (ChangeFeedProcessorContext context, IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                    {
+                        processedDocCount += docs.Count;
+                        if (processedDocCount >= 10)
+                        {
+                            allDocsProcessed.Set();
+                        }
+
+                        return Task.CompletedTask;
+                    })
+                    .WithStartTime(startTime)
+                    .WithInstanceName("random")
+                    .WithLeaseContainer(this.LeaseContainer).Build();
+
+                await processor.StartAsync();
+                bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+                await processor.StopAsync();
+                Assert.IsTrue(isStartOk, "Timed out waiting for docs to process");
+
+                bool foundSubsequentWithEtag = false;
+                for (int i = 0; i < headerHandler.CapturedRequests.Count; i++)
+                {
+                    RequestMessage subsequentRequest = headerHandler.CapturedRequests[i];
+                    string subsequentIfNoneMatch = subsequentRequest.Headers.IfNoneMatch;
+                    if (subsequentIfNoneMatch != null)
+                    {
+                        foundSubsequentWithEtag = true;
+                        Assert.AreNotEqual("*", subsequentIfNoneMatch, "If-None-Match should be a specific etag, not '*'.");
+                    }
+
+                    string ifModifiedSince = subsequentRequest.Headers[Microsoft.Azure.Documents.HttpConstants.HttpHeaders.IfModifiedSince];
+                    Assert.IsNotNull(ifModifiedSince, "If-Modified-Since header should be set on the first change feed request with start time.");
+                    Assert.AreEqual(expectedIfModifiedSince, ifModifiedSince, "If-Modified-Since header value should match the start time.");
+
+                    string  sdkCapabilities = subsequentRequest.Headers[Microsoft.Azure.Documents.HttpConstants.HttpHeaders.SDKSupportedCapabilities];
+                    Assert.IsNotNull(sdkCapabilities, "SDKSupportedCapabilities header should be present on change feed requests.");
+                    ulong capabilitiesValue = ulong.Parse(sdkCapabilities);
+                    Assert.IsTrue(
+                        (capabilitiesValue & changeFeedWithStartTimePostMergeFlag) == changeFeedWithStartTimePostMergeFlag,
+                        $"SDKSupportedCapabilities header should include ChangeFeedWithStartTimePostMerge flag. Actual value: {capabilitiesValue}");
+                }
+
+                Assert.IsTrue(foundSubsequentWithEtag, "Expected at least one subsequent request with If-None-Match (etag) header.");
+            }
+            finally
+            {
+                // Restore original handler chain
+                client.RequestHandler.InnerHandler = currentInnerHandler;
+            }
+        }
+
         private async Task ValidateContextAsync(ChangeFeedProcessorContext changeFeedProcessorContext)
         {
             Assert.IsNotNull(changeFeedProcessorContext.LeaseToken);
@@ -429,5 +507,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             Assert.IsNotNull(partitionKeyRanges);
         }
 
+    }
+
+    internal class ChangeFeedHeaderValidationHandler : RequestHandler
+    {
+        public List<RequestMessage> CapturedRequests { get; } = new List<RequestMessage>();
+
+        public override Task<ResponseMessage> SendAsync(RequestMessage request, CancellationToken cancellationToken)
+        {
+            if (request.ResourceType == Microsoft.Azure.Documents.ResourceType.Document
+                && request.OperationType == Microsoft.Azure.Documents.OperationType.ReadFeed)
+            {
+                this.CapturedRequests.Add(request);
+            }
+
+            return base.SendAsync(request, cancellationToken);
+        }
     }
 }
