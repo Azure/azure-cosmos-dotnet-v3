@@ -83,6 +83,32 @@ namespace Microsoft.Data.Encryption.Cryptography
         }
 
         /// <summary>
+        /// Directly stores a value in the cache, replacing any existing entry for the same key.
+        /// The new entry uses the current <see cref="TimeToLive"/> for absolute expiration.
+        /// </summary>
+        /// <param name="key">The cache key.</param>
+        /// <param name="value">The value to store.</param>
+        internal void Set(TKey key, TValue value)
+        {
+            if (TimeToLive <= TimeSpan.Zero)
+            {
+                return;
+            }
+
+            if (cache.Count == maxSize)
+            {
+                cache.Compact(Max(0.10, 1.0 / maxSize));
+            }
+
+            var cacheEntryOptions = new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeToLive
+            };
+
+            cache.Set(key, value, cacheEntryOptions);
+        }
+
+        /// <summary>
         /// Determines whether the <see cref="LocalCache{TKey, TValue}">LocalCache</see> contains the specified key.
         /// </summary>
         /// <param name="key"></param>
