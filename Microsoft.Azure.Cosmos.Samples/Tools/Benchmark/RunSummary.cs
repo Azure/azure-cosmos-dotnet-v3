@@ -81,6 +81,8 @@ namespace CosmosBenchmark
 
         public double AverageRps { get; set; }
 
+        public double AverageRuPerSecond { get; set; }
+
         public JArray Diagnostics { get; set; }
     }
 }

@@ -182,6 +182,27 @@ namespace CosmosBenchmark
                 string partitionKeyPath = containerResponse.Resource.PartitionKeyPath;
                 int opsPerTask = config.ItemCount / taskCount;
 
+                // Optional per-window metrics sink (W3). When configured, route per-operation
+                // latency/RU/error samples plus .NET runtime metrics to the dedicated dashboard
+                // schema. Defaults to null (no-op) so existing count-based runs are unaffected.
+                IMetricsSink metricsSink = MetricsSinkFactory.Create(config);
+                PerfMetricsReporter perfReporter = null;
+                if (metricsSink != null)
+                {
+                    PerfRunContext perfRunContext = new PerfRunContext
+                    {
+                        Operation = string.IsNullOrWhiteSpace(config.WorkloadName) ? config.WorkloadType : config.WorkloadName,
+                        Hostname = Environment.MachineName,
+                        SdkVersion = config.ResolveSdkVersion(),
+                        CommitSha = config.ResolveSdkSourceRef() ?? config.CommitId,
+                        ConfigConcurrency = taskCount,
+                        ConfigApplicationRegion = config.ApplicationPreferredRegions,
+                    };
+
+                    perfReporter = new PerfMetricsReporter(metricsSink, perfRunContext, config.MetricsReportingIntervalInSec);
+                    perfReporter.Start();
+                }
+
                 // TBD: 2 clients SxS some overhead
                 RunSummary runSummary;
 
@@ -200,8 +221,18 @@ namespace CosmosBenchmark
                         Program.ClearCoreSdkListeners();
                     }
 
-                    IExecutionStrategy execution = IExecutionStrategy.StartNew(benchmarkOperationFactory);
-                    runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask, 0.01);
+                    try
+                    {
+                        IExecutionStrategy execution = IExecutionStrategy.StartNew(benchmarkOperationFactory);
+                        runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask, 0.01);
+                    }
+                    finally
+                    {
+                        if (perfReporter != null)
+                        {
+                            await perfReporter.StopAndFlushAsync();
+                        }
+                    }
                 }
 
                 if (config.CleanupOnFinish)
@@ -291,6 +322,13 @@ namespace CosmosBenchmark
             }
             else if (benchmarkTypeName.Name.EndsWith("V2BenchmarkOperation"))
             {
+                if (documentClient == null)
+                {
+                    throw new NotSupportedException(
+                        $"Workload type {config.WorkloadType} uses the V2 DocumentClient, which requires master-key auth (-k). " +
+                        "Use a V3 workload (the six tracked operations are all V3) when running with --aad.");
+                }
+
                 ci = benchmarkTypeName.GetConstructor(new Type[] { typeof(Microsoft.Azure.Documents.Client.DocumentClient), typeof(string), typeof(string), typeof(string), typeof(string) });
                 ctorArguments = new object[]
                     {
