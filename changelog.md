@@ -48,6 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [5868](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5868) Diagnostics: Adds hedging detection API (`CosmosDiagnostics.HedgingStarted`, `GetRequestedRegions`, `GetRespondedRegions`) along with the new `RequestedRegion` struct and `RequestedRegionReason` enum so callers can observe per-operation hedging behavior. `RequestedRegionReason.Unknown` (= 0) is the default sentinel for `default(RequestedRegion).Reason` and is never emitted by the SDK; `RequestedRegionReason.CircuitBreakerProbe` and `RequestedRegionReason.TransportRetry` are reserved for the future and not yet populated by this SDK; see issue [#5867](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5867).
 - [5600](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5600) HPK: Adds id to partition key when "/id" is the last path in partition key definition.
 
+- [#5549](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5549) Adds AAD token revocation (CAE / Emergency) transparent retry handling
+
 #### Breaking Changes
 
 #### Bugs Fixed
