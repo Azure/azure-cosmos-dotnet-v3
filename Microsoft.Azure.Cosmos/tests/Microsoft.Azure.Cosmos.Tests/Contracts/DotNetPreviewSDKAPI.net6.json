@@ -1185,6 +1185,18 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "System.String get_ETag();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_SessionToken()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_SessionToken();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String SessionToken": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.String SessionToken;CanRead:True;CanWrite:True;System.String get_SessionToken();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}

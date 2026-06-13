@@ -70,7 +70,11 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                DefaultTrace.TraceError($"Distributed transaction failed: {ex.Message}");
+                // Neutral wording: the server-side commit may have succeeded even when this
+                // pipeline throws (e.g., post-commit session-token bookkeeping surfacing a
+                // coordinator contract violation). Callers should rely on the exception type
+                // and message — not this trace — to decide whether to retry.
+                DefaultTrace.TraceError($"Distributed transaction commit pipeline threw: {ex.Message}");
                 throw;
             }
         }
@@ -172,6 +176,9 @@ namespace Microsoft.Azure.Cosmos
                             attemptTrace,
                             cancellationToken);
 
+                        // MergeSessionTokens may throw CosmosException for malformed tokens.
+                        // Response is not disposed: the transaction committed and the caller
+                        // may still need operation results. MemoryStream has no unmanaged resources.
                         DistributedTransactionCommitter.MergeSessionTokens(
                             response,
                             serverRequest,
@@ -197,57 +204,96 @@ namespace Microsoft.Azure.Cosmos
             DistributedTransactionServerRequest serverRequest,
             ISessionContainer sessionContainer)
         {
-            // Mirror the pattern used by GatewayStoreModel.CaptureSessionTokenAndHandleSplitAsync.
-            // after a response is received, store each operation's session token in the SessionContainer
-            // so that subsequent Session-consistency reads on the affected collections can use the latest token
-            // without getting ReadSessionNotAvailable.
-            //
-            // DTC spans multiple collections so the server embeds per-operation session tokens in the JSON body.
-            // DistributedTransactionOperationResult.FromJson assembles each token into canonical SDK session-token
+            // Mirror GatewayStoreModel.CaptureSessionTokenAndHandleSplitAsync -> SessionContainer.SetSessionToken:
+            // absent/empty tokens are silently skipped; valid tokens are merged into the SessionContainer.
+            // Malformed tokens (anything SessionContainer.SetSessionToken cannot parse) are caught per-op
+            // so other ops still get merged, then surfaced via a single CosmosException after the loop.
             if (response == null || response.Count == 0 || serverRequest == null || sessionContainer == null)
             {
                 return;
             }
 
             RequestNameValueCollection headers = new RequestNameValueCollection();
+            List<string> malformedErrors = null;
 
             for (int i = 0; i < response.Count; i++)
             {
                 DistributedTransactionOperationResult result = response[i];
 
-                DistributedTransactionOperation operation = null;
+                // Defensive: server controls result.Index. A malformed response with an
+                // out-of-range index must not crash the loop or skip remaining ops.
+                if (result.Index < 0 || result.Index >= serverRequest.Operations.Count)
+                {
+                    malformedErrors ??= new List<string>();
+                    malformedErrors.Add(
+                        $"Result {i}: out-of-range op Index {result.Index} (request has {serverRequest.Operations.Count} ops)");
+                    continue;
+                }
+
+                DistributedTransactionOperation operation = serverRequest.Operations[result.Index];
+
+                // Silently skip empty tokens (same semantics as GatewayStoreModel).
+                if (string.IsNullOrEmpty(result.SessionToken))
+                {
+                    continue;
+                }
+
+                // Skip merge if CollectionResourceId was not resolved (e.g., serverless/system resources).
+                if (string.IsNullOrEmpty(operation.CollectionResourceId))
+                {
+                    continue;
+                }
+
+                headers.Clear();
+                headers[HttpConstants.HttpHeaders.SessionToken] = result.SessionToken;
+
+                // Validate canonical shape up front; SetSessionToken validates content internally.
+                // Both failures funnel through the same catch block for uniform error reporting.
+                // Catch per-op so one bad token doesn't abort merging the rest of the batch.
                 try
                 {
-                    operation = serverRequest.Operations[result.Index];
-
-                    if (string.IsNullOrEmpty(result.SessionToken) || string.IsNullOrEmpty(operation.CollectionResourceId))
+                    int colonIndex = result.SessionToken.IndexOf(':');
+                    if (colonIndex <= 0 || colonIndex == result.SessionToken.Length - 1)
                     {
-                        continue;
+                        throw new FormatException(
+                            "Expected canonical '{pkRangeId}:{lsn}' format.");
                     }
-
-                    // SessionToken is already in canonical SDK session-token format, assembled by FromJson.
-                    // Note: each SetSessionToken call acquires a write lock on the SessionContainer.
-                    // For a future optimization, consider a batch-update API on ISessionContainer to
-                    // reduce lock acquisitions when multiple operations target the same collection.
-                    headers.Clear();
-                    headers[HttpConstants.HttpHeaders.SessionToken] = result.SessionToken;
 
                     sessionContainer.SetSessionToken(
                         operation.CollectionResourceId,
                         DistributedTransactionConstants.GetCollectionFullName(operation.Database, operation.Container),
                         headers);
                 }
-                catch (Exception ex) when (ex is not OperationCanceledException)
+                catch (OperationCanceledException)
                 {
-                    // Session-token bookkeeping must never fail a transaction the server already committed.
-                    // Log and continue so the remaining operations' tokens are still attempted.
-                    DefaultTrace.TraceWarning(
-                        "DTC session token merge failed for operation index {0} (collection {1}): [{2}] {3}",
-                        result.Index,
-                        operation?.CollectionResourceId ?? "<unknown>",
-                        ex.GetType().Name,
-                        ex.Message);
+                    throw;
                 }
+                catch (Exception ex)
+                {
+                    malformedErrors ??= new List<string>();
+                    malformedErrors.Add(
+                        $"Op {result.Index}: SetSessionToken failed for '{DistributedTransactionCommitter.TruncateForLog(result.SessionToken)}' ({ex.GetType().Name}: {ex.Message})");
+                }
+            }
+
+            // After merging all valid tokens, surface aggregated failure as CosmosException.
+            // The transaction has already committed — this is a post-commit bookkeeping error.
+            // Message explicitly states "committed successfully" so callers do not retry.
+            if (malformedErrors != null)
+            {
+                throw new CosmosException(
+                    message:
+                        $"Distributed transaction committed successfully, but the coordinator returned " +
+                        $"{malformedErrors.Count} malformed session token(s); session-token bookkeeping " +
+                        "was partial and subsequent session-consistent reads on affected partitions may " +
+                        "see ReadSessionNotAvailable until the session container is refreshed. " +
+                        "DO NOT retry the transaction. " +
+                        "Expected canonical '{{pkRangeId}}:{{lsn}}' format. " +
+                        $"Details: [{string.Join("; ", malformedErrors)}]",
+                    statusCode: HttpStatusCode.InternalServerError,
+                    subStatusCode: 0,
+                    activityId: response.ActivityId,
+                    requestCharge: response.RequestCharge);
             }
         }
     }
