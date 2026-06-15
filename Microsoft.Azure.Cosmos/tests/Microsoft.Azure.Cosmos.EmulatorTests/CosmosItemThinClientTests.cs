@@ -25,6 +25,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class CosmosItemThinClientTests
     {
+        private const string CentralUs = "Central US";
+        private const string EastUs2 = "East US 2";
+        private static readonly IReadOnlyList<string> PreferredRegions = new List<string> { CentralUs, EastUs2 };
+        private static readonly IReadOnlyList<string> ExcludeRegions = new List<string> { CentralUs };
+
         private string connectionString;
         private CosmosClient client;
         private Database database;
@@ -37,7 +42,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
             this.connectionString = Environment.GetEnvironmentVariable("COSMOSDB_THINCLIENT");
-
             if (string.IsNullOrEmpty(this.connectionString))
             {
                 Assert.Fail("Set environment variable COSMOSDB_THINCLIENT to run the tests");
@@ -51,13 +55,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
             this.cosmosSystemTextJsonSerializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions);
 
-            this.client = new CosmosClient(
-                  this.connectionString,
-                  new CosmosClientOptions()
-                  {
-                      ConnectionMode = ConnectionMode.Gateway,
-                      Serializer = this.cosmosSystemTextJsonSerializer,
-                  });
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                ApplicationPreferredRegions = PreferredRegions,
+                Serializer = this.cosmosSystemTextJsonSerializer,
+            };
+            clientOptions.CustomHandlers.Add(new ExcludeRegionsInjectingHandler(ExcludeRegions));
+
+            this.client = new CosmosClient(this.connectionString, clientOptions);
 
             string uniqueDbName = "TestDb_" + Guid.NewGuid().ToString();
             this.database = await this.client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
@@ -99,6 +105,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private async Task<List<TestObject>> CreateItemsSafeAsync(IEnumerable<TestObject> items)
         {
             List<TestObject> itemsCreated = new List<TestObject>();
+            await Task.Delay(TimeSpan.FromSeconds(30));
             foreach (TestObject item in items)
             {
                 try
@@ -114,6 +121,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
             return itemsCreated;
+        }
+
+        private static void AssertExcludedRegionsNotInDiagnostics(string diagnostics)
+        {
+            foreach (string excludedRegion in ExcludeRegions)
+            {
+                string excludedHost = excludedRegion.Replace(" ", string.Empty).ToLowerInvariant() + ".documents.azure.com:10250";
+                Assert.IsFalse(
+                    diagnostics.Contains(excludedHost),
+                    $"Operation with ExcludeRegions=[{string.Join(",", ExcludeRegions)}] must not route to '{excludedHost}'. Diagnostics: {diagnostics}");
+            }
         }
 
         [TestMethod]
@@ -457,13 +475,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string pk = "pk_create";
             IEnumerable<TestObject> items = this.GenerateItems(pk);
-
+            await Task.Delay(TimeSpan.FromSeconds(30));
             foreach (TestObject item in items)
             {
                 ItemResponse<TestObject> response = await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
                 Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
                 string diagnostics = response.Diagnostics.ToString();
                 Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
+                AssertExcludedRegionsNotInDiagnostics(diagnostics);
             }
         }
 
@@ -677,7 +696,99 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
                 Assert.AreEqual(item.Id, response.Resource.Id);
                 Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
+                AssertExcludedRegionsNotInDiagnostics(diagnostics);
             }
+        }
+
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task ReadItem_WithHedgingAndExcludeRegions_OnThinClient_Succeeds()
+        {
+            CosmosClientOptions hedgingClientOptions = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                ApplicationPreferredRegions = PreferredRegions,
+                Serializer = this.cosmosSystemTextJsonSerializer,
+                AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
+                    threshold: TimeSpan.FromMilliseconds(100),
+                    thresholdStep: TimeSpan.FromMilliseconds(50)),
+            };
+
+            using CosmosClient hedgingClient = new CosmosClient(this.connectionString, hedgingClientOptions);
+            Container hedgingContainer = hedgingClient.GetContainer(this.database.Id, this.container.Id);
+            await Task.Delay(TimeSpan.FromSeconds(30));
+            TestObject seed = new TestObject
+            {
+                Id = Guid.NewGuid().ToString(),
+                Pk = "pk_hedging",
+                Other = "hedging composition fixture",
+            };
+            await hedgingContainer.CreateItemAsync(seed, new PartitionKey(seed.Pk));
+
+            ItemResponse<TestObject> readResponse = await hedgingContainer.ReadItemAsync<TestObject>(
+                seed.Id,
+                new PartitionKey(seed.Pk),
+                new ItemRequestOptions
+                {
+                    ExcludeRegions = new List<string>(ExcludeRegions),
+                });
+
+            string diagnostics = readResponse.Diagnostics.ToString();
+            Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
+            Assert.AreEqual(seed.Id, readResponse.Resource.Id);
+            Assert.IsTrue(
+                diagnostics.Contains("|F4"),
+                "Read should route through the thin client pipeline (|F4 user agent token).");
+            Assert.IsTrue(
+                diagnostics.Contains($"\"Hedge Context\":[\"{EastUs2}\"]"),
+                $"Diagnostics should contain Hedge Context with only the non-excluded preferred region ('{EastUs2}'). Diagnostics: {diagnostics}");
+            AssertExcludedRegionsNotInDiagnostics(diagnostics);
+        }
+
+        /// <summary>
+        /// When every preferred region is excluded,
+        /// <see cref="LocationCache.ResolveThinClientEndpoint"/> falls back to the primary thin
+        /// client write endpoint instead of failing the request. The operation must succeed and
+        /// route through the thin client pipeline.
+        /// </summary>
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task CreateItem_WithAllPreferredRegionsExcluded_OnThinClient_FallsBackToPrimaryWriteRegion()
+        {
+            List<string> allPreferredRegionsExcluded = new List<string>(PreferredRegions);
+
+            CosmosClientOptions fallbackClientOptions = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                ApplicationPreferredRegions = PreferredRegions,
+                Serializer = this.cosmosSystemTextJsonSerializer,
+            };
+
+            using CosmosClient fallbackClient = new CosmosClient(this.connectionString, fallbackClientOptions);
+            Container fallbackContainer = fallbackClient.GetContainer(this.database.Id, this.container.Id);
+            await Task.Delay(TimeSpan.FromSeconds(30));
+
+            TestObject seed = new TestObject
+            {
+                Id = Guid.NewGuid().ToString(),
+                Pk = "pk_fallback",
+                Other = "all-preferred-excluded fallback fixture",
+            };
+
+            ItemResponse<TestObject> createResponse = await fallbackContainer.CreateItemAsync(
+                seed,
+                new PartitionKey(seed.Pk),
+                new ItemRequestOptions
+                {
+                    ExcludeRegions = allPreferredRegionsExcluded,
+                });
+
+            string diagnostics = createResponse.Diagnostics.ToString();
+            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+            Assert.AreEqual(seed.Id, createResponse.Resource.Id);
+            Assert.IsTrue(
+                diagnostics.Contains("|F4"),
+                "Create should route through the thin client pipeline (|F4 user agent token).");
         }
 
         [TestMethod]
@@ -703,6 +814,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
                 Assert.AreEqual("Updated " + item.Other, response.Resource.Other);
                 Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
+                AssertExcludedRegionsNotInDiagnostics(diagnostics);
             }
         }
 
@@ -713,12 +825,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string pk = "pk_upsert";
             IEnumerable<TestObject> items = this.GenerateItems(pk);
 
+            await Task.Delay(TimeSpan.FromSeconds(30));
             foreach (TestObject item in items)
             {
                 ItemResponse<TestObject> response = await this.container.UpsertItemAsync(item, new PartitionKey(item.Pk));
                 string diagnostics = response.Diagnostics.ToString();
                 Assert.IsTrue(response.StatusCode == HttpStatusCode.Created || response.StatusCode == HttpStatusCode.OK);
                 Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
+                AssertExcludedRegionsNotInDiagnostics(diagnostics);
             }
         }
 
@@ -737,6 +851,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string diagnostics = response.Diagnostics.ToString();
                 Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
                 Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
+                AssertExcludedRegionsNotInDiagnostics(diagnostics);
             }
         }
 
@@ -746,7 +861,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string pk = "pk_create_stream";
             IEnumerable<TestObject> items = this.GenerateItems(pk);
-
+            await Task.Delay(TimeSpan.FromSeconds(30));
             foreach (TestObject item in items)
             {
                 using (Stream stream = this.cosmosSystemTextJsonSerializer.ToStream(item))
@@ -756,6 +871,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         string diagnostics = response.Diagnostics.ToString();
                         Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
                         Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
+                        AssertExcludedRegionsNotInDiagnostics(diagnostics);
                     }
                 }
             }
@@ -777,6 +893,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     string diagnostics = response.Diagnostics.ToString();
                     Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
                     Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
+                    AssertExcludedRegionsNotInDiagnostics(diagnostics);
                 }
             }
         }
@@ -806,6 +923,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         string diagnostics = response.Diagnostics.ToString();
                         Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
                         Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
+                        AssertExcludedRegionsNotInDiagnostics(diagnostics);
                     }
                 }
             }
@@ -817,7 +935,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string pk = "pk_upsert_stream";
             IEnumerable<TestObject> items = this.GenerateItems(pk);
-
+            await Task.Delay(TimeSpan.FromSeconds(30));
             foreach (TestObject item in items)
             {
                 using (Stream stream = this.cosmosSystemTextJsonSerializer.ToStream(item))
@@ -827,6 +945,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         string diagnostics = response.Diagnostics.ToString();
                         Assert.IsTrue(response.StatusCode == HttpStatusCode.Created || response.StatusCode == HttpStatusCode.OK);
                         Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
+                        AssertExcludedRegionsNotInDiagnostics(diagnostics);
                     }
                 }
             }
@@ -848,6 +967,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     string diagnostics = response.Diagnostics.ToString();
                     Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
                     Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
+                    AssertExcludedRegionsNotInDiagnostics(diagnostics);
                 }
             }
         }
@@ -869,6 +989,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 FeedResponse<TestObject> response = await iterator.ReadNextAsync();
                 count += response.Count;
+                AssertExcludedRegionsNotInDiagnostics(response.Diagnostics.ToString());
             }
 
             Assert.AreEqual(createdItems.Count, count);
@@ -1042,6 +1163,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 using (ResponseMessage response = await iterator.ReadNextAsync())
                 {
                     Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                    AssertExcludedRegionsNotInDiagnostics(response.Diagnostics.ToString());
 
                     using (StreamReader reader = new StreamReader(response.Content))
                     {
@@ -1061,21 +1183,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCategory("ThinClient")]
         public async Task BulkCreateItemsTest()
         {
-            CosmosClient bulkClient = new CosmosClient(
-                this.connectionString,
-                new CosmosClientOptions
-                {
-                    ConnectionMode = ConnectionMode.Gateway,
-                    Serializer = this.cosmosSystemTextJsonSerializer,
-                    AllowBulkExecution = true,
-                });
+            CosmosClientOptions bulkOptions = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                ApplicationPreferredRegions = PreferredRegions,
+                Serializer = this.cosmosSystemTextJsonSerializer,
+                AllowBulkExecution = true,
+            };
+            bulkOptions.CustomHandlers.Add(new ExcludeRegionsInjectingHandler(ExcludeRegions));
+
+            CosmosClient bulkClient = new CosmosClient(this.connectionString, bulkOptions);
 
             string pk = "pk_bulk";
             List<TestObject> items = this.GenerateItems(pk).ToList();
             List<Task<ItemResponse<TestObject>>> tasks = new List<Task<ItemResponse<TestObject>>>();
 
             Container bulkContainer = bulkClient.GetContainer(this.database.Id, this.container.Id);
-
+            await Task.Delay(TimeSpan.FromSeconds(30));
             foreach (TestObject item in items)
             {
                 tasks.Add(bulkContainer.CreateItemAsync(item, new PartitionKey(item.Pk)));
@@ -1086,6 +1210,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             foreach (Task<ItemResponse<TestObject>> task in tasks)
             {
                 Assert.AreEqual(HttpStatusCode.Created, task.Result.StatusCode);
+                AssertExcludedRegionsNotInDiagnostics(task.Result.Diagnostics.ToString());
             }
 
             bulkClient.Dispose();
@@ -1097,7 +1222,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string pk = "pk_batch";
             List<TestObject> items = this.GenerateItems(pk).Take(100).ToList();
-
+            await Task.Delay(TimeSpan.FromSeconds(30));
             TransactionalBatch batch = this.container.CreateTransactionalBatch(new PartitionKey(pk));
 
             foreach (TestObject item in items)
@@ -1107,6 +1232,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             TransactionalBatchResponse batchResponse = await batch.ExecuteAsync();
             Assert.AreEqual(HttpStatusCode.OK, batchResponse.StatusCode);
+            AssertExcludedRegionsNotInDiagnostics(batchResponse.Diagnostics.ToString());
 
             for (int i = 0; i < items.Count; i++)
             {
@@ -1155,6 +1281,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     string diagnostics = response.Diagnostics.ToString();
                     Assert.IsTrue(diagnostics.Contains("|F4"), $"Page {pageCount}: Should use ThinClient");
+                    AssertExcludedRegionsNotInDiagnostics(diagnostics);
                 }
 
                 Assert.AreEqual(5, results.Count, "Should return all 5 items");
@@ -1223,6 +1350,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     string diagnostics = response.Diagnostics.ToString();
                     Assert.IsTrue(diagnostics.Contains("|F4"), $"Page {pageCount}: Should use ThinClient");
+                    AssertExcludedRegionsNotInDiagnostics(diagnostics);
                 }
 
                 Assert.IsTrue(results.Count >= 9,
@@ -1303,6 +1431,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     string diagnostics = response.Diagnostics.ToString();
                     Assert.IsTrue(diagnostics.Contains("|F4"), "Should use ThinClient mode");
+                    AssertExcludedRegionsNotInDiagnostics(diagnostics);
                 }
 
                 // Verify all items are returned
@@ -1387,6 +1516,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 string diagnostics = response.Diagnostics.ToString();
                 Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient change feed");
+                AssertExcludedRegionsNotInDiagnostics(diagnostics);
 
                 changeFeedResults.AddRange(response);
             }
@@ -1604,6 +1734,32 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.requestCallback?.Invoke(request);
 
                 // If no exception was thrown, proceed with the actual request
+                return base.SendAsync(request, cancellationToken);
+            }
+        }
+
+
+        private sealed class ExcludeRegionsInjectingHandler : RequestHandler
+        {
+            private readonly IReadOnlyList<string> excludeRegions;
+
+            public ExcludeRegionsInjectingHandler(IReadOnlyList<string> excludeRegions)
+            {
+                this.excludeRegions = excludeRegions;
+            }
+
+            public override Task<ResponseMessage> SendAsync(RequestMessage request, CancellationToken cancellationToken)
+            {
+                if (request.RequestOptions == null)
+                {
+                    request.RequestOptions = new RequestOptions();
+                }
+
+                if (request.RequestOptions.ExcludeRegions == null || request.RequestOptions.ExcludeRegions.Count == 0)
+                {
+                    request.RequestOptions.ExcludeRegions = new List<string>(this.excludeRegions);
+                }
+
                 return base.SendAsync(request, cancellationToken);
             }
         }
