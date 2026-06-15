@@ -725,13 +725,13 @@ namespace Microsoft.Azure.Cosmos
                     {
                         "thinClientWritableLocations",
                         JArray.Parse(@"[
-                            { 'name': 'ThinClientRegionWrite', 'databaseAccountEndpoint': 'https://thinclientwrite.documents.azure.com:10650/' }
+                            { 'name': 'ThinClientRegionWrite', 'databaseAccountEndpoint': 'https://thinclientwrite.documents.azure.com:10250/' }
                         ]")
                     },
                     {
                         "thinClientReadableLocations",
                         JArray.Parse(@"[
-                            { 'name': 'ThinClientRegionRead', 'databaseAccountEndpoint': 'https://thinclientread.documents.azure.com:10650/' }
+                            { 'name': 'ThinClientRegionRead', 'databaseAccountEndpoint': 'https://thinclientread.documents.azure.com:10250/' }
                         ]")
                     }
                 }
@@ -776,9 +776,9 @@ namespace Microsoft.Azure.Cosmos
                 Uri thinClientWriteEndpoint = gem.ResolveThinClientEndpoint(writeRequest);
 
                 // Assert: 
-                Assert.AreEqual("https://thinclientread.documents.azure.com:10650/", thinClientReadEndpoint.AbsoluteUri);
+                Assert.AreEqual("https://thinclientread.documents.azure.com:10250/", thinClientReadEndpoint.AbsoluteUri);
 
-                Assert.AreEqual("https://thinclientwrite.documents.azure.com:10650/", thinClientWriteEndpoint.AbsoluteUri);
+                Assert.AreEqual("https://thinclientwrite.documents.azure.com:10250/", thinClientWriteEndpoint.AbsoluteUri);
             }
             finally
             {

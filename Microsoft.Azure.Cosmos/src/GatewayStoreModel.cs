@@ -605,7 +605,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Read-direction variant of <see cref="IsThinClientRoutable"/> for failover walks
-        /// (PLCB / PPAF) that traverse thin-client READ endpoints regardless of the original
+        /// (PPCB / PPAF) that traverse thin-client READ endpoints regardless of the original
         /// request direction.
         /// </summary>
         internal static bool IsThinClientReadRoutable(IGlobalEndpointManager endpointManager, DocumentServiceRequest request)
