@@ -20,7 +20,17 @@ namespace Microsoft.Azure.Cosmos
     {
         // Outer-loop retry parameters. The inner loop (ClientRetryPolicy) handles envelope failures with empty body;
         // the outer loop handles body-bearing semantic failures whose JSON body sets isRetriable: true.
+        //
+        // Hard ceiling on outer-loop wire requests. With non-trivial retryBaseDelay the cumulative
+        // MaxCumulativeRetryDelay budget will typically fire first; this cap only binds when delays
+        // are very small (e.g., zero in tests or hypothetical fast-server scenarios) — it guards
+        // against unbounded wire-request amplification when delays are degenerate.
         internal const int MaxIsRetriableRetryCount = 10;
+        // Default cumulative planned-delay budget. With default 1s base and maxExponent=5 (±25% jitter),
+        // the budget is the binding constraint (~4-5 retries) rather than the attempt-count cap (10).
+        // Mirrors ResourceThrottleRetryPolicy's cumulative cap pattern. Overridable via the internal
+        // constructor for tests that need to exercise the attempt-count cap with realistic delays.
+        internal static readonly TimeSpan MaxCumulativeRetryDelay = TimeSpan.FromSeconds(30);
         private const int RetryMaxExponent = 5; // ~32 s max base delay before jitter
         private static readonly TimeSpan DefaultRetryBaseDelay = TimeSpan.FromSeconds(1);
         private static readonly string ResourceUri = Paths.OperationsPathSegment + "/" + Paths.Operations_Dtc;
@@ -28,6 +38,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly IReadOnlyList<DistributedTransactionOperation> operations;
         private readonly CosmosClientContext clientContext;
         private readonly TimeSpan retryBaseDelay;
+        private readonly TimeSpan maxCumulativeRetryDelay;
         private readonly Func<TimeSpan, CancellationToken, Task> delayProvider;
 
         public DistributedTransactionCommitter(
@@ -41,12 +52,14 @@ namespace Microsoft.Azure.Cosmos
             IReadOnlyList<DistributedTransactionOperation> operations,
             CosmosClientContext clientContext,
             TimeSpan retryBaseDelay,
-            Func<TimeSpan, CancellationToken, Task> delayProvider = null)
+            Func<TimeSpan, CancellationToken, Task> delayProvider = null,
+            TimeSpan? maxCumulativeRetryDelay = null)
         {
             this.operations = operations ?? throw new ArgumentNullException(nameof(operations));
             this.clientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
             this.retryBaseDelay = retryBaseDelay;
             this.delayProvider = delayProvider ?? Task.Delay;
+            this.maxCumulativeRetryDelay = maxCumulativeRetryDelay ?? DistributedTransactionCommitter.MaxCumulativeRetryDelay;
         }
 
         public async Task<DistributedTransactionResponse> CommitTransactionAsync(
@@ -84,6 +97,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosTraceDiagnostics diagnostics = new CosmosTraceDiagnostics(parentTrace);
 
             int attempt = 0;
+            TimeSpan cumulativeRetryDelay = TimeSpan.Zero;
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -117,8 +131,23 @@ namespace Microsoft.Azure.Cosmos
                     ? serverHint
                     : computedDelay;
 
+                // Check cumulative delay budget before sleeping. If the next delay would
+                // exceed the budget, stop retrying — mirroring ResourceThrottleRetryPolicy.
+                cumulativeRetryDelay += delay;
+                if (cumulativeRetryDelay > this.maxCumulativeRetryDelay)
+                {
+                    DefaultTrace.TraceWarning(
+                        $"Distributed transaction isRetriable cumulative delay budget exceeded " +
+                            $"(cumulativeDelayMs={(int)cumulativeRetryDelay.TotalMilliseconds}, " +
+                            $"maxDelayMs={(int)this.maxCumulativeRetryDelay.TotalMilliseconds}, " +
+                            $"attempt={attempt}, StatusCode={response.StatusCode}, " +
+                            $"DiagnosticString={TruncateForLog(response.DiagnosticString)}). Returning last response.");
+                    response.Diagnostics = diagnostics;
+                    return response;
+                }
+
                 DefaultTrace.TraceWarning(
-                    $"Distributed transaction commit retriable (StatusCode={response.StatusCode}, IsRetriable={response.IsRetriable}, DiagnosticString={TruncateForLog(response.DiagnosticString)}, attempt {attempt + 1}, delayMs={(int)delay.TotalMilliseconds}). Retrying with idempotency token {serverRequest.IdempotencyToken}.");
+                    $"Distributed transaction commit retriable (StatusCode={response.StatusCode}, IsRetriable={response.IsRetriable}, DiagnosticString={TruncateForLog(response.DiagnosticString)}, attempt={attempt}, delayMs={(int)delay.TotalMilliseconds}, cumulativeDelayMs={(int)cumulativeRetryDelay.TotalMilliseconds}). Retrying with idempotency token {serverRequest.IdempotencyToken}.");
 
                 response.Dispose();
                 attempt++;
