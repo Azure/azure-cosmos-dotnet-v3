@@ -148,14 +148,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                     {
                         "thinClientWritableLocations",
                         JArray.Parse(@"[
-                            { 'name': 'East US', 'databaseAccountEndpoint': 'https://thinclientwrite-eastus.documents.azure.com:10650/' }
+                            { 'name': 'East US', 'databaseAccountEndpoint': 'https://thinclientwrite-eastus.documents.azure.com:10250/' }
                         ]")
                     },
                     {
                         "thinClientReadableLocations",
                         JArray.Parse(@"[
-                            { 'name': 'East US', 'databaseAccountEndpoint': 'https://thinclientread-eastus.documents.azure.com:10650/' },
-                            { 'name': 'West US', 'databaseAccountEndpoint': 'https://thinclientread-westus.documents.azure.com:10650/' }
+                            { 'name': 'East US', 'databaseAccountEndpoint': 'https://thinclientread-eastus.documents.azure.com:10250/' },
+                            { 'name': 'West US', 'databaseAccountEndpoint': 'https://thinclientread-westus.documents.azure.com:10250/' }
                         ]")
                     }
                 };
