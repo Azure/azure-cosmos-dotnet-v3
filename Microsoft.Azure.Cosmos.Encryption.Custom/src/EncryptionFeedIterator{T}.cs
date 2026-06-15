@@ -52,9 +52,41 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 IReadOnlyCollection<T> resource;
                 (responseMessage, resource) = await this.ReadNextWithoutDecryptionAsync(cancellationToken).ConfigureAwait(false);
 
-                return DecryptableFeedResponse<T>.CreateResponse(
-                    responseMessage,
-                    resource);
+                try
+                {
+                    return DecryptableFeedResponse<T>.CreateResponse(
+                        responseMessage,
+                        resource);
+                }
+                catch
+                {
+                    // Symmetric to the orphan-cleanup inside ConvertResponseToDecryptableItemsStreamAsync:
+                    // once the items are constructed and returned to us, ownership doesn't transfer to a
+                    // disposable response wrapper until CreateResponse succeeds. If CreateResponse throws
+                    // (EnsureSuccessStatusCode mid-construction, OOM allocating the wrapper, ...), every
+                    // StreamDecryptableItem in `resource` still holds a rented ArrayPool<byte> buffer that
+                    // nothing will free except GC. Drain best-effort before rethrowing the original cause.
+                    if (resource != null)
+                    {
+                        foreach (T item in resource)
+                        {
+                            if (item is IAsyncDisposable disposable)
+                            {
+                                try
+                                {
+                                    await disposable.DisposeAsync().ConfigureAwait(false);
+                                }
+                                catch
+                                {
+                                    // Best-effort cleanup: swallow per-item disposal failures so we still
+                                    // attempt to drain the remaining orphans and re-throw the original cause.
+                                }
+                            }
+                        }
+                    }
+
+                    throw;
+                }
             }
             else
             {

@@ -244,6 +244,34 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
+        public async Task GetItemAsync_WhenDecryptionFailsThenCalledAgain_SurfacesObjectDisposedException()
+        {
+            // Regression: after a failed decrypt the catch nulled `contentStream` but left both
+            // `isDisposed` and `isDecrypted` at false. A retry would call DecryptContentStreamAsync
+            // with a null content stream -> NRE inside the MDE adapter -> second EncryptionException
+            // with empty DataEncryptionKeyId and empty EncryptedContent, masking the original failure.
+            // Fix: set isDisposed=true before throwing in the catch so the retry surfaces a clean
+            // ObjectDisposedException.
+            TestDoc originalDoc = TestDoc.Create();
+            Stream encryptedStream = await CreateEncryptedStreamAsync(originalDoc, mockEncryptor.Object);
+
+            Mock<Encryptor> failingEncryptor = new ();
+            failingEncryptor.Setup(m => m.DecryptAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException("Simulated DEK failure"));
+
+            StreamDecryptableItem streamItem = new (encryptedStream, failingEncryptor.Object, cosmosSerializer);
+
+            EncryptionException first = await Assert.ThrowsExceptionAsync<EncryptionException>(
+                async () => await streamItem.GetItemAsync<TestDoc>());
+
+            Assert.IsNotNull(first.InnerException, "First failure should preserve the underlying cause.");
+
+            await Assert.ThrowsExceptionAsync<ObjectDisposedException>(
+                async () => await streamItem.GetItemAsync<TestDoc>(),
+                "Second call after a failed decrypt must surface ObjectDisposedException, not a second masked EncryptionException.");
+        }
+
+        [TestMethod]
         public async Task GetItemAsync_StreamMode_WithMdeAlgorithm_TakesGenuineMdeStreamPath()
         {
             // Coverage regression: every existing `Stream`-variant exception/decrypt test in this file

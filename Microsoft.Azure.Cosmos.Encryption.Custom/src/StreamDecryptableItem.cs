@@ -98,6 +98,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
                     await this.DisposeContentStreamAsync().ConfigureAwait(false);
 
+                    // Mark the item as disposed before throwing so a retry surfaces a clean
+                    // ObjectDisposedException rather than NRE-wrapping the original failure: the
+                    // content stream is gone, the cached item was never populated, and decryption
+                    // cannot be re-attempted. Setting this flag here keeps the state machine self-
+                    // consistent for callers that retry on EncryptionException.
+                    this.isDisposed = true;
+
                     throw new EncryptionException(dataEncryptionKeyId: dataEncryptionKeyId, encryptedContent: encryptedContent ?? string.Empty, exception);
                 }
             }

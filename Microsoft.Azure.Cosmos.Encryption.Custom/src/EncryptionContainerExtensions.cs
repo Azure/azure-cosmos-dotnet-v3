@@ -56,7 +56,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             if (container is not EncryptionContainer encryptionContainer)
             {
-                throw new NotSupportedException($"{nameof(UseStreamingJsonProcessingByDefault)} is only supported with {nameof(EncryptionContainer)}.");
+                throw new ArgumentException(
+                    $"{nameof(UseStreamingJsonProcessingByDefault)} is only supported with {nameof(EncryptionContainer)}.",
+                    nameof(container));
             }
 
             encryptionContainer.UseStreamingJsonProcessingByDefault();

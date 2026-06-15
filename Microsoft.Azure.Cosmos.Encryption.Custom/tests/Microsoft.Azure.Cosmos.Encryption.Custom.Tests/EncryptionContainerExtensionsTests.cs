@@ -115,7 +115,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         {
             Container nonEncryptionContainer = Mock.Of<Container>();
 
-            Assert.ThrowsException<NotSupportedException>(() => nonEncryptionContainer.UseStreamingJsonProcessingByDefault());
+            ArgumentException ex = Assert.ThrowsException<ArgumentException>(() => nonEncryptionContainer.UseStreamingJsonProcessingByDefault());
+            Assert.AreEqual("container", ex.ParamName, "Parameter name should identify the wrong-typed argument.");
         }
 #endif
     }

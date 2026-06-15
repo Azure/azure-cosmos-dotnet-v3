@@ -17,6 +17,45 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     [TestClass]
     public class JsonArrayStreamSplitterTests
     {
+        [DataTestMethod]
+        [DataRow("{\"Documents\":[{\"id\":\"doc1\"")]  // truncated mid-object
+        [DataRow("{\"Documents\":[{\"id\":\"doc1\"},{\"id\":\"doc")]  // truncated mid-second-object
+        [DataRow("{\"Documents\":[{")]  // truncated immediately after open brace
+        [DataRow("{\"Documents\":[")]  // truncated immediately after array open
+        public async Task SplitIntoSubstreamsAsync_TruncatedInput_ThrowsCleanJsonExceptionWithoutBufferGrowth(string payload)
+        {
+            // Contract: truncated / malformed feed envelopes surface as a clean JsonException, NOT as a
+            // misleading "maximum buffer size" InvalidOperationException after wasteful buffer doublings.
+            //
+            // The strict final-block Utf8JsonReader inside ProcessChunk throws a JsonReaderException
+            // (which derives from JsonException) on the leftover the moment the stream is exhausted, so the
+            // failure is fast and well-described. This test pins that contract so any future change that
+            // lets truncated input degrade into the 64 MiB-growth / buffer-size-error path is caught.
+            //
+            // Note: we assert "is JsonException" (base-or-derived) rather than the exact type, because the
+            // concrete type (JsonReaderException) is a System.Text.Json implementation detail.
+            using MemoryStream inputStream = new (Encoding.UTF8.GetBytes(payload));
+
+            Exception caught = null;
+            try
+            {
+                await foreach (Stream documentStream in JsonArrayStreamSplitter.SplitIntoSubstreamsAsync(inputStream, CancellationToken.None))
+                {
+                    documentStream.Dispose();
+                }
+            }
+            catch (Exception ex)
+            {
+                caught = ex;
+            }
+
+            Assert.IsNotNull(caught, "Truncated input must throw.");
+            Assert.IsInstanceOfType(caught, typeof(JsonException), $"Expected a JsonException (or subclass). Actual: {caught.GetType().Name}: {caught.Message}");
+            Assert.IsFalse(
+                caught.Message.Contains("maximum buffer size", StringComparison.OrdinalIgnoreCase),
+                $"Truncated input must not degrade to a buffer-size error. Actual: {caught.Message}");
+        }
+
         [TestMethod]
         public async Task SplitIntoSubstreamsAsync_WithLargeDocument_ShouldHandleBufferBoundary()
         {
