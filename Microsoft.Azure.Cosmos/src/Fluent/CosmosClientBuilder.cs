@@ -438,9 +438,10 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// At the transport boundary, values in [<see cref="TimeSpan.Zero"/>, 1 second) are treated as 0
         /// (use the configured request timeout). Values greater than or equal to 1 second are rounded up to
         /// the nearest whole second (for example, 2.3 seconds becomes 3 seconds).
-        /// Negative values are not recommended and will emit a warning trace. They are preserved for
-        /// backward compatibility; at the transport boundary they are truncated to whole seconds and the
-        /// TransportClient returns the configured request timeout for any stored value not greater than zero.
+        /// Negative values are not recommended. They are preserved for backward compatibility and will
+        /// cause the underlying <c>DocumentClient</c> to emit a warning trace at client construction time;
+        /// at the transport boundary they are truncated to whole seconds and the TransportClient returns
+        /// the configured request timeout for any stored value not greater than zero.
         /// </param>
         /// <param name="maxRequestsPerTcpConnection">
         /// Controls the number of requests allowed simultaneously over a single TCP connection. When more requests are in flight simultaneously, the direct/TCP client will open additional connections.

@@ -929,11 +929,23 @@ namespace Microsoft.Azure.Cosmos
                 {
                     // Values in [TimeSpan.Zero, 1 second) become 0 (use RequestTimeout).
                     // Values >= 1 second round up to the nearest whole second, clamped to int.MaxValue.
-                    // Negative values are truncated via (int)TotalSeconds, preserving pre-PR behavior.
+                    // Negative values are truncated via (int)TotalSeconds, preserving pre-PR behavior,
+                    // and a warning trace is emitted (Direct mode only) because negative timeouts
+                    // cause the TransportClient to fall back to the configured RequestTimeout.
+                    // The warning is gated on Direct mode because openConnectionTimeoutInSeconds is
+                    // not consumed in Gateway mode, so the message would be misleading there.
                     TimeSpan openTcpConnectionTimeout = connectionPolicy.OpenTcpConnectionTimeout.Value;
 
                     if (openTcpConnectionTimeout < TimeSpan.Zero)
                     {
+                        if (connectionPolicy.ConnectionMode == ConnectionMode.Direct)
+                        {
+                            DefaultTrace.TraceWarning(
+                                "OpenTcpConnectionTimeout value {0} is negative. Negative values are not recommended; "
+                                + "the TransportClient will fall back to the configured RequestTimeout.",
+                                openTcpConnectionTimeout);
+                        }
+
                         this.openConnectionTimeoutInSeconds = (int)openTcpConnectionTimeout.TotalSeconds;
                     }
                     else if (openTcpConnectionTimeout < TimeSpan.FromSeconds(1))
