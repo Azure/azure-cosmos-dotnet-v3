@@ -94,6 +94,24 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
 #endif
 
+        /// <summary>
+        /// Finalizes an instance of the <see cref="PooledMemoryStream"/> class.
+        /// </summary>
+        /// <remarks>
+        /// Safety net: returns and clears the rented <see cref="ArrayPool{T}"/> buffer if a consumer
+        /// forgot to dispose this stream. The streaming-decryption feed path hands pooled
+        /// <see cref="PooledMemoryStream"/> instances to lazy <c>DecryptableItem</c>s whose lifetime the
+        /// caller controls; a caller that abandons a page without disposing it would otherwise leak the
+        /// rental (pool-slot loss) and leave decrypted plaintext lingering in memory until GC overwrites
+        /// it. This finalizer degrades that mistake to a benign, GC-timed cleanup. Proper disposal calls
+        /// <see cref="GC.SuppressFinalize"/> (via <see cref="Stream.Close"/> on <see cref="Stream.Dispose()"/>
+        /// and the default <see cref="Stream.DisposeAsync"/>), so this runs only when disposal was missed.
+        /// </remarks>
+        ~PooledMemoryStream()
+        {
+            this.Dispose(false);
+        }
+
         public override bool CanRead => !this.disposed;
 
         public override bool CanSeek => !this.disposed;
@@ -476,7 +494,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         protected override void Dispose(bool disposing)
         {
-            if (!this.disposed && disposing)
+            // Return the rented buffer on BOTH the normal disposal path (disposing == true) and the
+            // finalizer path (disposing == false). Touching only the rented byte[] and the static
+            // ArrayPool is finalizer-safe — neither has its own finalizer or depends on other managed
+            // state that may already be reclaimed. The `disposed` guard + GC.SuppressFinalize on proper
+            // disposal prevents any double-return.
+            if (!this.disposed)
             {
                 if (this.buffer != null && this.buffer.Length > 0)
                 {
