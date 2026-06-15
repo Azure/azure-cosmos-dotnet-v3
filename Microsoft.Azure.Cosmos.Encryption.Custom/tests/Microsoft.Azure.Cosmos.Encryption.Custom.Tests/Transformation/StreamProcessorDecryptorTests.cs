@@ -642,20 +642,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                     StreamProcessor processor = new();
                     CosmosDiagnosticsContext diagnostics = new();
 
-                    DecryptionContext context = await processor.DecryptJsonArrayStreamInPlaceAsync(
+                    await processor.DecryptJsonArrayStreamInPlaceAsync(
                         feedPayloadStream,
                         cosmosEncryptor,
                         diagnostics,
                         CancellationToken.None).ConfigureAwait(false);
-
-                    Assert.IsNotNull(context, "Expected aggregated decryption context");
-                    Assert.AreEqual(1, context.DecryptionInfoList.Count, "Unexpected number of decryption info entries");
-
-                    DecryptionInfo info = context.DecryptionInfoList[0];
-                    Assert.AreEqual(DekId, info.DataEncryptionKeyId, "Unexpected DEK identifier");
-                    CollectionAssert.AreEquivalent(
-                        FeedDoc.PathsToEncrypt.ToList(),
-                        info.PathsDecrypted.ToList());
 
                     feedPayloadStream.Position = 0;
                     using StreamReader reader = new(feedPayloadStream, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, leaveOpen: true);
@@ -740,13 +731,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                 StreamProcessor processor = new();
                 CosmosDiagnosticsContext diagnostics = new();
 
-                DecryptionContext context = await processor.DecryptJsonArrayStreamInPlaceAsync(
+                await processor.DecryptJsonArrayStreamInPlaceAsync(
                     input,
                     mockEncryptor.Object,
                     diagnostics,
                     CancellationToken.None).ConfigureAwait(false);
-
-                Assert.IsNull(context, "Expected no decryption context when payload lacks encrypted objects");
 
                 input.Position = 0;
                 using StreamReader reader = new(input, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, leaveOpen: true);

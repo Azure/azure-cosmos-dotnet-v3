@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
         internal MdeEncryptor Encryptor { get; set; } = new MdeEncryptor();
 
-        internal async Task<DecryptionContext> DecryptJsonArrayStreamInPlaceAsync(
+        internal async Task DecryptJsonArrayStreamInPlaceAsync(
             Stream stream,
             Encryptor encryptor,
             CosmosDiagnosticsContext diagnosticsContext,
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             using RentArrayBufferWriter objectBuffer = new (InitialBufferSize);
             using RentArrayBufferWriter decryptedObjectBuffer = new (InitialBufferSize);
 
-            Dictionary<string, HashSet<string>> aggregatedPaths = await this.ProcessJsonArrayStreamAsync(
+            await this.ProcessJsonArrayStreamAsync(
                 stream,
                 encryptor,
                 diagnosticsContext,
@@ -63,12 +63,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 decryptedObjectBuffer,
                 cancellationToken).ConfigureAwait(false);
 
-            await OverwriteStreamAsync(stream, tempOutputStream, cancellationToken).ConfigureAwait(false);
-
-            return CreateAggregatedContext(aggregatedPaths);
+            OverwriteStreamInPlace(stream, tempOutputStream);
         }
 
-        private async Task<Dictionary<string, HashSet<string>>> ProcessJsonArrayStreamAsync(
+        private async Task ProcessJsonArrayStreamAsync(
             Stream stream,
             Encryptor encryptor,
             CosmosDiagnosticsContext diagnosticsContext,
@@ -79,7 +77,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         {
             JsonReaderState readerState = new (JsonReaderOptions);
             JsonArrayTraversalState traversalState = JsonArrayTraversalState.CreateInitial();
-            Dictionary<string, HashSet<string>> aggregatedPaths = null;
 
             bool isFinalBlock = false;
             int leftOver = 0;
@@ -114,18 +111,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                     if (result.ObjectCompleted)
                     {
-                        aggregatedPaths = await this.ProcessCapturedObjectAsync(
+                        await this.ProcessCapturedObjectAsync(
                             objectBuffer,
                             decryptedObjectBuffer,
                             tempOutputStream,
                             encryptor,
                             diagnosticsContext,
-                            cancellationToken,
-                            aggregatedPaths).ConfigureAwait(false);
+                            cancellationToken).ConfigureAwait(false);
                     }
                 }
-
-                return aggregatedPaths;
             }
             finally
             {
@@ -150,23 +144,34 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             objectBuffer.Advance(segment.Length);
         }
 
-        private static async Task OverwriteStreamAsync(Stream stream, Stream source, CancellationToken cancellationToken)
+        private static void OverwriteStreamInPlace(Stream destination, PooledMemoryStream decrypted)
         {
-            stream.Position = 0;
-            stream.SetLength(0);
-            source.Position = 0;
-            await source.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
-            stream.Position = 0;
+            // The decrypted payload is already fully materialized in the pooled buffer before we touch
+            // the destination. SetLength(0) destroys the original ciphertext, so the refill must not
+            // contain an interruptible gap: a cancellation (or partial async write) between the truncate
+            // and the rewrite would leave the response body empty or half-written with no way to recover
+            // the original encrypted bytes. We therefore copy back synchronously — over the in-memory,
+            // seekable destination guaranteed by the CanRead/CanWrite/CanSeek check at method entry this
+            // is a memcpy that cannot be cancelled mid-way, eliminating the truncate-then-fail corruption
+            // window. Cancellation is already observed during the decrypt loop that precedes this call.
+            destination.Position = 0;
+            destination.SetLength(0);
+
+            if (decrypted.TryGetBuffer(out ArraySegment<byte> buffer) && buffer.Count > 0)
+            {
+                destination.Write(buffer.Array, buffer.Offset, buffer.Count);
+            }
+
+            destination.Position = 0;
         }
 
-        private async Task<Dictionary<string, HashSet<string>>> ProcessCapturedObjectAsync(
+        private async Task ProcessCapturedObjectAsync(
             RentArrayBufferWriter objectBuffer,
             RentArrayBufferWriter decryptedObjectBuffer,
             Stream outputStream,
             Encryptor encryptor,
             CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken,
-            Dictionary<string, HashSet<string>> aggregatedPaths)
+            CancellationToken cancellationToken)
         {
             (byte[] objectBytes, int length) = objectBuffer.WrittenBuffer;
 
@@ -174,10 +179,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             if (encryptionProperties == null)
             {
                 WriteBufferedObject(objectBytes, length, objectBuffer, outputStream);
-                return aggregatedPaths;
+                return;
             }
 
-            DecryptionContext context = await this.DecryptEncryptedObjectAsync(
+            await this.DecryptEncryptedObjectAsync(
                 objectBytes,
                 length,
                 objectBuffer,
@@ -187,29 +192,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 encryptionProperties,
                 diagnosticsContext,
                 cancellationToken).ConfigureAwait(false);
-
-            UpdateAggregatedPaths(context, ref aggregatedPaths);
-
-            return aggregatedPaths;
         }
 
-        private static DecryptionContext CreateAggregatedContext(Dictionary<string, HashSet<string>> aggregatedPaths)
-        {
-            if (aggregatedPaths == null || aggregatedPaths.Count == 0)
-            {
-                return null;
-            }
-
-            List<DecryptionInfo> infos = new (aggregatedPaths.Count);
-            foreach ((string dekId, HashSet<string> paths) in aggregatedPaths)
-            {
-                infos.Add(new DecryptionInfo(new List<string>(paths), dekId));
-            }
-
-            return new DecryptionContext(infos);
-        }
-
-        private async Task<DecryptionContext> DecryptEncryptedObjectAsync(
+        private async Task DecryptEncryptedObjectAsync(
             byte[] objectBytes,
             int length,
             RentArrayBufferWriter objectBuffer,
@@ -223,7 +208,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             using MemoryStream objectInput = new (objectBytes, 0, length, writable: false);
             decryptedObjectBuffer.Clear();
 
-            DecryptionContext context = await this.DecryptStreamAsync(
+            // The per-object DecryptionContext returned here is intentionally not aggregated or
+            // surfaced: the in-place feed/array decrypt path returns only the decrypted Stream to its
+            // callers (matching the Newtonsoft feed path), so a page-level decryption summary has no
+            // consumer. Decryption *failures* propagate as exceptions and are unaffected. The per-item
+            // DecryptionContext is still surfaced on the point-read / lazy DecryptableItem path, which
+            // uses DecryptStreamAsync directly. If a caller-facing per-page summary is ever needed it
+            // should be returned to the caller (who already holds the plaintext), not emitted to
+            // telemetry, to avoid leaking the encryption schema and key ids.
+            _ = await this.DecryptStreamAsync(
                 objectInput,
                 decryptedObjectBuffer,
                 encryptor,
@@ -234,8 +227,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             WriteDecryptedPayload(decryptedObjectBuffer, outputStream);
             decryptedObjectBuffer.Clear();
             objectBuffer.Clear();
-
-            return context;
         }
 
         private static void WriteBufferedObject(byte[] objectBytes, int length, RentArrayBufferWriter objectBuffer, Stream outputStream)
@@ -250,30 +241,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             if (!decryptedSpan.IsEmpty)
             {
                 outputStream.Write(decryptedSpan);
-            }
-        }
-
-        private static void UpdateAggregatedPaths(DecryptionContext context, ref Dictionary<string, HashSet<string>> aggregatedPaths)
-        {
-            if (context == null)
-            {
-                return;
-            }
-
-            aggregatedPaths ??= new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
-
-            foreach (DecryptionInfo info in context.DecryptionInfoList)
-            {
-                if (!aggregatedPaths.TryGetValue(info.DataEncryptionKeyId, out HashSet<string> paths))
-                {
-                    paths = new HashSet<string>(StringComparer.Ordinal);
-                    aggregatedPaths[info.DataEncryptionKeyId] = paths;
-                }
-
-                foreach (string path in info.PathsDecrypted)
-                {
-                    paths.Add(path);
-                }
             }
         }
 
