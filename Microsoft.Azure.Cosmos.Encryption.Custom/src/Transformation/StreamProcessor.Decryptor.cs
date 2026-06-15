@@ -240,11 +240,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             static void WriteDoubleValueNewtonsoftStyle(Utf8JsonWriter writer, double value)
             {
-                if (double.IsNaN(value) || double.IsInfinity(value))
+                // Non-finite doubles are not representable as JSON numbers. Newtonsoft.Json
+                // (FloatFormatHandling.String, the default used on the Newtonsoft decrypt path)
+                // emits them as quoted string literals; match that exact textual form so both
+                // processors and the 1.0.0-preview08 release produce byte-identical output and so
+                // values already encrypted under TypeMarker.Double remain readable.
+                if (double.IsNaN(value))
                 {
-                    // Non-finite doubles are not valid JSON; let the writer surface the failure
-                    // rather than emitting an invalid literal. Reachable only via forged ciphertext.
-                    writer.WriteNumberValue(value);
+                    writer.WriteStringValue("NaN");
+                    return;
+                }
+
+                if (double.IsPositiveInfinity(value))
+                {
+                    writer.WriteStringValue("Infinity");
+                    return;
+                }
+
+                if (double.IsNegativeInfinity(value))
+                {
+                    writer.WriteStringValue("-Infinity");
                     return;
                 }
 

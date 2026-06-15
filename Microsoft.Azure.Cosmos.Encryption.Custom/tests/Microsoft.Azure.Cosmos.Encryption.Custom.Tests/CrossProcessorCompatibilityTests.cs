@@ -868,6 +868,76 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 #endif
 
+        // ---- Non-finite doubles: cleanly supported, cross-processor identical, downgrade-safe --
+#if NET8_0_OR_GREATER
+        // A non-finite double (Infinity / -Infinity) cannot be represented by the MDE float
+        // serializer, so it is encrypted as the canonical Newtonsoft string form ("Infinity" /
+        // "-Infinity") under TypeMarker.String - identical across both processors and readable by
+        // 1.0.0-preview08.
+        [DataTestMethod]
+        [DataRow("1e309", "Infinity", DisplayName = "PositiveInfinity")]
+        [DataRow("-1e309", "-Infinity", DisplayName = "NegativeInfinity")]
+        public async Task NonFiniteDouble_AllProcessorPairs_DecryptToCanonicalString(string literal, string expected)
+        {
+            string json = $"{{\"id\":\"1\",\"D\":{literal}}}";
+            JsonProcessor[] processors = { JsonProcessor.Newtonsoft, JsonProcessor.Stream };
+
+            foreach (JsonProcessor enc in processors)
+            {
+                using MemoryStream encrypted = await EncryptToMemoryAsync(json, enc, new List<string> { "/D" });
+
+                // Stored under TypeMarker.String (byte 2) on every encrypt path.
+                using (JsonDocument encDoc = JsonDocument.Parse(encrypted.ToArray()))
+                {
+                    byte[] cipher = Convert.FromBase64String(encDoc.RootElement.GetProperty("D").GetString());
+                    Assert.AreEqual((byte)2 /* TypeMarker.String */, cipher[0], $"[encrypt:{enc}] non-finite double must use TypeMarker.String");
+                }
+
+                foreach (JsonProcessor dec in processors)
+                {
+                    (string decrypted, _) = await DecryptToStringAsync(encrypted, dec);
+                    StringAssert.Contains(decrypted, $"\"D\":\"{expected}\"", $"[encrypt:{enc}->decrypt:{dec}] must decrypt to canonical \"{expected}\"");
+                }
+
+                // Downgrade: the released preview08 decryptor reads it identically.
+                (JObject downgraded, _) = await Preview08Decryptor.DecryptAsync(
+                    new MemoryStream(encrypted.ToArray()),
+                    mockEncryptor.Object,
+                    CancellationToken.None);
+                Assert.AreEqual(expected, downgraded["D"].Value<string>(), $"[encrypt:{enc}->preview08] downgrade must read \"{expected}\"");
+            }
+        }
+
+        [TestMethod]
+        public async Task NonFiniteDouble_NaN_FromNewtonsoftLiteral_DecryptsToNaNEverywhere()
+        {
+            // A bare NaN literal is invalid JSON for System.Text.Json (the Stream encryptor rejects
+            // it at parse time), but Newtonsoft accepts it - and a value already encrypted under
+            // TypeMarker.Double by preview08 may hold NaN bits. Such ciphertext must remain readable
+            // by both decrypt processors and by the released preview08 decryptor.
+            string json = "{\"id\":\"1\",\"D\":NaN}";
+            using MemoryStream encrypted = await EncryptToMemoryAsync(json, JsonProcessor.Newtonsoft, new List<string> { "/D" });
+
+            using (JsonDocument encDoc = JsonDocument.Parse(encrypted.ToArray()))
+            {
+                byte[] cipher = Convert.FromBase64String(encDoc.RootElement.GetProperty("D").GetString());
+                Assert.AreEqual((byte)2 /* TypeMarker.String */, cipher[0]);
+            }
+
+            foreach (JsonProcessor dec in new[] { JsonProcessor.Newtonsoft, JsonProcessor.Stream })
+            {
+                (string decrypted, _) = await DecryptToStringAsync(encrypted, dec);
+                StringAssert.Contains(decrypted, "\"D\":\"NaN\"", $"[decrypt:{dec}] NaN must decrypt to canonical \"NaN\"");
+            }
+
+            (JObject downgraded, _) = await Preview08Decryptor.DecryptAsync(
+                new MemoryStream(encrypted.ToArray()),
+                mockEncryptor.Object,
+                CancellationToken.None);
+            Assert.AreEqual("NaN", downgraded["D"].Value<string>());
+        }
+#endif
+
         // ---- Replicated preview08 (baseline) decryptor ----------------------------------------
 
         /// <summary>

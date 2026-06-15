@@ -39,16 +39,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     return (TypeMarker.Boolean, buffer, length);
                 case JTokenType.Float:
                     double doubleValue = propertyValue.ToObject<double>();
-                    if (double.IsNaN(doubleValue) || double.IsInfinity(doubleValue))
+                    if (!double.IsNaN(doubleValue) && !double.IsInfinity(doubleValue))
                     {
-                        // Non-finite doubles are not representable in JSON and would decrypt
-                        // to a quoted string (silent type change); reject at encryption time,
-                        // matching the Stream processor.
-                        throw new InvalidOperationException("Unsupported Number type: non-finite floating-point values cannot be encrypted.");
+                        (buffer, length) = SerializeFixed(SqlDoubleSerializer);
+                        return (TypeMarker.Double, buffer, length);
                     }
 
-                    (buffer, length) = SerializeFixed(SqlDoubleSerializer);
-                    return (TypeMarker.Double, buffer, length);
+                    // The MDE float serializer cannot represent non-finite doubles, and JSON has no
+                    // non-finite number literal. Encrypt the canonical Newtonsoft string form
+                    // ("NaN" / "Infinity" / "-Infinity") under TypeMarker.String so the value
+                    // round-trips losslessly, is identical across both processors, and remains
+                    // readable by the 1.0.0-preview08 release (which decrypts it as that string).
+                    (buffer, length) = SerializeString(NonFiniteToCanonicalString(doubleValue));
+                    return (TypeMarker.String, buffer, length);
                 case JTokenType.Integer:
                     (buffer, length) = SerializeFixed(SqlLongSerializer);
                     return (TypeMarker.Long, buffer, length);
@@ -77,6 +80,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 byte[] buffer = arrayPoolManager.Rent(SqlVarCharSerializer.GetSerializedMaxByteCount(value.Length));
                 int length = SqlVarCharSerializer.Serialize(value, buffer);
                 return (buffer, length);
+            }
+
+            static string NonFiniteToCanonicalString(double value)
+            {
+                if (double.IsNaN(value))
+                {
+                    return "NaN";
+                }
+
+                return double.IsPositiveInfinity(value) ? "Infinity" : "-Infinity";
             }
         }
 

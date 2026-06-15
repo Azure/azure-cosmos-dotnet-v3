@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using Microsoft.Azure.Cosmos.Encryption.Custom;
     using Microsoft.Azure.Cosmos.Encryption.Custom.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Regression tests for the preview08-compatibility findings that are not covered by
@@ -21,7 +22,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     ///  - C4: custom <see cref="Encryptor"/>/<see cref="DataEncryptionKey"/> subclasses written
     ///    against preview08 (no GetEncryptionKeyAsync / no buffer-based members) must keep
     ///    working and must NOT be silently bypassed on the MDE path.
-    ///  - M1: integral literals beyond Int64 and non-finite doubles are rejected by both paths.
+    ///  - M1: integral literals beyond Int64 are rejected by both paths; non-finite doubles
+    ///    (NaN / Infinity) are cleanly supported (TypeMarker.Double, preview08 parity) and decrypt
+    ///    to the canonical Newtonsoft string form.
     ///  - M2: integral doubles decrypt with Newtonsoft-compatible text ("5.0", not "5") so the
     ///    TypeMarker does not flap between Double and Long across re-encrypt cycles.
     ///  - F-9: legacy-algorithm documents produce a clear error through the Stream decrypt path.
@@ -262,23 +265,39 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 #endif
 
-        // ---- M1: non-finite doubles rejected on the Newtonsoft path ---------------------------
+        // ---- Non-finite doubles: cleanly supported on both paths (preview08 parity) -----------
 
         [TestMethod]
-        public async Task NewtonsoftEncrypt_InfinityProducingLiteral_Throws()
+        public async Task NewtonsoftEncrypt_InfinityProducingLiteral_RoundTripsToInfinityString()
         {
-            // 1e309 overflows double range; modern runtimes parse it as +Infinity which is not
-            // representable in JSON. Must be rejected, matching the Stream path.
+            // 1e309 overflows double range; modern runtimes parse it as +Infinity. The MDE float
+            // serializer cannot represent non-finite doubles, so it is encrypted as the canonical
+            // Newtonsoft string form ("Infinity") under TypeMarker.String - identical across both
+            // processors and readable by 1.0.0-preview08.
             Preview08StyleEncryptor encryptor = new ();
             string json = "{\"id\":\"1\",\"Big\":1e309}";
 
-            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => EncryptionProcessor.EncryptAsync(
+            Stream encrypted = await EncryptionProcessor.EncryptAsync(
                 ToStream(json),
                 encryptor,
                 CreateOptions(new[] { "/Big" }),
                 JsonProcessor.Newtonsoft,
                 new CosmosDiagnosticsContext(),
-                CancellationToken.None));
+                CancellationToken.None);
+
+            encrypted.Position = 0;
+            string encryptedJson = new StreamReader(encrypted).ReadToEnd();
+            JObject encDoc = JObject.Parse(encryptedJson);
+            byte[] cipher = Convert.FromBase64String((string)encDoc["Big"]);
+            Assert.AreEqual((byte)2, cipher[0], "non-finite double must be stored under TypeMarker.String");
+
+            (JObject decrypted, _) = await EncryptionProcessor.DecryptAsync(
+                JObject.Parse(encryptedJson),
+                encryptor,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+
+            Assert.AreEqual("Infinity", decrypted["Big"].Value<string>(), "non-finite double must decrypt to the canonical Newtonsoft string form");
         }
 
 #if NET8_0_OR_GREATER

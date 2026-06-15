@@ -429,26 +429,35 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         }
 
         [TestMethod]
-        public async Task Encrypt_Fails_OnDoubleInfinity()
+        public async Task Encrypt_Succeeds_OnDoubleInfinity_RoundTripsToInfinityString()
         {
             // Arrange
-            // Extremely large exponent overflows to Infinity in double parsing; serializer should not accept it.
+            // 1e309 is syntactically valid JSON; it overflows double range to +Infinity. The MDE
+            // float serializer cannot represent non-finite doubles, so the Stream processor encrypts
+            // the canonical Newtonsoft string form ("Infinity") under TypeMarker.String - matching
+            // the Newtonsoft processor and readable by 1.0.0-preview08.
             string json = "{\"id\":\"1\",\"SensitiveDouble\":1e309}";
             using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
             MemoryStream output = new();
             EncryptionOptions options = CreateOptions(new[] { "/SensitiveDouble" });
-            try
+
+            // Act
+            await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, JsonProcessor.Stream, new CosmosDiagnosticsContext(), CancellationToken.None);
+
+            // Assert: encrypted value carries TypeMarker.String (canonical non-finite form)
+            output.Position = 0;
+            using (JsonDocument encDoc = JsonDocument.Parse(output))
             {
-                // Act
-                await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, JsonProcessor.Stream, new CosmosDiagnosticsContext(), CancellationToken.None);
-                // Assert
-                Assert.Fail("Expected exception for Infinity double serialization");
+                byte[] cipher = Convert.FromBase64String(encDoc.RootElement.GetProperty("SensitiveDouble").GetString());
+                Assert.AreEqual((byte)TypeMarker.String, cipher[0], "non-finite double must be stored under TypeMarker.String");
             }
-            catch (Exception ex)
-            {
-                // Different serializer layers may throw different exception types; verify it's about out-of-range/infinity
-                StringAssert.Contains(ex.ToString(), "Infinity");
-            }
+
+            // Decrypt (Stream) -> canonical "Infinity" string
+            output.Position = 0;
+            (Stream decrypted, _) = await EncryptionProcessor.DecryptStreamAsync(output, mockEncryptor.Object, new CosmosDiagnosticsContext(), CancellationToken.None);
+            decrypted.Position = 0;
+            string decryptedJson = new StreamReader(decrypted).ReadToEnd();
+            StringAssert.Contains(decryptedJson, "\"SensitiveDouble\":\"Infinity\"", "non-finite double must decrypt to the canonical Newtonsoft string form");
         }
 
         [TestMethod]

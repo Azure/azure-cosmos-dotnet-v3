@@ -374,11 +374,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             if (System.Buffers.Text.Utf8Parser.TryParse(utf8bytes, out double doubleValue, out int consumedDouble) && consumedDouble == utf8bytes.Length)
             {
-                // Reject non-finite numbers to keep JSON contract compatibility
                 if (double.IsFinite(doubleValue))
                 {
                     return Serialize(doubleValue, arrayPoolManager);
                 }
+
+                // Non-finite (e.g. the overflowing literal 1e309 -> Infinity): the MDE float
+                // serializer cannot represent it and JSON has no non-finite number literal. Encrypt
+                // the canonical Newtonsoft string form under TypeMarker.String so it round-trips
+                // losslessly, matches the Newtonsoft processor, and remains readable by preview08.
+                return SerializeNonFinite(doubleValue, arrayPoolManager);
             }
 
             throw new InvalidOperationException("Unsupported Number type");
@@ -400,6 +405,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             int length = StreamProcessor.SqlDoubleSerializer.Serialize(value, buffer);
 
             return (TypeMarker.Double, buffer, length);
+        }
+
+        private static (TypeMarker typeMarker, byte[] buffer, int length) SerializeNonFinite(double value, ArrayPoolManager arrayPoolManager)
+        {
+            string text = NonFiniteToCanonicalString(value);
+            byte[] buffer = arrayPoolManager.Rent(Encoding.UTF8.GetByteCount(text));
+            int length = Encoding.UTF8.GetBytes(text.AsSpan(), buffer.AsSpan());
+
+            return (TypeMarker.String, buffer, length);
+        }
+
+        private static string NonFiniteToCanonicalString(double value)
+        {
+            if (double.IsNaN(value))
+            {
+                return "NaN";
+            }
+
+            return double.IsPositiveInfinity(value) ? "Infinity" : "-Infinity";
         }
     }
 }
