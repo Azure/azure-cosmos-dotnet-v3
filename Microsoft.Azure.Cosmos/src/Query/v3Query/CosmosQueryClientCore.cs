@@ -210,7 +210,12 @@ namespace Microsoft.Azure.Cosmos
                 // Syntax exception are argument exceptions and thrown to the user.
                 message.EnsureSuccessStatusCode();
 
-                if (this.documentClient.isThinClientEnabled)
+                bool responseCameViaThinClient = string.Equals(
+                    message.Headers?.Get(ThinClientConstants.RoutedViaProxy),
+                    "1",
+                    StringComparison.Ordinal);
+
+                if (responseCameViaThinClient)
                 {
                     ContainerProperties containerProperties = await this.clientContext.GetCachedContainerPropertiesAsync(
                         resourceUri, trace, cancellationToken);
