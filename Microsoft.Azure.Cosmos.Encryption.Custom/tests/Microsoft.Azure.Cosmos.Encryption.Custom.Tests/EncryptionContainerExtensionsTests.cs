@@ -86,6 +86,32 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
 #if NET8_0_OR_GREATER
         [TestMethod]
+        public void ToEncryptionStreamIterator_WithJsonProcessor_ThrowsForNonEncryptionContainer()
+        {
+            Container regularContainer = new Mock<Container>().Object;
+            IQueryable<int> queryable = Enumerable.Empty<int>().AsQueryable();
+
+            ArgumentOutOfRangeException exception = Assert.ThrowsException<ArgumentOutOfRangeException>(
+                () => regularContainer.ToEncryptionStreamIterator(queryable, JsonProcessor.Stream));
+
+            StringAssert.Contains(exception.Message, nameof(EncryptionContainer));
+            StringAssert.Contains(exception.Message, nameof(EncryptionContainerExtensions.ToEncryptionStreamIterator));
+        }
+
+        [TestMethod]
+        public void ToEncryptionFeedIterator_WithJsonProcessor_ThrowsForNonEncryptionContainer()
+        {
+            Container regularContainer = new Mock<Container>().Object;
+            IQueryable<int> queryable = Enumerable.Empty<int>().AsQueryable();
+
+            ArgumentOutOfRangeException exception = Assert.ThrowsException<ArgumentOutOfRangeException>(
+                () => regularContainer.ToEncryptionFeedIterator(queryable, JsonProcessor.Stream));
+
+            StringAssert.Contains(exception.Message, nameof(EncryptionContainer));
+            StringAssert.Contains(exception.Message, nameof(EncryptionContainerExtensions.ToEncryptionFeedIterator));
+        }
+
+        [TestMethod]
         public void UseStreamingJsonProcessingByDefault_SetsDefaultJsonProcessor()
         {
             Mock<CosmosClient> clientMock = new();
