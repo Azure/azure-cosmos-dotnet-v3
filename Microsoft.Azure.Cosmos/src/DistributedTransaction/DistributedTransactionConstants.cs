@@ -12,10 +12,25 @@ namespace Microsoft.Azure.Cosmos
         // Commit guard: values used with Interlocked.CompareExchange to enforce single-use semantics.
         internal const int CommitNotStarted = 0;
         internal const int CommitStarted = 1;
+
+        /// <summary>
+        /// OperationType for distributed read transactions. The backend introduced this value
+        /// but it is not yet present in the Microsoft.Azure.Cosmos.Direct package, so we define
+        /// it locally until the Direct package is updated.
+        /// </summary>
+        internal const OperationType CommitDistributedReadTransaction = (OperationType)81;
+
+        /// <summary>
+        /// Wire-format string for <see cref="CommitDistributedReadTransaction"/>.
+        /// <see cref="OperationTypeExtensions.ToOperationTypeString"/> does not recognize this
+        /// value in the current Direct package, so we provide the string ourselves.
+        /// </summary>
+        internal const string CommitDistributedReadTransactionString = "CommitDistributedReadTransaction";
+
         internal static bool IsDistributedTransactionRequest(OperationType operationType, ResourceType resourceType)
         {
             return (operationType == OperationType.CommitDistributedTransaction
-                    || operationType == OperationType.Read)
+                    || operationType == DistributedTransactionConstants.CommitDistributedReadTransaction)
                 && resourceType == ResourceType.DistributedTransactionBatch;
         }
 

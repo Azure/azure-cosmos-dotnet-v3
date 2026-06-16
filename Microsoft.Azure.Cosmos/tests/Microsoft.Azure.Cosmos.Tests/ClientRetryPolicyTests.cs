@@ -1696,9 +1696,9 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         [TestMethod]
         public async Task ReadDtxRequest_410_LeaseNotFound_FailsOverViaGenericPath()
         {
-            // Regression test: locks in the behavior that 410/1022 (LeaseNotFound) is not emitted
-            // by the DTX coordinator. If this becomes possible in the future and needs DTX-specific
-            // handling, this test will fail and signal the need to add && !isDtxRequest guard.
+            // With CommitDistributedReadTransaction, IsReadOnlyRequest is false, so on single-master
+            // the 410/1022 path correctly returns NoRetry (write requests cannot fail over to another
+            // region on single-master). 410/1022 is not emitted by the DTX coordinator anyway.
             const bool enableEndpointDiscovery = true;
             using GlobalEndpointManager endpointManager = this.Initialize(
                 useMultipleWriteLocations: false,
@@ -1715,8 +1715,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             ShouldRetryResult result = await policy.ShouldRetryAsync(response, CancellationToken.None);
 
-            Assert.IsTrue(result.ShouldRetry, "Read DTX 410/1022 must retry via generic endpoint failover path.");
-            Assert.AreEqual(TimeSpan.Zero, result.BackoffTime, "Generic endpoint failover uses RetryAfter(TimeSpan.Zero); DTX classifier would not return this shape for 410/1022.");
+            Assert.IsFalse(result.ShouldRetry, "Read DTX 410/1022 on single-master must not retry — write requests cannot fail over without multi-write or partition-level failover.");
         }
 
         [TestMethod]
@@ -2210,7 +2209,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         private static DocumentServiceRequest CreateReadDtxRequest()
         {
             return DocumentServiceRequest.Create(
-                OperationType.Read,
+                DistributedTransactionConstants.CommitDistributedReadTransaction,
                 ResourceType.DistributedTransactionBatch,
                 AuthorizationTokenType.PrimaryMasterKey);
         }

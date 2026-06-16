@@ -354,7 +354,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             Uri locationEndpointToRoute = this.defaultEndpoint;
 
             if (!request.RequestContext.UsePreferredLocations.GetValueOrDefault(true) // Should not use preferred location ?
-                || (request.OperationType.IsWriteOperation() && !this.CanUseMultipleWriteLocations(request)))
+                || (request.OperationType.IsWriteOperation() && !this.CanUseMultipleWriteLocations(request))
+                || DistributedTransactionConstants.IsDistributedTransactionRequest(request.OperationType, request.ResourceType))
             {
                 // For non-document resource types in case of client can use multiple write locations
                 // or when client cannot use multiple write locations, flip-flop between the 

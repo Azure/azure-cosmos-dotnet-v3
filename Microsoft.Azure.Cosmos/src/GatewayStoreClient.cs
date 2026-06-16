@@ -303,7 +303,7 @@ namespace Microsoft.Azure.Cosmos
                 request.OperationType == OperationType.SqlQuery ||
                 request.OperationType == OperationType.Batch ||
                 request.OperationType == OperationType.CommitDistributedTransaction ||
-                (request.ResourceType == ResourceType.DistributedTransactionBatch && request.OperationType == OperationType.Read) ||
+                request.OperationType == DistributedTransactionConstants.CommitDistributedReadTransaction ||
                 request.OperationType == OperationType.ExecuteJavaScript ||
                 request.OperationType == OperationType.QueryPlan ||
                 (request.ResourceType == ResourceType.PartitionKey && request.OperationType == OperationType.Delete))
