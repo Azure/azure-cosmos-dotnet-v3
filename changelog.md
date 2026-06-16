@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+- [5958](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5958) DistributedTransaction (preview): Adds public `SessionToken` property on `DistributedTransactionOperationResult`, allowing callers to pass per-operation session tokens back via `DistributedTransactionRequestOptions.SessionToken` to enforce read-your-writes session consistency.
+
 #### Breaking Changes
 
 #### Bugs Fixed
