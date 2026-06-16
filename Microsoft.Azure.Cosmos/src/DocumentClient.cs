@@ -6763,7 +6763,8 @@ namespace Microsoft.Azure.Cosmos
                     remoteCertificateValidationCallback: this.remoteCertificateValidationCallback,
                     distributedTracingOptions: distributedTracingOptions,
                     enableChannelMultiplexing: ConfigurationManager.IsTcpChannelMultiplexingEnabled(),
-                    chaosInterceptor: this.chaosInterceptor);
+                    chaosInterceptor: this.chaosInterceptor,
+                    enableBarrierEarlyYieldOn429: this.ConnectionPolicy.EnableBarrierEarlyYieldOn429);
 
                 if (this.transportClientHandlerFactory != null)
                 {

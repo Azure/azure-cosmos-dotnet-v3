@@ -705,6 +705,18 @@ namespace Microsoft.Azure.Cosmos
         public bool EnableTcpConnectionEndpointRediscovery { get; set; } = true;
 
         /// <summary>
+        /// Gets or sets a value indicating whether the barrier early yield on 429
+        /// optimization is enabled. When true, ConsistencyWriter and QuorumReader
+        /// return early when all replicas return 429 (Too Many Requests) during a
+        /// write or read barrier request, allowing the ResourceThrottleRetryPolicy
+        /// to handle the retry instead of spinning until timeout.
+        /// </summary>
+        /// <value>
+        /// The default value is true.
+        /// </value>
+        public bool EnableBarrierEarlyYieldOn429 { get; set; } = true;
+
+        /// <summary>
         /// Gets or sets a delegate to use to obtain an HttpClient instance to be used for HTTPS communication.
         /// </summary>
         /// <remarks>
@@ -1065,6 +1077,7 @@ namespace Microsoft.Azure.Cosmos
                 ServerCertificateCustomValidationCallback = this.ServerCertificateCustomValidationCallback,
                 CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions(),
                 AvailabilityStrategy = this.AvailabilityStrategy,
+                EnableBarrierEarlyYieldOn429 = this.EnableBarrierEarlyYieldOn429,
             };
 
             if (this.CosmosClientTelemetryOptions != null)
