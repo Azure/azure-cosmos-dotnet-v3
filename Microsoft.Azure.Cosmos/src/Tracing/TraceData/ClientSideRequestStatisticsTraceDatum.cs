@@ -269,6 +269,10 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                     this.TraceSummary?.AddRegionContacted(regionName, locationEndpoint);
                 }
 
+                // Hedging-Detection API: record the responding region (duplicates allowed and
+                // expected — see internal-spec §3.1 and AC14).
+                this.TraceSummary?.HedgingDetectionState?.AppendResponded(regionName);
+
                 if (responseStatistics.StoreResult != null && !((HttpStatusCode)responseStatistics.StoreResult.StatusCode).IsSuccess()
                     && !(responseStatistics.StoreResult.StatusCode == StatusCodes.NotFound && responseStatistics.StoreResult.SubStatusCode == SubStatusCodes.Unknown)
                     && !(responseStatistics.StoreResult.StatusCode == StatusCodes.Conflict && responseStatistics.StoreResult.SubStatusCode == SubStatusCodes.Unknown)
@@ -357,6 +361,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                         request.Properties.TryGetValue(HttpRequestRegionNameProperty, out regionName))
                 {
                     this.TraceSummary.AddRegionContacted(Convert.ToString(regionName), locationEndpoint);
+                    this.TraceSummary.HedgingDetectionState?.AppendResponded(Convert.ToString(regionName));
                 }
 
                 this.shallowCopyOfHttpResponseStatistics = null;
@@ -388,6 +393,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                         request.Properties.TryGetValue(HttpRequestRegionNameProperty, out regionName))
                 {
                     this.TraceSummary.AddRegionContacted(Convert.ToString(regionName), locationEndpoint);
+                    this.TraceSummary.HedgingDetectionState?.AppendResponded(Convert.ToString(regionName));
                 }
 
                 this.shallowCopyOfHttpResponseStatistics = null;

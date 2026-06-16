@@ -79,6 +79,14 @@ namespace Microsoft.Azure.Cosmos
         internal static readonly string HybridSearchQueryPlanOptimizationDisabled = "AZURE_COSMOS_HYBRID_SEARCH_QUERYPLAN_OPTIMIZATION_DISABLED";
 
         /// <summary>
+        /// A read-only string containing the environment variable name for enabling hub region processing for read requests.
+        /// When enabled (default), the SDK attaches a hub region header to read requests that encounter repeated 404/1002
+        /// (ReadSessionNotAvailable) errors, allowing the hub region to process the request directly. When disabled, the
+        /// SDK falls back to the original retry behavior without hub region header attachment.
+        /// </summary>
+        internal static readonly string HubRegionProcessingEnabled = "AZURE_COSMOS_HUB_REGION_PROCESSING_ENABLED";
+
+        /// <summary>
         /// Environment variable name to enable distributed query gateway mode.
         /// </summary>
         internal static readonly string DistributedQueryGatewayModeEnabled = "AZURE_COSMOS_DISTRIBUTED_QUERY_GATEWAY_ENABLED";
@@ -425,14 +433,17 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Gets the boolean value indicating if length-aware range comparator is enabled.
-        /// Default: true for preview , false for GA.
+        /// Default: true for GA and Preview builds, false for INTERNAL builds.
+        /// Can be overridden via the AZURE_COSMOS_USE_LENGTH_AWARE_RANGE_COMPARATOR environment variable.
+        /// Setting the environment variable to false disables length-aware range comparator across all
+        /// usage sites (TryCombine, QueryRangeUtils, PartitionRoutingHelper).
         /// </summary>
         /// <returns>A boolean flag indicating if length-aware range comparator is enabled.</returns>
         public static bool IsLengthAwareRangeComparatorEnabled()
         {
-            bool defaultValue = false;
-#if PREVIEW && !INTERNAL
-            defaultValue = true;
+            bool defaultValue = true;
+#if INTERNAL
+            defaultValue = false;
 #endif
             return ConfigurationManager
                     .GetEnvironmentVariable(
@@ -455,6 +466,23 @@ namespace Microsoft.Azure.Cosmos
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.TcpDnsDotSuffixEnabled,
                         defaultValue: false);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating if hub region processing is enabled for read requests
+        /// encountering repeated 404/1002 (ReadSessionNotAvailable) errors on single-master accounts.
+        /// When enabled, the SDK attaches a hub region header to route read requests to the hub region
+        /// for authoritative partition resolution. When disabled, the SDK falls back to the original
+        /// retry behavior (route to write region and give up after two 404/1002 attempts).
+        /// Default: true.
+        /// </summary>
+        /// <returns>A boolean flag indicating if hub region processing is enabled.</returns>
+        public static bool IsHubRegionProcessingEnabled()
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.HubRegionProcessingEnabled,
+                        defaultValue: true);
         }
     }
 }

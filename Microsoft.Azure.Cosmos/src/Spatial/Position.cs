@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     using System.Linq;
     using System.Runtime.Serialization;
     using Converters;
+    using Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -23,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// </summary>
     [DataContract]
     [JsonConverter(typeof(PositionJsonConverter))]
+    [System.Text.Json.Serialization.JsonConverter(typeof(PositionSTJConverter))]
     public sealed class Position : IEquatable<Position>
     {
         /// <summary>
@@ -61,6 +63,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
             {
                 this.Coordinates = new ReadOnlyCollection<double>(new[] { longitude, latitude });
             }
+
         }
 
         /// <summary>

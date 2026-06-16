@@ -406,6 +406,18 @@ namespace Microsoft.Azure.Cosmos
         ReadConsistencyStrategy? ReadConsistencyStrategy { get; set; }
 
         /// <summary>
+        /// Gets or sets the client-wide default <see cref="ICosmosEmbeddingGenerator"/> used to generate
+        /// query-time vector embeddings for hybrid and vector-search queries.
+        /// </summary>
+        [JsonIgnore]
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        ICosmosEmbeddingGenerator EmbeddingGenerator { get; set; }
+
+        /// <summary>
         /// Sets the priority level for requests created using cosmos client.
         /// </summary>
         /// <remarks>
@@ -555,16 +567,14 @@ namespace Microsoft.Azure.Cosmos
         /// Range.LengthAwareMinComparer/LengthAwareMaxComparer.
         /// Setting the value to false will disable length-aware range comparator and switch to using the regular 
         /// Range.MinComparer/MaxComparer.
+        /// Can be controlled via the AZURE_COSMOS_USE_LENGTH_AWARE_RANGE_COMPARATOR environment variable.
         /// </summary>
         /// <value>
-        /// The default value is true.
+        /// Defaults to true (false for INTERNAL builds). Reads from ConfigurationManager which
+        /// respects the AZURE_COSMOS_USE_LENGTH_AWARE_RANGE_COMPARATOR environment variable.
         /// </value>
         internal bool UseLengthAwareRangeComparer { get; set; } =
-#if !INTERNAL
-            true;
-#else
-            false;
-#endif
+            ConfigurationManager.IsLengthAwareRangeComparatorEnabled();
 
         /// <summary>
         /// (Direct/TCP) Controls the amount of idle time after which unused connections are closed.
@@ -593,6 +603,27 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         /// <remarks>
         /// When the time elapses, the attempt is cancelled and an error is returned. Longer timeouts will delay retries and failures.
+        /// <para>
+        /// The supplied <see cref="TimeSpan"/> is preserved unchanged on this property. At the
+        /// transport boundary the value is converted to whole seconds:
+        /// </para>
+        /// <list type="bullet">
+        /// <item>
+        /// Values in [<see cref="TimeSpan.Zero"/>, 1 second) are treated as 0, causing the
+        /// configured <see cref="RequestTimeout"/> to be used as the open-connection timeout.
+        /// </item>
+        /// <item>
+        /// Values greater than or equal to 1 second are rounded up to the nearest whole second
+        /// (for example, 2.3 seconds becomes 3 seconds).
+        /// </item>
+        /// </list>
+        /// Negative values are not recommended. They are preserved on this property for backward
+        /// compatibility and will cause <c>DocumentClient</c> to emit a warning trace at client
+        /// construction time. At the transport boundary they are converted to whole seconds via
+        /// truncation (e.g. −5.7 s → −5) and ultimately reach the
+        /// <c>TransportClient.Options.OpenTimeout</c> getter, which returns
+        /// <see cref="RequestTimeout"/> for any value that is not greater than
+        /// <see cref="TimeSpan.Zero"/>.
         /// </remarks>
         public TimeSpan? OpenTcpConnectionTimeout
         {
@@ -631,7 +662,7 @@ namespace Microsoft.Azure.Cosmos
         /// Together with MaxRequestsPerTcpConnection, this setting limits the number of requests that are simultaneously sent to a single Cosmos DB back-end(MaxRequestsPerTcpConnection x MaxTcpConnectionPerEndpoint).
         /// </summary>
         /// <value>
-        /// The default value is 65,535. Value must be greater than or equal to 16.
+        /// The default value is 65,535. Any positive value is accepted, allowing applications to constrain the connection pool size when needed; values of 16 or greater are recommended.
         /// </value>
         public int? MaxTcpConnectionsPerEndpoint
         {

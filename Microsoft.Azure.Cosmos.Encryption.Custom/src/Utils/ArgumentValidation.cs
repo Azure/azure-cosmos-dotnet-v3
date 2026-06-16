@@ -172,5 +172,51 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 #endif
         }
+
+        /// <summary>
+        /// Throws an <see cref="ArgumentOutOfRangeException"/> if <paramref name="value"/> is negative.
+        /// </summary>
+        /// <param name="value">The argument to validate as non-negative.</param>
+        /// <param name="paramName">The name of the parameter with which <paramref name="value"/> corresponds.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> is negative.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DebuggerStepThrough]
+        public static void ThrowIfNegative(
+            TimeSpan value,
+#if NET6_0_OR_GREATER
+            [CallerArgumentExpression(nameof(value))] string paramName = null)
+#else
+            string paramName = null)
+#endif
+        {
+            if (value < TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(paramName, value, $"'{paramName}' must be a non-negative value.");
+            }
+        }
+
+        /// <summary>
+        /// Throws an <see cref="ArgumentOutOfRangeException"/> if <paramref name="value"/> is greater than or equal to <paramref name="other"/>.
+        /// </summary>
+        /// <param name="value">The argument to validate.</param>
+        /// <param name="other">The value to compare with <paramref name="value"/>.</param>
+        /// <param name="paramName">The name of the parameter with which <paramref name="value"/> corresponds.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> is greater than or equal to <paramref name="other"/>.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DebuggerStepThrough]
+        public static void ThrowIfGreaterThanOrEqual(
+            TimeSpan value,
+            TimeSpan other,
+#if NET6_0_OR_GREATER
+            [CallerArgumentExpression(nameof(value))] string paramName = null)
+#else
+            string paramName = null)
+#endif
+        {
+            if (value >= other)
+            {
+                throw new ArgumentOutOfRangeException(paramName, value, $"'{paramName}' ({value}) must be less than {other}.");
+            }
+        }
     }
 }
