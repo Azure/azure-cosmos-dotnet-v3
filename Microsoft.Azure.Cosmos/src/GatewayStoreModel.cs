@@ -86,9 +86,12 @@ namespace Microsoft.Azure.Cosmos
                     request.RequestContext.RegionName = regionName;
                 }
 
-                // Per partition automatic failover / circuit breaker resolves the PKR up-front
-                // so that GlobalPartitionEndpointManager can pin the override location.
-                if (this.IsPartitionLevelFailoverEnabled()
+                // The PartitionKeyRange is resolved up-front when either per partition automatic
+                // failover / circuit breaker needs it to pin the override location, or a subclass
+                // (e.g. ThinClientStoreModel) always needs it for its own dispatch decision. The
+                // location override is only applied when PPAF / PPCB is actually enabled.
+                bool isPartitionLevelFailoverEnabled = this.IsPartitionLevelFailoverEnabled();
+                if (this.ShouldResolvePartitionKeyRange()
                     && !ReplicatedResourceClient.IsMasterResource(request.ResourceType)
                     && (request.ResourceType.IsPartitioned() || request.ResourceType == ResourceType.StoredProcedure))
                 {
@@ -100,18 +103,18 @@ namespace Microsoft.Azure.Cosmos
                         refreshCache: false);
 
                     request.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
-                    this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request, false);
+
+                    if (isPartitionLevelFailoverEnabled)
+                    {
+                        this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request, false);
+                    }
                 }
 
                 Uri physicalAddress = GatewayStoreClient.IsFeedRequest(request.OperationType)
                         ? this.GetFeedUri(request)
                         : this.GetEntityUri(request);
 
-                response = await this.gatewayStoreClient.InvokeAsync(
-                    request,
-                    request.ResourceType,
-                    physicalAddress,
-                    cancellationToken);
+                response = await this.DispatchAsync(request, physicalAddress, cancellationToken);
             }
             catch (DocumentClientException exception)
             {
@@ -127,6 +130,36 @@ namespace Microsoft.Azure.Cosmos
 
             await this.CaptureSessionTokenAndHandleSplitAsync(response.StatusCode, response.SubStatusCode, request, response.Headers);
             return response;
+        }
+
+        /// <summary>
+        /// Determines whether the <see cref="PartitionKeyRange"/> should be resolved up-front for
+        /// the request. The base gateway path only needs it when per partition automatic failover /
+        /// circuit breaker is enabled. Subclasses (e.g. <see cref="ThinClientStoreModel"/>) override
+        /// this to always resolve it when they need the PKR for their own dispatch.
+        /// </summary>
+        protected virtual bool ShouldResolvePartitionKeyRange()
+        {
+            return this.IsPartitionLevelFailoverEnabled();
+        }
+
+        /// <summary>
+        /// Dispatches the request to the underlying transport. The base implementation sends the
+        /// request through the gateway HTTP path. Subclasses (e.g. <see cref="ThinClientStoreModel"/>)
+        /// override this seam to route to a different transport, while reusing the shared
+        /// session-token, partition-key-range and split-handling logic in
+        /// <see cref="ProcessMessageAsync"/>.
+        /// </summary>
+        protected virtual Task<DocumentServiceResponse> DispatchAsync(
+            DocumentServiceRequest request,
+            Uri physicalAddress,
+            CancellationToken cancellationToken)
+        {
+            return this.gatewayStoreClient.InvokeAsync(
+                request,
+                request.ResourceType,
+                physicalAddress,
+                cancellationToken);
         }
 
         public virtual async Task<AccountProperties> GetDatabaseAccountAsync(Func<ValueTask<HttpRequestMessage>> requestMessage,

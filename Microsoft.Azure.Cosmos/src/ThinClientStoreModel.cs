@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -57,111 +56,50 @@ namespace Microsoft.Azure.Cosmos
                 chaosInterceptor);
         }
 
-        public override async Task<DocumentServiceResponse> ProcessMessageAsync(
-            DocumentServiceRequest request,
-            CancellationToken cancellationToken = default)
+        /// <summary>
+        /// The thin-client path always needs the resolved <see cref="PartitionKeyRange"/> so that
+        /// the proxy request can be populated with ProxyStartEpk / ProxyEndEpk, and so the gateway
+        /// fall-back still has the PKR available for split detection in
+        /// <see cref="GatewayStoreModel.CaptureSessionTokenAndHandleSplitAsync"/>. It is therefore
+        /// resolved for every non-master, partitioned (or stored-procedure) request, regardless of
+        /// whether per partition automatic failover / circuit breaker is enabled.
+        /// </summary>
+        protected override bool ShouldResolvePartitionKeyRange()
         {
-            // ThinClientStoreModel pre-resolves the PartitionKeyRange for all
-            // thin-client-enabled, non-master, partitioned (or stored-procedure) requests so that:
-            //   * the thin-client invoke can populate ProxyStartEpk / ProxyEndEpk on the proxy
-            //     request,
-            //   * the gateway fall-back still has the resolved PKR available for split
-            //     detection in CaptureSessionTokenAndHandleSplitAsync.
-            // The dispatch decision is taken AFTER PKR resolution: routable requests go through
-            // the thin-client store client, the rest fall back to the gateway store client on the
-            // same instance — exactly matching the prior merged behavior.
-            DocumentServiceResponse response;
+            return true;
+        }
 
-            await GatewayStoreModel.ApplySessionTokenAsync(
+        /// <summary>
+        /// Routes the request through the thin-client store client when it is currently
+        /// thin-client-routable, otherwise transparently falls back to the inherited gateway HTTP
+        /// path on the same instance. The decision is taken per request so the model can switch
+        /// direction (thin-client ↔ gateway) as soon as the next <see cref="LocationCache"/> refresh
+        /// updates the availability signals, without requiring a client restart.
+        /// </summary>
+        protected override async Task<DocumentServiceResponse> DispatchAsync(
+            DocumentServiceRequest request,
+            Uri physicalAddress,
+            CancellationToken cancellationToken)
+        {
+            bool canUseThinClient = this.thinClientStoreClient != null
+                && ThinClientStoreModel.IsThinClientRoutable(this.endpointManager, request);
+
+            if (!canUseThinClient)
+            {
+                return await base.DispatchAsync(request, physicalAddress, cancellationToken);
+            }
+
+            Uri thinClientEndpoint = this.endpointManager.ResolveThinClientEndpoint(request);
+            AccountProperties account = await this.GetDatabaseAccountPropertiesAsync();
+
+            return await this.thinClientStoreClient.InvokeAsync(
                 request,
-                this.defaultConsistencyLevel,
-                this.sessionContainer,
-                this.partitionKeyRangeCache,
+                request.ResourceType,
+                physicalAddress,
+                thinClientEndpoint,
+                account.Id,
                 this.clientCollectionCache,
-                this.endpointManager);
-            try
-            {
-                if (request.ResourceType.Equals(ResourceType.Document) &&
-                    this.endpointManager.TryGetLocationForGatewayDiagnostics(
-                        request.RequestContext.LocationEndpointToRoute,
-                        out string regionName))
-                {
-                    request.RequestContext.RegionName = regionName;
-                }
-
-                bool isPPAFEnabled = this.IsPartitionLevelFailoverEnabled();
-                if (!ReplicatedResourceClient.IsMasterResource(request.ResourceType)
-                    && (request.ResourceType.IsPartitioned() || request.ResourceType == ResourceType.StoredProcedure))
-                {
-                    (bool isSuccess, PartitionKeyRange partitionKeyRange) = await GatewayStoreModel.TryResolvePartitionKeyRangeAsync(
-                        request: request,
-                        sessionContainer: this.sessionContainer,
-                        partitionKeyRangeCache: this.partitionKeyRangeCache,
-                        clientCollectionCache: this.clientCollectionCache,
-                        refreshCache: false);
-
-                    request.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
-
-                    if (isPPAFEnabled)
-                    {
-                        this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request, false);
-                    }
-                }
-
-                bool canUseThinClient = this.thinClientStoreClient != null
-                    && ThinClientStoreModel.IsThinClientRoutable(this.endpointManager, request);
-
-                Uri physicalAddress = ThinClientStoreClient.IsFeedRequest(request.OperationType)
-                    ? this.GetFeedUri(request)
-                    : this.GetEntityUri(request);
-
-                if (canUseThinClient)
-                {
-                    Uri thinClientEndpoint = this.endpointManager.ResolveThinClientEndpoint(request);
-                    AccountProperties account = await this.GetDatabaseAccountPropertiesAsync();
-
-                    response = await this.thinClientStoreClient.InvokeAsync(
-                        request,
-                        request.ResourceType,
-                        physicalAddress,
-                        thinClientEndpoint,
-                        account.Id,
-                        this.clientCollectionCache,
-                        cancellationToken);
-                }
-                else
-                {
-                    response = await this.gatewayStoreClient.InvokeAsync(
-                        request,
-                        request.ResourceType,
-                        physicalAddress,
-                        cancellationToken);
-                }
-            }
-            catch (DocumentClientException exception)
-            {
-                if ((!ReplicatedResourceClient.IsMasterResource(request.ResourceType)) &&
-                    (exception.StatusCode == HttpStatusCode.PreconditionFailed
-                     || exception.StatusCode == HttpStatusCode.Conflict
-                     || (exception.StatusCode == HttpStatusCode.NotFound && exception.GetSubStatus() != SubStatusCodes.ReadSessionNotAvailable)))
-                {
-                    await this.CaptureSessionTokenAndHandleSplitAsync(
-                        exception.StatusCode,
-                        exception.GetSubStatus(),
-                        request,
-                        exception.Headers);
-                }
-
-                throw;
-            }
-
-            await this.CaptureSessionTokenAndHandleSplitAsync(
-                response.StatusCode,
-                response.SubStatusCode,
-                request,
-                response.Headers);
-
-            return response;
+                cancellationToken);
         }
 
         internal static bool IsOperationSupportedByThinClient(DocumentServiceRequest request)
