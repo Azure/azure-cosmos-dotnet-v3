@@ -107,12 +107,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [TestCategory("Security")]
         public void PooledMemoryStream_Finalizer_ReturnsAndClearsBufferWhenNotDisposed()
         {
-            // SECURITY + RELIABILITY: a consumer that forgets to dispose (e.g. abandons a streaming
-            // DecryptableItem page without disposing it) must not permanently lose the rented pool
-            // buffer or leave decrypted plaintext lingering in it. The finalizer is the safety net:
-            // when the undisposed stream becomes unreachable and is finalized, it returns AND clears
-            // the buffer. We capture the buffer reference, drop the stream without disposing, force
-            // finalization, and assert the buffer was zeroed.
+            // A consumer that forgets to dispose (e.g. abandons a streaming page) must not permanently lose
+            // the rented buffer or leave plaintext in it. The finalizer is the safety net: we capture the
+            // buffer, drop the stream undisposed, force finalization, and assert it was zeroed.
             byte[] capturedBuffer = WriteSensitiveAndCaptureBufferWithoutDisposing(out byte[] sensitive);
 
             bool anyNonZeroBefore = false;

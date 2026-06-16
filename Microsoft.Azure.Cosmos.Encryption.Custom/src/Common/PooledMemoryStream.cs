@@ -494,11 +494,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         protected override void Dispose(bool disposing)
         {
-            // Return the rented buffer on BOTH the normal disposal path (disposing == true) and the
-            // finalizer path (disposing == false). Touching only the rented byte[] and the static
-            // ArrayPool is finalizer-safe — neither has its own finalizer or depends on other managed
-            // state that may already be reclaimed. The `disposed` guard + GC.SuppressFinalize on proper
-            // disposal prevents any double-return.
+            // Returns the buffer on both the normal (disposing) and finalizer paths. Touching only the
+            // rented byte[] and the static ArrayPool is finalizer-safe; the `disposed` guard plus
+            // GC.SuppressFinalize on proper disposal prevents a double-return.
             if (!this.disposed)
             {
                 if (this.buffer != null && this.buffer.Length > 0)

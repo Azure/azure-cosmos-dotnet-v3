@@ -146,14 +146,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
         private static void OverwriteStreamInPlace(Stream destination, PooledMemoryStream decrypted)
         {
-            // The decrypted payload is already fully materialized in the pooled buffer before we touch
-            // the destination. SetLength(0) destroys the original ciphertext, so the refill must not
-            // contain an interruptible gap: a cancellation (or partial async write) between the truncate
-            // and the rewrite would leave the response body empty or half-written with no way to recover
-            // the original encrypted bytes. We therefore copy back synchronously — over the in-memory,
-            // seekable destination guaranteed by the CanRead/CanWrite/CanSeek check at method entry this
-            // is a memcpy that cannot be cancelled mid-way, eliminating the truncate-then-fail corruption
-            // window. Cancellation is already observed during the decrypt loop that precedes this call.
+            // SetLength(0) destroys the original ciphertext, so the refill must be uninterruptible: a
+            // cancellation or partial write between the truncate and the rewrite would corrupt the response
+            // body irrecoverably. The decrypted payload is already materialized in the pooled buffer, so we
+            // copy it back synchronously (a memcpy that cannot be cancelled mid-way). Cancellation is still
+            // observed during the decrypt loop that precedes this call.
             destination.Position = 0;
             destination.SetLength(0);
 
@@ -208,14 +205,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             using MemoryStream objectInput = new (objectBytes, 0, length, writable: false);
             decryptedObjectBuffer.Clear();
 
-            // The per-object DecryptionContext returned here is intentionally not aggregated or
-            // surfaced: the in-place feed/array decrypt path returns only the decrypted Stream to its
-            // callers (matching the Newtonsoft feed path), so a page-level decryption summary has no
-            // consumer. Decryption *failures* propagate as exceptions and are unaffected. The per-item
-            // DecryptionContext is still surfaced on the point-read / lazy DecryptableItem path, which
-            // uses DecryptStreamAsync directly. If a caller-facing per-page summary is ever needed it
-            // should be returned to the caller (who already holds the plaintext), not emitted to
-            // telemetry, to avoid leaking the encryption schema and key ids.
+            // The per-object DecryptionContext is intentionally discarded: the feed/array path surfaces
+            // only the decrypted stream to callers (like the Newtonsoft path), so a page-level summary has
+            // no consumer. Failures still propagate as exceptions, and the per-item context is still
+            // surfaced on the point-read / lazy DecryptableItem path. A future per-page summary should be
+            // returned to the caller (who already holds the plaintext), never emitted to telemetry, to
+            // avoid leaking the encryption schema and key ids.
             _ = await this.DecryptStreamAsync(
                 objectInput,
                 decryptedObjectBuffer,

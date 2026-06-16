@@ -24,16 +24,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [DataRow("{\"Documents\":[")]  // truncated immediately after array open
         public async Task SplitIntoSubstreamsAsync_TruncatedInput_ThrowsCleanJsonExceptionWithoutBufferGrowth(string payload)
         {
-            // Contract: truncated / malformed feed envelopes surface as a clean JsonException, NOT as a
-            // misleading "maximum buffer size" InvalidOperationException after wasteful buffer doublings.
-            //
-            // The strict final-block Utf8JsonReader inside ProcessChunk throws a JsonReaderException
-            // (which derives from JsonException) on the leftover the moment the stream is exhausted, so the
-            // failure is fast and well-described. This test pins that contract so any future change that
-            // lets truncated input degrade into the 64 MiB-growth / buffer-size-error path is caught.
-            //
-            // Note: we assert "is JsonException" (base-or-derived) rather than the exact type, because the
-            // concrete type (JsonReaderException) is a System.Text.Json implementation detail.
+            // Contract: truncated/malformed feed envelopes must surface as a clean JsonException, not as a
+            // misleading "maximum buffer size" error after wasteful buffer doublings. The strict final-block
+            // Utf8JsonReader throws JsonReaderException (a JsonException) the moment the stream is exhausted;
+            // this test pins that so a future change can't let truncated input degrade into the growth path.
+            // We assert "is JsonException" (base-or-derived) since JsonReaderException is an STJ detail.
             using MemoryStream inputStream = new (Encoding.UTF8.GetBytes(payload));
 
             Exception caught = null;

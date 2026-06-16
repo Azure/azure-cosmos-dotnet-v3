@@ -60,12 +60,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 }
                 catch
                 {
-                    // Symmetric to the orphan-cleanup inside ConvertResponseToDecryptableItemsStreamAsync:
-                    // once the items are constructed and returned to us, ownership doesn't transfer to a
-                    // disposable response wrapper until CreateResponse succeeds. If CreateResponse throws
-                    // (EnsureSuccessStatusCode mid-construction, OOM allocating the wrapper, ...), every
-                    // StreamDecryptableItem in `resource` still holds a rented ArrayPool<byte> buffer that
-                    // nothing will free except GC. Drain best-effort before rethrowing the original cause.
+                    // Until CreateResponse takes ownership, every StreamDecryptableItem in `resource` still
+                    // holds a rented ArrayPool buffer. If CreateResponse throws (e.g. EnsureSuccessStatusCode,
+                    // OOM), drain them best-effort before rethrowing so the buffers are not leaked. Mirrors
+                    // the orphan cleanup inside ConvertResponseToDecryptableItemsStreamAsync.
                     if (resource != null)
                     {
                         foreach (T item in resource)
@@ -78,8 +76,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                                 }
                                 catch
                                 {
-                                    // Best-effort cleanup: swallow per-item disposal failures so we still
-                                    // attempt to drain the remaining orphans and re-throw the original cause.
+                                    // Swallow per-item disposal failures so the remaining orphans are still
+                                    // drained and the original cause is rethrown.
                                 }
                             }
                         }

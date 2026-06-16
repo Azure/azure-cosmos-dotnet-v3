@@ -246,12 +246,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [TestMethod]
         public async Task GetItemAsync_WhenDecryptionFailsThenCalledAgain_SurfacesObjectDisposedException()
         {
-            // Regression: after a failed decrypt the catch nulled `contentStream` but left both
-            // `isDisposed` and `isDecrypted` at false. A retry would call DecryptContentStreamAsync
-            // with a null content stream -> NRE inside the MDE adapter -> second EncryptionException
-            // with empty DataEncryptionKeyId and empty EncryptedContent, masking the original failure.
-            // Fix: set isDisposed=true before throwing in the catch so the retry surfaces a clean
-            // ObjectDisposedException.
+            // Regression: after a failed decrypt the catch nulled contentStream but left isDisposed/
+            // isDecrypted false, so a retry NRE'd on the null stream and produced a second EncryptionException
+            // with empty fields, masking the original. A retry must now surface ObjectDisposedException.
             TestDoc originalDoc = TestDoc.Create();
             Stream encryptedStream = await CreateEncryptedStreamAsync(originalDoc, mockEncryptor.Object);
 
@@ -274,14 +271,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [TestMethod]
         public async Task GetItemAsync_StreamMode_WithMdeAlgorithm_TakesGenuineMdeStreamPath()
         {
-            // Coverage regression: every existing `Stream`-variant exception/decrypt test in this file
-            // encrypts with the legacy `AEAes256CbcHmacSha256Randomized` algorithm, which causes
-            // SystemTextJsonStreamAdapter.DecryptAsync to throw NotSupportedException and routes the
-            // request through the Newtonsoft legacy-fallback (EncryptionProcessor.DecryptAsync with
-            // legacyFallback: true). Net effect: the MDE stream-decrypt path is never actually
-            // exercised by the StreamDecryptableItem test class. This test plugs that gap by encrypting
-            // with the MDE algorithm and asserting via the diagnostics-context selection scope that
-            // the JsonProcessor.Stream path was the one taken (and that the document round-trips).
+            // Coverage gap: the other Stream-variant tests encrypt with the legacy algorithm, which makes
+            // SystemTextJsonStreamAdapter.DecryptAsync throw NotSupportedException and fall back to Newtonsoft
+            // - so the MDE stream-decrypt path is never actually exercised. This encrypts with MDE and asserts
+            // (via the diagnostics selection scope) that the JsonProcessor.Stream branch was taken, not the
+            // Newtonsoft fallback, and that the document round-trips.
             TestDoc originalDoc = TestDoc.Create();
 
             EncryptionOptions encryptionOptions = new ()

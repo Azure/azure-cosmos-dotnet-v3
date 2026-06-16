@@ -85,11 +85,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 }
                 catch (Exception exception)
                 {
-                    // Best-effort DEK ID extraction for the diagnostic EncryptionException, in priority order:
-                    //   1. If decryption succeeded and serialization later threw, the DEK ID is already in the context.
-                    //   2. Else if contentStream is still readable/seekable, parse it out of _ei.
-                    //   3. Else fall back to string.Empty (matches the prior behavior and avoids re-throwing inside the catch).
-                    // Falls back to string.Empty rather than null because EncryptionException's ctor rejects null DataEncryptionKeyId.
+                    // Best-effort DEK id for the diagnostic exception: prefer the in-flight context (decrypt
+                    // succeeded, serializer threw), else parse it from the on-stream _ei, else string.Empty
+                    // (EncryptionException's ctor rejects null).
                     string dataEncryptionKeyId = decryptionContextForDiagnostics?.DecryptionInfoList?.FirstOrDefault()?.DataEncryptionKeyId
                         ?? await this.TryReadDataEncryptionKeyIdAsync().ConfigureAwait(false)
                         ?? string.Empty;
@@ -98,11 +96,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
                     await this.DisposeContentStreamAsync().ConfigureAwait(false);
 
-                    // Mark the item as disposed before throwing so a retry surfaces a clean
-                    // ObjectDisposedException rather than NRE-wrapping the original failure: the
-                    // content stream is gone, the cached item was never populated, and decryption
-                    // cannot be re-attempted. Setting this flag here keeps the state machine self-
-                    // consistent for callers that retry on EncryptionException.
+                    // Mark disposed before throwing: the content stream is gone and decryption cannot be
+                    // retried, so a second call must surface ObjectDisposedException rather than NRE on the
+                    // nulled stream and mask the original failure.
                     this.isDisposed = true;
 
                     throw new EncryptionException(dataEncryptionKeyId: dataEncryptionKeyId, encryptedContent: encryptedContent ?? string.Empty, exception);

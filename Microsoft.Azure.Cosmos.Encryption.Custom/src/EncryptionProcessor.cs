@@ -427,11 +427,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
             catch
             {
-                // If the splitter throws after yielding one or more documents (e.g. cancellation,
-                // malformed/truncated payload, oversized token), every StreamDecryptableItem already
-                // appended to the local list owns a pooled PooledMemoryStream that the caller will
-                // never see and therefore cannot dispose. Drain the partial list before re-throwing
-                // so those rented ArrayPool buffers are returned (and cleared of any plaintext residue).
+                // If the splitter throws after yielding one or more documents, every StreamDecryptableItem
+                // already in the list owns a pooled buffer the caller will never see (so cannot dispose).
+                // Drain the partial list before re-throwing so those buffers are returned and cleared.
                 foreach (DecryptableItem partialItem in decryptableItems)
                 {
                     if (partialItem is IAsyncDisposable asyncDisposable)
@@ -442,8 +440,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         }
                         catch
                         {
-                            // Best-effort cleanup: swallow per-item disposal failures so we still
-                            // attempt to drain the remaining orphans and re-throw the original cause.
+                            // Swallow per-item disposal failures so the remaining orphans are still
+                            // drained and the original cause is rethrown.
                         }
                     }
                 }

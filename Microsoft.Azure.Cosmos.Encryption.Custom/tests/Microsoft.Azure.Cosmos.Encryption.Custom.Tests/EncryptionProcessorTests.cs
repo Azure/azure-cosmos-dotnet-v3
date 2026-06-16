@@ -231,15 +231,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [TestMethod]
         public async Task ConvertResponseToDecryptableItemsAsync_Stream_WhenSplitterThrowsMidFeed_PreservesOriginalException()
         {
-            // Regression coverage for the orphan-cleanup path added to
-            // EncryptionProcessor.ConvertResponseToDecryptableItemsStreamAsync.
-            //
-            // Scenario: the underlying transport yields a partial Cosmos feed payload (one complete
-            // document, then errors). Before the fix, the splitter would yield a pooled stream that
-            // was wrapped into a StreamDecryptableItem held only in the method's local list; when the
-            // splitter then threw, the partial list (and its rented ArrayPool buffers) was abandoned.
-            // The fix drains that list inside a catch block and rethrows the original exception so
-            // the caller still sees the underlying transport failure (not a wrapped/swallowed one).
+            // Regression: if the splitter throws after yielding one or more documents (here, a partial
+            // feed: one complete document then a transport error), the StreamDecryptableItems held in the
+            // method's local list must be drained and the original exception rethrown unchanged - rather
+            // than abandoning the list (and its pooled buffers) or wrapping/swallowing the failure.
             byte[] partialFeed = System.Text.Encoding.UTF8.GetBytes("{\"_count\":2,\"Documents\":[{\"id\":\"doc1\",\"pk\":\"pk\"},");
             IOException sentinel = new ("simulated mid-feed transport error");
 
