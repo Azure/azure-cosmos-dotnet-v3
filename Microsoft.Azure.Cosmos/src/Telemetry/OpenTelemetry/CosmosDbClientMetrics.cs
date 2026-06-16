@@ -228,8 +228,12 @@ namespace Microsoft.Azure.Cosmos
         /// Metadata hedging metrics. Emitted by <c>MetadataHedgingStrategy</c>
         /// for PPAF cold-start cross-region hedging — see
         /// <c>docs/PPAF_Metadata_Hedging_ColdStart_Design.md</c> §9.1.1.
+        /// Internal in Phase 1: there is no public configuration or telemetry
+        /// surface for metadata hedging yet, so this is not exposed even in
+        /// preview builds (the meter is still observable by its literal name
+        /// <c>Azure.Cosmos.Client.MetadataHedging</c>).
         /// </summary>
-        public static class MetadataHedgingMetrics
+        internal static class MetadataHedgingMetrics
         {
             /// <summary>
             /// The name of the metadata hedging meter.

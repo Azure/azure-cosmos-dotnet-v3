@@ -1021,7 +1021,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             RunWithMetadataHedgingEnvVar(envValue, () =>
             {
-                bool? resolved = Microsoft.Azure.Cosmos.ConfigurationManager.GetMetadataHedgingForColdStartOptIn(clientOption: null);
+                bool? resolved = Microsoft.Azure.Cosmos.ConfigurationManager.GetMetadataHedgingForColdStartOptIn();
                 Assert.AreEqual(expected, resolved);
             });
         }
@@ -1032,7 +1032,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             RunWithMetadataHedgingEnvVar(null, () =>
             {
-                Assert.IsNull(Microsoft.Azure.Cosmos.ConfigurationManager.GetMetadataHedgingForColdStartOptIn(clientOption: null));
+                Assert.IsNull(Microsoft.Azure.Cosmos.ConfigurationManager.GetMetadataHedgingForColdStartOptIn());
             });
         }
 
@@ -1042,21 +1042,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             RunWithMetadataHedgingEnvVar("not-a-bool", () =>
             {
-                Assert.IsNull(Microsoft.Azure.Cosmos.ConfigurationManager.GetMetadataHedgingForColdStartOptIn(clientOption: null));
-            });
-        }
-
-        [TestMethod]
-        [Owner("dkunda")]
-        [DataRow(true)]
-        [DataRow(false)]
-        public void GetMetadataHedgingForColdStartOptIn_ExplicitOption_AlwaysWinsOverEnv(bool option)
-        {
-            // The CosmosClientOptions value, when set, takes precedence over the environment
-            // variable regardless of what the variable says.
-            RunWithMetadataHedgingEnvVar(option ? "false" : "true", () =>
-            {
-                Assert.AreEqual(option, Microsoft.Azure.Cosmos.ConfigurationManager.GetMetadataHedgingForColdStartOptIn(clientOption: option));
+                Assert.IsNull(Microsoft.Azure.Cosmos.ConfigurationManager.GetMetadataHedgingForColdStartOptIn());
             });
         }
 

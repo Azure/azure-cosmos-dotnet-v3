@@ -81,10 +81,10 @@ namespace Microsoft.Azure.Cosmos.Routing
         internal int PerClientConcurrencyBudget => this.perClientConcurrencyBudget;
 
         /// <summary>
-        /// Resolves the tri-state
-        /// <see cref="CosmosClientOptions.EnableMetadataHedgingForColdStart"/>
-        /// to a concrete opt-in <see cref="bool"/>. When the customer leaves
-        /// the property <c>null</c>, cold-start metadata hedging follows the
+        /// Resolves the tri-state cold-start metadata hedging opt-in (resolved
+        /// from the <c>AZURE_COSMOS_METADATA_HEDGING_FOR_COLDSTART_ENABLED</c>
+        /// environment variable) to a concrete opt-in <see cref="bool"/>. When
+        /// the opt-in is left <c>null</c>, cold-start metadata hedging follows the
         /// account's PPAF (Per-Partition Automatic Failover) state — enabled by
         /// default when PPAF is enabled, disabled otherwise. An explicit
         /// <c>true</c> enables hedging even when PPAF is disabled, and an
@@ -97,13 +97,14 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         /// <summary>
-        /// Builds the strategy from the customer-supplied
-        /// <see cref="CosmosClientOptions.EnableMetadataHedgingForColdStart"/>
-        /// tri-state. Returns <c>null</c> only when the customer explicitly
-        /// disabled hedging (<c>false</c>). When the property is <c>true</c> or
+        /// Builds the strategy from the resolved cold-start metadata hedging
+        /// tri-state opt-in (from the
+        /// <c>AZURE_COSMOS_METADATA_HEDGING_FOR_COLDSTART_ENABLED</c> environment
+        /// variable). Returns <c>null</c> only when hedging is explicitly
+        /// disabled (<c>false</c>). When the opt-in is <c>true</c> or
         /// left <c>null</c> the strategy is created and the per-request
         /// eligibility check resolves the effective opt-in against the live PPAF
-        /// state (a <c>null</c> property follows PPAF; an explicit <c>true</c>
+        /// state (a <c>null</c> opt-in follows PPAF; an explicit <c>true</c>
         /// enables hedging even when PPAF is disabled). The hedge threshold is a
         /// fixed SDK-derived value (<c>FirstAttemptTimeout + 500&#160;ms</c>,
         /// today 1.5&#160;s) and is not customer-configurable. The Gateway
