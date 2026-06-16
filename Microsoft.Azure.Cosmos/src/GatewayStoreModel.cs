@@ -118,13 +118,12 @@ namespace Microsoft.Azure.Cosmos
 
                     if (isPPAFEnabled)
                     {
-                        this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request);
+                        this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request, false);
                     }
                 }
 
-                bool canUseThinClient =
-                    this.thinClientStoreClient != null &&
-                    GatewayStoreModel.IsOperationSupportedByThinClient(request);
+                bool canUseThinClient = this.thinClientStoreClient != null
+                    && IsThinClientRoutable(this.endpointManager, request);
 
                 Uri physicalAddress = ThinClientStoreClient.IsFeedRequest(request.OperationType)
                         ? this.GetFeedUri(request)
@@ -587,6 +586,32 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Returns true if the request is currently eligible for thin-client dispatch:
+        /// the operation type is supported AND the service is still advertising thin-client
+        /// endpoints for the request's direction. When either condition is false the dispatch
+        /// falls back to the regular gateway path on the very next request without a client
+        /// restart.
+        /// </summary>
+        internal static bool IsThinClientRoutable(IGlobalEndpointManager endpointManager, DocumentServiceRequest request)
+        {
+            return IsOperationSupportedByThinClient(request)
+                && (request.IsReadOnlyRequest
+                    ? endpointManager.HasThinClientReadLocations
+                    : endpointManager.HasThinClientWriteLocations);
+        }
+
+        /// <summary>
+        /// Read-direction variant of <see cref="IsThinClientRoutable"/> for failover walks
+        /// (PPCB / PPAF) that traverse thin-client READ endpoints regardless of the original
+        /// request direction.
+        /// </summary>
+        internal static bool IsThinClientReadRoutable(IGlobalEndpointManager endpointManager, DocumentServiceRequest request)
+        {
+            return IsOperationSupportedByThinClient(request)
+                && endpointManager.HasThinClientReadLocations;
         }
 
         /// <summary>
