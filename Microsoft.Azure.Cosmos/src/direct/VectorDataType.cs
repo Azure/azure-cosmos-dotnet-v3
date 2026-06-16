@@ -12,7 +12,13 @@ namespace Microsoft.Azure.Documents
     /// </summary>
     [JsonConverter(typeof(StringEnumConverter))]
     internal enum VectorDataType
-    { 
+    {
+        /// <summary>
+        /// Represent a float16 data type.
+        /// </summary>
+        [EnumMember(Value = Constants.Properties.Float16)]
+        Float16,
+
         /// <summary>
         /// Represent a float32 data type.
         /// </summary>

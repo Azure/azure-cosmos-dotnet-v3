@@ -114,6 +114,13 @@ namespace Microsoft.Azure.Documents
 
         public bool UserRequestSent { get; private set; }
 
+        public static bool IsDNSException(TransportErrorCode errorCode)
+        {
+            return
+                (errorCode == TransportErrorCode.DnsResolutionFailed) ||
+                (errorCode == TransportErrorCode.DnsResolutionTimeout);
+        }
+
         public static bool IsTimeout(TransportErrorCode errorCode)
         {
             return

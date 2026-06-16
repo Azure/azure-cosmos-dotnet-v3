@@ -52,6 +52,7 @@ namespace Microsoft.Azure.Documents
             this.RoleDefinition = 0;
             this.SystemDocument = 0;
             this.PartitionedSystemDocument = 0;
+            this.HistoricalPartitionKeyRange = 0;
             this.EncryptionScope = 0;
         }
 
@@ -243,6 +244,12 @@ namespace Microsoft.Azure.Documents
         }
 
         public ulong PartitionKeyRange
+        {
+            get;
+            private set;
+        }
+
+        public ulong HistoricalPartitionKeyRange
         {
             get;
             private set;
@@ -602,7 +609,7 @@ namespace Microsoft.Azure.Documents
                 if (this.Document > 0 || this.Permission > 0 || this.StoredProcedure > 0 || this.Trigger > 0
                     || this.UserDefinedFunction > 0 || this.Conflict > 0 || this.PartitionKeyRange > 0 || this.Schema > 0
                     || this.UserDefinedType > 0 || this.ClientEncryptionKey > 0 || this.SystemDocument > 0
-                    || this.PartitionedSystemDocument > 0)
+                    || this.PartitionedSystemDocument > 0 || this.HistoricalPartitionKeyRange > 0)
                     len += 8;
                 if (this.Attachment > 0)
                     len += 4;
@@ -667,6 +674,8 @@ namespace Microsoft.Azure.Documents
                     ResourceId.BlockCopy(BitConverter.GetBytes(this.SystemDocument), 0, val, 8, 8);
                 else if (this.PartitionedSystemDocument > 0)
                     ResourceId.BlockCopy(BitConverter.GetBytes(this.PartitionedSystemDocument), 0, val, 8, 8);
+                else if (this.HistoricalPartitionKeyRange > 0)
+                    ResourceId.BlockCopy(BitConverter.GetBytes(this.HistoricalPartitionKeyRange), 0, val, 8, 8);
                 else if (this.UserDefinedType > 0)
                 {
                     ResourceId.BlockCopy(BitConverter.GetBytes(this.UserDefinedType), 0, val, 8, 4);
@@ -836,6 +845,10 @@ namespace Microsoft.Azure.Documents
                     childResourceId.PartitionKeyRange = childId;
                     return childResourceId;
 
+                case ResourceType.HistoricalPartitionKeyRange:
+                    childResourceId.HistoricalPartitionKeyRange = childId;
+                    return childResourceId;
+
                 case ResourceType.Document:
                     childResourceId.Document = childId;
                     return childResourceId;
@@ -921,6 +934,10 @@ namespace Microsoft.Azure.Documents
 
                 case ResourceType.PartitionedSystemDocument:
                     subCollRes[7] = (byte)CollectionChildResourceType.PartitionedSystemDocument << 4;
+                    break;
+
+                case ResourceType.HistoricalPartitionKeyRange:
+                    subCollRes[7] = (byte)CollectionChildResourceType.HistoricalPartitionKeyRange << 4;
                     break;
 
                 default:
@@ -1080,6 +1097,10 @@ namespace Microsoft.Azure.Documents
                             else if ((subCollRes[7] >> 4) == (byte)CollectionChildResourceType.PartitionKeyRange)
                             {
                                 rid.PartitionKeyRange = subCollectionResource;
+                            }
+                            else if ((subCollRes[7] >> 4) == (byte)CollectionChildResourceType.HistoricalPartitionKeyRange)
+                            {
+                                rid.HistoricalPartitionKeyRange = subCollectionResource;
                             }
                             else if((subCollRes[7] >> 4) == (byte)CollectionChildResourceType.Schema)
                             {
@@ -1315,7 +1336,8 @@ namespace Microsoft.Azure.Documents
             PartitionKeyRange = 0x05,
             Schema = 0x09,
             PartitionedSystemDocument = 0x0A,
-            SystemDocument = 0x0D
+            SystemDocument = 0x0D,
+            HistoricalPartitionKeyRange = 0x0E,
         }
 
         private enum ExtendedDatabaseChildResourceType

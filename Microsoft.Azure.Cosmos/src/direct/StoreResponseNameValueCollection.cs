@@ -57,6 +57,7 @@ namespace Microsoft.Azure.Documents.Collections
         public string CollectionUniqueKeysUnderReIndex { get; set; }
         public string CollectionVectorIndexProgress { get; set; }
         public string ConfirmedStoreChecksum { get; set; }
+        public string ConflictResolvedTimestamp { get; set; }
         public string Continuation { get; set; }
         public string CorrelatedActivityId { get; set; }
         public string CosmosGatewayTransactionId { get; set; }
@@ -72,6 +73,7 @@ namespace Microsoft.Azure.Documents.Collections
         public string HasTentativeWrites { get; set; }
         public string HighestTentativeWriteLLSN { get; set; }
         public string HybridLogicalClockTimestamp { get; set; }
+        public string IdempotencyToken { get; set; }
         public string IndexingDirective { get; set; }
         public string IndexUtilization { get; set; }
         public string InstantScaleUpValue { get; set; }
@@ -198,6 +200,7 @@ namespace Microsoft.Azure.Documents.Collections
             this.CollectionUniqueKeysUnderReIndex = null;
             this.CollectionVectorIndexProgress = null;
             this.ConfirmedStoreChecksum = null;
+            this.ConflictResolvedTimestamp = null;
             this.Continuation = null;
             this.CorrelatedActivityId = null;
             this.CosmosGatewayTransactionId = null;
@@ -213,6 +216,7 @@ namespace Microsoft.Azure.Documents.Collections
             this.HasTentativeWrites = null;
             this.HighestTentativeWriteLLSN = null;
             this.HybridLogicalClockTimestamp = null;
+            this.IdempotencyToken = null;
             this.IndexingDirective = null;
             this.IndexUtilization = null;
             this.InstantScaleUpValue = null;
@@ -311,6 +315,7 @@ namespace Microsoft.Azure.Documents.Collections
                 CollectionUniqueKeysUnderReIndex = this.CollectionUniqueKeysUnderReIndex,
                 CollectionVectorIndexProgress = this.CollectionVectorIndexProgress,
                 ConfirmedStoreChecksum = this.ConfirmedStoreChecksum,
+                ConflictResolvedTimestamp = this.ConflictResolvedTimestamp,
                 Continuation = this.Continuation,
                 CorrelatedActivityId = this.CorrelatedActivityId,
                 CosmosGatewayTransactionId = this.CosmosGatewayTransactionId,
@@ -326,6 +331,7 @@ namespace Microsoft.Azure.Documents.Collections
                 HasTentativeWrites = this.HasTentativeWrites,
                 HighestTentativeWriteLLSN = this.HighestTentativeWriteLLSN,
                 HybridLogicalClockTimestamp = this.HybridLogicalClockTimestamp,
+                IdempotencyToken = this.IdempotencyToken,
                 IndexingDirective = this.IndexingDirective,
                 IndexUtilization = this.IndexUtilization,
                 InstantScaleUpValue = this.InstantScaleUpValue,
@@ -798,6 +804,10 @@ namespace Microsoft.Azure.Documents.Collections
             {
                 yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.ThroughputBucketApplied, this.ThroughputBucketApplied);
             }
+            if (this.ConflictResolvedTimestamp != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.ConflictResolvedTimestamp, this.ConflictResolvedTimestamp);
+            }
             if (this.MutualTlsStatus != null)
             {
                 yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.MutualTlsStatus, this.MutualTlsStatus);
@@ -809,6 +819,10 @@ namespace Microsoft.Azure.Documents.Collections
             if (this.HybridLogicalClockTimestamp != null)
             {
                 yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.HybridLogicalClockTimestamp, this.HybridLogicalClockTimestamp);
+            }
+            if (this.IdempotencyToken != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.IdempotencyToken, this.IdempotencyToken);
             }
 
             if (this.lazyNotCommonHeaders != null)
@@ -1221,6 +1235,10 @@ namespace Microsoft.Azure.Documents.Collections
             {
                 yield return HttpConstants.HttpHeaders.ThroughputBucketApplied;
             }
+            if (this.ConflictResolvedTimestamp != null)
+            {
+                yield return WFConstants.BackendHeaders.ConflictResolvedTimestamp;
+            }
             if (this.MutualTlsStatus != null)
             {
                 yield return HttpConstants.HttpHeaders.MutualTlsStatus;
@@ -1232,6 +1250,10 @@ namespace Microsoft.Azure.Documents.Collections
             if (this.HybridLogicalClockTimestamp != null)
             {
                 yield return HttpConstants.HttpHeaders.HybridLogicalClockTimestamp;
+            }
+            if (this.IdempotencyToken != null)
+            {
+                yield return HttpConstants.HttpHeaders.IdempotencyToken;
             }
 
             if (this.lazyNotCommonHeaders != null)
@@ -1643,6 +1665,10 @@ namespace Microsoft.Azure.Documents.Collections
                         {
                             this.nameValueCollection.Add(HttpConstants.HttpHeaders.ThroughputBucketApplied, this.ThroughputBucketApplied);
                         }
+                        if (this.ConflictResolvedTimestamp != null)
+                        {
+                            this.nameValueCollection.Add(WFConstants.BackendHeaders.ConflictResolvedTimestamp, this.ConflictResolvedTimestamp);
+                        }
                         if (this.MutualTlsStatus != null)
                         {
                             this.nameValueCollection.Add(HttpConstants.HttpHeaders.MutualTlsStatus, this.MutualTlsStatus);
@@ -1654,6 +1680,10 @@ namespace Microsoft.Azure.Documents.Collections
                         if (this.HybridLogicalClockTimestamp != null)
                         {
                             this.nameValueCollection.Add(HttpConstants.HttpHeaders.HybridLogicalClockTimestamp, this.HybridLogicalClockTimestamp);
+                        }
+                        if (this.IdempotencyToken != null)
+                        {
+                            this.nameValueCollection.Add(HttpConstants.HttpHeaders.IdempotencyToken, this.IdempotencyToken);
                         }
                         if(this.lazyNotCommonHeaders != null)
                         {
@@ -2124,6 +2154,10 @@ namespace Microsoft.Azure.Documents.Collections
                     {
                         return this.MinGLSNForDocumentOperations;
                     }
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.IdempotencyToken, key))
+                    {
+                        return this.IdempotencyToken;
+                    }
                     if (string.Equals(WFConstants.BackendHeaders.CurrentReplicaSetSize, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.CurrentReplicaSetSize;
@@ -2147,6 +2181,11 @@ namespace Microsoft.Azure.Documents.Collections
                     if (string.Equals(WFConstants.BackendHeaders.MinGLSNForDocumentOperations, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.MinGLSNForDocumentOperations;
+                    }
+
+                    if (string.Equals(HttpConstants.HttpHeaders.IdempotencyToken, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.IdempotencyToken;
                     }
 
                     break;
@@ -2458,6 +2497,13 @@ namespace Microsoft.Azure.Documents.Collections
                     if (string.Equals(WFConstants.BackendHeaders.ThroughputpoolMaxConsumableRUs, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.ThroughputpoolMaxConsumableRUs;
+                    }
+
+                    break;
+                case 39:
+                    if (string.Equals(WFConstants.BackendHeaders.ConflictResolvedTimestamp, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.ConflictResolvedTimestamp;
                     }
 
                     break;
@@ -3568,6 +3614,16 @@ namespace Microsoft.Azure.Documents.Collections
                         this.MinGLSNForDocumentOperations = value;
                         return;
                     }
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.IdempotencyToken, key))
+                    {
+                        if (throwIfAlreadyExists && this.IdempotencyToken != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.IdempotencyToken = value;
+                        return;
+                    }
                     if (string.Equals(WFConstants.BackendHeaders.CurrentReplicaSetSize, key, StringComparison.OrdinalIgnoreCase))
                     {
                         if (throwIfAlreadyExists && this.CurrentReplicaSetSize != null)
@@ -3616,6 +3672,16 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.MinGLSNForDocumentOperations = value;
+                        return;
+                    }
+                    if (string.Equals(HttpConstants.HttpHeaders.IdempotencyToken, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.IdempotencyToken != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.IdempotencyToken = value;
                         return;
                     }
                     break;
@@ -4284,6 +4350,18 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.ThroughputpoolMaxConsumableRUs = value;
+                        return;
+                    }
+                    break;
+                case 39:
+                    if (string.Equals(WFConstants.BackendHeaders.ConflictResolvedTimestamp, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.ConflictResolvedTimestamp != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.ConflictResolvedTimestamp = value;
                         return;
                     }
                     break;

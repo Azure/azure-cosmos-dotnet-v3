@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -260,6 +260,9 @@
   </data>
   <data name="NotFound" xml:space="preserve">
     <value>Entity with the specified id does not exist in the system. More info: https://aka.ms/cosmosdb-tsg-not-found</value>
+  </data>
+  <data name="NotModified" xml:space="preserve">
+    <value>Entity has not been modified.</value>
   </data>
   <data name="PartitionIsFull" xml:space="preserve">
     <value>Selected partition is full, please try insert in different partition.</value>
@@ -1048,7 +1051,7 @@ If you would like to serve this query through continuation tokens, then please r
   <data name="EnableMultipleWriteLocationsBeforeAddingRegion" xml:space="preserve">
     <value>"Availability Zone on a multi region account requires multi master to be enabled. Please enable Multi-Master on the database account to proceed."</value>
   </data>
-  <data name="EnableMultiRegionAndEnableServerlessNotSupported" xml:space="preserve">
+  <data name="MultiRegionServerlessNotSupported" xml:space="preserve">
     <value>Serverless accounts do not support multiple regions.</value>
   </data>
   <data name="MergeNotSupportedForServerless" xml:space="preserve">
@@ -1410,8 +1413,23 @@ If you would like to serve this query through continuation tokens, then please r
   <data name="DataMaskingPolicyNotSupportedOnNonSQLAccounts" xml:space="preserve">
     <value>Dynamic Data Masking Policy is not supported on this account type.</value>
   </data>
+  <data name="SnapshotNotSupportedWithDDM" xml:space="preserve">
+    <value>Snapshot operations are not supported on accounts with Dynamic Data Masking enabled.</value>
+  </data>
   <data name="EnableOnlyColdStorageContainersInAccountV1AndEnableMaterializedViewsNotSupported" xml:space="preserve">
     <value>Enable OnlyColdStorageContainersInAccount V1 and EnableMaterializedViews are not supported together on GlobalDatabaseAccount.</value>
+  </data>
+  <data name="EnableOnlyColdStorageContainersInAccountV1AndEnableEmbeddingGeneratorNotSupported" xml:space="preserve">
+    <value>Embedding Generator cannot be enabled on this account. Embedding Generator requires continuous backups with point-in-time restore (PITR) and full fidelity change feed, and is not compatible with GSI.</value>
+  </data>
+  <data name="EnablingEmbeddingGeneratorOnNonPITRNonFullFidelityChangeFeedEnabledAccountNotAllowed" xml:space="preserve">
+    <value>Embedding Generator cannot be enabled. This feature requires continuous backups with point-in-time restore (PITR) and full fidelity change feed to be enabled on your account. Additionally, Embedding Generator is not compatible with GSI. Please enable PITR and FullFidelityChangeFeed features and try again.</value>
+  </data>
+  <data name="EnablingBothEmbeddingGeneratorAndMaterializedViewsNotSupported" xml:space="preserve">
+    <value>Embedding Generator cannot be enabled together with GSI. Embedding Generator requires continuous backups with point-in-time restore (PITR) and full fidelity change feed, and is not compatible with GSI.</value>
+  </data>
+  <data name="DisableEmbeddingGeneratorNotAllowed" xml:space="preserve">
+    <value>Embedding Generator cannot be disabled once it is enabled on an account.</value>
   </data>
   <data name="InvalidFederationCapUncapMetadataSource" xml:space="preserve">
     <value>The CapUncapMetadata source '{0}' is invalid.</value>
@@ -1506,7 +1524,10 @@ If you would like to serve this query through continuation tokens, then please r
   <data name="CannotOfflineDueToInvalidAccountStatus" xml:space="preserve">
     <value>Cannot offline when Region {0} is in an invalid state (i.e., not Online or Updating).</value>
   </data>
-	<data name="CannotSetSoftDeletionMetadataWhenDisablingSoftDeleteErrorMessage" xml:space="preserve">
+  <data name="CannotSetSoftDeletionMetadataWhenDisablingSoftDeleteErrorMessage" xml:space="preserve">
     <value>Cannot set SoftDeletionMetadata when disabling soft delete.</value>
+  </data>
+  <data name="PITRNotEnabledForOnlineCopy" xml:space="preserve">
+    <value>Online copy jobs require continuous backup to be enabled on the source Cosmos DB account.</value>
   </data>
 </root>

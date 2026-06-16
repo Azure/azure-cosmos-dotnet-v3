@@ -185,7 +185,7 @@ namespace Microsoft.Azure.Documents
             {
                 timeout.ThrowGoneIfElapsed();
             }
-            
+
             entity.RequestContext.TimeoutHelper = timeout;
 
             if (entity.RequestContext.RequestChargeTracker == null)
@@ -193,16 +193,16 @@ namespace Microsoft.Azure.Documents
                 entity.RequestContext.RequestChargeTracker = new RequestChargeTracker();
             }
 
-            if(entity.RequestContext.ClientRequestStatistics == null)
+            if (entity.RequestContext.ClientRequestStatistics == null)
             {
                 entity.RequestContext.ClientRequestStatistics = new ClientSideRequestStatistics();
             }
 
             entity.RequestContext.ForceRefreshAddressCache = forceRefresh;
 
-            ConsistencyLevel targetConsistencyLevel;
+            ReadConsistencyStrategy readConsistencyStrategy;
             bool useSessionToken;
-            ReadMode desiredReadMode = this.DeduceReadMode(entity, out targetConsistencyLevel, out useSessionToken);
+            ReadMode desiredReadMode = this.DeduceReadMode(entity, out readConsistencyStrategy, out useSessionToken);
 
             int maxReplicaCount = this.GetMaxReplicaSetSize(entity);
             int readQuorumValue = maxReplicaCount - (maxReplicaCount / 2);
@@ -232,7 +232,7 @@ namespace Microsoft.Azure.Documents
                     return this.quorumReader.ReadStrongAsync(entity, readQuorumValue, desiredReadMode);
 
                 case ReadMode.Any:
-                    if (targetConsistencyLevel == ConsistencyLevel.Session)
+                    if (readConsistencyStrategy == ReadConsistencyStrategy.Session)
                     {
                         // RequestRetryUtility vs BackoffRetryUtility: is purely for safe flighting purpose only
                         // Post flighting can be fully pivoted to RequestRetryUtility and remove BackoffRetryUtility below
@@ -304,7 +304,7 @@ namespace Microsoft.Azure.Documents
 
             IList<ReferenceCountedDisposable<StoreResult>> responses = await this.storeReader.ReadMultipleReplicaAsync(
                     entity:entity,
-                    includePrimary:true, 
+                    includePrimary:true,
                     replicaCountToRead:1,
                     requiresValidLsn:true,
                     useSessionToken:true,
@@ -352,11 +352,13 @@ namespace Microsoft.Azure.Documents
             throw new NotFoundException(RMResources.ReadSessionNotAvailable, responseHeaders);
         }
 
-        private ReadMode DeduceReadMode(DocumentServiceRequest request, out ConsistencyLevel targetConsistencyLevel, out bool useSessionToken)
+        private ReadMode DeduceReadMode(
+            DocumentServiceRequest request,
+            out ReadConsistencyStrategy readConsistencyStrategy,
+            out bool useSessionToken)
         {
-            targetConsistencyLevel = RequestHelper.GetConsistencyLevelToUse(this.serviceConfigReader, request);
-
-            useSessionToken = targetConsistencyLevel == ConsistencyLevel.Session;
+            readConsistencyStrategy = RequestHelper.GetReadConsistencyStrategyToUse(this.serviceConfigReader, request);
+            useSessionToken = (readConsistencyStrategy == ReadConsistencyStrategy.Session);
 
             if (request.DefaultReplicaIndex.HasValue)
             {
@@ -366,21 +368,17 @@ namespace Microsoft.Azure.Documents
                 return ReadMode.Primary;  //Let the addressResolver decides which replica to connect to.
             }
 
-            switch (targetConsistencyLevel)
+            switch (readConsistencyStrategy)
             {
-                case ConsistencyLevel.Eventual:
+                case ReadConsistencyStrategy.Eventual:
+                case ReadConsistencyStrategy.Session:
                     return ReadMode.Any;
 
-                case ConsistencyLevel.ConsistentPrefix:
-                    return ReadMode.Any;
-
-                case ConsistencyLevel.Session:
-                    return ReadMode.Any;
-
-                case ConsistencyLevel.BoundedStaleness:
+                case ReadConsistencyStrategy.LatestCommitted:
+                case ReadConsistencyStrategy.LastCommittedSingleWriteRegion:
                     return ReadMode.BoundedStaleness;
 
-                case ConsistencyLevel.Strong:
+                case ReadConsistencyStrategy.GlobalStrong:
                     return ReadMode.Strong;
 
                 default:

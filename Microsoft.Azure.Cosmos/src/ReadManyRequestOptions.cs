@@ -4,6 +4,8 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using Microsoft.Azure.Documents;
+
     /// <summary>
     /// The Cosmos query request options
     /// </summary>
@@ -26,6 +28,25 @@ namespace Microsoft.Azure.Cosmos
         {
             get => this.BaseConsistencyLevel;
             set => this.BaseConsistencyLevel = value;
+        }
+
+        /// <summary>
+        /// Gets or sets the <see cref="ReadConsistencyStrategy"/> for the request.
+        /// </summary>
+        /// <remarks>
+        /// When set, this takes precedence over <see cref="ConsistencyLevel"/> for read many operations.
+        /// The <see cref="ReadConsistencyStrategy.GlobalStrong"/> strategy is only valid
+        /// for accounts configured with Strong consistency.
+        /// </remarks>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        ReadConsistencyStrategy? ReadConsistencyStrategy
+        {
+            get => this.BaseReadConsistencyStrategy;
+            set => this.BaseReadConsistencyStrategy = value;
         }
 
         /// <summary>
@@ -64,9 +85,30 @@ namespace Microsoft.Azure.Cosmos
             return new QueryRequestOptions
             {
                 ConsistencyLevel = this.ConsistencyLevel,
+                ReadConsistencyStrategy = this.ReadConsistencyStrategy,
                 SessionToken = this.SessionToken,
                 IfMatchEtag = this.IfMatchEtag,
                 IfNoneMatchEtag = this.IfNoneMatchEtag,
+                Properties = this.Properties,
+                AddRequestHeaders = this.AddRequestHeaders,
+                ExcludeRegions = this.ExcludeRegions
+            };
+        }
+
+        internal ItemRequestOptions ConvertToItemRequestOptions()
+        {
+            // Deliberately does NOT copy IfMatchEtag / IfNoneMatchEtag. Per-item ETags
+            // have no coherent meaning at the ReadMany level (a single ETag value cannot
+            // apply across N (id, partitionKey) tuples), and the legacy multi-id query
+            // path silently ignores them on the wire today. Mirroring that silent-ignore
+            // here keeps caller-observable behavior identical between the two execution
+            // branches and avoids a same-input/different-outcome footgun if the server
+            // ever begins honoring these headers on point reads.
+            return new ItemRequestOptions
+            {
+                ConsistencyLevel = this.ConsistencyLevel,
+                ReadConsistencyStrategy = this.ReadConsistencyStrategy,
+                SessionToken = this.SessionToken,
                 Properties = this.Properties,
                 AddRequestHeaders = this.AddRequestHeaders,
                 ExcludeRegions = this.ExcludeRegions

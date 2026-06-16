@@ -38,18 +38,23 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private const uint TcpKeepAliveIntervalSocketOptionEnumValue = 17;
         private const uint TcpKeepAliveTimeSocketOptionEnumValue = 3;
-        private const uint DefaultSocketOptionTcpKeepAliveInterval = 1;
-        private const uint DefaultSocketOptionTcpKeepAliveTime = 30;
-        private static readonly uint SocketOptionTcpKeepAliveInterval = GetUInt32FromEnvironmentVariableOrDefault(
+        private const int DefaultSocketOptionTcpKeepAliveInterval = 1;
+        private const int DefaultSocketOptionTcpKeepAliveTime = 30;
+        private static readonly int SocketOptionTcpKeepAliveInterval = GetInt32FromEnvironmentVariableOrDefault(
             Constants.EnvironmentVariables.SocketOptionTcpKeepAliveIntervalName,
             minValue: 1,
             maxValue: 100,
             defaultValue: DefaultSocketOptionTcpKeepAliveInterval);
-        private static readonly uint SocketOptionTcpKeepAliveTime = GetUInt32FromEnvironmentVariableOrDefault(
+        private static readonly int SocketOptionTcpKeepAliveTime = GetInt32FromEnvironmentVariableOrDefault(
             Constants.EnvironmentVariables.SocketOptionTcpKeepAliveTimeName,
             minValue: 1,
             maxValue: 100,
             defaultValue: DefaultSocketOptionTcpKeepAliveTime);
+        private static readonly int tcpKeepAliveValidation = GetInt32FromEnvironmentVariableOrDefault(
+            Constants.EnvironmentVariables.TcpKeepAliveValidation,
+            minValue: 0,
+            maxValue: 1,
+            defaultValue: 0);
 
         private static readonly Lazy<ConcurrentPrng> rng =
             new Lazy<ConcurrentPrng>(LazyThreadSafetyMode.ExecutionAndPublication);
@@ -483,20 +488,20 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         #endregion
 
-        private static uint GetUInt32FromEnvironmentVariableOrDefault(
+        private static int GetInt32FromEnvironmentVariableOrDefault(
             string name,
-            uint minValue,
-            uint maxValue,
-            uint defaultValue)
+            int minValue,
+            int maxValue,
+            int defaultValue)
         {
             string envVariableValueText = Environment.GetEnvironmentVariable(name);
 
-            if (String.IsNullOrEmpty(envVariableValueText)  ||
-                !UInt32.TryParse(
+            if (String.IsNullOrEmpty(envVariableValueText) ||
+                !Int32.TryParse(
                     envVariableValueText,
                     NumberStyles.Integer,
                     CultureInfo.InvariantCulture,
-                    out uint envVariableValue))
+                    out int envVariableValue))
             {
                 return defaultValue;
             }
@@ -1085,7 +1090,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             if (Connection.isKeepAliveCustomizationSupported.Value)
             {
                 //SocketOptionName.TcpKeepAliveInterval
-                clientSocket.SetSocketOption(SocketOptionLevel.Tcp, 
+                clientSocket.SetSocketOption(SocketOptionLevel.Tcp,
                                             (SocketOptionName)TcpKeepAliveIntervalSocketOptionEnumValue, 
                                             SocketOptionTcpKeepAliveInterval);
 
@@ -1093,15 +1098,27 @@ namespace Microsoft.Azure.Documents.Rntbd
                 clientSocket.SetSocketOption(SocketOptionLevel.Tcp, 
                                             (SocketOptionName)TcpKeepAliveTimeSocketOptionEnumValue,
                                             SocketOptionTcpKeepAliveTime);
+
+                if (Connection.tcpKeepAliveValidation == 1)
+                {
+                    int actualKeepAliveInterval = (int)clientSocket.GetSocketOption(SocketOptionLevel.Tcp,
+                                                                                   (SocketOptionName)TcpKeepAliveIntervalSocketOptionEnumValue);
+                    int actualKeepAliveTime = (int)clientSocket.GetSocketOption(SocketOptionLevel.Tcp,
+                                                                               (SocketOptionName)TcpKeepAliveTimeSocketOptionEnumValue);
+
+                    if (actualKeepAliveInterval != SocketOptionTcpKeepAliveInterval
+                        || actualKeepAliveTime != SocketOptionTcpKeepAliveTime)
+                    {
+                        DefaultTrace.TraceWarning(
+                            "SetKeepAliveSocketOptions: validation mismatch. " +
+                            "Expected interval={0} time={1}, actual interval={2} time={3}",
+                            SocketOptionTcpKeepAliveInterval,
+                            SocketOptionTcpKeepAliveTime,
+                            actualKeepAliveInterval,
+                            actualKeepAliveTime);
+                    }
+                }
             }
-#if DEBUG
-            int tcpKeepAliveInterval = (int)clientSocket.GetSocketOption(SocketOptionLevel.Tcp,
-                                                                        (SocketOptionName)TcpKeepAliveIntervalSocketOptionEnumValue);
-            int tcpKeepAliveTime = (int)clientSocket.GetSocketOption(SocketOptionLevel.Tcp, 
-                                                                    (SocketOptionName)TcpKeepAliveTimeSocketOptionEnumValue);
-            Debug.Equals(tcpKeepAliveInterval, SocketOptionTcpKeepAliveInterval);
-            Debug.Equals(tcpKeepAliveTime, SocketOptionTcpKeepAliveTime);
-#endif
         }
 
         private static bool IsKeepAliveCustomizationSupported()
@@ -1120,7 +1137,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     return true;
                 }
             }
-            catch
+            catch (SocketException)
             {
                 return false;
             }

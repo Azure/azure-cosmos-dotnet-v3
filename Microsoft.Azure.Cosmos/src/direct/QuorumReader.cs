@@ -65,6 +65,7 @@ namespace Microsoft.Azure.Documents
 
         private readonly StoreReader storeReader;
         private readonly IServiceConfigurationReader serviceConfigReader;
+        private readonly IServiceConfigurationReaderExtension serviceConfigurationReaderExtension;
         private readonly IAuthorizationTokenProvider authorizationTokenProvider;
 
         public QuorumReader(
@@ -76,6 +77,7 @@ namespace Microsoft.Azure.Documents
         {
             this.storeReader = storeReader;
             this.serviceConfigReader = serviceConfigReader;
+            this.serviceConfigurationReaderExtension = serviceConfigReader as IServiceConfigurationReaderExtension;
             this.authorizationTokenProvider = authorizationTokenProvider;
         }
 
@@ -87,7 +89,13 @@ namespace Microsoft.Azure.Documents
             int readQuorumRetry = QuorumReader.maxNumberOfReadQuorumRetries;
             bool shouldRetryOnSecondary = false;
             bool hasPerformedReadFromPrimary = false;
-            bool includePrimary = false;
+
+            // Use the partition-level TargetReplicaSetSize (TRSS) resolved
+            // during address resolution. When TRSS <= 3 there are at most
+            // 2 secondaries; losing one makes quorum unreachable without the
+            // primary. Include primary upfront to avoid an extra round-trip.
+            int? trss = entity.RequestContext.ResolvedPartitionTargetReplicaSetSize;
+            bool includePrimary = trss.HasValue && trss.Value <= 3;
 
             do
             {
@@ -325,10 +333,31 @@ namespace Microsoft.Azure.Documents
                         ReadQuorumResultKind.QuorumNotSelected, -1, -1, null, responsesForLogging);
                 }
 
-                //either request overrides consistency level with strong, or request does not override and account default consistency level is strong
+                // GlobalStrong read is a candidate when:
+                // 1. Global strong is enabled and account default consistency is Strong (or overridden to Strong for PPF-eligible resources)
+                // 2. Request does not override ConsistencyLevel OR overrides with Strong
+                // 3. Request does not override ReadConsistencyStrategy (null = use account default)
+                //    OR explicitly requests GlobalStrong
+                ConsistencyLevel effectiveDefaultConsistencyLevel = this.serviceConfigReader.DefaultConsistencyLevel;
+                if (this.serviceConfigurationReaderExtension != null &&
+                    this.serviceConfigurationReaderExtension.TryGetConsistencyLevel(entity, out ConsistencyLevel consistencyLevelOverride))
+                {
+                    DefaultTrace.TraceInformation(
+                        "QuorumReader: ConsistencyLevel is overridden from {0} to {1} for resourceType {2} and operationType {3}",
+                        effectiveDefaultConsistencyLevel,
+                        consistencyLevelOverride,
+                        entity.ResourceType.ToResourceTypeString(),
+                        entity.OperationType.ToOperationTypeString());
+                    effectiveDefaultConsistencyLevel = consistencyLevelOverride;
+                }
+
                 bool isGlobalStrongReadCandidate =
-                    (ReplicatedResourceClient.IsGlobalStrongEnabled() && this.serviceConfigReader.DefaultConsistencyLevel == ConsistencyLevel.Strong) &&
-                    (!entity.RequestContext.OriginalRequestConsistencyLevel.HasValue || entity.RequestContext.OriginalRequestConsistencyLevel == ConsistencyLevel.Strong);
+                    (ReplicatedResourceClient.IsGlobalStrongEnabled() &&
+                     effectiveDefaultConsistencyLevel == ConsistencyLevel.Strong) &&
+                    (!entity.RequestContext.OriginalRequestConsistencyLevel.HasValue ||
+                     entity.RequestContext.OriginalRequestConsistencyLevel == ConsistencyLevel.Strong) &&
+                    (!entity.RequestContext.ReadConsistencyStrategy.HasValue ||
+                     entity.RequestContext.ReadConsistencyStrategy == ReadConsistencyStrategy.GlobalStrong);
 
                 if (isGlobalStrongReadCandidate && readMode != ReadMode.Strong)
                 {
@@ -366,10 +395,15 @@ namespace Microsoft.Azure.Documents
             }
 
             // ReadBarrier required
+            // Use partition-level TRSS to decide whether to include the primary
+            // in the barrier. With 3 or fewer replicas, a single unavailable
+            // secondary would prevent barrier convergence without the primary.
+            int? barrierTrss = entity.RequestContext.ResolvedPartitionTargetReplicaSetSize;
+            bool allowPrimaryForBarrier = barrierTrss.HasValue && barrierTrss.Value <= 3;
             DocumentServiceRequest barrierRequest = await BarrierRequestHelper.CreateAsync(entity, this.authorizationTokenProvider, readLsn, globalCommittedLSN);
             (bool isSuccess, StoreResponse throttledResponse) = await this.WaitForReadBarrierAsync(
                                                 barrierRequest,
-                                                false,
+                                                allowPrimaryForBarrier,
                                                 readQuorum,
                                                 readLsn,
                                                 globalCommittedLSN,

@@ -277,22 +277,115 @@ namespace Microsoft.Azure.Documents
         private StoreClientFactory(
             Protocol protocol,
             RetryWithConfiguration retryWithConfiguration,
+            bool disableRetryWithRetryPolicy,
             TransportClient transportClient,
             TransportClient fallbackTransportClient,
             IConnectionStateListener connectionStateListener)
         {
             this.protocol = protocol;
             this.retryWithConfiguration = retryWithConfiguration;
+            this.disableRetryWithRetryPolicy = disableRetryWithRetryPolicy;
             this.transportClient = transportClient;
             this.fallbackTransportClient = fallbackTransportClient;
             this.connectionStateListener = connectionStateListener;
         }
 
-        internal StoreClientFactory Clone()
+        /// <summary>
+        /// Creates a clone of this factory that shares TCP
+        /// transport clients but merges the per-client
+        /// RetryWithConfiguration override with the parent's
+        /// config at the field level. Each override field
+        /// takes precedence; unset (null) fields inherit the
+        /// parent factory's value.
+        ///
+        /// <paramref name="disableRetryWithOverride"/> uses
+        /// tri-state: null inherits from parent, true disables,
+        /// false explicitly keeps enabled even if parent disables.
+        ///
+        /// OWNERSHIP / DISPOSAL CONTRACT: The returned clone
+        /// shares <see cref="transportClient"/>,
+        /// <see cref="fallbackTransportClient"/>, and
+        /// <see cref="connectionStateListener"/> with the parent.
+        /// Only the parent (owning) factory may be disposed;
+        /// clones must not be disposed by callers — doing so
+        /// would tear down transports still in use by the
+        /// parent and every other clone. Callers that receive a
+        /// clone via DocumentClient rely on
+        /// <c>DocumentClient.isStoreClientFactoryCreatedInternally
+        /// = false</c> to skip disposal; preserve that invariant
+        /// when adding new call sites.
+        /// </summary>
+        internal StoreClientFactory Clone(
+            RetryWithConfiguration retryWithConfigurationOverride,
+            bool? disableRetryWithOverride = null,
+            string accountIdentifier = null)
         {
+            // Fast-path: no overrides at all — reuse parent config
+            // reference directly to avoid unnecessary allocation.
+            // This is the common flag-OFF path where Clone(null)
+            // is called with no disable override.
+            //
+            // IMMUTABILITY CONTRACT: RetryWithConfiguration has
+            // mutable setters, but instances stored in
+            // StoreClientFactory.retryWithConfiguration are treated
+            // as effectively immutable after construction. No code
+            // path mutates a config after it is assigned. Sharing
+            // the reference here is safe under this contract.
+            // If mutability is ever needed, deep-copy instead.
+            if (retryWithConfigurationOverride == null
+                && disableRetryWithOverride == null)
+            {
+                DefaultTrace.TraceInformation(
+                    "StoreClientFactory.Clone [{0}] no overrides; inheriting parent: " +
+                    "DisableRetryWith={1}, RetryWith=(Initial={2},Max={3},Salt={4},Total={5})",
+                    accountIdentifier ?? "<unknown>",
+                    this.disableRetryWithRetryPolicy,
+                    this.retryWithConfiguration?.InitialRetryIntervalMilliseconds,
+                    this.retryWithConfiguration?.MaximumRetryIntervalMilliseconds,
+                    this.retryWithConfiguration?.RandomSaltMaxValueMilliseconds,
+                    this.retryWithConfiguration?.TotalWaitTimeMilliseconds);
+
+                return new StoreClientFactory(
+                    this.protocol,
+                    this.retryWithConfiguration,
+                    disableRetryWithRetryPolicy: this.disableRetryWithRetryPolicy,
+                    transportClient: this.transportClient,
+                    fallbackTransportClient: this.fallbackTransportClient,
+                    connectionStateListener: this.connectionStateListener);
+            }
+
+            RetryWithConfiguration merged = new RetryWithConfiguration
+            {
+                InitialRetryIntervalMilliseconds = retryWithConfigurationOverride?.InitialRetryIntervalMilliseconds ?? this.retryWithConfiguration?.InitialRetryIntervalMilliseconds,
+                MaximumRetryIntervalMilliseconds = retryWithConfigurationOverride?.MaximumRetryIntervalMilliseconds ?? this.retryWithConfiguration?.MaximumRetryIntervalMilliseconds,
+                RandomSaltMaxValueMilliseconds = retryWithConfigurationOverride?.RandomSaltMaxValueMilliseconds ?? this.retryWithConfiguration?.RandomSaltMaxValueMilliseconds,
+                TotalWaitTimeMilliseconds = retryWithConfigurationOverride?.TotalWaitTimeMilliseconds ?? this.retryWithConfiguration?.TotalWaitTimeMilliseconds,
+            };
+
+            bool effectiveDisableRetryWith = disableRetryWithOverride ?? this.disableRetryWithRetryPolicy;
+
+            DefaultTrace.TraceInformation(
+                "StoreClientFactory.Clone [{0}] applied overrides; effective: " +
+                "DisableRetryWith={1} (override={2}, parent={3}), " +
+                "RetryWith=(Initial={4},Max={5},Salt={6},Total={7}) " +
+                "parent=(Initial={8},Max={9},Salt={10},Total={11})",
+                accountIdentifier ?? "<unknown>",
+                effectiveDisableRetryWith,
+                disableRetryWithOverride,
+                this.disableRetryWithRetryPolicy,
+                merged.InitialRetryIntervalMilliseconds,
+                merged.MaximumRetryIntervalMilliseconds,
+                merged.RandomSaltMaxValueMilliseconds,
+                merged.TotalWaitTimeMilliseconds,
+                this.retryWithConfiguration?.InitialRetryIntervalMilliseconds,
+                this.retryWithConfiguration?.MaximumRetryIntervalMilliseconds,
+                this.retryWithConfiguration?.RandomSaltMaxValueMilliseconds,
+                this.retryWithConfiguration?.TotalWaitTimeMilliseconds);
+
             return new StoreClientFactory(
                 this.protocol,
-                this.retryWithConfiguration,
+                merged,
+                disableRetryWithRetryPolicy: effectiveDisableRetryWith,
                 transportClient: this.transportClient,
                 fallbackTransportClient: this.fallbackTransportClient,
                 connectionStateListener: this.connectionStateListener);

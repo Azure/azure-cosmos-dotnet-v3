@@ -70,6 +70,7 @@ namespace Microsoft.Azure.Documents
             EncryptionScope = 0x0030,
             AzureRbac = 0x0034,
             DistributedTransactionBatch = 0x0035,
+            HistoricalPartitionKeyRange = 0x0037,
 
             // Please update RntbdConstants.tt T4 template and generate
             // Also get sign-off from cdbcosdk
@@ -355,6 +356,18 @@ namespace Microsoft.Azure.Documents
             // Also get sign-off from cdbcosdk
         }
 
+        [Flags]
+        public enum RntbdSupportedSerializationFeatures : ushort
+        {
+            None = 0x00,
+            Base64Strings = 0x01,
+            NumberArrays = 0x02,
+            UInt64 = 0x04,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
+        }
+
         public enum RntbdSystemDocumentType : byte
         {
             PartitionKey = 0x00,
@@ -393,6 +406,28 @@ namespace Microsoft.Azure.Documents
         public enum RntbdMutualTlsAuthMode : byte
         {
             System = 0x00,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
+        }
+
+        /// <summary>
+        /// Backend response-field selection. Transmitted on the wire as a single
+        /// byte via the <see cref="RequestIdentifiers.ReturnPreference"/> token.
+        /// The backend RNTBD parser maps this byte to its internal
+        /// SkipResponseFields enum (Backend/native/common/Transport.h) so it can
+        /// elide selected response fields:
+        ///   None    - return the full response (default).
+        ///   Content - skip the document body; return everything else.
+        ///   All     - skip every optional field; return only the status.
+        /// Currently consumed by the read-tx Phase 2 path (LSN-only validation
+        /// uses Content to skip bodies on the wire).
+        /// </summary>
+        public enum RntbdSkipResponseFields : byte
+        {
+            None = 0x00,
+            Content = 0x01,
+            All = 0xFF,
 
             // Please update RntbdConstants.tt T4 template and generate
             // Also get sign-off from cdbcosdk
@@ -636,6 +671,16 @@ namespace Microsoft.Azure.Documents
             HybridLogicalClockTimestamp = 0x00FA,
             DistributedTransactionId = 0x00FB,
             CreatePKRangesWithStatusOffline = 0x00FC,
+            IsSoftDeletePurgeOperation = 0x00FD,
+            ReadConsistencyStrategy = 0x00FE,
+            SupportedQueryFeatures = 0x00FF,
+            QueryVersion = 0x0100,
+            SupportedSerializationFeatures = 0x0101,
+            RefreshOnlyFabricServiceLevelConfigs = 0x0102,
+            RetriggerDTX = 0x0103,
+            ShouldCheckInflightDtx = 0x0104,
+            PopulateCachedWriteRegion = 0x0105,
+            PopulateEsanMigrationStatus = 0x0106,
 
             // Please update RntbdConstants.tt T4 template and generate
             // Also get sign-off from cdbcosdk
@@ -881,6 +926,16 @@ namespace Microsoft.Azure.Documents
             public RntbdToken hybridLogicalClockTimestamp;
             public RntbdToken distributedTransactionId;
             public RntbdToken createPKRangesWithStatusOffline;
+            public RntbdToken isSoftDeletePurgeOperation;
+            public RntbdToken readConsistencyStrategy;
+            public RntbdToken supportedQueryFeatures;
+            public RntbdToken queryVersion;
+            public RntbdToken supportedSerializationFeatures;
+            public RntbdToken refreshOnlyFabricServiceLevelConfigs;
+            public RntbdToken retriggerDTX;
+            public RntbdToken shouldCheckInflightDtx;
+            public RntbdToken populateCachedWriteRegion;
+            public RntbdToken populateEsanMigrationStatus;
 
             public Request()
             {
@@ -1120,6 +1175,16 @@ namespace Microsoft.Azure.Documents
                 this.hybridLogicalClockTimestamp = new RntbdToken(false, RntbdTokenTypes.LongLong, (ushort)RequestIdentifiers.HybridLogicalClockTimestamp);
                 this.distributedTransactionId = new RntbdToken(false, RntbdTokenTypes.Guid, (ushort)RequestIdentifiers.DistributedTransactionId);
                 this.createPKRangesWithStatusOffline = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.CreatePKRangesWithStatusOffline);
+                this.isSoftDeletePurgeOperation = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.IsSoftDeletePurgeOperation);
+                this.readConsistencyStrategy = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.ReadConsistencyStrategy);
+                this.supportedQueryFeatures = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.SupportedQueryFeatures);
+                this.queryVersion = new RntbdToken(false, RntbdTokenTypes.SmallString, (ushort)RequestIdentifiers.QueryVersion);
+                this.supportedSerializationFeatures = new RntbdToken(false, RntbdTokenTypes.UShort, (ushort)RequestIdentifiers.SupportedSerializationFeatures);
+                this.refreshOnlyFabricServiceLevelConfigs = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.RefreshOnlyFabricServiceLevelConfigs);
+                this.retriggerDTX = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.RetriggerDTX);
+                this.shouldCheckInflightDtx = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.ShouldCheckInflightDtx);
+                this.populateCachedWriteRegion = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateCachedWriteRegion);
+                this.populateEsanMigrationStatus = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateEsanMigrationStatus);
 
                 this.tokens = new RntbdToken[]
                 {
@@ -1376,6 +1441,16 @@ namespace Microsoft.Azure.Documents
                     this.hybridLogicalClockTimestamp,
                     this.distributedTransactionId,
                     this.createPKRangesWithStatusOffline,
+                    this.isSoftDeletePurgeOperation,
+                    this.readConsistencyStrategy,
+                    this.supportedQueryFeatures,
+                    this.queryVersion,
+                    this.supportedSerializationFeatures,
+                    this.refreshOnlyFabricServiceLevelConfigs,
+                    this.retriggerDTX,
+                    this.shouldCheckInflightDtx,
+                    this.populateCachedWriteRegion,
+                    this.populateEsanMigrationStatus,
                 };
             }
         }
@@ -1481,6 +1556,7 @@ namespace Microsoft.Azure.Documents
             MergeProgressBlockedReason = 0x0084,
             ThroughputBucketApplied = 0x0085,
             HybridLogicalClockTimestamp = 0x0086,
+            ConflictResolvedTimestamp = 0x0087,
 
             // Please update RntbdConstants.tt T4 template and generate
             // Also get sign-off from cdbcosdk

@@ -20,6 +20,19 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        [JsonProperty(PropertyName = Constants.Properties.PartitionTargetReplicaSetSize, DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public int? PartitionTargetReplicaSetSize
+        {
+            get
+            {
+                return base.GetValue<int?>(Constants.Properties.PartitionTargetReplicaSetSize);
+            }
+            internal set
+            {
+                base.SetValue(Constants.Properties.PartitionTargetReplicaSetSize, value);
+            }
+        }
+
         [JsonProperty(PropertyName = Constants.Properties.IsPrimary)]
         public bool IsPrimary
         {

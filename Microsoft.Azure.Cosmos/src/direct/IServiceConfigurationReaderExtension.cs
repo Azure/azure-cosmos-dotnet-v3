@@ -14,5 +14,7 @@ namespace Microsoft.Azure.Documents
         IServiceRetryParams TryGetServiceRetryParams(DocumentServiceRequest documentServiceRequest);
 
         bool TryGetConsistencyLevel(DocumentServiceRequest documentServiceRequest, out ConsistencyLevel consistencyLevel);
+
+        bool EnableFetchTargetReplicaSetSizeDuringAddressResolution { get; }
     }
 }

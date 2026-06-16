@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// List of regions to be excluded routing the request to.
         /// This can be used to route a request to a specific region by excluding all other regions.
-        /// If all regions are excluded, then the request will be routed to the primary/hub region.
+        /// If all regions are excluded, the SDK will route the request on a best-effort basis to maintain availability.
         /// </summary>
         public List<string> ExcludeRegions { get; set; }
 
@@ -108,6 +108,12 @@ namespace Microsoft.Azure.Cosmos
         /// ConsistencyLevel compatibility will validated and set by RequestInvokeHandler
         /// </remarks>
         internal virtual ConsistencyLevel? BaseConsistencyLevel { get; set; }
+
+        /// <summary>
+        /// Gets or sets the read consistency strategy for the request.
+        /// When set, this takes precedence over <see cref="BaseConsistencyLevel"/>.
+        /// </summary>
+        internal virtual ReadConsistencyStrategy? BaseReadConsistencyStrategy { get; set; }
 
         internal bool DisablePointOperationDiagnostics { get; set; }
 

@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Documents
         private const int backoffMultiplier = 2;
         private const int maximumBackoffTimeInSeconds = 15;
 
-        private const int minFailedReplicaCountToConsiderConnectivityIssue = 3;
+        private const int defaultTargetReplicaSetSize = 4;
 
         private Stopwatch durationTimer = new Stopwatch();
         private int attemptCount = 1;
@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Documents
                             }
                             else if (this.detectConnectivityIssues &&
                                 this.request.RequestContext.ClientRequestStatistics != null &&
-                                this.request.RequestContext.ClientRequestStatistics.FailedReplicas.Count >= GoneAndRetryWithRetryPolicy.minFailedReplicaCountToConsiderConnectivityIssue)
+                                this.request.RequestContext.ClientRequestStatistics.FailedReplicas.Count >= GoneAndRetryWithRetryPolicy.GetMinFailedReplicaCount(this.request))
                             {
 
                                 exceptionToThrow = new ServiceUnavailableException(
@@ -318,6 +318,14 @@ namespace Microsoft.Azure.Documents
             return Task.FromResult(ShouldRetryResult<Tuple<bool, bool, TimeSpan, int, int, TimeSpan>>.RetryAfter(
                 backoffTime,
                 Tuple.Create(forceRefreshAddressCache, true, timeout, currentAttemptCount, this.regionRerouteAttemptCount, backoffTime)));
+        }
+
+        private static int GetMinFailedReplicaCount(DocumentServiceRequest request)
+        {
+            int targetReplicaSetSize = request.RequestContext.ResolvedPartitionTargetReplicaSetSize
+                ?? defaultTargetReplicaSetSize;
+
+            return Math.Max(targetReplicaSetSize - 1, 1);
         }
 
         private void ClearRequestContext()

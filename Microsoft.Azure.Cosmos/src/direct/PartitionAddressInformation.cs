@@ -19,6 +19,11 @@ namespace Microsoft.Azure.Documents
 
         public bool IsLocalRegion { get; set; }
 
+        /// <summary>
+        /// Per-partition target replica set size. Null means not available (fall back to account-level).
+        /// </summary>
+        public int? PartitionTargetReplicaSetSize { get; }
+
         public PartitionAddressInformation(IReadOnlyList<AddressInformation> replicaAddresses)
             : this(replicaAddresses, false)
         {
@@ -27,7 +32,8 @@ namespace Microsoft.Azure.Documents
 
         public PartitionAddressInformation(
             IReadOnlyList<AddressInformation> replicaAddresses,
-            bool inNetworkRequest)
+            bool inNetworkRequest,
+            int? partitionTargetReplicaSetSize = null)
         {
             if (replicaAddresses == null)
             {
@@ -65,6 +71,7 @@ namespace Microsoft.Azure.Documents
             }
 
             this.IsLocalRegion = inNetworkRequest;
+            this.PartitionTargetReplicaSetSize = partitionTargetReplicaSetSize;
         }
 
         public Uri GetPrimaryUri(DocumentServiceRequest request, Protocol protocol)

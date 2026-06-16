@@ -232,7 +232,8 @@ namespace Microsoft.Azure.Documents.Routing
             int partitionCount,
             PartitionKeyDefinition partitionKeyDefinition,
             bool useHashV2asDefault = false,
-            bool enablePadding = false)
+            bool enablePadding = false,
+            bool enableLastPathPaddingForMultiHash = false)
         {
             if (partitionKeyDefinition.Paths.Count > 0 && !(partitionKeyDefinition.Kind == PartitionKind.Hash || partitionKeyDefinition.Kind == PartitionKind.MultiHash))
             {
@@ -272,7 +273,7 @@ namespace Microsoft.Azure.Documents.Routing
                     }
 
                 case PartitionKind.MultiHash:
-                    return CalculateEffectivePartitionKeyHex(partitionIndex, partitionCount, partitionKeyDefinition, isMaxExclusive: false, enablePadding);
+                    return CalculateEffectivePartitionKeyHex(partitionIndex, partitionCount, partitionKeyDefinition, isMaxExclusive: false, enablePadding, enableLastPathPaddingForMultiHash);
 
                 default:
                     throw new InternalServerErrorException("Unexpected PartitionKeyDefinitionKind");
@@ -284,7 +285,8 @@ namespace Microsoft.Azure.Documents.Routing
             int partitionCount,
             PartitionKeyDefinition partitionKeyDefinition,
             bool useHashV2asDefault = false,
-            bool enablePadding = false)
+            bool enablePadding = false,
+            bool enableLastPathPaddingForMultiHash = false)
         {
             if (partitionKeyDefinition.Paths.Count > 0 && !(partitionKeyDefinition.Kind == PartitionKind.Hash || partitionKeyDefinition.Kind == PartitionKind.MultiHash))
             {
@@ -323,7 +325,7 @@ namespace Microsoft.Azure.Documents.Routing
                     }
 
                 case PartitionKind.MultiHash:
-                    return CalculateEffectivePartitionKeyHex(partitionIndex, partitionCount, partitionKeyDefinition, isMaxExclusive: true, enablePadding: enablePadding);
+                    return CalculateEffectivePartitionKeyHex(partitionIndex, partitionCount, partitionKeyDefinition, isMaxExclusive: true, enablePadding: enablePadding, enableLastPathPaddingForMultiHash: enableLastPathPaddingForMultiHash);
 
                 default:
                     throw new InternalServerErrorException("Unexpected PartitionKeyDefinitionKind");
@@ -335,11 +337,6 @@ namespace Microsoft.Azure.Documents.Routing
             if (partitionKeyDef.Paths.Count == 0)
             {
                 throw new BadRequestException("MultiHash partition key must have at least one path");
-            }
-
-            if (partitionKeyDef.Paths.Count > 3)
-            {
-                throw new BadRequestException($"MultiHash partition key cannot have more than 3 paths");
             }
 
             foreach (string path in partitionKeyDef.Paths)
@@ -356,7 +353,8 @@ namespace Microsoft.Azure.Documents.Routing
             int partitionCount,
             PartitionKeyDefinition partitionKeyDefinition,
             bool isMaxExclusive,
-            bool enablePadding = false)
+            bool enablePadding = false,
+            bool enableLastPathPaddingForMultiHash = false)
         {
             if (partitionKeyDefinition.Kind == PartitionKind.MultiHash && enablePadding)
             {
@@ -371,6 +369,18 @@ namespace Microsoft.Azure.Documents.Routing
             if (partitionKeyDefinition.Kind == PartitionKind.MultiHash && enablePadding)
             {
                 int pathCount = partitionKeyDefinition.Paths.Count;
+
+                // When enableLastPathPaddingForMultiHash is enabled and the last partition key path
+                // is not "/id", add an extra path with all 0s to extend the EPK by 16 bytes.
+                if (enableLastPathPaddingForMultiHash)
+                {
+                    string lastPath = partitionKeyDefinition.Paths[partitionKeyDefinition.Paths.Count - 1];
+                    if (!string.Equals(lastPath, "/id", StringComparison.Ordinal))
+                    {
+                        pathCount += 1;
+                    }
+                }
+
                 byte[] result = new byte[pathCount * BytesPerPath];
                 Array.Copy(bytes, 0, result, 0, BytesPerPath);
                 bytes = result;

@@ -28,7 +28,8 @@ namespace Microsoft.Azure.Documents
             UserAgentContainer userAgent = null,
             int idleTimeoutInSeconds = -1,
             HttpMessageHandler messageHandler = null,
-            TimeSpan dnsPooledCollectionLifeTime = default)
+            TimeSpan dnsPooledCollectionLifeTime = default,
+            bool disposeMessageHandler = true)
         {
 #if NETFX
             if (idleTimeoutInSeconds > 0)
@@ -40,7 +41,7 @@ namespace Microsoft.Azure.Documents
 
             if (messageHandler != null)
             {
-                this.httpClient = new HttpClient(messageHandler);
+                this.httpClient = new HttpClient(messageHandler, disposeHandler: disposeMessageHandler);
             }
 
             if (this.httpClient == null)
@@ -492,6 +493,7 @@ namespace Microsoft.Azure.Documents
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.AllowRequestWithoutInstanceId, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateAnalyticalMigrationProgress, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateByokEncryptionProgress, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateEsanMigrationStatus, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IncludePhysicalPartitionThroughputInfo, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.UpdateOfferStateToPendingForMerge, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.UpdateOfferStateToPendingForThroughputSplit, request);
@@ -525,11 +527,15 @@ namespace Microsoft.Azure.Documents
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.WorkloadId, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IsEmbeddingGeneratorRequest, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.BypassSoftDeletionBlocking, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IsSoftDeletePurgeOperation, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IsStrongConsistencyStoreClient, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.OriginalAuthorizationTokenType, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.DistributedTransactionId, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.HybridLogicalClockTimestamp, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ShouldCheckInflightDtx, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ReadConsistencyStrategy, request);
+
 
             // Set the CollectionOperation TransactionId if present
             // Currently only being done for SharedThroughputTransactionHandler in the collection create path

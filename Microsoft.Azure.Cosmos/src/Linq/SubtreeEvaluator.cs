@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Linq.Expressions;
     using System.Reflection;
 
@@ -40,7 +41,21 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         protected override Expression VisitMemberInit(MemberInitExpression node)
         {
-            return node;
+            // Rebuild the MemberInit manually and intentionally do NOT visit node.NewExpression.
+            // The Nominator nominates a parameterless `new T()` as a candidate (CanBeEvaluated
+            // returns true for any non-Parameter / non-Lambda expression). Routing it through
+            // our overridden Visit would fold it into a ConstantExpression of the constructed
+            // CLR instance. Expression.MemberInit requires a NewExpression as its first argument,
+            // not a ConstantExpression, so that path would throw InvalidOperationException at
+            // runtime. We only need to recurse into the bindings to fold closure-captured
+            // variables (and other independent sub-trees) in initializers — see issue #1664.
+            ReadOnlyCollection<MemberBinding> newBindings = Visit(node.Bindings, this.VisitMemberBinding);
+            if (newBindings == node.Bindings)
+            {
+                return node;
+            }
+
+            return Expression.MemberInit(node.NewExpression, newBindings);
         }
 
         private Expression EvaluateMemberAccess(Expression expression)
@@ -117,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             LambdaExpression lambda = Expression.Lambda(expression);
-            Delegate function = lambda.Compile();
+            Delegate function = lambda.Compile(preferInterpretation: true);
 
             return Expression.Constant(function.DynamicInvoke(null), expression.Type);
         }
