@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// rental (pool-slot loss) and leave decrypted plaintext lingering in memory until GC overwrites
         /// it. This finalizer degrades that mistake to a benign, GC-timed cleanup. Proper disposal calls
         /// <see cref="GC.SuppressFinalize"/> (via <see cref="Stream.Close"/> on <see cref="Stream.Dispose()"/>
-        /// and the default <see cref="Stream.DisposeAsync"/>), so this runs only when disposal was missed.
+        /// and the default <c>Stream.DisposeAsync</c>), so this runs only when disposal was missed.
         /// </remarks>
         ~PooledMemoryStream()
         {
