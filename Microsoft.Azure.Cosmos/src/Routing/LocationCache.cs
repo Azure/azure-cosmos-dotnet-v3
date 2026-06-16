@@ -35,6 +35,9 @@ namespace Microsoft.Azure.Cosmos.Routing
         private DateTime lastCacheUpdateTimestamp;
         private bool enableMultipleWriteLocations;
 
+        private volatile bool hasThinClientReadLocations;
+        private volatile bool hasThinClientWriteLocations;
+
         public LocationCache(
             ReadOnlyCollection<string> preferredLocations,
             Uri defaultEndpoint,
@@ -242,14 +245,27 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <param name="databaseAccount">Read DatabaseAccoaunt </param>
         public void OnDatabaseAccountRead(AccountProperties databaseAccount)
         {
-            this.UpdateLocationCache(
-                databaseAccount.WritableRegions,
-                databaseAccount.ReadableRegions,
-                thinClientWriteLocations: databaseAccount.ThinClientWritableLocationsInternal,
-                thinClientReadLocations: databaseAccount.ThinClientReadableLocationsInternal,
-                preferenceList: null,
-                enableMultipleWriteLocations: databaseAccount.EnableMultipleWriteLocations);
+            lock (this.lockObject)
+            {
+                // Refresh the per-direction thin-client availability signals on every account read
+                // so dispatch falls back to gateway mode on the next request when the service stops
+                // advertising thin-client endpoints.
+                this.hasThinClientReadLocations = databaseAccount.ThinClientReadableLocationsInternal?.Count > 0;
+                this.hasThinClientWriteLocations = databaseAccount.ThinClientWritableLocationsInternal?.Count > 0;
+
+                this.UpdateLocationCache(
+                    databaseAccount.WritableRegions,
+                    databaseAccount.ReadableRegions,
+                    thinClientWriteLocations: databaseAccount.ThinClientWritableLocationsInternal,
+                    thinClientReadLocations: databaseAccount.ThinClientReadableLocationsInternal,
+                    preferenceList: null,
+                    enableMultipleWriteLocations: databaseAccount.EnableMultipleWriteLocations);
+            }
         }
+
+        public bool HasThinClientReadLocations => this.hasThinClientReadLocations;
+
+        public bool HasThinClientWriteLocations => this.hasThinClientWriteLocations;
 
         /// <summary>
         /// Invoked when <see cref="ConnectionPolicy.PreferredLocations"/> changes
@@ -956,15 +972,47 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             DatabaseAccountLocationsInfo snapshot = this.locationInfo;
-            ReadOnlyCollection<Uri> endpoints = isReadRequest
-                ? snapshot.ThinClientReadEndpoints
-                : snapshot.ThinClientWriteEndpoints;
+            ReadOnlyCollection<Uri> endpoints = this.GetApplicableThinClientEndpoints(request, isReadRequest, snapshot);
 
             int locationIndex = request.RequestContext.LocationIndexToRoute.GetValueOrDefault(0);
             Uri chosenEndpoint = endpoints[locationIndex % endpoints.Count];
 
             request.RequestContext.RouteToLocation(chosenEndpoint);
             return chosenEndpoint;
+        }
+
+        /// <summary>
+        /// Resolves the applicable thin client endpoints for a request, honoring per-request
+        /// <see cref="DocumentServiceRequestContext.ExcludeRegions"/>. Uses the same preferred-
+        /// location filter as the gateway path in <see cref="GetApplicableEndpoints(DocumentServiceRequest, bool)"/>,
+        /// differing only in which fallback endpoint is selected.
+        /// </summary>
+        /// <remarks>
+        /// When all preferred regions are excluded, this method always falls back to the first
+        /// thin client write endpoint (<c>snapshot.ThinClientWriteEndpoints[0]</c>) for both reads
+        /// and writes. This deliberately diverges from the gateway path's fallback selection
+        /// (which uses <see cref="defaultEndpoint"/>, or <c>WriteEndpoints[0]</c> under PPAF for
+        /// reads) because <see cref="defaultEndpoint"/> resolves to the gateway port (443) and
+        /// would break thin client port semantics if used here.
+        /// </remarks>
+        private ReadOnlyCollection<Uri> GetApplicableThinClientEndpoints(
+            DocumentServiceRequest request,
+            bool isReadRequest,
+            DatabaseAccountLocationsInfo snapshot)
+        {
+            IReadOnlyList<string> excludeRegions = request.RequestContext?.ExcludeRegions;
+            if (excludeRegions == null || excludeRegions.Count == 0)
+            {
+                return isReadRequest ? snapshot.ThinClientReadEndpoints : snapshot.ThinClientWriteEndpoints;
+            }
+
+            Uri fallbackEndpoint = snapshot.ThinClientWriteEndpoints[0];
+
+            return GetApplicableEndpoints(
+                isReadRequest ? snapshot.ThinClientReadEndpointByLocation : snapshot.ThinClientWriteEndpointByLocation,
+                snapshot.EffectivePreferredLocations,
+                fallbackEndpoint,
+                excludeRegions);
         }
 
         private void SetServicePointConnectionLimit(Uri endpoint)
