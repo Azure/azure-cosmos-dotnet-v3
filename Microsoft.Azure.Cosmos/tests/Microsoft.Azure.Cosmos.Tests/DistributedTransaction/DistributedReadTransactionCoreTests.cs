@@ -421,13 +421,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             await txn.CommitTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual($"{nameof(DistributedReadTransaction)}.{nameof(DistributedReadTransaction.CommitTransactionAsync)}", capturedOperationName);
-            Assert.AreEqual(DistributedTransactionConstants.CommitDistributedReadTransaction, capturedOperationType);
+            Assert.AreEqual(OperationType.Read, capturedOperationType);
             Assert.AreEqual(TraceComponent.Batch, capturedTraceComponent);
             Assert.AreEqual(OpenTelemetryConstants.Operations.CommitDistributedReadTransaction, capturedOTelOperationName);
         }
 
         [TestMethod]
-        [Description("End-to-end: verifies the wire request issued by the DistributedTransactionCommitter for a read transaction uses ResourceType.DistributedTransactionBatch and OperationType.CommitDistributedReadTransaction.")]
+        [Description("End-to-end: verifies the wire request issued by the DistributedTransactionCommitter for a read transaction uses ResourceType.DistributedTransactionBatch and OperationType.Read (not CommitDistributedTransaction).")]
         public async Task CommitAsync_SendsCorrectOperationAndResourceType()
         {
             ResourceType capturedResourceType = default;
@@ -460,7 +460,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .CommitTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual(ResourceType.DistributedTransactionBatch, capturedResourceType);
-            Assert.AreEqual(DistributedTransactionConstants.CommitDistributedReadTransaction, capturedOperationType);
+            Assert.AreEqual(OperationType.Read, capturedOperationType);
         }
 
         #endregion

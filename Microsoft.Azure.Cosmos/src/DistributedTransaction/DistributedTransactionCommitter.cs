@@ -191,14 +191,7 @@ namespace Microsoft.Azure.Cosmos
         {
             // Set DTC-specific headers
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.IdempotencyToken, serverRequest.IdempotencyToken.ToString());
-
-            // The Direct package does not yet recognize CommitDistributedReadTransaction,
-            // so ToOperationTypeString() would return the wrong value. Use our own string constant instead.
-            string operationTypeString = requestMessage.OperationType == DistributedTransactionConstants.CommitDistributedReadTransaction
-                ? DistributedTransactionConstants.CommitDistributedReadTransactionString
-                : requestMessage.OperationType.ToOperationTypeString();
-
-            requestMessage.Headers.Add(HttpConstants.HttpHeaders.OperationType, operationTypeString);
+            requestMessage.Headers.Add(HttpConstants.HttpHeaders.OperationType, requestMessage.OperationType.ToOperationTypeString());
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.ResourceType, requestMessage.ResourceType.ToResourceTypeString());
             requestMessage.UseGatewayMode = true;
         }

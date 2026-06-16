@@ -739,15 +739,15 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void HttpTimeoutPolicyForReadDistributedTransaction_ReturnsDefault()
         {
-            // Regression guard: read DTX uses CommitDistributedReadTransaction which is not recognized
-            // as a write by the Direct package (IsReadOnlyRequest==true). It must not be classified as a
-            // metadata read on the control-plane hot path (1s/5s/65s) because /operations/dtc can
-            // legitimately take many seconds. The DTX short-circuit in HttpTimeoutPolicy.GetTimeoutPolicy
-            // must keep this on the default policy regardless of partition-level failover or thin-client flags.
+            // Regression guard: read DTX has OperationType.Read on the wire (IsReadOnlyRequest==true)
+            // but must not be classified as a metadata read on the control-plane hot path
+            // (1s/5s/65s) because /operations/dtc can legitimately take many seconds. The
+            // DTX short-circuit in HttpTimeoutPolicy.GetTimeoutPolicy must keep this on the
+            // default policy regardless of partition-level failover or thin-client flags.
             HttpTimeoutPolicy defaultPolicy = HttpTimeoutPolicy.GetTimeoutPolicy(
                 documentServiceRequest: CosmosHttpClientCoreTests.CreateDocumentServiceRequestByOperation(
                     ResourceType.DistributedTransactionBatch,
-                    DistributedTransactionConstants.CommitDistributedReadTransaction),
+                    OperationType.Read),
                 isPartitionLevelFailoverEnabled: false,
                 isThinClientEnabled: false);
             Assert.AreSame(HttpTimeoutPolicyDefault.Instance, defaultPolicy);
@@ -755,7 +755,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             HttpTimeoutPolicy partitionFailoverPolicy = HttpTimeoutPolicy.GetTimeoutPolicy(
                 documentServiceRequest: CosmosHttpClientCoreTests.CreateDocumentServiceRequestByOperation(
                     ResourceType.DistributedTransactionBatch,
-                    DistributedTransactionConstants.CommitDistributedReadTransaction),
+                    OperationType.Read),
                 isPartitionLevelFailoverEnabled: true,
                 isThinClientEnabled: false);
             Assert.AreSame(HttpTimeoutPolicyDefault.Instance, partitionFailoverPolicy);
@@ -763,7 +763,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             HttpTimeoutPolicy thinClientPolicy = HttpTimeoutPolicy.GetTimeoutPolicy(
                 documentServiceRequest: CosmosHttpClientCoreTests.CreateDocumentServiceRequestByOperation(
                     ResourceType.DistributedTransactionBatch,
-                    DistributedTransactionConstants.CommitDistributedReadTransaction),
+                    OperationType.Read),
                 isPartitionLevelFailoverEnabled: false,
                 isThinClientEnabled: true);
             Assert.AreSame(HttpTimeoutPolicyDefault.Instance, thinClientPolicy);
