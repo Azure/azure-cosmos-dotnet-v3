@@ -93,6 +93,32 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public async Task RetryBudget_IsHonoredAtExactBudgetBoundary()
+        {
+            // At exactly the 30s budget remaining = 30 - 30 = 0, which is not > 0, so the
+            // policy must stop retrying on the boundary.
+            WebExceptionRetryPolicy policy = new WebExceptionRetryPolicy(() => TimeSpan.FromSeconds(30));
+
+            ShouldRetryResult first = await policy.ShouldRetryAsync(
+                CreateRetriableWebException(),
+                CancellationToken.None);
+            Assert.IsTrue(first.ShouldRetry);
+
+            ShouldRetryResult second = await policy.ShouldRetryAsync(
+                CreateRetriableWebException(),
+                CancellationToken.None);
+
+            Assert.IsFalse(second.ShouldRetry, "The retry budget must be honored exactly at the boundary.");
+        }
+
+        [TestMethod]
+        public void InternalConstructor_NullElapsedTimeDelegate_Throws()
+        {
+            Assert.ThrowsException<ArgumentNullException>(
+                () => new WebExceptionRetryPolicy(getElapsedTime: null));
+        }
+
+        [TestMethod]
         public void ElapsedSeconds_VersusTotalSeconds_DocumentsBudgetBug()
         {
             // Documents the root cause of the bug class: TimeSpan.Seconds is the modulo-60

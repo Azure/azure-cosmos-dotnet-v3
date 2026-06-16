@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
         internal WebExceptionRetryPolicy(Func<TimeSpan> getElapsedTime)
         {
             this.durationTimer.Start();
-            this.getElapsedTime = getElapsedTime;
+            this.getElapsedTime = getElapsedTime ?? throw new ArgumentNullException(nameof(getElapsedTime));
         }
 
         public Task<ShouldRetryResult> ShouldRetryAsync(
