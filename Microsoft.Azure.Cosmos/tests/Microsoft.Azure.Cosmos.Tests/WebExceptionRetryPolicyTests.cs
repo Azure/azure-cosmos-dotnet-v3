@@ -119,6 +119,38 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public async Task RetryBudget_BackoffDoublesAcrossRetriesWithinBudget()
+        {
+            // Elapsed stays at 1s so the 30s budget is never exhausted; backoff should
+            // double on each penalised attempt (1s -> 2s -> 4s), each capped by remaining budget.
+            WebExceptionRetryPolicy policy = new WebExceptionRetryPolicy(() => TimeSpan.FromSeconds(1));
+
+            ShouldRetryResult first = await policy.ShouldRetryAsync(
+                CreateRetriableWebException(),
+                CancellationToken.None);
+            Assert.IsTrue(first.ShouldRetry);
+            Assert.AreEqual(TimeSpan.Zero, first.BackoffTime, "First retry is never penalised.");
+
+            ShouldRetryResult second = await policy.ShouldRetryAsync(
+                CreateRetriableWebException(),
+                CancellationToken.None);
+            Assert.IsTrue(second.ShouldRetry);
+            Assert.AreEqual(TimeSpan.FromSeconds(1), second.BackoffTime);
+
+            ShouldRetryResult third = await policy.ShouldRetryAsync(
+                CreateRetriableWebException(),
+                CancellationToken.None);
+            Assert.IsTrue(third.ShouldRetry);
+            Assert.AreEqual(TimeSpan.FromSeconds(2), third.BackoffTime);
+
+            ShouldRetryResult fourth = await policy.ShouldRetryAsync(
+                CreateRetriableWebException(),
+                CancellationToken.None);
+            Assert.IsTrue(fourth.ShouldRetry);
+            Assert.AreEqual(TimeSpan.FromSeconds(4), fourth.BackoffTime);
+        }
+
+        [TestMethod]
         public void ElapsedSeconds_VersusTotalSeconds_DocumentsBudgetBug()
         {
             // Documents the root cause of the bug class: TimeSpan.Seconds is the modulo-60
