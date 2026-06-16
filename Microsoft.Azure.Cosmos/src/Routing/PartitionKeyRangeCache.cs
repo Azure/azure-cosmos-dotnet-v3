@@ -226,8 +226,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                 IsFirstReadFeedPage = true,
             };
 
-            // `as` (not hard cast). If the retry policy is wrapped or replaced
-            // with a test double, hedge still runs and dedup degrades to a no-op.
+            // Direct typed call: metadataRetryPolicy is a MetadataRequestThrottleRetryPolicy here.
+            // If a hedge runs, AttemptedEndpoints lets the retry policy skip regions the hedge burned.
             metadataRetryPolicy.AttachHedgeContext(hedgeContext);
 
             do

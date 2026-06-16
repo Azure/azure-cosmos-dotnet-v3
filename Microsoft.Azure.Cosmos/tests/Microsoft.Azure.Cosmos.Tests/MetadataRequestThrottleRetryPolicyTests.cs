@@ -279,8 +279,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             HttpStatusCode status = (HttpStatusCode)statusCodeInt;
             SubStatusCodes subStatus = (SubStatusCodes)subStatusInt;
             // Arrange — confirm the policy now routes regional-failure classification through
-            // MetadataHedgingStrategy.IsRegionalFailure (single source of truth, §5.7.2) and preserves
-            // the existing 4-case set.
+            // MetadataRegionalFailureClassifier.IsRegionalFailure (single source of truth, §5.7.2) and
+            // preserves the existing 4-case set.
             Uri endpointA = new("https://default-endpoint-region1.net/");
             Uri endpointB = new("https://default-endpoint-region2.net/");
 

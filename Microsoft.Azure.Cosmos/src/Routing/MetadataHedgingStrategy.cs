@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Diagnostics;
     using System.Linq;
     using System.Net;
-    using System.Net.Http;
     using System.Runtime.ExceptionServices;
     using System.Threading;
     using System.Threading.Tasks;
@@ -269,20 +268,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             // ---- 3. Resolve hedge endpoint ----
-            ReadOnlyCollection<Uri> applicable = this.globalEndpointManager.GetApplicableEndpoints(request, isReadRequest: true);
-            Uri hedgeEndpoint = applicable.FirstOrDefault(u => u != null && !u.Equals(primaryEndpoint));
-
-            if (hedgeEndpoint == null)
-            {
-                this.hedgeBudget.Release();
-                diag.Eligible = false;
-                diag.SkipReason = MetadataHedgeSkipReason.SingleRegion;
-                CosmosDbEventSource.MetadataHedgeSkipped(diag.SkipReason.ToString(), diag.ResourceType);
-                return await this.PrimaryOnlyAsync(request, primaryEndpoint, sendToEndpoint, hedgeContext, diag, trace, cancellationToken);
-            }
-
-            diag.HedgeRegion = this.SafeGetLocation(hedgeEndpoint);
-
             CancellationTokenSource primaryCts = null;
             CancellationTokenSource hedgeCts = null;
             CancellationTokenSource timerCts = null;
@@ -290,6 +275,24 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             try
             {
+                // Endpoint resolution runs inside the try so that a throw from
+                // GetApplicableEndpoints (e.g. a concurrent location-cache refresh/failover) or a
+                // null result runs the finally and releases the budget permit acquired above,
+                // instead of leaking it for the lifetime of the CosmosClient.
+                ReadOnlyCollection<Uri> applicable = this.globalEndpointManager.GetApplicableEndpoints(request, isReadRequest: true);
+                Uri hedgeEndpoint = applicable?.FirstOrDefault(u => u != null && !u.Equals(primaryEndpoint));
+
+                if (hedgeEndpoint == null)
+                {
+                    // PrimaryOnlyAsync is awaited inside the try; the finally below releases the permit.
+                    diag.Eligible = false;
+                    diag.SkipReason = MetadataHedgeSkipReason.SingleRegion;
+                    CosmosDbEventSource.MetadataHedgeSkipped(diag.SkipReason.ToString(), diag.ResourceType);
+                    return await this.PrimaryOnlyAsync(request, primaryEndpoint, sendToEndpoint, hedgeContext, diag, trace, cancellationToken);
+                }
+
+                diag.HedgeRegion = this.SafeGetLocation(hedgeEndpoint);
+
                 primaryCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 hedgeCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 timerCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -360,17 +363,26 @@ namespace Microsoft.Azure.Cosmos.Routing
                         break;
                     }
 
-                    if (branch == HedgeBranch.Hedge
-                        && finished.Status == TaskStatus.RanToCompletion
-                        && finished.Result != null
-                        && (finished.Result.StatusCode == HttpStatusCode.Unauthorized
-                            || finished.Result.StatusCode == HttpStatusCode.Forbidden))
+                    if (branch == HedgeBranch.Hedge)
                     {
-                        diag.HedgeOutcome = finished.Result.StatusCode == HttpStatusCode.Unauthorized
-                            ? "Auth401"
-                            : "Auth403";
-                        MetadataHedgingMeter.RecordHedgeAuthReject(diag.HedgeRegion, (int)finished.Result.StatusCode);
-                        CosmosDbEventSource.MetadataHedgeAuthReject(diag.HedgeRegion, (int)finished.Result.StatusCode);
+                        // Classify a cross-region auth reject from BOTH a completed task whose
+                        // DocumentServiceResponse carries 401/403 AND a faulted task whose thrown
+                        // DocumentClientException carries 401/403 (the GatewayStoreModel path), so the
+                        // auth signal is never lost just because the store model threw instead of returned.
+                        // finished.Result is only read on the RanToCompletion branch (the task is known
+                        // complete here), so it never blocks.
+                        DocumentServiceResponse hedgeResponse = finished.Status == TaskStatus.RanToCompletion
+                            ? finished.Result
+                            : null;
+                        HttpStatusCode? authStatus = TryGetHedgeAuthRejectStatus(hedgeResponse, finished.Exception);
+                        if (authStatus.HasValue)
+                        {
+                            diag.HedgeOutcome = authStatus.Value == HttpStatusCode.Unauthorized
+                                ? "Auth401"
+                                : "Auth403";
+                            MetadataHedgingMeter.RecordHedgeAuthReject(diag.HedgeRegion, (int)authStatus.Value);
+                            CosmosDbEventSource.MetadataHedgeAuthReject(diag.HedgeRegion, (int)authStatus.Value);
+                        }
                     }
 
                     if (remaining.Length == 1)
@@ -485,7 +497,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         /// <summary>
         /// Per-branch acceptable-winner predicate composed over
-        /// <see cref="IsRegionalFailure"/>. A 401 / plain 403
+        /// <see cref="MetadataRegionalFailureClassifier.IsRegionalFailure"/>. A 401 / plain 403
         /// from the hedge branch is rejected — see design §5.13.
         /// </summary>
         internal static bool IsAcceptableWinner(DocumentServiceResponse response, HedgeBranch branch)
@@ -495,7 +507,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return false;
             }
 
-            if (IsRegionalFailure(
+            if (MetadataRegionalFailureClassifier.IsRegionalFailure(
                 statusCode: response.StatusCode,
                 subStatus: response.SubStatusCode,
                 exception: null,
@@ -512,6 +524,40 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Classifies a settled hedge branch as a cross-region auth reject (401 / plain 403).
+        /// Handles BOTH a completed branch whose <paramref name="response"/> carries the status AND
+        /// a faulted branch whose thrown <see cref="DocumentClientException"/> (surfaced via
+        /// <paramref name="faultException"/>) carries the status — the GatewayStoreModel path throws
+        /// 401/403 rather than returning a response. Returns <c>null</c> when neither applies.
+        /// See design §5.13.
+        /// </summary>
+        internal static HttpStatusCode? TryGetHedgeAuthRejectStatus(
+            DocumentServiceResponse response,
+            AggregateException faultException)
+        {
+            HttpStatusCode? status = response?.StatusCode;
+            if (status == HttpStatusCode.Unauthorized || status == HttpStatusCode.Forbidden)
+            {
+                return status;
+            }
+
+            if (faultException != null)
+            {
+                foreach (Exception inner in faultException.InnerExceptions)
+                {
+                    if (inner is DocumentClientException dce
+                        && (dce.StatusCode == HttpStatusCode.Unauthorized
+                            || dce.StatusCode == HttpStatusCode.Forbidden))
+                    {
+                        return dce.StatusCode;
+                    }
+                }
+            }
+
+            return null;
         }
 
         private static bool IsSupportedResource(DocumentServiceRequest request)
@@ -646,58 +692,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             catch
             {
                 return null;
-            }
-        }
-
-        /// <summary>
-        /// Returns <c>true</c> iff the response or exception represents a regional failure
-        /// that should advance a metadata retry/hedge to a different preferred location.
-        ///
-        /// Single source of truth for the failure-class list shared by
-        /// <see cref="MetadataRequestThrottleRetryPolicy"/> and the cold-start
-        /// metadata hedging strategy (see
-        /// <c>docs/PPAF_Metadata_Hedging_ColdStart_Design.md</c> §5.7.2).
-        /// </summary>
-        /// <param name="statusCode">HTTP status code from the response, or <c>null</c> if no
-        /// response was produced (transport-level failure).</param>
-        /// <param name="subStatus">Cosmos sub-status code from the response.</param>
-        /// <param name="exception">Exception observed instead of (or in addition to) the
-        /// response, or <c>null</c>.</param>
-        /// <param name="callerToken">The caller-supplied cancellation token. Used to
-        /// distinguish a user-initiated cancellation (not a regional failure) from a
-        /// non-user cancellation surfaced by the HTTP timeout policy (regional failure).</param>
-        internal static bool IsRegionalFailure(
-            HttpStatusCode? statusCode,
-            SubStatusCodes subStatus,
-            Exception exception,
-            CancellationToken callerToken)
-        {
-            if (exception is HttpRequestException)
-            {
-                return true;
-            }
-
-            if (exception is OperationCanceledException && !callerToken.IsCancellationRequested)
-            {
-                return true;
-            }
-
-            if (statusCode == null)
-            {
-                return false;
-            }
-
-            switch (statusCode.Value)
-            {
-                case HttpStatusCode.ServiceUnavailable:
-                case HttpStatusCode.InternalServerError:
-                    return true;
-                case HttpStatusCode.Gone:
-                    return subStatus == SubStatusCodes.LeaseNotFound;
-                case HttpStatusCode.Forbidden:
-                    return subStatus == SubStatusCodes.DatabaseAccountNotFound;
-                default:
-                    return false;
             }
         }
 

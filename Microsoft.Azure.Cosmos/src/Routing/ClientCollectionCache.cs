@@ -75,14 +75,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                                                     IClientSideRequestStatistics clientSideRequestStatistics,
                                                     CancellationToken cancellationToken)
         {
-            return this.GetByRidAsync(apiVersion, collectionRid, trace, clientSideRequestStatistics, isColdStart: false, cancellationToken);
+            return this.GetByRidAsync(apiVersion, collectionRid, trace, clientSideRequestStatistics, isFirstPopulation: false, cancellationToken);
         }
 
         protected override Task<ContainerProperties> GetByRidAsync(string apiVersion,
                                                     string collectionRid,
                                                     ITrace trace,
                                                     IClientSideRequestStatistics clientSideRequestStatistics,
-                                                    bool isColdStart,
+                                                    bool isFirstPopulation,
                                                     CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                       retryPolicyInstance,
                       trace,
                       clientSideRequestStatistics,
-                      isColdStart,
+                      isFirstPopulation,
                       cancellationToken),
                   retryPolicyInstance,
                   cancellationToken);
@@ -106,14 +106,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                                                 IClientSideRequestStatistics clientSideRequestStatistics,
                                                 CancellationToken cancellationToken)
         {
-            return this.GetByNameAsync(apiVersion, resourceAddress, trace, clientSideRequestStatistics, isColdStart: false, cancellationToken);
+            return this.GetByNameAsync(apiVersion, resourceAddress, trace, clientSideRequestStatistics, isFirstPopulation: false, cancellationToken);
         }
 
         protected override Task<ContainerProperties> GetByNameAsync(string apiVersion,
                                                 string resourceAddress,
                                                 ITrace trace,
                                                 IClientSideRequestStatistics clientSideRequestStatistics,
-                                                bool isColdStart,
+                                                bool isFirstPopulation,
                                                 CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.sessionContainer, this.retryPolicy.GetRequestPolicy());
             return TaskHelper.InlineIfPossible(
                 () => this.ReadCollectionAsync(
-                    resourceAddress, retryPolicyInstance, trace, clientSideRequestStatistics, isColdStart, cancellationToken),
+                    resourceAddress, retryPolicyInstance, trace, clientSideRequestStatistics, isFirstPopulation, cancellationToken),
                 retryPolicyInstance,
                 cancellationToken);
         }
@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             IDocumentClientRetryPolicy retryPolicyInstance,
             ITrace trace,
             IClientSideRequestStatistics clientSideRequestStatistics,
-            bool isColdStart,
+            bool isFirstPopulation,
             CancellationToken cancellationToken)
         {
             using (ITrace childTrace = trace.StartChild("Read Collection", TraceComponent.Transport, TraceLevel.Info))
@@ -281,10 +281,13 @@ namespace Microsoft.Azure.Cosmos.Routing
                         {
                             MetadataHedgingStrategy.MetadataHedgingContext hedgeContext = new MetadataHedgingStrategy.MetadataHedgingContext
                             {
-                                IsColdStart = isColdStart,
+                                IsColdStart = isFirstPopulation,
                             };
 
-                            (retryPolicyInstance as MetadataRequestThrottleRetryPolicy)?.AttachHedgeContext(hedgeContext);
+                            // Attach via the narrow IMetadataHedgeContextReceiver seam (not a concrete-type
+                            // cast): ClearingSessionContainerClientRetryPolicy forwards to its inner policy,
+                            // so the dedup context reaches the metadata retry policy even when wrapped.
+                            (retryPolicyInstance as IMetadataHedgeContextReceiver)?.AttachHedgeContext(hedgeContext);
 
                             try
                             {

@@ -151,6 +151,17 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal static readonly string ChangeFeedLeaseIdAsPartitionKeyEnabled = "AZURE_COSMOS_CHANGE_FEED_LEASE_ID_AS_PARTITION_KEY_ENABLED";
 
+        /// <summary>
+        /// A read-only string containing the environment variable name for opting in to cold-start
+        /// metadata cache hedging. This is the environment-variable equivalent of
+        /// <see cref="CosmosClientOptions.EnableMetadataHedgingForColdStart"/>. When unset, cold-start
+        /// metadata hedging follows the account's PPAF state (off by default for non-PPAF accounts).
+        /// Setting the variable to <c>true</c> force-enables hedging even when PPAF is disabled; setting
+        /// it to <c>false</c> acts as a kill switch. The <see cref="CosmosClientOptions"/> property, when
+        /// set explicitly, always takes precedence over this environment variable.
+        /// </summary>
+        internal static readonly string MetadataHedgingForColdStartEnabled = "AZURE_COSMOS_METADATA_HEDGING_FOR_COLDSTART_ENABLED";
+
         public static T GetEnvironmentVariable<T>(string variable, T defaultValue)
         {
             string value = Environment.GetEnvironmentVariable(variable);
@@ -229,6 +240,33 @@ namespace Microsoft.Azure.Cosmos
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.ChangeFeedLeaseIdAsPartitionKeyEnabled,
                         defaultValue: true);
+        }
+
+        /// <summary>
+        /// Resolves the effective tri-state opt-in for cold-start metadata cache hedging.
+        /// The explicit <see cref="CosmosClientOptions.EnableMetadataHedgingForColdStart"/> value
+        /// (when set) always wins. When the property is left <c>null</c>, the
+        /// <c>AZURE_COSMOS_METADATA_HEDGING_FOR_COLDSTART_ENABLED</c> environment variable is consulted:
+        /// when it is unset (or not a valid boolean) the result stays <c>null</c> so hedging follows the
+        /// account's PPAF state (off by default for non-PPAF accounts); when it is <c>true</c> hedging is
+        /// force-enabled even for non-PPAF accounts; and when it is <c>false</c> it acts as a kill switch.
+        /// </summary>
+        /// <param name="clientOption">The customer-supplied <see cref="CosmosClientOptions.EnableMetadataHedgingForColdStart"/> value.</param>
+        /// <returns>The resolved tri-state opt-in passed to the metadata hedging strategy factory.</returns>
+        public static bool? GetMetadataHedgingForColdStartOptIn(bool? clientOption)
+        {
+            if (clientOption.HasValue)
+            {
+                return clientOption.Value;
+            }
+
+            string value = Environment.GetEnvironmentVariable(ConfigurationManager.MetadataHedgingForColdStartEnabled);
+            if (!string.IsNullOrEmpty(value) && bool.TryParse(value, out bool parsed))
+            {
+                return parsed;
+            }
+
+            return null;
         }
 
         /// <summary>

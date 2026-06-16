@@ -897,6 +897,11 @@ namespace Microsoft.Azure.Cosmos
         /// metadata caches if the primary region's response has not arrived within the
         /// SDK-derived default threshold — even when PPAF is disabled. When set to
         /// <c>false</c>, metadata hedging is suppressed regardless of the PPAF state.
+        /// When this property is left <c>null</c>, the
+        /// <c>AZURE_COSMOS_METADATA_HEDGING_FOR_COLDSTART_ENABLED</c> environment variable
+        /// provides the same tri-state opt-in (<c>true</c> force-enables, <c>false</c>
+        /// suppresses); an explicitly set property value always takes precedence over the
+        /// environment variable. The default behavior is off for non-PPAF accounts.
         /// The Gateway-controlled <c>disableCrossRegionalHedging</c> account flag, when
         /// set, takes precedence over this property. The hedging threshold and all other
         /// tuning knobs are SDK-derived defaults and are not customer-configurable.

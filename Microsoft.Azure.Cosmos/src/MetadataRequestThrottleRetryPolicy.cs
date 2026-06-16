@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Metadata Request Throttle Retry Policy is combination of endpoint change retry + throttling retry.
     /// </summary>
-    internal sealed class MetadataRequestThrottleRetryPolicy : IDocumentClientRetryPolicy
+    internal sealed class MetadataRequestThrottleRetryPolicy : IDocumentClientRetryPolicy, IMetadataHedgeContextReceiver
     {
         /// <summary>
         /// A constant integer defining the default maximum retry wait time in seconds.
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos
                 return this.throttlingRetryPolicy.ShouldRetryAsync(exception, cancellationToken);
             }
 
-            if (MetadataHedgingStrategy.IsRegionalFailure(
+            if (MetadataRegionalFailureClassifier.IsRegionalFailure(
                 statusCode: statusCode,
                 subStatus: subStatus,
                 exception: null,
@@ -202,7 +202,7 @@ namespace Microsoft.Azure.Cosmos
                 return this.throttlingRetryPolicy.ShouldRetryAsync(responseMessage, cancellationToken);
             }
 
-            if (MetadataHedgingStrategy.IsRegionalFailure(
+            if (MetadataRegionalFailureClassifier.IsRegionalFailure(
                 statusCode: statusCode,
                 subStatus: subStatus,
                 exception: null,
@@ -254,6 +254,12 @@ namespace Microsoft.Azure.Cosmos
         internal void AttachHedgeContext(MetadataHedgingStrategy.MetadataHedgingContext context)
         {
             this.hedgeContext = context;
+        }
+
+        /// <inheritdoc />
+        void IMetadataHedgeContextReceiver.AttachHedgeContext(MetadataHedgingStrategy.MetadataHedgingContext context)
+        {
+            this.AttachHedgeContext(context);
         }
 
         /// <summary>

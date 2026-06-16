@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [Owner("dkunda")]
         public void IsRegionalFailure_HttpRequestException_ReturnsTrue()
         {
-            Assert.IsTrue(MetadataHedgingStrategy.IsRegionalFailure(
+            Assert.IsTrue(MetadataRegionalFailureClassifier.IsRegionalFailure(
                 statusCode: null,
                 subStatus: SubStatusCodes.Unknown,
                 exception: new HttpRequestException("boom"),
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [Owner("dkunda")]
         public void IsRegionalFailure_NonUserOperationCanceled_ReturnsTrue()
         {
-            Assert.IsTrue(MetadataHedgingStrategy.IsRegionalFailure(
+            Assert.IsTrue(MetadataRegionalFailureClassifier.IsRegionalFailure(
                 statusCode: null,
                 subStatus: SubStatusCodes.Unknown,
                 exception: new OperationCanceledException(),
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             using CancellationTokenSource cts = new CancellationTokenSource();
             cts.Cancel();
-            Assert.IsFalse(MetadataHedgingStrategy.IsRegionalFailure(
+            Assert.IsFalse(MetadataRegionalFailureClassifier.IsRegionalFailure(
                 statusCode: null,
                 subStatus: SubStatusCodes.Unknown,
                 exception: new OperationCanceledException(),
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [DataRow((int)HttpStatusCode.OK, false)]
         public void IsRegionalFailure_StatusCodeOnly(int statusCode, bool expected)
         {
-            Assert.AreEqual(expected, MetadataHedgingStrategy.IsRegionalFailure(
+            Assert.AreEqual(expected, MetadataRegionalFailureClassifier.IsRegionalFailure(
                 statusCode: (HttpStatusCode)statusCode,
                 subStatus: SubStatusCodes.Unknown,
                 exception: null,
@@ -70,9 +70,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [Owner("dkunda")]
         public void IsRegionalFailure_GoneRequiresLeaseNotFound()
         {
-            Assert.IsTrue(MetadataHedgingStrategy.IsRegionalFailure(
+            Assert.IsTrue(MetadataRegionalFailureClassifier.IsRegionalFailure(
                 HttpStatusCode.Gone, SubStatusCodes.LeaseNotFound, null, CancellationToken.None));
-            Assert.IsFalse(MetadataHedgingStrategy.IsRegionalFailure(
+            Assert.IsFalse(MetadataRegionalFailureClassifier.IsRegionalFailure(
                 HttpStatusCode.Gone, SubStatusCodes.PartitionKeyRangeGone, null, CancellationToken.None));
         }
 
@@ -80,9 +80,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [Owner("dkunda")]
         public void IsRegionalFailure_ForbiddenRequiresDatabaseAccountNotFound()
         {
-            Assert.IsTrue(MetadataHedgingStrategy.IsRegionalFailure(
+            Assert.IsTrue(MetadataRegionalFailureClassifier.IsRegionalFailure(
                 HttpStatusCode.Forbidden, SubStatusCodes.DatabaseAccountNotFound, null, CancellationToken.None));
-            Assert.IsFalse(MetadataHedgingStrategy.IsRegionalFailure(
+            Assert.IsFalse(MetadataRegionalFailureClassifier.IsRegionalFailure(
                 HttpStatusCode.Forbidden, SubStatusCodes.Unknown, null, CancellationToken.None));
         }
 
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [Owner("dkunda")]
         public void IsRegionalFailure_NoStatusNoException_ReturnsFalse()
         {
-            Assert.IsFalse(MetadataHedgingStrategy.IsRegionalFailure(
+            Assert.IsFalse(MetadataRegionalFailureClassifier.IsRegionalFailure(
                 statusCode: null,
                 subStatus: SubStatusCodes.Unknown,
                 exception: null,

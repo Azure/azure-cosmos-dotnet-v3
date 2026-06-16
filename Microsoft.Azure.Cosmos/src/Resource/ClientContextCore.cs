@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos
                chaosInterceptorFactory: clientOptions.ChaosInterceptorFactory,
                enableAsyncCacheExceptionNoSharing: clientOptions.EnableAsyncCacheExceptionNoSharing,
                useLengthAwareRangeComparer: clientOptions.UseLengthAwareRangeComparer,
-               enableMetadataHedgingForColdStart: clientOptions.EnableMetadataHedgingForColdStart);
+               enableMetadataHedgingForColdStart: ConfigurationManager.GetMetadataHedgingForColdStartOptIn(clientOptions.EnableMetadataHedgingForColdStart));
 
             return ClientContextCore.Create(
                 cosmosClient,

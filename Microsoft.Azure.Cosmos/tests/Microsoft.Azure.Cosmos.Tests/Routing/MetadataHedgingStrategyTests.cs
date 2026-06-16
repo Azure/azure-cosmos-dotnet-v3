@@ -561,6 +561,173 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         }
 
         // ---------------------------------------------------------------
+        // ExecuteAsync — fault paths (budget restoration / fallback)
+        // ---------------------------------------------------------------
+
+        [TestMethod]
+        [Owner("dkunda")]
+        public async Task ExecuteAsync_HedgeEndpointResolutionFaults_ReleasesBudgetPermit()
+        {
+            // Eligibility resolves the applicable endpoints once (returns both, so the request is
+            // eligible and the budget permit is taken). The subsequent hedge-endpoint resolution then
+            // throws — simulating a concurrent location-cache refresh/failover after the permit is held.
+            // The permit must still be released (regression guard for the leak that would otherwise
+            // drive AvailableBudget to 0 for the lifetime of the client).
+            Mock<IGlobalEndpointManager> gem = new Mock<IGlobalEndpointManager>(MockBehavior.Loose);
+            gem.Setup(g => g.ReadEndpoints).Returns(new ReadOnlyCollection<Uri>(new[] { PrimaryEndpoint, HedgeEndpoint }));
+            gem.Setup(g => g.ResolveServiceEndpoint(It.IsAny<DocumentServiceRequest>())).Returns(PrimaryEndpoint);
+            gem.Setup(g => g.GetLocation(It.IsAny<Uri>())).Returns(PrimaryRegion);
+            gem.SetupSequence(g => g.GetApplicableEndpoints(It.IsAny<DocumentServiceRequest>(), It.IsAny<bool>()))
+                .Returns(new ReadOnlyCollection<Uri>(new[] { PrimaryEndpoint, HedgeEndpoint }))
+                .Throws(new InvalidOperationException("location cache refresh in flight"));
+
+            using MetadataHedgingStrategy strategy = new MetadataHedgingStrategy(
+                globalEndpointManager: gem.Object,
+                isHedgingDisabledByGateway: () => false,
+                isPpafEnabled: () => true,
+                customerOptIn: true,
+                threshold: TimeSpan.FromMilliseconds(100));
+
+            DocumentServiceRequest req = BuildCollectionReadRequest();
+            MetadataHedgingContext ctx = NewColdStartContext();
+
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => strategy.ExecuteAsync(
+                req,
+                (r, u, ct) => Task.FromResult(NewOkResponse()),
+                ctx,
+                NoOpTrace.Singleton,
+                CancellationToken.None));
+
+            Assert.AreEqual(
+                strategy.PerClientConcurrencyBudget,
+                strategy.AvailableBudget,
+                "the hedge budget permit must be released when hedge-endpoint resolution faults");
+        }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        public async Task ExecuteAsync_BothBranchesRegionalFailure_PrefersPrimaryOutcome()
+        {
+            // Primary fails fast (503) before the threshold, so the hedge fires immediately; the hedge
+            // also returns a regional failure (503). With neither branch an acceptable winner, the
+            // strategy must prefer the primary's outcome (so the metadata retry policy classifies the
+            // failure normally) and still record TotalAttempts == 2.
+            using MetadataHedgingStrategy strategy = BuildStrategy(threshold: TimeSpan.FromMilliseconds(500));
+            DocumentServiceRequest req = BuildCollectionReadRequest();
+            MetadataHedgingContext ctx = NewColdStartContext();
+            TrackedResponse primaryResp = NewTrackedResponse(HttpStatusCode.ServiceUnavailable);
+            TrackedResponse hedgeResp = NewTrackedResponse(HttpStatusCode.ServiceUnavailable);
+
+            MetadataHedgingResult result = await strategy.ExecuteAsync(
+                req,
+                async (r, u, ct) =>
+                {
+                    if (u.Equals(PrimaryEndpoint))
+                    {
+                        return primaryResp;
+                    }
+
+                    await Task.Delay(5, CancellationToken.None).ConfigureAwait(false);
+                    return hedgeResp;
+                },
+                ctx,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.IsTrue(result.HedgeFired, "a degraded primary that fails fast must trigger the hedge");
+            Assert.AreEqual(PrimaryEndpoint, result.WinningEndpoint, "both branches 503: prefer the primary outcome");
+            Assert.AreEqual(PrimaryRegion, result.WinningRegion);
+            Assert.AreEqual((int)HttpStatusCode.ServiceUnavailable, (int)result.Response.StatusCode);
+            Assert.AreEqual(2, result.Diagnostics.TotalAttempts);
+
+            // Loser (hedge 503) is disposed by background cleanup; the budget is restored.
+            await WaitForAsync(() => strategy.AvailableBudget == strategy.PerClientConcurrencyBudget, TimeSpan.FromSeconds(2));
+            Assert.AreEqual(strategy.PerClientConcurrencyBudget, strategy.AvailableBudget, "budget must be restored after a both-failure fallback");
+        }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        public async Task ExecuteAsync_FaultedWinner_RethrowsThroughObserveWinningTaskAndReleasesBudget()
+        {
+            // Primary throws fast (before the threshold), so the hedge fires; the hedge then returns a
+            // regional failure (503). The fallback selects the (faulted) primary as the winner, which
+            // must surface verbatim through ObserveWinningTaskAsync — and the budget must still be
+            // released by the background cleanup of the loser.
+            using MetadataHedgingStrategy strategy = BuildStrategy(threshold: TimeSpan.FromMilliseconds(500));
+            DocumentServiceRequest req = BuildCollectionReadRequest();
+            MetadataHedgingContext ctx = NewColdStartContext();
+            TrackedResponse hedgeResp = NewTrackedResponse(HttpStatusCode.ServiceUnavailable);
+            InvalidOperationException primaryFault = new InvalidOperationException("primary transport fault");
+
+            InvalidOperationException thrown = await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => strategy.ExecuteAsync(
+                req,
+                async (r, u, ct) =>
+                {
+                    if (u.Equals(PrimaryEndpoint))
+                    {
+                        throw primaryFault;
+                    }
+
+                    await Task.Delay(5, CancellationToken.None).ConfigureAwait(false);
+                    return hedgeResp;
+                },
+                ctx,
+                NoOpTrace.Singleton,
+                CancellationToken.None));
+
+            Assert.AreSame(primaryFault, thrown, "the faulted winner's exception must propagate verbatim via ObserveWinningTaskAsync");
+
+            await WaitForAsync(() => strategy.AvailableBudget == strategy.PerClientConcurrencyBudget, TimeSpan.FromSeconds(2));
+            Assert.AreEqual(strategy.PerClientConcurrencyBudget, strategy.AvailableBudget, "budget must be restored after a faulted winner");
+        }
+
+        // ---------------------------------------------------------------
+        // TryGetHedgeAuthRejectStatus — completed vs faulted classification
+        // ---------------------------------------------------------------
+
+        [TestMethod]
+        [Owner("dkunda")]
+        public void TryGetHedgeAuthRejectStatus_CompletedResponse_401Or403_ReturnsStatus()
+        {
+            DocumentServiceResponse unauthorized = new DocumentServiceResponse(
+                Stream.Null, new StoreResponseNameValueCollection(), HttpStatusCode.Unauthorized);
+            DocumentServiceResponse forbidden = new DocumentServiceResponse(
+                Stream.Null, new StoreResponseNameValueCollection(), HttpStatusCode.Forbidden);
+
+            Assert.AreEqual(HttpStatusCode.Unauthorized, MetadataHedgingStrategy.TryGetHedgeAuthRejectStatus(unauthorized, null));
+            Assert.AreEqual(HttpStatusCode.Forbidden, MetadataHedgingStrategy.TryGetHedgeAuthRejectStatus(forbidden, null));
+        }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        public void TryGetHedgeAuthRejectStatus_FaultedDocumentClientException_401Or403_ReturnsStatus()
+        {
+            // The GatewayStoreModel path throws 401/403 as a DocumentClientException rather than
+            // returning a response, so the faulted-task branch must still surface the auth signal.
+            AggregateException unauthorized = new AggregateException(
+                new DocumentClientException("denied", null, HttpStatusCode.Unauthorized));
+            AggregateException forbidden = new AggregateException(
+                new DocumentClientException("denied", null, HttpStatusCode.Forbidden));
+
+            Assert.AreEqual(HttpStatusCode.Unauthorized, MetadataHedgingStrategy.TryGetHedgeAuthRejectStatus(null, unauthorized));
+            Assert.AreEqual(HttpStatusCode.Forbidden, MetadataHedgingStrategy.TryGetHedgeAuthRejectStatus(null, forbidden));
+        }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        public void TryGetHedgeAuthRejectStatus_NonAuthOrNull_ReturnsNull()
+        {
+            DocumentServiceResponse ok = new DocumentServiceResponse(
+                Stream.Null, new StoreResponseNameValueCollection(), HttpStatusCode.OK);
+            AggregateException serverError = new AggregateException(
+                new DocumentClientException("boom", null, HttpStatusCode.ServiceUnavailable));
+
+            Assert.IsNull(MetadataHedgingStrategy.TryGetHedgeAuthRejectStatus(ok, null));
+            Assert.IsNull(MetadataHedgingStrategy.TryGetHedgeAuthRejectStatus(null, serverError));
+            Assert.IsNull(MetadataHedgingStrategy.TryGetHedgeAuthRejectStatus(null, null));
+        }
+
+        // ---------------------------------------------------------------
         // IsAcceptableWinner unit tests
         // ---------------------------------------------------------------
 
@@ -836,6 +1003,75 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             Mock<IGlobalEndpointManager> mock = new Mock<IGlobalEndpointManager>(MockBehavior.Loose);
             return mock.Object;
+        }
+
+        // ---------------------------------------------------------------
+        // Environment-variable opt-in resolution
+        // (AZURE_COSMOS_METADATA_HEDGING_FOR_COLDSTART_ENABLED)
+        // ---------------------------------------------------------------
+
+        private const string MetadataHedgingEnvVar = "AZURE_COSMOS_METADATA_HEDGING_FOR_COLDSTART_ENABLED";
+
+        [TestMethod]
+        [Owner("dkunda")]
+        [DataRow("true", true)]
+        [DataRow("True", true)]
+        [DataRow("false", false)]
+        public void GetMetadataHedgingForColdStartOptIn_NullOption_UsesEnvironmentVariable(string envValue, bool expected)
+        {
+            RunWithMetadataHedgingEnvVar(envValue, () =>
+            {
+                bool? resolved = Microsoft.Azure.Cosmos.ConfigurationManager.GetMetadataHedgingForColdStartOptIn(clientOption: null);
+                Assert.AreEqual(expected, resolved);
+            });
+        }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        public void GetMetadataHedgingForColdStartOptIn_NullOption_UnsetEnv_ReturnsNull_FollowsPpaf()
+        {
+            RunWithMetadataHedgingEnvVar(null, () =>
+            {
+                Assert.IsNull(Microsoft.Azure.Cosmos.ConfigurationManager.GetMetadataHedgingForColdStartOptIn(clientOption: null));
+            });
+        }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        public void GetMetadataHedgingForColdStartOptIn_NullOption_NonBooleanEnv_ReturnsNull()
+        {
+            RunWithMetadataHedgingEnvVar("not-a-bool", () =>
+            {
+                Assert.IsNull(Microsoft.Azure.Cosmos.ConfigurationManager.GetMetadataHedgingForColdStartOptIn(clientOption: null));
+            });
+        }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        [DataRow(true)]
+        [DataRow(false)]
+        public void GetMetadataHedgingForColdStartOptIn_ExplicitOption_AlwaysWinsOverEnv(bool option)
+        {
+            // The CosmosClientOptions value, when set, takes precedence over the environment
+            // variable regardless of what the variable says.
+            RunWithMetadataHedgingEnvVar(option ? "false" : "true", () =>
+            {
+                Assert.AreEqual(option, Microsoft.Azure.Cosmos.ConfigurationManager.GetMetadataHedgingForColdStartOptIn(clientOption: option));
+            });
+        }
+
+        private static void RunWithMetadataHedgingEnvVar(string value, Action action)
+        {
+            string original = Environment.GetEnvironmentVariable(MetadataHedgingEnvVar);
+            try
+            {
+                Environment.SetEnvironmentVariable(MetadataHedgingEnvVar, value);
+                action();
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(MetadataHedgingEnvVar, original);
+            }
         }
     }
 }
