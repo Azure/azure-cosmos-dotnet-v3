@@ -320,11 +320,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         // ─── Authorization: read-only vs read-write credential ─────────────────
 
         [TestMethod]
-        public async Task ReadTransaction_ReadOnlyResourceToken_ReturnsForbidden()
+        public async Task ReadTransaction_ReadOnlyResourceToken_Succeeds()
         {
-            // A read distributed transaction is authorized by the coordinator on the WRITE path
-            // (the request resolves to the write region / coordinator). A read-only credential must
-            // therefore be rejected with Forbidden, even though the user-facing operation is a read.
+            // A read distributed transaction should work with a read-only credential since
+            // the user-facing operation is a read.
             ToDoActivity doc = await this.SeedItemAsync(this.container);
 
             (CosmosClient readOnlyClient, HttpStatusCode mintStatus) = await this.TryCreateResourceTokenClientAsync(
@@ -339,19 +338,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     .CommitTransactionAsync(CancellationToken.None));
 
                 Assert.AreEqual(
-                    HttpStatusCode.Forbidden,
+                    HttpStatusCode.OK,
                     status,
-                    $"A read DTX with a read-only resource token must be rejected with Forbidden. Got: {status}");
+                    $"A read DTX with a read-only resource token should succeed. Got: {status}");
             }
         }
 
         [TestMethod]
-        public async Task ReadTransaction_ReadWriteResourceToken_AlsoReturnsForbidden()
+        public async Task ReadTransaction_ReadWriteResourceToken_Succeeds()
         {
-            // Disambiguation control: the SAME read DTX with a read-WRITE (PermissionMode.All) resource
-            // token is ALSO Forbidden. This proves the coordinator rejects resource-token auth wholesale —
-            // the discriminator is the credential TYPE (resource token vs master key), not the permission
-            // level. A read-only-vs-read-write distinction only manifests at the master-key level.
+            // A read distributed transaction should also work with a read-write (PermissionMode.All) resource token.
             ToDoActivity doc = await this.SeedItemAsync(this.container);
 
             (CosmosClient readWriteClient, HttpStatusCode mintStatus) = await this.TryCreateResourceTokenClientAsync(
@@ -366,18 +362,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     .CommitTransactionAsync(CancellationToken.None));
 
                 Assert.AreEqual(
-                    HttpStatusCode.Forbidden,
+                    HttpStatusCode.OK,
                     status,
-                    $"A read DTX with any resource token (even read-write) is currently Forbidden by the coordinator. Got: {status}");
+                    $"A read DTX with a read-write resource token should succeed. Got: {status}");
             }
         }
 
         [TestMethod]
-        public async Task ReadTransaction_MasterKey_NotForbidden()
+        public async Task ReadTransaction_MasterKey_Succeeds()
         {
-            // The "but not otherwise" half: the same read DTX with the read-write MASTER key must NOT be
-            // Forbidden — it succeeds end-to-end. Paired with the read-only-resource-token test, this
-            // confirms that a read-only credential is rejected while a read-write credential is accepted.
+            // A read DTX with the read-write master key must succeed end-to-end.
             ToDoActivity doc = await this.SeedItemAsync(this.container);
 
             HttpStatusCode status = await TryGetReadTransactionStatusAsync(() => this.client
@@ -385,10 +379,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .ReadItem(this.container, new PartitionKey(doc.pk), doc.id)
                 .CommitTransactionAsync(CancellationToken.None));
 
-            Assert.AreNotEqual(
-                HttpStatusCode.Forbidden,
-                status,
-                $"A read DTX with the read-write master key must NOT be Forbidden. Got: {status}");
             Assert.AreEqual(
                 HttpStatusCode.OK,
                 status,

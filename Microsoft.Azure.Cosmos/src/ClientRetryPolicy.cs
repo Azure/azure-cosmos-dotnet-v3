@@ -1,4 +1,4 @@
-//------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -260,9 +260,20 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    // set location-based routing directive based on request retry context
-                    request.RequestContext.RouteToLocation(this.retryContext.RetryLocationIndex, this.retryContext.RetryRequestOnPreferredLocations);
+                    // set location-based routing directive based on request retry context.
+                    // For DTX requests, always disable preferred locations so the request enters
+                    // the write-region flip-flop branch in LocationCache.ResolveServiceEndpoint,
+                    // ensuring it never routes to a read-only region.
+                    request.RequestContext.RouteToLocation(
+                        this.retryContext.RetryLocationIndex,
+                        this.isDtxRequest ? false : this.retryContext.RetryRequestOnPreferredLocations);
                 }
+            }
+            else if (this.isDtxRequest)
+            {
+                // First attempt (no retry context): disable preferred locations so the request
+                // enters the write-region branch in LocationCache.ResolveServiceEndpoint.
+                request.RequestContext.RouteToLocation(0, usePreferredLocations: false);
             }
 
 #if !INTERNAL
@@ -312,6 +323,15 @@ namespace Microsoft.Azure.Cosmos
                 : this.globalEndpointManager.ResolveServiceEndpoint(request);
 
             request.RequestContext.RouteToLocation(this.locationEndpoint);
+
+            // Force UsePreferredLocations=false for DTX after endpoint pinning so that any
+            // downstream re-resolution (e.g. on retry) stays on the write-region branch.
+            if (this.isDtxRequest)
+            {
+                request.RequestContext.RouteToLocation(
+                    this.retryContext?.RetryLocationIndex ?? 0,
+                    usePreferredLocations: false);
+            }
 
             // Hedging-Detection API: tag the upcoming dispatch reason on Properties so that
             // the downstream dispatch site (TransportHandler / GatewayStoreModel) can append

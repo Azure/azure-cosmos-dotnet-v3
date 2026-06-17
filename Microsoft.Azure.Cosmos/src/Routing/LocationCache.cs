@@ -386,15 +386,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
             else
             {
-                // Distributed transaction requests (including reads, which are sent as OperationType.Read)
-                // must always route to the write region where the transaction coordinator lives; never
-                // resolve them to read-only endpoints.
-                bool isDistributedTransactionRequest = DistributedTransactionConstants.IsDistributedTransactionRequest(
-                    request.OperationType,
-                    request.ResourceType);
-                ReadOnlyCollection<Uri> endpoints = this.GetApplicableEndpoints(
-                    request,
-                    !request.OperationType.IsWriteOperation() && !isDistributedTransactionRequest);
+                ReadOnlyCollection<Uri> endpoints = this.GetApplicableEndpoints(request, !request.OperationType.IsWriteOperation());
                 locationEndpointToRoute = endpoints[locationIndex % endpoints.Count];
             }
 
@@ -404,16 +396,6 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public ReadOnlyCollection<Uri> GetApplicableEndpoints(DocumentServiceRequest request, bool isReadRequest)
         {
-            // Single chokepoint guard: distributed transaction requests (including reads, which are
-            // sent as OperationType.Read) must always resolve to the write region where the transaction
-            // coordinator lives. Force write-endpoint resolution regardless of the caller-supplied flag
-            // so a DTX request can never be routed to a read-only region.
-            if (isReadRequest
-                && DistributedTransactionConstants.IsDistributedTransactionRequest(request.OperationType, request.ResourceType))
-            {
-                isReadRequest = false;
-            }
-
             if (request.RequestContext.ExcludeRegions == null || request.RequestContext.ExcludeRegions.Count == 0)
             {
                 return isReadRequest ? this.ReadEndpoints : this.WriteEndpoints;

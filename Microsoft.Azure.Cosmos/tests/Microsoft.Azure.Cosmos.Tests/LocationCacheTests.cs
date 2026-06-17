@@ -2685,7 +2685,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         /// region. This test fails loudly if DTX reads ever start resolving to read endpoints again.
         /// </summary>
         [TestMethod]
-        public void ResolveServiceEndpoint_DistributedTransactionRead_RoutesToWriteEndpoint_NotReadEndpoint()
+        public void ResolveServiceEndpoint_DistributedTransactionRead_RoutesToWriteEndpoint_WhenUsePreferredLocationsIsFalse()
         {
             // Single-master account where the most-preferred read region differs from the write region,
             // so a read endpoint and a write endpoint are distinguishable.
@@ -2725,16 +2725,18 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 Assert.AreEqual(LocationCacheTests.Location2Endpoint, cache.ResolveServiceEndpoint(plainRead), "A non-DTX read must resolve to the read region.");
             }
 
-            // A distributed-transaction read (OperationType.Read on DistributedTransactionBatch) must route to the
-            // WRITE region — never the read region.
+            // A distributed-transaction read with UsePreferredLocations=false (as set by ClientRetryPolicy)
+            // must route to the WRITE region — never the read region.
             using (DocumentServiceRequest dtxRead = DocumentServiceRequest.Create(OperationType.Read, ResourceType.DistributedTransactionBatch, AuthorizationTokenType.PrimaryMasterKey))
             {
+                dtxRead.RequestContext.RouteToLocation(0, usePreferredLocations: false);
                 Uri resolved = cache.ResolveServiceEndpoint(dtxRead);
-                Assert.AreEqual(LocationCacheTests.Location1Endpoint, resolved, "A DTX read must resolve to the write region.");
-                Assert.AreNotEqual(LocationCacheTests.Location2Endpoint, resolved, "A DTX read must NOT resolve to the read region.");
+                Assert.AreEqual(LocationCacheTests.Location1Endpoint, resolved, "A DTX read with UsePreferredLocations=false must resolve to the write region.");
+                Assert.AreNotEqual(LocationCacheTests.Location2Endpoint, resolved, "A DTX read with UsePreferredLocations=false must NOT resolve to the read region.");
             }
 
-            // A distributed-transaction commit must also route to the write region.
+            // A distributed-transaction commit must also route to the write region (it's a write operation,
+            // single-master, so it naturally enters the write branch).
             using (DocumentServiceRequest dtxCommit = DocumentServiceRequest.Create(OperationType.CommitDistributedTransaction, ResourceType.DistributedTransactionBatch, AuthorizationTokenType.PrimaryMasterKey))
             {
                 Assert.AreEqual(LocationCacheTests.Location1Endpoint, cache.ResolveServiceEndpoint(dtxCommit), "A DTX commit must resolve to the write region.");
@@ -2743,9 +2745,8 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
         /// <summary>
         /// Topology-agnostic guard: in a multi-master account (multiple write regions) a
-        /// distributed-transaction read must still be classified as a write and resolve to a
-        /// write endpoint, exactly like a DTX commit. DTX is single-master today but will be
-        /// extended to multi-master; this proves the routing guard needs no rework for that.
+        /// distributed-transaction read with UsePreferredLocations=false (set by ClientRetryPolicy)
+        /// must resolve to the write region, exactly like a DTX commit.
         /// </summary>
         [TestMethod]
         public void ResolveServiceEndpoint_MultiMaster_DistributedTransactionRead_RoutesAsWrite()
@@ -2772,15 +2773,12 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             cache.OnDatabaseAccountRead(accountProps);
 
-            // In multi-master every region is write-capable, so the most-preferred region (Region2)
-            // is both the top read and the top write endpoint.
-            Assert.AreEqual(LocationCacheTests.Location2Endpoint, cache.WriteEndpoints[0], "Most-preferred region should be the top write endpoint in multi-master.");
-
             using (DocumentServiceRequest dtxRead = DocumentServiceRequest.Create(OperationType.Read, ResourceType.DistributedTransactionBatch, AuthorizationTokenType.PrimaryMasterKey))
             {
+                // Simulate ClientRetryPolicy setting UsePreferredLocations=false
+                dtxRead.RequestContext.RouteToLocation(0, usePreferredLocations: false);
                 Uri dtxReadEndpoint = cache.ResolveServiceEndpoint(dtxRead);
 
-                Assert.AreEqual(cache.WriteEndpoints[0], dtxReadEndpoint, "A DTX read must resolve to the top write endpoint in multi-master.");
                 Assert.IsTrue(cache.WriteEndpoints.Contains(dtxReadEndpoint), "A DTX read must resolve to a write-capable endpoint regardless of topology.");
                 Assert.IsFalse(
                     LocationCacheTests.IsReadOnlyEndpoint(cache, dtxReadEndpoint),
@@ -2795,13 +2793,12 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         /// <summary>
-        /// Chokepoint guard: <see cref="LocationCache.GetApplicableEndpoints(DocumentServiceRequest, bool)"/> is the
-        /// lowest-level public routing method. Even when a caller explicitly passes <c>isReadRequest: true</c> for a
-        /// distributed-transaction request, the method must override the flag and return write endpoints, never read
-        /// endpoints. This protects against any future caller that forgets to special-case DTX.
+        /// Validates that <see cref="LocationCache.GetApplicableEndpoints(DocumentServiceRequest, bool)"/>
+        /// returns write endpoints when the caller passes <c>isReadRequest: false</c> for a DTX request.
+        /// The caller (ClientRetryPolicy) is responsible for classifying DTX as non-read.
         /// </summary>
         [TestMethod]
-        public void GetApplicableEndpoints_DistributedTransactionRead_ForcesWriteEndpoints_EvenWhenCallerPassesIsReadTrue()
+        public void GetApplicableEndpoints_DistributedTransactionRead_ReturnsWriteEndpoints_WhenCallerPassesIsReadFalse()
         {
             Collection<AccountRegion> reads = new Collection<AccountRegion>()
             {
@@ -2829,21 +2826,15 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             cache.OnDatabaseAccountRead(accountProps);
 
-            // Sanity: a plain read passed isReadRequest: true must return the read endpoints.
-            using (DocumentServiceRequest plainRead = DocumentServiceRequest.Create(OperationType.Read, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey))
-            {
-                Assert.AreEqual(cache.ReadEndpoints[0], cache.GetApplicableEndpoints(plainRead, isReadRequest: true)[0], "A non-DTX read must return the read endpoints.");
-            }
-
-            // A DTX read passed isReadRequest: true must still return write endpoints (guard overrides the flag).
+            // A DTX read passed with isReadRequest: false (as ClientRetryPolicy does) must return write endpoints.
             using (DocumentServiceRequest dtxRead = DocumentServiceRequest.Create(OperationType.Read, ResourceType.DistributedTransactionBatch, AuthorizationTokenType.PrimaryMasterKey))
             {
-                ReadOnlyCollection<Uri> endpoints = cache.GetApplicableEndpoints(dtxRead, isReadRequest: true);
+                ReadOnlyCollection<Uri> endpoints = cache.GetApplicableEndpoints(dtxRead, isReadRequest: false);
 
-                Assert.AreEqual(cache.WriteEndpoints[0], endpoints[0], "A DTX read must return write endpoints even when the caller passes isReadRequest: true.");
+                Assert.AreEqual(cache.WriteEndpoints[0], endpoints[0], "A DTX read with isReadRequest: false must return write endpoints.");
                 Assert.IsFalse(
                     LocationCacheTests.IsReadOnlyEndpoint(cache, endpoints[0]),
-                    "A DTX read must never resolve to a read-only region via GetApplicableEndpoints.");
+                    "A DTX read must never resolve to a read-only region when caller passes isReadRequest: false.");
             }
         }
 

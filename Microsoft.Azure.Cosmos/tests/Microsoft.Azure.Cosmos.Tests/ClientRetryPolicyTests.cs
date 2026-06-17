@@ -24,7 +24,6 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
 
-
     /// <summary>
     /// Tests for <see cref="ClientRetryPolicy"/>
     /// </summary>
@@ -192,6 +191,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             //Create Retry Policy
             ClientRetryPolicy retryPolicy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, isThinClientEnabled: false);
+
             CancellationToken cancellationToken = new CancellationToken();
             Exception serviceUnavailableException = new Exception();
             Mock<INameValueCollection> nameValueCollection = new Mock<INameValueCollection>();
@@ -1461,6 +1461,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             replicatedResourceClient.GoneAndRetryWithRetryTimeoutInSecondsOverride = 1;
 
             this.partitionKeyRangeLocationCache = GlobalPartitionEndpointManagerNoOp.Instance;
+
             ClientRetryPolicy retryPolicy = new ClientRetryPolicy(mockDocumentClientContext.GlobalEndpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery: true, isThinClientEnabled: false);
 
             INameValueCollection headers = new DictionaryNameValueCollection();
@@ -2290,23 +2291,30 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 "A non-DTX read must route to the read region.");
 
             // A DTX read (OperationType.Read on DistributedTransactionBatch) must route to the write region.
+            // OnBeforeSendRequest sets UsePreferredLocations=false; then ResolveServiceEndpoint picks the write region.
             DocumentServiceRequest dtxRead = ClientRetryPolicyTests.CreateReadDtxRequest();
             retryPolicy.OnBeforeSendRequest(dtxRead);
+
+            // Verify UsePreferredLocations was set to false by OnBeforeSendRequest
+            Assert.AreEqual(false, dtxRead.RequestContext.UsePreferredLocations, "OnBeforeSendRequest must set UsePreferredLocations=false for DTX reads.");
+
+            Uri dtxReadEndpoint = endpointManager.ResolveServiceEndpoint(dtxRead);
             Assert.AreEqual(
                 ClientRetryPolicyTests.Location1Endpoint,
-                dtxRead.RequestContext.LocationEndpointToRoute,
+                dtxReadEndpoint,
                 "A DTX read must route to the write region, not the read region.");
             Assert.AreNotEqual(
                 ClientRetryPolicyTests.Location2Endpoint,
-                dtxRead.RequestContext.LocationEndpointToRoute,
+                dtxReadEndpoint,
                 "A DTX read must NOT route to the read region.");
 
             // A DTX commit must also route to the write region.
             DocumentServiceRequest dtxCommit = ClientRetryPolicyTests.CreateDtxRequest();
             retryPolicy.OnBeforeSendRequest(dtxCommit);
+            Uri dtxCommitEndpoint = endpointManager.ResolveServiceEndpoint(dtxCommit);
             Assert.AreEqual(
                 ClientRetryPolicyTests.Location1Endpoint,
-                dtxCommit.RequestContext.LocationEndpointToRoute,
+                dtxCommitEndpoint,
                 "A DTX commit must route to the write region.");
         }
 
@@ -2335,7 +2343,10 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             DocumentServiceRequest dtxRead = ClientRetryPolicyTests.CreateReadDtxRequest();
             retryPolicy.OnBeforeSendRequest(dtxRead);
 
-            Uri dtxReadEndpoint = dtxRead.RequestContext.LocationEndpointToRoute;
+            // Verify UsePreferredLocations was set to false
+            Assert.AreEqual(false, dtxRead.RequestContext.UsePreferredLocations, "OnBeforeSendRequest must set UsePreferredLocations=false for DTX reads in multi-master.");
+
+            Uri dtxReadEndpoint = endpointManager.ResolveServiceEndpoint(dtxRead);
             Assert.IsTrue(
                 endpointManager.WriteEndpoints.Contains(dtxReadEndpoint),
                 "A DTX read must route to a write-capable endpoint, even in multi-master.");

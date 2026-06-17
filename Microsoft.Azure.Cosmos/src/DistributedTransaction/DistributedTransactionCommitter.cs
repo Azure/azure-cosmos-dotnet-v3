@@ -57,6 +57,11 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace,
             CancellationToken cancellationToken)
         {
+            if (this.operations.Count == 0)
+            {
+                throw new InvalidOperationException("Cannot commit a distributed transaction with zero operations. Add at least one operation before committing.");
+            }
+
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
