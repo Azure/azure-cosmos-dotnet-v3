@@ -56,6 +56,11 @@ namespace Microsoft.Azure.Cosmos
         public override Task<DistributedTransactionResponse> CommitTransactionAsync(
             CancellationToken cancellationToken = default)
         {
+            if (this.operations.Count == 0)
+            {
+                throw new InvalidOperationException("Cannot commit a distributed read transaction with zero operations. Add at least one ReadItem call before committing.");
+            }
+
             if (Interlocked.CompareExchange(ref this.isCommitInvoked, DistributedTransactionConstants.CommitStarted, DistributedTransactionConstants.CommitNotStarted) != DistributedTransactionConstants.CommitNotStarted)
             {
                 throw new InvalidOperationException(CommitAlreadyCalledMessage);

@@ -236,14 +236,18 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="request">The request being sent to the service.</param>
         public void OnBeforeSendRequest(DocumentServiceRequest request)
         {
-            this.isReadRequest = request.IsReadOnlyRequest;
-            this.canUseMultipleWriteLocations = this.globalEndpointManager.CanUseMultipleWriteLocations(request);
-            this.documentServiceRequest = request;
-            this.isMultiMasterWriteRequest = !this.isReadRequest
-                && (this.globalEndpointManager?.CanSupportMultipleWriteLocations(request.ResourceType, request.OperationType) ?? false);
             this.isDtxRequest = DistributedTransactionConstants.IsDistributedTransactionRequest(
                 request.OperationType,
                 request.ResourceType);
+
+            // Distributed transaction requests (including reads, which are sent as OperationType.Read)
+            // must always route to the write region where the transaction coordinator lives. Treat them
+            // as non-read for routing/failover purposes so they are never directed to read-only regions.
+            this.isReadRequest = request.IsReadOnlyRequest && !this.isDtxRequest;
+            this.canUseMultipleWriteLocations = this.globalEndpointManager.CanUseMultipleWriteLocations(request);
+            this.documentServiceRequest = request;
+            this.isMultiMasterWriteRequest = !request.IsReadOnlyRequest
+                && (this.globalEndpointManager?.CanSupportMultipleWriteLocations(request.ResourceType, request.OperationType) ?? false);
 
             // clear previous location-based routing directive
             request.RequestContext.ClearRouteToLocation();

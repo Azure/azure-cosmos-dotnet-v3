@@ -386,7 +386,15 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
             else
             {
-                ReadOnlyCollection<Uri> endpoints = this.GetApplicableEndpoints(request, !request.OperationType.IsWriteOperation());
+                // Distributed transaction requests (including reads, which are sent as OperationType.Read)
+                // must always route to the write region where the transaction coordinator lives; never
+                // resolve them to read-only endpoints.
+                bool isDistributedTransactionRequest = DistributedTransactionConstants.IsDistributedTransactionRequest(
+                    request.OperationType,
+                    request.ResourceType);
+                ReadOnlyCollection<Uri> endpoints = this.GetApplicableEndpoints(
+                    request,
+                    !request.OperationType.IsWriteOperation() && !isDistributedTransactionRequest);
                 locationEndpointToRoute = endpoints[locationIndex % endpoints.Count];
             }
 
