@@ -317,6 +317,84 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             response.Dispose();
         }
 
+        // ─── Authorization: read-only vs read-write credential ─────────────────
+
+        [TestMethod]
+        public async Task ReadTransaction_ReadOnlyResourceToken_ReturnsForbidden()
+        {
+            // A read distributed transaction is authorized by the coordinator on the WRITE path
+            // (the request resolves to the write region / coordinator). A read-only credential must
+            // therefore be rejected with Forbidden, even though the user-facing operation is a read.
+            ToDoActivity doc = await this.SeedItemAsync(this.container);
+
+            (CosmosClient readOnlyClient, HttpStatusCode mintStatus) = await this.TryCreateResourceTokenClientAsync(
+                this.container, PermissionMode.Read, "DtxReadOnlyPermission");
+            Assert.AreEqual(HttpStatusCode.Created, mintStatus, "Minting the read-only resource token should succeed.");
+
+            using (readOnlyClient)
+            {
+                HttpStatusCode status = await TryGetReadTransactionStatusAsync(() => readOnlyClient
+                    .CreateDistributedReadTransaction()
+                    .ReadItem(readOnlyClient.GetContainer(DatabaseId, ContainerId), new PartitionKey(doc.pk), doc.id)
+                    .CommitTransactionAsync(CancellationToken.None));
+
+                Assert.AreEqual(
+                    HttpStatusCode.Forbidden,
+                    status,
+                    $"A read DTX with a read-only resource token must be rejected with Forbidden. Got: {status}");
+            }
+        }
+
+        [TestMethod]
+        public async Task ReadTransaction_ReadWriteResourceToken_AlsoReturnsForbidden()
+        {
+            // Disambiguation control: the SAME read DTX with a read-WRITE (PermissionMode.All) resource
+            // token is ALSO Forbidden. This proves the coordinator rejects resource-token auth wholesale —
+            // the discriminator is the credential TYPE (resource token vs master key), not the permission
+            // level. A read-only-vs-read-write distinction only manifests at the master-key level.
+            ToDoActivity doc = await this.SeedItemAsync(this.container);
+
+            (CosmosClient readWriteClient, HttpStatusCode mintStatus) = await this.TryCreateResourceTokenClientAsync(
+                this.container, PermissionMode.All, "DtxReadWritePermission");
+            Assert.AreEqual(HttpStatusCode.Created, mintStatus, "Minting the read-write resource token should succeed.");
+
+            using (readWriteClient)
+            {
+                HttpStatusCode status = await TryGetReadTransactionStatusAsync(() => readWriteClient
+                    .CreateDistributedReadTransaction()
+                    .ReadItem(readWriteClient.GetContainer(DatabaseId, ContainerId), new PartitionKey(doc.pk), doc.id)
+                    .CommitTransactionAsync(CancellationToken.None));
+
+                Assert.AreEqual(
+                    HttpStatusCode.Forbidden,
+                    status,
+                    $"A read DTX with any resource token (even read-write) is currently Forbidden by the coordinator. Got: {status}");
+            }
+        }
+
+        [TestMethod]
+        public async Task ReadTransaction_MasterKey_NotForbidden()
+        {
+            // The "but not otherwise" half: the same read DTX with the read-write MASTER key must NOT be
+            // Forbidden — it succeeds end-to-end. Paired with the read-only-resource-token test, this
+            // confirms that a read-only credential is rejected while a read-write credential is accepted.
+            ToDoActivity doc = await this.SeedItemAsync(this.container);
+
+            HttpStatusCode status = await TryGetReadTransactionStatusAsync(() => this.client
+                .CreateDistributedReadTransaction()
+                .ReadItem(this.container, new PartitionKey(doc.pk), doc.id)
+                .CommitTransactionAsync(CancellationToken.None));
+
+            Assert.AreNotEqual(
+                HttpStatusCode.Forbidden,
+                status,
+                $"A read DTX with the read-write master key must NOT be Forbidden. Got: {status}");
+            Assert.AreEqual(
+                HttpStatusCode.OK,
+                status,
+                $"A read DTX with the read-write master key should succeed with 200 OK. Got: {status}");
+        }
+
         // ─── Helpers ───────────────────────────────────────────────────────────
 
         private async Task<ToDoActivity> SeedItemAsync(Container targetContainer)
@@ -324,6 +402,46 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity doc = ToDoActivity.CreateRandomToDoActivity();
             await targetContainer.CreateItemAsync(doc, new PartitionKey(doc.pk));
             return doc;
+        }
+
+        // Mints a resource token scoped to the target container at the requested permission level and
+        // returns a CosmosClient authenticated with that token (plus the permission-creation status code).
+        private async Task<(CosmosClient, HttpStatusCode)> TryCreateResourceTokenClientAsync(
+            Container targetContainer,
+            PermissionMode permissionMode,
+            string permissionId)
+        {
+            User user = (await this.database.CreateUserAsync($"dtx-user-{Guid.NewGuid()}")).User;
+
+            PermissionResponse permissionResponse = await user.CreatePermissionAsync(
+                new PermissionProperties(permissionId, permissionMode, targetContainer));
+
+            CosmosClient tokenClient = new CosmosClient(
+                this.endpoint,
+                authKeyOrResourceToken: permissionResponse.Resource.Token,
+                new CosmosClientOptions
+                {
+                    ConnectionMode = ConnectionMode.Gateway,
+                    ConsistencyLevel = ConsistencyLevel.Session
+                });
+
+            return (tokenClient, permissionResponse.StatusCode);
+        }
+
+        // Runs a read DTX commit and returns the effective HTTP status, whether the coordinator surfaces
+        // it as an envelope status code or as a thrown CosmosException (e.g. Forbidden).
+        private static async Task<HttpStatusCode> TryGetReadTransactionStatusAsync(
+            Func<Task<DistributedTransactionResponse>> commit)
+        {
+            try
+            {
+                using DistributedTransactionResponse response = await commit();
+                return response.StatusCode;
+            }
+            catch (CosmosException ex)
+            {
+                return ex.StatusCode;
+            }
         }
     }
 }
