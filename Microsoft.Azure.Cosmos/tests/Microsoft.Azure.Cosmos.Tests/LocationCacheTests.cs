@@ -2794,6 +2794,59 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             return cache.ReadEndpoints.Contains(endpoint) && !cache.WriteEndpoints.Contains(endpoint);
         }
 
+        /// <summary>
+        /// Chokepoint guard: <see cref="LocationCache.GetApplicableEndpoints(DocumentServiceRequest, bool)"/> is the
+        /// lowest-level public routing method. Even when a caller explicitly passes <c>isReadRequest: true</c> for a
+        /// distributed-transaction request, the method must override the flag and return write endpoints, never read
+        /// endpoints. This protects against any future caller that forgets to special-case DTX.
+        /// </summary>
+        [TestMethod]
+        public void GetApplicableEndpoints_DistributedTransactionRead_ForcesWriteEndpoints_EvenWhenCallerPassesIsReadTrue()
+        {
+            Collection<AccountRegion> reads = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "ReadRegion", Endpoint = LocationCacheTests.Location2Endpoint.ToString() },
+                new AccountRegion { Name = "WriteRegion", Endpoint = LocationCacheTests.Location1Endpoint.ToString() },
+            };
+            Collection<AccountRegion> writes = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "WriteRegion", Endpoint = LocationCacheTests.Location1Endpoint.ToString() },
+            };
+
+            AccountProperties accountProps = new AccountProperties
+            {
+                ReadLocationsInternal = reads,
+                WriteLocationsInternal = writes,
+                EnableMultipleWriteLocations = false,
+            };
+
+            LocationCache cache = new LocationCache(
+                preferredLocations: new ReadOnlyCollection<string>(new List<string>() { "ReadRegion", "WriteRegion" }),
+                defaultEndpoint: LocationCacheTests.DefaultEndpoint,
+                enableEndpointDiscovery: true,
+                connectionLimit: 50,
+                useMultipleWriteLocations: false);
+
+            cache.OnDatabaseAccountRead(accountProps);
+
+            // Sanity: a plain read passed isReadRequest: true must return the read endpoints.
+            using (DocumentServiceRequest plainRead = DocumentServiceRequest.Create(OperationType.Read, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey))
+            {
+                Assert.AreEqual(cache.ReadEndpoints[0], cache.GetApplicableEndpoints(plainRead, isReadRequest: true)[0], "A non-DTX read must return the read endpoints.");
+            }
+
+            // A DTX read passed isReadRequest: true must still return write endpoints (guard overrides the flag).
+            using (DocumentServiceRequest dtxRead = DocumentServiceRequest.Create(OperationType.Read, ResourceType.DistributedTransactionBatch, AuthorizationTokenType.PrimaryMasterKey))
+            {
+                ReadOnlyCollection<Uri> endpoints = cache.GetApplicableEndpoints(dtxRead, isReadRequest: true);
+
+                Assert.AreEqual(cache.WriteEndpoints[0], endpoints[0], "A DTX read must return write endpoints even when the caller passes isReadRequest: true.");
+                Assert.IsFalse(
+                    LocationCacheTests.IsReadOnlyEndpoint(cache, endpoints[0]),
+                    "A DTX read must never resolve to a read-only region via GetApplicableEndpoints.");
+            }
+        }
+
         private Uri ResolveEndpointForReadRequest(bool masterResourceType)
         {
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Read, masterResourceType ? ResourceType.Database : ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey))
