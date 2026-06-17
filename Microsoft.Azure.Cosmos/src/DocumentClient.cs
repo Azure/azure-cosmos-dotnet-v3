@@ -1125,10 +1125,7 @@ namespace Microsoft.Azure.Cosmos
                 eventSource: this.eventSource,
                 serializerSettings: this.serializerSettings,
                 httpClient: this.httpClient,
-                globalPartitionEndpointManager: this.PartitionKeyRangeLocation,
-                isThinClientEnabled: this.isThinClientEnabled,
-                userAgentContainer: this.ConnectionPolicy.UserAgentContainer,
-                this.chaosInterceptor);
+                globalPartitionEndpointManager: this.PartitionKeyRangeLocation);
 
             this.GatewayStoreModel = gatewayStoreModel;
 
@@ -1146,7 +1143,27 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway)
             {
-                this.StoreModel = this.GatewayStoreModel;
+                if (this.isThinClientEnabled)
+                {
+                    ThinClientStoreModel thinClientStoreModel = new ThinClientStoreModel(
+                        endpointManager: this.GlobalEndpointManager,
+                        sessionContainer: this.sessionContainer,
+                        defaultConsistencyLevel: (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
+                        eventSource: this.eventSource,
+                        serializerSettings: this.serializerSettings,
+                        httpClient: this.httpClient,
+                        globalPartitionEndpointManager: this.PartitionKeyRangeLocation,
+                        userAgentContainer: this.ConnectionPolicy.UserAgentContainer,
+                        chaosInterceptor: this.chaosInterceptor);
+
+                    thinClientStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
+
+                    this.StoreModel = thinClientStoreModel;
+                }
+                else
+                {
+                    this.StoreModel = this.GatewayStoreModel;
+                }
             }
             else
             {

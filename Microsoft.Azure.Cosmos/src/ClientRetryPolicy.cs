@@ -313,7 +313,7 @@ namespace Microsoft.Azure.Cosmos
 #endif
             // Resolve the endpoint for the request and pin the resolution to the resolved endpoint
             this.locationEndpoint = this.isThinClientEnabled
-                && GatewayStoreModel.IsThinClientRoutable(this.globalEndpointManager, request)
+                && ThinClientStoreModel.IsThinClientRoutable(this.globalEndpointManager, request)
                 ? this.globalEndpointManager.ResolveThinClientEndpoint(request)
                 : this.globalEndpointManager.ResolveServiceEndpoint(request);
 
