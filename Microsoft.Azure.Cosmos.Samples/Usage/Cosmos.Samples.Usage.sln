@@ -59,6 +59,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CustomDiagnosticAndEventLis
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChangeFeedAllVersionsAndDeletes", "ChangeFeedAllVersionsAndDeletes\ChangeFeedAllVersionsAndDeletes.csproj", "{6B26AD21-63D1-4C68-A45A-5E066E3FD7F8}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DistributedTransaction", "DistributedTransaction\DistributedTransaction.csproj", "{B2E3A7D1-5C4F-4E8A-9F1D-3A6B7C8D9E0F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -177,6 +179,10 @@ Global
 		{6B26AD21-63D1-4C68-A45A-5E066E3FD7F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6B26AD21-63D1-4C68-A45A-5E066E3FD7F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6B26AD21-63D1-4C68-A45A-5E066E3FD7F8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2E3A7D1-5C4F-4E8A-9F1D-3A6B7C8D9E0F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2E3A7D1-5C4F-4E8A-9F1D-3A6B7C8D9E0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2E3A7D1-5C4F-4E8A-9F1D-3A6B7C8D9E0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2E3A7D1-5C4F-4E8A-9F1D-3A6B7C8D9E0F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
