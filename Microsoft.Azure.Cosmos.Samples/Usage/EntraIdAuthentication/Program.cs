@@ -1,6 +1,9 @@
 ﻿namespace Cosmos.Samples.Shared
 {
     using System;
+    using System.Collections.Generic;
+    using System.Net;
+    using System.Threading.Tasks;
     using global::Azure.Core;
     using global::Azure.Identity;
     using Microsoft.Azure.Cosmos;
@@ -17,20 +20,34 @@
     //    data-plane role on the account (for example "Cosmos DB Built-in Data Contributor").
     //    https://learn.microsoft.com/azure/cosmos-db/how-to-setup-rbac
     //
-    // 3. Microsoft.Azure.Cosmos and Azure.Identity NuGet packages.
-    // ----------------------------------------------------------------------------------------------------------
-    // Sample - demonstrates connecting a CosmosClient using Azure AD (Microsoft Entra ID)
-    //          via an Azure.Core TokenCredential, instead of an account key.
+    // 3. A database and container that ALREADY exist on the account. With a data-plane RBAC
+    //    role you cannot create them from the SDK (see RunControlPlaneLimitationDemoAsync below) -
+    //    create them ahead of time via ARM / Bicep / the Azure portal / the Azure CLI, e.g.:
     //
-    // Note: constructing a CosmosClient is lazy and does not perform any network call until the
-    //       first operation, so this sample illustrates the AAD construction surface without
-    //       requiring a live, RBAC-enabled account.
+    //      az cosmosdb sql database create   -a <account> -g <rg> -n SampleDb
+    //      az cosmosdb sql container create  -a <account> -g <rg> -d SampleDb -n People --partition-key-path /id
+    //
+    // 4. Microsoft.Azure.Cosmos and Azure.Identity NuGet packages.
+    // ----------------------------------------------------------------------------------------------------------
+    // Sample - demonstrates connecting a CosmosClient using Azure AD (Microsoft Entra ID) via an
+    //          Azure.Core TokenCredential instead of an account key, and the practical differences
+    //          you hit when running on a data-plane RBAC token:
+    //
+    //          * Data-plane operations (item create / read / query / replace / delete) work.
+    //          * Control-plane / metadata operations (create database, create container, ...) are
+    //            rejected with 403 Forbidden - they must be done through ARM, not the data plane.
+    //
+    //          The sample also shows two alternative construction patterns: a custom background
+    //          token-refresh interval and the CosmosClientBuilder fluent API.
     // ----------------------------------------------------------------------------------------------------------
 
     public class Program
     {
+        private const string DatabaseId = "SampleDb";
+        private const string ContainerId = "People";
+
         // <Main>
-        public static void Main(string[] _)
+        public static async Task Main(string[] _)
         {
             try
             {
@@ -39,18 +56,33 @@
                     .Build();
 
                 string endpoint = configuration["EndPointUrl"];
-                if (string.IsNullOrEmpty(endpoint))
+                if (string.IsNullOrEmpty(endpoint) || string.Equals(endpoint, "https://localhost:8081"))
                 {
-                    throw new ArgumentNullException("Please specify a valid endpoint in the appSettings.json");
+                    throw new ArgumentNullException(
+                        "Please specify the endpoint of a real, RBAC-enabled Cosmos account in appSettings.json. " +
+                        "The emulator does not issue or validate real Entra tokens.");
                 }
 
                 // DefaultAzureCredential resolves a token from the environment, a managed identity,
                 // the Azure CLI, Visual Studio, etc. Any Azure.Core TokenCredential works here.
                 TokenCredential tokenCredential = new DefaultAzureCredential();
 
-                Program.CreateClientWithTokenCredential(endpoint, tokenCredential);
-                Program.CreateClientWithCustomRefreshInterval(endpoint, tokenCredential);
-                Program.CreateClientWithBuilder(endpoint, tokenCredential);
+                // The simplest way to authenticate with Azure AD: pass a TokenCredential to the
+                // CosmosClient. The SDK acquires a token for the account scope and refreshes it in
+                // the background before expiry.
+                // <CreateClientWithTokenCredential>
+                using CosmosClient client = new CosmosClient(endpoint, tokenCredential);
+                // </CreateClientWithTokenCredential>
+
+                Console.WriteLine($"Created CosmosClient for '{client.Endpoint}' using a TokenCredential.");
+
+                // Show the control-plane vs data-plane behavior difference, then run real data operations.
+                await Program.RunControlPlaneLimitationDemoAsync(client);
+                await Program.RunDataPlaneDemoAsync(client);
+
+                // Alternative construction patterns.
+                Program.ShowCustomRefreshIntervalConstruction(endpoint, tokenCredential);
+                Program.ShowBuilderConstruction(endpoint, tokenCredential);
             }
             catch (CosmosException cre)
             {
@@ -70,27 +102,100 @@
         // </Main>
 
         /// <summary>
-        /// The simplest way to authenticate with Azure AD: pass a TokenCredential to the CosmosClient.
-        /// The SDK acquires a token for the account scope and refreshes it in the background before expiry.
+        /// The most commonly misunderstood aspect of AAD with Cosmos DB: a data-plane RBAC role
+        /// (such as "Cosmos DB Built-in Data Contributor") grants access to data, NOT to resource
+        /// management. Metadata / control-plane operations - creating or deleting databases and
+        /// containers, changing throughput, reading account keys - are governed by Azure RBAC on the
+        /// ARM control plane, so they are rejected with 403 Forbidden when attempted over a
+        /// data-plane token. Provision databases and containers with ARM / Bicep / the portal / the
+        /// Azure CLI instead.
         /// </summary>
-        private static void CreateClientWithTokenCredential(
-            string endpoint,
-            TokenCredential tokenCredential)
+        private static async Task RunControlPlaneLimitationDemoAsync(CosmosClient client)
         {
-            // <CreateClientWithTokenCredential>
-            using CosmosClient client = new CosmosClient(endpoint, tokenCredential);
+            // <ControlPlaneLimitation>
+            try
+            {
+                // This is a metadata (control-plane) operation. It will succeed with a master key,
+                // but with a data-plane RBAC token it is rejected.
+                await client.CreateDatabaseIfNotExistsAsync(Program.DatabaseId);
 
-            // To eagerly initialize the connection and route to specific containers, use the
-            // TokenCredential overload of CreateAndInitializeAsync, for example:
-            //
-            //   IReadOnlyList<(string, string)> containers = new List<(string, string)>
-            //   {
-            //       ("database-id", "container-id")
-            //   };
-            //   using CosmosClient initialized = await CosmosClient.CreateAndInitializeAsync(
-            //       endpoint, tokenCredential, containers);
-            // </CreateClientWithTokenCredential>
-            Console.WriteLine($"Created CosmosClient for '{client.Endpoint}' using a TokenCredential.");
+                Console.WriteLine(
+                    $"Created (or found) database '{Program.DatabaseId}'. " +
+                    "If you see this, the credential carries control-plane (ARM) permissions, " +
+                    "not just a data-plane RBAC role.");
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.Forbidden)
+            {
+                Console.WriteLine(
+                    "CreateDatabaseIfNotExistsAsync was rejected with 403 Forbidden - this is expected " +
+                    "with a data-plane RBAC role. Create databases and containers through ARM / Bicep / " +
+                    "the Azure portal / the Azure CLI; the SDK token is only for data operations.");
+            }
+            // </ControlPlaneLimitation>
+        }
+
+        /// <summary>
+        /// Data-plane item operations (create, read, query, replace, delete) are exactly what a
+        /// data-plane RBAC role authorizes, so these run normally over an AAD token. The database and
+        /// container are assumed to already exist (see the prerequisites and the control-plane demo).
+        /// </summary>
+        private static async Task RunDataPlaneDemoAsync(CosmosClient client)
+        {
+            Container container;
+            try
+            {
+                container = client.GetContainer(Program.DatabaseId, Program.ContainerId);
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                Console.WriteLine(
+                    $"Container '{Program.DatabaseId}/{Program.ContainerId}' was not found. Create it via " +
+                    "ARM / the Azure CLI before running the data-plane demo (data-plane RBAC cannot create it).");
+                return;
+            }
+
+            string id = Guid.NewGuid().ToString();
+            Person person = new Person
+            {
+                Id = id,
+                Name = "Ada Lovelace",
+                City = "London"
+            };
+
+            // <DataPlaneOperations>
+            // Create
+            ItemResponse<Person> created = await container.CreateItemAsync(
+                person,
+                new PartitionKey(person.Id));
+            Console.WriteLine(
+                $"Created item '{created.Resource.Id}' (RU charge: {created.RequestCharge:0.##}).");
+
+            // Read
+            ItemResponse<Person> read = await container.ReadItemAsync<Person>(
+                id,
+                new PartitionKey(id));
+            Console.WriteLine($"Read item '{read.Resource.Id}' for '{read.Resource.Name}'.");
+
+            // Query
+            QueryDefinition query = new QueryDefinition(
+                "SELECT * FROM c WHERE c.city = @city")
+                .WithParameter("@city", person.City);
+            using FeedIterator<Person> iterator = container.GetItemQueryIterator<Person>(query);
+            while (iterator.HasMoreResults)
+            {
+                FeedResponse<Person> page = await iterator.ReadNextAsync();
+                Console.WriteLine($"Query returned {page.Count} item(s) in '{person.City}'.");
+            }
+
+            // Replace
+            read.Resource.City = "Cambridge";
+            await container.ReplaceItemAsync(read.Resource, id, new PartitionKey(id));
+            Console.WriteLine($"Replaced item '{id}' (city updated).");
+
+            // Delete (clean up the item this sample created)
+            await container.DeleteItemAsync<Person>(id, new PartitionKey(id));
+            Console.WriteLine($"Deleted item '{id}'.");
+            // </DataPlaneOperations>
         }
 
         /// <summary>
@@ -98,7 +203,7 @@
         /// token's lifetime; set <see cref="CosmosClientOptions.TokenCredentialBackgroundRefreshInterval"/>
         /// to override it. The recommended minimum is 5 minutes.
         /// </summary>
-        private static void CreateClientWithCustomRefreshInterval(
+        private static void ShowCustomRefreshIntervalConstruction(
             string endpoint,
             TokenCredential tokenCredential)
         {
@@ -118,7 +223,7 @@
         /// <summary>
         /// CosmosClientBuilder also accepts a TokenCredential for fluent configuration.
         /// </summary>
-        private static void CreateClientWithBuilder(
+        private static void ShowBuilderConstruction(
             string endpoint,
             TokenCredential tokenCredential)
         {
@@ -134,6 +239,18 @@
             // SDK requests "https://{account-host}/.default" and falls back to
             // "https://cosmos.azure.com/.default" if the resource scope is rejected (AADSTS500011).
             Console.WriteLine($"Created CosmosClient for '{client.Endpoint}' using CosmosClientBuilder.");
+        }
+
+        private sealed class Person
+        {
+            [Newtonsoft.Json.JsonProperty("id")]
+            public string Id { get; set; }
+
+            [Newtonsoft.Json.JsonProperty("name")]
+            public string Name { get; set; }
+
+            [Newtonsoft.Json.JsonProperty("city")]
+            public string City { get; set; }
         }
     }
 }
