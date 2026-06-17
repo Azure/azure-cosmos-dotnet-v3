@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Other Changes
 
+- [XXXX](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/XXXX) ChangeFeedProcessor: Adds an always-on default error notification in the change feed processor health monitor. Processing failures (most importantly poison-message deserialization loops) are now traced with structured diagnostics — including the feed range and inner exception — even when no `WithErrorNotification` delegate is registered, and a critical "stuck lease" trace is emitted once the same error repeats on a lease with no forward progress. Any customer-registered error delegate remains additive and is still invoked.
 - [5916](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5916) Direct: Moves the `OpenTcpConnectionTimeout` negative-value warning trace from `CosmosClientOptions` to `DocumentClient`. The warning is now emitted once per client construction (instead of once per property assignment) and is gated on `ConnectionMode == Direct`, so it no longer false-positives when a negative value is later overwritten with a non-negative one or when running in Gateway mode where the timeout is not consumed.
 ### <a name="3.62.0-preview.0"/> [3.62.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.62.0-preview.0) - 2026-6-1
 
