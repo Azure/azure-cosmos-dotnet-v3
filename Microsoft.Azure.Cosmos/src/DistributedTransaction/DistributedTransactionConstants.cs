@@ -14,7 +14,8 @@ namespace Microsoft.Azure.Cosmos
         internal const int CommitStarted = 1;
         internal static bool IsDistributedTransactionRequest(OperationType operationType, ResourceType resourceType)
         {
-            return operationType == OperationType.CommitDistributedTransaction
+            return (operationType == OperationType.CommitDistributedTransaction
+                    || operationType == OperationType.Read)
                 && resourceType == ResourceType.DistributedTransactionBatch;
         }
 

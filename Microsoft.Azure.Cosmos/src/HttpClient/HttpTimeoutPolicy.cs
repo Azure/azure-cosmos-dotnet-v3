@@ -43,6 +43,19 @@ namespace Microsoft.Azure.Cosmos
                 return HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout;
             }
 
+            // Distributed transaction (DTX) requests have their own retry/backoff policy
+            // (see DistributedTransactionCommitter outer loop and ClientRetryPolicy.ShouldRetryDtxRequest).
+            // They must use the default HTTP timeout policy regardless of OperationType (Read for
+            // DistributedReadTransaction vs CommitDistributedTransaction for DistributedWriteTransaction)
+            // so that read DTX is not mis-classified as a metadata-read on the control-plane hot path
+            // (1s/5s/65s timeouts), which would cancel long-running commits prematurely.
+            if (DistributedTransactionConstants.IsDistributedTransactionRequest(
+                    documentServiceRequest.OperationType,
+                    documentServiceRequest.ResourceType))
+            {
+                return HttpTimeoutPolicyDefault.Instance;
+            }
+
             //Data Plane Operations
             if (!HttpTimeoutPolicy.IsMetaData(documentServiceRequest))
             {
