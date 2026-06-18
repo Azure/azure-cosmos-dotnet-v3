@@ -399,7 +399,7 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("Exception thrown while executing cross region hedging availability strategy: {0}", ex.Message);
+                DefaultTrace.TraceError("Exception thrown while executing cross region hedging availability strategy: {0}", ex.ToTraceSafeString());
                 throw;
             }
         }

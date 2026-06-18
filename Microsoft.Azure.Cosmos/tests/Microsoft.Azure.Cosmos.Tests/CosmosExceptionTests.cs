@@ -197,6 +197,71 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
+        public void ToTraceSafeString_CosmosException_PreservesReasonAndInnerCause_OmitsDiagnostics()
+        {
+            // The trace-safe summary must avoid the diagnostics serialization, but it should still
+            // preserve the actionable, cheap-to-build content operators rely on to root cause
+            // background-refresh/failover failures: the server-side Reason (response body) and a
+            // summary of the inner cause (e.g. a Direct-mode transport exception). Regression for the
+            // diagnosability gap called out while reviewing #5945.
+            string diagnosticString = new Diagnostics.CosmosTraceDiagnostics(NoOpTrace.Singleton).ToString();
+
+            CosmosException cosmosException = new CosmosException(
+                statusCode: HttpStatusCode.ServiceUnavailable,
+                message: "server-reason-token",
+                stackTrace: null,
+                headers: null,
+                trace: NoOpTrace.Singleton,
+                error: null,
+                innerException: new InvalidOperationException("inner-transport-token"));
+
+            string traceSafe = cosmosException.ToTraceSafeString();
+
+            // Diagnostics must NOT be serialized into the trace-safe summary...
+            Assert.IsFalse(traceSafe.Contains("Diagnostics"), "Summary must omit diagnostics.");
+            Assert.IsFalse(traceSafe.Contains(diagnosticString));
+
+            // ...but the actionable reason and inner cause are preserved.
+            Assert.IsTrue(traceSafe.Contains("ServiceUnavailable"), "Missing status code.");
+            Assert.IsTrue(traceSafe.Contains("server-reason-token"), "Missing server-side Reason (response body).");
+            Assert.IsTrue(traceSafe.Contains("inner-transport-token"), "Missing inner exception cause.");
+
+            // Sanity: Message would still embed the full diagnostics for this status code.
+            Assert.IsTrue(cosmosException.Message.Contains("; Diagnostics:"));
+        }
+
+        [TestMethod]
+        public void ToTraceSafeString_CosmosException_InnerCosmosException_DoesNotSerializeInnerDiagnostics()
+        {
+            // A CosmosException can wrap another CosmosException. The inner cause must also be
+            // summarized through the safe path so the inner's diagnostics tree is never serialized.
+            DiagnosticsThrowingCosmosException innerSpy = new DiagnosticsThrowingCosmosException(
+                statusCode: HttpStatusCode.ServiceUnavailable,
+                message: "inner-reason",
+                stackTrace: null,
+                headers: new Headers { ActivityId = "inner-activity" },
+                trace: NoOpTrace.Singleton,
+                error: null,
+                innerException: null);
+
+            CosmosException outer = new CosmosException(
+                statusCode: HttpStatusCode.RequestTimeout,
+                message: "outer-reason",
+                stackTrace: null,
+                headers: null,
+                trace: NoOpTrace.Singleton,
+                error: null,
+                innerException: innerSpy);
+
+            string traceSafe = outer.ToTraceSafeString();
+
+            Assert.IsTrue(traceSafe.Contains("RequestTimeout"));
+            Assert.IsTrue(traceSafe.Contains("ServiceUnavailable"), "Inner CosmosException summary missing.");
+            Assert.IsFalse(traceSafe.Contains("Diagnostics"));
+            Assert.IsFalse(innerSpy.DiagnosticsAccessed, "Inner CosmosException diagnostics must not be accessed.");
+        }
+
+        [TestMethod]
         public void ToTraceSafeString_AggregateException_UnwrapsInnerWithoutSerializingDiagnostics()
         {
             // Regression for #5945: faulted Task.Exception (an AggregateException) is passed to this

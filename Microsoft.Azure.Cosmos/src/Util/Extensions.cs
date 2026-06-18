@@ -276,13 +276,18 @@ namespace Microsoft.Azure.Cosmos
             // other exception type Message is cheap, so preserve the existing log content.
             if (exception is CosmosException cosmosException)
             {
-                return string.Format(
-                    CultureInfo.InvariantCulture,
-                    "CosmosException (StatusCode: {0} ({1}); SubStatusCode: {2}; ActivityId: {3})",
-                    cosmosException.StatusCode,
-                    (int)cosmosException.StatusCode,
-                    cosmosException.SubStatusCode,
-                    cosmosException.ActivityId ?? string.Empty);
+                // MessageWithoutDiagnostics keeps the actionable identity fields AND the server-side
+                // reason (response body) that operators rely on to root cause failover/refresh failures,
+                // while never serializing the diagnostics tree. Append a short summary of the inner
+                // exception (e.g. a Direct-mode TransportException carrying the real network cause)
+                // through this same safe path so it is never serialized via the inner's own Message.
+                string summary = cosmosException.MessageWithoutDiagnostics;
+                if (cosmosException.InnerException != null)
+                {
+                    summary = string.Concat(summary, " ---> ", cosmosException.InnerException.ToTraceSafeString());
+                }
+
+                return summary;
             }
 
             // AggregateException.Message eagerly concatenates every inner exception's Message, which

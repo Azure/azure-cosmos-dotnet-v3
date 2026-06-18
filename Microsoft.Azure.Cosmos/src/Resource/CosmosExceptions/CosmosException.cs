@@ -84,6 +84,27 @@ namespace Microsoft.Azure.Cosmos
         public override string Message => this.lazyMessage.Value;
 
         /// <summary>
+        /// A trace/log-safe summary of this exception that includes the status code, sub status code,
+        /// activity id, and reason (response body) but, unlike <see cref="Message"/>, never appends the
+        /// serialized diagnostics tree for the critical failure status codes. It is cheap to build
+        /// (no <c>Diagnostics.ToString()</c>), so it is safe to pass eagerly into trace/log call sites
+        /// even when the trace sink is a no-op. See issue #5945.
+        /// </summary>
+        internal string MessageWithoutDiagnostics
+        {
+            get
+            {
+                StringBuilder stringBuilder = new StringBuilder();
+                CosmosException.AppendMessageWithoutDiagnostics(
+                    stringBuilder,
+                    this.StatusCode,
+                    this.Headers,
+                    this.ResponseBody);
+                return stringBuilder.ToString();
+            }
+        }
+
+        /// <summary>
         /// The body of the cosmos response message as a string
         /// </summary>
         public virtual string ResponseBody { get; }
