@@ -150,6 +150,10 @@ namespace Microsoft.Azure.Documents
                 !(GoneAndRetryWithRequestRetryPolicy<TResponse>.IsPartitionIsMigrating(response, exception) && (request.ServiceIdentity == null || request.ServiceIdentity.IsMasterService)) &&
                 !(GoneAndRetryWithRequestRetryPolicy<TResponse>.IsInvalidPartition(response, exception) && (request.PartitionKeyRangeIdentity == null || request.PartitionKeyRangeIdentity.CollectionRid == null)) &&
                 !(GoneAndRetryWithRequestRetryPolicy<TResponse>.IsPartitionKeySplitting(response, exception) && request.ServiceIdentity == null) &&
+                // Unlike the sibling terms above, IsPartitionKeyRangeGone carries no fast-fail guard:
+                // a 410/1002 always wants a retry with a collection-routing-map refresh (the retry
+                // re-resolves the new child/parent range), so there is no request shape for which the
+                // retry is known to be futile. The retry is still bounded by the wall-clock budget below.
                 !GoneAndRetryWithRequestRetryPolicy<TResponse>.IsPartitionKeyRangeGone(response, exception))
             {
                 // Have caller propagate original exception / response.
