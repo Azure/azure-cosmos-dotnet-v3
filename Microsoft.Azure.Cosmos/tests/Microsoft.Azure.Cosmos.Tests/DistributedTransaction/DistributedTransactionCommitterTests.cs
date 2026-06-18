@@ -794,6 +794,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 CreateTestOperations(),
                 mockContext.Object,
+                OperationType.CommitDistributedTransaction,
                 retryBaseDelay: TimeSpan.FromSeconds(15),
                 delayProvider: captureDelay);
 
@@ -851,6 +852,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 CreateTestOperations(),
                 mockContext.Object,
+                OperationType.CommitDistributedTransaction,
                 retryBaseDelay: TimeSpan.FromMilliseconds(100),
                 delayProvider: captureDelay);
 
