@@ -542,6 +542,123 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsTrue(isExceptionLogged, "The exception was logged as a warning trace event.");
         }
 
+        /// <summary>
+        /// Regression test for the operator-only kill-switch property-drop scenario.
+        ///
+        /// When the Gateway first reports <c>disableCrossRegionalHedging=true</c> and then a later
+        /// account-refresh response omits the property entirely (HasValue == false), the change
+        /// event MUST NOT fire — an absent property is "no signal", not an implicit transition to
+        /// false. Re-enabling hedging silently on a property drop would defeat the entire purpose
+        /// of the kill-switch during the exact window the operator most wants it disabled
+        /// (transient gateway response shapes, partial regional failovers, stale gateway versions).
+        ///
+        /// The runbook contract is "to disable, set the property to explicit false" — never by
+        /// removing it.
+        /// </summary>
+        [TestMethod]
+        public async Task RefreshDatabaseAccount_DisableCrossRegionalHedging_PropertyDroppedAfterTrue_DoesNotFireChangeEvent()
+        {
+            // Arrange — initial AccountProperties with disableCrossRegionalHedging=true.
+            AccountProperties initialAccount = new AccountProperties
+            {
+                ReadLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "Region0", Endpoint = "https://region0.documents.azure.com/" }
+                },
+                DisableCrossRegionalHedging = true
+            };
+
+            // Refresh response drops the property entirely (HasValue == false). Read locations are
+            // preserved so the refresh path itself completes successfully.
+            AccountProperties refreshAccount = new AccountProperties
+            {
+                ReadLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "Region0", Endpoint = "https://region0.documents.azure.com/" }
+                }
+                // DisableCrossRegionalHedging intentionally NOT set (null).
+            };
+
+            Mock<IDocumentClientInternal> mockOwner = new Mock<IDocumentClientInternal>();
+            mockOwner.Setup(owner => owner.ServiceEndpoint).Returns(new Uri("https://defaultendpoint.net/"));
+            mockOwner.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(refreshAccount);
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy();
+
+            using GlobalEndpointManager gem = new GlobalEndpointManager(mockOwner.Object, connectionPolicy);
+
+            // Seed the baseline: lastKnownDisableCrossRegionalHedging = true.
+            gem.InitializeAccountPropertiesAndStartBackgroundRefresh(initialAccount);
+
+            int changeEventInvocations = 0;
+            gem.OnEnablePartitionLevelFailoverConfigChanged += (_, _) => Interlocked.Increment(ref changeEventInvocations);
+
+            // Act — force a refresh that observes the property-dropped response.
+            await gem.RefreshLocationAsync(forceRefresh: true);
+
+            // Assert — change event must NOT fire on a true -> null transition.
+            Assert.AreEqual(
+                0,
+                changeEventInvocations,
+                "Dropping the disableCrossRegionalHedging property from the gateway response must not be treated as a transition to false. The kill-switch is only released by an explicit 'false' value.");
+        }
+
+        /// <summary>
+        /// Positive companion to <see cref="RefreshDatabaseAccount_DisableCrossRegionalHedging_PropertyDroppedAfterTrue_DoesNotFireChangeEvent"/>:
+        /// when the gateway emits an explicit <c>false</c> after a prior <c>true</c>, the change
+        /// event MUST fire so the SDK can restore hedging. This validates the <c>.HasValue</c>
+        /// guard is gating only absent values, not explicit ones.
+        /// </summary>
+        [TestMethod]
+        public async Task RefreshDatabaseAccount_DisableCrossRegionalHedging_ExplicitFalseAfterTrue_FiresChangeEvent()
+        {
+            AccountProperties initialAccount = new AccountProperties
+            {
+                ReadLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "Region0", Endpoint = "https://region0.documents.azure.com/" }
+                },
+                DisableCrossRegionalHedging = true
+            };
+
+            AccountProperties refreshAccount = new AccountProperties
+            {
+                ReadLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "Region0", Endpoint = "https://region0.documents.azure.com/" }
+                },
+                DisableCrossRegionalHedging = false
+            };
+
+            Mock<IDocumentClientInternal> mockOwner = new Mock<IDocumentClientInternal>();
+            mockOwner.Setup(owner => owner.ServiceEndpoint).Returns(new Uri("https://defaultendpoint.net/"));
+            mockOwner.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(refreshAccount);
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy();
+
+            using GlobalEndpointManager gem = new GlobalEndpointManager(mockOwner.Object, connectionPolicy);
+            gem.InitializeAccountPropertiesAndStartBackgroundRefresh(initialAccount);
+
+            int changeEventInvocations = 0;
+            bool? observedDisableValue = null;
+            gem.OnEnablePartitionLevelFailoverConfigChanged += (_, disableHedging) =>
+            {
+                Interlocked.Increment(ref changeEventInvocations);
+                observedDisableValue = disableHedging;
+            };
+
+            await gem.RefreshLocationAsync(forceRefresh: true);
+
+            Assert.AreEqual(
+                1,
+                changeEventInvocations,
+                "Explicit transition from disableCrossRegionalHedging=true to false must fire the change event exactly once.");
+            Assert.IsTrue(observedDisableValue.HasValue && observedDisableValue.Value == false,
+                "Change event must propagate the new explicit false value.");
+        }
+
         private sealed class GetAccountRequestInjector
         {
             public Func<Uri, bool> ShouldFailRequest { get; set; }
