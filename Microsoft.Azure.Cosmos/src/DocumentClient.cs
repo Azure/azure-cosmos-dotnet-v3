@@ -7112,11 +7112,14 @@ namespace Microsoft.Azure.Cosmos
                     return;
                 }
 
-                // Capture the kill-switch flag so it can be reverted if the reconcile below throws; otherwise
-                // the GEM re-fire (which reverts its own baseline) would be short-circuited by the no-op guard
-                // above and the missed hedging transition would never retry. Scoped to the hedging flag —
-                // PPAF-enablement recovery is tracked separately.
+                // Capture the prior applied state so it can be reverted if the reconcile below throws;
+                // otherwise the GEM re-fire (which reverts its own baseline) would be short-circuited by the
+                // no-op guard above and the missed transition would never retry. Both the hedging kill-switch
+                // and the PPAF-enablement state are captured so a throwing subscriber leaves either transition
+                // re-detectable end-to-end.
                 bool previousDisableCrossRegionalHedging = this.disableCrossRegionalHedging;
+                bool previousEnablePartitionLevelFailover = this.ConnectionPolicy.EnablePartitionLevelFailover;
+                bool previousEnablePartitionLevelCircuitBreaker = this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker;
 
                 if (ppafEnablementChanged)
                 {
@@ -7174,10 +7177,22 @@ namespace Microsoft.Azure.Cosmos
                 }
                 catch
                 {
-                    // Revert the kill-switch flag so the GEM re-fire (which reverts its own baseline) is not
+                    // Revert the applied state so the GEM re-fire (which reverts its own baseline) is not
                     // short-circuited by the no-op guard above; the next refresh re-detects and retries the
-                    // missed hedging transition rather than going permanently silent.
+                    // missed transition rather than going permanently silent.
                     this.disableCrossRegionalHedging = previousDisableCrossRegionalHedging;
+
+                    if (ppafEnablementChanged)
+                    {
+                        // Mirror the hedging revert for PPAF enablement: restore the connection-policy flags
+                        // and the partition-key-range location PPAF/PPCB state to their pre-change values so the
+                        // no-op guard at the top of this method does not swallow the GEM-re-fired transition.
+                        this.PartitionKeyRangeLocation.SetIsPPAFEnabled(previousEnablePartitionLevelFailover);
+                        this.ConnectionPolicy.EnablePartitionLevelFailover = previousEnablePartitionLevelFailover;
+                        this.PartitionKeyRangeLocation.SetIsPPCBEnabled(previousEnablePartitionLevelCircuitBreaker);
+                        this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker = previousEnablePartitionLevelCircuitBreaker;
+                    }
+
                     throw;
                 }
             }

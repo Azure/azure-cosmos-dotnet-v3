@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Other Changes
 
+- [5936](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5936) Routing: Hardens dynamic per-partition automatic failover (PPAF) enablement tracking. `GlobalEndpointManager` now keeps its own last-known PPAF-enablement baseline instead of reusing the mutable `ConnectionPolicy.EnablePartitionLevelFailover` field, so gateway-driven enablement changes are detected reliably. A transient failure while applying a PPAF-enablement change is now retried on the next account refresh (the SDK reverts the partially-applied PPAF state so the change is re-detected and re-applied), matching the recovery behavior already in place for the `disableCrossRegionalHedging` flag.
 - [5916](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5916) Direct: Moves the `OpenTcpConnectionTimeout` negative-value warning trace from `CosmosClientOptions` to `DocumentClient`. The warning is now emitted once per client construction (instead of once per property assignment) and is gated on `ConnectionMode == Direct`, so it no longer false-positives when a negative value is later overwritten with a non-negative one or when running in Gateway mode where the timeout is not consumed.
 ### <a name="3.62.0-preview.0"/> [3.62.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.62.0-preview.0) - 2026-6-1
 
