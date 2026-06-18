@@ -37,26 +37,30 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly IReadOnlyList<DistributedTransactionOperation> operations;
         private readonly CosmosClientContext clientContext;
+        private readonly OperationType operationType;
         private readonly TimeSpan retryBaseDelay;
         private readonly TimeSpan maxCumulativeRetryDelay;
         private readonly Func<TimeSpan, CancellationToken, Task> delayProvider;
 
         public DistributedTransactionCommitter(
             IReadOnlyList<DistributedTransactionOperation> operations,
-            CosmosClientContext clientContext)
-            : this(operations, clientContext, DistributedTransactionCommitter.DefaultRetryBaseDelay)
+            CosmosClientContext clientContext,
+            OperationType operationType)
+            : this(operations, clientContext, operationType, DistributedTransactionCommitter.DefaultRetryBaseDelay)
         {
         }
 
         internal DistributedTransactionCommitter(
             IReadOnlyList<DistributedTransactionOperation> operations,
             CosmosClientContext clientContext,
+            OperationType operationType,
             TimeSpan retryBaseDelay,
             Func<TimeSpan, CancellationToken, Task> delayProvider = null,
             TimeSpan? maxCumulativeRetryDelay = null)
         {
             this.operations = operations ?? throw new ArgumentNullException(nameof(operations));
             this.clientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
+            this.operationType = operationType;
             this.retryBaseDelay = retryBaseDelay;
             this.delayProvider = delayProvider ?? Task.Delay;
             this.maxCumulativeRetryDelay = maxCumulativeRetryDelay ?? DistributedTransactionCommitter.MaxCumulativeRetryDelay;
@@ -66,6 +70,11 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace,
             CancellationToken cancellationToken)
         {
+            if (this.operations.Count == 0)
+            {
+                throw new InvalidOperationException("Cannot commit a distributed transaction with zero operations. Add at least one operation before committing.");
+            }
+
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -182,7 +191,7 @@ namespace Microsoft.Azure.Cosmos
                     ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
                         resourceUri: DistributedTransactionCommitter.ResourceUri,
                         resourceType: ResourceType.DistributedTransactionBatch,
-                        operationType: OperationType.CommitDistributedTransaction,
+                        operationType: this.operationType,
                         requestOptions: null,
                         cosmosContainerCore: null,
                         partitionKey: null,

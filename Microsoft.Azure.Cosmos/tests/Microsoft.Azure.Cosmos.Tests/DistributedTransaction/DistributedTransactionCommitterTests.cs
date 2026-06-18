@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             };
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                operations, mockContext.Object);
+                operations, mockContext.Object, OperationType.CommitDistributedTransaction);
 
             await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
 
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             };
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                operations, mockContext.Object);
+                operations, mockContext.Object, OperationType.CommitDistributedTransaction);
 
             await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
 
@@ -189,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             };
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                operations, mockContext.Object);
+                operations, mockContext.Object, OperationType.CommitDistributedTransaction);
 
             await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
 
@@ -239,7 +239,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             };
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                operations, mockContext.Object);
+                operations, mockContext.Object, OperationType.CommitDistributedTransaction);
 
             DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
 
@@ -278,7 +278,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             };
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                operations, mockContext.Object);
+                operations, mockContext.Object, OperationType.CommitDistributedTransaction);
 
             await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
 
@@ -316,7 +316,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             };
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                operations, mockContext.Object);
+                operations, mockContext.Object, OperationType.CommitDistributedTransaction);
 
             await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
 
@@ -358,7 +358,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             };
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                operations, mockContext.Object);
+                operations, mockContext.Object, OperationType.CommitDistributedTransaction);
 
             await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
 
@@ -444,7 +444,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             };
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                operations, mockContext.Object);
+                operations, mockContext.Object, OperationType.CommitDistributedTransaction);
 
             await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
 
@@ -492,7 +492,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             };
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                operations, mockContext.Object);
+                operations, mockContext.Object, OperationType.CommitDistributedTransaction);
 
             List<string> capturedWarnings = new List<string>();
             System.Diagnostics.TraceListener listener = new DelegatingTraceListener(
@@ -588,7 +588,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             };
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                operations, mockContext.Object);
+                operations, mockContext.Object, OperationType.CommitDistributedTransaction);
 
             // Must not throw even though SetSessionToken throws internally.
             DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
@@ -629,7 +629,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             };
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                operations, mockContext.Object);
+                operations, mockContext.Object, OperationType.CommitDistributedTransaction);
 
             await Assert.ThrowsExceptionAsync<OperationCanceledException>(
                 () => committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None),
@@ -651,7 +651,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     return Task.FromResult(CreateSuccessResponseMessage(operationCount: 1));
                 });
 
-            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, TimeSpan.Zero);
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
 
             using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
             {
@@ -681,7 +681,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     return Task.FromResult(CreateSuccessResponseMessage(operationCount: 1));
                 });
 
-            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, TimeSpan.Zero);
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
 
             using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
             {
@@ -714,9 +714,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
                 // Non-zero delay so Task.Delay honours the already-cancelled token.
                 DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                    CreateTestOperations(),
-                    mockContext.Object,
-                    TimeSpan.FromMilliseconds(1));
+                    CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.FromMilliseconds(1));
 
                 await Assert.ThrowsExceptionAsync<OperationCanceledException>(
                     () => committer.CommitTransactionAsync(NoOpTrace.Singleton, cts.Token));
@@ -750,6 +748,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 CreateTestOperations(),
                 mockContext.Object,
+                OperationType.CommitDistributedTransaction,
                 retryBaseDelay: TimeSpan.Zero,
                 delayProvider: captureDelay);
 
@@ -795,6 +794,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 CreateTestOperations(),
                 mockContext.Object,
+                OperationType.CommitDistributedTransaction,
                 retryBaseDelay: TimeSpan.FromSeconds(15),
                 delayProvider: captureDelay);
 
@@ -852,6 +852,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 CreateTestOperations(),
                 mockContext.Object,
+                OperationType.CommitDistributedTransaction,
                 retryBaseDelay: TimeSpan.FromMilliseconds(100),
                 delayProvider: captureDelay);
 
@@ -895,7 +896,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     return Task.FromException<ResponseMessage>(ex);
                 });
 
-            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, TimeSpan.Zero);
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
 
             CosmosException thrown = await Assert.ThrowsExceptionAsync<CosmosException>(
                 () => committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None));
@@ -924,7 +925,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                         });
                 });
 
-            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, TimeSpan.Zero);
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
 
             using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
             {
@@ -948,7 +949,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     mockContext,
                     () => throw new InvalidOperationException("Should not be called on a pre-cancelled token."));
 
-                DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, TimeSpan.Zero);
+                DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
 
                 await Assert.ThrowsExceptionAsync<OperationCanceledException>(
                     () => committer.CommitTransactionAsync(NoOpTrace.Singleton, cts.Token));
@@ -977,9 +978,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 // Non-zero delay so the retry path enters Task.Delay
                 // the token is already cancelled synchronously in the callback, so it throws immediately.
                 DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                    CreateTestOperations(),
-                    mockContext.Object,
-                    TimeSpan.FromMilliseconds(500));
+                    CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.FromMilliseconds(500));
 
                 await Assert.ThrowsExceptionAsync<OperationCanceledException>(
                     () => committer.CommitTransactionAsync(NoOpTrace.Singleton, cts.Token));
@@ -1007,7 +1006,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     return Task.FromResult(CreateSuccessResponseMessage(operationCount: 1));
                 });
 
-            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, TimeSpan.Zero);
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
 
             using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
             {
@@ -1032,7 +1031,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     return Task.FromException<ResponseMessage>(new IOException("Network error"));
                 });
 
-            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, TimeSpan.Zero);
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
 
             IOException ex = await Assert.ThrowsExceptionAsync<IOException>(
                 () => committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None));
@@ -1089,6 +1088,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 CreateTestOperations(count: 2),
                 mockContext.Object,
+                OperationType.CommitDistributedTransaction,
                 TimeSpan.Zero);
 
             using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
@@ -1125,7 +1125,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     return Task.FromResult(CreateEmptyResponseMessage((HttpStatusCode)statusCode, subStatusCode: 0));
                 });
 
-            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, TimeSpan.Zero);
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
 
             using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
             {
@@ -1154,7 +1154,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     return Task.FromResult(CreateEmptyResponseMessage(HttpStatusCode.BadRequest, subStatusCode));
                 });
 
-            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, TimeSpan.Zero);
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
 
             using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
             {
@@ -1196,6 +1196,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 CreateTestOperations(),
                 mockContext.Object,
+                OperationType.CommitDistributedTransaction,
                 retryBaseDelay: baseDelay,
                 delayProvider: captureDelay,
                 maxCumulativeRetryDelay: TimeSpan.FromMinutes(5));
@@ -1276,7 +1277,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     requestOptions: new DistributedTransactionRequestOptions { SessionToken = expectedToken })
             };
 
-            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(operations, mockContext.Object);
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(operations, mockContext.Object, OperationType.CommitDistributedTransaction);
             await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
 
             Assert.IsNotNull(capturedBody, "Request body must have been captured.");
@@ -1314,7 +1315,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     })
                 .ReturnsAsync(CreateSuccessResponseMessage(operationCount: 1));
 
-            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object);
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction);
             await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
 
             Assert.IsNotNull(capturedBody);
@@ -1367,7 +1368,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     requestOptions: new DistributedTransactionRequestOptions { SessionToken = sessionToken })
             };
 
-            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(operations, mockContext.Object);
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(operations, mockContext.Object, OperationType.CommitDistributedTransaction);
             await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
 
             Assert.IsNotNull(capturedBody);
@@ -1420,7 +1421,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     requestOptions: new DistributedTransactionRequestOptions { SessionToken = token2 }),
             };
 
-            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(operations, mockContext.Object);
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(operations, mockContext.Object, OperationType.CommitDistributedTransaction);
             await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
 
             Assert.IsNotNull(capturedBody);
@@ -1443,7 +1444,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 () => Task.FromResult(CreateSuccessResponseMessage(operationCount: 1)));
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                CreateTestOperations(), mockContext.Object, TimeSpan.Zero);
+                CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
 
             using (ITrace trace = Trace.GetRootTrace("CommitDistributedTransaction", TraceComponent.Batch, TraceLevel.Info))
             using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(trace, CancellationToken.None))
@@ -1475,7 +1476,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 });
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                CreateTestOperations(), mockContext.Object, TimeSpan.Zero);
+                CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
 
             using (ITrace trace = Trace.GetRootTrace("CommitDistributedTransaction", TraceComponent.Batch, TraceLevel.Info))
             using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(trace, CancellationToken.None))
@@ -1504,7 +1505,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     diagnosticString: expectedDiagnosticString)));
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                CreateTestOperations(), mockContext.Object, TimeSpan.Zero);
+                CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
 
             using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
             {
@@ -1527,7 +1528,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     diagnosticString: expectedDiagnosticString)));
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                CreateTestOperations(), mockContext.Object, TimeSpan.Zero);
+                CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
 
             using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
             {

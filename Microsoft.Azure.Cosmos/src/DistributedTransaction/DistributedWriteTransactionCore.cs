@@ -286,6 +286,11 @@ namespace Microsoft.Azure.Cosmos
         /// <exception cref="OperationCanceledException">Thrown if <paramref name="cancellationToken"/> is cancelled before or during the commit.</exception>
         public override Task<DistributedTransactionResponse> CommitTransactionAsync(CancellationToken cancellationToken = default)
         {
+            if (this.operations.Count == 0)
+            {
+                throw new InvalidOperationException("Cannot commit a distributed write transaction with zero operations. Add at least one write operation before committing.");
+            }
+
             if (Interlocked.CompareExchange(ref this.isCommitInvoked, DistributedTransactionConstants.CommitStarted, DistributedTransactionConstants.CommitNotStarted) != DistributedTransactionConstants.CommitNotStarted)
             {
                 throw new InvalidOperationException(CommitAlreadyCalledMessage);
@@ -301,7 +306,8 @@ namespace Microsoft.Azure.Cosmos
                 {
                     DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                         operations: this.operations,
-                        clientContext: this.clientContext);
+                        clientContext: this.clientContext,
+                        operationType: OperationType.CommitDistributedTransaction);
 
                     return committer.CommitTransactionAsync(trace, cancellationToken);
                 },
