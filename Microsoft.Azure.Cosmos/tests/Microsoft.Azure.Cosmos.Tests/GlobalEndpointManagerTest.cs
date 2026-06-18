@@ -786,6 +786,175 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        [TestMethod]
+        public void RegionProximity_ParsedFromAdditionalProperties_PopulatesConnectionPolicyRegionProximity()
+        {
+            AccountProperties accountProperties = new AccountProperties
+            {
+                AdditionalProperties = new Dictionary<string, JToken>
+                {
+                    { "regionProximity", JArray.Parse(@"[""East US"", ""West US"", ""North Europe""]") }
+                }
+            };
+
+            Mock<IDocumentClientInternal> mockOwner = new Mock<IDocumentClientInternal>();
+            mockOwner.Setup(owner => owner.ServiceEndpoint).Returns(new Uri("https://defaultendpoint.net/"));
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy();
+
+            using (GlobalEndpointManager gem = new GlobalEndpointManager(mockOwner.Object, connectionPolicy))
+            {
+                gem.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
+
+                Assert.AreEqual(3, connectionPolicy.RegionProximity.Count);
+                Assert.AreEqual("East US", connectionPolicy.RegionProximity[0]);
+                Assert.AreEqual("West US", connectionPolicy.RegionProximity[1]);
+                Assert.AreEqual("North Europe", connectionPolicy.RegionProximity[2]);
+            }
+        }
+
+        [TestMethod]
+        public void RegionProximity_AbsentFromResponse_RegionProximityRemainsEmpty()
+        {
+            AccountProperties accountProperties = new AccountProperties
+            {
+                AdditionalProperties = new Dictionary<string, JToken>()
+            };
+
+            Mock<IDocumentClientInternal> mockOwner = new Mock<IDocumentClientInternal>();
+            mockOwner.Setup(owner => owner.ServiceEndpoint).Returns(new Uri("https://defaultendpoint.net/"));
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy();
+
+            using (GlobalEndpointManager gem = new GlobalEndpointManager(mockOwner.Object, connectionPolicy))
+            {
+                gem.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
+
+                Assert.AreEqual(0, connectionPolicy.RegionProximity.Count);
+            }
+        }
+
+        [TestMethod]
+        public void RegionProximity_WithApplicationRegion_OverridesPreferredLocationsOnInit()
+        {
+            AccountProperties accountProperties = new AccountProperties
+            {
+                AdditionalProperties = new Dictionary<string, JToken>
+                {
+                    { "regionProximity", JArray.Parse(@"[""East US"", ""West US"", ""North Europe""]") }
+                }
+            };
+
+            Mock<IDocumentClientInternal> mockOwner = new Mock<IDocumentClientInternal>();
+            mockOwner.Setup(owner => owner.ServiceEndpoint).Returns(new Uri("https://defaultendpoint.net/"));
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy();
+            connectionPolicy.SetCurrentLocation("East US");
+
+            using (GlobalEndpointManager gem = new GlobalEndpointManager(mockOwner.Object, connectionPolicy))
+            {
+                gem.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
+
+                Assert.AreEqual(3, connectionPolicy.PreferredLocations.Count);
+                Assert.AreEqual("East US", connectionPolicy.PreferredLocations[0]);
+                Assert.AreEqual("West US", connectionPolicy.PreferredLocations[1]);
+                Assert.AreEqual("North Europe", connectionPolicy.PreferredLocations[2]);
+            }
+        }
+
+        [TestMethod]
+        public async Task RegionProximity_WithApplicationRegion_OverridesPreferredLocationsOnBackgroundRefresh()
+        {
+            AccountProperties accountProperties = new AccountProperties
+            {
+                AdditionalProperties = new Dictionary<string, JToken>
+                {
+                    { "regionProximity", JArray.Parse(@"[""East US"", ""West US"", ""North Europe""]") }
+                }
+            };
+
+            Mock<IDocumentClientInternal> mockOwner = new Mock<IDocumentClientInternal>();
+            mockOwner.Setup(owner => owner.ServiceEndpoint).Returns(new Uri("https://defaultendpoint.net/"));
+            mockOwner.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(accountProperties);
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy();
+            connectionPolicy.SetCurrentLocation("East US");
+
+            using (GlobalEndpointManager gem = new GlobalEndpointManager(mockOwner.Object, connectionPolicy))
+            {
+                gem.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
+
+                await gem.RefreshLocationAsync(forceRefresh: true);
+
+                Assert.AreEqual(3, connectionPolicy.PreferredLocations.Count);
+                Assert.AreEqual("East US", connectionPolicy.PreferredLocations[0]);
+                Assert.AreEqual("West US", connectionPolicy.PreferredLocations[1]);
+                Assert.AreEqual("North Europe", connectionPolicy.PreferredLocations[2]);
+            }
+        }
+
+        [TestMethod]
+        public void RegionProximity_WithoutApplicationRegion_DoesNotOverridePreferredLocations()
+        {
+            AccountProperties accountProperties = new AccountProperties
+            {
+                AdditionalProperties = new Dictionary<string, JToken>
+                {
+                    { "regionProximity", JArray.Parse(@"[""East US"", ""West US"", ""North Europe""]") }
+                }
+            };
+
+            Mock<IDocumentClientInternal> mockOwner = new Mock<IDocumentClientInternal>();
+            mockOwner.Setup(owner => owner.ServiceEndpoint).Returns(new Uri("https://defaultendpoint.net/"));
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy();
+            connectionPolicy.PreferredLocations.Add("Australia East");
+            connectionPolicy.PreferredLocations.Add("Southeast Asia");
+
+            using (GlobalEndpointManager gem = new GlobalEndpointManager(mockOwner.Object, connectionPolicy))
+            {
+                gem.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
+
+                Assert.AreEqual(2, connectionPolicy.PreferredLocations.Count);
+                Assert.AreEqual("Australia East", connectionPolicy.PreferredLocations[0]);
+                Assert.AreEqual("Southeast Asia", connectionPolicy.PreferredLocations[1]);
+            }
+        }
+
+        [TestMethod]
+        public void SetCurrentLocation_KnownRegion_SetsCurrentLocationAndPopulatesPreferredLocations()
+        {
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy();
+            connectionPolicy.SetCurrentLocation("East US");
+
+            Assert.AreEqual("East US", connectionPolicy.CurrentLocation);
+            Assert.IsTrue(connectionPolicy.PreferredLocations.Count > 0,
+                "Expected PreferredLocations to be populated from the static table for a known region.");
+        }
+
+        [TestMethod]
+        public void SetCurrentLocation_UnknownRegion_SetsCurrentLocationWithoutThrowing()
+        {
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy();
+
+            // Should NOT throw — validation is softened to a warning for unknown regions.
+            connectionPolicy.SetCurrentLocation("New Unknown Region 2099");
+
+            Assert.AreEqual("New Unknown Region 2099", connectionPolicy.CurrentLocation);
+        }
+
+        [TestMethod]
+        public void SetCurrentLocation_UnknownRegion_LeavesPreferredLocationsEmpty()
+        {
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy();
+            connectionPolicy.SetCurrentLocation("New Unknown Region 2099");
+
+            // Bootstrap preferred list is empty for unknown regions; the SDK will rely on
+            // the server-provided regionProximity list once the first account read completes.
+            Assert.AreEqual(0, connectionPolicy.PreferredLocations.Count);
+        }
+
         private class TestTraceListener : TraceListener
         {
             public Action<string> Callback { get; set; }

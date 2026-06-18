@@ -237,6 +237,101 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual("Service is Unavailable at the Moment.", exception.InnerException.Message);
         }
 
+        [TestMethod]
+        public async Task GetDatabaseAccountAsync_WhenApplicationRegionSet_AppendsRegionProximityQueryParam()
+        {
+            string accountPropertiesJson = "{\"id\":\"testaccount\",\"_rid\":\"testrid\",\"_self\":\"\",\"_etag\":\"etag\",\"writableLocations\":[],\"readableLocations\":[],\"userConsistencyPolicy\":{\"defaultConsistencyLevel\":\"Session\"},\"enableMultipleWriteLocations\":false,\"queryEngineConfiguration\":\"{}\"}";
+
+            Uri capturedUri = null;
+
+            Mock<CosmosHttpClient> mockHttpClient = new();
+            mockHttpClient
+                .Setup(x => x.GetAsync(
+                    It.IsAny<Uri>(),
+                    It.IsAny<INameValueCollection>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<HttpTimeoutPolicy>(),
+                    It.IsAny<IClientSideRequestStatistics>(),
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<DocumentServiceRequest>()))
+                .Callback<Uri, INameValueCollection, ResourceType, HttpTimeoutPolicy, IClientSideRequestStatistics, CancellationToken, DocumentServiceRequest>(
+                    (uri, _, _, _, _, _, _) => capturedUri = uri)
+                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(accountPropertiesJson)
+                });
+
+            ConnectionPolicy connectionPolicy = new();
+            connectionPolicy.SetCurrentLocation("East US");
+
+            GatewayAccountReader accountReader = new GatewayAccountReader(
+                serviceEndpoint: new Uri("https://myaccount.documents.azure.com/"),
+                cosmosAuthorization: Mock.Of<AuthorizationTokenProvider>(),
+                connectionPolicy: connectionPolicy,
+                httpClient: mockHttpClient.Object);
+
+            await accountReader.InitializeReaderAsync();
+
+            Assert.IsNotNull(capturedUri);
+            Assert.IsTrue(
+                capturedUri.Query.Contains("regionproximitysourceregion=eastus"),
+                $"Expected query param 'regionproximitysourceregion=eastus' in URI '{capturedUri}'");
+        }
+
+        [TestMethod]
+        public async Task GetDatabaseAccountAsync_WhenApplicationRegionNotSet_NoRegionProximityQueryParam()
+        {
+            string accountPropertiesJson = "{\"id\":\"testaccount\",\"_rid\":\"testrid\",\"_self\":\"\",\"_etag\":\"etag\",\"writableLocations\":[],\"readableLocations\":[],\"userConsistencyPolicy\":{\"defaultConsistencyLevel\":\"Session\"},\"enableMultipleWriteLocations\":false,\"queryEngineConfiguration\":\"{}\"}";
+
+            Uri capturedUri = null;
+
+            Mock<CosmosHttpClient> mockHttpClient = new();
+            mockHttpClient
+                .Setup(x => x.GetAsync(
+                    It.IsAny<Uri>(),
+                    It.IsAny<INameValueCollection>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<HttpTimeoutPolicy>(),
+                    It.IsAny<IClientSideRequestStatistics>(),
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<DocumentServiceRequest>()))
+                .Callback<Uri, INameValueCollection, ResourceType, HttpTimeoutPolicy, IClientSideRequestStatistics, CancellationToken, DocumentServiceRequest>(
+                    (uri, _, _, _, _, _, _) => capturedUri = uri)
+                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(accountPropertiesJson)
+                });
+
+            ConnectionPolicy connectionPolicy = new();
+            // No SetCurrentLocation call
+
+            GatewayAccountReader accountReader = new GatewayAccountReader(
+                serviceEndpoint: new Uri("https://myaccount.documents.azure.com/"),
+                cosmosAuthorization: Mock.Of<AuthorizationTokenProvider>(),
+                connectionPolicy: connectionPolicy,
+                httpClient: mockHttpClient.Object);
+
+            await accountReader.InitializeReaderAsync();
+
+            Assert.IsNotNull(capturedUri);
+            Assert.IsFalse(
+                capturedUri.Query.Contains("regionproximitysourceregion"),
+                $"Did not expect query param 'regionproximitysourceregion' in URI '{capturedUri}'");
+        }
+
+        [TestMethod]
+        [DataRow("East US", "eastus")]
+        [DataRow("West Europe", "westeurope")]
+        [DataRow("Australia Central 2", "australiacentral2")]
+        [DataRow("brazilsouth", "brazilsouth")]
+        [DataRow("", "")]
+        [DataRow(null, "")]
+        public void SanitizeRegionName_NormalizesRegionNames(string input, string expected)
+        {
+            string result = GatewayAccountReader.SanitizeRegionName(input);
+            Assert.AreEqual(expected, result);
+        }
+
         private static void SetupMockToThrowException(
             Mock<CosmosHttpClient> mockHttpClient,
             IList<Uri> endpoints)
