@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Standalone, dependency-free simulation harness for the metadata-hedging
+    amplification / latency analysis (PR #5923). Lives on the
+    nalutripician/metadata-hedging-benchmark branch ONLY — it is intentionally
+    NOT part of the shipped SDK or the feature PR.
+
+    It faithfully models MetadataHedgingStrategy.ExecuteAsync's decision logic
+    (threshold race via Task.WhenAny(primary, timer), non-blocking budget
+    Wait(TimeSpan.Zero), fast-fail fall-through, one-hedge-per-operation latch)
+    so the secondary-region fan-out and latency behaviour can be measured
+    without a live multi-region account.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>MetadataHedgingBenchmark</AssemblyName>
+    <RootNamespace>MetadataHedgingBenchmark</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <SignAssembly>false</SignAssembly>
+  </PropertyGroup>
+
+</Project>
