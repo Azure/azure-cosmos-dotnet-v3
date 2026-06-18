@@ -795,6 +795,67 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         }
 
         // ---------------------------------------------------------------
+        // Cancellation behaviour
+        // ---------------------------------------------------------------
+
+        /// <summary>
+        /// Validates the fix for the timerCts / phantom-hedge bug: when the caller cancels their
+        /// token during the threshold window the strategy must throw OperationCanceledException
+        /// (not silently dispatch a hedge or return a result) and must restore the budget permit.
+        /// </summary>
+        [TestMethod]
+        [Owner("NaluTripician")]
+        public async Task ExecuteAsync_CallerCancellationFiredDuringHedgeTimer_ThrowsOceAndRestoresBudget()
+        {
+            // Use a long threshold so the timer is still running when we cancel.
+            using MetadataHedgingStrategy strategy = BuildStrategy(threshold: TimeSpan.FromSeconds(10));
+            DocumentServiceRequest req = BuildCollectionReadRequest();
+            MetadataHedgingContext ctx = NewColdStartContext();
+
+            using CancellationTokenSource cts = new CancellationTokenSource();
+
+            // Cancel after a short delay (well before the 10 s threshold).
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(150)).ConfigureAwait(false);
+                cts.Cancel();
+            });
+
+            // Primary blocks until it receives the cancellation signal.
+            // TaskCanceledException (a subclass of OperationCanceledException) is expected; use
+            // a try/catch rather than ThrowsExceptionAsync because MSTest checks the exact type.
+            bool threw = false;
+            try
+            {
+                await strategy.ExecuteAsync(
+                    req,
+                    async (r, u, ct) =>
+                    {
+                        await Task.Delay(Timeout.Infinite, ct).ConfigureAwait(false);
+                        return NewOkResponse(); // unreachable
+                    },
+                    ctx,
+                    NoOpTrace.Singleton,
+                    cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                threw = true;
+            }
+
+            Assert.IsTrue(threw, "ExecuteAsync must throw OperationCanceledException when the caller's token is cancelled during the threshold window");
+
+            // Budget permit must be fully restored; no slot was consumed permanently.
+            await WaitForAsync(
+                () => strategy.AvailableBudget == strategy.PerClientConcurrencyBudget,
+                TimeSpan.FromSeconds(3));
+            Assert.AreEqual(
+                strategy.PerClientConcurrencyBudget,
+                strategy.AvailableBudget,
+                "budget permit must be released after caller cancels during the threshold window");
+        }
+
+        // ---------------------------------------------------------------
         // TryGetHedgeAuthRejectStatus — completed vs faulted classification
         // ---------------------------------------------------------------
 

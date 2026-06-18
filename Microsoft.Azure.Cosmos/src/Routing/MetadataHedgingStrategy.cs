@@ -301,7 +301,12 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 primaryCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 hedgeCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                timerCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                // Do NOT link timerCts to cancellationToken. If the user cancels their token,
+                // timerCts firing would cause Task.WhenAny to return hedgeTimer as firstCompleted,
+                // which the code interprets as "threshold elapsed" and dispatches a phantom hedge.
+                // The timer is explicitly cancelled in 5a when the primary wins cleanly; the user's
+                // cancellation propagates through primaryCts / hedgeCts instead.
+                timerCts = new CancellationTokenSource();
 
                 hedgeContext.AttemptedEndpoints.TryAdd(primaryEndpoint.AbsoluteUri, 0);
 
@@ -497,7 +502,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     request.RequestContext.RouteToLocation(targetEndpoint);
                 }
 
-                return storeModel.ProcessMessageAsync(request);
+                return storeModel.ProcessMessageAsync(request, ct);
             };
         }
 

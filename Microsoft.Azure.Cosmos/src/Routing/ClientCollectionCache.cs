@@ -285,8 +285,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                             };
 
                             // Attach via the narrow IMetadataHedgeContextReceiver seam (not a concrete-type
-                            // cast): ClearingSessionContainerClientRetryPolicy forwards to its inner policy,
-                            // so the dedup context reaches the metadata retry policy even when wrapped.
+                            // cast). NOTE: for Collection reads the dedup context does NOT propagate through
+                            // ClearingSessionContainerClientRetryPolicy to MetadataRequestThrottleRetryPolicy
+                            // because ClientRetryPolicy (the inner policy used here) does not implement
+                            // IMetadataHedgeContextReceiver. Dedup via AttachHedgeContext is effective only
+                            // for PKR reads, where MetadataRequestThrottleRetryPolicy is used directly.
                             (retryPolicyInstance as IMetadataHedgeContextReceiver)?.AttachHedgeContext(hedgeContext);
 
                             try
