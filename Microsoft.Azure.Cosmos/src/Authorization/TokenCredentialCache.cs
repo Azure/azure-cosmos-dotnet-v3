@@ -6,7 +6,9 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Globalization;
+    using System.IO;
     using System.Net;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure;
@@ -176,52 +178,45 @@ namespace Microsoft.Azure.Cosmos
                 byte[] claimsBytes = Convert.FromBase64String(claimsChallenge);
                 string claimsJson = System.Text.Encoding.UTF8.GetString(claimsBytes);
 
-                int accessTokenIndex = claimsJson.IndexOf("\"access_token\"", StringComparison.Ordinal);
-                if (accessTokenIndex < 0)
+                using JsonDocument document = JsonDocument.Parse(claimsJson);
+                if (document.RootElement.ValueKind != JsonValueKind.Object
+                    || !document.RootElement.TryGetProperty("access_token", out JsonElement accessTokenElement)
+                    || accessTokenElement.ValueKind != JsonValueKind.Object)
                 {
-                    DefaultTrace.TraceWarning("TokenCredentialCache: CAE claims challenge missing 'access_token' key, using client capabilities only");
+                    DefaultTrace.TraceWarning("TokenCredentialCache: CAE claims challenge missing or malformed 'access_token' object, using client capabilities only");
                     return clientCapabilitiesJson;
                 }
 
-                int openBraceIndex = claimsJson.IndexOf('{', accessTokenIndex);
-                if (openBraceIndex < 0)
+                using MemoryStream stream = new MemoryStream();
+                using (Utf8JsonWriter writer = new Utf8JsonWriter(stream))
                 {
-                    DefaultTrace.TraceWarning("TokenCredentialCache: Malformed CAE claims challenge, using client capabilities only");
-                    return clientCapabilitiesJson;
-                }
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("access_token");
+                    writer.WriteStartObject();
 
-                int braceCount = 1;
-                int currentIndex = openBraceIndex + 1;
-                int closeBraceIndex = -1;
-
-                while (currentIndex < claimsJson.Length && braceCount > 0)
-                {
-                    if (claimsJson[currentIndex] == '{')
+                    foreach (JsonProperty property in accessTokenElement.EnumerateObject())
                     {
-                        braceCount++;
-                    }
-                    else if (claimsJson[currentIndex] == '}')
-                    {
-                        braceCount--;
-                        if (braceCount == 0)
+                        if (string.Equals(property.Name, "xms_cc", StringComparison.Ordinal))
                         {
-                            closeBraceIndex = currentIndex;
-                            break;
+                            continue;
                         }
+
+                        property.WriteTo(writer);
                     }
 
-                    currentIndex++;
+                    writer.WritePropertyName("xms_cc");
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("values");
+                    writer.WriteStartArray();
+                    writer.WriteStringValue("cp1");
+                    writer.WriteEndArray();
+                    writer.WriteEndObject();
+
+                    writer.WriteEndObject();
+                    writer.WriteEndObject();
                 }
 
-                if (closeBraceIndex < 0)
-                {
-                    DefaultTrace.TraceWarning("TokenCredentialCache: Unable to locate the end of the 'access_token' object in the CAE claims challenge. Using client capabilities only");
-                    return clientCapabilitiesJson;
-                }
-
-                return claimsJson.Substring(0, closeBraceIndex) +
-                    ",\"xms_cc\":{\"values\":[\"cp1\"]}" +
-                    claimsJson.Substring(closeBraceIndex);
+                return System.Text.Encoding.UTF8.GetString(stream.ToArray());
             }
             catch (Exception ex)
             {

@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net.Http;
     using System.Reflection;
     using System.Security.Cryptography.X509Certificates;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure.Core;
@@ -677,6 +678,31 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Assert
             Assert.IsTrue(result.Contains("\"xms_cc\":{\"values\":[\"cp1\"]}"), "Should contain cp1");
             Assert.IsTrue(result.Contains("\"acrs\""), "Should contain original claims");
+        }
+
+        [DataTestMethod]
+        // {"access_token":{}}
+        [DataRow("eyJhY2Nlc3NfdG9rZW4iOnt9fQ==", DisplayName = "Empty access_token object")]
+        // {"access_token":{"nbf":{"essential":true,"value":"1"}}} - real revocation shape
+        [DataRow("eyJhY2Nlc3NfdG9rZW4iOnsibmJmIjp7ImVzc2VudGlhbCI6dHJ1ZSwidmFsdWUiOiIxIn19fQ==", DisplayName = "nbf revocation shape")]
+        // {"access_token":{"nonce":"a}b"}} - brace inside a string value
+        [DataRow("eyJhY2Nlc3NfdG9rZW4iOnsibm9uY2UiOiJhfWIifX0=", DisplayName = "Brace inside string value")]
+        // {"access_token":{"xms_cc":{"values":["cp2"]},"nbf":{"value":"1"}}} - pre-existing xms_cc must be overwritten
+        [DataRow("eyJhY2Nlc3NfdG9rZW4iOnsieG1zX2NjIjp7InZhbHVlcyI6WyJjcDIiXX0sIm5iZiI6eyJ2YWx1ZSI6IjEifX19", DisplayName = "Pre-existing xms_cc is overwritten")]
+        public void MergeClaimsWithClientCapabilities_ProducesValidJson(string base64Claims)
+        {
+            // Act
+            string merged = TokenCredentialCache.MergeClaimsWithClientCapabilities(base64Claims);
+
+            // Assert - result must be parseable JSON with the expected shape.
+            using JsonDocument doc = JsonDocument.Parse(merged);
+            JsonElement accessToken = doc.RootElement.GetProperty("access_token");
+            Assert.AreEqual(JsonValueKind.Object, accessToken.ValueKind);
+
+            JsonElement xmsCc = accessToken.GetProperty("xms_cc");
+            JsonElement values = xmsCc.GetProperty("values");
+            Assert.AreEqual(1, values.GetArrayLength());
+            Assert.AreEqual("cp1", values[0].GetString());
         }
 
         [TestMethod]
