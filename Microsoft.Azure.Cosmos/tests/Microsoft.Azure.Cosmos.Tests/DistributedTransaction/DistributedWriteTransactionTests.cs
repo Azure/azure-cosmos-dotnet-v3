@@ -456,6 +456,19 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsFalse(response.IsSuccessStatusCode);
         }
 
+        // Zero-operations guard
+
+        [TestMethod]
+        public async Task CommitAsync_ZeroOperations_ThrowsInvalidOperationException()
+        {
+            DistributedWriteTransaction tx = this.NewTransaction();
+
+            InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => tx.CommitTransactionAsync(CancellationToken.None));
+
+            Assert.IsTrue(ex.Message.Contains("zero operations"), $"Unexpected message: {ex.Message}");
+        }
+
         // Double-commit guard
 
         [TestMethod]
