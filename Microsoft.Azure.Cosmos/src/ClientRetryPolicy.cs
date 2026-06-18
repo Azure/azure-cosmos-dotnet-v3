@@ -236,14 +236,18 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="request">The request being sent to the service.</param>
         public void OnBeforeSendRequest(DocumentServiceRequest request)
         {
-            this.isReadRequest = request.IsReadOnlyRequest;
-            this.canUseMultipleWriteLocations = this.globalEndpointManager.CanUseMultipleWriteLocations(request);
-            this.documentServiceRequest = request;
-            this.isMultiMasterWriteRequest = !this.isReadRequest
-                && (this.globalEndpointManager?.CanSupportMultipleWriteLocations(request.ResourceType, request.OperationType) ?? false);
             this.isDtxRequest = DistributedTransactionConstants.IsDistributedTransactionRequest(
                 request.OperationType,
                 request.ResourceType);
+
+            // Distributed transaction requests (including reads, which are sent as OperationType.Read)
+            // must always route to the write region where the transaction coordinator lives. Treat them
+            // as non-read for routing/failover purposes so they are never directed to read-only regions.
+            this.isReadRequest = request.IsReadOnlyRequest && !this.isDtxRequest;
+            this.canUseMultipleWriteLocations = this.globalEndpointManager.CanUseMultipleWriteLocations(request);
+            this.documentServiceRequest = request;
+            this.isMultiMasterWriteRequest = !request.IsReadOnlyRequest
+                && (this.globalEndpointManager?.CanSupportMultipleWriteLocations(request.ResourceType, request.OperationType) ?? false);
 
             // clear previous location-based routing directive
             request.RequestContext.ClearRouteToLocation();
@@ -256,9 +260,20 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    // set location-based routing directive based on request retry context
-                    request.RequestContext.RouteToLocation(this.retryContext.RetryLocationIndex, this.retryContext.RetryRequestOnPreferredLocations);
+                    // set location-based routing directive based on request retry context.
+                    // For DTX requests, always disable preferred locations so the request enters
+                    // the write-region flip-flop branch in LocationCache.ResolveServiceEndpoint,
+                    // ensuring it never routes to a read-only region.
+                    request.RequestContext.RouteToLocation(
+                        this.retryContext.RetryLocationIndex,
+                        this.isDtxRequest ? false : this.retryContext.RetryRequestOnPreferredLocations);
                 }
+            }
+            else if (this.isDtxRequest)
+            {
+                // First attempt (no retry context): disable preferred locations so the request
+                // enters the write-region branch in LocationCache.ResolveServiceEndpoint.
+                request.RequestContext.RouteToLocation(0, usePreferredLocations: false);
             }
 
 #if !INTERNAL
@@ -308,6 +323,15 @@ namespace Microsoft.Azure.Cosmos
                 : this.globalEndpointManager.ResolveServiceEndpoint(request);
 
             request.RequestContext.RouteToLocation(this.locationEndpoint);
+
+            // Force UsePreferredLocations=false for DTX after endpoint pinning so that any
+            // downstream re-resolution (e.g. on retry) stays on the write-region branch.
+            if (this.isDtxRequest)
+            {
+                request.RequestContext.RouteToLocation(
+                    this.retryContext?.RetryLocationIndex ?? 0,
+                    usePreferredLocations: false);
+            }
 
             // Hedging-Detection API: tag the upcoming dispatch reason on Properties so that
             // the downstream dispatch site (TransportHandler / GatewayStoreModel) can append
@@ -452,8 +476,12 @@ namespace Microsoft.Azure.Cosmos
                     isSystemResourceUnavailableForWrite: false);
             }
 
-            // Recieved 500 status code or lease not found
-            if ((statusCode == HttpStatusCode.InternalServerError && this.isReadRequest)
+            // Recieved 500 status code or lease not found.
+            // DTX requests (including read DTX whose IsReadOnlyRequest is true) defer to the
+            // DTX-specific retry classifier below so the dedicated 500/5411-5413 budget applies
+            // instead of generic endpoint-unavailable retry.
+            // Note: 410/1022 (LeaseNotFound) is not emitted by DTX coordinator; this branch never hit for DTX.
+            if ((statusCode == HttpStatusCode.InternalServerError && this.isReadRequest && !this.isDtxRequest)
                 || (statusCode == HttpStatusCode.Gone && subStatusCode == SubStatusCodes.LeaseNotFound))
             {
                 return this.ShouldRetryOnUnavailableEndpointStatusCodes();
