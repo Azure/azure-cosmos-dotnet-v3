@@ -577,5 +577,58 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 }));
             }
         }
+
+        [TestMethod]
+        public async Task GetAsync_FailureLogging_DoesNotSerializeCosmosExceptionDiagnostics()
+        {
+            // Call-site regression for #5945: the failure-path DefaultTrace.TraceError must summarize
+            // the exception via ToTraceSafeString() (which never touches Diagnostics), NOT via ex.Message.
+            // The spy's Diagnostics getter throws, and its Message resolves through Diagnostics for a 503
+            // status code, so a revert of the call site back to ex.Message would surface here as an
+            // InvalidOperationException (and DiagnosticsAccessed == true) instead of the original exception.
+            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>(enableAsyncCacheExceptionNoSharing: false);
+
+            DiagnosticsThrowingCosmosException toThrow = new DiagnosticsThrowingCosmosException(
+                HttpStatusCode.ServiceUnavailable,
+                "boom",
+                new Headers { ActivityId = "activity-5945" });
+
+            DiagnosticsThrowingCosmosException caught = await Assert.ThrowsExceptionAsync<DiagnosticsThrowingCosmosException>(
+                () => asyncCache.GetAsync(
+                    "test",
+                    async (_) =>
+                    {
+                        await Task.Yield();
+                        throw toThrow;
+                    },
+                    (_) => false));
+
+            Assert.AreSame(toThrow, caught, "The original exception must propagate unchanged.");
+            Assert.IsFalse(
+                toThrow.DiagnosticsAccessed,
+                "Failure-path logging must not serialize CosmosException diagnostics (must use ToTraceSafeString).");
+        }
+
+        private sealed class DiagnosticsThrowingCosmosException : CosmosException
+        {
+            public DiagnosticsThrowingCosmosException(
+                HttpStatusCode statusCode,
+                string message,
+                Headers headers)
+                : base(statusCode, message, null, headers, Microsoft.Azure.Cosmos.Tracing.NoOpTrace.Singleton, null, null)
+            {
+            }
+
+            public bool DiagnosticsAccessed { get; private set; }
+
+            public override CosmosDiagnostics Diagnostics
+            {
+                get
+                {
+                    this.DiagnosticsAccessed = true;
+                    throw new InvalidOperationException("Diagnostics must not be accessed by trace-safe logging (#5945).");
+                }
+            }
+        }
     }
 }
