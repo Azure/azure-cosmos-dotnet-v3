@@ -1627,6 +1627,104 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             Assert.IsTrue(result.ShouldRetry, $"DTX 500/{subStatusCode} transient infra failure must be retried.");
         }
 
+        [DataTestMethod]
+        [DataRow((int)SubStatusCodes.DtcLedgerFailure, DisplayName = "500/5411 LedgerFailure - read DTX")]
+        [DataRow((int)SubStatusCodes.DtcAccountConfigFailure, DisplayName = "500/5412 AccountConfigFailure - read DTX")]
+        [DataRow((int)SubStatusCodes.DtcDispatchFailure, DisplayName = "500/5413 DispatchFailure - read DTX")]
+        public async Task ReadDtxRequest_500_InfraFailure_ShouldRetry(int subStatusCode)
+        {
+            // Regression guard: read DTX uses OperationType.Read, which sets isReadRequest=true.
+            // Without the !isDtxRequest guard in ClientRetryPolicy, the generic read-500 branch
+            // would short-circuit to ShouldRetryOnUnavailableEndpointStatusCodes (returns
+            // RetryAfter(TimeSpan.Zero)) and skip ShouldRetryDtxRequest, bypassing the DTX-specific
+            // infra failure budget and sub-status handling. We discriminate by asserting that the
+            // backoff is non-zero (DTX path applies ComputeBackoff >= 100ms base) — the generic
+            // endpoint-unavailable path always returns TimeSpan.Zero.
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            ClientRetryPolicy policy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+            DocumentServiceRequest request = ClientRetryPolicyTests.CreateReadDtxRequest();
+            policy.OnBeforeSendRequest(request);
+
+            ResponseMessage response = new ResponseMessage(HttpStatusCode.InternalServerError);
+            response.Headers.SubStatusCodeLiteral = subStatusCode.ToString();
+
+            ShouldRetryResult result = await policy.ShouldRetryAsync(response, CancellationToken.None);
+
+            Assert.IsTrue(result.ShouldRetry, $"Read DTX 500/{subStatusCode} transient infra failure must be retried.");
+            Assert.IsTrue(result.BackoffTime > TimeSpan.Zero, $"Read DTX 500/{subStatusCode} must go through ShouldRetryDtxRequest (non-zero ComputeBackoff), not generic endpoint-unavailable retry (TimeSpan.Zero). Actual BackoffTime={result.BackoffTime}.");
+        }
+
+        [TestMethod]
+        public async Task ReadDtxRequest_408_ShouldRetry()
+        {
+            // Regression guard: read DTX 408 must fall through to ShouldRetryDtxRequest, not the
+            // generic read endpoint failover path. Discriminator is the same — DTX path uses
+            // 1s RetryIntervalInMS while ShouldRetryOnUnavailableEndpointStatusCodes returns
+            // TimeSpan.Zero. We also verify the DTX 10-call budget by replaying past it.
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            ClientRetryPolicy policy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+            DocumentServiceRequest request = ClientRetryPolicyTests.CreateReadDtxRequest();
+            policy.OnBeforeSendRequest(request);
+
+            ResponseMessage response = new ResponseMessage(HttpStatusCode.RequestTimeout);
+
+            ShouldRetryResult firstResult = await policy.ShouldRetryAsync(response, CancellationToken.None);
+            Assert.IsTrue(firstResult.ShouldRetry, "Read DTX 408 must be retried — idempotency token guarantees safety.");
+            Assert.IsTrue(firstResult.BackoffTime > TimeSpan.Zero, $"Read DTX 408 must go through ShouldRetryDtxRequest (non-zero RetryIntervalInMS), not generic endpoint-unavailable retry (TimeSpan.Zero). Actual BackoffTime={firstResult.BackoffTime}.");
+
+            // DTX budget = 10 for 408. We already consumed one; replay 9 more and the 11th must be denied.
+            const int budget = 10;
+            for (int i = 1; i < budget; i++)
+            {
+                ShouldRetryResult retryResult = await policy.ShouldRetryAsync(response, CancellationToken.None);
+                Assert.IsTrue(retryResult.ShouldRetry, $"Read DTX 408 retry {i + 1} of {budget} should be allowed.");
+            }
+
+            ShouldRetryResult finalResult = await policy.ShouldRetryAsync(response, CancellationToken.None);
+            Assert.IsFalse(finalResult.ShouldRetry, $"Read DTX retry budget is exhausted after {budget} retries; the next call must be denied.");
+        }
+
+        [TestMethod]
+        public async Task ReadDtxRequest_410_LeaseNotFound_SingleMaster_DoesNotFailOverToReadRegion()
+        {
+            // Region guard: a distributed-transaction read is dispatched as OperationType.Read but must be
+            // treated as a write for routing/failover (the transaction coordinator lives in the write region).
+            // On a single-master account the only other regions are read-only, so a DTX read that gets
+            // 410/1022 (LeaseNotFound) must NOT fail over (doing so would route the DTX onto a read region).
+            // It therefore takes the generic endpoint-failover path (not the DTX classifier) and is denied a
+            // cross-region retry. Note: 410/1022 is not actually emitted by the DTX coordinator today; this
+            // locks in the region-safe behavior should it ever occur.
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            ClientRetryPolicy policy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+            DocumentServiceRequest request = ClientRetryPolicyTests.CreateReadDtxRequest();
+            policy.OnBeforeSendRequest(request);
+
+            ResponseMessage response = new ResponseMessage(HttpStatusCode.Gone);
+            response.Headers.SubStatusCodeLiteral = ((int)SubStatusCodes.LeaseNotFound).ToString();
+
+            ShouldRetryResult result = await policy.ShouldRetryAsync(response, CancellationToken.None);
+
+            Assert.IsFalse(result.ShouldRetry, "A single-master DTX read must NOT fail over to a read region on 410/1022; it is routed as a write and there is no other write region.");
+        }
+
         [TestMethod]
         public async Task NonDtxWriteRequest_408_ShouldNotRetry()
         {
@@ -2161,10 +2259,114 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 "The resolved endpoint must change between the thin-advertised and thin-withdrawn phases.");
         }
 
+        /// <summary>
+        /// Regression guard: a distributed-transaction read flows through <see cref="ClientRetryPolicy.OnBeforeSendRequest"/>
+        /// as <see cref="OperationType.Read"/> but MUST be routed to the write region (where the transaction
+        /// coordinator lives), never to a read-only region. Fails loudly if DTX reads start routing to read regions.
+        /// </summary>
+        [TestMethod]
+        public void OnBeforeSendRequest_DistributedTransactionRead_RoutesToWriteRegion_NotReadRegion()
+        {
+            // Single-master account; prefer the read region (location2) ahead of the write region (location1)
+            // so the read endpoint and write endpoint are distinguishable.
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: false,
+                preferedRegionListOverride: new List<string>() { "location2", "location1" }.AsReadOnly());
+
+            ClientRetryPolicy retryPolicy = new(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery: true,
+                isThinClientEnabled: false);
+
+            // Sanity: a non-DTX read routes to the preferred read region (location2).
+            DocumentServiceRequest plainRead = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            retryPolicy.OnBeforeSendRequest(plainRead);
+            Assert.AreEqual(
+                ClientRetryPolicyTests.Location2Endpoint,
+                plainRead.RequestContext.LocationEndpointToRoute,
+                "A non-DTX read must route to the read region.");
+
+            // A DTX read (OperationType.Read on DistributedTransactionBatch) must route to the write region.
+            // OnBeforeSendRequest sets UsePreferredLocations=false; then ResolveServiceEndpoint picks the write region.
+            DocumentServiceRequest dtxRead = ClientRetryPolicyTests.CreateReadDtxRequest();
+            retryPolicy.OnBeforeSendRequest(dtxRead);
+
+            // Verify UsePreferredLocations was set to false by OnBeforeSendRequest
+            Assert.AreEqual(false, dtxRead.RequestContext.UsePreferredLocations, "OnBeforeSendRequest must set UsePreferredLocations=false for DTX reads.");
+
+            Uri dtxReadEndpoint = endpointManager.ResolveServiceEndpoint(dtxRead);
+            Assert.AreEqual(
+                ClientRetryPolicyTests.Location1Endpoint,
+                dtxReadEndpoint,
+                "A DTX read must route to the write region, not the read region.");
+            Assert.AreNotEqual(
+                ClientRetryPolicyTests.Location2Endpoint,
+                dtxReadEndpoint,
+                "A DTX read must NOT route to the read region.");
+
+            // A DTX commit must also route to the write region.
+            DocumentServiceRequest dtxCommit = ClientRetryPolicyTests.CreateDtxRequest();
+            retryPolicy.OnBeforeSendRequest(dtxCommit);
+            Uri dtxCommitEndpoint = endpointManager.ResolveServiceEndpoint(dtxCommit);
+            Assert.AreEqual(
+                ClientRetryPolicyTests.Location1Endpoint,
+                dtxCommitEndpoint,
+                "A DTX commit must route to the write region.");
+        }
+
+        /// <summary>
+        /// Topology-agnostic guard: in a multi-master account (multiple write regions) a
+        /// distributed-transaction read flowing through <see cref="ClientRetryPolicy.OnBeforeSendRequest"/>
+        /// must still be classified as a write and route to the same endpoint as a DTX commit.
+        /// DTX is single-master today but will be extended to multi-master; this proves no rework is needed.
+        /// </summary>
+        [TestMethod]
+        public void OnBeforeSendRequest_MultiMaster_DistributedTransactionRead_RoutesAsWrite()
+        {
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: true,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: false,
+                preferedRegionListOverride: new List<string>() { "location2", "location1" }.AsReadOnly());
+
+            ClientRetryPolicy retryPolicy = new(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery: true,
+                isThinClientEnabled: false);
+
+            DocumentServiceRequest dtxRead = ClientRetryPolicyTests.CreateReadDtxRequest();
+            retryPolicy.OnBeforeSendRequest(dtxRead);
+
+            // Verify UsePreferredLocations was set to false
+            Assert.AreEqual(false, dtxRead.RequestContext.UsePreferredLocations, "OnBeforeSendRequest must set UsePreferredLocations=false for DTX reads in multi-master.");
+
+            Uri dtxReadEndpoint = endpointManager.ResolveServiceEndpoint(dtxRead);
+            Assert.IsTrue(
+                endpointManager.WriteEndpoints.Contains(dtxReadEndpoint),
+                "A DTX read must route to a write-capable endpoint, even in multi-master.");
+            Assert.IsFalse(
+                endpointManager.ReadEndpoints.Contains(dtxReadEndpoint) && !endpointManager.WriteEndpoints.Contains(dtxReadEndpoint),
+                "A DTX read must never route to a read-only region, even in multi-master.");
+        }
+
         private static DocumentServiceRequest CreateDtxRequest()
         {
             return DocumentServiceRequest.Create(
                 OperationType.CommitDistributedTransaction,
+                ResourceType.DistributedTransactionBatch,
+                AuthorizationTokenType.PrimaryMasterKey);
+        }
+
+        private static DocumentServiceRequest CreateReadDtxRequest()
+        {
+            return DocumentServiceRequest.Create(
+                OperationType.Read,
                 ResourceType.DistributedTransactionBatch,
                 AuthorizationTokenType.PrimaryMasterKey);
         }
