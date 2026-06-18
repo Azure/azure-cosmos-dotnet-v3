@@ -16,24 +16,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     /// End-to-end tests for conditional ETag behavior (ifMatch / ifNoneMatch) in distributed
     /// transactions, run against a live DTX-enabled account.
     ///
-    /// These tests verify SDK-visible behavior for conditional ETags in distributed transactions:
-    ///
-    /// ┌────┬──────────────────────────────────────────────────────┬──────────────────────────────────────────┐
-    /// │ #  │ Scenario                                             │ Expected SDK Result                      │
-    /// ├────┼──────────────────────────────────────────────────────┼──────────────────────────────────────────┤
-    /// │ 1  │ Read 2 existing items, no conditionals               │ 200 [200, 200]                           │
-    /// │ 2  │ Read 2 items, one has matching IfNoneMatch           │ 207 [200, 304]                           │
-    /// │ 3  │ Read 1 item with stale IfNoneMatch (item changed)    │ 200 [200] — returns updated resource     │
-    /// │ 4  │ Read 2 items, both have matching IfNoneMatch         │ 207 [304, 304]                           │
-    /// │ 5  │ Read 2 items, one does not exist                     │ 404 [424, 404]                           │
-    /// │ 6  │ Write with stale IfMatch (conflict)                  │ 412/452 — precondition failed            │
-    /// │ 7  │ Write with current IfMatch (no conflict)             │ 200 [200] — item replaced successfully   │
-    /// │ 8  │ Read 1 item with matching IfNoneMatch (inspectable)  │ 304 — user can inspect StatusCode        │
-    /// │ 9  │ Read with both IfMatch+IfNoneMatch set               │ 304 — only IfNoneMatch honoured          │
-    /// │ 10 │ Write with both IfMatch+IfNoneMatch set              │ 200 — only IfMatch honoured              │
-    /// │ 11 │ Write with stale IfMatch + current IfNoneMatch       │ 412 — IfNoneMatch cannot rescue writes   │
-    /// └────┴──────────────────────────────────────────────────────┴──────────────────────────────────────────┘
-    ///
     /// To run locally:
     ///     set COSMOS_DTX_ENDPOINT=https://your-account.documents.azure.com:443/
     ///     set COSMOS_DTX_KEY=your-master-key
@@ -95,11 +77,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        // ─── Phase 1→2 happy path: all 200s ────────────────────────────────────
+        // ─── Baseline: all items exist, no conditionals ─────────────────────────
 
         /// <summary>
-        /// Contract row: Phase 1 all-200 → Phase 2 all-200 → SDK 200 [200, 200, …]
         /// Verifies baseline read DTx behavior without conditional ETags.
+        /// All items exist and no conditionals are set, so every op returns 200.
         /// </summary>
         [TestMethod]
         public async Task ReadDtx_AllItemsExist_NoConditional_Returns200()
@@ -136,10 +118,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             response.Dispose();
         }
 
-        // ─── Phase 2: 207 with [200, 304] — IfNoneMatch match ──────────────────
+        // ─── IfNoneMatch match on one op → 207 [200, 304] ────────────────────
 
         /// <summary>
-        /// Contract row: Phase 1 207 [200, 304] → proceed → Phase 2 207 [200, 304, 200, 200]
         /// Verifies that a matching IfNoneMatchEtag produces a 304 on the matching op
         /// and a 207 MultiStatus envelope (aligning with TransactionalBatch behavior).
         /// </summary>
@@ -265,11 +246,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             response.Dispose();
         }
 
-        // ─── Phase 1 abort: non-existent item → 404 with FailedDependency ──────
+        // ─── Non-existent item → 404 with FailedDependency ──────────────────
 
         /// <summary>
-        /// Contract row: Phase 1 207 [424, 404] → SDK 404 [424, 404, 424, 424]
-        /// When one item doesn't exist, the transaction aborts in phase 1.
+        /// When one item doesn't exist, the transaction aborts.
         /// The failing op gets 404, all other ops get 424 (FailedDependency).
         /// </summary>
         [TestMethod]
@@ -290,7 +270,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .CommitTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode,
-                $"Envelope should be 404 when a phase 1 op returns 404. Got: {response.StatusCode}");
+                $"Envelope should be 404 when a read op targets a non-existent item. Got: {response.StatusCode}");
             Assert.IsFalse(response.IsSuccessStatusCode);
 
             // Per contract: the failing op gets 404, other ops get 424 (FailedDependency).

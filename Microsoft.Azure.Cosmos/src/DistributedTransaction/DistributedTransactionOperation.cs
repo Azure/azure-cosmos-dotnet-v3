@@ -58,9 +58,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal string SessionToken { get; set; }
 
-        internal string IfMatch => this.RequestOptions?.IfMatchEtag ?? null;
+        internal string IfMatch => this.RequestOptions?.IfMatchEtag;
 
-        internal string IfNoneMatch => this.RequestOptions?.IfNoneMatchEtag ?? null;
+        internal string IfNoneMatch => this.RequestOptions?.IfNoneMatchEtag;
 
         internal Stream ResourceStream { get; set; }
 
