@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Diagnostics;
     using System.Linq;
     using System.Net;
     using System.Text.Json;
@@ -89,8 +90,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             {
                 await this.highThroughputContainer.DeleteContainerAsync();
             }
-            this.client.Dispose();
-            this.fiClient.Dispose();
+            this.client?.Dispose();
+            this.fiClient?.Dispose();
         }
 
         [TestMethod]
@@ -1040,6 +1041,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         [DataRow(FaultInjectionOperationType.ReadItem, FaultInjectionServerErrorType.Timeout, 410, 20001, DisplayName = "Timeout")]
         [DataRow(FaultInjectionOperationType.ReadItem, FaultInjectionServerErrorType.PartitionIsMigrating, 410, 1008, DisplayName = "PartitionIsMigrating")]
         [DataRow(FaultInjectionOperationType.ReadItem, FaultInjectionServerErrorType.PartitionIsSplitting, 410, 1007, DisplayName = "PartitionIsSplitting")]
+        [DataRow(FaultInjectionOperationType.ReadItem, FaultInjectionServerErrorType.LeaseNotFound, 410, 1022, DisplayName = "LeaseNotFound")]
         [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.Gone, 410, 21005, DisplayName = "Gone Write")]
         [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.InternalServerError, 500, 0, DisplayName = "InternalServerError Write")]
         [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.RetryWith, 449, 0, DisplayName = "RetryWith Write")]
@@ -1048,6 +1050,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.Timeout, 410, 20001, DisplayName = "Timeout Write")]
         [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.PartitionIsMigrating, 410, 1008, DisplayName = "PartitionIsMigrating Write")]
         [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.PartitionIsSplitting, 410, 1007, DisplayName = "PartitionIsSplitting Write")]
+        [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.LeaseNotFound, 410, 1022, DisplayName = "LeaseNotFound Write")]
         public async Task FaultInjectionServerErrorRule_ServerErrorResponseTest(
             FaultInjectionOperationType faultInjectionOperationType,
             FaultInjectionServerErrorType serverErrorType,
@@ -1794,6 +1797,403 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                     rule);
             }
         }
+
+        // -----------------------------------------------------------------------------
+        // Partition merge / lease handoff repro — deterministic variant.
+        //
+        // During a partition merge / lease handoff, the backend may return 410/1022
+        // (LeaseNotFound) to in-flight cross-partition FeedIterator pages. The retry
+        // plumbing (Direct GoneAndRetryWithRequestRetryPolicy -> ClientRetryPolicy
+        // cross-region retry) eventually succeeds against the destination region, but
+        // each page-level retry chain can run past the operation-level
+        // CancellationToken.
+        //
+        // To make this deterministic locally we trap the SDK on both regions:
+        //   * Primary region: LeaseNotFound on Query/Read forces cross-region failover.
+        //   * Secondary region: long ResponseDelay holds the failed-over request open
+        //     well past the user's CT.
+        //
+        // The SDK has nowhere to succeed within the CT window, so a CT-aware path
+        // should surface OperationCanceledException promptly. A non-CT-aware path
+        // sits in the secondary region's delayed read until either the request
+        // returns or MSTest kills the test.
+        // -----------------------------------------------------------------------------
+        [TestMethod]
+        [Timeout(300000)]
+        [Owner("tomasvaron")]
+        [Description("FeedIterator with 410/1022 in primary and long delay in secondary should honor the operation CancellationToken")]
+        public async Task FaultInjectionLeaseNotFound_FeedIteratorHonorsCancellationToken()
+        {
+            // Build preferred regions list with non-write regions first so reads land on a remote region.
+            List<string> preferredRegions = new List<string>();
+            GlobalEndpointManager globalEndpointManager = this.client.DocumentClient.GlobalEndpointManager;
+            if (globalEndpointManager != null)
+            {
+                (List<string> writeRegions, List<string> readRegions) = await this.GetReadWriteEndpoints(globalEndpointManager);
+                for (int i = 0; i < readRegions.Count; i++)
+                {
+                    if (writeRegions != null && writeRegions.Contains(readRegions[i]))
+                    {
+                        preferredRegions.Add(readRegions[i]);
+                    }
+                    else
+                    {
+                        preferredRegions.Insert(0, readRegions[i]);
+                    }
+                }
+            }
+
+            Assert.IsTrue(
+                preferredRegions.Count >= 2,
+                "Test requires at least two regions so that cross-region retry has somewhere to fail over to. "
+                + "Ensure the test account has at least two regions configured.");
+
+            string primaryRegion = preferredRegions[0];
+            string secondaryRegion = preferredRegions[1];
+
+            // 1) Primary region: LeaseNotFound on every Query/Read forces the SDK into cross-region retry.
+            string queryLeaseNotFoundRuleId = "queryLeaseNotFoundRule-" + Guid.NewGuid();
+            FaultInjectionRule queryLeaseNotFoundRule = new FaultInjectionRuleBuilder(
+                id: queryLeaseNotFoundRuleId,
+                condition: new FaultInjectionConditionBuilder()
+                    .WithOperationType(FaultInjectionOperationType.QueryItem)
+                    .WithRegion(primaryRegion)
+                    .Build(),
+                result: FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.LeaseNotFound)
+                    .WithTimes(int.MaxValue)
+                    .Build())
+                .WithDuration(TimeSpan.FromMinutes(5))
+                .Build();
+            queryLeaseNotFoundRule.Disable();
+
+            string readLeaseNotFoundRuleId = "readLeaseNotFoundRule-" + Guid.NewGuid();
+            FaultInjectionRule readLeaseNotFoundRule = new FaultInjectionRuleBuilder(
+                id: readLeaseNotFoundRuleId,
+                condition: new FaultInjectionConditionBuilder()
+                    .WithOperationType(FaultInjectionOperationType.ReadItem)
+                    .WithRegion(primaryRegion)
+                    .Build(),
+                result: FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.LeaseNotFound)
+                    .WithTimes(int.MaxValue)
+                    .Build())
+                .WithDuration(TimeSpan.FromMinutes(5))
+                .Build();
+            readLeaseNotFoundRule.Disable();
+
+            // 2) Secondary region: a long delay on every Query/Read parks the failed-over request
+            //    well past the CT. 30s is enough to dwarf the 5s CT used below while keeping this
+            //    test comfortably under the MSTest default timeout.
+            const int secondaryDelaySeconds = 30;
+            string secondaryQueryDelayRuleId = "secondaryQueryDelayRule-" + Guid.NewGuid();
+            FaultInjectionRule secondaryQueryDelayRule = new FaultInjectionRuleBuilder(
+                id: secondaryQueryDelayRuleId,
+                condition: new FaultInjectionConditionBuilder()
+                    .WithOperationType(FaultInjectionOperationType.QueryItem)
+                    .WithRegion(secondaryRegion)
+                    .Build(),
+                result: FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                    .WithDelay(TimeSpan.FromSeconds(secondaryDelaySeconds))
+                    .WithTimes(int.MaxValue)
+                    .Build())
+                .WithDuration(TimeSpan.FromMinutes(5))
+                .Build();
+            secondaryQueryDelayRule.Disable();
+
+            string secondaryReadDelayRuleId = "secondaryReadDelayRule-" + Guid.NewGuid();
+            FaultInjectionRule secondaryReadDelayRule = new FaultInjectionRuleBuilder(
+                id: secondaryReadDelayRuleId,
+                condition: new FaultInjectionConditionBuilder()
+                    .WithOperationType(FaultInjectionOperationType.ReadItem)
+                    .WithRegion(secondaryRegion)
+                    .Build(),
+                result: FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                    .WithDelay(TimeSpan.FromSeconds(secondaryDelaySeconds))
+                    .WithTimes(int.MaxValue)
+                    .Build())
+                .WithDuration(TimeSpan.FromMinutes(5))
+                .Build();
+            secondaryReadDelayRule.Disable();
+
+            FaultInjector faultInjector = new FaultInjector(
+                new List<FaultInjectionRule>
+                {
+                    queryLeaseNotFoundRule,
+                    readLeaseNotFoundRule,
+                    secondaryQueryDelayRule,
+                    secondaryReadDelayRule,
+                });
+
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                ConsistencyLevel = ConsistencyLevel.Session,
+                ApplicationPreferredRegions = preferredRegions,
+                FaultInjector = faultInjector,
+                Serializer = this.serializer,
+            };
+
+            this.fiClient = new CosmosClient(this.connectionString, cosmosClientOptions);
+            this.fiDatabase = this.fiClient.GetDatabase(TestCommon.FaultInjectionDatabaseName);
+            this.fiContainer = this.fiDatabase.GetContainer(TestCommon.FaultInjectionContainerName);
+
+            string query = "SELECT TOP 1 c.id FROM c WHERE c.pk != '' ORDER BY c.pk ASC";
+
+            const int cancellationBudgetSeconds = 5;
+            // Bound for how long after the CT fires we are willing to wait before declaring the SDK
+            // failed to honor the token.
+            const int gracePeriodSeconds = 2;
+
+            using CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(cancellationBudgetSeconds));
+
+            queryLeaseNotFoundRule.Enable();
+            readLeaseNotFoundRule.Enable();
+            secondaryQueryDelayRule.Enable();
+            secondaryReadDelayRule.Enable();
+
+            FeedIterator<FaultInjectionTestObject> feedIterator = this.fiContainer.GetItemQueryIterator<FaultInjectionTestObject>(query);
+
+            Stopwatch sw = Stopwatch.StartNew();
+            Exception observed = null;
+            try
+            {
+                while (feedIterator.HasMoreResults)
+                {
+                    await feedIterator.ReadNextAsync(cts.Token);
+                }
+            }
+            catch (Exception ex)
+            {
+                observed = ex;
+            }
+            finally
+            {
+                sw.Stop();
+                queryLeaseNotFoundRule.Disable();
+                readLeaseNotFoundRule.Disable();
+                secondaryQueryDelayRule.Disable();
+                secondaryReadDelayRule.Disable();
+            }
+
+            long elapsedSeconds = sw.ElapsedMilliseconds / 1000;
+            long primaryHits = queryLeaseNotFoundRule.GetHitCount() + readLeaseNotFoundRule.GetHitCount();
+            long secondaryHits = secondaryQueryDelayRule.GetHitCount() + secondaryReadDelayRule.GetHitCount();
+
+            // Sanity: at least one of the fault rules must have fired. Otherwise the test setup is invalid.
+            Assert.IsTrue(
+                primaryHits + secondaryHits > 0,
+                $"No fault injection rules fired (primary={primaryHits}, secondary={secondaryHits}); test setup is invalid.");
+
+            // The contract: once the operation-level CancellationToken expires, the SDK should surface
+            // OperationCanceledException within a small grace period. It MUST NOT block in the secondary
+            // region's delayed response while the user's token is already cancelled.
+            Assert.IsTrue(
+                elapsedSeconds <= cancellationBudgetSeconds + gracePeriodSeconds,
+                $"Operation ran for {elapsedSeconds}s under a {cancellationBudgetSeconds}s CancellationToken "
+                + $"(allowed: <= {cancellationBudgetSeconds + gracePeriodSeconds}s). "
+                + $"CT was not honored in a timely manner. "
+                + $"Observed exception: {observed?.GetType().FullName ?? "<none>"}. "
+                + $"Primary LeaseNotFound hits: {primaryHits}. Secondary delay hits: {secondaryHits}.");
+
+            // We also expect OperationCanceledException (or a derived TaskCanceledException) to surface,
+            // not a CosmosException wrapping the injected fault.
+            Assert.IsNotNull(observed, "Expected the operation to be cancelled, but it completed normally.");
+            Assert.IsTrue(
+                observed is OperationCanceledException,
+                $"Expected OperationCanceledException, got {observed.GetType().FullName}: {observed.Message}");
+        }
+
+
+        // -----------------------------------------------------------------------------
+        // Companion test: verify the operation CancellationToken is honored when the SDK
+        // sits in the consistency-barrier loop polling Head/Collection.
+        //
+        // Under Strong / Bounded Staleness consistency, the SDK's QuorumReader picks a
+        // target LSN from the highest LSN it saw across the quorum's Read responses,
+        // then verifies that the responding replica's GlobalCommittedLSN is at or above
+        // that target. If GCLSN is behind, it polls Head/Collection until it catches up
+        // (`WaitForReadBarrierNewAsync`).
+        //
+        // To make this deterministic without relying on real cross-region replication
+        // lag, two fault rules cooperate:
+        //   1. ResponseHeaderOverride on ReadItem — synthesizes a 200 response that
+        //      reports a fresh LSN but a stale GlobalCommittedLSN. The quorum picks
+        //      the fresh LSN as the barrier target; the replica's reported GCLSN is
+        //      below it, so the SDK enters the barrier loop.
+        //   2. Gone on MetadataHeadCollection — every barrier Head/Collection poll fails for
+        //      60s. The barrier loop retries.
+        //
+        // With the barrier loop spinning, the user's 5s CancellationToken should
+        // pre-empt within a small tolerance. A non-CT-aware path stays in the loop
+        // until either the retry limit or MSTest's outer timeout fires.
+        // -----------------------------------------------------------------------------
+        [TestMethod]
+        [Timeout(300000)]
+        [Owner("tomasvaron")]
+        [Description("CancellationToken must be honored between barrier (Head/Collection) requests")]
+        public async Task FaultInjectionMetadataHeadCollectionDelay_HonorsCancellationToken()
+        {
+            const int cancellationBudgetSeconds = 5;
+            const int gracePeriodSeconds = 2;
+            const int barrierFaultDurationSeconds = 60;
+
+            // 1) Force the SDK into the consistency-barrier loop by reporting NumberOfReadRegions=2
+            //    with a fresh LSN and stale GlobalCommittedLSN on the write response. This mirrors
+            //    the proven pattern in BarrierRequestReplicaRetryTests.cs and triggers
+            //    ConsistencyWriter.WaitForWriteBarrierNewAsync.
+            Dictionary<string, string> staleGclsnHeaders = new Dictionary<string, string>
+            {
+                { WFConstants.BackendHeaders.NumberOfReadRegions, "2"     },
+                { WFConstants.BackendHeaders.LSN,                 "10000" },
+                { WFConstants.BackendHeaders.GlobalCommittedLSN,  "1"     },
+                { WFConstants.BackendHeaders.QuorumAckedLSN,      "10000" },
+                { WFConstants.BackendHeaders.LocalLSN,            "10000" },
+            };
+
+            string headerOverrideRuleId = "barrierHeaderOverrideRule-" + Guid.NewGuid();
+            FaultInjectionRule headerOverrideRule = new FaultInjectionRuleBuilder(
+                id: headerOverrideRuleId,
+                condition: new FaultInjectionConditionBuilder()
+                    .WithOperationType(FaultInjectionOperationType.CreateItem)
+                    .WithConnectionType(FaultInjectionConnectionType.Direct)
+                    .Build(),
+                result: FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseHeaderOverride)
+                    .WithHeaderOverrides(staleGclsnHeaders)
+                    .WithTimes(int.MaxValue)
+                    .Build())
+                .WithDuration(TimeSpan.FromSeconds(barrierFaultDurationSeconds))
+                .Build();
+            headerOverrideRule.Disable();
+
+            // 2) Fail every barrier Head/Collection poll with 410/Gone. Constrain to Direct
+            //    (RNTBD) so we don't accidentally intercept HTTP gateway metadata-resolution
+            //    calls that also use OperationType.Head — those are not barriers and aren't
+            //    retried, so they short-circuit the test before the barrier loop runs.
+            string barrierFailureRuleId = "barrierGoneRule-" + Guid.NewGuid();
+            FaultInjectionRule barrierFailureRule = new FaultInjectionRuleBuilder(
+                id: barrierFailureRuleId,
+                condition: new FaultInjectionConditionBuilder()
+                    .WithOperationType(FaultInjectionOperationType.MetadataHeadCollection)
+                    .WithConnectionType(FaultInjectionConnectionType.Direct)
+                    .Build(),
+                result: FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.Gone)
+                    .WithTimes(int.MaxValue)
+                    .Build())
+                .WithDuration(TimeSpan.FromSeconds(barrierFaultDurationSeconds))
+                .Build();
+            barrierFailureRule.Disable();
+
+            FaultInjector faultInjector = new FaultInjector(
+                new List<FaultInjectionRule> { headerOverrideRule, barrierFailureRule });
+
+            // Build preferred regions list with non-write regions first so reads land on a remote
+            // region — that's the path where Strong-consistency barriers actually fire.
+            List<string> preferredRegions = new List<string>();
+            string writeRegion = null;
+            GlobalEndpointManager globalEndpointManager = this.client.DocumentClient.GlobalEndpointManager;
+            if (globalEndpointManager != null)
+            {
+                (List<string> writeRegions, List<string> readRegions) = await this.GetReadWriteEndpoints(globalEndpointManager);
+                if (writeRegions != null && writeRegions.Count > 0)
+                {
+                    writeRegion = writeRegions[0];
+                }
+
+                for (int i = 0; i < readRegions.Count; i++)
+                {
+                    if (writeRegions != null && writeRegions.Contains(readRegions[i]))
+                    {
+                        preferredRegions.Add(readRegions[i]);
+                    }
+                    else
+                    {
+                        preferredRegions.Insert(0, readRegions[i]);
+                    }
+                }
+            }
+
+            Assert.IsTrue(
+                preferredRegions.Count >= 2,
+                "Test requires at least two regions configured on the test account.");
+
+            CosmosClientOptions readerOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                ConsistencyLevel = ConsistencyLevel.Strong,
+                ApplicationPreferredRegions = preferredRegions,
+                FaultInjector = faultInjector,
+                Serializer = this.serializer,
+            };
+
+            this.fiClient = new CosmosClient(this.connectionString, readerOptions);
+            this.fiDatabase = this.fiClient.GetDatabase(TestCommon.FaultInjectionDatabaseName);
+            this.fiContainer = this.fiDatabase.GetContainer(TestCommon.FaultInjectionContainerName);
+
+            headerOverrideRule.Enable();
+            barrierFailureRule.Enable();
+
+            using CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(cancellationBudgetSeconds));
+
+            Stopwatch sw = Stopwatch.StartNew();
+            Exception observed = null;
+            try
+            {
+                // Write a new item — the synthetic header override on the response will report
+                // GCLSN behind LSN with NumberOfReadRegions=2, forcing ConsistencyWriter into
+                // WaitForWriteBarrierNewAsync. Every barrier Head/Collection poll then fails
+                // (the second rule), keeping the loop spinning past the user's CT.
+                FaultInjectionTestObject newItem = new FaultInjectionTestObject
+                {
+                    Id = "barrier-ct-" + Guid.NewGuid(),
+                    Pk = "barrier-pk-" + Guid.NewGuid(),
+                };
+                _ = await this.fiContainer.CreateItemAsync(
+                    newItem,
+                    new PartitionKey(newItem.Pk),
+                    cancellationToken: cts.Token);
+            }
+            catch (Exception ex)
+            {
+                observed = ex;
+            }
+            finally
+            {
+                sw.Stop();
+                headerOverrideRule.Disable();
+                barrierFailureRule.Disable();
+            }
+
+            long elapsedSeconds = sw.ElapsedMilliseconds / 1000;
+            long overrideHits = headerOverrideRule.GetHitCount();
+            long barrierHits = barrierFailureRule.GetHitCount();
+
+            // Sanity: the barrier failure rule must have fired. The header-override rule is the
+            // ideal trigger to drop the SDK into the barrier loop (synthetic stale GCLSN), but on
+            // Strong-consistency reads against the write region the SDK often issues barriers
+            // anyway as part of quorum read; either path validates the CT-honor contract.
+            if (barrierHits == 0)
+            {
+                Assert.Fail(
+                    $"Barrier (Head/Collection) failure rule never fired. Header override hits: {overrideHits}, "
+                    + $"barrier failure hits: {barrierHits}. The SDK did not invoke WaitForReadBarrierNewAsync; "
+                    + $"the test cannot validate CT-honor behavior in the barrier loop.");
+            }
+
+            // The contract: once the operation-level CancellationToken expires, the SDK should
+            // surface OperationCanceledException within a small grace period — it must NOT spin
+            // in WaitForReadBarrierNewAsync past the user's deadline.
+            Assert.IsTrue(
+                elapsedSeconds <= cancellationBudgetSeconds + gracePeriodSeconds,
+                $"Operation ran for {elapsedSeconds}s under a {cancellationBudgetSeconds}s CancellationToken "
+                + $"(allowed: <= {cancellationBudgetSeconds + gracePeriodSeconds}s). "
+                + $"Barrier loop did not pre-empt on CT cancellation. "
+                + $"Observed exception: {observed?.GetType().FullName ?? "<none>"}. "
+                + $"Header override hits: {overrideHits}, barrier failure hits: {barrierHits}.");
+
+            Assert.IsNotNull(observed, "Expected the operation to be cancelled, but it completed normally.");
+            Assert.IsTrue(
+                observed is OperationCanceledException,
+                $"Expected OperationCanceledException, got {observed.GetType().FullName}: {observed.Message}");
+        }
+
 
         private async Task<(List<string>, List<string>)> GetReadWriteEndpoints(GlobalEndpointManager globalEndpointManager)
         {

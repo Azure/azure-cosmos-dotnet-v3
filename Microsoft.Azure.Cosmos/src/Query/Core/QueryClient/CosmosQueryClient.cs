@@ -92,7 +92,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             Documents.PartitionKeyDefinition partitionKeyDefinition,
             FeedRangeInternal feedRangeInternal,
             bool forceRefresh,
-            ITrace trace);
+            ITrace trace,
+            CancellationToken cancellationToken = default);
 
         public abstract Task<List<Documents.PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(
             string resourceLink,

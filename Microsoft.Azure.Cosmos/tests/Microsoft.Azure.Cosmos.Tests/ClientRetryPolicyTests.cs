@@ -359,6 +359,101 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             }
         }
 
+        /// <summary>
+        /// Regression for PR #5913 / ICM 21000001041367: the OperationCanceledException
+        /// raised by the new inter-attempt Task.Delay(ct) inside
+        /// CosmosHttpClientCore.ProcessMessageAsync must NOT be classified as a
+        /// region-down signal by ClientRetryPolicy. Pure caller-cancellation must not
+        /// invoke <see cref="GlobalEndpointManager.MarkEndpointUnavailableForRead"/>
+        /// (nor the write variant) — those are reserved for genuine endpoint failures
+        /// (HttpRequestException, 503, etc.).
+        ///
+        /// Uses a CallBase Moq spy over <see cref="GlobalEndpointManager"/> so the
+        /// real ClientRetryPolicy flow runs end-to-end and the assertion is a true
+        /// behavioral pin: any future change that wires OCE handling into the
+        /// endpoint-marking path will fail this test.
+        /// </summary>
+        [TestMethod]
+        [DataRow(true, DisplayName = "PPAF enabled")]
+        [DataRow(false, DisplayName = "PPAF disabled (customer scenario)")]
+        public async Task OperationCanceledException_DoesNotMarkEndpointUnavailable(
+            bool enablePartitionLevelFailover)
+        {
+            const bool enableEndpointDiscovery = true;
+
+            this.databaseAccount = ClientRetryPolicyTests.CreateDatabaseAccount(
+                useMultipleWriteLocations: false,
+                enforceSingleMasterSingleWriteLocation: false);
+            this.preferredLocations = new List<string>() { "location1", "location2", "location3", "location4" }.AsReadOnly();
+
+            Mock<IDocumentClientInternal> mockedDocClient = new();
+            mockedDocClient.Setup(c => c.ServiceEndpoint).Returns(ClientRetryPolicyTests.Location1Endpoint);
+            mockedDocClient.Setup(c => c.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(this.databaseAccount);
+            this.mockedClient = mockedDocClient;
+
+            ConnectionPolicy connectionPolicy = new()
+            {
+                EnableEndpointDiscovery = enableEndpointDiscovery,
+                UseMultipleWriteLocations = false,
+            };
+            foreach (string preferredLocation in this.preferredLocations)
+            {
+                connectionPolicy.PreferredLocations.Add(preferredLocation);
+            }
+
+            // CallBase=true: virtual methods (MarkEndpointUnavailableForRead, ResolveServiceEndpoint, ...)
+            // execute the real implementation, so the test exercises the real routing flow, but Moq
+            // also records invocations so we can Verify Times.Never.
+            Mock<GlobalEndpointManager> endpointManagerSpy = new(mockedDocClient.Object, connectionPolicy, false)
+            {
+                CallBase = true,
+            };
+            using GlobalEndpointManager endpointManager = endpointManagerSpy.Object;
+            endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(this.databaseAccount);
+
+            this.partitionKeyRangeLocationCache = enablePartitionLevelFailover
+                ? new GlobalPartitionEndpointManagerCore(
+                    globalEndpointManager: endpointManager,
+                    isPartitionLevelFailoverEnabled: true,
+                    isPartitionLevelCircuitBreakerEnabled: true)
+                : GlobalPartitionEndpointManagerNoOp.Instance;
+
+            ClientRetryPolicy retryPolicy = new(
+                globalEndpointManager: endpointManager,
+                partitionKeyRangeLocationCache: this.partitionKeyRangeLocationCache,
+                retryOptions: new RetryOptions(),
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isThinClientEnabled: false);
+
+            const string suffix = "-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF";
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            request.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange() { Id = "0", MinInclusive = "3F" + suffix, MaxExclusive = "5F" + suffix };
+
+            using CancellationTokenSource cts = new();
+            cts.Cancel();
+            OperationCanceledException oce = new(message: "Caller cancellation token expired during HTTP retry delay.", cts.Token);
+
+            // Drive enough OCE attempts to exceed the read-request failover threshold (10).
+            // Without the contract this test pins, a future regression that translates OCE
+            // into an endpoint-failure signal would call MarkEndpointUnavailableForRead
+            // somewhere in this loop.
+            for (int i = 0; i < 12; i++)
+            {
+                retryPolicy.OnBeforeSendRequest(request);
+                await retryPolicy.ShouldRetryAsync(oce, cts.Token);
+            }
+
+            endpointManagerSpy.Verify(
+                gep => gep.MarkEndpointUnavailableForRead(It.IsAny<Uri>()),
+                Times.Never,
+                "Pure caller-cancellation (OperationCanceledException) must not mark the read endpoint unavailable.");
+            endpointManagerSpy.Verify(
+                gep => gep.MarkEndpointUnavailableForWrite(It.IsAny<Uri>()),
+                Times.Never,
+                "Pure caller-cancellation (OperationCanceledException) must not mark the write endpoint unavailable.");
+        }
+
         [TestMethod]
         public async Task ClientRetryPolicy_Retry_SingleMaster_Read_PreferredLocationsAsync()
         {

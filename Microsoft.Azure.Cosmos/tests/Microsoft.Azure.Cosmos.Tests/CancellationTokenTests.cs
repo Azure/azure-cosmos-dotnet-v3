@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [ExpectedException(typeof(OperationCanceledException))]
+        [ExpectedException(typeof(OperationCanceledException), AllowDerivedTypes = true)]
         public async Task GatewayProcessMessageAsyncCancelsOnDeadline()
         {
             // Cancellation deadline is before Request timeout

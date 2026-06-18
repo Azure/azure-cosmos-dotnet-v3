@@ -763,5 +763,54 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return await this.sendFunc(request, cancellationToken);
             }
         }
+
+        /// <summary>
+        /// Pins the fix in <c>CosmosHttpClientCore.SendHttpHelperAsync</c>: the inter-attempt
+        /// <c>Task.Delay(delayForNextRequest, cancellationToken)</c> must honor the operation-level
+        /// <see cref="CancellationToken"/>. The mock returns a retriable 408 once, cancels the
+        /// caller's CT, and expects the SDK to surface <see cref="OperationCanceledException"/>
+        /// from the retry delay instead of issuing a second send.
+        /// </summary>
+        [TestMethod]
+        [Owner("tvaron3")]
+        [Timeout(30000)]
+        public async Task SendHttpHelperAsync_CancelledDuringRetryDelay_ThrowsOperationCanceledException()
+        {
+            using CancellationTokenSource cts = new ();
+
+            int count = 0;
+            Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                count++;
+                if (count == 1)
+                {
+                    // Cancel the operation-level CT. The very next line inside SendHttpHelperAsync
+                    // is `await Task.Delay(delayForNextRequest, cancellationToken)`. With the fix in
+                    // place that delay observes the cancellation and throws OperationCanceledException
+                    // before invoking sendFunc again.
+                    cts.Cancel();
+                    return Task.FromResult(new HttpResponseMessage(HttpStatusCode.RequestTimeout));
+                }
+
+                throw new InvalidOperationException(
+                    "Second send should not happen — the retry delay must observe the cancellation and surface OperationCanceledException.");
+            }
+
+            HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+            using CosmosHttpClient cosmosHttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
+
+            using (ITrace trace = Trace.GetRootTrace(nameof(SendHttpHelperAsync_CancelledDuringRetryDelay_ThrowsOperationCanceledException)))
+            {
+                await Assert.ThrowsExceptionAsync<OperationCanceledException>(() =>
+                    cosmosHttpClient.SendHttpAsync(
+                        () => new ValueTask<HttpRequestMessage>(new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
+                        resourceType: ResourceType.Collection,
+                        timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
+                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace),
+                        cancellationToken: cts.Token));
+            }
+
+            Assert.AreEqual(1, count, "Only the first send should have been issued; the second was expected to be short-circuited by the cancelled retry delay.");
+        }
     }
 }

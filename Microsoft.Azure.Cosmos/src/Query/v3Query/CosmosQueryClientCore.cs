@@ -245,12 +245,13 @@ namespace Microsoft.Azure.Cosmos
             PartitionKeyDefinition partitionKeyDefinition,
             FeedRangeInternal feedRangeInternal,
             bool forceRefresh,
-            ITrace trace)
+            ITrace trace,
+            CancellationToken cancellationToken = default)
         {
             using (ITrace childTrace = trace.StartChild("Get Overlapping Feed Ranges", TraceComponent.Routing, Tracing.TraceLevel.Info))
             {
                 IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
-                List<Range<string>> providedRanges = await feedRangeInternal.GetEffectiveRangesAsync(routingMapProvider, collectionResourceId, partitionKeyDefinition, trace);
+                List<Range<string>> providedRanges = await feedRangeInternal.GetEffectiveRangesAsync(routingMapProvider, collectionResourceId, partitionKeyDefinition, trace, cancellationToken: cancellationToken);
 
                 List<PartitionKeyRange> ranges = await this.GetTargetPartitionKeyRangesAsync(
                     resourceLink,

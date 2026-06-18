@@ -30,8 +30,11 @@ namespace Microsoft.Azure.Cosmos
             IRoutingMapProvider routingMapProvider,
             string containerRid,
             Documents.PartitionKeyDefinition partitionKeyDefinition,
-            ITrace trace)
+            ITrace trace,
+            CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             Documents.PartitionKeyRange pkRange = await routingMapProvider.TryGetPartitionKeyRangeByIdAsync(
                 collectionResourceId: containerRid,
                 partitionKeyRangeId: this.PartitionKeyRangeId,
