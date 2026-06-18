@@ -18,14 +18,18 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Documents;
 
     /// <summary>
-    /// Bounded cross-region hedging for cold-start metadata cache population.
-    /// One instance per <see cref="CosmosClient"/>. Consumed by
-    /// <c>ClientCollectionCache</c> and <c>PartitionKeyRangeCache</c>.
+    /// Bounded cross-region hedging for metadata cache reads (both cold-start
+    /// first-population and steady-state refresh reads). One instance per
+    /// <see cref="CosmosClient"/>. Consumed by <c>ClientCollectionCache</c>
+    /// (<c>Collection</c> <c>Read</c>) and <c>PartitionKeyRangeCache</c>
+    /// (<c>PartitionKeyRange</c> <c>ReadFeed</c>, first page only).
     /// </summary>
     /// <remarks>
-    /// Design: <c>docs/PPAF_Metadata_Hedging_ColdStart_Design.md</c>. Wired into
-    /// <c>ClientCollectionCache</c> and <c>PartitionKeyRangeCache</c> for
-    /// cold-start metadata cache reads.
+    /// Design: <c>docs/PPAF_Metadata_Hedging_ColdStart_Design.md</c>. Hedging is
+    /// restricted to the supported metadata request types but is NOT limited to
+    /// cold start; refresh reads are hedged on the same terms. The historical
+    /// "ColdStart" tokens in the env var / opt-in / design-doc names are retained
+    /// for the broader feature.
     /// </remarks>
     internal sealed class MetadataHedgingStrategy : IDisposable
     {
@@ -81,15 +85,16 @@ namespace Microsoft.Azure.Cosmos.Routing
         internal int PerClientConcurrencyBudget => this.perClientConcurrencyBudget;
 
         /// <summary>
-        /// Resolves the tri-state cold-start metadata hedging opt-in (resolved
+        /// Resolves the tri-state metadata hedging opt-in (resolved
         /// from the <c>AZURE_COSMOS_METADATA_HEDGING_FOR_COLDSTART_ENABLED</c>
         /// environment variable) to a concrete opt-in <see cref="bool"/>. When
-        /// the opt-in is left <c>null</c>, cold-start metadata hedging follows the
+        /// the opt-in is left <c>null</c>, metadata hedging follows the
         /// account's PPAF (Per-Partition Automatic Failover) state — enabled by
         /// default when PPAF is enabled, disabled otherwise. An explicit
         /// <c>true</c> enables hedging even when PPAF is disabled, and an
         /// explicit <c>false</c> disables it regardless of PPAF — see design
-        /// §5.1.
+        /// §5.1. (The env-var name retains the historical "COLDSTART" token; the
+        /// feature now covers refresh reads too.)
         /// </summary>
         internal static bool ResolveOptIn(bool? customerOptIn, bool isPpafEnabled)
         {
@@ -97,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         /// <summary>
-        /// Builds the strategy from the resolved cold-start metadata hedging
+        /// Builds the strategy from the resolved metadata hedging
         /// tri-state opt-in (from the
         /// <c>AZURE_COSMOS_METADATA_HEDGING_FOR_COLDSTART_ENABLED</c> environment
         /// variable). Returns <c>null</c> only when hedging is explicitly
@@ -168,18 +173,18 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return MetadataHedgeEligibility.Skip(MetadataHedgeSkipReason.GatewayKillSwitchOn);
             }
 
-            // When the customer leaves the opt-in null, cold-start metadata hedging
-            // follows the live PPAF state. An explicit opt-in of true bypasses this gate.
+            // When the customer leaves the opt-in null, metadata hedging follows the
+            // live PPAF state. An explicit opt-in of true bypasses this gate.
             if (!ResolveOptIn(this.customerOptIn, this.isPpafEnabled()))
             {
                 return MetadataHedgeEligibility.Skip(MetadataHedgeSkipReason.PpafDisabled);
             }
 
-            if (!hedgeContext.IsColdStart)
-            {
-                return MetadataHedgeEligibility.Skip(MetadataHedgeSkipReason.NotColdStart);
-            }
-
+            // Hedging is intentionally NOT gated on cold start. Both the
+            // first-population (cold-start) read and steady-state refresh reads of
+            // the two metadata caches are eligible — the request-type restriction
+            // below (IsSupportedResource) is what keeps the surface to metadata
+            // reads. hedgeContext.IsColdStart is retained for diagnostics only.
             if (hedgeContext.HasHedgedThisOperation)
             {
                 return MetadataHedgeEligibility.Skip(MetadataHedgeSkipReason.AlreadyHedgedThisOperation);
@@ -707,6 +712,10 @@ namespace Microsoft.Azure.Cosmos.Routing
             PpafDisabled,
             GatewayKillSwitchOn,
             SingleRegion,
+
+            // Retained for wire/diagnostic compatibility. Hedging is no longer
+            // gated on cold start, so EvaluateEligibility never produces this
+            // value; refresh reads are eligible on the same terms as cold start.
             NotColdStart,
             ResourceTypeNotSupported,
             NotFirstReadFeedPage,
@@ -823,9 +832,10 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <summary>
         /// Per-logical-operation context shared between
         /// <see cref="MetadataHedgingStrategy"/> and
-        /// <c>MetadataRequestThrottleRetryPolicy</c>. Carries the cold-start signal,
-        /// the dedupe set, the winner, the &quot;hedged this operation&quot; latch,
-        /// and the first-page flag for PK-range pagination. See
+        /// <c>MetadataRequestThrottleRetryPolicy</c>. Carries the cold-start signal
+        /// (diagnostics only — hedging is not gated on it), the dedupe set, the
+        /// winner, the &quot;hedged this operation&quot; latch, and the first-page
+        /// flag for PK-range pagination. See
         /// <c>docs/PPAF_Metadata_Hedging_ColdStart_Design.md</c> §5.2 / §6.1.
         /// </summary>
         internal sealed class MetadataHedgingContext
@@ -833,6 +843,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             private Uri winningEndpoint;
             private int hasHedgedThisOperation;
 
+            /// <summary>
+            /// Whether this read is the first-population (cold-start) read of the
+            /// cache. Recorded for diagnostics/telemetry only; it does NOT gate
+            /// hedging eligibility — refresh reads hedge on the same terms.
+            /// </summary>
             public bool IsColdStart { get; set; }
 
             public bool IsFirstReadFeedPage { get; set; } = true;

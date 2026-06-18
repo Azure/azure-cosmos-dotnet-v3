@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
         [TestMethod]
         [Owner("dkunda")]
-        public async Task WithStrategy_NotColdStart_DoesNotHedge_SingleSendPerPage()
+        public async Task WithStrategy_WarmRefresh_FastPrimary_SingleSendPerPage()
         {
             ConcurrentQueue<Uri> sentToEndpoints = new ConcurrentQueue<Uri>();
             Mock<IStoreModel> storeModel = BuildStoreModelMock(sentToEndpoints, primaryDelayMs: 500);
@@ -144,7 +144,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
             int sendCountAfterSeed = sentToEndpoints.Count;
 
-            // Force-refresh: previousValue != null → isColdStart=false → no hedge.
+            // Force-refresh: previousValue != null → isColdStart=false. The refresh is
+            // now hedge-ELIGIBLE (hedging is no longer gated on cold start), but the
+            // refresh's first page carries the seeded continuation token, so the mock
+            // returns NotModified immediately. The primary wins before the threshold,
+            // so no hedge is dispatched → a single primary send.
             CollectionRoutingMap refreshed = await cache.TryLookupAsync(
                 collectionRid: CollectionRid,
                 previousValue: initialMap,
@@ -152,16 +156,57 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 trace: NoOpTrace.Singleton);
 
             Assert.IsNotNull(refreshed);
-            // Refresh sends the continuation token from the seeded map. The mock
-            // returns NotModified, exiting the change-feed loop after a single
-            // send with no hedge.
             Assert.AreEqual(sendCountAfterSeed + 1, sentToEndpoints.Count);
 
-            // The refresh send must have gone to the primary endpoint (no hedge,
-            // and IsFirstReadFeedPage=true on a non-cold-start path → skipped by
-            // NotColdStart eligibility).
+            // The refresh send went to the primary endpoint (primary won fast; no hedge).
             Uri[] sequence = sentToEndpoints.ToArray();
             Assert.AreEqual(PrimaryEndpoint, sequence[sequence.Length - 1]);
+        }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        public async Task WithStrategy_WarmRefresh_PrimarySlow_PageOneHedges()
+        {
+            // Core regression for the broadened scope on the PKRange path: a
+            // steady-state refresh (previousValue != null → isColdStart=false) whose
+            // first page is slow on the primary MUST dispatch a cross-region hedge.
+            ConcurrentQueue<Uri> sentToEndpoints = new ConcurrentQueue<Uri>();
+            Mock<IStoreModel> storeModel = BuildWarmRefreshHedgingStoreModelMock(sentToEndpoints, refreshPrimaryDelayMs: 500);
+
+            MetadataHedgingStrategy strategy = BuildStrategy(threshold: TimeSpan.FromMilliseconds(50));
+            PartitionKeyRangeCache cache = new PartitionKeyRangeCache(
+                authorizationTokenProvider: BuildTokenProviderMock().Object,
+                storeModel: storeModel.Object,
+                collectionCache: null,
+                endpointManager: BuildEndpointManagerMock().Object,
+                useLengthAwareRangeComparer: false,
+                enableAsyncCacheExceptionNoSharing: true,
+                metadataHedgingStrategy: strategy);
+
+            // Seed (cold start) — fast, single send to primary (continuation seeds "etag-1").
+            CollectionRoutingMap initialMap = await cache.TryLookupAsync(
+                collectionRid: CollectionRid,
+                previousValue: null,
+                request: null,
+                trace: NoOpTrace.Singleton);
+
+            int sendCountAfterSeed = sentToEndpoints.Count;
+            Assert.AreEqual(2, sendCountAfterSeed, "cold-start seed is page 1 (OK) + page 2 (NotModified), both fast primary sends");
+
+            // Warm refresh — first page (continuation "etag-1") is slow on primary, so the
+            // hedge fires and wins; page 2 (continuation "etag-2") pins to the winner.
+            CollectionRoutingMap refreshed = await cache.TryLookupAsync(
+                collectionRid: CollectionRid,
+                previousValue: initialMap,
+                request: null,
+                trace: NoOpTrace.Singleton);
+
+            Assert.IsNotNull(refreshed);
+
+            Uri[] sequence = sentToEndpoints.ToArray();
+            int refreshSends = sequence.Length - sendCountAfterSeed;
+            Assert.AreEqual(3, refreshSends, "warm refresh page 1 must hedge (2 sends) and page 2 pins to the winner (1 send)");
+            Assert.AreEqual(HedgeEndpoint, sequence[sequence.Length - 1], "page 2 of the warm refresh must pin to the hedge winner");
         }
 
         // ---------------------------------------------------------------
@@ -272,6 +317,86 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
             headers.ETag = "etag-1";
+            return new DocumentServiceResponse(Stream.Null, headers, HttpStatusCode.NotModified);
+        }
+
+        // Stateful mock that drives a warm (refresh) PKRange read through a hedge.
+        // Tokens advance so the cold-start seed and the warm refresh use distinct
+        // continuation values:
+        //   (no continuation)  -> OK feed, ETag "etagA"  (seed page 1, fast)
+        //   "etagA"            -> NotModified, ETag "etagB" (seed page 2 ends seed)
+        //   "etagB"            -> OK feed, ETag "etagC"  (refresh page 1; SLOW on primary)
+        //   "etagC"            -> NotModified, ETag "etagC" (refresh page 2 ends refresh)
+        private static Mock<IStoreModel> BuildWarmRefreshHedgingStoreModelMock(
+            ConcurrentQueue<Uri> sentToEndpoints,
+            int refreshPrimaryDelayMs)
+        {
+            Mock<IStoreModel> mock = new Mock<IStoreModel>(MockBehavior.Strict);
+            mock
+                .Setup(s => s.ProcessMessageAsync(It.IsAny<DocumentServiceRequest>(), It.IsAny<CancellationToken>()))
+                .Returns<DocumentServiceRequest, CancellationToken>(async (req, ct) =>
+                {
+                    Uri target = req.RequestContext?.LocationEndpointToRoute ?? PrimaryEndpoint;
+                    sentToEndpoints.Enqueue(target);
+
+                    string continuation = req.Headers?[HttpConstants.HttpHeaders.IfNoneMatch];
+
+                    if (string.IsNullOrEmpty(continuation))
+                    {
+                        return BuildPartitionKeyRangeFeedResponse("etagA");
+                    }
+
+                    if (continuation == "etagA")
+                    {
+                        return BuildNotModifiedResponse("etagB");
+                    }
+
+                    if (continuation == "etagB")
+                    {
+                        // Refresh first page: stall the primary so the hedge fires and wins.
+                        if (target.Equals(PrimaryEndpoint) && refreshPrimaryDelayMs > 0)
+                        {
+                            await Task.Delay(refreshPrimaryDelayMs, ct);
+                        }
+
+                        return BuildPartitionKeyRangeFeedResponse("etagC");
+                    }
+
+                    return BuildNotModifiedResponse("etagC");
+                });
+            return mock;
+        }
+
+        private static DocumentServiceResponse BuildPartitionKeyRangeFeedResponse(string etag)
+        {
+            List<PartitionKeyRange> ranges = new List<PartitionKeyRange>
+            {
+                new PartitionKeyRange
+                {
+                    Id = "0",
+                    MinInclusive = string.Empty,
+                    MaxExclusive = "FF",
+                    ResourceId = "ccZ1ANCszwkDAAAAAAAAUA==",
+                },
+            };
+
+            JObject body = new JObject
+            {
+                { "_rid", CollectionRid },
+                { "_count", ranges.Count },
+                { "PartitionKeyRanges", JArray.FromObject(ranges) },
+            };
+
+            byte[] bytes = Encoding.UTF8.GetBytes(body.ToString());
+            StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
+            headers.ETag = etag;
+            return new DocumentServiceResponse(new MemoryStream(bytes), headers, HttpStatusCode.OK);
+        }
+
+        private static DocumentServiceResponse BuildNotModifiedResponse(string etag)
+        {
+            StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
+            headers.ETag = etag;
             return new DocumentServiceResponse(Stream.Null, headers, HttpStatusCode.NotModified);
         }
     }

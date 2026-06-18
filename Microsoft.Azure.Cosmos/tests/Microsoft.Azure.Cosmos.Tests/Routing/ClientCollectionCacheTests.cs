@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
         [TestMethod]
         [Owner("dkunda")]
-        public async Task ClientCollectionCache_WithStrategy_NotColdStart_DoesNotHedge_SingleSend()
+        public async Task ClientCollectionCache_WithStrategy_WarmRead_FastPrimary_SingleSend()
         {
             int sendCount = 0;
             Mock<IStoreModel> storeModel = BuildStoreModelMock(_ => { Interlocked.Increment(ref sendCount); return BuildOkContainerResponse(); });
@@ -139,7 +139,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             MetadataHedgingStrategy strategy = BuildStrategy();
             ClientCollectionCache cache = BuildClientCollectionCache(storeModel.Object, strategy);
 
-            // forceRefresh=true → isColdStart=false → eligibility skips with NotColdStart.
+            // forceRefresh=true → isColdStart=false. The warm read is now eligible to
+            // hedge, but the primary responds immediately and wins before the
+            // threshold, so no hedge is dispatched → exactly one send.
             ContainerProperties result = await cache.ResolveByNameAsync(
                 apiVersion: HttpConstants.Versions.CurrentVersion,
                 resourceAddress: "dbs/db/colls/coll",
@@ -150,6 +152,43 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
             Assert.IsNotNull(result);
             Assert.AreEqual(1, sendCount);
+        }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        public async Task ClientCollectionCache_WithStrategy_WarmRead_PrimarySlow_HedgeFires_TwoSends()
+        {
+            // Core regression for the broadened scope: a forceRefresh (warm,
+            // non-cold-start) collection read whose primary is slow MUST dispatch a
+            // cross-region hedge — proving hedging is no longer limited to cold start.
+            int sendCount = 0;
+            Mock<IStoreModel> storeModel = new Mock<IStoreModel>(MockBehavior.Strict);
+            storeModel
+                .Setup(s => s.ProcessMessageAsync(It.IsAny<DocumentServiceRequest>(), It.IsAny<CancellationToken>()))
+                .Returns<DocumentServiceRequest, CancellationToken>(async (req, ct) =>
+                {
+                    int callIndex = Interlocked.Increment(ref sendCount);
+                    if (callIndex == 1)
+                    {
+                        // Primary stalls long enough for the hedge to fire.
+                        await Task.Delay(TimeSpan.FromMilliseconds(500), ct);
+                    }
+                    return BuildOkContainerResponse();
+                });
+
+            MetadataHedgingStrategy strategy = BuildStrategy(threshold: TimeSpan.FromMilliseconds(50));
+            ClientCollectionCache cache = BuildClientCollectionCache(storeModel.Object, strategy);
+
+            ContainerProperties result = await cache.ResolveByNameAsync(
+                apiVersion: HttpConstants.Versions.CurrentVersion,
+                resourceAddress: "dbs/db/colls/coll",
+                forceRefesh: true,
+                trace: NoOpTrace.Singleton,
+                clientSideRequestStatistics: null,
+                cancellationToken: CancellationToken.None);
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(2, sendCount, "a slow-primary warm refresh read must fire exactly one cross-region hedge");
         }
 
         [TestMethod]

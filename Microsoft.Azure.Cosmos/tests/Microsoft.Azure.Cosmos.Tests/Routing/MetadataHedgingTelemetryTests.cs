@@ -105,14 +105,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
         [TestMethod]
         [Owner("dkunda")]
-        public async Task SkippedHedge_NotColdStart_EmitsSkippedEvent_DiagnosticsPopulated()
+        public async Task SkippedHedge_UnsupportedResource_EmitsSkippedEvent_DiagnosticsPopulated()
         {
             using MetricCollector metrics = new MetricCollector();
             using EventCollector events = new EventCollector();
 
             MetadataHedgingStrategy strategy = BuildStrategy();
+
+            // Hedging is no longer gated on cold start, so the skipped-event /
+            // diagnostics path is now exercised via the request-type restriction
+            // (an unsupported resource type) which remains in force for all reads.
             DocumentServiceRequest request = DocumentServiceRequest.Create(
-                OperationType.Read, ResourceType.Collection, AuthorizationTokenType.PrimaryMasterKey);
+                OperationType.Read, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
             MetadataHedgingContext ctx = NewColdStartContext();
             ctx.IsColdStart = false;
 
@@ -132,8 +136,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
             MetadataHedgeDiagnostics diag = result.Diagnostics;
             Assert.IsFalse(diag.Eligible);
-            Assert.AreEqual(MetadataHedgeSkipReason.NotColdStart, diag.SkipReason);
-            Assert.AreEqual(ResourceType.Collection.ToString(), diag.ResourceType);
+            Assert.AreEqual(MetadataHedgeSkipReason.ResourceTypeNotSupported, diag.SkipReason);
+            Assert.AreEqual(ResourceType.Document.ToString(), diag.ResourceType);
             Assert.AreEqual(PrimaryRegion, diag.PrimaryRegion);
             Assert.AreEqual(PrimaryRegion, diag.WinningRegion);
             Assert.AreEqual(1, diag.TotalAttempts);

@@ -103,8 +103,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
         [TestMethod]
         [Owner("dkunda")]
-        public void EvaluateEligibility_NotColdStart_SkipsWithNotColdStart()
+        public void EvaluateEligibility_NotColdStart_StillEligible()
         {
+            // Hedging is no longer gated on cold start: a steady-state refresh
+            // read (IsColdStart == false) of a supported metadata type must be
+            // eligible on the same terms as the cold-start read.
             using MetadataHedgingStrategy strategy = BuildStrategy();
             DocumentServiceRequest req = BuildCollectionReadRequest();
             MetadataHedgingContext ctx = NewColdStartContext();
@@ -112,8 +115,42 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
             MetadataHedgeEligibility result = strategy.EvaluateEligibility(req, ctx);
 
+            Assert.IsTrue(result.IsEligible, "warm (non-cold-start) metadata reads must be eligible for hedging");
+            Assert.AreEqual(MetadataHedgeSkipReason.None, result.SkipReason);
+        }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        public void EvaluateEligibility_NotColdStart_PartitionKeyRangeFirstPage_StillEligible()
+        {
+            // A warm PartitionKeyRange ReadFeed first page is still eligible; the
+            // first-page gate is orthogonal to cold start.
+            using MetadataHedgingStrategy strategy = BuildStrategy();
+            DocumentServiceRequest req = DocumentServiceRequest.Create(
+                OperationType.ReadFeed, ResourceType.PartitionKeyRange, AuthorizationTokenType.PrimaryMasterKey);
+            MetadataHedgingContext ctx = NewWarmContext();
+
+            MetadataHedgeEligibility result = strategy.EvaluateEligibility(req, ctx);
+
+            Assert.IsTrue(result.IsEligible, "warm PKRange first-page reads must be eligible for hedging");
+            Assert.AreEqual(MetadataHedgeSkipReason.None, result.SkipReason);
+        }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        public void EvaluateEligibility_NotColdStart_UnsupportedResource_StillSkipsByType()
+        {
+            // The request-type restriction must continue to apply for warm reads:
+            // a non-metadata resource is rejected by type regardless of cold start.
+            using MetadataHedgingStrategy strategy = BuildStrategy();
+            DocumentServiceRequest req = DocumentServiceRequest.Create(
+                OperationType.Read, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
+            MetadataHedgingContext ctx = NewWarmContext();
+
+            MetadataHedgeEligibility result = strategy.EvaluateEligibility(req, ctx);
+
             Assert.IsFalse(result.IsEligible);
-            Assert.AreEqual(MetadataHedgeSkipReason.NotColdStart, result.SkipReason);
+            Assert.AreEqual(MetadataHedgeSkipReason.ResourceTypeNotSupported, result.SkipReason);
         }
 
         [TestMethod]
@@ -311,6 +348,82 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             await WaitForAsync(() => primaryResp.DisposeCount == 1, TimeSpan.FromSeconds(2));
             Assert.AreEqual(1, primaryResp.DisposeCount, "primary response should be disposed by background cleanup");
             Assert.AreEqual(0, hedgeResp.DisposeCount, "winning hedge response must NOT be disposed");
+        }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        public async Task ExecuteAsync_WarmRead_PrimarySlowHedgeFast_HedgeWins()
+        {
+            // Regression for the broadened scope: a non-cold-start (refresh) read
+            // must still dispatch a hedge when the primary is slow and return the
+            // hedge winner — proving hedging is not limited to cold start.
+            using MetadataHedgingStrategy strategy = BuildStrategy(threshold: TimeSpan.FromMilliseconds(30));
+            DocumentServiceRequest req = BuildCollectionReadRequest();
+            MetadataHedgingContext ctx = NewWarmContext();
+            TrackedResponse primaryResp = NewTrackingOkResponse();
+            TrackedResponse hedgeResp = NewTrackingOkResponse();
+            TaskCompletionSource<DocumentServiceResponse> primaryGate = new TaskCompletionSource<DocumentServiceResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            MetadataHedgingResult result = await strategy.ExecuteAsync(
+                req,
+                async (r, u, ct) =>
+                {
+                    if (u.Equals(PrimaryEndpoint))
+                    {
+                        using (ct.Register(() => primaryGate.TrySetResult(primaryResp)))
+                        {
+                            return await primaryGate.Task.ConfigureAwait(false);
+                        }
+                    }
+
+                    await Task.Delay(5, CancellationToken.None).ConfigureAwait(false);
+                    return hedgeResp;
+                },
+                ctx,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.IsFalse(ctx.IsColdStart, "this regression specifically exercises the warm-read path");
+            Assert.IsTrue(result.HedgeFired, "a warm (non-cold-start) read with a slow primary must still hedge");
+            Assert.AreSame(hedgeResp, result.Response);
+            Assert.AreEqual(HedgeEndpoint, result.WinningEndpoint);
+            Assert.AreEqual(HedgeRegion, result.WinningRegion);
+
+            await WaitForAsync(() => primaryResp.DisposeCount == 1, TimeSpan.FromSeconds(2));
+            Assert.AreEqual(1, primaryResp.DisposeCount, "primary response should be disposed by background cleanup");
+            Assert.AreEqual(0, hedgeResp.DisposeCount, "winning hedge response must NOT be disposed");
+        }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        public async Task ExecuteAsync_WarmRead_PrimaryWinsBeforeThreshold_DoesNotDispatchHedge()
+        {
+            // A warm read whose primary is healthy must NOT fire a hedge — the same
+            // amplification guard that protects cold start protects refresh reads,
+            // so a fast secondary cannot bombard the gateway on every refresh.
+            using MetadataHedgingStrategy strategy = BuildStrategy(threshold: TimeSpan.FromMilliseconds(500));
+            DocumentServiceRequest req = BuildCollectionReadRequest();
+            MetadataHedgingContext ctx = NewWarmContext();
+            int hedgeSends = 0;
+
+            MetadataHedgingResult result = await strategy.ExecuteAsync(
+                req,
+                (r, u, ct) =>
+                {
+                    if (!u.Equals(PrimaryEndpoint))
+                    {
+                        Interlocked.Increment(ref hedgeSends);
+                    }
+
+                    return Task.FromResult<DocumentServiceResponse>(NewOkResponse());
+                },
+                ctx,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.IsFalse(result.HedgeFired, "a healthy warm-read primary must not trigger a hedge");
+            Assert.AreEqual(0, hedgeSends, "no hedge request should be dispatched when the primary wins fast");
+            Assert.AreEqual(PrimaryEndpoint, result.WinningEndpoint);
         }
 
         [TestMethod]
@@ -854,6 +967,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             return new MetadataHedgingContext
             {
                 IsColdStart = true,
+                IsFirstReadFeedPage = true,
+            };
+        }
+
+        private static MetadataHedgingContext NewWarmContext()
+        {
+            return new MetadataHedgingContext
+            {
+                IsColdStart = false,
                 IsFirstReadFeedPage = true,
             };
         }

@@ -222,9 +222,10 @@ namespace Microsoft.Azure.Cosmos.Common
 
         // First-population aware overloads. The bool flags whether the read is populating the cache
         // entry for the first time (a cache miss / cold start) versus a forced refresh of an existing
-        // entry — only first population is eligible for cold-start metadata hedging. Default delegates
-        // to the existing abstract so subclasses (e.g. encryption-mirrored caches) keep compiling and
-        // remain hedge-disabled. See docs/PPAF_Metadata_Hedging_ColdStart_Design.md §5.4 / §5.6.
+        // entry. The flag is forwarded to the hedge context as a diagnostic signal (IsColdStart);
+        // hedging itself is NOT limited to first population — refresh reads are hedged on the same
+        // terms. Default delegates to the existing abstract so subclasses (e.g. encryption-mirrored
+        // caches) keep compiling. See docs/PPAF_Metadata_Hedging_ColdStart_Design.md §5.4 / §5.6.
         protected virtual Task<ContainerProperties> GetByRidAsync(string apiVersion,
                                 string collectionRid,
                                 ITrace trace,
