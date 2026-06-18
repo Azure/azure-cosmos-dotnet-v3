@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -583,9 +583,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             // Call-site regression for #5945: the failure-path DefaultTrace.TraceError must summarize
             // the exception via ToTraceSafeString() (which never touches Diagnostics), NOT via ex.Message.
-            // The spy's Diagnostics getter throws, and its Message resolves through Diagnostics for a 503
-            // status code, so a revert of the call site back to ex.Message would surface here as an
+            // The spy's Diagnostics getter throws, and Message evaluates Diagnostics as an argument before
+            // building the string, so a revert of the call site back to ex.Message would surface here as an
             // InvalidOperationException (and DiagnosticsAccessed == true) instead of the original exception.
+            // A 503 is used because that is a status code where Message eagerly serializes diagnostics in prod.
             AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>(enableAsyncCacheExceptionNoSharing: false);
 
             DiagnosticsThrowingCosmosException toThrow = new DiagnosticsThrowingCosmosException(
