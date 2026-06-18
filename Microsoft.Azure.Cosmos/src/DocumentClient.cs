@@ -7030,6 +7030,8 @@ namespace Microsoft.Azure.Cosmos
                 // ApplyHedgingStrategyForCurrentState (which already holds it) is unaffected.
                 if (this.disableCrossRegionalHedging)
                 {
+                    DefaultTrace.TraceInformation(
+                        "DocumentClient: Skipping default PPAF hedging under lock; disableCrossRegionalHedging flipped true during init race");
                     return;
                 }
 
