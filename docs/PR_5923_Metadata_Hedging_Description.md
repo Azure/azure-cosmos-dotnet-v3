@@ -39,7 +39,7 @@ through an environment variable.
 | `ClientCollectionCache` / `PartitionKeyRangeCache` | Wired to consume the strategy for metadata reads (both first-population and refresh). Collection `Read` and `PartitionKeyRange` `ReadFeed` (first page only). |
 | `MetadataRequestThrottleRetryPolicy` | Skips preferred-location indices a hedge already burned (cross-region dedup), capping total attempts at the preferred-region count. Receives the hedge context through the narrow `IMetadataHedgeContextReceiver` seam. |
 | `ClearingSessionContainerClientRetryPolicy` | Forwards the hedge context to its inner policy via `AttachHedgeContext` so dedup survives policy wrapping. |
-| `ConfigurationManager` | `AZURE_COSMOS_METADATA_HEDGING_FOR_COLDSTART_ENABLED` env var + `GetMetadataHedgingForColdStartOptIn()` resolver (env-var only — no public option). |
+| `ConfigurationManager` | `AZURE_COSMOS_METADATA_HEDGING_ENABLED` env var + `GetMetadataHedgingOptIn()` resolver (env-var only — no public option). |
 | Telemetry | New `Azure.Cosmos.Client.MetadataHedging` Meter (`internal MetadataHedgingMetrics`, no public/contract surface), `CosmosDbEventSource` events, and a `Metadata Hedge Context` diagnostics datum. |
 
 ## How it works
@@ -88,7 +88,7 @@ tri-state and resolved as **environment variable → PPAF state**:
 
 | Setting | `null` (unset / invalid) | `true` | `false` |
 | --- | --- | --- | --- |
-| `AZURE_COSMOS_METADATA_HEDGING_FOR_COLDSTART_ENABLED` | follow PPAF | force-enable (even non-PPAF) | suppress (kill switch) |
+| `AZURE_COSMOS_METADATA_HEDGING_ENABLED` | follow PPAF | force-enable (even non-PPAF) | suppress (kill switch) |
 
 When the variable is unset, hedging follows the account's PPAF state — **active for
 PPAF-enabled multi-region accounts** and **off by default for non-PPAF accounts**.
@@ -97,7 +97,7 @@ eligibility check and is **hard-wired off in Phase 1**.
 
 Resolution precedence:
 
-1. The `AZURE_COSMOS_METADATA_HEDGING_FOR_COLDSTART_ENABLED` env var (when a valid bool) wins.
+1. The `AZURE_COSMOS_METADATA_HEDGING_ENABLED` env var (when a valid bool) wins.
 2. Otherwise `null` → follow the live PPAF state (`customerOptIn ?? isPpafEnabled`).
 
 ## Eligibility gate

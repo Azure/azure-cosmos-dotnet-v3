@@ -20,11 +20,13 @@
 > `MetadataHedgeSkipReason.NotColdStart` value is retired (never produced). All
 > other amplification safeguards are unchanged (1.5&nbsp;s threshold, per-client
 > concurrency budget, one-hedge-per-operation latch, first-page-only PK-range
-> gate, cross-region dedup, single-region skip). The historical "ColdStart"
-> tokens in the env var (`AZURE_COSMOS_METADATA_HEDGING_FOR_COLDSTART_ENABLED`),
-> opt-in parameter, and this document's filename are retained for the broader
-> feature. Where the sections below say "cold start only", read them through this
-> note. See §6 for the current eligibility list.
+> gate, cross-region dedup, single-region skip). The environment variable was
+> renamed to `AZURE_COSMOS_METADATA_HEDGING_ENABLED` (dropping the "ForColdStart"
+> token) to reflect the broader scope; the historical "ColdStart" token is
+> retained only in the internal `enableMetadataHedgingForColdStart` plumbing
+> parameter and in this document's filename. Where the sections below say "cold
+> start only", read them through this note. See §6 for the current eligibility
+> list.
 
 ---
 

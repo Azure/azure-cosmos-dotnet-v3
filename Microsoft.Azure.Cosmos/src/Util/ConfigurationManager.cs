@@ -160,12 +160,12 @@ namespace Microsoft.Azure.Cosmos
         internal static readonly string ChangeFeedLeaseIdAsPartitionKeyEnabled = "AZURE_COSMOS_CHANGE_FEED_LEASE_ID_AS_PARTITION_KEY_ENABLED";
 
         /// <summary>
-        /// A read-only string containing the environment variable name for opting in to cold-start
-        /// metadata cache hedging. When unset, cold-start metadata hedging follows the account's PPAF
+        /// A read-only string containing the environment variable name for opting in to
+        /// metadata cache hedging. When unset, metadata hedging follows the account's PPAF
         /// state (off by default for non-PPAF accounts). Setting the variable to <c>true</c> force-enables
         /// hedging even when PPAF is disabled; setting it to <c>false</c> acts as a kill switch.
         /// </summary>
-        internal static readonly string MetadataHedgingForColdStartEnabled = "AZURE_COSMOS_METADATA_HEDGING_FOR_COLDSTART_ENABLED";
+        internal static readonly string MetadataHedgingEnabled = "AZURE_COSMOS_METADATA_HEDGING_ENABLED";
 
         public static T GetEnvironmentVariable<T>(string variable, T defaultValue)
         {
@@ -248,16 +248,16 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Resolves the effective tri-state opt-in for cold-start metadata cache hedging from the
-        /// <c>AZURE_COSMOS_METADATA_HEDGING_FOR_COLDSTART_ENABLED</c> environment variable. When the
+        /// Resolves the effective tri-state opt-in for metadata cache hedging from the
+        /// <c>AZURE_COSMOS_METADATA_HEDGING_ENABLED</c> environment variable. When the
         /// variable is unset (or not a valid boolean) the result is <c>null</c> so hedging follows the
         /// account's PPAF state (off by default for non-PPAF accounts); when it is <c>true</c> hedging is
         /// force-enabled even for non-PPAF accounts; and when it is <c>false</c> it acts as a kill switch.
         /// </summary>
         /// <returns>The resolved tri-state opt-in passed to the metadata hedging strategy factory.</returns>
-        public static bool? GetMetadataHedgingForColdStartOptIn()
+        public static bool? GetMetadataHedgingOptIn()
         {
-            string value = Environment.GetEnvironmentVariable(ConfigurationManager.MetadataHedgingForColdStartEnabled);
+            string value = Environment.GetEnvironmentVariable(ConfigurationManager.MetadataHedgingEnabled);
             if (!string.IsNullOrEmpty(value) && bool.TryParse(value, out bool parsed))
             {
                 return parsed;

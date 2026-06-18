@@ -1129,42 +1129,42 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
         // ---------------------------------------------------------------
         // Environment-variable opt-in resolution
-        // (AZURE_COSMOS_METADATA_HEDGING_FOR_COLDSTART_ENABLED)
+        // (AZURE_COSMOS_METADATA_HEDGING_ENABLED)
         // ---------------------------------------------------------------
 
-        private const string MetadataHedgingEnvVar = "AZURE_COSMOS_METADATA_HEDGING_FOR_COLDSTART_ENABLED";
+        private const string MetadataHedgingEnvVar = "AZURE_COSMOS_METADATA_HEDGING_ENABLED";
 
         [TestMethod]
         [Owner("dkunda")]
         [DataRow("true", true)]
         [DataRow("True", true)]
         [DataRow("false", false)]
-        public void GetMetadataHedgingForColdStartOptIn_NullOption_UsesEnvironmentVariable(string envValue, bool expected)
+        public void GetMetadataHedgingOptIn_NullOption_UsesEnvironmentVariable(string envValue, bool expected)
         {
             RunWithMetadataHedgingEnvVar(envValue, () =>
             {
-                bool? resolved = Microsoft.Azure.Cosmos.ConfigurationManager.GetMetadataHedgingForColdStartOptIn();
+                bool? resolved = Microsoft.Azure.Cosmos.ConfigurationManager.GetMetadataHedgingOptIn();
                 Assert.AreEqual(expected, resolved);
             });
         }
 
         [TestMethod]
         [Owner("dkunda")]
-        public void GetMetadataHedgingForColdStartOptIn_NullOption_UnsetEnv_ReturnsNull_FollowsPpaf()
+        public void GetMetadataHedgingOptIn_NullOption_UnsetEnv_ReturnsNull_FollowsPpaf()
         {
             RunWithMetadataHedgingEnvVar(null, () =>
             {
-                Assert.IsNull(Microsoft.Azure.Cosmos.ConfigurationManager.GetMetadataHedgingForColdStartOptIn());
+                Assert.IsNull(Microsoft.Azure.Cosmos.ConfigurationManager.GetMetadataHedgingOptIn());
             });
         }
 
         [TestMethod]
         [Owner("dkunda")]
-        public void GetMetadataHedgingForColdStartOptIn_NullOption_NonBooleanEnv_ReturnsNull()
+        public void GetMetadataHedgingOptIn_NullOption_NonBooleanEnv_ReturnsNull()
         {
             RunWithMetadataHedgingEnvVar("not-a-bool", () =>
             {
-                Assert.IsNull(Microsoft.Azure.Cosmos.ConfigurationManager.GetMetadataHedgingForColdStartOptIn());
+                Assert.IsNull(Microsoft.Azure.Cosmos.ConfigurationManager.GetMetadataHedgingOptIn());
             });
         }
 

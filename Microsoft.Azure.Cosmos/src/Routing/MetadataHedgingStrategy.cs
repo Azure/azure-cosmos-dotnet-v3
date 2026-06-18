@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         /// <summary>
         /// Resolves the tri-state metadata hedging opt-in (resolved
-        /// from the <c>AZURE_COSMOS_METADATA_HEDGING_FOR_COLDSTART_ENABLED</c>
+        /// from the <c>AZURE_COSMOS_METADATA_HEDGING_ENABLED</c>
         /// environment variable) to a concrete opt-in <see cref="bool"/>. When
         /// the opt-in is left <c>null</c>, metadata hedging follows the
         /// account's PPAF (Per-Partition Automatic Failover) state — enabled by
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <summary>
         /// Builds the strategy from the resolved metadata hedging
         /// tri-state opt-in (from the
-        /// <c>AZURE_COSMOS_METADATA_HEDGING_FOR_COLDSTART_ENABLED</c> environment
+        /// <c>AZURE_COSMOS_METADATA_HEDGING_ENABLED</c> environment
         /// variable). Returns <c>null</c> only when hedging is explicitly
         /// disabled (<c>false</c>). When the opt-in is <c>true</c> or
         /// left <c>null</c> the strategy is created and the per-request
