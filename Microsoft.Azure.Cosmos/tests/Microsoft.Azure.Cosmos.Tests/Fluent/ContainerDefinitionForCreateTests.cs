@@ -480,6 +480,84 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                     It.IsAny<CancellationToken>()), Times.Once);
         }
 
+#if PREVIEW
+        [TestMethod]
+        public async Task ValidateFullTextPolicyStandardPackageUsingContainerBuilder()
+        {
+            FullTextDefaultSpec defaultSpec = new FullTextDefaultSpec
+            {
+                Language = "en-US",
+                Tokenizer = "word",
+                Filters = new Collection<string> { "stop", "lowercase", "stem" },
+                StopWordListKind = "basic",
+                AddStopWords = new Collection<string> { "powerbi" },
+            };
+
+            Collection<FullTextPath> fullTextPaths = new Collection<FullTextPath>()
+            {
+                new FullTextPath()
+                {
+                    Path = "/description",
+                },
+                new FullTextPath()
+                {
+                    Path = "/title",
+                    Tokenizer = "word",
+                    Filters = new Collection<string> { "stop", "lowercase" },
+                },
+            };
+
+            Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
+            mockContainerResponse
+                .Setup(x => x.StatusCode)
+                .Returns(HttpStatusCode.Created);
+
+            Mock<Database> mockContainers = new Mock<Database>();
+            Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
+            mockContainers.Setup(m => m.Client).Returns(mockClient.Object);
+            mockContainers
+                .Setup(c => c.CreateContainerAsync(
+                    It.IsAny<ContainerProperties>(),
+                    It.IsAny<int?>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(mockContainerResponse.Object);
+            mockContainers
+                .Setup(c => c.Id)
+                .Returns(Guid.NewGuid().ToString());
+
+            ContainerBuilder containerFluentDefinitionForCreate = new ContainerBuilder(
+                mockContainers.Object,
+                containerName,
+                partitionKey);
+
+            ContainerResponse response = await containerFluentDefinitionForCreate
+                .WithFullTextPolicy(
+                    package: "standard",
+                    defaultSpec: defaultSpec,
+                    fullTextPaths: fullTextPaths)
+                .Attach()
+                .CreateAsync();
+
+            Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+            mockContainers.Verify(c => c.CreateContainerAsync(
+                    It.Is<ContainerProperties>((settings) =>
+                        settings.FullTextPolicy.Package == "standard"
+                        && settings.FullTextPolicy.DefaultSpec != null
+                        && settings.FullTextPolicy.DefaultSpec.Language == "en-US"
+                        && settings.FullTextPolicy.DefaultSpec.Tokenizer == "word"
+                        && settings.FullTextPolicy.DefaultSpec.Filters.Count == 3
+                        && settings.FullTextPolicy.DefaultSpec.StopWordListKind == "basic"
+                        && settings.FullTextPolicy.DefaultSpec.AddStopWords.Count == 1
+                        && settings.FullTextPolicy.FullTextPaths.Count == 2
+                        && settings.FullTextPolicy.FullTextPaths[1].Tokenizer == "word"
+                        && settings.FullTextPolicy.FullTextPaths[1].Filters.Count == 2),
+                    It.IsAny<int?>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<CancellationToken>()), Times.Once);
+        }
+#endif
+
         [TestMethod]
         public async Task ValidateVectorEmbeddingsAndIndexingPolicyUsingContainerBuilder()
         {
