@@ -1307,6 +1307,306 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await databaseForFullText.DeleteAsync();
             }
         }
+
+        [TestMethod]
+        public async Task TestFullTextSearchPolicyAllValidFilterTypes()
+        {
+            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextFiltersDB",
+                cancellationToken: this.cancellationToken);
+
+            try
+            {
+                // All valid filters: stop, lowercase, stem, ascii.
+                FullTextDefaultSpec defaultSpec = new FullTextDefaultSpec
+                {
+                    Language = "en-US",
+                    Tokenizer = "word",
+                    Filters = new Collection<string> { "stop", "lowercase", "stem", "ascii" },
+                    StopWordListKind = "basic",
+                };
+
+                Collection<FullTextPath> fullTextPaths = new Collection<FullTextPath>()
+                {
+                    new FullTextPath() { Path = "/text" },
+                };
+
+                ContainerResponse containerResponse =
+                    await databaseForFullText.DefineContainer("allFiltersContainer", "/pk")
+                        .WithFullTextPolicy(
+                            package: "standard",
+                            defaultSpec: defaultSpec,
+                            fullTextPaths: fullTextPaths)
+                        .Attach()
+                        .WithIndexingPolicy()
+                            .WithFullTextIndex().Path("/text").Attach()
+                        .Attach()
+                        .CreateAsync();
+
+                Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+                ContainerProperties settings = containerResponse.Resource;
+                Assert.AreEqual(4, settings.FullTextPolicy.DefaultSpec.Filters.Count);
+                Assert.IsTrue(settings.FullTextPolicy.DefaultSpec.Filters.Contains("stop"));
+                Assert.IsTrue(settings.FullTextPolicy.DefaultSpec.Filters.Contains("lowercase"));
+                Assert.IsTrue(settings.FullTextPolicy.DefaultSpec.Filters.Contains("stem"));
+                Assert.IsTrue(settings.FullTextPolicy.DefaultSpec.Filters.Contains("ascii"));
+            }
+            finally
+            {
+                await databaseForFullText.DeleteAsync();
+            }
+        }
+
+        [TestMethod]
+        public async Task TestFullTextSearchPolicyInvalidFilterReturnsError()
+        {
+            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextInvalidFilterDB",
+                cancellationToken: this.cancellationToken);
+
+            try
+            {
+                FullTextDefaultSpec defaultSpec = new FullTextDefaultSpec
+                {
+                    Language = "en-US",
+                    Tokenizer = "word",
+                    Filters = new Collection<string> { "stop", "invalid_filter" },
+                    StopWordListKind = "basic",
+                };
+
+                Collection<FullTextPath> fullTextPaths = new Collection<FullTextPath>()
+                {
+                    new FullTextPath() { Path = "/text" },
+                };
+
+                try
+                {
+                    await databaseForFullText.DefineContainer("invalidFilterContainer", "/pk")
+                        .WithFullTextPolicy(
+                            package: "standard",
+                            defaultSpec: defaultSpec,
+                            fullTextPaths: fullTextPaths)
+                        .Attach()
+                        .WithIndexingPolicy()
+                            .WithFullTextIndex().Path("/text").Attach()
+                        .Attach()
+                        .CreateAsync();
+
+                    Assert.Fail("Expected an exception for invalid filter type");
+                }
+                catch (CosmosException ex)
+                {
+                    Assert.AreEqual(HttpStatusCode.BadRequest, ex.StatusCode,
+                        $"Expected BadRequest for invalid filter. Got: {ex.StatusCode}, Message: {ex.Message}");
+                }
+            }
+            finally
+            {
+                await databaseForFullText.DeleteAsync();
+            }
+        }
+
+        [TestMethod]
+        public async Task TestFullTextSearchPolicyInvalidTokenizerReturnsError()
+        {
+            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextInvalidTokenizerDB",
+                cancellationToken: this.cancellationToken);
+
+            try
+            {
+                FullTextDefaultSpec defaultSpec = new FullTextDefaultSpec
+                {
+                    Language = "en-US",
+                    Tokenizer = "invalid_tokenizer",
+                };
+
+                Collection<FullTextPath> fullTextPaths = new Collection<FullTextPath>()
+                {
+                    new FullTextPath() { Path = "/text" },
+                };
+
+                try
+                {
+                    await databaseForFullText.DefineContainer("invalidTokenizerContainer", "/pk")
+                        .WithFullTextPolicy(
+                            package: "standard",
+                            defaultSpec: defaultSpec,
+                            fullTextPaths: fullTextPaths)
+                        .Attach()
+                        .WithIndexingPolicy()
+                            .WithFullTextIndex().Path("/text").Attach()
+                        .Attach()
+                        .CreateAsync();
+
+                    Assert.Fail("Expected an exception for invalid tokenizer type");
+                }
+                catch (CosmosException ex)
+                {
+                    Assert.AreEqual(HttpStatusCode.BadRequest, ex.StatusCode,
+                        $"Expected BadRequest for invalid tokenizer. Got: {ex.StatusCode}, Message: {ex.Message}");
+                }
+            }
+            finally
+            {
+                await databaseForFullText.DeleteAsync();
+            }
+        }
+
+        [TestMethod]
+        public async Task TestFullTextSearchPolicyFiltersWithLegacyPackageReturnsError()
+        {
+            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextLegacyFiltersDB",
+                cancellationToken: this.cancellationToken);
+
+            try
+            {
+                // Filters are only valid with "standard" package. Setting them on "legacy" should fail.
+                Collection<FullTextPath> fullTextPaths = new Collection<FullTextPath>()
+                {
+                    new FullTextPath()
+                    {
+                        Path = "/text",
+                        Language = "en-US",
+                        Tokenizer = "word",
+                        Filters = new Collection<string> { "stop", "lowercase" },
+                    },
+                };
+
+                try
+                {
+                    await databaseForFullText.DefineContainer("legacyFiltersContainer", "/pk")
+                        .WithFullTextPolicy(
+                            package: "legacy",
+                            defaultSpec: null,
+                            fullTextPaths: fullTextPaths)
+                        .Attach()
+                        .WithIndexingPolicy()
+                            .WithFullTextIndex().Path("/text").Attach()
+                        .Attach()
+                        .CreateAsync();
+
+                    Assert.Fail("Expected an exception for filters with legacy package");
+                }
+                catch (CosmosException ex)
+                {
+                    Assert.AreEqual(HttpStatusCode.BadRequest, ex.StatusCode,
+                        $"Expected BadRequest for filters on legacy package. Got: {ex.StatusCode}, Message: {ex.Message}");
+                }
+            }
+            finally
+            {
+                await databaseForFullText.DeleteAsync();
+            }
+        }
+
+        [TestMethod]
+        public async Task TestFullTextSearchPolicyAllStopWordListKinds()
+        {
+            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextStopWordKindsDB",
+                cancellationToken: this.cancellationToken);
+
+            try
+            {
+                // Test "none", "basic", and "extended" stopWordListKind values.
+                string[] stopWordKinds = new[] { "none", "basic", "extended" };
+
+                foreach (string kind in stopWordKinds)
+                {
+                    FullTextDefaultSpec defaultSpec = new FullTextDefaultSpec
+                    {
+                        Language = "en-US",
+                        Tokenizer = "word",
+                        Filters = new Collection<string> { "stop", "lowercase" },
+                        StopWordListKind = kind,
+                    };
+
+                    Collection<FullTextPath> fullTextPaths = new Collection<FullTextPath>()
+                    {
+                        new FullTextPath() { Path = "/text" },
+                    };
+
+                    string containerName = $"stopWordKind_{kind}";
+                    ContainerResponse containerResponse =
+                        await databaseForFullText.DefineContainer(containerName, "/pk")
+                            .WithFullTextPolicy(
+                                package: "standard",
+                                defaultSpec: defaultSpec,
+                                fullTextPaths: fullTextPaths)
+                            .Attach()
+                            .WithIndexingPolicy()
+                                .WithFullTextIndex().Path("/text").Attach()
+                            .Attach()
+                            .CreateAsync();
+
+                    Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode,
+                        $"Failed to create container with stopWordListKind: {kind}");
+                    Assert.AreEqual(kind, containerResponse.Resource.FullTextPolicy.DefaultSpec.StopWordListKind,
+                        $"StopWordListKind mismatch for: {kind}");
+                }
+            }
+            finally
+            {
+                await databaseForFullText.DeleteAsync();
+            }
+        }
+
+        [TestMethod]
+        public async Task TestFullTextSearchPolicyBothPackageTypesValid()
+        {
+            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextBothPackagesDB",
+                cancellationToken: this.cancellationToken);
+
+            try
+            {
+                // Test "legacy" package.
+                ContainerResponse legacyResponse =
+                    await databaseForFullText.DefineContainer("legacyContainer", "/pk")
+                        .WithFullTextPolicy(
+                            package: "legacy",
+                            defaultSpec: null,
+                            fullTextPaths: new Collection<FullTextPath>
+                            {
+                                new FullTextPath() { Path = "/text", Language = "en-US" },
+                            })
+                        .Attach()
+                        .WithIndexingPolicy()
+                            .WithFullTextIndex().Path("/text").Attach()
+                        .Attach()
+                        .CreateAsync();
+
+                Assert.AreEqual(HttpStatusCode.Created, legacyResponse.StatusCode);
+                Assert.AreEqual("legacy", legacyResponse.Resource.FullTextPolicy.Package);
+
+                // Test "standard" package.
+                FullTextDefaultSpec defaultSpec = new FullTextDefaultSpec
+                {
+                    Language = "en-US",
+                    Tokenizer = "word",
+                    Filters = new Collection<string> { "stop", "lowercase" },
+                    StopWordListKind = "basic",
+                };
+
+                ContainerResponse standardResponse =
+                    await databaseForFullText.DefineContainer("standardContainer", "/pk")
+                        .WithFullTextPolicy(
+                            package: "standard",
+                            defaultSpec: defaultSpec,
+                            fullTextPaths: new Collection<FullTextPath>
+                            {
+                                new FullTextPath() { Path = "/text" },
+                            })
+                        .Attach()
+                        .WithIndexingPolicy()
+                            .WithFullTextIndex().Path("/text").Attach()
+                        .Attach()
+                        .CreateAsync();
+
+                Assert.AreEqual(HttpStatusCode.Created, standardResponse.StatusCode);
+                Assert.AreEqual("standard", standardResponse.Resource.FullTextPolicy.Package);
+            }
+            finally
+            {
+                await databaseForFullText.DeleteAsync();
+            }
+        }
 #endif
 
         [Ignore]
