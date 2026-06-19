@@ -37,13 +37,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     ///     set COSMOS_DTX_KEY=your-master-key
     ///     dotnet test --filter "FullyQualifiedName~DistributedTransactionFaultInjectionE2ETests"
     ///
-    /// Remove the [Ignore] attribute before running. The class is gated because the public emulator
-    /// does not implement /operations/dtc, and because a live DTX-enabled Coordinator is required to
-    /// observe the retry-then-real-success behaviour.
+    /// This class runs in the "DistributedTransaction" test category and is NOT gated with
+    /// [Ignore]. It requires the COSMOS_DTX_ENDPOINT / COSMOS_DTX_KEY environment variables
+    /// pointing at a live DTX-enabled account (the public emulator does not implement
+    /// /operations/dtc, and a live DTX-enabled Coordinator is required to observe the
+    /// retry-then-real-success behaviour); without them the tests fail fast in TestInitialize.
     /// </summary>
     [TestClass]
     [DoNotParallelize]
-    [Ignore("DTX endpoint not yet available in emulator. Remove to run locally with env vars.")]
+    [TestCategory("DistributedTransaction")]
     public class DistributedTransactionFaultInjectionE2ETests
     {
         private const string DatabaseId = "DtxFaultInjectionE2ETestDb";
