@@ -79,6 +79,16 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         MetadataQueryPlan,
 
         /// <summary>
+        /// Read distributed transaction batch operations.
+        /// </summary>
+        DistributedTransactionReadBatch,
+
+        /// <summary>
+        /// Write (commit) distributed transaction batch operations.
+        /// </summary>
+        DistributedTransactionWriteBatch,
+
+        /// <summary>
         /// All operation types. Default value.
         /// </summary>
         All,

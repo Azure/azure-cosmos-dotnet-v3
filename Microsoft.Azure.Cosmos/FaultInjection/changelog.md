@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### <a name="unreleased-faultinjection"/> Unreleased
 
 #### Features Added
+- Distributed Transactions: Adds `DistributedTransactionReadBatch` and `DistributedTransactionWriteBatch` operation types so fault injection rules can target distributed transaction read and write (commit) batch requests
 
 #### Breaking Changes
 
