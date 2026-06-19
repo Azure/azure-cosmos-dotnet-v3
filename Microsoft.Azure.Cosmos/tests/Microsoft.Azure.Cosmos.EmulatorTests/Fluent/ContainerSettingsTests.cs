@@ -1050,6 +1050,263 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await databaseForFullText.DeleteAsync();
             }
         }
+
+        [TestMethod]
+        public async Task TestFullTextSearchPolicyStandardPackageWithStopWords()
+        {
+            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextStopWordsDB",
+                cancellationToken: this.cancellationToken);
+
+            try
+            {
+                // Create container with custom stop words configuration.
+                FullTextDefaultSpec defaultSpec = new FullTextDefaultSpec
+                {
+                    Language = "en-US",
+                    Tokenizer = "word",
+                    Filters = new Collection<string> { "stop", "lowercase" },
+                    StopWordListKind = "basic",
+                    AddStopWords = new Collection<string> { "customword", "anotherword" },
+                    RemoveStopWords = new Collection<string> { "the" },
+                };
+
+                Collection<FullTextPath> fullTextPaths = new Collection<FullTextPath>()
+                {
+                    new FullTextPath() { Path = "/text" },
+                };
+
+                ContainerResponse containerResponse =
+                    await databaseForFullText.DefineContainer("stopWordsContainer", "/pk")
+                        .WithFullTextPolicy(
+                            package: "standard",
+                            defaultSpec: defaultSpec,
+                            fullTextPaths: fullTextPaths)
+                        .Attach()
+                        .WithIndexingPolicy()
+                            .WithFullTextIndex()
+                                .Path("/text")
+                             .Attach()
+                        .Attach()
+                        .CreateAsync();
+
+                Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+
+                // Validate addStopWords/removeStopWords round-trip.
+                ContainerProperties settings = containerResponse.Resource;
+                Assert.AreEqual("standard", settings.FullTextPolicy.Package);
+                Assert.AreEqual("basic", settings.FullTextPolicy.DefaultSpec.StopWordListKind);
+                Assert.IsNotNull(settings.FullTextPolicy.DefaultSpec.AddStopWords);
+                Assert.AreEqual(2, settings.FullTextPolicy.DefaultSpec.AddStopWords.Count);
+                Assert.IsTrue(settings.FullTextPolicy.DefaultSpec.AddStopWords.Contains("customword"));
+                Assert.IsTrue(settings.FullTextPolicy.DefaultSpec.AddStopWords.Contains("anotherword"));
+                Assert.IsNotNull(settings.FullTextPolicy.DefaultSpec.RemoveStopWords);
+                Assert.AreEqual(1, settings.FullTextPolicy.DefaultSpec.RemoveStopWords.Count);
+                Assert.AreEqual("the", settings.FullTextPolicy.DefaultSpec.RemoveStopWords[0]);
+
+                // Insert a document and verify query still works with this policy config.
+                Container container = containerResponse.Container;
+                await container.CreateItemAsync(new { id = "1", pk = "1", text = "The cloud platform is great" });
+
+                string query = "SELECT c.id FROM c WHERE FullTextContains(c.text, 'cloud')";
+                FeedIterator<dynamic> feedIterator = container.GetItemQueryIterator<dynamic>(query);
+
+                List<dynamic> results = new List<dynamic>();
+                while (feedIterator.HasMoreResults)
+                {
+                    FeedResponse<dynamic> response = await feedIterator.ReadNextAsync();
+                    results.AddRange(response);
+                }
+
+                Assert.AreEqual(1, results.Count, "Expected query to return the document matching 'cloud'");
+            }
+            finally
+            {
+                await databaseForFullText.DeleteAsync();
+            }
+        }
+
+        [TestMethod]
+        public async Task TestFullTextSearchPolicyStandardPackageUpdateContainer()
+        {
+            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextUpdateDB",
+                cancellationToken: this.cancellationToken);
+
+            try
+            {
+                // Create with minimal config.
+                FullTextDefaultSpec defaultSpec = new FullTextDefaultSpec
+                {
+                    Language = "en-US",
+                    Tokenizer = "word",
+                    Filters = new Collection<string> { "stop", "lowercase" },
+                    StopWordListKind = "basic",
+                };
+
+                Collection<FullTextPath> fullTextPaths = new Collection<FullTextPath>()
+                {
+                    new FullTextPath() { Path = "/title" },
+                };
+
+                ContainerResponse containerResponse =
+                    await databaseForFullText.DefineContainer("updateContainer", "/pk")
+                        .WithFullTextPolicy(
+                            package: "standard",
+                            defaultSpec: defaultSpec,
+                            fullTextPaths: fullTextPaths)
+                        .Attach()
+                        .WithIndexingPolicy()
+                            .WithFullTextIndex()
+                                .Path("/title")
+                             .Attach()
+                        .Attach()
+                        .CreateAsync();
+
+                Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+
+                // Read and update: add a new full-text path.
+                Container container = containerResponse.Container;
+                ContainerProperties properties = containerResponse.Resource;
+
+                properties.FullTextPolicy.FullTextPaths.Add(new FullTextPath { Path = "/body" });
+                properties.IndexingPolicy.FullTextIndexes.Add(new FullTextIndexPath { Path = "/body" });
+
+                ContainerResponse replaceResponse = await container.ReplaceContainerAsync(properties);
+                Assert.AreEqual(HttpStatusCode.OK, replaceResponse.StatusCode);
+
+                // Validate updated policy.
+                ContainerProperties updatedSettings = replaceResponse.Resource;
+                Assert.AreEqual("standard", updatedSettings.FullTextPolicy.Package);
+                Assert.AreEqual(2, updatedSettings.FullTextPolicy.FullTextPaths.Count);
+                Assert.AreEqual("/title", updatedSettings.FullTextPolicy.FullTextPaths[0].Path);
+                Assert.AreEqual("/body", updatedSettings.FullTextPolicy.FullTextPaths[1].Path);
+            }
+            finally
+            {
+                await databaseForFullText.DeleteAsync();
+            }
+        }
+
+        [TestMethod]
+        public async Task TestFullTextSearchPolicyStandardPackagePerPathOverrides()
+        {
+            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextOverridesDB",
+                cancellationToken: this.cancellationToken);
+
+            try
+            {
+                // DefaultSpec with stem filter; one path overrides with just lowercase.
+                FullTextDefaultSpec defaultSpec = new FullTextDefaultSpec
+                {
+                    Language = "en-US",
+                    Tokenizer = "word",
+                    Filters = new Collection<string> { "stop", "lowercase", "stem" },
+                    StopWordListKind = "basic",
+                };
+
+                Collection<FullTextPath> fullTextPaths = new Collection<FullTextPath>()
+                {
+                    new FullTextPath() { Path = "/title" },
+                    new FullTextPath()
+                    {
+                        Path = "/tags",
+                        Language = "en-US",
+                        StopWordListKind = "none",
+                    },
+                    new FullTextPath()
+                    {
+                        Path = "/notes",
+                        Tokenizer = "word",
+                        Filters = new Collection<string> { "lowercase" },
+                    },
+                };
+
+                ContainerResponse containerResponse =
+                    await databaseForFullText.DefineContainer("overridesContainer", "/pk")
+                        .WithFullTextPolicy(
+                            package: "standard",
+                            defaultSpec: defaultSpec,
+                            fullTextPaths: fullTextPaths)
+                        .Attach()
+                        .WithIndexingPolicy()
+                            .WithFullTextIndex().Path("/title").Attach()
+                            .WithFullTextIndex().Path("/tags").Attach()
+                            .WithFullTextIndex().Path("/notes").Attach()
+                        .Attach()
+                        .CreateAsync();
+
+                Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+                ContainerProperties settings = containerResponse.Resource;
+
+                // Validate per-path overrides round-trip.
+                Assert.AreEqual(3, settings.FullTextPolicy.FullTextPaths.Count);
+
+                // /title inherits from defaultSpec.
+                Assert.AreEqual("/title", settings.FullTextPolicy.FullTextPaths[0].Path);
+                Assert.IsNull(settings.FullTextPolicy.FullTextPaths[0].Tokenizer);
+
+                // /tags has explicit language and stopWordListKind override.
+                Assert.AreEqual("/tags", settings.FullTextPolicy.FullTextPaths[1].Path);
+                Assert.AreEqual("en-US", settings.FullTextPolicy.FullTextPaths[1].Language);
+                Assert.AreEqual("none", settings.FullTextPolicy.FullTextPaths[1].StopWordListKind);
+
+                // /notes has explicit tokenizer and filters override.
+                Assert.AreEqual("/notes", settings.FullTextPolicy.FullTextPaths[2].Path);
+                Assert.AreEqual("word", settings.FullTextPolicy.FullTextPaths[2].Tokenizer);
+                Assert.AreEqual(1, settings.FullTextPolicy.FullTextPaths[2].Filters.Count);
+                Assert.AreEqual("lowercase", settings.FullTextPolicy.FullTextPaths[2].Filters[0]);
+            }
+            finally
+            {
+                await databaseForFullText.DeleteAsync();
+            }
+        }
+
+        [TestMethod]
+        public async Task TestFullTextSearchPolicyInvalidPackageReturnsError()
+        {
+            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextInvalidDB",
+                cancellationToken: this.cancellationToken);
+
+            try
+            {
+                // Invalid package value should be rejected by the service.
+                FullTextDefaultSpec defaultSpec = new FullTextDefaultSpec
+                {
+                    Language = "en-US",
+                };
+
+                Collection<FullTextPath> fullTextPaths = new Collection<FullTextPath>()
+                {
+                    new FullTextPath() { Path = "/text" },
+                };
+
+                try
+                {
+                    ContainerResponse containerResponse =
+                        await databaseForFullText.DefineContainer("invalidPackageContainer", "/pk")
+                            .WithFullTextPolicy(
+                                package: "invalid_package",
+                                defaultSpec: defaultSpec,
+                                fullTextPaths: fullTextPaths)
+                            .Attach()
+                            .WithIndexingPolicy()
+                                .WithFullTextIndex().Path("/text").Attach()
+                            .Attach()
+                            .CreateAsync();
+
+                    Assert.Fail("Expected an exception for invalid package type");
+                }
+                catch (CosmosException ex)
+                {
+                    Assert.AreEqual(HttpStatusCode.BadRequest, ex.StatusCode,
+                        $"Expected BadRequest for invalid package. Got: {ex.StatusCode}, Message: {ex.Message}");
+                }
+            }
+            finally
+            {
+                await databaseForFullText.DeleteAsync();
+            }
+        }
 #endif
 
         [Ignore]
