@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
     using System;
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
@@ -961,7 +962,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
 #if PREVIEW
-        [Ignore("Marking as ignore until emulator supports standard package")]
         [TestMethod]
         public async Task TestFullTextSearchPolicyStandardPackageWithQueryExecution()
         {
