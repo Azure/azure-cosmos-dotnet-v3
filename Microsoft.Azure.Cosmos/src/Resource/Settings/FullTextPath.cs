@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
         public string Language { get; set; }
 
         /// <summary>
-        /// Gets or sets the tokenizer method. Valid values: "word", "ngram", "ml".
+        /// Gets or sets the tokenizer method. Valid values: "word".
         /// Only applicable with the "standard" package.
         /// </summary>
         [JsonProperty(PropertyName = "tokenizer", NullValueHandling = NullValueHandling.Ignore)]

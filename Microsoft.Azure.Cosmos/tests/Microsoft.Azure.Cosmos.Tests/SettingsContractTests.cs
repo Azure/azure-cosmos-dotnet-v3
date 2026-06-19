@@ -1346,6 +1346,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 $"Language mismatch after deserialization for: {language}");
         }
 
+#if PREVIEW
         [TestMethod]
         public void FullTextPolicyStandardPackageSerialization()
         {
@@ -1493,6 +1494,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(1, deserialized.FullTextPaths[0].AddStopWords.Count);
             Assert.AreEqual(1, deserialized.FullTextPaths[0].RemoveStopWords.Count);
         }
+#endif
 
         private static T CosmosDeserialize<T>(string payload)
         {

@@ -960,6 +960,98 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+#if PREVIEW
+        [Ignore("Marking as ignore until emulator supports standard package")]
+        [TestMethod]
+        public async Task TestFullTextSearchPolicyStandardPackageWithQueryExecution()
+        {
+            string fullTextPath1 = "/title", fullTextPath2 = "/description";
+            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextStandardDB",
+                cancellationToken: this.cancellationToken);
+
+            try
+            {
+                Collection<FullTextPath> fullTextPaths = new Collection<FullTextPath>()
+                {
+                    new FullTextPath()
+                    {
+                        Path = fullTextPath1,
+                    },
+                    new FullTextPath()
+                    {
+                        Path = fullTextPath2,
+                        Tokenizer = "word",
+                        Filters = new Collection<string> { "stop", "lowercase" },
+                    },
+                };
+
+                FullTextDefaultSpec defaultSpec = new FullTextDefaultSpec
+                {
+                    Language = "en-US",
+                    Tokenizer = "word",
+                    Filters = new Collection<string> { "stop", "lowercase", "stem" },
+                    StopWordListKind = "basic",
+                };
+
+                string containerName = "fullTextStandardContainer";
+                string partitionKeyPath = "/pk";
+
+                ContainerResponse containerResponse =
+                    await databaseForFullText.DefineContainer(containerName, partitionKeyPath)
+                        .WithFullTextPolicy(
+                            package: "standard",
+                            defaultSpec: defaultSpec,
+                            fullTextPaths: fullTextPaths)
+                        .Attach()
+                        .WithIndexingPolicy()
+                            .WithFullTextIndex()
+                                .Path(fullTextPath1)
+                             .Attach()
+                            .WithFullTextIndex()
+                                .Path(fullTextPath2)
+                             .Attach()
+                        .Attach()
+                        .CreateAsync();
+
+                Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+                ContainerProperties containerSettings = containerResponse.Resource;
+
+                // Validate FullText Policy round-trip.
+                Assert.IsNotNull(containerSettings.FullTextPolicy);
+                Assert.AreEqual("standard", containerSettings.FullTextPolicy.Package);
+                Assert.IsNotNull(containerSettings.FullTextPolicy.DefaultSpec);
+                Assert.AreEqual("en-US", containerSettings.FullTextPolicy.DefaultSpec.Language);
+                Assert.AreEqual("word", containerSettings.FullTextPolicy.DefaultSpec.Tokenizer);
+                Assert.IsNotNull(containerSettings.FullTextPolicy.DefaultSpec.Filters);
+                Assert.AreEqual("basic", containerSettings.FullTextPolicy.DefaultSpec.StopWordListKind);
+
+                Assert.IsNotNull(containerSettings.FullTextPolicy.FullTextPaths);
+                Assert.AreEqual(2, containerSettings.FullTextPolicy.FullTextPaths.Count);
+
+                // Insert documents and run a FullTextContains query.
+                Container container = containerResponse.Container;
+                await container.CreateItemAsync(new { id = "1", pk = "1", title = "Hello world from Azure", description = "The quick brown fox jumps over the lazy dog" });
+                await container.CreateItemAsync(new { id = "2", pk = "2", title = "Cosmos DB is great", description = "Azure Cosmos DB is a globally distributed database" });
+
+                string query = "SELECT c.id FROM c WHERE FullTextContains(c.title, 'Azure') ORDER BY RANK FullTextScore(c.title, 'Azure')";
+                FeedIterator<dynamic> feedIterator = container.GetItemQueryIterator<dynamic>(query);
+
+                List<dynamic> results = new List<dynamic>();
+                while (feedIterator.HasMoreResults)
+                {
+                    FeedResponse<dynamic> response = await feedIterator.ReadNextAsync();
+                    results.AddRange(response);
+                }
+
+                Assert.IsTrue(results.Count > 0, "Expected at least one result from FullTextContains query");
+            }
+            finally
+            {
+                await databaseForFullText.DeleteAsync();
+            }
+        }
+#endif
+
         [Ignore]
         [TestMethod]
         public async Task WithComputedProperties()
