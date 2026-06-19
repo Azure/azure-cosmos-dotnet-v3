@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly bool isThinClientEnabled;
         private readonly bool isHubRegionProcessingEnabled;
         private readonly RetryOptions retryOptions;
+        private readonly AuthorizationTokenProvider authorizationTokenProvider;
 
         /// <summary>
         /// Initialize the instance of the RetryPolicy class
@@ -26,7 +27,8 @@ namespace Microsoft.Azure.Cosmos
             ConnectionPolicy connectionPolicy,
             GlobalPartitionEndpointManager partitionKeyRangeLocationCache,
             bool isThinClientEnabled,
-            bool isHubRegionProcessingEnabled = true)
+            bool isHubRegionProcessingEnabled = true,
+            AuthorizationTokenProvider authorizationTokenProvider = null)
         {
             this.enableEndpointDiscovery = connectionPolicy.EnableEndpointDiscovery;
             this.isPartitionLevelFailoverEnabled = connectionPolicy.EnablePartitionLevelFailover;
@@ -35,6 +37,7 @@ namespace Microsoft.Azure.Cosmos
             this.partitionKeyRangeLocationCache = partitionKeyRangeLocationCache;
             this.isThinClientEnabled = isThinClientEnabled;
             this.isHubRegionProcessingEnabled = isHubRegionProcessingEnabled;
+            this.authorizationTokenProvider = authorizationTokenProvider;
         }
 
         /// <summary>
@@ -48,7 +51,8 @@ namespace Microsoft.Azure.Cosmos
                 this.retryOptions,
                 this.enableEndpointDiscovery,
                 this.isThinClientEnabled,
-                this.isHubRegionProcessingEnabled);
+                this.isHubRegionProcessingEnabled,
+                this.authorizationTokenProvider);
 
             return clientRetryPolicy;
         }

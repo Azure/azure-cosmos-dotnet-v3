@@ -1168,7 +1168,8 @@ namespace Microsoft.Azure.Cosmos
                 connectionPolicy: this.ConnectionPolicy,
                 partitionKeyRangeLocationCache: this.PartitionKeyRangeLocation,
                 isThinClientEnabled: this.isThinClientEnabled,
-                isHubRegionProcessingEnabled: isHubRegionProcessingEnabled);
+                isHubRegionProcessingEnabled: isHubRegionProcessingEnabled,
+                authorizationTokenProvider: this.cosmosAuthorization);
 
             this.ResetSessionTokenRetryPolicy = this.retryPolicy;
 
@@ -6918,7 +6919,8 @@ namespace Microsoft.Azure.Cosmos
                 this.ConnectionPolicy,
                 this.httpClient,
                 this.storeClientFactory.GetConnectionStateListener(),
-                this.enableAsyncCacheExceptionNoSharing);
+                this.enableAsyncCacheExceptionNoSharing,
+                authorizationTokenProvider: this.cosmosAuthorization);
 
             this.CreateStoreModel(subscribeRntbdStatus: true);
         }

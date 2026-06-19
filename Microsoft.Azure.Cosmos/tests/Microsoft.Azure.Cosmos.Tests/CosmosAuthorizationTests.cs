@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net.Http;
     using System.Reflection;
     using System.Security.Cryptography.X509Certificates;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure.Core;
@@ -598,6 +599,170 @@ namespace Microsoft.Azure.Cosmos.Tests
                 this.ValidateSemaphoreIsReleased(tokenCredentialCache);
                 Assert.AreEqual(1, testTokenCredential.NumTimesInvoked);
             }
+        }
+
+        [TestMethod]
+        [DataRow("Bearer error=\"insufficient_claims\", claims=\"eyJhY2Nlc3NfdG9rZW4iOnt9fQ==\"", true, DisplayName = "With insufficient_claims")]
+        [DataRow("Bearer claims=\"eyJhY2Nlc3NfdG9rZW4iOnt9fQ==\"", true, DisplayName = "With claims only")]
+        [DataRow("Bearer realm=\"test\"", false, DisplayName = "Without claims challenge")]
+        [DataRow("", false, DisplayName = "Empty header")]
+        public void TryHandleTokenRevocation_VariousHeaders(string wwwAuthenticateValue, bool expectedResult)
+        {
+            // Arrange
+            Mock<TokenCredential> mockTokenCredential = new Mock<TokenCredential>();
+            mockTokenCredential
+                .Setup(x => x.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new AccessToken("test-token", DateTimeOffset.MaxValue));
+
+            using AuthorizationTokenProviderTokenCredential tokenProvider = new AuthorizationTokenProviderTokenCredential(
+                mockTokenCredential.Object,
+                CosmosAuthorizationTests.AccountEndpoint,
+                backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(5),
+                tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
+
+            // Act
+            bool result = tokenProvider.TryHandleTokenRevocation(HttpStatusCode.Unauthorized, wwwAuthenticateValue);
+
+            // Assert
+            Assert.AreEqual(expectedResult, result);
+        }
+
+        [TestMethod]
+        [DataRow(HttpStatusCode.Forbidden)]
+        [DataRow(HttpStatusCode.BadRequest)]
+        [DataRow(HttpStatusCode.NotFound)]
+        public void TryHandleTokenRevocation_NonUnauthorizedStatus_ReturnsFalse(HttpStatusCode statusCode)
+        {
+            // Arrange
+            Mock<TokenCredential> mockTokenCredential = new Mock<TokenCredential>();
+            mockTokenCredential
+                .Setup(x => x.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new AccessToken("test-token", DateTimeOffset.MaxValue));
+
+            using AuthorizationTokenProviderTokenCredential tokenProvider = new AuthorizationTokenProviderTokenCredential(
+                mockTokenCredential.Object,
+                CosmosAuthorizationTests.AccountEndpoint,
+                backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(5),
+                tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
+
+            string wwwAuthenticateValue = "Bearer error=\"insufficient_claims\", claims=\"eyJhY2Nlc3NfdG9rZW4iOnt9fQ==\"";
+
+            // Act
+            bool result = tokenProvider.TryHandleTokenRevocation(statusCode, wwwAuthenticateValue);
+            // Assert
+            Assert.IsFalse(result);
+        }
+
+        [TestMethod]
+        [DataRow(null, "{\"access_token\":{\"xms_cc\":{\"values\":[\"cp1\"]}}}", DisplayName = "Null claims")]
+        [DataRow("", "{\"access_token\":{\"xms_cc\":{\"values\":[\"cp1\"]}}}", DisplayName = "Empty claims")]
+        [DataRow("not-valid-base64!!!", "{\"access_token\":{\"xms_cc\":{\"values\":[\"cp1\"]}}}", DisplayName = "Invalid base64")]
+        public void MergeClaimsWithClientCapabilities_InvalidInput_ReturnsOnlyCp1(string claimsChallenge, string expected)
+        {
+            // Act
+            string result = TokenCredentialCache.MergeClaimsWithClientCapabilities(claimsChallenge);
+
+            // Assert
+            Assert.AreEqual(expected, result);
+        }
+
+        [TestMethod]
+        public void MergeClaimsWithClientCapabilities_ValidClaims_MergesWithCp1()
+        {
+            // Arrange - Base64 encoded: {"access_token":{"acrs":{"essential":true,"value":"c1"}}}
+            string claimsChallenge = "eyJhY2Nlc3NfdG9rZW4iOnsiYWNycyI6eyJlc3NlbnRpYWwiOnRydWUsInZhbHVlIjoiYzEifX19";
+
+            // Act
+            string result = TokenCredentialCache.MergeClaimsWithClientCapabilities(claimsChallenge);
+
+            // Assert
+            Assert.IsTrue(result.Contains("\"xms_cc\":{\"values\":[\"cp1\"]}"), "Should contain cp1");
+            Assert.IsTrue(result.Contains("\"acrs\""), "Should contain original claims");
+        }
+
+        [DataTestMethod]
+        // {"access_token":{}}
+        [DataRow("eyJhY2Nlc3NfdG9rZW4iOnt9fQ==", DisplayName = "Empty access_token object")]
+        // {"access_token":{"nbf":{"essential":true,"value":"1"}}} - real revocation shape
+        [DataRow("eyJhY2Nlc3NfdG9rZW4iOnsibmJmIjp7ImVzc2VudGlhbCI6dHJ1ZSwidmFsdWUiOiIxIn19fQ==", DisplayName = "nbf revocation shape")]
+        // {"access_token":{"nonce":"a}b"}} - brace inside a string value
+        [DataRow("eyJhY2Nlc3NfdG9rZW4iOnsibm9uY2UiOiJhfWIifX0=", DisplayName = "Brace inside string value")]
+        // {"access_token":{"xms_cc":{"values":["cp2"]},"nbf":{"value":"1"}}} - pre-existing xms_cc must be overwritten
+        [DataRow("eyJhY2Nlc3NfdG9rZW4iOnsieG1zX2NjIjp7InZhbHVlcyI6WyJjcDIiXX0sIm5iZiI6eyJ2YWx1ZSI6IjEifX19", DisplayName = "Pre-existing xms_cc is overwritten")]
+        public void MergeClaimsWithClientCapabilities_ProducesValidJson(string base64Claims)
+        {
+            // Act
+            string merged = TokenCredentialCache.MergeClaimsWithClientCapabilities(base64Claims);
+
+            // Assert - result must be parseable JSON with the expected shape.
+            using JsonDocument doc = JsonDocument.Parse(merged);
+            JsonElement accessToken = doc.RootElement.GetProperty("access_token");
+            Assert.AreEqual(JsonValueKind.Object, accessToken.ValueKind);
+
+            JsonElement xmsCc = accessToken.GetProperty("xms_cc");
+            JsonElement values = xmsCc.GetProperty("values");
+            Assert.AreEqual(1, values.GetArrayLength());
+            Assert.AreEqual("cp1", values[0].GetString());
+        }
+
+        [TestMethod]
+        public async Task TokenCredentialCache_ResetWithClaims_RefreshesTokenWithClaims()
+        {
+            // Arrange
+            int callCount = 0;
+            List<string> claimsReceived = new List<string>();
+
+            TestTokenCredential testTokenCredential = new TestTokenCredential(() =>
+            {
+                callCount++;
+                return new ValueTask<AccessToken>(new AccessToken($"Token{callCount}", DateTimeOffset.MaxValue));
+            });
+
+            using TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential);
+
+            // Get initial token
+            string t1 = await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton);
+            Assert.AreEqual(AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature("Token1"), t1);
+            Assert.AreEqual(1, callCount);
+
+            // Simulate CAE revocation with claims
+            string claimsChallenge = Convert.ToBase64String(
+                System.Text.Encoding.UTF8.GetBytes("{\"access_token\":{\"acrs\":{\"essential\":true,\"value\":\"c1\"}}}"));
+            tokenCredentialCache.ResetCachedToken(claimsChallenge);
+
+            // Get token again
+            string t2 = await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton);
+
+            // Assert
+            Assert.AreEqual(AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature("Token2"), t2);
+            Assert.AreEqual(2, callCount);
+        }
+
+        [TestMethod]
+        public async Task TokenCredentialCache_ResetWithNullClaims_RefreshesToken()
+        {
+            // Arrange
+            int callCount = 0;
+            TestTokenCredential testTokenCredential = new TestTokenCredential(() =>
+            {
+                callCount++;
+                return new ValueTask<AccessToken>(new AccessToken($"Token{callCount}", DateTimeOffset.MaxValue));
+            });
+
+            using TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential);
+
+            // Get initial token
+            await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton);
+            Assert.AreEqual(1, callCount);
+
+            // Reset with null claims
+            tokenCredentialCache.ResetCachedToken(claimsChallenge: null);
+
+            // Get token again
+            await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton);
+
+            // Assert
+            Assert.AreEqual(2, callCount);
         }
 
         [TestMethod]
