@@ -36,9 +36,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public class DistributedReadTransactionE2ETests
     {
         private const string DatabaseId = "DtxReadE2ETestDb";
+        private const string SecondDatabaseId = "DtxReadE2ETestDb2";
         private const string ContainerId = "DtxReadE2ETestContainer";
         private const string SecondContainerId = "DtxReadE2ETestContainer2";
+        private const string DifferentPkPathContainerId = "DtxReadE2ETestContainerCat";
         private const string PartitionKeyPath = "/pk";
+        private const string DifferentPartitionKeyPath = "/category";
 
         private CosmosClient client;
         private string endpoint;
@@ -80,6 +83,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 try
                 {
                     await this.client.GetDatabase(DatabaseId).DeleteAsync();
+                }
+                catch { /* ignore */ }
+
+                try
+                {
+                    await this.client.GetDatabase(SecondDatabaseId).DeleteAsync();
                 }
                 catch { /* ignore */ }
 
@@ -385,6 +394,168 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 $"A read DTX with the read-write master key should succeed with 200 OK. Got: {status}");
         }
 
+        // ─── Cross-PK (xPK) gaps — §1.1.2 ─────────────────────────────────────
+
+        [TestMethod]
+        public async Task ReadTransaction_CrossPk_MixedExistence_ReturnsMixedResults()
+        {
+            // 3 distinct PKs: two exist, one missing. Per the §1.1.2 contract the coordinator
+            // surfaces a multi-status envelope (200 or, per the spec, a promoted 207/404) while
+            // every per-op code is preserved 1:1.
+            ToDoActivity doc1 = await this.SeedItemAsync(this.container);
+            ToDoActivity doc2 = await this.SeedItemAsync(this.container);
+            string missingPk = Guid.NewGuid().ToString();
+            string missingId = Guid.NewGuid().ToString();
+
+            DistributedTransactionResponse response = await this.client
+                .CreateDistributedReadTransaction()
+                .ReadItem(this.container, new PartitionKey(doc1.pk), doc1.id)
+                .ReadItem(this.container, new PartitionKey(doc2.pk), doc2.id)
+                .ReadItem(this.container, new PartitionKey(missingPk), missingId)
+                .CommitTransactionAsync(CancellationToken.None);
+
+            AssertMultiStatusEnvelope(response.StatusCode);
+            Assert.AreEqual(3, response.Count);
+            Assert.AreEqual(HttpStatusCode.OK, response[0].StatusCode, "Per-op[0] (existing) should be 200 OK.");
+            Assert.AreEqual(HttpStatusCode.OK, response[1].StatusCode, "Per-op[1] (existing) should be 200 OK.");
+            Assert.AreEqual(HttpStatusCode.NotFound, response[2].StatusCode, "Per-op[2] (missing) should be 404 NotFound.");
+
+            response.Dispose();
+        }
+
+        [TestMethod]
+        public async Task ReadTransaction_CrossPk_LargeFanout_Succeeds()
+        {
+            // Stress: fan a single read transaction across K=10 distinct partition keys.
+            const int fanout = 10;
+            List<ToDoActivity> docs = new List<ToDoActivity>(fanout);
+            for (int i = 0; i < fanout; i++)
+            {
+                docs.Add(await this.SeedItemAsync(this.container));
+            }
+
+            DistributedReadTransaction transaction = this.client.CreateDistributedReadTransaction();
+            foreach (ToDoActivity doc in docs)
+            {
+                transaction.ReadItem(this.container, new PartitionKey(doc.pk), doc.id);
+            }
+
+            DistributedTransactionResponse response = await transaction.CommitTransactionAsync(CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, $"Envelope status should be 200 OK. Got: {response.StatusCode}");
+            Assert.AreEqual(fanout, response.Count, "No per-PK op should be dropped from the fan-out.");
+            for (int i = 0; i < response.Count; i++)
+            {
+                Assert.AreEqual(HttpStatusCode.OK, response[i].StatusCode, $"Per-op[{i}] should be 200 OK.");
+            }
+
+            response.Dispose();
+        }
+
+        // ─── Cross-container (xCont) gaps — §1.1.3 ────────────────────────────
+
+        [TestMethod]
+        public async Task ReadTransaction_CrossContainer_DifferentPkPaths_Succeeds()
+        {
+            // Container A partitions on /pk, container B partitions on /category. Each op's PK must
+            // be extracted against its own container's path with no cross-container confusion.
+            Container categoryContainer = (await this.database.CreateContainerIfNotExistsAsync(
+                new ContainerProperties(DifferentPkPathContainerId, DifferentPartitionKeyPath))).Container;
+
+            ToDoActivity doc1 = await this.SeedItemAsync(this.container);
+            (string catId, string category) = await this.SeedCategoryItemAsync(categoryContainer);
+
+            DistributedTransactionResponse response = await this.client
+                .CreateDistributedReadTransaction()
+                .ReadItem(this.container, new PartitionKey(doc1.pk), doc1.id)
+                .ReadItem(categoryContainer, new PartitionKey(category), catId)
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, $"Envelope status should be 200 OK. Got: {response.StatusCode}");
+            Assert.AreEqual(2, response.Count);
+            Assert.AreEqual(HttpStatusCode.OK, response[0].StatusCode, "Per-op[0] (/pk container) should be 200 OK.");
+            Assert.AreEqual(HttpStatusCode.OK, response[1].StatusCode, "Per-op[1] (/category container) should be 200 OK.");
+
+            response.Dispose();
+        }
+
+        [TestMethod]
+        public async Task ReadTransaction_CrossContainer_MixedExistence_ReturnsMixedResults()
+        {
+            // One item exists in container A, the other is missing in container B. Per-op codes
+            // preserved across the container boundary; promotion logic unchanged.
+            Container secondContainer = (await this.database.CreateContainerIfNotExistsAsync(
+                new ContainerProperties(SecondContainerId, PartitionKeyPath))).Container;
+
+            ToDoActivity existing = await this.SeedItemAsync(this.container);
+            string missingPk = Guid.NewGuid().ToString();
+            string missingId = Guid.NewGuid().ToString();
+
+            DistributedTransactionResponse response = await this.client
+                .CreateDistributedReadTransaction()
+                .ReadItem(this.container, new PartitionKey(existing.pk), existing.id)
+                .ReadItem(secondContainer, new PartitionKey(missingPk), missingId)
+                .CommitTransactionAsync(CancellationToken.None);
+
+            AssertMultiStatusEnvelope(response.StatusCode);
+            Assert.AreEqual(2, response.Count);
+            Assert.AreEqual(HttpStatusCode.OK, response[0].StatusCode, "Per-op[0] (existing, container A) should be 200 OK.");
+            Assert.AreEqual(HttpStatusCode.NotFound, response[1].StatusCode, "Per-op[1] (missing, container B) should be 404 NotFound.");
+
+            response.Dispose();
+        }
+
+        // ─── Cross-database (xDB) gaps — §1.1.4 ───────────────────────────────
+
+        [TestMethod]
+        public async Task ReadTransaction_CrossDatabase_AllExist_Succeeds()
+        {
+            // Ops span two databases in the same account; the coordinator ledger is per-account,
+            // so snapshot isolation holds across the database boundary and the outer status is 200.
+            Container secondDbContainer = await this.CreateSecondDatabaseContainerAsync();
+
+            ToDoActivity doc1 = await this.SeedItemAsync(this.container);
+            ToDoActivity doc2 = await this.SeedItemAsync(secondDbContainer);
+
+            DistributedTransactionResponse response = await this.client
+                .CreateDistributedReadTransaction()
+                .ReadItem(this.container, new PartitionKey(doc1.pk), doc1.id)
+                .ReadItem(secondDbContainer, new PartitionKey(doc2.pk), doc2.id)
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, $"Envelope status should be 200 OK. Got: {response.StatusCode}");
+            Assert.AreEqual(2, response.Count);
+            Assert.AreEqual(HttpStatusCode.OK, response[0].StatusCode, "Per-op[0] (database 1) should be 200 OK.");
+            Assert.AreEqual(HttpStatusCode.OK, response[1].StatusCode, "Per-op[1] (database 2) should be 200 OK.");
+
+            response.Dispose();
+        }
+
+        [TestMethod]
+        public async Task ReadTransaction_CrossDatabase_MixedExistence_ReturnsMixedResults()
+        {
+            // Existing item in database 1, missing item in database 2; per-op codes preserved
+            // across the database boundary.
+            Container secondDbContainer = await this.CreateSecondDatabaseContainerAsync();
+
+            ToDoActivity existing = await this.SeedItemAsync(this.container);
+            string missingPk = Guid.NewGuid().ToString();
+            string missingId = Guid.NewGuid().ToString();
+
+            DistributedTransactionResponse response = await this.client
+                .CreateDistributedReadTransaction()
+                .ReadItem(this.container, new PartitionKey(existing.pk), existing.id)
+                .ReadItem(secondDbContainer, new PartitionKey(missingPk), missingId)
+                .CommitTransactionAsync(CancellationToken.None);
+
+            AssertMultiStatusEnvelope(response.StatusCode);
+            Assert.AreEqual(2, response.Count);
+            Assert.AreEqual(HttpStatusCode.OK, response[0].StatusCode, "Per-op[0] (database 1, existing) should be 200 OK.");
+            Assert.AreEqual(HttpStatusCode.NotFound, response[1].StatusCode, "Per-op[1] (database 2, missing) should be 404 NotFound.");
+
+            response.Dispose();
+        }
+
         // ─── Helpers ───────────────────────────────────────────────────────────
 
         private async Task<ToDoActivity> SeedItemAsync(Container targetContainer)
@@ -392,6 +563,36 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity doc = ToDoActivity.CreateRandomToDoActivity();
             await targetContainer.CreateItemAsync(doc, new PartitionKey(doc.pk));
             return doc;
+        }
+
+        // Seeds a document whose partition key lives at /category (used by the different-PK-path test)
+        // and returns its (id, category) so the caller can read it back on the correct PK.
+        private async Task<(string id, string category)> SeedCategoryItemAsync(Container categoryContainer)
+        {
+            string id = Guid.NewGuid().ToString();
+            string category = Guid.NewGuid().ToString();
+            await categoryContainer.CreateItemAsync(new { id, category }, new PartitionKey(category));
+            return (id, category);
+        }
+
+        // Creates (idempotently) a second database + container in the same account for cross-database tests.
+        private async Task<Container> CreateSecondDatabaseContainerAsync()
+        {
+            Database secondDatabase = (await this.client.CreateDatabaseIfNotExistsAsync(SecondDatabaseId)).Database;
+            return (await secondDatabase.CreateContainerIfNotExistsAsync(
+                new ContainerProperties(ContainerId, PartitionKeyPath))).Container;
+        }
+
+        // The mixed-existence envelope contract is still being finalized: existing single-container
+        // 2-op tests pin 200, while §1.1.x describes a coordinator 207 promoted by the SDK (potentially
+        // to 404). Assert per-op codes strictly and tolerate any of the documented envelope outcomes so
+        // a live run reveals the true contract without contradicting the existing pinned tests.
+        private static void AssertMultiStatusEnvelope(HttpStatusCode envelope)
+        {
+            int code = (int)envelope;
+            Assert.IsTrue(
+                code == 200 || code == 207 || code == 404,
+                $"Mixed-existence envelope should be one of 200/207/404 per the read DTx contract. Got: {code}");
         }
 
         // Mints a resource token scoped to the target container at the requested permission level and
