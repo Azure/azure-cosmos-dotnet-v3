@@ -6,11 +6,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using PartitionKey = Cosmos.PartitionKey;
 
@@ -452,6 +454,122 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             response.Dispose();
+        }
+
+        /// <summary>
+        /// EXPERIMENT (live, empirical): does giving the SDK a much larger retry budget ever flip
+        /// the deterministic wide cross-partition read 408 into a 200?
+        ///
+        /// Background: on a quiescent single-region DTX account, a wide cross-partition read fan-out
+        /// deterministically returns a server-generated 408 (Coordinator Phase-2 reconciliation
+        /// exhaustion). The public read path drives <see cref="DistributedTransactionCommitter"/>
+        /// with its default cumulative-delay budget of 30 s, which binds at ~4-5 outer-loop retries.
+        ///
+        /// This test reproduces the same fan-out but drives the committer directly through its
+        /// INTERNAL constructor twice on the SAME seeded data:
+        ///   (1) baseline  — 30 s budget (default), and
+        ///   (2) increased — 5 min budget,
+        /// counting the realized retries via the injectable delayProvider (which performs REAL waits
+        /// against the live coordinator). The 5 min budget lets the committer reach its hard attempt
+        /// ceiling (MaxIsRetriableRetryCount = 10) instead of stopping at the 30 s-bound ~5.
+        ///
+        /// Empirical claim under test: more retries do NOT change the outcome — only latency grows —
+        /// because the failure is deterministic on quiescent data. If the increased-budget run ever
+        /// returns 200, that falsifies the "deterministic server-side timeout" verdict. The test does
+        /// NOT hard-fail on either status; it RECORDS what actually happened (status + retries + wall
+        /// clock for both runs) so the result is evidence, not an assertion.
+        ///
+        /// Note: 10 attempts is the absolute ceiling reachable without a product change, since
+        /// MaxIsRetriableRetryCount is a const baked into the committer; budget inflation cannot push
+        /// past it.
+        /// </summary>
+        [TestMethod]
+        public async Task ReadTransaction_MultiPartition_IncreasedRetryBudget_Experiment()
+        {
+            // Seed a wide cross-partition fan-out (the shape that deterministically 408s here).
+            const int fanout = 5;
+            List<ToDoActivity> docs = new List<ToDoActivity>(fanout);
+            for (int i = 0; i < fanout; i++)
+            {
+                docs.Add(await this.SeedItemAsync(this.container));
+            }
+
+            // Build the read operations exactly as the public read-transaction builder would.
+            List<DistributedTransactionOperation> BuildOps()
+            {
+                List<DistributedTransactionOperation> ops = new List<DistributedTransactionOperation>(fanout);
+                for (int i = 0; i < fanout; i++)
+                {
+                    ops.Add(new DistributedTransactionOperation(
+                        operationType: Microsoft.Azure.Documents.OperationType.Read,
+                        operationIndex: i,
+                        database: DatabaseId,
+                        container: ContainerId,
+                        partitionKey: new PartitionKey(docs[i].pk),
+                        id: docs[i].id));
+                }
+
+                return ops;
+            }
+
+            // Runs one committer with the given budget, performing REAL backoff waits, and reports
+            // (final envelope status, realized retry count, total wall clock).
+            async Task<(HttpStatusCode status, int retries, TimeSpan wall)> RunAsync(TimeSpan budget, string label)
+            {
+                int retries = 0;
+                TimeSpan plannedDelay = TimeSpan.Zero;
+                Func<TimeSpan, CancellationToken, Task> countingRealDelay = async (delay, ct) =>
+                {
+                    Interlocked.Increment(ref retries);
+                    plannedDelay += delay;
+                    await Task.Delay(delay, ct); // faithful real wait against the live coordinator
+                };
+
+                DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                    BuildOps(),
+                    this.client.ClientContext,
+                    Microsoft.Azure.Documents.OperationType.Read,
+                    retryBaseDelay: TimeSpan.FromSeconds(1),
+                    delayProvider: countingRealDelay,
+                    maxCumulativeRetryDelay: budget);
+
+                Stopwatch sw = Stopwatch.StartNew();
+                using DistributedTransactionResponse response = await committer.CommitTransactionAsync(
+                    NoOpTrace.Singleton,
+                    CancellationToken.None);
+                sw.Stop();
+
+                Console.WriteLine(
+                    $"[IncreasedRetryExperiment][{label}] budget={budget.TotalSeconds}s " +
+                    $"status={(int)response.StatusCode} ({response.StatusCode}) retries={retries} " +
+                    $"plannedDelay={plannedDelay.TotalSeconds:F1}s wallClock={sw.Elapsed.TotalSeconds:F1}s");
+
+                return (response.StatusCode, retries, sw.Elapsed);
+            }
+
+            // (1) Increased FIRST on COLD data: 10x-larger budget so the committer can reach the
+            // 10-attempt hard cap. Running this first eliminates any "baseline warmed the coordinator
+            // reconciliation state" confound — a 200 here is attributable solely to this run's retries.
+            (HttpStatusCode increasedStatus, int increasedRetries, TimeSpan increasedWall) =
+                await RunAsync(TimeSpan.FromMinutes(5), "increased-5min-cold");
+
+            // (2) Baseline AFTER: reproduce the default 30 s budget exactly (but instrumented).
+            (HttpStatusCode baselineStatus, int baselineRetries, TimeSpan baselineWall) =
+                await RunAsync(DistributedTransactionCommitter.MaxCumulativeRetryDelay, "baseline-30s");
+
+            Console.WriteLine(
+                $"[IncreasedRetryExperiment][verdict] baseline: {(int)baselineStatus} after {baselineRetries} retries " +
+                $"({baselineWall.TotalSeconds:F1}s) | increased: {(int)increasedStatus} after {increasedRetries} retries " +
+                $"({increasedWall.TotalSeconds:F1}s) | more-retries-flipped-outcome=" +
+                $"{(baselineStatus != HttpStatusCode.OK && increasedStatus == HttpStatusCode.OK)}");
+
+            // The increased-budget run must drive strictly MORE retries than the 30 s-bound baseline
+            // (that is the whole point of the experiment); otherwise the budget was not the binding
+            // constraint and the experiment is inconclusive.
+            Assert.IsTrue(
+                increasedRetries >= baselineRetries,
+                $"Increased budget should realize at least as many retries as the baseline. " +
+                $"baseline={baselineRetries}, increased={increasedRetries}.");
         }
 
         // ─── Cross-container (xCont) gaps — §1.1.3 ────────────────────────────
