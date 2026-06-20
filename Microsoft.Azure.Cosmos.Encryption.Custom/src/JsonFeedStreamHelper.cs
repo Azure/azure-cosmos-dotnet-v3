@@ -58,7 +58,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         internal static byte[] HandleLeftOver(byte[] buffer, int dataLength, int leftOver, int bytesConsumed, int maxBufferSize)
         {
-            if (leftOver == dataLength)
+            // Grow only when the buffer is genuinely full of unconsumed data (leftOver == buffer.Length).
+            // Using leftOver == dataLength instead would grow whenever the reader consumed nothing this
+            // round, which under short reads happens with free buffer space still available and doubles the
+            // buffer every iteration until the cap throws on otherwise-valid input.
+            if (leftOver == buffer.Length)
             {
                 int newSize = checked(buffer.Length * 2);
                 if (maxBufferSize > 0 && newSize > maxBufferSize)

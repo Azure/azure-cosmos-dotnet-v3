@@ -301,5 +301,83 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             CollectionAssert.AreEqual(expectedIds, actualIds);
         }
+
+        [TestMethod]
+        public async Task SplitIntoSubstreamsAsync_ShortReadsAcrossLargeValue_DoesNotPrematurelyGrowBuffer()
+        {
+            // Stream.ReadAsync is permitted to return short reads. A value larger than one chunk forces
+            // Utf8JsonReader to consume zero bytes for many iterations while it waits for the closing quote.
+            // The buffer must only grow when it is genuinely full, never merely because no token was
+            // consumed this round; otherwise short reads double the buffer every iteration until the 64 MiB
+            // cap throws on an otherwise-valid feed. 64 KiB read 128 bytes at a time exercises that path.
+            const int largeValueSize = 64 * 1024;
+            string largeValue = new ('B', largeValueSize);
+            string payload = $"{{\"Documents\":[{{\"id\":\"doc1\",\"encryptedData\":\"{largeValue}\"}}],\"_count\":1}}";
+
+            using MemoryStream backing = new (Encoding.UTF8.GetBytes(payload));
+            using ChunkedReadStream chunked = new (backing, maxBytesPerRead: 128);
+
+            List<Stream> results = new ();
+            try
+            {
+                await foreach (Stream documentStream in JsonArrayStreamSplitter.SplitIntoSubstreamsAsync(chunked, CancellationToken.None))
+                {
+                    results.Add(documentStream);
+                }
+
+                Assert.AreEqual(1, results.Count);
+                results[0].Position = 0;
+                using JsonDocument doc = JsonDocument.Parse(results[0]);
+                Assert.AreEqual("doc1", doc.RootElement.GetProperty("id").GetString());
+                Assert.AreEqual(largeValue, doc.RootElement.GetProperty("encryptedData").GetString());
+            }
+            finally
+            {
+                foreach (Stream stream in results)
+                {
+                    stream?.Dispose();
+                }
+            }
+        }
+
+        private sealed class ChunkedReadStream : Stream
+        {
+            private readonly Stream inner;
+            private readonly int maxBytesPerRead;
+
+            public ChunkedReadStream(Stream inner, int maxBytesPerRead)
+            {
+                this.inner = inner;
+                this.maxBytesPerRead = maxBytesPerRead;
+            }
+
+            public override bool CanRead => this.inner.CanRead;
+
+            public override bool CanSeek => false;
+
+            public override bool CanWrite => false;
+
+            public override long Length => this.inner.Length;
+
+            public override long Position { get => this.inner.Position; set => throw new NotSupportedException(); }
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                return this.inner.Read(buffer, offset, Math.Min(count, this.maxBytesPerRead));
+            }
+
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                return this.inner.ReadAsync(buffer, offset, Math.Min(count, this.maxBytesPerRead), cancellationToken);
+            }
+
+            public override void Flush() => this.inner.Flush();
+
+            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+            public override void SetLength(long value) => throw new NotSupportedException();
+
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        }
     }
 }
