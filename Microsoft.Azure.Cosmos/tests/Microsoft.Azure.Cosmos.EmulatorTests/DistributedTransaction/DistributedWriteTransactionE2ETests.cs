@@ -39,8 +39,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         private const string DatabaseId = "DtxWriteE2ETestDb";
         private const string SecondDatabaseId = "DtxWriteE2ETestDb2";
+        private const string SharedThroughputDatabaseId = "DtxWriteE2ETestDbShared";
+        private const string DedicatedThroughputDatabaseId = "DtxWriteE2ETestDbDedicated";
         private const string ContainerId = "DtxWriteE2ETestContainer";
         private const string SecondContainerId = "DtxWriteE2ETestContainer2";
+        private const string ThirdContainerId = "DtxWriteE2ETestContainer3";
         private const string PartitionKeyPath = "/pk";
 
         private CosmosClient client;
@@ -89,6 +92,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 try
                 {
                     await this.client.GetDatabase(SecondDatabaseId).DeleteAsync();
+                }
+                catch { /* ignore */ }
+
+                try
+                {
+                    await this.client.GetDatabase(SharedThroughputDatabaseId).DeleteAsync();
+                }
+                catch { /* ignore */ }
+
+                try
+                {
+                    await this.client.GetDatabase(DedicatedThroughputDatabaseId).DeleteAsync();
                 }
                 catch { /* ignore */ }
 
@@ -366,6 +381,87 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 $"Read-your-own-write op should be 200 OK. Got: {readResponse[0].StatusCode}");
 
             readResponse.Dispose();
+        }
+
+        // ─── §1.2.3 Cross-container with heterogeneous provisioning ───────────────
+
+        /// <summary>
+        /// §1.2.3 2PC commit across containers provisioned with <b>different RU throughput</b>:
+        /// one container is created with 400 RU/s manual throughput and the other with 1000 RU/s
+        /// manual throughput. A cross-container write DTx must still prepare + commit atomically
+        /// regardless of the per-container RU provisioning, proving the coordinator does not require
+        /// homogeneous throughput across the enlisted resources.
+        /// </summary>
+        [TestMethod]
+        public async Task WriteTransaction_CrossContainer_DifferentRuProvisioning_Succeeds()
+        {
+            Container lowRuContainer = (await this.database.CreateContainerIfNotExistsAsync(
+                new ContainerProperties(SecondContainerId, PartitionKeyPath), throughput: 400)).Container;
+            Container highRuContainer = (await this.database.CreateContainerIfNotExistsAsync(
+                new ContainerProperties(ThirdContainerId, PartitionKeyPath), throughput: 1000)).Container;
+
+            string pk1 = $"ru-low-{Guid.NewGuid():N}";
+            string pk2 = $"ru-high-{Guid.NewGuid():N}";
+            string id1 = Guid.NewGuid().ToString();
+            string id2 = Guid.NewGuid().ToString();
+
+            DistributedTransactionResponse response = await this.client
+                .CreateDistributedWriteTransaction()
+                .CreateItem(lowRuContainer, new PartitionKey(pk1), id1, new { id = id1, pk = pk1, value = "low-ru" })
+                .CreateItem(highRuContainer, new PartitionKey(pk2), id2, new { id = id2, pk = pk2, value = "high-ru" })
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.IsTrue(response.IsSuccessStatusCode,
+                $"Cross-container 2PC across different RU provisioning should succeed. Got: {response.StatusCode}");
+            Assert.AreEqual(2, response.Count);
+            Assert.IsTrue(response[0].IsSuccessStatusCode, $"Op[0] should succeed. Got: {response[0].StatusCode}");
+            Assert.IsTrue(response[1].IsSuccessStatusCode, $"Op[1] should succeed. Got: {response[1].StatusCode}");
+
+            response.Dispose();
+        }
+
+        // ─── §1.2.4 Cross-database with mixed throughput models ───────────────────
+
+        /// <summary>
+        /// §1.2.4 2PC commit across databases that use <b>different throughput models</b>: one
+        /// database provisions <b>shared (database-level) throughput</b> consumed by its container,
+        /// while the other database hosts a container with its own <b>dedicated (container-level)
+        /// throughput</b>. A cross-database write DTx spanning both must prepare + commit atomically,
+        /// proving the coordinator tolerates mixed shared/dedicated provisioning models.
+        /// </summary>
+        [TestMethod]
+        public async Task WriteTransaction_CrossDatabase_MixedThroughputModels_Succeeds()
+        {
+            // DB1: shared (database-level) throughput; container inherits it (no dedicated RU).
+            Database sharedDb = (await this.client.CreateDatabaseIfNotExistsAsync(
+                SharedThroughputDatabaseId, throughput: 400)).Database;
+            Container sharedContainer = (await sharedDb.CreateContainerIfNotExistsAsync(
+                new ContainerProperties(ContainerId, PartitionKeyPath))).Container;
+
+            // DB2: no shared throughput; container provisions its own dedicated RU.
+            Database dedicatedDb = (await this.client.CreateDatabaseIfNotExistsAsync(
+                DedicatedThroughputDatabaseId)).Database;
+            Container dedicatedContainer = (await dedicatedDb.CreateContainerIfNotExistsAsync(
+                new ContainerProperties(ContainerId, PartitionKeyPath), throughput: 400)).Container;
+
+            string pk1 = $"shared-{Guid.NewGuid():N}";
+            string pk2 = $"dedicated-{Guid.NewGuid():N}";
+            string id1 = Guid.NewGuid().ToString();
+            string id2 = Guid.NewGuid().ToString();
+
+            DistributedTransactionResponse response = await this.client
+                .CreateDistributedWriteTransaction()
+                .CreateItem(sharedContainer, new PartitionKey(pk1), id1, new { id = id1, pk = pk1, value = "shared-db" })
+                .CreateItem(dedicatedContainer, new PartitionKey(pk2), id2, new { id = id2, pk = pk2, value = "dedicated-db" })
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.IsTrue(response.IsSuccessStatusCode,
+                $"Cross-database 2PC across mixed throughput models should succeed. Got: {response.StatusCode}");
+            Assert.AreEqual(2, response.Count);
+            Assert.IsTrue(response[0].IsSuccessStatusCode, $"Op[0] should succeed. Got: {response[0].StatusCode}");
+            Assert.IsTrue(response[1].IsSuccessStatusCode, $"Op[1] should succeed. Got: {response[1].StatusCode}");
+
+            response.Dispose();
         }
     }
 }

@@ -328,6 +328,52 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "Status must remain 207 when all operation results are FailedDependency (excluded from promotion).");
         }
 
+        [TestMethod]
+        [Description("A 207 MultiStatus response with a leading FailedDependency (424) skips the 424 marker and promotes the next genuine failure (409).")]
+        public async Task FromResponseMessage_MultiStatus_SkipsFailedDependency_PromotesNextFailure()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 2);
+
+            // index 0 is a FailedDependency (424) cascade marker — excluded; index 1 fails with 409
+            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":{(int)StatusCodes.FailedDependency}}},{{""index"":1,""statusCode"":409}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage((HttpStatusCode)StatusCodes.MultiStatus, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.Conflict, response.StatusCode,
+                "Promotion must skip the leading FailedDependency (424) marker and promote the next genuine failure (409).");
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.AreEqual(2, response.Count);
+        }
+
+        [TestMethod]
+        [Description("A 207 MultiStatus response with a per-op RetryWith (449) followed by NotFound (404) promotes the overall status to 449 (449 is not excluded from promotion).")]
+        public async Task FromResponseMessage_MultiStatus_PromotesRetryWith449()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 2);
+
+            // index 0 fails with 449 RetryWith; index 1 fails with 404 NotFound
+            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":{(int)StatusCodes.RetryWith}}},{{""index"":1,""statusCode"":404}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage((HttpStatusCode)StatusCodes.MultiStatus, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual((HttpStatusCode)StatusCodes.RetryWith, response.StatusCode,
+                "The first failing operation status (449 RetryWith) must be promoted to the overall response status.");
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.AreEqual(2, response.Count);
+        }
+
         // Idempotency token resolution
 
         [DataTestMethod]
@@ -1306,6 +1352,33 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(response.IsSuccessStatusCode);
             Assert.AreEqual(1, response.Count);
             Assert.AreEqual(HttpStatusCode.Created, response[0].StatusCode);
+        }
+
+        [TestMethod]
+        [Description("A seekable stream positioned at EOF is parsed from its current position (the SDK does not rewind seekable streams), so the body reads as empty. On a success status this surfaces as InternalServerError (invalid server response), locking down the no-rewind behavior.")]
+        public async Task FromResponseMessage_SeekableContent_AtPositionEnd_SuccessStatus_ReturnsInternalServerError()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            Assert.IsTrue(responseMessage.Content.CanSeek);
+
+            // Position the seekable stream at EOF. The SDK only buffers/rewinds non-seekable
+            // streams, so a seekable stream is parsed from its current position -> empty read.
+            responseMessage.Content.Seek(0, SeekOrigin.End);
+            Assert.AreEqual(responseMessage.Content.Length, responseMessage.Content.Position);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.InternalServerError, response.StatusCode,
+                "A success status with an empty (EOF) body must surface as InternalServerError because the server contract requires a parseable body on success.");
+            Assert.IsFalse(response.IsSuccessStatusCode);
         }
 
         [TestMethod]

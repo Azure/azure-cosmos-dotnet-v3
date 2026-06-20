@@ -1142,6 +1142,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         [DataRow(5408, DisplayName = "400/5408 MissingIdempotencyToken")]
         [DataRow(5409, DisplayName = "400/5409 InvalidAccountName")]
         [DataRow(5410, DisplayName = "400/5410 InvalidOperation")]
+        [DataRow(5422, DisplayName = "400/5422 RetryOperationsMismatch")]
         public async Task CommitTransaction_DoesNotRetryOnValidationFailure400(int subStatusCode)
         {
             int callCount = 0;
@@ -1160,6 +1161,32 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             {
                 Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
                 Assert.AreEqual(1, callCount, $"Validation failure 400/{subStatusCode} must not be retried.");
+            }
+        }
+
+        [TestMethod]
+        [Description("Verifies that a 452 DtcHlcClockSkewAborted (sub-status 5421) envelope with an empty body is terminal: it falls through the DTx retry classifier (IsRetriable=false for empty bodies) and the outer committer loop must not retry it.")]
+        public async Task CommitTransaction_DoesNotRetryOnClockSkewAbort452()
+        {
+            const int clockSkewAbortStatus = 452;
+            const int clockSkewAbortSubStatus = 5421;
+
+            int callCount = 0;
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            this.SetupProcessResourceOperation(
+                mockContext,
+                () =>
+                {
+                    callCount++;
+                    return Task.FromResult(CreateEmptyResponseMessage((HttpStatusCode)clockSkewAbortStatus, subStatusCode: clockSkewAbortSubStatus));
+                });
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
+
+            using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.AreEqual((HttpStatusCode)clockSkewAbortStatus, response.StatusCode);
+                Assert.AreEqual(1, callCount, "Clock-skew abort 452/5421 is terminal and must not be retried by the outer loop.");
             }
         }
 
