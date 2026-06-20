@@ -572,6 +572,129 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 $"baseline={baselineRetries}, increased={increasedRetries}.");
         }
 
+        /// <summary>
+        /// LIMITS PROBE (live, empirical): scale the fan-out an order of magnitude wider —
+        /// 10 containers × 5 distinct partition keys each = 50 read operations in a single
+        /// distributed read transaction — and ask whether the coordinator's Phase-2 reconciliation
+        /// can still converge within the SDK's hard 10-attempt ceiling
+        /// (<see cref="DistributedTransactionCommitter.MaxIsRetriableRetryCount"/>) when the
+        /// cumulative-retry BUDGET is made effectively unbounded (10 min).
+        ///
+        /// Why this matters: the 5-op fan-out already needs ~8-10 retries / ~2-3 min of coordinator
+        /// backoff to converge to a confirmed snapshot. Since the attempt cap is a const that budget
+        /// inflation can reach but never exceed, a sufficiently wide read could need MORE than 10
+        /// reconciliation passes and would then 408 regardless of budget. This test finds out where
+        /// that wall is for a 50-op / 10-container shape.
+        ///
+        /// This records evidence (200 = converged within the ceiling; 408 = hit the wall) rather than
+        /// asserting a specific outcome, so a live run reveals the true limit without a brittle gate.
+        /// The 10 probe containers live in the test database and are torn down with it in TestCleanup.
+        /// </summary>
+        [TestMethod]
+        public async Task ReadTransaction_TenContainers_FivePartitions_LimitsProbe()
+        {
+            const int containerCount = 10;
+            const int pkPerContainer = 5;
+
+            // Create 10 sibling containers (idempotent; cleaned up with the database in TestCleanup).
+            List<Container> containers = new List<Container>(containerCount);
+            for (int c = 0; c < containerCount; c++)
+            {
+                Container created = (await this.database.CreateContainerIfNotExistsAsync(
+                    new ContainerProperties($"DtxLimitsProbeContainer{c}", PartitionKeyPath))).Container;
+                containers.Add(created);
+            }
+
+            // Seed 5 distinct-PK docs per container (50 docs total) in parallel for setup speed.
+            ToDoActivity[][] seeded = new ToDoActivity[containerCount][];
+            List<Task> seedTasks = new List<Task>(containerCount * pkPerContainer);
+            for (int c = 0; c < containerCount; c++)
+            {
+                seeded[c] = new ToDoActivity[pkPerContainer];
+                int ci = c;
+                for (int p = 0; p < pkPerContainer; p++)
+                {
+                    int pi = p;
+                    seedTasks.Add(Task.Run(async () => seeded[ci][pi] = await this.SeedItemAsync(containers[ci])));
+                }
+            }
+
+            await Task.WhenAll(seedTasks);
+
+            // Build all 50 read ops spanning the 10 containers × 5 partition keys.
+            List<DistributedTransactionOperation> ops =
+                new List<DistributedTransactionOperation>(containerCount * pkPerContainer);
+            int idx = 0;
+            for (int c = 0; c < containerCount; c++)
+            {
+                for (int p = 0; p < pkPerContainer; p++)
+                {
+                    ops.Add(new DistributedTransactionOperation(
+                        operationType: Microsoft.Azure.Documents.OperationType.Read,
+                        operationIndex: idx++,
+                        database: DatabaseId,
+                        container: $"DtxLimitsProbeContainer{c}",
+                        partitionKey: new PartitionKey(seeded[c][p].pk),
+                        id: seeded[c][p].id));
+                }
+            }
+
+            int retries = 0;
+            TimeSpan plannedDelay = TimeSpan.Zero;
+            Func<TimeSpan, CancellationToken, Task> countingRealDelay = async (delay, ct) =>
+            {
+                Interlocked.Increment(ref retries);
+                plannedDelay += delay;
+                await Task.Delay(delay, ct); // faithful real wait against the live coordinator
+            };
+
+            // Effectively-unbounded budget so the only binding constraint is the 10-attempt ceiling.
+            TimeSpan budget = TimeSpan.FromMinutes(10);
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                ops,
+                this.client.ClientContext,
+                Microsoft.Azure.Documents.OperationType.Read,
+                retryBaseDelay: TimeSpan.FromSeconds(1),
+                delayProvider: countingRealDelay,
+                maxCumulativeRetryDelay: budget);
+
+            Stopwatch sw = Stopwatch.StartNew();
+            using DistributedTransactionResponse response = await committer.CommitTransactionAsync(
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+            sw.Stop();
+
+            // Per-op tally is only meaningful on a converged (200) envelope.
+            int perOpOk = 0;
+            int perOpTotal = 0;
+            if (response.StatusCode == HttpStatusCode.OK)
+            {
+                perOpTotal = response.Count;
+                for (int i = 0; i < perOpTotal; i++)
+                {
+                    if (response[i].StatusCode == HttpStatusCode.OK)
+                    {
+                        perOpOk++;
+                    }
+                }
+            }
+
+            Console.WriteLine(
+                $"[LimitsProbe] ops={ops.Count} containers={containerCount} pkPerContainer={pkPerContainer} " +
+                $"budget={budget.TotalMinutes}min status={(int)response.StatusCode} ({response.StatusCode}) " +
+                $"retries={retries} (ceiling={DistributedTransactionCommitter.MaxIsRetriableRetryCount}) " +
+                $"plannedDelay={plannedDelay.TotalSeconds:F1}s wallClock={sw.Elapsed.TotalSeconds:F1}s " +
+                $"perOpOk={perOpOk}/{perOpTotal} " +
+                $"converged={response.StatusCode == HttpStatusCode.OK} " +
+                $"hitAttemptCeiling={retries >= DistributedTransactionCommitter.MaxIsRetriableRetryCount}");
+
+            // Evidence, not a pass/fail gate: a 50-op fan-out either converges within the attempt
+            // ceiling (200) or hits the wall (408) regardless of budget. Both are valid findings.
+            Assert.IsTrue(
+                response.StatusCode == HttpStatusCode.OK || (int)response.StatusCode == 408,
+                $"Limits probe should resolve to 200 (converged) or 408 (hit ceiling). Got: {(int)response.StatusCode}.");
+        }
+
         // ─── Cross-container (xCont) gaps — §1.1.3 ────────────────────────────
 
         [TestMethod]
