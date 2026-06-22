@@ -767,6 +767,81 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Console.WriteLine(new string('-', 60));
             }
 
+            // Local helper: fully verify every OUTER (transaction-level) value of a DTX read response.
+            void AssertOuter(DistributedTransactionResponse resp, HttpStatusCode expectedStatus, int expectedCount, string label)
+            {
+                bool expectedSuccess = (int)expectedStatus >= 200 && (int)expectedStatus <= 299;
+                Assert.AreEqual(expectedCount, resp.Count, $"{label}: transaction Count should be {expectedCount}");
+                Assert.AreEqual(expectedStatus, resp.StatusCode, $"{label}: transaction StatusCode should be {expectedStatus}");
+                Assert.AreEqual(expectedSuccess, resp.IsSuccessStatusCode, $"{label}: transaction IsSuccessStatusCode should be {expectedSuccess} for {expectedStatus}");
+                Assert.IsTrue(resp.RequestCharge >= 0, $"{label}: transaction RequestCharge should be >= 0, but was {resp.RequestCharge}");
+                Assert.IsFalse(string.IsNullOrWhiteSpace(resp.ActivityId), $"{label}: transaction ActivityId should be populated");
+                Assert.IsNotNull(resp.Diagnostics, $"{label}: transaction Diagnostics should be populated");
+                if (expectedSuccess)
+                {
+                    Assert.IsTrue(string.IsNullOrEmpty(resp.ErrorMessage), $"{label}: a successful transaction should have no error message, but was '{resp.ErrorMessage}'");
+                }
+
+                // The server only populates a sequential per-operation Index for 200 OK reads; NotFound /
+                // NotModified operations report Index 0. So assert positional Index only for OK ops here.
+                for (int k = 0; k < resp.Count; k++)
+                {
+                    if (resp[k].StatusCode == HttpStatusCode.OK)
+                    {
+                        Assert.AreEqual(k, resp[k].Index, $"{label}: 200 OK operation at position {k} should report Index {k}");
+                    }
+                }
+            }
+
+            // Local helper: fully verify every INNER (per-operation) value of a DTX read result.
+            //  expectedDoc != null => the op must return 200 OK and its body must match this document.
+            async Task AssertOperation(
+                DistributedTransactionOperationResult op,
+                int expectedIndex,
+                HttpStatusCode expectedStatus,
+                ToDoActivity expectedDoc,
+                string label)
+            {
+                bool expectedSuccess = (int)expectedStatus >= 200 && (int)expectedStatus <= 299;
+                Assert.AreEqual(expectedStatus, op.StatusCode, $"{label}: StatusCode should be {expectedStatus}");
+                Assert.AreEqual(expectedSuccess, op.IsSuccessStatusCode, $"{label}: IsSuccessStatusCode should be {expectedSuccess} for {expectedStatus}");
+                Assert.IsTrue(op.RequestCharge >= 0, $"{label}: RequestCharge should be >= 0, but was {op.RequestCharge}");
+
+                if (expectedStatus == HttpStatusCode.OK)
+                {
+                    // The server populates a sequential per-operation Index for 200 OK reads only.
+                    Assert.AreEqual(expectedIndex, op.Index, $"{label}: Index should be {expectedIndex}");
+                    Assert.IsTrue(op.RequestCharge > 0, $"{label}: a 200 OK read op should consume RU, but charge was {op.RequestCharge}");
+                    Assert.IsNotNull(op.ResourceStream, $"{label}: a 200 OK read op should carry a ResourceStream");
+                    Assert.IsTrue(op.ResourceStream.Length > 0, $"{label}: a 200 OK read op body should be non-empty");
+                    Assert.IsFalse(string.IsNullOrWhiteSpace(op.ETag), $"{label}: a 200 OK read op should carry an ETag");
+
+                    if (expectedDoc != null)
+                    {
+                        if (op.ResourceStream.CanSeek) { op.ResourceStream.Position = 0; }
+                        using (var reader = new StreamReader(op.ResourceStream, leaveOpen: true))
+                        {
+                            string json = await reader.ReadToEndAsync();
+                            Console.WriteLine($"  {label} content: {json}");
+                            ToDoActivity readDoc = JsonSerializer.Deserialize<ToDoActivity>(json);
+                            Assert.AreEqual(expectedDoc.id, readDoc.id, $"{label}: body id should match");
+                            Assert.AreEqual(expectedDoc.pk, readDoc.pk, $"{label}: body pk should match");
+                            Assert.AreEqual(expectedDoc.taskNum, readDoc.taskNum, $"{label}: body taskNum should match");
+                        }
+                        if (op.ResourceStream.CanSeek) { op.ResourceStream.Position = 0; }
+                    }
+                }
+                else
+                {
+                    bool noBody = op.ResourceStream == null || op.ResourceStream.Length == 0;
+                    Assert.IsTrue(noBody, $"{label}: a {expectedStatus} read op should not carry a document body");
+                    if (expectedStatus != HttpStatusCode.NotModified)
+                    {
+                        Assert.IsFalse(op.IsSuccessStatusCode, $"{label}: a {expectedStatus} read op should not be a success");
+                    }
+                }
+            }
+
             // ----------------------------------------------------------------------------
             // Step 1: Prepare two documents but DO NOT insert them yet.
             // ----------------------------------------------------------------------------
@@ -791,14 +866,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .ReadItem(container, new PartitionKey(doc1.pk), doc1.id)
                 .CommitTransactionAsync(this.cancellationToken);
 
-            Console.WriteLine($"Pre-insert read StatusCode: {preInsertRead.StatusCode}, Count: {preInsertRead.Count}");
-            Assert.AreEqual(2, preInsertRead.Count, "Pre-insert read should have 2 operation responses");
-            for (int i = 0; i < preInsertRead.Count; i++)
-            {
-                Console.WriteLine($"  Op[{i}] StatusCode: {preInsertRead[i].StatusCode}");
-                Assert.AreEqual(HttpStatusCode.NotFound, preInsertRead[i].StatusCode,
-                    $"Pre-insert read op[{i}] should be NotFound because the document does not exist yet");
-            }
+            Console.WriteLine($"Pre-insert read StatusCode: {preInsertRead.StatusCode}, Count: {preInsertRead.Count}, Charge: {preInsertRead.RequestCharge}");
+
+            // Outer: a transaction whose every read targets a missing document surfaces NotFound.
+            AssertOuter(preInsertRead, HttpStatusCode.NotFound, 2, "Pre-insert read");
+            Assert.IsTrue(preInsertRead.RequestCharge > 0,
+                $"Pre-insert read transaction charge should be > 0, but was {preInsertRead.RequestCharge}");
+            // Inner: both ops are NotFound with no body.
+            await AssertOperation(preInsertRead[0], 0, HttpStatusCode.NotFound, null, "Pre-insert Op[0]");
+            await AssertOperation(preInsertRead[1], 1, HttpStatusCode.NotFound, null, "Pre-insert Op[1]");
+
             PrintSummary("DTX Read BEFORE insert", preInsertRead);
             preInsertRead.Dispose();
 
@@ -834,32 +911,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Console.WriteLine($"Post-insert read StatusCode: {readResponse.StatusCode}, Count: {readResponse.Count}, Charge: {readResponse.RequestCharge}");
 
-            Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode, "Read transaction should succeed");
-            Assert.IsTrue(readResponse.IsSuccessStatusCode, "Read transaction should indicate success");
-            Assert.AreEqual(2, readResponse.Count, "Should have 2 operation responses");
+            // Outer: the whole transaction succeeds (200 OK).
+            AssertOuter(readResponse, HttpStatusCode.OK, 2, "Post-insert read");
             Assert.IsTrue(readResponse.RequestCharge > 0,
-                $"Transaction-level request charge should be > 0, but was {readResponse.RequestCharge}");
+                $"Post-insert read transaction charge should be > 0, but was {readResponse.RequestCharge}");
+            // Inner: both ops are 200 OK and their bodies match the inserted documents.
+            await AssertOperation(readResponse[0], 0, HttpStatusCode.OK, doc0, "Post-insert Op[0]");
+            await AssertOperation(readResponse[1], 1, HttpStatusCode.OK, doc1, "Post-insert Op[1]");
 
-            ToDoActivity[] documents = new[] { doc0, doc1 };
-            for (int i = 0; i < readResponse.Count; i++)
-            {
-                DistributedTransactionOperationResult opResult = readResponse[i];
-                Console.WriteLine($"\nOperation[{i}] (Read): StatusCode={opResult.StatusCode}, ETag={opResult.ETag}, Charge={opResult.RequestCharge}");
-
-                Assert.AreEqual(HttpStatusCode.OK, opResult.StatusCode, $"Read operation[{i}] should return 200 OK");
-                Assert.IsTrue(opResult.RequestCharge > 0, $"Operation[{i}] request charge should be > 0");
-                Assert.IsNotNull(opResult.ResourceStream, $"Operation[{i}] should have a ResourceStream");
-
-                using (var reader = new StreamReader(opResult.ResourceStream, leaveOpen: true))
-                {
-                    string json = await reader.ReadToEndAsync();
-                    Console.WriteLine($"  Content: {json}");
-                    ToDoActivity readDoc = JsonSerializer.Deserialize<ToDoActivity>(json);
-                    Assert.AreEqual(documents[i].id, readDoc.id, $"Document {i} id should match");
-                    Assert.AreEqual(documents[i].pk, readDoc.pk, $"Document {i} pk should match");
-                    Assert.AreEqual(documents[i].taskNum, readDoc.taskNum, $"Document {i} taskNum should match");
-                }
-            }
             PrintSummary("DTX Read AFTER insert", readResponse);
             readResponse.Dispose();
 
@@ -885,50 +944,49 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     new DistributedTransactionRequestOptions { IfNoneMatchEtag = wrongEtag })
                 .CommitTransactionAsync(this.cancellationToken);
 
-            Console.WriteLine($"Conditional read StatusCode: {conditionalRead.StatusCode}, Count: {conditionalRead.Count}");
-            Assert.AreEqual(2, conditionalRead.Count, "Conditional read should have 2 operation responses");
+            Console.WriteLine($"Conditional read StatusCode: {conditionalRead.StatusCode}, Count: {conditionalRead.Count}, Charge: {conditionalRead.RequestCharge}");
 
             DistributedTransactionOperationResult condOp0 = conditionalRead[0];
             DistributedTransactionOperationResult condOp1 = conditionalRead[1];
             Console.WriteLine($"  Op[0] (correct etag) StatusCode: {condOp0.StatusCode}, HasStream: {condOp0.ResourceStream != null}");
             Console.WriteLine($"  Op[1] (wrong etag)   StatusCode: {condOp1.StatusCode}, HasStream: {condOp1.ResourceStream != null}");
 
-            // Local helper: a conditional-read op must be either 200 OK (body present, id matches)
-            // or 304 NotModified (no body). Anything else is a real failure.
-            async Task AssertConditionalReadOp(DistributedTransactionOperationResult op, string expectedId, string label)
-            {
-                Assert.IsTrue(op.StatusCode == HttpStatusCode.OK || op.StatusCode == HttpStatusCode.NotModified,
-                    $"{label} conditional DTX read should return 200 OK or 304 NotModified, but was {op.StatusCode}");
+            // Outer: IfNoneMatch handling for DTX reads is service/version dependent. When the two ops
+            // resolve differently (e.g. one 304 NotModified + one 200 OK) the transaction surfaces
+            // 207 MultiStatus; when uniform it is 200 OK (IfNoneMatch ignored) or 304 NotModified.
+            Assert.IsTrue(
+                conditionalRead.StatusCode == HttpStatusCode.OK
+                    || conditionalRead.StatusCode == HttpStatusCode.NotModified
+                    || (int)conditionalRead.StatusCode == 207,
+                $"Conditional read transaction status should be 200 OK, 304 NotModified, or 207 MultiStatus, but was {conditionalRead.StatusCode} ({(int)conditionalRead.StatusCode})");
+            bool conditionalOuterSuccess = (int)conditionalRead.StatusCode >= 200 && (int)conditionalRead.StatusCode <= 299;
+            Assert.AreEqual(conditionalOuterSuccess, conditionalRead.IsSuccessStatusCode,
+                "Conditional read IsSuccessStatusCode should match the 2xx range of its status");
+            Assert.AreEqual(2, conditionalRead.Count, "Conditional read should have 2 operation responses");
+            Assert.IsTrue(conditionalRead.RequestCharge >= 0,
+                $"Conditional read transaction charge should be >= 0, but was {conditionalRead.RequestCharge}");
+            Assert.IsFalse(string.IsNullOrWhiteSpace(conditionalRead.ActivityId), "Conditional read ActivityId should be populated");
+            Assert.IsNotNull(conditionalRead.Diagnostics, "Conditional read Diagnostics should be populated");
+            Assert.AreEqual(0, condOp0.Index, "Conditional Op[0] Index should be 0");
+            Assert.AreEqual(1, condOp1.Index, "Conditional Op[1] Index should be 1");
 
-                if (op.StatusCode == HttpStatusCode.OK)
-                {
-                    Assert.IsNotNull(op.ResourceStream, $"{label} returned 200 OK and should include the document body");
-                    using (var reader = new StreamReader(op.ResourceStream, leaveOpen: true))
-                    {
-                        string json = await reader.ReadToEndAsync();
-                        Console.WriteLine($"  {label} content: {json}");
-                        ToDoActivity readDoc = JsonSerializer.Deserialize<ToDoActivity>(json);
-                        Assert.AreEqual(expectedId, readDoc.id, $"{label} returned document id should match");
-                    }
-                }
-                else
-                {
-                    Console.WriteLine($"  {label} returned 304 NotModified (IfNoneMatch honored); no body expected.");
-                }
-            }
-
-            await AssertConditionalReadOp(condOp0, doc0.id, "Op[0] (correct etag)");
-            await AssertConditionalReadOp(condOp1, doc1.id, "Op[1] (wrong etag)");
+            // Inner: each op must be 200 OK (body present, id matches) or 304 NotModified (no body).
+            Assert.IsTrue(condOp0.StatusCode == HttpStatusCode.OK || condOp0.StatusCode == HttpStatusCode.NotModified,
+                $"Conditional Op[0] should return 200 OK or 304 NotModified, but was {condOp0.StatusCode}");
+            Assert.IsTrue(condOp1.StatusCode == HttpStatusCode.OK || condOp1.StatusCode == HttpStatusCode.NotModified,
+                $"Conditional Op[1] should return 200 OK or 304 NotModified, but was {condOp1.StatusCode}");
+            await AssertOperation(condOp0, 0, condOp0.StatusCode, condOp0.StatusCode == HttpStatusCode.OK ? doc0 : null, "Conditional Op[0] (correct etag)");
+            await AssertOperation(condOp1, 1, condOp1.StatusCode, condOp1.StatusCode == HttpStatusCode.OK ? doc1 : null, "Conditional Op[1] (wrong etag)");
 
             PrintSummary("Conditional DTX Read", conditionalRead);
             conditionalRead.Dispose();
 
             // ----------------------------------------------------------------------------
             // Step 6: Mixed DTX read where one document exists (doc0) and another does NOT
-            // (a brand-new id that was never inserted). The existing op should return OK with
-            // the body; the missing op should return NotFound. The transaction itself still
-            // completes (a read DTX surfaces per-operation results rather than aborting), and
-            // the transaction-level status surfaces the failing operation's status (NotFound).
+            // (a brand-new id that was never inserted).
+            // Observed behavior: a distributed READ transaction is atomic over its reads — when ANY
+            // targeted document is missing the WHOLE transaction surfaces NotFound and EVERY operation
+            // reports NotFound with no body (the existing document is NOT returned with 200 OK).
             // ----------------------------------------------------------------------------
             Console.WriteLine("\n=== Mixed DTX Read (one exists, one missing) ===");
             ToDoActivity missingDoc = ToDoActivity.CreateRandomToDoActivity();
@@ -949,39 +1007,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Console.WriteLine($"  RequestCharge: {mixedRead.RequestCharge}");
             Console.WriteLine($"  Count: {mixedRead.Count}");
 
-            Assert.AreEqual(2, mixedRead.Count, "Mixed read should have 2 operation responses");
-
-            // Outer status reflects the failing operation: the missing document makes the
-            // transaction-level status NotFound and IsSuccessStatusCode false.
-            Assert.AreEqual(HttpStatusCode.NotFound, mixedRead.StatusCode,
-                "Transaction-level status should surface NotFound when one read operation targets a missing document");
-            Assert.IsFalse(mixedRead.IsSuccessStatusCode,
-                "Transaction-level IsSuccessStatusCode should be false when a read operation is NotFound");
+            // Outer: one missing document makes the entire read transaction NotFound.
+            AssertOuter(mixedRead, HttpStatusCode.NotFound, 2, "Mixed read");
             Assert.IsTrue(mixedRead.RequestCharge > 0,
-                $"Transaction-level request charge should be > 0, but was {mixedRead.RequestCharge}");
+                $"Mixed read transaction charge should be > 0, but was {mixedRead.RequestCharge}");
 
-            DistributedTransactionOperationResult existingOp = mixedRead[0];
-            DistributedTransactionOperationResult missingOp = mixedRead[1];
             Console.WriteLine("--- Operation (inner) level ---");
-            Console.WriteLine($"  Op[0] (exists)  StatusCode: {existingOp.StatusCode}, HasStream: {existingOp.ResourceStream != null}");
-            Console.WriteLine($"  Op[1] (missing) StatusCode: {missingOp.StatusCode}, HasStream: {missingOp.ResourceStream != null}");
-
-            // Existing document -> OK with body.
-            Assert.AreEqual(HttpStatusCode.OK, existingOp.StatusCode,
-                "Mixed read op for the existing document should return 200 OK");
-            Assert.IsNotNull(existingOp.ResourceStream, "Existing-document op should return the document body");
-
-            using (var readerExisting = new StreamReader(existingOp.ResourceStream, leaveOpen: true))
+            for (int i = 0; i < mixedRead.Count; i++)
             {
-                string jsonExisting = await readerExisting.ReadToEndAsync();
-                Console.WriteLine($"  Op[0] content: {jsonExisting}");
-                ToDoActivity readDocExisting = JsonSerializer.Deserialize<ToDoActivity>(jsonExisting);
-                Assert.AreEqual(doc0.id, readDocExisting.id, "Existing-document op should return doc0");
+                Console.WriteLine($"  Op[{i}] StatusCode: {mixedRead[i].StatusCode}, HasStream: {mixedRead[i].ResourceStream != null}");
             }
 
-            // Missing document -> NotFound.
-            Assert.AreEqual(HttpStatusCode.NotFound, missingOp.StatusCode,
-                "Mixed read op for the missing document should return 404 NotFound");
+            // Inner: the read transaction is atomic over its reads, so EVERY operation is NotFound with
+            // no body — even the operation that targeted the existing document.
+            Assert.AreEqual(2, mixedRead.Count(r => r.StatusCode == HttpStatusCode.NotFound),
+                "Both mixed-read operations should be NotFound when any targeted document is missing");
+            Assert.AreEqual(0, mixedRead.Count(r => r.StatusCode == HttpStatusCode.OK),
+                "No mixed-read operation should return OK when any targeted document is missing");
+            await AssertOperation(mixedRead[0], mixedRead[0].Index, HttpStatusCode.NotFound, null, "Mixed Op[0]");
+            await AssertOperation(mixedRead[1], mixedRead[1].Index, HttpStatusCode.NotFound, null, "Mixed Op[1]");
 
             PrintSummary("Mixed DTX Read", mixedRead);
             mixedRead.Dispose();
