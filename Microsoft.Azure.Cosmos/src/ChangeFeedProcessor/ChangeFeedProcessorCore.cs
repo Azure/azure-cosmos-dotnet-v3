@@ -83,9 +83,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
                 // Determine whether we need to apply the StartTime back-off compensation
                 // introduced by PR #5617 to avoid missing writes during async lease acquisition.
-                // AllVersionsAndDeletes (AVAD) is exempt because AVAD uses LSN-based continuation
-                // (IfNoneMatch: *) rather than RFC1123 IfModifiedSince, so the seconds-precision
-                // rounding issue does not apply. See PR #5825 for details.
+                // AllVersionsAndDeletes (AVAD) is exempt for two related reasons:
+                //   1. AVAD uses LSN-based continuation (IfNoneMatch: *) rather than RFC1123
+                //      IfModifiedSince, so the seconds-precision rounding issue does not apply.
+                //   2. The AVAD endpoint rejects an explicit StartTime on a null-continuation
+                //      lease with HTTP 400 (#5846), which was the regression introduced by #5617.
+                // See PRs #5825 and #5852 for details. Do not drop the mode guard without
+                // re-validating both #5268 and #5846.
                 bool shouldAnchorStartTime =
                     !this.changeFeedProcessorOptions.StartFromBeginning
                     && this.changeFeedProcessorOptions.StartTime == null

@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Authorization
 
         public TokenRequestContext GetTokenRequestContext()
         {
-            return new TokenRequestContext(new[] { this.currentScope });
+            return new TokenRequestContext(new[] { this.currentScope }, isCaeEnabled: true);
         }
 
         public bool TryFallback(Exception exception)
