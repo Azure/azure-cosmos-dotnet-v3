@@ -81,6 +81,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return Cosmos.ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", string.Empty);
         }
 
+        /// <summary>
+        /// Reads the endpoint + master key for a live distributed-transaction (DTx) enabled account
+        /// from the COSMOS_DTX_ENDPOINT / COSMOS_DTX_KEY environment variables. Returns empty strings
+        /// when unset so callers can skip (Assert.Inconclusive) rather than fail on environments that
+        /// do not have the account secret configured (e.g. fork PRs, local runs).
+        /// </summary>
+        internal static (string endpoint, string key) GetDistributedTransactionAccountInfo()
+        {
+            string endpoint = Cosmos.ConfigurationManager.GetEnvironmentVariable<string>("COSMOS_DTX_ENDPOINT", string.Empty);
+            string key = Cosmos.ConfigurationManager.GetEnvironmentVariable<string>("COSMOS_DTX_KEY", string.Empty);
+            return (endpoint, key);
+        }
+
         internal static CosmosClientBuilder GetDefaultConfiguration(
             bool useCustomSeralizer = true,
             bool validatePartitionKeyRangeCalls = false,
