@@ -255,8 +255,99 @@ namespace MetadataHedgingBenchmark
                 count: 2000, maxConcurrency: 2000, slowFraction: 1.0,
                 eligible: true);
 
+            Console.WriteLine();
+
+            // Scenario 4 (warm-path verification) — client-lifetime workload where
+            // each cache key is read many times: one cold-start read + recurring
+            // refresh reads (410/Gone, forceRefresh, splits). This is the genuinely
+            // NEW exposure of opening hedging to the warm path: refreshes RECUR, so
+            // the rate of potential hedges over a client's life is higher than
+            // cold-start-only. We contrast the two eligibility policies on the SAME
+            // workload to quantify exactly what the warm path costs.
+            await RunWarmComparisonAsync(
+                "S4 Lifetime churn, 10% slow refreshes",
+                keys: 500, readsPerKey: 10, slowRefreshFraction: 0.10, maxConcurrency: 8);
+
+            await RunWarmComparisonAsync(
+                "S5 Region brownout, 50% slow refreshes",
+                keys: 500, readsPerKey: 10, slowRefreshFraction: 0.50, maxConcurrency: 8);
+
             Console.WriteLine(new string('-', 118));
             Console.WriteLine("Done.");
+        }
+
+        /// <summary>
+        /// Runs the SAME lifetime workload (per key: 1 cold read + N-1 refresh reads)
+        /// twice — once under cold-start-only eligibility (refreshes never hedge) and
+        /// once under the broadened warm-enabled eligibility (slow refreshes hedge) —
+        /// so the warm-path delta (extra secondary requests, refresh-tail latency) is
+        /// directly observable. Cold reads are healthy (fast primary) in both runs.
+        /// </summary>
+        private static async Task RunWarmComparisonAsync(
+            string name, int keys, int readsPerKey, double slowRefreshFraction, int maxConcurrency)
+        {
+            (long secCold, double p99Cold, long hedgeCold, int maxInflCold) =
+                await RunLifetimeAsync(keys, readsPerKey, slowRefreshFraction, maxConcurrency, warmEligible: false);
+            (long secWarm, double p99Warm, long hedgeWarm, int maxInflWarm) =
+                await RunLifetimeAsync(keys, readsPerKey, slowRefreshFraction, maxConcurrency, warmEligible: true);
+
+            int refreshReads = keys * (readsPerKey - 1);
+            Console.WriteLine(
+                $"{name,-40} | COLD-ONLY: secondarySends {secCold,5}  refresh-p99 {p99Cold,7:F1}ms" +
+                $"   ||   WARM-ON: secondarySends {secWarm,5}  refresh-p99 {p99Warm,7:F1}ms  " +
+                $"maxSecondaryInFlight {maxInflWarm,3} (cap {BudgetCapacity}) | " +
+                $"extra secondary {secWarm - secCold,5} over {refreshReads,5} refreshes");
+        }
+
+        private static async Task<(long secondarySends, double refreshP99, long hedgeFires, int maxInflight)> RunLifetimeAsync(
+            int keys, int readsPerKey, double slowRefreshFraction, int maxConcurrency, bool warmEligible)
+        {
+            HedgeSimulator sim = new HedgeSimulator(Threshold, BudgetCapacity);
+            ConcurrentBag<double> refreshLatencies = new ConcurrentBag<double>();
+            int slowEvery = slowRefreshFraction <= 0 ? int.MaxValue : Math.Max(1, (int)Math.Round(1.0 / slowRefreshFraction));
+
+            using SemaphoreSlim gate = new SemaphoreSlim(maxConcurrency, maxConcurrency);
+            List<Task> tasks = new List<Task>(keys * readsPerKey);
+            int refreshIndex = 0;
+
+            for (int k = 0; k < keys; k++)
+            {
+                for (int r = 0; r < readsPerKey; r++)
+                {
+                    bool isCold = r == 0;
+                    bool isSlow = !isCold && (Interlocked.Increment(ref refreshIndex) % slowEvery == 0);
+
+                    // Cold reads are always eligible; refresh reads are eligible only
+                    // under the warm-enabled policy.
+                    OperationSpec op = new OperationSpec(
+                        eligible: isCold || warmEligible,
+                        primaryLatency: isSlow ? SlowPrimary : FastPrimary,
+                        secondaryLatency: HealthySecondary,
+                        primaryAcceptable: true);
+
+                    await gate.WaitAsync().ConfigureAwait(false);
+                    bool recordRefresh = !isCold;
+                    tasks.Add(Task.Run(async () =>
+                    {
+                        try
+                        {
+                            double ms = await sim.ExecuteAsync(op).ConfigureAwait(false);
+                            if (recordRefresh)
+                            {
+                                refreshLatencies.Add(ms);
+                            }
+                        }
+                        finally
+                        {
+                            gate.Release();
+                        }
+                    }));
+                }
+            }
+
+            await Task.WhenAll(tasks).ConfigureAwait(false);
+            double[] sorted = refreshLatencies.OrderBy(x => x).ToArray();
+            return (sim.SecondarySends, Percentile(sorted, 99), sim.HedgeFires, sim.MaxSecondaryInFlight);
         }
 
         private static async Task RunScenarioAsync(
