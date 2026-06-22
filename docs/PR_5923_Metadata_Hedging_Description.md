@@ -138,6 +138,37 @@ design) bound the fan-out:
   attempts at the preferred-region count.
 - **Single-region / excluded-region** reads never hedge.
 
+## Warm-path cost — what opening to refresh reads actually costs
+
+The genuinely new exposure of broadening beyond cold start is that **refresh reads
+recur** over a client's lifetime (410/Gone, forceRefresh, partition splits),
+whereas a cold-start read happens once per cache key. This was verified with a
+client-lifetime simulation (per cache key: 1 cold read + 9 recurring refreshes)
+run under both eligibility policies — see
+[`Microsoft.Azure.Cosmos.Samples/Tools/MetadataHedgingBenchmark`](https://github.com/Azure/azure-cosmos-dotnet-v3/tree/nalutripician/metadata-hedging-benchmark)
+(scenarios S4/S5).
+
+There **is** a quantifiable cost, and it is bounded:
+
+| Scenario | Cold-only secondary reqs | Warm-on secondary reqs | Extra (over 4500 refreshes) | Max secondary in-flight | Refresh p99 cold→warm |
+| --- | --- | --- | --- | --- | --- |
+| S4 — 10 % slow refreshes (normal churn) | 0 | 450 | **+450** (= slow-refresh count) | 1 (cap 8) | 310.7 → 171.9 ms |
+| S5 — 50 % slow refreshes (region brownout) | 0 | 2250 | **+2250** (= slow-refresh count) | 4 (cap 8) | 313.5 → 179.1 ms |
+
+- The extra secondary requests equal the **slow-refresh count exactly** — one hedge
+  per slow refresh, **zero** for healthy refreshes. The cost scales with how
+  degraded the primary is, not with total refresh traffic.
+- It is **still hard-bounded by the per-client budget** — even at a 50 %
+  slow-refresh brownout, concurrent secondary requests peak at **4 ≤ 8 (cap)**. The
+  warm path cannot exceed the ceiling that already bounds the cold path.
+- It buys the intended benefit: refresh-tail p99 drops **~44–45 %**, the same win
+  cold start gets, now extended to refresh reads.
+
+**Bottom line:** opening to the warm path is not free — it adds secondary-region
+requests proportional to the slow-refresh rate — but the cost is structurally
+capped by the existing concurrency budget, is zero when the primary is healthy,
+and is paid only to recover a real refresh-tail latency regression.
+
 ## Observability
 
 - New `Azure.Cosmos.Client.MetadataHedging` Meter
