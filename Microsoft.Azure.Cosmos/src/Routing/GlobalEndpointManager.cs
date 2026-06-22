@@ -43,6 +43,9 @@ namespace Microsoft.Azure.Cosmos.Routing
         private bool isBackgroundAccountRefreshActive = false;
         private DateTime LastBackgroundRefreshUtc = DateTime.MinValue;
 
+        // Drives the thin client HTTP/2 connectivity probe.
+        private EndpointProbeClient? thinClientProbeClient;
+
         /// <summary>
         /// Event that is raised when PPAF (Per Partition Automatic Failover) enablement status changes
         /// </summary>
@@ -113,6 +116,60 @@ namespace Microsoft.Azure.Cosmos.Routing
         public bool HasThinClientReadLocations => this.locationCache.HasThinClientReadLocations;
 
         public bool HasThinClientWriteLocations => this.locationCache.HasThinClientWriteLocations;
+
+        /// <summary>
+        /// Returns true when has been confirmed healthy by the
+        /// connectivity probe, or when no probe client is wired. An endpoint reports
+        /// unhealthy until its first successful probe, so the routing site uses the proxy only for healthy
+        /// regions and Gateway V1 otherwise.
+        /// </summary>
+        public bool IsProxyEndpointHealthy(Uri thinClientEndpoint)
+        {
+            EndpointProbeClient? probeClient = this.thinClientProbeClient;
+            return probeClient == null || probeClient.IsEndpointHealthy(thinClientEndpoint);
+        }
+
+        /// <summary>
+        /// True only when every advertised thin client READ regional endpoint is probe-healthy. Used by the
+        /// failover walk, which routes a whole read-endpoint list rather than a single endpoint. 
+        /// </summary>
+        public bool AreAllThinClientReadEndpointsHealthy
+        {
+            get
+            {
+                EndpointProbeClient? probeClient = this.thinClientProbeClient;
+                if (probeClient == null)
+                {
+                    return true;
+                }
+
+                ReadOnlyCollection<Uri> readEndpoints = this.ThinClientReadEndpoints;
+                if (readEndpoints == null || readEndpoints.Count == 0)
+                {
+                    return false;
+                }
+
+                foreach (Uri endpoint in readEndpoints)
+                {
+                    if (!probeClient.IsEndpointHealthy(endpoint))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Computes the thin client regional endpoint for <paramref name="request"/> without pinning it onto the
+        /// request context, so the routing layer can evaluate <see cref="IsProxyEndpointHealthy"/> before
+        /// deciding whether to pin the thin client endpoint or fall back to the gateway (service) endpoint.
+        /// </summary>
+        public Uri GetThinClientEndpointCandidate(DocumentServiceRequest request)
+        {
+            return this.locationCache.GetThinClientEndpointCandidate(request, request.IsReadOnlyRequest);
+        }
 
         public int PreferredLocationCount
         {
@@ -541,6 +598,9 @@ namespace Microsoft.Azure.Cosmos.Routing
         public void Dispose()
         {
             this.connectionPolicy.PreferenceChanged -= this.OnPreferenceChanged;
+
+            this.thinClientProbeClient?.Dispose();
+
             if (!this.cancellationTokenSource.IsCancellationRequested)
             {
                 try
@@ -620,6 +680,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             GlobalEndpointManager.ParseThinClientLocationsFromAdditionalProperties(databaseAccount);
 
             this.locationCache.OnDatabaseAccountRead(databaseAccount);
+
+            _ = this.RunThinClientProbeCycleAsync();
 
             if (this.isBackgroundAccountRefreshActive)
             {
@@ -785,6 +847,9 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 this.locationCache.OnDatabaseAccountRead(accountProperties);
 
+                // Probe the thin client regional endpoints after every account-topology refresh so the
+                // routing gate reflects the latest proxy connectivity health.
+                await this.RunThinClientProbeCycleAsync();
             }
             catch (Exception ex)
             {
@@ -843,6 +908,62 @@ namespace Microsoft.Azure.Cosmos.Routing
         public Uri ResolveThinClientEndpoint(DocumentServiceRequest request)
         {
             return this.locationCache.ResolveThinClientEndpoint(request, request.IsReadOnlyRequest);
+        }
+
+        /// <summary>
+        /// Wires the thin client HTTP/2 <see cref="CosmosHttpClient"/> used by the connectivity probe. Must run
+        /// before the first topology refresh. Never trips client construction: if the probe client cannot be
+        /// created it is left null and <see cref="IsProxyEndpointHealthy"/> stays optimistic.
+        /// </summary>
+        public void SetThinClientHttpClient(CosmosHttpClient httpClient)
+        {
+            if (httpClient == null)
+            {
+                return;
+            }
+
+            try
+            {
+                this.thinClientProbeClient ??= new EndpointProbeClient(httpClient);
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceWarning(
+                    "Failed to wire thin client connectivity-probe client; thin client routing will proceed without probe gating. Exception: {0}",
+                    ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Runs one connectivity-probe cycle against the thin client regional endpoints from the most recent
+        /// topology refresh, populating the per-endpoint success cache. No-op when no probe client is wired or
+        /// the account advertises no thin client read locations. Only endpoints not yet cached healthy are
+        /// probed. Never throws; probe failures must not fail topology refresh.
+        /// </summary>
+        public async Task RunThinClientProbeCycleAsync()
+        {
+            EndpointProbeClient? probeClient = this.thinClientProbeClient;
+            if (probeClient == null || !this.locationCache.HasThinClientReadLocations)
+            {
+                return;
+            }
+
+            try
+            {
+                HashSet<Uri> endpoints = this.locationCache.GetThinClientRegionalEndpoints();
+                if (endpoints.Count == 0)
+                {
+                    return;
+                }
+
+                await probeClient.RunProbeCycleAsync(endpoints, this.cancellationTokenSource.Token);
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceWarning(
+                    "Thin client probe cycle threw; ignoring to protect topology refresh. Exception: {0}",
+                    ex.Message);
+            }
         }
     }
 }

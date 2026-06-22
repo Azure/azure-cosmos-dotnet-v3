@@ -235,6 +235,15 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Gets or sets the effective flag indicating whether HTTP/2 is enabled for the client.
+        /// </summary>
+        internal bool EnableHttp2
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
         /// Gets the default connection policy used to connect to the Azure Cosmos DB service.
         /// </summary>
         /// <value>

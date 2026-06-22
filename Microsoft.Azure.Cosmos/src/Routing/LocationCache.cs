@@ -970,14 +970,29 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return request.RequestContext.LocationEndpointToRoute;
             }
 
+            Uri chosenEndpoint = this.GetThinClientEndpointCandidate(request, isReadRequest);
+
+            request.RequestContext.RouteToLocation(chosenEndpoint);
+            return chosenEndpoint;
+        }
+
+        /// <summary>
+        /// Computes the thin client regional endpoint that would be chosen for <paramref name="request"/>
+        /// <b>without</b> pinning it onto the request context, so the routing layer can evaluate the candidate
+        /// region's probe health before deciding whether to pin the thin client endpoint or fall back to gateway.
+        /// </summary>
+        internal Uri GetThinClientEndpointCandidate(DocumentServiceRequest request, bool isReadRequest)
+        {
+            if (request.RequestContext != null && request.RequestContext.LocationEndpointToRoute != null)
+            {
+                return request.RequestContext.LocationEndpointToRoute;
+            }
+
             DatabaseAccountLocationsInfo snapshot = this.locationInfo;
             ReadOnlyCollection<Uri> endpoints = this.GetApplicableThinClientEndpoints(request, isReadRequest, snapshot);
 
             int locationIndex = request.RequestContext.LocationIndexToRoute.GetValueOrDefault(0);
-            Uri chosenEndpoint = endpoints[locationIndex % endpoints.Count];
-
-            request.RequestContext.RouteToLocation(chosenEndpoint);
-            return chosenEndpoint;
+            return endpoints[locationIndex % endpoints.Count];
         }
 
         /// <summary>
@@ -1012,6 +1027,42 @@ namespace Microsoft.Azure.Cosmos.Routing
                 snapshot.EffectivePreferredLocations,
                 fallbackEndpoint,
                 excludeRegions);
+        }
+
+        /// <summary>
+        /// Returns the set of thin client regional endpoints (read and write) from the most recent
+        /// topology refresh, used by the connectivity probe. 
+        /// </summary>
+        internal HashSet<Uri> GetThinClientRegionalEndpoints()
+        {
+            DatabaseAccountLocationsInfo snapshot = this.locationInfo;
+            HashSet<Uri> endpoints = new HashSet<Uri>();
+
+            LocationCache.CollectThinClientEndpointsBestEffort(
+                snapshot.AvailableReadLocations, snapshot.ThinClientReadEndpointByLocation, endpoints);
+            LocationCache.CollectThinClientEndpointsBestEffort(
+                snapshot.AvailableWriteLocations, snapshot.ThinClientWriteEndpointByLocation, endpoints);
+
+            return endpoints;
+        }
+
+        private static void CollectThinClientEndpointsBestEffort(
+            ReadOnlyCollection<string> regions,
+            ReadOnlyDictionary<string, Uri> thinClientEndpointByLocation,
+            HashSet<Uri> sink)
+        {
+            if (regions == null || regions.Count == 0 || thinClientEndpointByLocation == null)
+            {
+                return;
+            }
+
+            foreach (string region in regions)
+            {
+                if (thinClientEndpointByLocation.TryGetValue(region, out Uri endpoint) && endpoint != null)
+                {
+                    sink.Add(endpoint);
+                }
+            }
         }
 
         private void SetServicePointConnectionLimit(Uri endpoint)

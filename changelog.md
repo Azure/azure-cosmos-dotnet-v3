@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+- [TBD](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/TBD) ThinClient: Adds an HTTP/2 connectivity probe (`POST /connectivity-probe`) that validates each discovered thin client (proxy) regional endpoint over HTTP/2. After every account topology refresh the SDK probes any newly discovered regional endpoint it has not already confirmed reachable, retrying a transient probe failure a few times before treating that region as unhealthy for the cycle, and caches each success per endpoint so a known-good region is never re-probed. Data-plane traffic routes through the thin client proxy only for regions whose endpoint has passed its probe; any region that has not yet passed (un-probed, or unable to negotiate HTTP/2) transparently uses the standard gateway for that region's traffic, with no client restart required. Thin client mode is now enabled by default (opt-out) and proxy routing additionally requires opting in to HTTP/2 via the new preview `CosmosClientOptions.EnableHttp2` option.
+
 #### Breaking Changes
 
 #### Bugs Fixed
