@@ -61,9 +61,10 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// </summary>
         /// <remarks>
         /// First argument is the latest <c>EnablePartitionLevelFailover</c> value observed from the
-        /// Gateway (falls back to the existing connection-policy value when the property is absent).
-        /// Second argument is the latest <c>disableCrossRegionalHedging</c> value (false when absent
-        /// from the Gateway response).
+        /// Gateway (falls back to <see cref="lastKnownEnablePartitionLevelFailover"/> when the property
+        /// is absent, so a dropped property preserves the previously-honored value rather than implying
+        /// a transition). Second argument is the latest <c>disableCrossRegionalHedging</c> value (falls
+        /// back to <see cref="lastKnownDisableCrossRegionalHedging"/> when absent from the Gateway response).
         /// </remarks>
         internal event Action<bool, bool>? OnEnablePartitionLevelFailoverConfigChanged;
 
