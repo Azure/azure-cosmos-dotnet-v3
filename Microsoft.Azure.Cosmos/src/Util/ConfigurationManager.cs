@@ -158,6 +158,10 @@ namespace Microsoft.Azure.Cosmos
         /// detached metadata-read operation in <see cref="MetadataDetachedExecutor"/>. This is a defensive
         /// upper bound on background work in the metadata-cache path; it is independent of the caller's
         /// CancellationToken. Default is 300 seconds (5 minutes).
+        ///
+        /// Intentionally an environment variable rather than a <c>CosmosClientOptions</c> setting: this
+        /// is an internal defensive backstop (not an expected tuning knob for application code), so it is
+        /// kept off the public client surface and configurable only by operators at the host level.
         /// </summary>
         internal static readonly string MetadataDetachedHardDeadlineInSeconds = "AZURE_COSMOS_METADATA_DETACHED_HARD_DEADLINE_SECONDS";
 
@@ -173,9 +177,8 @@ namespace Microsoft.Azure.Cosmos
         /// <c>ClientRetryPolicy.RetryIntervalInMS = 1000 ms</c> per failover. 300 s covers
         /// the common-case multi-region failover with margin. This is NOT a tight bound on
         /// <c>ClientRetryPolicy.MaxRetryCount = 120</c> — pathological failover ping-pong is
-        /// bounded by <see cref="MetadataDetachedExecutor.MaxAttemptsHardCap"/> and by the
-        /// policy's own counter; the time deadline targets realistic failover duration,
-        /// not the theoretical worst case.
+        /// bounded by the policy's own retry counter, and the time deadline targets realistic
+        /// failover duration, not the theoretical worst case.
         /// Note: account reads via <c>GatewayAccountReader</c> use the slower
         /// <c>HttpTimeoutPolicyControlPlaneRead</c> ladder (5+10+20 = 35 s/region) instead,
         /// but the executor does not wrap that path today.
@@ -310,6 +313,13 @@ namespace Microsoft.Azure.Cosmos
             // field docs) but emit a one-time warning so the clamp is visible in diagnostics
             // instead of being applied silently. The flag keeps the warning off the hot path
             // after the first occurrence.
+            //
+            // The guard is process-static (not per-client) by design: the env var is a single
+            // host-level setting, so a single warning per process is the correct granularity. In
+            // a multi-client host where a second client supplies a different out-of-range value,
+            // only the first clamp warns; the clamp itself still applies to every client. The
+            // live-fan-out counter on MetadataDetachedExecutor is likewise process-global for the
+            // same reason (one host-wide signal).
             if (clamped != seconds
                 && Interlocked.CompareExchange(ref metadataDetachedHardDeadlineClampWarned, 1, 0) == 0)
             {

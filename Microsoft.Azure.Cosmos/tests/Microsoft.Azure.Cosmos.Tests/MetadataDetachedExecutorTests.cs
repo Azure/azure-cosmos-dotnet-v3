@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Diagnostics;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -290,7 +291,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         [TestMethod]
         [Owner("ntripician")]
-        public async Task ExecuteAsync_PolicyThrows_SurfacesOriginalException()
+        public async Task ExecuteAsync_PolicyThrows_SurfacesPolicyException()
         {
             DocumentClientException original = new DocumentClientException(
                 "transient",
@@ -302,13 +303,16 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Setup(p => p.ShouldRetryAsync(It.IsAny<Exception>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new InvalidOperationException("policy crashed"));
 
-            DocumentClientException thrown = await Assert.ThrowsExceptionAsync<DocumentClientException>(
+            // The collection-cache path now drives the canonical BackoffRetryUtility on the
+            // detached token. When the retry policy itself throws, BackoffRetryUtility lets
+            // that exception propagate (it does not swallow it in favour of the operation
+            // exception). Real ClientRetryPolicy instances do not throw; this pins the
+            // canonical-utility behaviour for the defensive case.
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(
                 () => MetadataDetachedExecutor.ExecuteAsync<int>(
                     (_) => throw original,
                     policy.Object,
                     CancellationToken.None));
-
-            Assert.AreSame(original, thrown);
         }
 
         [TestMethod]
@@ -320,50 +324,22 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Setup(p => p.ShouldRetryAsync(It.IsAny<Exception>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(ShouldRetryResult.RetryAfter(TimeSpan.FromSeconds(30)));
 
-            // Operation always fails. Backoff is 30s but deadline is 200ms — we expect
-            // the original exception to surface once the internal deadline trips during
-            // the backoff delay.
+            // Operation always fails. Backoff is 30s but deadline is 200ms — once the internal
+            // (detached) deadline trips during the backoff Task.Delay, BackoffRetryUtility
+            // surfaces OperationCanceledException bound to the detached token. The caller's
+            // token is CancellationToken.None here, so the OCE is purely the hard-deadline
+            // backstop, not a caller cancellation.
             DocumentClientException firstFailure = new DocumentClientException(
                 "transient",
                 HttpStatusCode.ServiceUnavailable,
                 SubStatusCodes.Unknown);
 
-            DocumentClientException thrown = await Assert.ThrowsExceptionAsync<DocumentClientException>(
+            await Assert.ThrowsExceptionAsync<TaskCanceledException>(
                 () => MetadataDetachedExecutor.ExecuteAsync<int>(
                     (_) => throw firstFailure,
                     policy.Object,
                     TimeSpan.FromMilliseconds(200),
                     CancellationToken.None));
-
-            Assert.AreSame(firstFailure, thrown);
-        }
-
-        [TestMethod]
-        [Owner("ntripician")]
-        public async Task ExecuteAsync_HardAttemptCap_PreventsInfiniteSpin()
-        {
-            Mock<IDocumentClientRetryPolicy> policy = new Mock<IDocumentClientRetryPolicy>();
-            policy
-                .Setup(p => p.ShouldRetryAsync(It.IsAny<Exception>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(ShouldRetryResult.RetryAfter(TimeSpan.Zero));
-
-            int attempts = 0;
-            await Assert.ThrowsExceptionAsync<InvalidOperationException>(
-                () => MetadataDetachedExecutor.ExecuteAsync<int>(
-                    (_) =>
-                    {
-                        Interlocked.Increment(ref attempts);
-                        throw new DocumentClientException(
-                            "always",
-                            HttpStatusCode.ServiceUnavailable,
-                            SubStatusCodes.Unknown);
-                    },
-                    policy.Object,
-                    CancellationToken.None));
-
-            int observed = Interlocked.CompareExchange(ref attempts, 0, 0);
-            Assert.AreEqual(MetadataDetachedExecutor.MaxAttemptsHardCap, observed,
-                $"expected exactly {MetadataDetachedExecutor.MaxAttemptsHardCap} attempts before cap, observed {observed}");
         }
 
         [TestMethod]
@@ -501,17 +477,16 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         /// <summary>
-        /// Regression test for R2.4: when the SDK-internal hard deadline trips while the
-        /// operation lambda is in flight (as opposed to during Task.Delay backoff), the
-        /// surfaced exception must be the underlying retry-driving failure, not the
-        /// deadline-induced OperationCanceledException. This protects the design contract
-        /// that customers see the failure mode that drove the retry rather than a
-        /// hard-deadline artifact, regardless of whether the deadline trips during backoff
-        /// or during the operation call itself.
+        /// When the SDK-internal hard deadline trips while the operation lambda is in flight
+        /// (after at least one retry), the collapsed collection-cache path surfaces the
+        /// deadline-induced <see cref="OperationCanceledException"/> from the canonical
+        /// BackoffRetryUtility. The caller's token is CancellationToken.None, so this OCE is
+        /// purely the hard-deadline backstop firing, distinguishable in diagnostics from a
+        /// caller cancellation (which is observed only on the response path).
         /// </summary>
         [TestMethod]
         [Owner("ntripician")]
-        public async Task ExecuteAsync_DeadlineTripsDuringOperation_SurfacesUnderlyingException()
+        public async Task ExecuteAsync_DeadlineTripsDuringOperation_SurfacesOperationCanceled()
         {
             Mock<IDocumentClientRetryPolicy> policy = new Mock<IDocumentClientRetryPolicy>();
             policy
@@ -524,7 +499,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 HttpStatusCode.ServiceUnavailable,
                 SubStatusCodes.Unknown);
 
-            DocumentClientException thrown = await Assert.ThrowsExceptionAsync<DocumentClientException>(
+            await Assert.ThrowsExceptionAsync<OperationCanceledException>(
                 () => MetadataDetachedExecutor.ExecuteAsync<int>(
                     async (ct) =>
                     {
@@ -545,8 +520,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                     TimeSpan.FromSeconds(2),
                     CancellationToken.None));
 
-            Assert.AreSame(underlying, thrown,
-                "Expected the original DocumentClientException, not a deadline-induced OperationCanceledException.");
             Assert.IsTrue(attempts >= 2, $"expected ≥2 attempts, observed {attempts}");
         }
 
@@ -808,6 +781,58 @@ namespace Microsoft.Azure.Cosmos.Tests
                 CancellationToken.None);
 
             Assert.AreEqual(13, result);
+        }
+
+        /// <summary>
+        /// Observability: when the caller abandons a detached read by cancelling mid-flight,
+        /// <see cref="MetadataDetachedExecutor.LiveDetachedBackgroundReads"/> increments while
+        /// the orphaned read keeps running and decrements once it completes. This pins the
+        /// fan-out counter that surfaces the documented AsyncCache-dedup-weakening behavior
+        /// under concurrent caller cancellation, so the signal cannot silently regress to dead
+        /// code. The test class is [DoNotParallelize], so the process-global counter is not
+        /// raced by sibling tests.
+        /// </summary>
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteDetachedAsync_CallerAbandonsRead_LiveCounterTracksOrphanThenReleases()
+        {
+            long baseline = MetadataDetachedExecutor.LiveDetachedBackgroundReads;
+
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            TaskCompletionSource<int> operationGate = new TaskCompletionSource<int>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<bool> operationStarted = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+
+            Task<int> caller = MetadataDetachedExecutor.ExecuteDetachedAsync<int>(
+                async (ct) =>
+                {
+                    operationStarted.TrySetResult(true);
+                    return await operationGate.Task.ConfigureAwait(false);
+                },
+                cts.Token);
+
+            await operationStarted.Task.ConfigureAwait(false);
+            cts.Cancel();
+
+            await Assert.ThrowsExceptionAsync<OperationCanceledException>(() => caller);
+
+            // The orphaned detached read is still gated open, so the live counter must reflect it.
+            Assert.AreEqual(baseline + 1, MetadataDetachedExecutor.LiveDetachedBackgroundReads,
+                "live counter must increment while a caller-abandoned detached read is still running");
+
+            // Release the orphaned read and wait for the decrement to settle.
+            operationGate.TrySetResult(42);
+
+            Stopwatch sw = Stopwatch.StartNew();
+            while (MetadataDetachedExecutor.LiveDetachedBackgroundReads != baseline
+                && sw.Elapsed < TimeSpan.FromSeconds(5))
+            {
+                await Task.Delay(10).ConfigureAwait(false);
+            }
+
+            Assert.AreEqual(baseline, MetadataDetachedExecutor.LiveDetachedBackgroundReads,
+                "live counter must return to baseline once the orphaned detached read completes");
         }
 
         private sealed class SingleThreadSynchronizationContext : SynchronizationContext
