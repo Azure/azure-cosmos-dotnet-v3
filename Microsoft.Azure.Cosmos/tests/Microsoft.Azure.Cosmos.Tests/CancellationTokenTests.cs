@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
@@ -65,8 +65,7 @@ namespace Microsoft.Azure.Cosmos
                     MockCosmosUtil.CreateCosmosHttpClient(
                         () => new HttpClient(messageHandler),
                         eventSource),
-                    GlobalPartitionEndpointManagerNoOp.Instance,
-                    isThinClientEnabled: false);
+                    GlobalPartitionEndpointManagerNoOp.Instance);
 
                 TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
 
@@ -222,8 +221,7 @@ namespace Microsoft.Azure.Cosmos
                 new DocumentClientEventSource(),
                 new JsonSerializerSettings(),
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
-                GlobalPartitionEndpointManagerNoOp.Instance,
-                isThinClientEnabled: false);
+                GlobalPartitionEndpointManagerNoOp.Instance);
 
             TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager.Object);
 

@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http;
     using System.Net.Security;
     using System.Security.Cryptography.X509Certificates;
-    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
@@ -618,9 +617,10 @@ namespace Microsoft.Azure.Cosmos
         /// (for example, 2.3 seconds becomes 3 seconds).
         /// </item>
         /// </list>
-        /// Negative values are not recommended and will emit a warning trace. They are preserved
-        /// on this property for backward compatibility. At the transport boundary they are converted
-        /// to whole seconds via truncation (e.g. −5.7 s → −5) and ultimately reach the
+        /// Negative values are not recommended. They are preserved on this property for backward
+        /// compatibility and will cause <c>DocumentClient</c> to emit a warning trace at client
+        /// construction time. At the transport boundary they are converted to whole seconds via
+        /// truncation (e.g. −5.7 s → −5) and ultimately reach the
         /// <c>TransportClient.Options.OpenTimeout</c> getter, which returns
         /// <see cref="RequestTimeout"/> for any value that is not greater than
         /// <see cref="TimeSpan.Zero"/>.
@@ -630,14 +630,6 @@ namespace Microsoft.Azure.Cosmos
             get => this.openTcpConnectionTimeout;
             set
             {
-                if (value.HasValue && value.Value < TimeSpan.Zero)
-                {
-                    DefaultTrace.TraceWarning(
-                        "OpenTcpConnectionTimeout value {0} is negative. Negative values are not recommended; "
-                        + "the TransportClient will fall back to the configured RequestTimeout.",
-                        value.Value);
-                }
-
                 this.openTcpConnectionTimeout = value;
                 this.ValidateDirectTCPSettings();
             }

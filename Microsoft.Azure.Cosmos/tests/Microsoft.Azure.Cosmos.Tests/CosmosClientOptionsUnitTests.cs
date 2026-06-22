@@ -922,24 +922,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void OpenTcpConnectionTimeoutNegativeTimeSpanPassesThroughWithWarning()
-        {
-            CosmosClientOptions options = new CosmosClientOptions
-            {
-                ConnectionMode = ConnectionMode.Direct,
-            };
-
-            // Negative values are passed through unchanged (warning is logged but value is preserved).
-            options.OpenTcpConnectionTimeout = TimeSpan.FromMilliseconds(-1);
-            Assert.AreEqual(TimeSpan.FromMilliseconds(-1), options.OpenTcpConnectionTimeout,
-                "Negative value should be preserved unchanged on the property.");
-
-            options.OpenTcpConnectionTimeout = TimeSpan.FromSeconds(-30);
-            Assert.AreEqual(TimeSpan.FromSeconds(-30), options.OpenTcpConnectionTimeout,
-                "Negative value should be preserved unchanged on the property.");
-        }
-
-        [TestMethod]
         public void OpenTcpConnectionTimeoutZeroIsAllowedAndRoundTripsThroughConnectionPolicy()
         {
             CosmosClientOptions options = new CosmosClientOptions

@@ -52,6 +52,38 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void GetHttpMethod_ReadDistributedTransaction_ReturnsPost()
+        {
+            // A DistributedReadTransaction is dispatched as OperationType.Read but carries a
+            // request body (the batch of read operations), so it must be sent as POST — not the
+            // GET that a plain Read would use. A regression to GET would drop the body.
+            Assert.AreEqual(
+                HttpMethod.Post,
+                RequestInvokerHandler.GetHttpMethod(
+                    ResourceType.DistributedTransactionBatch,
+                    OperationType.Read));
+
+            // Symmetry: a DistributedWriteTransaction (CommitDistributedTransaction) is also POST.
+            Assert.AreEqual(
+                HttpMethod.Post,
+                RequestInvokerHandler.GetHttpMethod(
+                    ResourceType.DistributedTransactionBatch,
+                    OperationType.CommitDistributedTransaction));
+        }
+
+        [TestMethod]
+        public void GetHttpMethod_PlainPointRead_ReturnsGet()
+        {
+            // Negative control: a normal point read (Read + Document) must remain a GET so the
+            // DTX-specific POST classification does not leak into the regular read path.
+            Assert.AreEqual(
+                HttpMethod.Get,
+                RequestInvokerHandler.GetHttpMethod(
+                    ResourceType.Document,
+                    OperationType.Read));
+        }
+
+        [TestMethod]
         public async Task TestPreProcessingHandler()
         {
             RequestHandler preProcessHandler = new PreProcessingTestHandler();

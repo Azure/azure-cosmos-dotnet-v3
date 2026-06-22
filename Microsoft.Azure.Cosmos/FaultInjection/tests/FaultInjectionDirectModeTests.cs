@@ -89,8 +89,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             {
                 await this.highThroughputContainer.DeleteContainerAsync();
             }
-            this.client.Dispose();
-            this.fiClient.Dispose();
+            this.client?.Dispose();
+            this.fiClient?.Dispose();
         }
 
         [TestMethod]

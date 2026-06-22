@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
 {
     using System;
     using System.Collections.Generic;
+    using System.Runtime.CompilerServices;
     using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
@@ -61,6 +62,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
 
             public UInt128 Visit(CosmosArray cosmosArray, UInt128 seed)
             {
+                // Guard against stack exhaustion on deeply-nested input. Converts an
+                // otherwise-uncatchable StackOverflowException into a catchable
+                // InsufficientExecutionStackException.
+                RuntimeHelpers.EnsureSufficientExecutionStack();
+
                 // Start the array with a distinct hash, so that empty array doesn't hash to another value.
                 UInt128 hash = seed == RootHashSeed ? RootCache.Array : MurmurHash3.Hash128(HashSeeds.Array, seed);
 
@@ -134,6 +140,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
 
             public UInt128 Visit(CosmosObject cosmosObject, UInt128 seed)
             {
+                // Guard against stack exhaustion on deeply-nested input. Converts an
+                // otherwise-uncatchable StackOverflowException into a catchable
+                // InsufficientExecutionStackException.
+                RuntimeHelpers.EnsureSufficientExecutionStack();
+
                 // Start the object with a distinct hash, so that empty object doesn't hash to another value.
                 UInt128 hash = seed == RootHashSeed ? RootCache.Object : MurmurHash3.Hash128(HashSeeds.Object, seed);
 

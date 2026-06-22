@@ -246,6 +246,53 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         #endregion
 
+        #region Zero-operations guard
+
+        [TestMethod]
+        public async Task CommitAsync_ZeroOperations_ThrowsInvalidOperationException()
+        {
+            DistributedReadTransactionCore txn = this.CreateTransaction();
+
+            InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => txn.CommitTransactionAsync(CancellationToken.None));
+
+            Assert.IsTrue(ex.Message.Contains("zero operations"), $"Unexpected message: {ex.Message}");
+        }
+
+        [TestMethod]
+        public async Task CommitAsync_ZeroOperations_DoesNotConsumeTransaction()
+        {
+            // The zero-operations guard runs before the single-use commit latch is set, so a caller
+            // can follow the error message's advice (add an operation) and commit on the same instance.
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
+            contextMock
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<CosmosPK?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(BuildReadSuccessResponse(1));
+
+            DistributedReadTransactionCore tx = new DistributedReadTransactionCore(contextMock.Object);
+
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => tx.CommitTransactionAsync(CancellationToken.None));
+
+            // Instance is not consumed: adding an operation and committing now succeeds.
+            tx.ReadItem(BuildMockContainer(), TestPartitionKey, ItemId);
+            DistributedTransactionResponse response = await tx.CommitTransactionAsync(CancellationToken.None);
+            Assert.IsTrue(response.IsSuccessStatusCode);
+        }
+
+        #endregion
+
         #region Double-commit guard
 
         [TestMethod]
