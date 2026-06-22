@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
 
     /// <summary>
     /// Client policy is combination of endpoint change retry + throttling retry.
@@ -28,6 +29,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         private const int MaxSessionTokenRetryCount = 1;
 #endif
+        private const int MaxCaeRevocationRetryCount = 1;
 
         // ----- DTX (Distributed Transaction) inner-loop retry constants -----
         // The outer loop (DistributedTransactionCommitter) handles body-bearing isRetriable failures.
@@ -46,10 +48,12 @@ namespace Microsoft.Azure.Cosmos
 #if !INTERNAL
         private readonly bool isHubRegionProcessingEnabled;
 #endif
+        private readonly AuthorizationTokenProvider authorizationTokenProvider;
         private int failoverRetryCount;
 
         private int sessionTokenRetryCount;
         private int serviceUnavailableRetryCount;
+        private int caeRevocationRetryCount;
         private int distributedTransactionRetryCount;
         private int distributedTransactionInfraFailureRetryCount;
         private bool isReadRequest;
@@ -70,7 +74,8 @@ namespace Microsoft.Azure.Cosmos
             RetryOptions retryOptions,
             bool enableEndpointDiscovery,
             bool isThinClientEnabled,
-            bool isHubRegionProcessingEnabled = true)
+            bool isHubRegionProcessingEnabled = true,
+            AuthorizationTokenProvider authorizationTokenProvider = null)
         {
             this.throttlingRetry = new ResourceThrottleRetryPolicy(
                 retryOptions.MaxRetryAttemptsOnThrottledRequests,
@@ -82,12 +87,14 @@ namespace Microsoft.Azure.Cosmos
             this.enableEndpointDiscovery = enableEndpointDiscovery;
             this.sessionTokenRetryCount = 0;
             this.serviceUnavailableRetryCount = 0;
+            this.caeRevocationRetryCount = 0;
             this.canUseMultipleWriteLocations = false;
             this.isMultiMasterWriteRequest = false;
             this.isThinClientEnabled = isThinClientEnabled;
 #if !INTERNAL
             this.isHubRegionProcessingEnabled = isHubRegionProcessingEnabled;
 #endif
+            this.authorizationTokenProvider = authorizationTokenProvider;
         }
 
         /// <summary> 
@@ -143,6 +150,7 @@ namespace Microsoft.Azure.Cosmos
                 ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
                     clientException?.StatusCode,
                     clientException?.GetSubStatus(),
+                    clientException?.Headers,
                     clientException?.RetryAfter);
                 if (shouldRetryResult != null)
                 {
@@ -158,6 +166,7 @@ namespace Microsoft.Azure.Cosmos
                 ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
                     cosmosException.StatusCode,
                     cosmosException.Headers.SubStatusCode,
+                    cosmosException.Headers,
                     cosmosException.RetryAfter);
                 if (shouldRetryResult != null)
                 {
@@ -202,6 +211,7 @@ namespace Microsoft.Azure.Cosmos
             ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
                     cosmosResponseMessage?.StatusCode,
                     cosmosResponseMessage?.Headers.SubStatusCode,
+                    cosmosResponseMessage?.Headers,
                     cosmosResponseMessage?.Headers.RetryAfter,
                     hasResponseBody);
             if (shouldRetryResult != null)
@@ -236,14 +246,18 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="request">The request being sent to the service.</param>
         public void OnBeforeSendRequest(DocumentServiceRequest request)
         {
-            this.isReadRequest = request.IsReadOnlyRequest;
-            this.canUseMultipleWriteLocations = this.globalEndpointManager.CanUseMultipleWriteLocations(request);
-            this.documentServiceRequest = request;
-            this.isMultiMasterWriteRequest = !this.isReadRequest
-                && (this.globalEndpointManager?.CanSupportMultipleWriteLocations(request.ResourceType, request.OperationType) ?? false);
             this.isDtxRequest = DistributedTransactionConstants.IsDistributedTransactionRequest(
                 request.OperationType,
                 request.ResourceType);
+
+            // Distributed transaction requests (including reads, which are sent as OperationType.Read)
+            // must always route to the write region where the transaction coordinator lives. Treat them
+            // as non-read for routing/failover purposes so they are never directed to read-only regions.
+            this.isReadRequest = request.IsReadOnlyRequest && !this.isDtxRequest;
+            this.canUseMultipleWriteLocations = this.globalEndpointManager.CanUseMultipleWriteLocations(request);
+            this.documentServiceRequest = request;
+            this.isMultiMasterWriteRequest = !request.IsReadOnlyRequest
+                && (this.globalEndpointManager?.CanSupportMultipleWriteLocations(request.ResourceType, request.OperationType) ?? false);
 
             // clear previous location-based routing directive
             request.RequestContext.ClearRouteToLocation();
@@ -256,9 +270,20 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    // set location-based routing directive based on request retry context
-                    request.RequestContext.RouteToLocation(this.retryContext.RetryLocationIndex, this.retryContext.RetryRequestOnPreferredLocations);
+                    // set location-based routing directive based on request retry context.
+                    // For DTX requests, always disable preferred locations so the request enters
+                    // the write-region flip-flop branch in LocationCache.ResolveServiceEndpoint,
+                    // ensuring it never routes to a read-only region.
+                    request.RequestContext.RouteToLocation(
+                        this.retryContext.RetryLocationIndex,
+                        this.isDtxRequest ? false : this.retryContext.RetryRequestOnPreferredLocations);
                 }
+            }
+            else if (this.isDtxRequest)
+            {
+                // First attempt (no retry context): disable preferred locations so the request
+                // enters the write-region branch in LocationCache.ResolveServiceEndpoint.
+                request.RequestContext.RouteToLocation(0, usePreferredLocations: false);
             }
 
 #if !INTERNAL
@@ -316,6 +341,15 @@ namespace Microsoft.Azure.Cosmos
 
             request.RequestContext.RouteToLocation(this.locationEndpoint);
 
+            // Force UsePreferredLocations=false for DTX after endpoint pinning so that any
+            // downstream re-resolution (e.g. on retry) stays on the write-region branch.
+            if (this.isDtxRequest)
+            {
+                request.RequestContext.RouteToLocation(
+                    this.retryContext?.RetryLocationIndex ?? 0,
+                    usePreferredLocations: false);
+            }
+
             // Hedging-Detection API: tag the upcoming dispatch reason on Properties so that
             // the downstream dispatch site (TransportHandler / GatewayStoreModel) can append
             // a RequestedRegion entry with the correct reason. Only override when this is a
@@ -350,6 +384,37 @@ namespace Microsoft.Azure.Cosmos
         private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
             HttpStatusCode? statusCode,
             SubStatusCodes? subStatusCode,
+            INameValueCollection responseHeaders,
+            TimeSpan? retryAfter = null,
+            bool hasResponseBody = false)
+        {
+            return await this.ShouldRetryInternalAsync(
+                statusCode,
+                subStatusCode,
+                responseHeaders?.Get(HttpConstants.HttpHeaders.WwwAuthenticate),
+                retryAfter,
+                hasResponseBody);
+        }
+
+        private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
+            HttpStatusCode? statusCode,
+            SubStatusCodes? subStatusCode,
+            Headers responseHeaders,
+            TimeSpan? retryAfter = null,
+            bool hasResponseBody = false)
+        {
+            return await this.ShouldRetryInternalAsync(
+                statusCode,
+                subStatusCode,
+                responseHeaders?[HttpConstants.HttpHeaders.WwwAuthenticate],
+                retryAfter,
+                hasResponseBody);
+        }
+
+        private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
+            HttpStatusCode? statusCode,
+            SubStatusCodes? subStatusCode,
+            string wwwAuthenticateHeaderValue,
             TimeSpan? retryAfter = null,
             bool hasResponseBody = false)
         {
@@ -459,11 +524,22 @@ namespace Microsoft.Azure.Cosmos
                     isSystemResourceUnavailableForWrite: false);
             }
 
-            // Recieved 500 status code or lease not found
-            if ((statusCode == HttpStatusCode.InternalServerError && this.isReadRequest)
+            // Recieved 500 status code or lease not found.
+            // DTX requests (including read DTX whose IsReadOnlyRequest is true) defer to the
+            // DTX-specific retry classifier below so the dedicated 500/5411-5413 budget applies
+            // instead of generic endpoint-unavailable retry.
+            // Note: 410/1022 (LeaseNotFound) is not emitted by DTX coordinator; this branch never hit for DTX.
+            if ((statusCode == HttpStatusCode.InternalServerError && this.isReadRequest && !this.isDtxRequest)
                 || (statusCode == HttpStatusCode.Gone && subStatusCode == SubStatusCodes.LeaseNotFound))
             {
                 return this.ShouldRetryOnUnavailableEndpointStatusCodes();
+            }
+
+            if (statusCode == HttpStatusCode.Unauthorized
+                && (subStatusCode == SubStatusCodes.AadTokenRevoked
+                    || !string.IsNullOrEmpty(wwwAuthenticateHeaderValue)))
+            {
+                return this.HandleUnauthorizedResponse(wwwAuthenticateHeaderValue);
             }
 
             if (this.isDtxRequest)
@@ -472,6 +548,36 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return null;
+        }
+
+        private ShouldRetryResult HandleUnauthorizedResponse(string wwwAuthenticateHeaderValue)
+        {
+            if (!(this.authorizationTokenProvider is AuthorizationTokenProviderTokenCredential tokenProvider)
+                || this.documentServiceRequest == null)
+            {
+                return null;
+            }
+
+            if (this.caeRevocationRetryCount >= ClientRetryPolicy.MaxCaeRevocationRetryCount)
+            {
+                DefaultTrace.TraceWarning(
+                    "ClientRetryPolicy: Token revocation max retry count ({0}) exceeded. Not retrying.",
+                    ClientRetryPolicy.MaxCaeRevocationRetryCount);
+                return ShouldRetryResult.NoRetry();
+            }
+
+            if (!tokenProvider.TryHandleTokenRevocation(
+                HttpStatusCode.Unauthorized,
+                wwwAuthenticateHeaderValue))
+            {
+                return null;
+            }
+
+            this.caeRevocationRetryCount++;
+            DefaultTrace.TraceInformation(
+                "ClientRetryPolicy: AAD token revocation handled. Retrying with fresh token. RetryCount={0}",
+                this.caeRevocationRetryCount);
+            return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
         }
 
         private async Task<ShouldRetryResult> ShouldRetryOnEndpointFailureAsync(
