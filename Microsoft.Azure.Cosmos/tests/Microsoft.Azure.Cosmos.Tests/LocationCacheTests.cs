@@ -2679,6 +2679,165 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             Assert.AreEqual(firstAvailableReadEndpoint, this.ResolveEndpointForReadRequest(false));
         }
 
+        /// <summary>
+        /// Regression guard: a distributed-transaction read is dispatched as <see cref="OperationType.Read"/>
+        /// but MUST route to the write region (where the transaction coordinator lives), never to a read-only
+        /// region. This test fails loudly if DTX reads ever start resolving to read endpoints again.
+        /// </summary>
+        [TestMethod]
+        public void ResolveServiceEndpoint_DistributedTransactionRead_RoutesToWriteEndpoint_WhenUsePreferredLocationsIsFalse()
+        {
+            // Single-master account where the most-preferred read region differs from the write region,
+            // so a read endpoint and a write endpoint are distinguishable.
+            Collection<AccountRegion> reads = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "ReadRegion", Endpoint = LocationCacheTests.Location2Endpoint.ToString() },
+                new AccountRegion { Name = "WriteRegion", Endpoint = LocationCacheTests.Location1Endpoint.ToString() },
+            };
+            Collection<AccountRegion> writes = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "WriteRegion", Endpoint = LocationCacheTests.Location1Endpoint.ToString() },
+            };
+
+            AccountProperties accountProps = new AccountProperties
+            {
+                ReadLocationsInternal = reads,
+                WriteLocationsInternal = writes,
+                EnableMultipleWriteLocations = false,
+            };
+
+            LocationCache cache = new LocationCache(
+                preferredLocations: new ReadOnlyCollection<string>(new List<string>() { "ReadRegion", "WriteRegion" }),
+                defaultEndpoint: LocationCacheTests.DefaultEndpoint,
+                enableEndpointDiscovery: true,
+                connectionLimit: 50,
+                useMultipleWriteLocations: false);
+
+            cache.OnDatabaseAccountRead(accountProps);
+
+            // Sanity: read and write endpoints must actually differ for this test to be meaningful.
+            Assert.AreEqual(LocationCacheTests.Location2Endpoint, cache.ReadEndpoints[0], "The most-preferred read region should be the read endpoint.");
+            Assert.AreEqual(LocationCacheTests.Location1Endpoint, cache.WriteEndpoints[0], "The single write region should be the write endpoint.");
+
+            // A plain document read resolves to the read region (proves the setup distinguishes the two).
+            using (DocumentServiceRequest plainRead = DocumentServiceRequest.Create(OperationType.Read, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey))
+            {
+                Assert.AreEqual(LocationCacheTests.Location2Endpoint, cache.ResolveServiceEndpoint(plainRead), "A non-DTX read must resolve to the read region.");
+            }
+
+            // A distributed-transaction read with UsePreferredLocations=false (as set by ClientRetryPolicy)
+            // must route to the WRITE region — never the read region.
+            using (DocumentServiceRequest dtxRead = DocumentServiceRequest.Create(OperationType.Read, ResourceType.DistributedTransactionBatch, AuthorizationTokenType.PrimaryMasterKey))
+            {
+                dtxRead.RequestContext.RouteToLocation(0, usePreferredLocations: false);
+                Uri resolved = cache.ResolveServiceEndpoint(dtxRead);
+                Assert.AreEqual(LocationCacheTests.Location1Endpoint, resolved, "A DTX read with UsePreferredLocations=false must resolve to the write region.");
+                Assert.AreNotEqual(LocationCacheTests.Location2Endpoint, resolved, "A DTX read with UsePreferredLocations=false must NOT resolve to the read region.");
+            }
+
+            // A distributed-transaction commit must also route to the write region (it's a write operation,
+            // single-master, so it naturally enters the write branch).
+            using (DocumentServiceRequest dtxCommit = DocumentServiceRequest.Create(OperationType.CommitDistributedTransaction, ResourceType.DistributedTransactionBatch, AuthorizationTokenType.PrimaryMasterKey))
+            {
+                Assert.AreEqual(LocationCacheTests.Location1Endpoint, cache.ResolveServiceEndpoint(dtxCommit), "A DTX commit must resolve to the write region.");
+            }
+        }
+
+        /// <summary>
+        /// Topology-agnostic guard: in a multi-master account (multiple write regions) a
+        /// distributed-transaction read with UsePreferredLocations=false (set by ClientRetryPolicy)
+        /// must resolve to the write region, exactly like a DTX commit.
+        /// </summary>
+        [TestMethod]
+        public void ResolveServiceEndpoint_MultiMaster_DistributedTransactionRead_RoutesAsWrite()
+        {
+            Collection<AccountRegion> regions = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "Region1", Endpoint = LocationCacheTests.Location1Endpoint.ToString() },
+                new AccountRegion { Name = "Region2", Endpoint = LocationCacheTests.Location2Endpoint.ToString() },
+            };
+
+            AccountProperties accountProps = new AccountProperties
+            {
+                ReadLocationsInternal = regions,
+                WriteLocationsInternal = regions,
+                EnableMultipleWriteLocations = true,
+            };
+
+            LocationCache cache = new LocationCache(
+                preferredLocations: new ReadOnlyCollection<string>(new List<string>() { "Region2", "Region1" }),
+                defaultEndpoint: LocationCacheTests.DefaultEndpoint,
+                enableEndpointDiscovery: true,
+                connectionLimit: 50,
+                useMultipleWriteLocations: true);
+
+            cache.OnDatabaseAccountRead(accountProps);
+
+            using (DocumentServiceRequest dtxRead = DocumentServiceRequest.Create(OperationType.Read, ResourceType.DistributedTransactionBatch, AuthorizationTokenType.PrimaryMasterKey))
+            {
+                // Simulate ClientRetryPolicy setting UsePreferredLocations=false
+                dtxRead.RequestContext.RouteToLocation(0, usePreferredLocations: false);
+                Uri dtxReadEndpoint = cache.ResolveServiceEndpoint(dtxRead);
+
+                Assert.IsTrue(cache.WriteEndpoints.Contains(dtxReadEndpoint), "A DTX read must resolve to a write-capable endpoint regardless of topology.");
+                Assert.IsFalse(
+                    LocationCacheTests.IsReadOnlyEndpoint(cache, dtxReadEndpoint),
+                    "A DTX read must never resolve to a read-only region, even in multi-master.");
+            }
+        }
+
+        // True only when the endpoint is a read endpoint that is NOT also a write endpoint (read-only region).
+        private static bool IsReadOnlyEndpoint(LocationCache cache, Uri endpoint)
+        {
+            return cache.ReadEndpoints.Contains(endpoint) && !cache.WriteEndpoints.Contains(endpoint);
+        }
+
+        /// <summary>
+        /// Validates that <see cref="LocationCache.GetApplicableEndpoints(DocumentServiceRequest, bool)"/>
+        /// returns write endpoints when the caller passes <c>isReadRequest: false</c> for a DTX request.
+        /// The caller (ClientRetryPolicy) is responsible for classifying DTX as non-read.
+        /// </summary>
+        [TestMethod]
+        public void GetApplicableEndpoints_DistributedTransactionRead_ReturnsWriteEndpoints_WhenCallerPassesIsReadFalse()
+        {
+            Collection<AccountRegion> reads = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "ReadRegion", Endpoint = LocationCacheTests.Location2Endpoint.ToString() },
+                new AccountRegion { Name = "WriteRegion", Endpoint = LocationCacheTests.Location1Endpoint.ToString() },
+            };
+            Collection<AccountRegion> writes = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "WriteRegion", Endpoint = LocationCacheTests.Location1Endpoint.ToString() },
+            };
+
+            AccountProperties accountProps = new AccountProperties
+            {
+                ReadLocationsInternal = reads,
+                WriteLocationsInternal = writes,
+                EnableMultipleWriteLocations = false,
+            };
+
+            LocationCache cache = new LocationCache(
+                preferredLocations: new ReadOnlyCollection<string>(new List<string>() { "ReadRegion", "WriteRegion" }),
+                defaultEndpoint: LocationCacheTests.DefaultEndpoint,
+                enableEndpointDiscovery: true,
+                connectionLimit: 50,
+                useMultipleWriteLocations: false);
+
+            cache.OnDatabaseAccountRead(accountProps);
+
+            // A DTX read passed with isReadRequest: false (as ClientRetryPolicy does) must return write endpoints.
+            using (DocumentServiceRequest dtxRead = DocumentServiceRequest.Create(OperationType.Read, ResourceType.DistributedTransactionBatch, AuthorizationTokenType.PrimaryMasterKey))
+            {
+                ReadOnlyCollection<Uri> endpoints = cache.GetApplicableEndpoints(dtxRead, isReadRequest: false);
+
+                Assert.AreEqual(cache.WriteEndpoints[0], endpoints[0], "A DTX read with isReadRequest: false must return write endpoints.");
+                Assert.IsFalse(
+                    LocationCacheTests.IsReadOnlyEndpoint(cache, endpoints[0]),
+                    "A DTX read must never resolve to a read-only region when caller passes isReadRequest: false.");
+            }
+        }
+
         private Uri ResolveEndpointForReadRequest(bool masterResourceType)
         {
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Read, masterResourceType ? ResourceType.Database : ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey))
