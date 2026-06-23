@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -443,6 +444,74 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 $"Per-op[0] should be 200 OK. Got: {response[0].StatusCode}.");
 
             response.Dispose();
+        }
+
+        /// <summary>
+        /// CANCELLATION during an injected delay: a long ResponseDelay parks the DTx commit awaiting
+        /// the coordinator response inside the FaultInjection interceptor's
+        /// <c>OnAfterHttpSendAsync</c> → <c>Task.Delay(delay, token)</c>. The CancellationToken fires at
+        /// ~2s — while the SDK is genuinely mid-delay — and must interrupt the wait, surfacing an
+        /// OperationCanceledException (the SDK may wrap it as CosmosOperationCanceledException) well
+        /// before the long delay elapses. This proves the caller's token flows all the way through to
+        /// the in-flight injected delay rather than the commit blocking for the full delay.
+        /// </summary>
+        [TestMethod]
+        public async Task WriteTransaction_CancellationDuringInjectedResponseDelay_ThrowsOperationCanceled()
+        {
+            string pk = $"fi-write-cancel-{Guid.NewGuid():N}";
+            string id = Guid.NewGuid().ToString();
+
+            // Long injected delay (60s) so the commit is parked in the interceptor's Task.Delay(delay,
+            // token); the token is cancelled at 2s, far inside the 60s window.
+            TimeSpan injectedDelay = TimeSpan.FromSeconds(60);
+            TimeSpan cancelAfter = TimeSpan.FromSeconds(2);
+
+            string ruleId = $"dtx-write-cancel-{Guid.NewGuid():N}";
+            FaultInjectionRule rule = new FaultInjectionRuleBuilder(
+                id: ruleId,
+                condition: new FaultInjectionConditionBuilder()
+                    .WithConnectionType(FaultInjectionConnectionType.Gateway)
+                    .WithOperationType(FaultInjectionOperationType.DistributedWriteTransaction)
+                    .Build(),
+                result: FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                    .WithDelay(injectedDelay)
+                    .WithTimes(1)
+                    .Build())
+                .WithDuration(TimeSpan.FromMinutes(5))
+                .Build();
+
+            using CosmosClient fiClient = this.CreateFaultInjectedClient(rule, out _);
+            Container fiContainer = fiClient.GetContainer(DatabaseId, ContainerId);
+
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(cancelAfter);
+
+            Exception caught = null;
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            try
+            {
+                using DistributedTransactionResponse response = await fiClient
+                    .CreateDistributedWriteTransaction()
+                    .CreateItem(fiContainer, new PartitionKey(pk), id, new { id, pk, value = "fi-cancel" })
+                    .CommitTransactionAsync(cts.Token);
+                Assert.Fail($"The commit should have been cancelled during the injected delay, but it completed with {response.StatusCode}.");
+            }
+            catch (Exception ex)
+            {
+                caught = ex;
+            }
+            stopwatch.Stop();
+
+            Assert.IsInstanceOfType(
+                caught,
+                typeof(OperationCanceledException),
+                $"Cancellation during the injected delay must surface as an OperationCanceledException (or subclass). Got: {caught?.GetType().Name} — {caught?.Message}.");
+            Assert.IsTrue(
+                rule.GetHitCount() >= 1,
+                $"The response-delay fault should have been injected at least once. Hit count: {rule.GetHitCount()}.");
+            Assert.IsTrue(
+                stopwatch.Elapsed < TimeSpan.FromSeconds(30),
+                $"Cancellation must interrupt the in-flight injected delay well before the 60s delay elapses; took {stopwatch.Elapsed.TotalSeconds:F1}s.");
         }
 
         // ─── Synthesized coordinator responses (DistributedTransactionCoordinatorError injector) ──────
