@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         /// <summary>
         /// WRITE DTx hybrid: inject a single retriable server error on the
-        /// <see cref="FaultInjectionOperationType.DistributedTransactionWriteBatch"/> request, then
+        /// <see cref="FaultInjectionOperationType.DistributedWriteTransaction"/> request, then
         /// assert the SDK retried (rule hit at least once) AND the commit ultimately succeeded
         /// against the real Coordinator. Data-driven over every retriable transport error type so
         /// the run itself reveals exactly which ones the Gateway-DTX inner loop retries-then-resends.
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 id: ruleId,
                 condition: new FaultInjectionConditionBuilder()
                     .WithConnectionType(FaultInjectionConnectionType.Gateway)
-                    .WithOperationType(FaultInjectionOperationType.DistributedTransactionWriteBatch)
+                    .WithOperationType(FaultInjectionOperationType.DistributedWriteTransaction)
                     .Build(),
                 result: FaultInjectionResultBuilder.GetResultBuilder(errorType)
                     .WithTimes(1)
@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         /// <summary>
         /// READ DTx hybrid: inject a single retriable server error on the
-        /// <see cref="FaultInjectionOperationType.DistributedTransactionReadBatch"/> request, then
+        /// <see cref="FaultInjectionOperationType.DistributedReadTransaction"/> request, then
         /// assert the SDK retried AND the read transaction ultimately returned 200 from the real
         /// Coordinator.
         /// </summary>
@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 id: ruleId,
                 condition: new FaultInjectionConditionBuilder()
                     .WithConnectionType(FaultInjectionConnectionType.Gateway)
-                    .WithOperationType(FaultInjectionOperationType.DistributedTransactionReadBatch)
+                    .WithOperationType(FaultInjectionOperationType.DistributedReadTransaction)
                     .Build(),
                 result: FaultInjectionResultBuilder.GetResultBuilder(errorType)
                     .WithTimes(1)
@@ -235,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 id: ruleId,
                 condition: new FaultInjectionConditionBuilder()
                     .WithConnectionType(FaultInjectionConnectionType.Gateway)
-                    .WithOperationType(FaultInjectionOperationType.DistributedTransactionWriteBatch)
+                    .WithOperationType(FaultInjectionOperationType.DistributedWriteTransaction)
                     .Build(),
                 result: FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
                     .WithTimes(injectTimes)
@@ -278,7 +278,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 id: ruleId,
                 condition: new FaultInjectionConditionBuilder()
                     .WithConnectionType(FaultInjectionConnectionType.Gateway)
-                    .WithOperationType(FaultInjectionOperationType.DistributedTransactionWriteBatch)
+                    .WithOperationType(FaultInjectionOperationType.DistributedWriteTransaction)
                     .Build(),
                 result: FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
                     .WithTimes(1)
@@ -319,6 +319,132 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             faulted.Dispose();
         }
 
+        // ─── Transport timeouts: a DTX hit by a connect/response timeout is retried then succeeds ──
+        //
+        // A Gateway DTX request can be hit by a transport-level timeout that yields NO Coordinator
+        // response at all. Two distinct shapes are modelled here, both surfacing to the SDK's inner
+        // DTX retry loop as a retriable client RequestTimeout (408):
+        //
+        //   • PRE-SEND (connect) timeout  — SendDelay injects a delay BEFORE the request leaves the
+        //     client; with the delay set longer than the client RequestTimeout the attempt is
+        //     abandoned before it ever reaches the wire, so the write was never applied and the
+        //     retry is unambiguously safe. Exercised against a WRITE commit.
+        //   • CLIENT-PERCEIVED RESPONSE timeout — ResponseDelay sends the request and then withholds
+        //     the response past the client RequestTimeout, so the client gives up waiting. Exercised
+        //     against a READ transaction, whose retry is idempotent, to keep the outcome deterministic.
+        //
+        // In both cases WithTimes(1) arms the delay for a single attempt; once exhausted the retry
+        // runs clean against the real Coordinator and the transaction completes successfully.
+
+        /// <summary>
+        /// WRITE DTx hit by a PRE-SEND (connect) timeout: a SendDelay longer than the client's
+        /// RequestTimeout abandons the first commit attempt before it reaches the wire (no write
+        /// applied), the SDK perceives a retriable 408, and the retry commits against the real
+        /// Coordinator.
+        /// </summary>
+        [TestMethod]
+        public async Task WriteTransaction_PreSendConnectTimeout_RetriesThenSucceedsAgainstRealCoordinator()
+        {
+            string pk = $"fi-write-connto-{Guid.NewGuid():N}";
+            string id = Guid.NewGuid().ToString();
+
+            // Delay (20s) deliberately exceeds the client RequestTimeout (5s); WithTimes(1) faults a
+            // single attempt. Because SendDelay holds the request BEFORE it is sent, the faulted
+            // attempt never mutates server state, so the retried commit is conflict-free.
+            TimeSpan injectedDelay = TimeSpan.FromSeconds(20);
+            TimeSpan requestTimeout = TimeSpan.FromSeconds(5);
+
+            string ruleId = $"dtx-write-connto-{Guid.NewGuid():N}";
+            FaultInjectionRule rule = new FaultInjectionRuleBuilder(
+                id: ruleId,
+                condition: new FaultInjectionConditionBuilder()
+                    .WithConnectionType(FaultInjectionConnectionType.Gateway)
+                    .WithOperationType(FaultInjectionOperationType.DistributedWriteTransaction)
+                    .Build(),
+                result: FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.SendDelay)
+                    .WithDelay(injectedDelay)
+                    .WithTimes(1)
+                    .Build())
+                .WithDuration(TimeSpan.FromMinutes(5))
+                .Build();
+
+            using CosmosClient fiClient = this.CreateFaultInjectedClient(rule, requestTimeout, out _);
+            Container fiContainer = fiClient.GetContainer(DatabaseId, ContainerId);
+
+            DistributedTransactionResponse response = await fiClient
+                .CreateDistributedWriteTransaction()
+                .CreateItem(fiContainer, new PartitionKey(pk), id, new { id, pk, value = "fi-connto" })
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.IsTrue(
+                rule.GetHitCount() >= 1,
+                $"The pre-send (connect) timeout should have faulted at least one attempt. Hit count: {rule.GetHitCount()}.");
+            Assert.IsTrue(
+                response.IsSuccessStatusCode,
+                $"After the injected connect timeout was exhausted, the retried commit should succeed " +
+                $"against the real Coordinator. Got: {response.StatusCode} (hit count {rule.GetHitCount()}).");
+            Assert.IsTrue(response.Count > 0);
+            Assert.IsTrue(
+                response[0].IsSuccessStatusCode,
+                $"Per-op[0] should succeed. Got: {response[0].StatusCode}.");
+
+            response.Dispose();
+        }
+
+        /// <summary>
+        /// READ DTx hit by a CLIENT-PERCEIVED RESPONSE timeout: a ResponseDelay longer than the
+        /// client's RequestTimeout makes the first read attempt give up waiting for the Coordinator
+        /// response (a retriable 408); the idempotent retry then returns 200 from the real Coordinator.
+        /// </summary>
+        [TestMethod]
+        public async Task ReadTransaction_ClientPerceivedResponseTimeout_RetriesThenSucceedsAgainstRealCoordinator()
+        {
+            ToDoActivity doc = await this.SeedItemAsync(this.bootstrapContainer);
+
+            // Delay (20s) exceeds the client RequestTimeout (5s); WithTimes(1) faults a single
+            // attempt. The request IS sent, but the read is idempotent so the retried read is safe.
+            TimeSpan injectedDelay = TimeSpan.FromSeconds(20);
+            TimeSpan requestTimeout = TimeSpan.FromSeconds(5);
+
+            string ruleId = $"dtx-read-respto-{Guid.NewGuid():N}";
+            FaultInjectionRule rule = new FaultInjectionRuleBuilder(
+                id: ruleId,
+                condition: new FaultInjectionConditionBuilder()
+                    .WithConnectionType(FaultInjectionConnectionType.Gateway)
+                    .WithOperationType(FaultInjectionOperationType.DistributedReadTransaction)
+                    .Build(),
+                result: FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                    .WithDelay(injectedDelay)
+                    .WithTimes(1)
+                    .Build())
+                .WithDuration(TimeSpan.FromMinutes(5))
+                .Build();
+
+            using CosmosClient fiClient = this.CreateFaultInjectedClient(rule, requestTimeout, out _);
+            Container fiContainer = fiClient.GetContainer(DatabaseId, ContainerId);
+
+            DistributedTransactionResponse response = await fiClient
+                .CreateDistributedReadTransaction()
+                .ReadItem(fiContainer, new PartitionKey(doc.pk), doc.id)
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.IsTrue(
+                rule.GetHitCount() >= 1,
+                $"The response timeout should have faulted at least one attempt. Hit count: {rule.GetHitCount()}.");
+            Assert.AreEqual(
+                HttpStatusCode.OK,
+                response.StatusCode,
+                $"After the injected response timeout was exhausted, the retried read transaction " +
+                $"should return 200 from the real Coordinator. Got: {response.StatusCode} (hit count {rule.GetHitCount()}).");
+            Assert.IsTrue(response.Count > 0);
+            Assert.AreEqual(
+                HttpStatusCode.OK,
+                response[0].StatusCode,
+                $"Per-op[0] should be 200 OK. Got: {response[0].StatusCode}.");
+
+            response.Dispose();
+        }
+
         // ─── Synthesized coordinator responses (DistributedTransactionCoordinatorError injector) ──────
         //
         // Unlike the hybrid tests above (which inject a transport error and let the REAL Coordinator
@@ -346,7 +472,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     isRetriable: false);
 
             using CosmosClient fiClient = this.CreateDtcFaultInjectedClient(
-                FaultInjectionOperationType.DistributedTransactionWriteBatch,
+                FaultInjectionOperationType.DistributedWriteTransaction,
                 coordinatorResponse,
                 suppressServiceRequest: true,
                 rule: out FaultInjectionRule rule);
@@ -389,7 +515,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     });
 
             using CosmosClient fiClient = this.CreateDtcFaultInjectedClient(
-                FaultInjectionOperationType.DistributedTransactionWriteBatch,
+                FaultInjectionOperationType.DistributedWriteTransaction,
                 coordinatorResponse,
                 suppressServiceRequest: true,
                 rule: out FaultInjectionRule rule);
@@ -436,7 +562,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     });
 
             using CosmosClient fiClient = this.CreateDtcFaultInjectedClient(
-                FaultInjectionOperationType.DistributedTransactionWriteBatch,
+                FaultInjectionOperationType.DistributedWriteTransaction,
                 coordinatorResponse,
                 suppressServiceRequest: true,
                 rule: out FaultInjectionRule rule);
@@ -492,7 +618,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     retryAfter: TimeSpan.FromSeconds(300));
 
             using CosmosClient fiClient = this.CreateDtcFaultInjectedClient(
-                FaultInjectionOperationType.DistributedTransactionWriteBatch,
+                FaultInjectionOperationType.DistributedWriteTransaction,
                 coordinatorResponse,
                 suppressServiceRequest: true,
                 rule: out FaultInjectionRule rule);
@@ -556,7 +682,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     isRetriable: false); // empty-body semantics: the SDK derives IsRetriable=false
 
             using CosmosClient fiClient = this.CreateDtcFaultInjectedClient(
-                FaultInjectionOperationType.DistributedTransactionWriteBatch,
+                FaultInjectionOperationType.DistributedWriteTransaction,
                 coordinatorResponse,
                 suppressServiceRequest: true,
                 rule: out FaultInjectionRule rule);
@@ -606,7 +732,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 };
 
             using CosmosClient fiClient = this.CreateDtcSequenceFaultInjectedClient(
-                FaultInjectionOperationType.DistributedTransactionWriteBatch,
+                FaultInjectionOperationType.DistributedWriteTransaction,
                 sequence,
                 suppressServiceRequest: true,
                 rule: out FaultInjectionRule rule);
@@ -644,6 +770,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     ConnectionMode = ConnectionMode.Gateway,
                     ConsistencyLevel = ConsistencyLevel.Session
+                });
+
+            return new CosmosClient(this.endpoint, this.key, options);
+        }
+
+        // Overload: same as above but with an explicit client RequestTimeout, used by the transport-
+        // timeout scenarios so an injected SendDelay/ResponseDelay longer than the timeout surfaces as
+        // a client-perceived RequestTimeout (408).
+        private CosmosClient CreateFaultInjectedClient(
+            FaultInjectionRule rule,
+            TimeSpan requestTimeout,
+            out FaultInjector faultInjector)
+        {
+            faultInjector = new FaultInjector(new List<FaultInjectionRule> { rule });
+
+            CosmosClientOptions options = faultInjector.GetFaultInjectionClientOptions(
+                new CosmosClientOptions
+                {
+                    ConnectionMode = ConnectionMode.Gateway,
+                    ConsistencyLevel = ConsistencyLevel.Session,
+                    RequestTimeout = requestTimeout
                 });
 
             return new CosmosClient(this.endpoint, this.key, options);

@@ -141,13 +141,13 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             {
                 FaultInjectionOperationType operationType = this.condition.GetOperationType();
 
-                if (operationType != FaultInjectionOperationType.DistributedTransactionReadBatch
-                    && operationType != FaultInjectionOperationType.DistributedTransactionWriteBatch)
+                if (operationType != FaultInjectionOperationType.DistributedReadTransaction
+                    && operationType != FaultInjectionOperationType.DistributedWriteTransaction)
                 {
                     throw new ArgumentException(
                         $"{nameof(FaultInjectionServerErrorType.DistributedTransactionCoordinatorError)} error type is only supported for " +
-                        $"{nameof(FaultInjectionOperationType.DistributedTransactionReadBatch)} and " +
-                        $"{nameof(FaultInjectionOperationType.DistributedTransactionWriteBatch)} operation types.");
+                        $"{nameof(FaultInjectionOperationType.DistributedReadTransaction)} and " +
+                        $"{nameof(FaultInjectionOperationType.DistributedWriteTransaction)} operation types.");
                 }
             }
         }

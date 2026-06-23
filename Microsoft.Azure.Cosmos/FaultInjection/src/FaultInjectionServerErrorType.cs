@@ -96,8 +96,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// can be any documented coordinator outcome — retriable or terminal — described by
         /// <see cref="FaultInjectionServerErrorResultBuilder.WithDistributedTransactionResponse"/>
         /// (status / sub-status, per-operation results, and the body <c>isRetriable</c> flag).
-        /// Only supported for <see cref="FaultInjectionOperationType.DistributedTransactionReadBatch"/>
-        /// and <see cref="FaultInjectionOperationType.DistributedTransactionWriteBatch"/> operation types.
+        /// Only supported for <see cref="FaultInjectionOperationType.DistributedReadTransaction"/>
+        /// and <see cref="FaultInjectionOperationType.DistributedWriteTransaction"/> operation types.
         /// </summary>
         DistributedTransactionCoordinatorError
     }

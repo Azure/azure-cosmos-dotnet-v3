@@ -81,12 +81,12 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <summary>
         /// Read distributed transaction batch operations.
         /// </summary>
-        DistributedTransactionReadBatch,
+        DistributedReadTransaction,
 
         /// <summary>
         /// Write (commit) distributed transaction batch operations.
         /// </summary>
-        DistributedTransactionWriteBatch,
+        DistributedWriteTransaction,
 
         /// <summary>
         /// All operation types. Default value.

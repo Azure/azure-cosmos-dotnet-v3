@@ -356,8 +356,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 FaultInjectionOperationType.MetadataPartitionKeyRange => OperationType.ReadFeed,
                 FaultInjectionOperationType.MetadataRefreshAddresses => OperationType.Invalid,
                 FaultInjectionOperationType.MetadataQueryPlan => OperationType.QueryPlan,
-                FaultInjectionOperationType.DistributedTransactionReadBatch => OperationType.Read,
-                FaultInjectionOperationType.DistributedTransactionWriteBatch => OperationType.CommitDistributedTransaction,
+                FaultInjectionOperationType.DistributedReadTransaction => OperationType.Read,
+                FaultInjectionOperationType.DistributedWriteTransaction => OperationType.CommitDistributedTransaction,
                 _ => throw new ArgumentException($"FaultInjectionOperationType: {faultInjectionOperationType} is not supported"),
             };
         }
@@ -380,8 +380,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 FaultInjectionOperationType.MetadataPartitionKeyRange => ResourceType.PartitionKeyRange,
                 FaultInjectionOperationType.MetadataRefreshAddresses => ResourceType.Address,
                 FaultInjectionOperationType.MetadataQueryPlan => ResourceType.Document,
-                FaultInjectionOperationType.DistributedTransactionReadBatch => ResourceType.DistributedTransactionBatch,
-                FaultInjectionOperationType.DistributedTransactionWriteBatch => ResourceType.DistributedTransactionBatch,
+                FaultInjectionOperationType.DistributedReadTransaction => ResourceType.DistributedTransactionBatch,
+                FaultInjectionOperationType.DistributedWriteTransaction => ResourceType.DistributedTransactionBatch,
                 _ => throw new ArgumentException($"FaultInjectionOperationType: {faultInjectionOperationType} is not supported"),
             };
         }

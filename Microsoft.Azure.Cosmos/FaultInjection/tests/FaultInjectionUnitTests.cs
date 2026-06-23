@@ -81,8 +81,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         {
             foreach (FaultInjectionOperationType dtxOperationType in new[]
             {
-                FaultInjectionOperationType.DistributedTransactionReadBatch,
-                FaultInjectionOperationType.DistributedTransactionWriteBatch,
+                FaultInjectionOperationType.DistributedReadTransaction,
+                FaultInjectionOperationType.DistributedWriteTransaction,
             })
             {
                 FaultInjectionCondition condition = new FaultInjectionConditionBuilder()

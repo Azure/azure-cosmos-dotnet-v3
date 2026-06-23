@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         public void FaultInjectionRuleBuilder_DistributedTransactionCoordinatorError_DistributedTransactionReadBatch_Builds()
         {
             FaultInjectionCondition condition = new FaultInjectionConditionBuilder()
-                .WithOperationType(FaultInjectionOperationType.DistributedTransactionReadBatch)
+                .WithOperationType(FaultInjectionOperationType.DistributedReadTransaction)
                 .Build();
             FaultInjectionServerErrorResult result = FaultInjectionResultBuilder
                 .GetResultBuilder(FaultInjectionServerErrorType.DistributedTransactionCoordinatorError)
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         public void FaultInjectionRuleBuilder_DistributedTransactionCoordinatorError_DistributedTransactionWriteBatch_Builds()
         {
             FaultInjectionCondition condition = new FaultInjectionConditionBuilder()
-                .WithOperationType(FaultInjectionOperationType.DistributedTransactionWriteBatch)
+                .WithOperationType(FaultInjectionOperationType.DistributedWriteTransaction)
                 .Build();
             FaultInjectionServerErrorResult result = FaultInjectionResultBuilder
                 .GetResultBuilder(FaultInjectionServerErrorType.DistributedTransactionCoordinatorError)
