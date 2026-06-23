@@ -6791,7 +6791,8 @@ namespace Microsoft.Azure.Cosmos
                     dnsResolutionFunction: ConfigurationManager.IsTcpDnsDotSuffixEnabled()
                         ? DnsDotSuffixHelper.ResolveHostAsync
                         : null,
-                    chaosInterceptor: this.chaosInterceptor);
+                    chaosInterceptor: this.chaosInterceptor,
+                    enableBarrierEarlyYieldOn429: this.ConnectionPolicy.EnableBarrierEarlyYieldOn429);
 
                 if (this.transportClientHandlerFactory != null)
                 {

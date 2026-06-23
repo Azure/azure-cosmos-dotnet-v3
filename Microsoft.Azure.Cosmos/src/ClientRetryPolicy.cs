@@ -261,8 +261,15 @@ namespace Microsoft.Azure.Cosmos
                     this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
                     this.documentServiceRequest?.ResourceAddress ?? string.Empty);
 
-                // Mark the partition key range as unavailable to retry future request on a new region.
-                this.TryMarkEndpointUnavailableForPkRange(isSystemResourceUnavailableForWrite: false);
+                // Do not mark the endpoint unavailable when the 408 is synthesized by
+                // ConsistencyWriter for barrier throttling (substatus 21013). That 408 is
+                // an early-yield signal, not a connectivity failure, and marking the
+                // endpoint unavailable would trigger unnecessary cross-region failover.
+                if (subStatusCode != SubStatusCodes.Server_WriteBarrierThrottled)
+                {
+                    // Mark the partition key range as unavailable to retry future request on a new region.
+                    this.TryMarkEndpointUnavailableForPkRange(isSystemResourceUnavailableForWrite: false);
+                }
             }
 
             // Received 403.3 on write region, initiate the endpoint rediscovery
