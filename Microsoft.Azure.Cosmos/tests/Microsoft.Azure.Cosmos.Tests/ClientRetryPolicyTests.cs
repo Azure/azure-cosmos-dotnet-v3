@@ -1834,6 +1834,69 @@
         }
 
         [TestMethod]
+        public async Task DtxRequest_403_3_WriteForbidden_MultiMaster_MarksRegionDownAndRetriesCrossRegion()
+        {
+            // A distributed-transaction commit that receives 403/3 (WriteForbidden) — the write region is
+            // no longer writable for this partition — must (1) mark the current write region down and
+            // (2) be retried cross-region against the next write region. On a MULTI-MASTER account there
+            // is a second write region to fail over to, so BOTH effects are directly observable:
+            //   • ShouldRetry == true                      → cross-region retry happens.
+            //   • next dispatch routes to Location2        → Location1 was marked down and the request
+            //                                                failed over to the other write region.
+            // The 403/3 branch in ClientRetryPolicy runs BEFORE the DTX classifier and is not guarded by
+            // isDtxRequest, so a DTX commit takes the same region-rediscovery/failover path as any write.
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: true,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false);
+
+            await endpointManager.RefreshLocationAsync();
+
+            ClientRetryPolicy policy = new ClientRetryPolicy(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery,
+                isThinClientEnabled: false);
+
+            DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
+
+            // First attempt → routes to the primary write region (Location1).
+            // Note: for DTX, OnBeforeSendRequest intentionally leaves LocationEndpointToRoute null
+            // (it pins UsePreferredLocations=false so the endpoint is (re)resolved on the write-region
+            // branch at dispatch); the resolved endpoint is obtained via ResolveServiceEndpoint.
+            policy.OnBeforeSendRequest(request);
+            Assert.AreEqual(
+                ClientRetryPolicyTests.Location1Endpoint,
+                endpointManager.ResolveServiceEndpoint(request),
+                "The DTX commit's first attempt should resolve to the primary write region (Location1).");
+
+            // Coordinator returns 403/3 (WriteForbidden) from Location1.
+            ShouldRetryResult result = await policy.ShouldRetryAsync(
+                new DocumentClientException(
+                    message: "403/3 WriteForbidden on DTX commit",
+                    innerException: null,
+                    statusCode: HttpStatusCode.Forbidden,
+                    substatusCode: SubStatusCodes.WriteForbidden,
+                    requestUri: request.RequestContext.LocationEndpointToRoute,
+                    responseHeaders: new DictionaryNameValueCollection()),
+                CancellationToken.None);
+
+            // (1) Cross-region retry happens.
+            Assert.IsTrue(
+                result.ShouldRetry,
+                "A DTX commit that hits 403/3 WriteForbidden must be retried (cross-region) after the write region is marked down.");
+
+            // (2) Region markdown happened → the retry resolves to the OTHER write region (Location2).
+            policy.OnBeforeSendRequest(request);
+            Assert.AreEqual(
+                ClientRetryPolicyTests.Location2Endpoint,
+                endpointManager.ResolveServiceEndpoint(request),
+                "After 403/3 marks Location1 down, the DTX commit must fail over and resolve to the next write region (Location2).");
+        }
+
+        [TestMethod]
         public async Task NonDtxWriteRequest_408_ShouldNotRetry()
         {
             const bool enableEndpointDiscovery = true;
@@ -1972,16 +2035,18 @@
             DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
             policy.OnBeforeSendRequest(request);
 
-            // 429/3200 (RU budget exceeded) is a recognized coordinator-retriable code. ClientRetryPolicy's
-            // DTX classifier invokes ResourceThrottleRetryPolicy inline and returns its decision, so the 429 is
-            // retried (honoring Retry-After up to the throttle budget) on the DTX commit path — the fix for
-            // https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5975.
+            // A bodyless 429/3200 (RU budget exceeded) on a DTX commit: the DTX classifier does not own
+            // throttling, so the response falls through to ResourceThrottleRetryPolicy, which retries it
+            // (honoring Retry-After up to the throttle budget). NOTE: the dedicated DTX-aware 429 handling
+            // (inline throttle invocation before the body-defer guard, covering the bodyless-DCE path of
+            // https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5975) is being delivered in a separate
+            // PR; this test pins the baseline throttle-retry behavior on the unit-test (bodyless) path.
             ResponseMessage response = new ResponseMessage(HttpStatusCode.TooManyRequests);
             response.Headers.SubStatusCodeLiteral = ((int)SubStatusCodes.RUBudgetExceeded).ToString();
 
             ShouldRetryResult result = await policy.ShouldRetryAsync(response, CancellationToken.None);
 
-            Assert.IsTrue(result.ShouldRetry, "DTX 429/3200 must be retried via ResourceThrottleRetryPolicy (the DTX classifier defers throttling to it and returns its retry decision).");
+            Assert.IsTrue(result.ShouldRetry, "DTX 429/3200 must be retried via ResourceThrottleRetryPolicy.");
         }
 
         [TestMethod]
