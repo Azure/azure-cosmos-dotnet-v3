@@ -347,6 +347,69 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [Description("When server operationResponses arrive out-of-order, the SDK reorders them by index so response[i].Index == i.")]
+        public async Task CommitAsync_OutOfOrderOperationResponses_SortedByIndex()
+        {
+            string capturedRequestJson = null;
+
+            // Wire response has indices in order [3,4,1,2,0] — deliberately shuffled.
+            const string mockResponseJson =
+                @"{""operationResponses"":[{""index"":3,""statusCode"":201},{""index"":4,""statusCode"":201},{""index"":1,""statusCode"":201},{""index"":2,""statusCode"":201},{""index"":0,""statusCode"":201}]}";
+
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
+            contextMock
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<PartitionKey?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns<string, ResourceType, OperationType, RequestOptions, ContainerInternal, PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
+                    (uri, resType, opType, opts, container, pk, itemId, stream, enricher, trace, ct) =>
+                    {
+                        using MemoryStream ms = new MemoryStream();
+                        stream.CopyTo(ms);
+                        capturedRequestJson = Encoding.UTF8.GetString(ms.ToArray());
+                        return Task.FromResult(new ResponseMessage(HttpStatusCode.OK)
+                        {
+                            Content = new MemoryStream(Encoding.UTF8.GetBytes(mockResponseJson))
+                        });
+                    });
+
+            DistributedTransactionResponse response = await new DistributedWriteTransactionCore(contextMock.Object)
+                .CreateItem(BuildMockContainer(), new PartitionKey("pk0"), "id0", new TestItem("id0"))
+                .ReplaceItem(BuildMockContainer(), new PartitionKey("pk1"), "id1", new TestItem("id1"))
+                .DeleteItem(BuildMockContainer(), new PartitionKey("pk2"), "id2")
+                .PatchItem(BuildMockContainer(), new PartitionKey("pk3"), "id3", new[] { PatchOperation.Add("/value", "v3") })
+                .UpsertItem(BuildMockContainer(), new PartitionKey("pk4"), "id4", new TestItem("id4"))
+                .CommitTransactionAsync(CancellationToken.None);
+
+            // Verify request indices are 0-based and ordered.
+            using JsonDocument requestDoc = JsonDocument.Parse(capturedRequestJson);
+            JsonElement requestOps = requestDoc.RootElement.GetProperty("operations");
+            Assert.AreEqual(5, requestOps.GetArrayLength());
+            for (int i = 0; i < 5; i++)
+            {
+                Assert.AreEqual(i, requestOps[i].GetProperty("index").GetInt32());
+            }
+
+            // After SDK reordering, response[i].Index must equal i.
+            Assert.AreEqual(5, response.Count);
+            for (int i = 0; i < response.Count; i++)
+            {
+                Assert.AreEqual(i, response[i].Index,
+                    $"Response[{i}] must have Index {i} after SDK reordering.");
+                Assert.AreEqual(HttpStatusCode.Created, response[i].StatusCode);
+            }
+        }
+
+        [TestMethod]
         public async Task CommitAsync_AllFiveOperationTypes_AreIncluded()
         {
             string capturedJson = null;
