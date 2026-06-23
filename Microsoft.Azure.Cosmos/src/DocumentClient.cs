@@ -6734,6 +6734,14 @@ namespace Microsoft.Azure.Cosmos
             // we return the Gateway store model
             if (request.UseGatewayMode)
             {
+                // When thin client is enabled the gateway HTTP path is the thin client
+                // proxy, so route thin-client-routable requests through the ThinClientStoreModel.
+                if (this.StoreModel is ThinClientStoreModel
+                    && ThinClientStoreModel.IsThinClientRoutable(this.GlobalEndpointManager, request))
+                {
+                    return this.StoreModel;
+                }
+
                 return this.GatewayStoreModel;
             }
 
