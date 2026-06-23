@@ -1,4 +1,4 @@
-//------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.FaultInjection
@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
     /// <summary>
     /// Describes a synthetic distributed-transaction coordinator response to inject when a fault
-    /// injection rule uses <see cref="FaultInjectionServerErrorType.RetriableCoordinatorResponse"/>.
+    /// injection rule uses <see cref="FaultInjectionServerErrorType.DistributedTransactionCoordinatorError"/>.
     /// This lets a test reproduce any documented DTC envelope outcome — status code, sub-status,
     /// the body <c>isRetriable</c> flag, an optional retry-after hint, and per-operation results —
     /// without a real coordinator backend.

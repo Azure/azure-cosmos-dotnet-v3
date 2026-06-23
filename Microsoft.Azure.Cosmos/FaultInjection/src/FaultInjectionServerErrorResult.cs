@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.FaultInjection
 {
     using System;
+    using System.Collections.Generic;
 
     /// <summary>
     /// Fault Injection Server Error Result.
@@ -16,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly bool suppressServiceRequests;
         private readonly double injectionRate;
         private readonly FaultInjectionDistributedTransactionResponse? distributedTransactionResponse;
+        private readonly IReadOnlyList<FaultInjectionDistributedTransactionResponse>? distributedTransactionResponses;
 
         /// <summary>
         /// Creates a new FaultInjectionServerErrorResult.
@@ -42,14 +44,15 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <param name="delay">Specifies the injected delay for the server error.</param>
         /// <param name="suppressServiceRequests">Specifies whether service requests should be suppressed.</param>
         /// <param name="injectionRate">Specifies the percentage of how many times the rule will be applied.</param>
-        /// <param name="distributedTransactionResponse">The coordinator response to inject for <see cref="FaultInjectionServerErrorType.RetriableCoordinatorResponse"/>.</param>
+        /// <param name="distributedTransactionResponse">The coordinator response to inject for <see cref="FaultInjectionServerErrorType.DistributedTransactionCoordinatorError"/>.</param>
         public FaultInjectionServerErrorResult(
             FaultInjectionServerErrorType serverErrorType,
             int times,
             TimeSpan delay,
             bool suppressServiceRequests,
             double injectionRate,
-            FaultInjectionDistributedTransactionResponse? distributedTransactionResponse)
+            FaultInjectionDistributedTransactionResponse? distributedTransactionResponse,
+            IReadOnlyList<FaultInjectionDistributedTransactionResponse>? distributedTransactionResponses = null)
         {
             this.serverErrorType = serverErrorType;
             this.times = times;
@@ -57,6 +60,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             this.suppressServiceRequests = suppressServiceRequests;
             this.injectionRate = injectionRate;
             this.distributedTransactionResponse = distributedTransactionResponse;
+            this.distributedTransactionResponses = distributedTransactionResponses;
         }
 
         /// <summary>
@@ -114,6 +118,16 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         public FaultInjectionDistributedTransactionResponse? GetDistributedTransactionResponse()
         {
             return this.distributedTransactionResponse;
+        }
+
+        /// <summary>
+        /// Gets the ordered sequence of distributed-transaction coordinator responses to inject across
+        /// successive attempts (the final entry repeats), or <c>null</c> when only a single response was set.
+        /// </summary>
+        /// <returns>the response sequence or <c>null</c>.</returns>
+        public IReadOnlyList<FaultInjectionDistributedTransactionResponse>? GetDistributedTransactionResponses()
+        {
+            return this.distributedTransactionResponses;
         }
 
         /// <summary>

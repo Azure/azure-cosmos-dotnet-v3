@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.FaultInjection
@@ -26,6 +26,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly FaultInjectionApplicationContext applicationContext;
         private readonly GlobalEndpointManager globalEndpointManager;
         private readonly FaultInjectionDistributedTransactionResponse? distributedTransactionResponse;
+        private readonly IReadOnlyList<FaultInjectionDistributedTransactionResponse>? distributedTransactionResponses;
+        private long distributedTransactionResponseInvocations;
 
         /// <summary>
         /// Constructor for FaultInjectionServerErrorResultInternal
@@ -45,7 +47,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             double injectionRate,
             FaultInjectionApplicationContext applicationContext,
             GlobalEndpointManager globalEndpointManager,
-            FaultInjectionDistributedTransactionResponse? distributedTransactionResponse = null)
+            FaultInjectionDistributedTransactionResponse? distributedTransactionResponse = null,
+            IReadOnlyList<FaultInjectionDistributedTransactionResponse>? distributedTransactionResponses = null)
         {
             this.serverErrorType = serverErrorType;
             this.times = times;
@@ -55,6 +58,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             this.applicationContext = applicationContext;
             this.globalEndpointManager = globalEndpointManager;
             this.distributedTransactionResponse = distributedTransactionResponse;
+            this.distributedTransactionResponses = distributedTransactionResponses;
         }
 
         /// <summary>
@@ -611,14 +615,31 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         HttpConstants.HttpHeaders.WwwAuthenticate,
                         this.GenerateWwwAuthenticateForRevocation());
                     return httpResponse;
-                case FaultInjectionServerErrorType.RetriableCoordinatorResponse:
+                case FaultInjectionServerErrorType.DistributedTransactionCoordinatorError:
 
                     // The distributed-transaction coordinator signals its outcome through the response
                     // BODY (isRetriable + operationResponses) plus the envelope status/sub-status. When a
                     // FaultInjectionDistributedTransactionResponse spec is supplied, reproduce it verbatim;
                     // otherwise fall back to the generic retriable shape (503 + {"isRetriable":true}) so the
                     // committer's outer retry loop both observes IsRetriable=true and a non-success status.
-                    FaultInjectionDistributedTransactionResponse? dtcSpec = this.distributedTransactionResponse;
+                    //
+                    // When a response SEQUENCE is supplied (WithDistributedTransactionResponses), successive
+                    // injections walk the sequence so each retry attempt can surface a DIFFERENT envelope code
+                    // (e.g. 449 then 408 then a terminal 400); the final entry repeats once exhausted. The
+                    // per-rule invocation counter is global (not per-activity-id), so it advances on every retry
+                    // regardless of the fresh activity ids the SDK assigns across its inner retry loop.
+                    FaultInjectionDistributedTransactionResponse? dtcSpec;
+                    if (this.distributedTransactionResponses != null && this.distributedTransactionResponses.Count > 0)
+                    {
+                        long invocation = System.Threading.Interlocked.Increment(ref this.distributedTransactionResponseInvocations) - 1;
+                        int index = (int)Math.Min(invocation, this.distributedTransactionResponses.Count - 1);
+                        dtcSpec = this.distributedTransactionResponses[index];
+                    }
+                    else
+                    {
+                        dtcSpec = this.distributedTransactionResponse;
+                    }
+
                     int dtcStatus = dtcSpec?.StatusCode ?? (int)HttpStatusCode.ServiceUnavailable;
                     int dtcSubStatus = dtcSpec?.SubStatusCode ?? (int)SubStatusCodes.Unknown;
                     bool dtcIsRetriable = dtcSpec?.IsRetriable ?? true;
@@ -630,6 +651,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                             ? new Version(2, 0)
                             : new Version(1, 1),
                         StatusCode = (HttpStatusCode)dtcStatus,
+
                         // A bodyless envelope (408/449/429/500 infra failures) leaves Content null so the SDK's
                         // ClientRetryPolicy.hasResponseBody check is false and the inner loop owns retry; otherwise
                         // emit the coordinator JSON body so the outer committer loop can read isRetriable.

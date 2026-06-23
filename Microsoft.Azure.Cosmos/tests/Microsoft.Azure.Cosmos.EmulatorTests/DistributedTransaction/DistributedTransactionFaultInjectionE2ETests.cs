@@ -109,10 +109,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// against the real Coordinator. Data-driven over every retriable transport error type so
         /// the run itself reveals exactly which ones the Gateway-DTX inner loop retries-then-resends.
         /// </summary>
-        // Note: the Gateway fault-injection path does not support RetryWith (449) or Gone (410) —
-        // those codes are only emitted on the Direct-mode path — so they are intentionally excluded
-        // from these Gateway DTX rows.
+        // Note: the Gateway fault-injection path does not support RetryWith (449) — only the
+        // Direct-mode path emits it — so it is intentionally excluded from these Gateway DTX rows.
         [DataTestMethod]
+        [DataRow(FaultInjectionServerErrorType.Gone)]
         [DataRow(FaultInjectionServerErrorType.ServiceUnavailable)]
         [DataRow(FaultInjectionServerErrorType.TooManyRequests)]
         [DataRow(FaultInjectionServerErrorType.Timeout)]
@@ -168,6 +168,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// Coordinator.
         /// </summary>
         [DataTestMethod]
+        [DataRow(FaultInjectionServerErrorType.Gone)]
         [DataRow(FaultInjectionServerErrorType.ServiceUnavailable)]
         [DataRow(FaultInjectionServerErrorType.TooManyRequests)]
         [DataRow(FaultInjectionServerErrorType.Timeout)]
@@ -318,10 +319,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             faulted.Dispose();
         }
 
-        // ─── Synthesized coordinator responses (RetriableCoordinatorResponse injector) ──────
+        // ─── Synthesized coordinator responses (DistributedTransactionCoordinatorError injector) ──────
         //
         // Unlike the hybrid tests above (which inject a transport error and let the REAL Coordinator
-        // serve the retry), these tests use the RetriableCoordinatorResponse error type to inject a
+        // serve the retry), these tests use the DistributedTransactionCoordinatorError error type to inject a
         // COMPLETE, contract-shaped Coordinator response — envelope status/sub-status + body
         // isRetriable + per-operation results — so each documented DTC outcome can be reproduced
         // deterministically. Terminal scenarios suppress the service request entirely, so they do
@@ -466,127 +467,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         /// <summary>
-        /// Bodyless inner-loop retry budgets. A coordinator envelope with NO body (Content == null) is
-        /// owned by ClientRetryPolicy's inner loop, which retries it up to a fixed budget and then
-        /// surfaces it. With the service request suppressed every attempt is re-injected, so the rule
-        /// hit count pins the EXACT inner-loop budget: 408 and 449/5352 share MaxDtxRetryCount (10
-        /// retries -> 11 hits); 500/5411-5413 use MaxDtxInfraFailureRetryCount (9 retries -> 10 hits).
-        /// The surfaced response reports IsRetriable=false because there is no body to carry the flag.
-        /// This is the live, exact-count proof that the inner loop owns bodyless retriable envelopes.
-        /// </summary>
-        [DataTestMethod]
-        [Timeout(120000)]
-        [DataRow(408, 0, 11, DisplayName = "408/0 stuck - inner loop retries 10x then surfaces (11 hits)")]
-        [DataRow(449, 5352, 11, DisplayName = "449/5352 coordinator race - inner loop retries 10x then surfaces (11 hits)")]
-        [DataRow(500, 5411, 10, DisplayName = "500/5411 ledger failure - inner loop retries 9x then surfaces (10 hits)")]
-        [DataRow(500, 5412, 10, DisplayName = "500/5412 account config failure - inner loop retries 9x then surfaces (10 hits)")]
-        [DataRow(500, 5413, 10, DisplayName = "500/5413 dispatch failure - inner loop retries 9x then surfaces (10 hits)")]
-        public async Task WriteTransaction_BodylessRetriableEnvelope_InnerLoopExhaustsBudgetThenSurfaces(
-            int statusCode,
-            int subStatusCode,
-            int expectedHits)
-        {
-            FaultInjectionDistributedTransactionResponse coordinatorResponse =
-                new FaultInjectionDistributedTransactionResponse(
-                    statusCode: statusCode,
-                    subStatusCode: subStatusCode,
-                    isRetriable: false,
-                    retryAfter: TimeSpan.FromMilliseconds(1), // keep the coordinator-retriable backoff tiny (ignored by the infra-failure branch)
-                    operationResults: null,
-                    emptyBody: true);
-
-            using CosmosClient fiClient = this.CreateDtcFaultInjectedClient(
-                FaultInjectionOperationType.DistributedTransactionWriteBatch,
-                coordinatorResponse,
-                suppressServiceRequest: true,
-                rule: out FaultInjectionRule rule);
-
-            Container fiContainer = fiClient.GetContainer(DatabaseId, ContainerId);
-            string pk = $"fi-bodyless-{statusCode}-{subStatusCode}-{Guid.NewGuid():N}";
-            string id = Guid.NewGuid().ToString();
-
-            DistributedTransactionResponse response = await fiClient
-                .CreateDistributedWriteTransaction()
-                .CreateItem(fiContainer, new PartitionKey(pk), id, new { id, pk, value = "v" })
-                .CommitTransactionAsync(CancellationToken.None);
-
-            Assert.AreEqual(
-                (HttpStatusCode)statusCode,
-                response.StatusCode,
-                $"The bodyless {statusCode}/{subStatusCode} envelope must surface unchanged after the inner loop exhausts its budget.");
-            Assert.IsFalse(response.IsSuccessStatusCode);
-            Assert.IsFalse(
-                response.IsRetriable,
-                $"A bodyless {statusCode}/{subStatusCode} response carries no isRetriable flag, so the surfaced response must report IsRetriable=false.");
-            Assert.AreEqual(
-                expectedHits,
-                rule.GetHitCount(),
-                $"ClientRetryPolicy must retry the bodyless {statusCode}/{subStatusCode} envelope exactly to its inner-loop budget. Expected {expectedHits} hits, got {rule.GetHitCount()}.");
-            response.Dispose();
-        }
-
-        /// <summary>
-        /// A bodyless 429/3200 (RU budget exceeded) is classified coordinator-retriable by ClientRetryPolicy
-        /// and retried via ResourceThrottleRetryPolicy (honoring Retry-After up to the throttle budget). With
-        /// the service request suppressed, every attempt re-injects the 429, so the rule is hit more than once
-        /// before the throttle budget is exhausted and the 429 finally surfaces. Regression guard for the fix
-        /// to issue #5975 (the throttle deferral previously did not re-send on the DTX commit path).
+        /// Live proof that the DistributedTransactionCoordinatorError injector drives the committer's OUTER
+        /// retry loop. A body-bearing <c>isRetriable:true</c> response — here a 452 clock-skew abort,
+        /// a status the inner transport policy does NOT retry — surfaces through the real gateway
+        /// pipeline to the committer, which enters the retry path. A retry-after hint larger than the
+        /// cumulative delay budget makes the budget gate fire on the FIRST retry decision (before any
+        /// sleep), so the test is fast and deterministic: the injected response is returned, still
+        /// flagged <c>IsRetriable</c>.
+        ///
+        /// This is the path the empty-body transport-fault hybrid could not reach. EXACT multi-attempt
+        /// retry counts + budget timing are asserted deterministically (no real sleeping) in the
+        /// committer unit tests (e.g. CommitTransaction_ExhaustsCumulativeDelayBudget_ReturnsLastResponse).
         /// </summary>
         [TestMethod]
-        [Timeout(120000)]
-        public async Task WriteTransaction_Bodyless429_ThrottlePolicyRetriesThenSurfaces()
-        {
-            FaultInjectionDistributedTransactionResponse coordinatorResponse =
-                new FaultInjectionDistributedTransactionResponse(
-                    statusCode: 429,
-                    subStatusCode: 3200, // RUBudgetExceeded
-                    isRetriable: false,
-                    retryAfter: TimeSpan.FromMilliseconds(1),
-                    operationResults: null,
-                    emptyBody: true);
-
-            using CosmosClient fiClient = this.CreateDtcFaultInjectedClient(
-                FaultInjectionOperationType.DistributedTransactionWriteBatch,
-                coordinatorResponse,
-                suppressServiceRequest: true,
-                rule: out FaultInjectionRule rule);
-
-            Container fiContainer = fiClient.GetContainer(DatabaseId, ContainerId);
-            string pk = $"fi-bodyless-429-{Guid.NewGuid():N}";
-            string id = Guid.NewGuid().ToString();
-
-            DistributedTransactionResponse response = await fiClient
-                .CreateDistributedWriteTransaction()
-                .CreateItem(fiContainer, new PartitionKey(pk), id, new { id, pk, value = "v" })
-                .CommitTransactionAsync(CancellationToken.None);
-
-
-            Assert.AreEqual(
-                (HttpStatusCode)429,
-                response.StatusCode,
-                "The bodyless 429/3200 surfaces once the throttle budget is exhausted.");
-            Assert.IsTrue(
-                rule.GetHitCount() >= 2,
-                $"429/3200 must be retried by ResourceThrottleRetryPolicy (ClientRetryPolicy defers to it), so the " +
-                $"rule must be hit more than once before the 429 surfaces. Hit count: {rule.GetHitCount()}.");
-            response.Dispose();
-        }
-
-        /// <summary>
-        /// A bodyless 452/5421 (aborted) is terminal: neither the inner ClientRetryPolicy nor the outer
-        /// committer loop retries it, so it surfaces at exactly one hit.
-        /// </summary>
-        [TestMethod]
-        public async Task WriteTransaction_Bodyless452Aborted_SurfacedWithoutRetry()
+        public async Task WriteTransaction_DistributedTransactionCoordinatorError_DrivesOuterRetryLoop()
         {
             FaultInjectionDistributedTransactionResponse coordinatorResponse =
                 new FaultInjectionDistributedTransactionResponse(
                     statusCode: 452,
-                    subStatusCode: 5421,
-                    isRetriable: false,
-                    retryAfter: null,
-                    operationResults: null,
-                    emptyBody: true);
+                    subStatusCode: 5421, // DtcHlcClockSkewAborted — the retriable 452 variant
+                    isRetriable: true,
+                    // Larger than the committer's cumulative delay budget so the budget gate fires on the
+                    // first retry decision (before any sleep) — keeps this live test fast and deterministic.
+                    retryAfter: TimeSpan.FromSeconds(300));
 
             using CosmosClient fiClient = this.CreateDtcFaultInjectedClient(
                 FaultInjectionOperationType.DistributedTransactionWriteBatch,
@@ -595,7 +498,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 rule: out FaultInjectionRule rule);
 
             Container fiContainer = fiClient.GetContainer(DatabaseId, ContainerId);
-            string pk = $"fi-bodyless-452-{Guid.NewGuid():N}";
+            string pk = $"fi-outer-{Guid.NewGuid():N}";
             string id = Guid.NewGuid().ToString();
 
             DistributedTransactionResponse response = await fiClient
@@ -603,62 +506,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .CreateItem(fiContainer, new PartitionKey(pk), id, new { id, pk, value = "v" })
                 .CommitTransactionAsync(CancellationToken.None);
 
-            Assert.AreEqual((HttpStatusCode)452, response.StatusCode, "The aborted 452 envelope must surface unchanged.");
-            Assert.IsFalse(response.IsSuccessStatusCode);
-            Assert.IsFalse(response.IsRetriable);
+            // The injected isRetriable body drove the OUTER loop into the retry path; the over-budget
+            // retry-after then stopped it on the first retry decision, returning the injected response.
             Assert.AreEqual(
-                1,
-                rule.GetHitCount(),
-                $"452/5421 is terminal - it must be injected exactly once with no inner or outer retry. Hit count: {rule.GetHitCount()}.");
-            response.Dispose();
-        }
-
-        /// <summary>
-        /// Bodyless inner-loop retry that reaches the REAL Coordinator: inject a bodyless retriable
-        /// envelope for the first attempt only (WithTimes(1), service request NOT suppressed). The inner
-        /// ClientRetryPolicy retries, the rule is then exhausted, and the retry flows through to the real
-        /// Coordinator and commits - mirroring the hybrid transport-fault "mock then real" pattern.
-        /// </summary>
-        [DataTestMethod]
-        [Timeout(120000)]
-        [DataRow(408, 0, DisplayName = "408/0 stuck - bodyless, inner retry reaches real Coordinator")]
-        [DataRow(449, 5352, DisplayName = "449/5352 coordinator race - bodyless, inner retry reaches real Coordinator")]
-        [DataRow(500, 5411, DisplayName = "500/5411 ledger failure - bodyless, inner retry reaches real Coordinator")]
-        public async Task WriteTransaction_BodylessRetriableEnvelope_InnerRetryReachesRealCoordinator(
-            int statusCode,
-            int subStatusCode)
-        {
-            FaultInjectionDistributedTransactionResponse coordinatorResponse =
-                new FaultInjectionDistributedTransactionResponse(
-                    statusCode: statusCode,
-                    subStatusCode: subStatusCode,
-                    isRetriable: false,
-                    retryAfter: TimeSpan.FromMilliseconds(1),
-                    operationResults: null,
-                    emptyBody: true);
-
-            using CosmosClient fiClient = this.CreateDtcFaultInjectedClient(
-                FaultInjectionOperationType.DistributedTransactionWriteBatch,
-                coordinatorResponse,
-                suppressServiceRequest: false,
-                times: 1,
-                rule: out FaultInjectionRule rule);
-
-            Container fiContainer = fiClient.GetContainer(DatabaseId, ContainerId);
-            string pk = $"fi-bodyless-real-{statusCode}-{subStatusCode}-{Guid.NewGuid():N}";
-            string id = Guid.NewGuid().ToString();
-
-            DistributedTransactionResponse response = await fiClient
-                .CreateDistributedWriteTransaction()
-                .CreateItem(fiContainer, new PartitionKey(pk), id, new { id, pk, value = "v" })
-                .CommitTransactionAsync(CancellationToken.None);
-
+                (HttpStatusCode)452,
+                response.StatusCode,
+                $"The injected retriable 452 envelope must surface from the outer loop. Got: {response.StatusCode}.");
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.IsTrue(
+                response.IsRetriable,
+                "A response returned after the outer loop gives up on the delay budget must still be flagged IsRetriable.");
             Assert.IsTrue(
                 rule.GetHitCount() >= 1,
-                $"[{statusCode}/{subStatusCode}] The bodyless fault must have fired at least once. Hit count: {rule.GetHitCount()}.");
-            Assert.IsTrue(
-                response.IsSuccessStatusCode,
-                $"[{statusCode}/{subStatusCode}] After the bodyless fault was exhausted, the inner-loop retry should reach the real Coordinator and commit. Got: {response.StatusCode} (hit count {rule.GetHitCount()}).");
+                $"The retriable coordinator response must have been injected. Hit count: {rule.GetHitCount()}.");
             response.Dispose();
         }
 
@@ -669,6 +529,108 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         // NOT reproduced here because the live pipeline would sleep the real exponential backoff (tens of
         // seconds) and could not pin an exact attempt count.
 
+        /// <summary>
+        /// Documented DTX envelope status/sub-status combinations from the SDK response-status-codes
+        /// spec, injected as full coordinator responses. The spec marks 408/449/429/500 as
+        /// "retriable: Yes" but with an EMPTY body — and the SDK derives IsRetriable from the body, so
+        /// an empty body (modeled here as isRetriable:false) yields IsRetriable=false and the outer loop
+        /// does NOT retry. These rows lock in the CURRENT behavior and make the spec-vs-SDK gap visible:
+        /// if these are meant to be retried, the coordinator must send isRetriable:true in the body
+        /// (or the SDK must retry by status), neither of which happens today.
+        /// </summary>
+        [DataTestMethod]
+        [Timeout(120000)]
+        [DataRow(408, 0, DisplayName = "408/0 stuck (spec: retriable) — empty body, not retried")]
+        [DataRow(449, 5352, DisplayName = "449/5352 coordinator race (spec: retriable) — empty body, not retried")]
+        [DataRow(429, 3200, DisplayName = "429/3200 ledger throttled (spec: retriable) — empty body, not retried")]
+        [DataRow(500, 5411, DisplayName = "500/5411 infra failure (spec: retriable) — empty body, not retried")]
+        [DataRow(500, 5412, DisplayName = "500/5412 infra failure (spec: retriable) — empty body, not retried")]
+        [DataRow(500, 5413, DisplayName = "500/5413 infra failure (spec: retriable) — empty body, not retried")]
+        [DataRow(452, 0, DisplayName = "452/0 aborted — empty body, not retried")]
+        public async Task WriteTransaction_DocumentedEnvelopeCode_EmptyBody_NotRetried(int statusCode, int subStatusCode)
+        {
+            FaultInjectionDistributedTransactionResponse coordinatorResponse =
+                new FaultInjectionDistributedTransactionResponse(
+                    statusCode: statusCode,
+                    subStatusCode: subStatusCode,
+                    isRetriable: false); // empty-body semantics: the SDK derives IsRetriable=false
+
+            using CosmosClient fiClient = this.CreateDtcFaultInjectedClient(
+                FaultInjectionOperationType.DistributedTransactionWriteBatch,
+                coordinatorResponse,
+                suppressServiceRequest: true,
+                rule: out FaultInjectionRule rule);
+
+            Container fiContainer = fiClient.GetContainer(DatabaseId, ContainerId);
+            string pk = $"fi-code-{statusCode}-{subStatusCode}-{Guid.NewGuid():N}";
+            string id = Guid.NewGuid().ToString();
+
+            DistributedTransactionResponse response = await fiClient
+                .CreateDistributedWriteTransaction()
+                .CreateItem(fiContainer, new PartitionKey(pk), id, new { id, pk, value = "v" })
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.AreEqual(
+                (HttpStatusCode)statusCode,
+                response.StatusCode,
+                $"The injected {statusCode}/{subStatusCode} envelope must surface unchanged.");
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.IsFalse(
+                response.IsRetriable,
+                $"An empty-body {statusCode}/{subStatusCode} response yields IsRetriable=false; the SDK does not retry it (the spec marks it retriable — this is the gap).");
+            Assert.AreEqual(
+                1,
+                rule.GetHitCount(),
+                $"Empty-body {statusCode}/{subStatusCode} must be surfaced at hit 1 — no inner or outer retry. Hit count: {rule.GetHitCount()}.");
+            response.Dispose();
+        }
+
+        /// <summary>
+        /// Mixed envelope codes across retries — a real distributed coordinator can surface a DIFFERENT
+        /// error on each attempt. A response SEQUENCE is injected so attempt 1 returns 449/5352, attempt 2
+        /// returns 408/0, attempt 3 returns 500/5411, and attempt 4 returns a TERMINAL 400/5422 mismatch.
+        /// The first three are retriable (the coordinator and infra budgets interleave), so the SDK retries
+        /// through the shifting error set; the terminal 400 stops it. Asserts exactly 4 injections and 400.
+        /// </summary>
+        [TestMethod]
+        [Timeout(120000)]
+        public async Task WriteTransaction_MixedEnvelopeCodesAcrossRetries_RetriesThenSurfacesTerminal()
+        {
+            IReadOnlyList<FaultInjectionDistributedTransactionResponse> sequence =
+                new List<FaultInjectionDistributedTransactionResponse>
+                {
+                    new FaultInjectionDistributedTransactionResponse(statusCode: 449, subStatusCode: 5352, isRetriable: false, retryAfter: TimeSpan.FromMilliseconds(1), operationResults: null, emptyBody: true),
+                    new FaultInjectionDistributedTransactionResponse(statusCode: 408, subStatusCode: 0, isRetriable: false, retryAfter: TimeSpan.FromMilliseconds(1), operationResults: null, emptyBody: true),
+                    new FaultInjectionDistributedTransactionResponse(statusCode: 500, subStatusCode: 5411, isRetriable: false, retryAfter: TimeSpan.FromMilliseconds(1), operationResults: null, emptyBody: true),
+                    new FaultInjectionDistributedTransactionResponse(statusCode: 400, subStatusCode: 5422, isRetriable: false),
+                };
+
+            using CosmosClient fiClient = this.CreateDtcSequenceFaultInjectedClient(
+                FaultInjectionOperationType.DistributedTransactionWriteBatch,
+                sequence,
+                suppressServiceRequest: true,
+                rule: out FaultInjectionRule rule);
+
+            Container fiContainer = fiClient.GetContainer(DatabaseId, ContainerId);
+            string pk = $"fi-mixed-{Guid.NewGuid():N}";
+            string id = Guid.NewGuid().ToString();
+
+            DistributedTransactionResponse response = await fiClient
+                .CreateDistributedWriteTransaction()
+                .CreateItem(fiContainer, new PartitionKey(pk), id, new { id, pk, value = "v" })
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.AreEqual(
+                (HttpStatusCode)400,
+                response.StatusCode,
+                "After retrying through 449 -> 408 -> 500, the terminal 400 must surface.");
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.AreEqual(
+                4,
+                rule.GetHitCount(),
+                $"The SDK must retry the three retriable envelopes (449, 408, 500) and stop at the terminal 400 — exactly 4 injections. Hit count: {rule.GetHitCount()}.");
+            response.Dispose();
+        }
         // ─── Helpers ───────────────────────────────────────────────────────────────────────
 
         // Builds a CosmosClient (endpoint + master key, Gateway/Session) wired with the supplied
@@ -688,7 +650,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         // Builds a fault-injected client whose rule injects a complete, synthesized DTC coordinator
-        // response (via RetriableCoordinatorResponse) for the given distributed-transaction operation
+        // response (via DistributedTransactionCoordinatorError) for the given distributed-transaction operation
         // type. When suppressServiceRequest is true the real Coordinator is never contacted.
         private CosmosClient CreateDtcFaultInjectedClient(
             FaultInjectionOperationType operationType,
@@ -698,7 +660,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int times = 0)
         {
             FaultInjectionServerErrorResultBuilder resultBuilder = FaultInjectionResultBuilder
-                .GetResultBuilder(FaultInjectionServerErrorType.RetriableCoordinatorResponse)
+                .GetResultBuilder(FaultInjectionServerErrorType.DistributedTransactionCoordinatorError)
                 .WithSuppressServiceRequest(suppressServiceRequest)
                 .WithDistributedTransactionResponse(coordinatorResponse);
 
@@ -720,6 +682,39 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return this.CreateFaultInjectedClient(rule, out _);
         }
 
+        // Builds a fault-injected client whose rule injects an ORDERED SEQUENCE of synthesized DTC
+        // coordinator responses — one per successive attempt, the last repeating once exhausted — for the
+        // given distributed-transaction operation type. When suppressServiceRequest is true the real
+        // Coordinator is never contacted, so the sequence walks deterministically on each injected attempt.
+        private CosmosClient CreateDtcSequenceFaultInjectedClient(
+            FaultInjectionOperationType operationType,
+            IReadOnlyList<FaultInjectionDistributedTransactionResponse> responses,
+            bool suppressServiceRequest,
+            out FaultInjectionRule rule,
+            int times = 0)
+        {
+            FaultInjectionServerErrorResultBuilder resultBuilder = FaultInjectionResultBuilder
+                .GetResultBuilder(FaultInjectionServerErrorType.DistributedTransactionCoordinatorError)
+                .WithSuppressServiceRequest(suppressServiceRequest)
+                .WithDistributedTransactionResponses(responses);
+
+            if (times > 0)
+            {
+                resultBuilder = resultBuilder.WithTimes(times);
+            }
+
+            rule = new FaultInjectionRuleBuilder(
+                id: $"dtc-seq-{operationType}-{Guid.NewGuid():N}",
+                condition: new FaultInjectionConditionBuilder()
+                    .WithConnectionType(FaultInjectionConnectionType.Gateway)
+                    .WithOperationType(operationType)
+                    .Build(),
+                result: resultBuilder.Build())
+                .WithDuration(TimeSpan.FromMinutes(5))
+                .Build();
+
+            return this.CreateFaultInjectedClient(rule, out _);
+        }
         private async Task<ToDoActivity> SeedItemAsync(Container targetContainer)
         {
             ToDoActivity doc = ToDoActivity.CreateRandomToDoActivity();

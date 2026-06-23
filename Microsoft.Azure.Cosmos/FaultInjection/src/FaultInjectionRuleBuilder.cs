@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         {
             FaultInjectionServerErrorResult? serverErrorResult = this.result as FaultInjectionServerErrorResult;
 
-            if (serverErrorResult?.GetServerErrorType() == FaultInjectionServerErrorType.RetriableCoordinatorResponse)
+            if (serverErrorResult?.GetServerErrorType() == FaultInjectionServerErrorType.DistributedTransactionCoordinatorError)
             {
                 FaultInjectionOperationType operationType = this.condition.GetOperationType();
 
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     && operationType != FaultInjectionOperationType.DistributedTransactionWriteBatch)
                 {
                     throw new ArgumentException(
-                        $"{nameof(FaultInjectionServerErrorType.RetriableCoordinatorResponse)} error type is only supported for " +
+                        $"{nameof(FaultInjectionServerErrorType.DistributedTransactionCoordinatorError)} error type is only supported for " +
                         $"{nameof(FaultInjectionOperationType.DistributedTransactionReadBatch)} and " +
                         $"{nameof(FaultInjectionOperationType.DistributedTransactionWriteBatch)} operation types.");
                 }

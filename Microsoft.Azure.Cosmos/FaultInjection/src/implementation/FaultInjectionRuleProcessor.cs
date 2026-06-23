@@ -196,7 +196,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     result.GetInjectionRate(),
                     this.applicationContext, 
                     this.globalEndpointManager,
-                    result.GetDistributedTransactionResponse()));
+                    result.GetDistributedTransactionResponse(),
+                    result.GetDistributedTransactionResponses()));
         }
 
         private async Task<IFaultInjectionRuleInternal> GetEffectiveCustomServerErrorRule(FaultInjectionRule rule)

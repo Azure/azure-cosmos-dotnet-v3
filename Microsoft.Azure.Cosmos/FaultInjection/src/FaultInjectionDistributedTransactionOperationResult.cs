@@ -1,4 +1,4 @@
-//------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.FaultInjection
@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     /// <summary>
     /// Describes a single per-operation result to embed in an injected distributed-transaction
     /// coordinator response (the <c>operationResponses[]</c> array of the response body).
-    /// Used with <see cref="FaultInjectionServerErrorType.RetriableCoordinatorResponse"/> to
+    /// Used with <see cref="FaultInjectionServerErrorType.DistributedTransactionCoordinatorError"/> to
     /// reproduce constituent (per-operation) outcomes such as <c>424 FailedDependency</c> or
     /// <c>453 DtcOperationRolledBack</c>.
     /// </summary>
