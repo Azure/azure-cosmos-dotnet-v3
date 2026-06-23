@@ -207,11 +207,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .ReadItem(this.container, new PartitionKey(pk2), Guid.NewGuid().ToString())
                 .CommitTransactionAsync(CancellationToken.None);
 
-            // PR 2154806 reworked read DTx response codes: 404 is now a non-retryable hard failure,
-            // not a per-op success (the success set is {200, 304}). All-missing fails Phase 1; the
-            // envelope is the promotion of the lone remaining non-424 code {404} -> 404. The 404 ops
-            // are themselves the failing code, so they are kept as-is (only successful 200/304 ops
-            // are rewritten to 424).
+            // Read DTx response codes: 404 is a non-retryable hard failure, not a per-op success
+            // (the success set is {200, 304}). All-missing fails Phase 1; the envelope is the
+            // promotion of the lone remaining non-424 code {404} -> 404. The 404 ops are themselves
+            // the failing code, so they are kept as-is (only successful 200/304 ops are rewritten
+            // to 424).
             Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode, "All-missing read DTx fails with envelope 404 (promotion of {404}).");
             Assert.AreEqual(2, response.Count);
             for (int i = 0; i < response.Count; i++)
@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     .CommitTransactionAsync(CancellationToken.None),
                 expectedMissingCount: 1);
 
-            // PR 2154806: a missing op (404) hard-fails Phase 1. On a converged read the successful
+            // A missing op (404) hard-fails Phase 1. On a converged read the successful
             // op is rewritten to 424 (body stripped) and the missing op keeps its 404, promoting the
             // envelope to 404; the per-op multiset must be exactly one 424 + one 404 (order-independent).
             // On this slow account the read may instead surface a retriable Phase-2 408 — both accepted.
@@ -406,14 +406,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 $"A read DTX with the read-write master key should succeed with 200 OK. Got: {status}");
         }
 
-        // ─── Cross-PK (xPK) gaps — §1.1.2 ─────────────────────────────────────
+        // ─── Cross-PK (xPK) gaps ──────────────────────────────────────────────
 
         [TestMethod]
         public async Task ReadTransaction_CrossPk_MixedExistence_ReturnsMixedResults()
         {
-            // 3 distinct PKs: two exist, one missing. Per the §1.1.2 contract the coordinator
-            // surfaces a multi-status envelope (200 or, per the spec, a promoted 207/404) while
-            // every per-op code is preserved 1:1.
+            // 3 distinct PKs: two exist, one missing. Per the read DTx contract the coordinator
+            // surfaces a multi-status envelope (200 or a promoted 207/404) while every per-op code
+            // is preserved 1:1.
             ToDoActivity doc1 = await this.SeedItemAsync(this.container);
             ToDoActivity doc2 = await this.SeedItemAsync(this.container);
             await ConfirmVisibleAsync(this.container, new PartitionKey(doc1.pk), doc1.id);
@@ -430,7 +430,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     .CommitTransactionAsync(CancellationToken.None),
                 expectedMissingCount: 1);
 
-            // PR 2154806: the missing op (404) hard-fails Phase 1. On a converged read both successful
+            // The missing op (404) hard-fails Phase 1. On a converged read both successful
             // ops are rewritten to 424 (bodies stripped) and the missing op keeps its 404; the per-op
             // multiset must be exactly two 424s + one 404 (order-independent). A retriable Phase-2 408
             // is also accepted on this slow account.
@@ -707,7 +707,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 $"Limits probe should resolve to 200 (converged) or 408 (hit ceiling). Got: {(int)response.StatusCode}.");
         }
 
-        // ─── Cross-container (xCont) gaps — §1.1.3 ────────────────────────────
+        // ─── Cross-container (xCont) gaps ─────────────────────────────────────
 
         [TestMethod]
         public async Task ReadTransaction_CrossContainer_DifferentPkPaths_Succeeds()
@@ -755,7 +755,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     .CommitTransactionAsync(CancellationToken.None),
                 expectedMissingCount: 1);
 
-            // PR 2154806: the missing op hard-fails Phase 1. On a converged read the existing op
+            // The missing op hard-fails Phase 1. On a converged read the existing op
             // (container A) is rewritten to 424 and the missing op (container B) keeps its 404; the
             // per-op multiset must be exactly one 424 + one 404 (order-independent). A retriable
             // Phase-2 408 is also accepted.
@@ -764,7 +764,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             response.Dispose();
         }
 
-        // ─── Cross-database (xDB) gaps — §1.1.4 ───────────────────────────────
+        // ─── Cross-database (xDB) gaps ────────────────────────────────────────
 
         [TestMethod]
         public async Task ReadTransaction_CrossDatabase_AllExist_Succeeds()
@@ -810,7 +810,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     .CommitTransactionAsync(CancellationToken.None),
                 expectedMissingCount: 1);
 
-            // PR 2154806: the missing op hard-fails Phase 1. On a converged read the existing op
+            // The missing op hard-fails Phase 1. On a converged read the existing op
             // (database 1) is rewritten to 424 and the missing op (database 2) keeps its 404; the
             // per-op multiset must be exactly one 424 + one 404 (order-independent). A retriable
             // Phase-2 408 is also accepted.
@@ -894,7 +894,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         // Asserts the documented terminal outcomes for a mixed-existence read DTx under the
-        // PR 2154806 contract. Two terminals are accepted on this slow single-region account:
+        // read DTx contract. Two terminals are accepted on this slow single-region account:
         //   (a) converged          -> envelope 404; the per-op multiset is exactly {424 x existing,
         //                             404 x missing} — every successful op is rewritten to 424
         //                             (FailedDependency, body stripped) and every missing op keeps 404.
@@ -918,7 +918,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 $"Converged mixed-existence read DTx must promote to envelope 404. Got: {(int)response.StatusCode}.");
             Assert.AreEqual(operationCount, response.Count);
 
-            // PR 2154806 requires a 424 to be present for the successful op(s). Assert the per-op
+            // The contract requires a 424 to be present for the successful op(s). Assert the per-op
             // multiset order-independently: exactly existingCount 424s and missingCount 404s.
             int observed424 = 0;
             int observed404 = 0;
