@@ -1,4 +1,4 @@
-//------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.FaultInjection
@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly double injectionRate;
         private readonly FaultInjectionApplicationContext applicationContext;
         private readonly GlobalEndpointManager globalEndpointManager;
+        private readonly FaultInjectionDistributedTransactionResponse? distributedTransactionResponse;
 
         /// <summary>
         /// Constructor for FaultInjectionServerErrorResultInternal
@@ -35,6 +36,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <param name="injectionRate"></param>
         /// <param name="applicationContext"></param>
         /// <param name="globalEndpointManager"></param>
+        /// <param name="distributedTransactionResponse"></param>
         public FaultInjectionServerErrorResultInternal(
             FaultInjectionServerErrorType serverErrorType,
             int times,
@@ -42,7 +44,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             bool suppressServiceRequest,
             double injectionRate,
             FaultInjectionApplicationContext applicationContext,
-            GlobalEndpointManager globalEndpointManager)
+            GlobalEndpointManager globalEndpointManager,
+            FaultInjectionDistributedTransactionResponse? distributedTransactionResponse = null)
         {
             this.serverErrorType = serverErrorType;
             this.times = times;
@@ -51,6 +54,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             this.injectionRate = injectionRate;
             this.applicationContext = applicationContext;
             this.globalEndpointManager = globalEndpointManager;
+            this.distributedTransactionResponse = distributedTransactionResponse;
         }
 
         /// <summary>
@@ -607,9 +611,92 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         HttpConstants.HttpHeaders.WwwAuthenticate,
                         this.GenerateWwwAuthenticateForRevocation());
                     return httpResponse;
+                case FaultInjectionServerErrorType.RetriableCoordinatorResponse:
+
+                    // The distributed-transaction coordinator signals its outcome through the response
+                    // BODY (isRetriable + operationResponses) plus the envelope status/sub-status. When a
+                    // FaultInjectionDistributedTransactionResponse spec is supplied, reproduce it verbatim;
+                    // otherwise fall back to the generic retriable shape (503 + {"isRetriable":true}) so the
+                    // committer's outer retry loop both observes IsRetriable=true and a non-success status.
+                    FaultInjectionDistributedTransactionResponse? dtcSpec = this.distributedTransactionResponse;
+                    int dtcStatus = dtcSpec?.StatusCode ?? (int)HttpStatusCode.ServiceUnavailable;
+                    int dtcSubStatus = dtcSpec?.SubStatusCode ?? (int)SubStatusCodes.Unknown;
+                    bool dtcIsRetriable = dtcSpec?.IsRetriable ?? true;
+                    bool dtcEmptyBody = dtcSpec?.EmptyBody ?? false;
+
+                    httpResponse = new HttpResponseMessage
+                    {
+                        Version = isProxyCall
+                            ? new Version(2, 0)
+                            : new Version(1, 1),
+                        StatusCode = (HttpStatusCode)dtcStatus,
+                        // A bodyless envelope (408/449/429/500 infra failures) leaves Content null so the SDK's
+                        // ClientRetryPolicy.hasResponseBody check is false and the inner loop owns retry; otherwise
+                        // emit the coordinator JSON body so the outer committer loop can read isRetriable.
+                        Content = dtcEmptyBody
+                            ? null
+                            : new FaultInjectionHttpContent(
+                                new MemoryStream(
+                                    FaultInjectionResponseEncoding.GetBytes(
+                                        BuildDistributedTransactionResponseBody(dtcIsRetriable, dtcSpec?.OperationResults)))),
+                    };
+
+                    this.SetHttpHeaders(httpResponse, headers, isProxyCall);
+
+                    if (dtcSubStatus != (int)SubStatusCodes.Unknown)
+                    {
+                        httpResponse.Headers.Add(
+                            WFConstants.BackendHeaders.SubStatus,
+                            dtcSubStatus.ToString(CultureInfo.InvariantCulture));
+                    }
+
+                    if (dtcSpec?.RetryAfter is TimeSpan retryAfter)
+                    {
+                        httpResponse.Headers.Add(
+                            HttpConstants.HttpHeaders.RetryAfterInMilliseconds,
+                            ((int)retryAfter.TotalMilliseconds).ToString(CultureInfo.InvariantCulture));
+                    }
+
+                    httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
+
+                    return httpResponse;
                 default:
                     throw new ArgumentException($"Server error type {this.serverErrorType} is not supported");
             }
+        }
+
+        private static string BuildDistributedTransactionResponseBody(
+            bool isRetriable,
+            IReadOnlyList<FaultInjectionDistributedTransactionOperationResult>? operationResults)
+        {
+            StringBuilder body = new StringBuilder();
+            body.Append("{\"isRetriable\":");
+            body.Append(isRetriable ? "true" : "false");
+
+            if (operationResults != null && operationResults.Count > 0)
+            {
+                body.Append(",\"operationResponses\":[");
+                for (int i = 0; i < operationResults.Count; i++)
+                {
+                    FaultInjectionDistributedTransactionOperationResult op = operationResults[i];
+                    if (i > 0)
+                    {
+                        body.Append(',');
+                    }
+
+                    body.Append(string.Format(
+                        CultureInfo.InvariantCulture,
+                        "{{\"index\":{0},\"statusCode\":{1},\"subStatusCode\":{2}}}",
+                        op.Index,
+                        op.StatusCode,
+                        op.SubStatusCode));
+                }
+
+                body.Append(']');
+            }
+
+            body.Append('}');
+            return body.ToString();
         }
 
         private bool IsProxyCall(DocumentServiceRequest dsr)

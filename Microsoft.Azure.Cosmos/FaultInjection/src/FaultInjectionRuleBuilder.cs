@@ -96,6 +96,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <returns>the <see cref="FaultInjectionRule"/>.</returns>
         public FaultInjectionRule Build()
         {
+            this.ValidateServerErrorOperationType();
+
             if (this.condition.GetConnectionType() == FaultInjectionConnectionType.Gateway)
             {
                 this.ValidateGatewayConnection();
@@ -128,6 +130,25 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             if (serverErrorResult?.GetServerErrorType() == FaultInjectionServerErrorType.DatabaseAccountNotFound)
             {
                 throw new ArgumentException("DatabaseAccountNotFound error type is not supported for Direct connection type.");
+            }
+        }
+
+        private void ValidateServerErrorOperationType()
+        {
+            FaultInjectionServerErrorResult? serverErrorResult = this.result as FaultInjectionServerErrorResult;
+
+            if (serverErrorResult?.GetServerErrorType() == FaultInjectionServerErrorType.RetriableCoordinatorResponse)
+            {
+                FaultInjectionOperationType operationType = this.condition.GetOperationType();
+
+                if (operationType != FaultInjectionOperationType.DistributedTransactionReadBatch
+                    && operationType != FaultInjectionOperationType.DistributedTransactionWriteBatch)
+                {
+                    throw new ArgumentException(
+                        $"{nameof(FaultInjectionServerErrorType.RetriableCoordinatorResponse)} error type is only supported for " +
+                        $"{nameof(FaultInjectionOperationType.DistributedTransactionReadBatch)} and " +
+                        $"{nameof(FaultInjectionOperationType.DistributedTransactionWriteBatch)} operation types.");
+                }
             }
         }
 

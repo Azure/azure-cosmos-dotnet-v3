@@ -111,6 +111,131 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                     .Build());
         }
 
+        [TestMethod]
+        [Description("RetriableCoordinatorResponse is allowed for the distributed-transaction read batch operation type.")]
+        public void FaultInjectionRuleBuilder_RetriableCoordinatorResponse_DistributedTransactionReadBatch_Builds()
+        {
+            FaultInjectionCondition condition = new FaultInjectionConditionBuilder()
+                .WithOperationType(FaultInjectionOperationType.DistributedTransactionReadBatch)
+                .Build();
+            FaultInjectionServerErrorResult result = FaultInjectionResultBuilder
+                .GetResultBuilder(FaultInjectionServerErrorType.RetriableCoordinatorResponse)
+                .Build();
+
+            FaultInjectionRule rule = new FaultInjectionRuleBuilder(id: "test", condition: condition, result: result)
+                .Build();
+
+            Assert.IsNotNull(rule);
+        }
+
+        [TestMethod]
+        [Description("RetriableCoordinatorResponse is allowed for the distributed-transaction write batch operation type.")]
+        public void FaultInjectionRuleBuilder_RetriableCoordinatorResponse_DistributedTransactionWriteBatch_Builds()
+        {
+            FaultInjectionCondition condition = new FaultInjectionConditionBuilder()
+                .WithOperationType(FaultInjectionOperationType.DistributedTransactionWriteBatch)
+                .Build();
+            FaultInjectionServerErrorResult result = FaultInjectionResultBuilder
+                .GetResultBuilder(FaultInjectionServerErrorType.RetriableCoordinatorResponse)
+                .Build();
+
+            FaultInjectionRule rule = new FaultInjectionRuleBuilder(id: "test", condition: condition, result: result)
+                .Build();
+
+            Assert.IsNotNull(rule);
+        }
+
+        [TestMethod]
+        [Description("RetriableCoordinatorResponse is rejected for a non-distributed-transaction operation type.")]
+        public void FaultInjectionRuleBuilder_RetriableCoordinatorResponse_NonDtcOperationType_Throws()
+        {
+            FaultInjectionCondition condition = new FaultInjectionConditionBuilder()
+                .WithOperationType(FaultInjectionOperationType.ReadItem)
+                .Build();
+            FaultInjectionServerErrorResult result = FaultInjectionResultBuilder
+                .GetResultBuilder(FaultInjectionServerErrorType.RetriableCoordinatorResponse)
+                .Build();
+
+            Assert.ThrowsException<ArgumentException>(() =>
+                new FaultInjectionRuleBuilder(id: "test", condition: condition, result: result)
+                    .Build());
+        }
+
+        [TestMethod]
+        [Description("RetriableCoordinatorResponse is rejected for the default (All) operation type.")]
+        public void FaultInjectionRuleBuilder_RetriableCoordinatorResponse_AllOperationType_Throws()
+        {
+            // No WithOperationType => defaults to FaultInjectionOperationType.All.
+            FaultInjectionCondition condition = new FaultInjectionConditionBuilder().Build();
+            FaultInjectionServerErrorResult result = FaultInjectionResultBuilder
+                .GetResultBuilder(FaultInjectionServerErrorType.RetriableCoordinatorResponse)
+                .Build();
+
+            Assert.ThrowsException<ArgumentException>(() =>
+                new FaultInjectionRuleBuilder(id: "test", condition: condition, result: result)
+                    .Build());
+        }
+
+        [TestMethod]
+        [Description("WithDistributedTransactionResponse round-trips the coordinator response spec onto the result.")]
+        public void ServerErrorResultBuilder_WithDistributedTransactionResponse_RoundTrips()
+        {
+            FaultInjectionDistributedTransactionResponse spec = new FaultInjectionDistributedTransactionResponse(
+                statusCode: 449,
+                subStatusCode: 5352,
+                isRetriable: true,
+                retryAfter: TimeSpan.FromMilliseconds(250),
+                operationResults: new[]
+                {
+                    new FaultInjectionDistributedTransactionOperationResult(index: 0, statusCode: 453, subStatusCode: 5415),
+                });
+
+            FaultInjectionServerErrorResult result = FaultInjectionResultBuilder
+                .GetResultBuilder(FaultInjectionServerErrorType.RetriableCoordinatorResponse)
+                .WithDistributedTransactionResponse(spec)
+                .Build();
+
+            Assert.AreSame(spec, result.GetDistributedTransactionResponse());
+            Assert.AreEqual(449, result.GetDistributedTransactionResponse().StatusCode);
+            Assert.IsTrue(result.GetDistributedTransactionResponse().IsRetriable);
+            Assert.AreEqual(1, result.GetDistributedTransactionResponse().OperationResults.Count);
+            Assert.AreEqual(453, result.GetDistributedTransactionResponse().OperationResults[0].StatusCode);
+        }
+
+        [TestMethod]
+        [Description("A server error result with no coordinator response spec returns null from the getter.")]
+        public void ServerErrorResultBuilder_NoDistributedTransactionResponse_ReturnsNull()
+        {
+            FaultInjectionServerErrorResult result = FaultInjectionResultBuilder
+                .GetResultBuilder(FaultInjectionServerErrorType.RetriableCoordinatorResponse)
+                .Build();
+
+            Assert.IsNull(result.GetDistributedTransactionResponse());
+        }
+
+        [TestMethod]
+        [Description("WithDistributedTransactionResponse is rejected for a non-RetriableCoordinatorResponse error type.")]
+        public void ServerErrorResultBuilder_WithDistributedTransactionResponse_WrongErrorType_Throws()
+        {
+            FaultInjectionDistributedTransactionResponse spec =
+                new FaultInjectionDistributedTransactionResponse(statusCode: 503, isRetriable: true);
+
+            Assert.ThrowsException<InvalidOperationException>(() =>
+                FaultInjectionResultBuilder
+                    .GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
+                    .WithDistributedTransactionResponse(spec));
+        }
+
+        [TestMethod]
+        [Description("WithDistributedTransactionResponse rejects a null spec.")]
+        public void ServerErrorResultBuilder_WithDistributedTransactionResponse_Null_Throws()
+        {
+            Assert.ThrowsException<ArgumentNullException>(() =>
+                FaultInjectionResultBuilder
+                    .GetResultBuilder(FaultInjectionServerErrorType.RetriableCoordinatorResponse)
+                    .WithDistributedTransactionResponse(null));
+        }
+
         #endregion
 
         #region FaultInjectionServerErrorResultBuilder Validation

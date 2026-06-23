@@ -537,7 +537,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.isDtxRequest)
             {
-                return this.ShouldRetryDtxRequest(statusCode, subStatusCode, retryAfter, hasResponseBody);
+                return await this.ShouldRetryDtxRequestAsync(statusCode, subStatusCode, retryAfter, hasResponseBody);
             }
 
             return null;
@@ -852,7 +852,7 @@ namespace Microsoft.Azure.Cosmos
         // failures (body with per-op results + isRetriable). Body-bearing responses defer to the outer
         // DistributedTransactionCommitter loop; otherwise the inner loop owns retry along one of two
         // shapes: coordinator-retriable (408/449) or infrastructure failure (500/5411-5413).
-        private ShouldRetryResult ShouldRetryDtxRequest(
+        private async Task<ShouldRetryResult> ShouldRetryDtxRequestAsync(
             HttpStatusCode? statusCode,
             SubStatusCodes? subStatusCode,
             TimeSpan? retryAfter,
@@ -872,6 +872,25 @@ namespace Microsoft.Azure.Cosmos
                     || subStatusCode == SubStatusCodes.DtcAccountConfigFailure
                     || subStatusCode == SubStatusCodes.DtcDispatchFailure);
 
+            // 429/3200 (RU budget exceeded) is a throttling signal, not a coordinator semantic outcome, so it is
+            // retried by ResourceThrottleRetryPolicy (Retry-After + throttle budget) REGARDLESS of whether the
+            // transport surfaced a response body. This is handled BEFORE the body-defer guard below: unlike the
+            // coordinator's body-bearing per-op responses, a 429 throttle envelope is not owned by the outer
+            // DistributedTransactionCommitter loop, so deferring it there would drop the retry entirely when the
+            // body is empty (an empty/throttle body carries no isRetriable:true for the outer loop to act on).
+            if (statusCodeValue == (int)StatusCodes.TooManyRequests && subStatusCode == SubStatusCodes.RUBudgetExceeded)
+            {
+                using (ResponseMessage throttleResponse = new ResponseMessage((HttpStatusCode)StatusCodes.TooManyRequests))
+                {
+                    if (retryAfter.HasValue)
+                    {
+                        throttleResponse.Headers.RetryAfter = retryAfter;
+                    }
+
+                    return await this.throttlingRetry.ShouldRetryAsync(throttleResponse, default);
+                }
+            }
+
             // Body-bearing response carries per-op isRetriable in JSON. The outer DistributedTransactionCommitter
             // loop owns retry; defer to avoid inner×outer amplification.
             if (hasResponseBody && isCoordinatorRetriable)
@@ -882,12 +901,6 @@ namespace Microsoft.Azure.Cosmos
 
             if (isCoordinatorRetriable)
             {
-                // 429/3200 without body — ResourceThrottleRetryPolicy handles it via Retry-After.
-                if (statusCodeValue == (int)StatusCodes.TooManyRequests)
-                {
-                    return null;
-                }
-
                 int attempt = this.distributedTransactionRetryCount++;
                 return this.RetryDtxWithBudget(
                     attempt,

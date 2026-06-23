@@ -1,4 +1,4 @@
-namespace Microsoft.Azure.Cosmos.Client.Tests
+﻿namespace Microsoft.Azure.Cosmos.Client.Tests
 {
     using System;
     using Microsoft.Azure.Cosmos.Routing;
@@ -1956,6 +1956,86 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             ShouldRetryResult innerResult = await policy.ShouldRetryAsync(emptyBodyResponse, CancellationToken.None);
             Assert.IsTrue(innerResult.ShouldRetry,
                 "CRP's inner retry budget must NOT have been consumed by the deferred body-bearing calls; an empty-body response should still trigger an inner retry.");
+        }
+
+        [TestMethod]
+        public async Task DtxRequest_429_3200_DefersToThrottlePolicy()
+        {
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            ClientRetryPolicy policy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+            DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
+            policy.OnBeforeSendRequest(request);
+
+            // 429/3200 (RU budget exceeded) is a recognized coordinator-retriable code. ClientRetryPolicy's
+            // DTX classifier invokes ResourceThrottleRetryPolicy inline and returns its decision, so the 429 is
+            // retried (honoring Retry-After up to the throttle budget) on the DTX commit path — the fix for
+            // https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5975.
+            ResponseMessage response = new ResponseMessage(HttpStatusCode.TooManyRequests);
+            response.Headers.SubStatusCodeLiteral = ((int)SubStatusCodes.RUBudgetExceeded).ToString();
+
+            ShouldRetryResult result = await policy.ShouldRetryAsync(response, CancellationToken.None);
+
+            Assert.IsTrue(result.ShouldRetry, "DTX 429/3200 must be retried via ResourceThrottleRetryPolicy (the DTX classifier defers throttling to it and returns its retry decision).");
+        }
+
+        [TestMethod]
+        public async Task DtxRequest_452_5421_Aborted_NoRetry()
+        {
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            ClientRetryPolicy policy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+            DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
+            policy.OnBeforeSendRequest(request);
+
+            // 452/5421 (aborted) is terminal: the DTX classifier returns null and the throttle policy
+            // does not retry a 452, so the response surfaces to the outer committer loop unchanged.
+            ResponseMessage response = new ResponseMessage((HttpStatusCode)452);
+            response.Headers.SubStatusCodeLiteral = "5421";
+
+            ShouldRetryResult result = await policy.ShouldRetryAsync(response, CancellationToken.None);
+
+            Assert.IsFalse(result.ShouldRetry, "DTX 452/5421 (aborted) is terminal and must not be retried by the inner loop.");
+        }
+
+        [DataTestMethod]
+        [DataRow((int)StatusCodes.RetryWith, 0, DisplayName = "449/0 — RetryWith without coordinator-race sub-status")]
+        [DataRow((int)HttpStatusCode.InternalServerError, 0, DisplayName = "500/0 — InternalServerError without infra sub-status")]
+        [DataRow((int)HttpStatusCode.InternalServerError, 9999, DisplayName = "500/9999 — unrecognized infra sub-status")]
+        public async Task DtxRequest_UnrecognizedSubStatus_NoRetry(int statusCode, int subStatusCode)
+        {
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            ClientRetryPolicy policy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+            DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
+            policy.OnBeforeSendRequest(request);
+
+            // Bodyless envelopes whose sub-status is not a recognized DTX-retriable code fall through the
+            // DTX classifier (null) and are not retried by the throttle policy either.
+            ResponseMessage response = new ResponseMessage((HttpStatusCode)statusCode);
+            if (subStatusCode != 0)
+            {
+                response.Headers.SubStatusCodeLiteral = subStatusCode.ToString();
+            }
+
+            ShouldRetryResult result = await policy.ShouldRetryAsync(response, CancellationToken.None);
+
+            Assert.IsFalse(result.ShouldRetry, $"DTX {statusCode}/{subStatusCode} is not a recognized retriable envelope and must not be retried.");
         }
 
         /// <summary>

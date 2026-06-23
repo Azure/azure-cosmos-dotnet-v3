@@ -89,6 +89,14 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <summary>
         /// 401:5013 AAD token revoked
         /// </summary>
-        AadTokenRevoked
+        AadTokenRevoked,
+
+        /// <summary>
+        /// A distributed-transaction coordinator response whose body sets <c>isRetriable: true</c>,
+        /// asking the SDK's committer outer retry loop to retry the whole transaction.
+        /// Only supported for <see cref="FaultInjectionOperationType.DistributedTransactionReadBatch"/>
+        /// and <see cref="FaultInjectionOperationType.DistributedTransactionWriteBatch"/> operation types.
+        /// </summary>
+        RetriableCoordinatorResponse
     }
 }

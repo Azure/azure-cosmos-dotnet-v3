@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private bool suppressServiceRequest;
         private bool isDelaySet = false;
         private double injectionRate = 1;
+        private FaultInjectionDistributedTransactionResponse? distributedTransactionResponse;
 
         /// <summary>
         /// Creates a <see cref="FaultInjectionServerErrorResult"/>.
@@ -95,6 +96,29 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         }
 
         /// <summary>
+        /// Sets the distributed-transaction coordinator response to inject. Only applicable to
+        /// <see cref="FaultInjectionServerErrorType.RetriableCoordinatorResponse"/>; lets a rule
+        /// reproduce any documented DTC envelope outcome (status, sub-status, <c>isRetriable</c>,
+        /// retry-after, and per-operation results).
+        /// </summary>
+        /// <param name="distributedTransactionResponse">The coordinator response specification.</param>
+        /// <returns>The current <see cref="FaultInjectionServerErrorResultBuilder"/>.</returns>
+        public FaultInjectionServerErrorResultBuilder WithDistributedTransactionResponse(
+            FaultInjectionDistributedTransactionResponse distributedTransactionResponse)
+        {
+            if (this.serverErrorType != FaultInjectionServerErrorType.RetriableCoordinatorResponse)
+            {
+                throw new InvalidOperationException(
+                    $"A distributed transaction response can only be set for server error type " +
+                    $"'{FaultInjectionServerErrorType.RetriableCoordinatorResponse}', but the current type is '{this.serverErrorType}'.");
+            }
+
+            this.distributedTransactionResponse = distributedTransactionResponse
+                ?? throw new ArgumentNullException(nameof(distributedTransactionResponse));
+            return this;
+        }
+
+        /// <summary>
         /// Creates a new <see cref="FaultInjectionServerErrorResult"/>.
         /// </summary>
         /// <returns>the <see cref="FaultInjectionServerErrorResult"/>.</returns>
@@ -113,7 +137,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 this.times,
                 this.delay,
                 this.suppressServiceRequest,
-                this.injectionRate);
+                this.injectionRate,
+                this.distributedTransactionResponse);
         }
     }
 }

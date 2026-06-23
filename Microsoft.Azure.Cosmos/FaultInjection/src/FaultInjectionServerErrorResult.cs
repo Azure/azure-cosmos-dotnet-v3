@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly TimeSpan delay;
         private readonly bool suppressServiceRequests;
         private readonly double injectionRate;
+        private readonly FaultInjectionDistributedTransactionResponse? distributedTransactionResponse;
 
         /// <summary>
         /// Creates a new FaultInjectionServerErrorResult.
@@ -29,12 +30,33 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             TimeSpan delay, 
             bool suppressServiceRequests,
             double injectionRate = 1)
+            : this(serverErrorType, times, delay, suppressServiceRequests, injectionRate, distributedTransactionResponse: null)
+        {
+        }
+
+        /// <summary>
+        /// Creates a new FaultInjectionServerErrorResult with a distributed-transaction coordinator response specification.
+        /// </summary>
+        /// <param name="serverErrorType">Specifies the server error type.</param>
+        /// <param name="times">Specifies the number of times a rule can be applied on a single operation.</param>
+        /// <param name="delay">Specifies the injected delay for the server error.</param>
+        /// <param name="suppressServiceRequests">Specifies whether service requests should be suppressed.</param>
+        /// <param name="injectionRate">Specifies the percentage of how many times the rule will be applied.</param>
+        /// <param name="distributedTransactionResponse">The coordinator response to inject for <see cref="FaultInjectionServerErrorType.RetriableCoordinatorResponse"/>.</param>
+        public FaultInjectionServerErrorResult(
+            FaultInjectionServerErrorType serverErrorType,
+            int times,
+            TimeSpan delay,
+            bool suppressServiceRequests,
+            double injectionRate,
+            FaultInjectionDistributedTransactionResponse? distributedTransactionResponse)
         {
             this.serverErrorType = serverErrorType;
             this.times = times;
             this.delay = delay;
             this.suppressServiceRequests = suppressServiceRequests;
             this.injectionRate = injectionRate;
+            this.distributedTransactionResponse = distributedTransactionResponse;
         }
 
         /// <summary>
@@ -83,6 +105,15 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         public double GetInjectionRate()
         {
             return this.injectionRate;
+        }
+
+        /// <summary>
+        /// Gets the distributed-transaction coordinator response to inject, or <c>null</c> when none was specified.
+        /// </summary>
+        /// <returns>the <see cref="FaultInjectionDistributedTransactionResponse"/> or <c>null</c>.</returns>
+        public FaultInjectionDistributedTransactionResponse? GetDistributedTransactionResponse()
+        {
+            return this.distributedTransactionResponse;
         }
 
         /// <summary>

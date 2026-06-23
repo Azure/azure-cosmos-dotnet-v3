@@ -789,14 +789,17 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 return Task.CompletedTask;
             };
 
-            // Use a large base delay (15s) so the cumulative budget (30s) is exceeded after 2-3 retries,
-            // well before the attempt count cap (10).
+            // Use a large base delay (15s) against an explicitly-pinned 30s budget so the cumulative
+            // budget is exceeded after 2-3 retries, well before the attempt count cap (10). The budget
+            // is pinned here (rather than relying on the production default) so this test stays stable
+            // if DistributedTransactionCommitter.MaxCumulativeRetryDelay changes.
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 CreateTestOperations(),
                 mockContext.Object,
                 OperationType.CommitDistributedTransaction,
                 retryBaseDelay: TimeSpan.FromSeconds(15),
-                delayProvider: captureDelay);
+                delayProvider: captureDelay,
+                maxCumulativeRetryDelay: TimeSpan.FromSeconds(30));
 
             using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
             {
@@ -809,8 +812,8 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 Assert.AreEqual(1, capturedDelays.Count,
                     $"Expected exactly 1 delay to be slept before the budget-exceeding second delay triggers early exit. Got {capturedDelays.Count}.");
 
-                // The single slept delay must be under the budget (it passed the check).
-                Assert.IsTrue(capturedDelays[0] <= DistributedTransactionCommitter.MaxCumulativeRetryDelay,
+                // The single slept delay must be under the pinned budget (it passed the check).
+                Assert.IsTrue(capturedDelays[0] <= TimeSpan.FromSeconds(30),
                     $"The slept delay ({capturedDelays[0].TotalMilliseconds}ms) must be within budget since it passed the check.");
                 // The slept delay must be substantial (15s base * 0.75 jitter minimum = 11.25s).
                 Assert.IsTrue(capturedDelays[0] >= TimeSpan.FromSeconds(11),
@@ -848,13 +851,15 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 return Task.CompletedTask;
             };
 
-            // Use small base delay so server RetryAfter dominates the delay selection.
+            // Use small base delay so server RetryAfter dominates the delay selection. Pin the budget
+            // to 30s (independent of the production default) so the timing math below is stable.
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 CreateTestOperations(),
                 mockContext.Object,
                 OperationType.CommitDistributedTransaction,
                 retryBaseDelay: TimeSpan.FromMilliseconds(100),
-                delayProvider: captureDelay);
+                delayProvider: captureDelay,
+                maxCumulativeRetryDelay: TimeSpan.FromSeconds(30));
 
             using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
             {

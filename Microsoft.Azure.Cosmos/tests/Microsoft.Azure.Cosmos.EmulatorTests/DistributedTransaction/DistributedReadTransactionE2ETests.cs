@@ -547,15 +547,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 return (response.StatusCode, retries, sw.Elapsed);
             }
 
-            // (1) Increased FIRST on COLD data: 10x-larger budget so the committer can reach the
+            // (1) Increased FIRST on COLD data: a much larger budget so the committer can reach the
             // 10-attempt hard cap. Running this first eliminates any "baseline warmed the coordinator
             // reconciliation state" confound — a 200 here is attributable solely to this run's retries.
             (HttpStatusCode increasedStatus, int increasedRetries, TimeSpan increasedWall) =
                 await RunAsync(TimeSpan.FromMinutes(5), "increased-5min-cold");
 
-            // (2) Baseline AFTER: reproduce the default 30 s budget exactly (but instrumented).
+            // (2) Baseline AFTER: reproduce the production default budget exactly (but instrumented).
             (HttpStatusCode baselineStatus, int baselineRetries, TimeSpan baselineWall) =
-                await RunAsync(DistributedTransactionCommitter.MaxCumulativeRetryDelay, "baseline-30s");
+                await RunAsync(DistributedTransactionCommitter.MaxCumulativeRetryDelay, "baseline-default-budget");
 
             Console.WriteLine(
                 $"[IncreasedRetryExperiment][verdict] baseline: {(int)baselineStatus} after {baselineRetries} retries " +
