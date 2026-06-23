@@ -1945,6 +1945,71 @@
         }
 
         [TestMethod]
+        public async Task DtxRequest_403_3_WriteForbidden_SingleWriterMultiRegion_FollowsServiceSideWriteRegionFailover()
+        {
+            // SINGLE-WRITER multi-region, but the service fails the write region over from Location1 to
+            // Location2 (account properties now report Location2 as the sole write region). A DTX commit
+            // hits 403/3 on Location1; the 403/3 path forces an account refresh (forceRefresh:true), so the
+            // SDK observes the new write region and the retry resolves to Location2 — i.e. the DTX commit
+            // FOLLOWS the service-side write-region failover instead of retrying the stale region.
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            await endpointManager.RefreshLocationAsync();
+
+            ClientRetryPolicy policy = new ClientRetryPolicy(
+                endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, isThinClientEnabled: false);
+            DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
+
+            policy.OnBeforeSendRequest(request);
+            Assert.AreEqual(
+                ClientRetryPolicyTests.Location1Endpoint,
+                endpointManager.ResolveServiceEndpoint(request),
+                "The DTX commit's first attempt resolves to the original write region (Location1).");
+
+            // Simulate a service-side write-region failover: the account now reports Location2 as the sole
+            // write region. The forced refresh on the 403/3 path will observe this on its next account read.
+            AccountProperties failedOverAccount = new AccountProperties()
+            {
+                EnableMultipleWriteLocations = false,
+                ReadLocationsInternal = new Collection<AccountRegion>()
+                {
+                    new AccountRegion() { Name = "location1", Endpoint = ClientRetryPolicyTests.Location1Endpoint.ToString() },
+                    new AccountRegion() { Name = "location2", Endpoint = ClientRetryPolicyTests.Location2Endpoint.ToString() },
+                },
+                WriteLocationsInternal = new Collection<AccountRegion>()
+                {
+                    new AccountRegion() { Name = "location2", Endpoint = ClientRetryPolicyTests.Location2Endpoint.ToString() },
+                }
+            };
+            this.mockedClient
+                .Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(failedOverAccount);
+
+            ShouldRetryResult result = await policy.ShouldRetryAsync(
+                new DocumentClientException(
+                    message: "403/3 WriteForbidden on DTX commit (single-writer, service failing over)",
+                    innerException: null,
+                    statusCode: HttpStatusCode.Forbidden,
+                    substatusCode: SubStatusCodes.WriteForbidden,
+                    requestUri: request.RequestContext.LocationEndpointToRoute,
+                    responseHeaders: new DictionaryNameValueCollection()),
+                CancellationToken.None);
+
+            Assert.IsTrue(result.ShouldRetry, "403/3 must request a retry.");
+
+            policy.OnBeforeSendRequest(request);
+            Assert.AreEqual(
+                ClientRetryPolicyTests.Location2Endpoint,
+                endpointManager.ResolveServiceEndpoint(request),
+                "After the forced refresh observes the new write region, the DTX retry must resolve to Location2 (the new write region).");
+        }
+
+        [TestMethod]
         public async Task DtxRequest_403_1008_DatabaseAccountNotFound_MultiWriterMultiRegion_NotRetried()
         {
             // MULTI-WRITER multi-region: even though the ACCOUNT enables multiple write locations, a DTX
