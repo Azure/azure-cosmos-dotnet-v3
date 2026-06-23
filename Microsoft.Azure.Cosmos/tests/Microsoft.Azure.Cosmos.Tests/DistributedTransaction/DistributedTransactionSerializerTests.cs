@@ -519,6 +519,104 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "Replace operation with only IfNoneMatchEtag must not include an 'ifMatch' field.");
         }
 
+        // partitionKey wire serialization (PartitionKey#Json)
+
+        [DataTestMethod]
+        [DataRow("string")]
+        [DataRow("number")]
+        [DataRow("bool")]
+        [Description("The 'partitionKey' field carries the partition key as the single-element array wire form, with the component value preserved per JSON value kind.")]
+        public async Task CreateItem_SerializedBody_PartitionKey_SerializedAsArrayWithValue(string pkKind)
+        {
+            PartitionKey pk = pkKind switch
+            {
+                "string" => new PartitionKey("pk-value"),
+                "number" => new PartitionKey(42.5),
+                "bool" => new PartitionKey(true),
+                _ => throw new ArgumentOutOfRangeException(nameof(pkKind)),
+            };
+
+            string capturedJson = await this.CaptureCommitBodyAsync(tx =>
+                tx.CreateItem(BuildMockContainer(), pk, "pk-json-id", new TestItem("pk-json-id")));
+
+            using JsonDocument doc = JsonDocument.Parse(capturedJson);
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
+
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.PartitionKey, out JsonElement pkElement),
+                "Operation must include a 'partitionKey' field carrying the routing key.");
+            Assert.AreEqual(JsonValueKind.Array, pkElement.ValueKind,
+                "The DTX wire partition key is a JSON array.");
+            Assert.AreEqual(1, pkElement.GetArrayLength(),
+                "A single-path partition key serializes to a one-element array.");
+
+            JsonElement component = pkElement[0];
+            switch (pkKind)
+            {
+                case "string":
+                    Assert.AreEqual(JsonValueKind.String, component.ValueKind);
+                    Assert.AreEqual("pk-value", component.GetString());
+                    break;
+                case "number":
+                    Assert.AreEqual(JsonValueKind.Number, component.ValueKind);
+                    Assert.AreEqual(42.5, component.GetDouble());
+                    break;
+                case "bool":
+                    Assert.AreEqual(JsonValueKind.True, component.ValueKind);
+                    Assert.IsTrue(component.GetBoolean());
+                    break;
+            }
+        }
+
+        [TestMethod]
+        [Description("PartitionKey.Null serializes the 'partitionKey' field as a one-element array containing a JSON null.")]
+        public async Task CreateItem_SerializedBody_NullPartitionKey_SerializedAsArrayWithJsonNull()
+        {
+            string capturedJson = await this.CaptureCommitBodyAsync(tx =>
+                tx.CreateItem(BuildMockContainer(), PartitionKey.Null, "pk-null-id", new TestItem("pk-null-id")));
+
+            using JsonDocument doc = JsonDocument.Parse(capturedJson);
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
+
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.PartitionKey, out JsonElement pkElement),
+                "Operation must include a 'partitionKey' field for PartitionKey.Null.");
+            Assert.AreEqual(JsonValueKind.Array, pkElement.ValueKind);
+            Assert.AreEqual(1, pkElement.GetArrayLength());
+            Assert.AreEqual(JsonValueKind.Null, pkElement[0].ValueKind,
+                "PartitionKey.Null serializes as a one-element array holding a JSON null.");
+        }
+
+        [TestMethod]
+        [Description("DeleteItem has no resource body but must still serialize the routing 'partitionKey' field with the correct value.")]
+        public async Task DeleteItem_SerializedBody_IncludesPartitionKey()
+        {
+            string capturedJson = await this.CaptureCommitBodyAsync(tx =>
+                tx.DeleteItem(BuildMockContainer(), new PartitionKey("del-pk"), "del-id"));
+
+            using JsonDocument doc = JsonDocument.Parse(capturedJson);
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
+
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.PartitionKey, out JsonElement pkElement),
+                "Delete operation must still carry a 'partitionKey' for routing.");
+            Assert.AreEqual(JsonValueKind.Array, pkElement.ValueKind);
+            Assert.AreEqual("del-pk", pkElement[0].GetString());
+        }
+
+        [TestMethod]
+        [Description("CreateItem with PartitionKey.None still emits a 'partitionKey' field carrying the None JSON sentinel array (it is NOT omitted).")]
+        public async Task CreateItem_SerializedBody_NonePartitionKey_EmitsSentinelArray()
+        {
+            string capturedJson = await this.CaptureCommitBodyAsync(tx =>
+                tx.CreateItem(BuildMockContainer(), PartitionKey.None, "pk-none-id", new TestItem("pk-none-id")));
+
+            using JsonDocument doc = JsonDocument.Parse(capturedJson);
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
+
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.PartitionKey, out JsonElement pkElement),
+                "PartitionKey.None is serialized via its JSON sentinel, so the 'partitionKey' field is present (not omitted).");
+            Assert.AreEqual(JsonValueKind.Array, pkElement.ValueKind,
+                "The None partition key serializes as a JSON array sentinel.");
+        }
+
         [TestMethod]
         [Description("CreateItem with a null id must throw ArgumentNullException at the call site.")]
         public void CreateItem_NullId_ThrowsArgumentNullException()
