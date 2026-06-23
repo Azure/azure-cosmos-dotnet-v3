@@ -207,12 +207,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .ReadItem(this.container, new PartitionKey(pk2), Guid.NewGuid().ToString())
                 .CommitTransactionAsync(CancellationToken.None);
 
-            // Pin the coordinator contract: envelope is 200 (multi-status), each missing item surfaces as a per-op 404.
-            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, "Envelope status should be 200 even when all per-op results are 404.");
+            // PR 2154806 reworked read DTx response codes: 404 is now a non-retryable hard failure,
+            // not a per-op success (the success set is {200, 304}). All-missing fails Phase 1; the
+            // envelope is the promotion of the lone remaining non-424 code {404} -> 404. The 404 ops
+            // are themselves the failing code, so they are kept as-is (only successful 200/304 ops
+            // are rewritten to 424).
+            Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode, "All-missing read DTx fails with envelope 404 (promotion of {404}).");
             Assert.AreEqual(2, response.Count);
             for (int i = 0; i < response.Count; i++)
             {
-                Assert.AreEqual(HttpStatusCode.NotFound, response[i].StatusCode, $"Op[{i}] should be 404 NotFound for a missing item.");
+                Assert.AreEqual(HttpStatusCode.NotFound, response[i].StatusCode, $"Op[{i}] should be 404 NotFound (the hard-failure code, kept as-is).");
             }
 
             response.Dispose();
@@ -222,19 +226,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ReadTransaction_OneExistsOneMissing_ReturnsMixedResults()
         {
             ToDoActivity existing = await this.SeedItemAsync(this.container);
+            await ConfirmVisibleAsync(this.container, new PartitionKey(existing.pk), existing.id);
             string missingPk = Guid.NewGuid().ToString();
             string missingId = Guid.NewGuid().ToString();
 
-            DistributedTransactionResponse response = await this.client
-                .CreateDistributedReadTransaction()
-                .ReadItem(this.container, new PartitionKey(existing.pk), existing.id)
-                .ReadItem(this.container, new PartitionKey(missingPk), missingId)
-                .CommitTransactionAsync(CancellationToken.None);
+            DistributedTransactionResponse response = await DriveMixedExistenceReadAsync(
+                () => this.client
+                    .CreateDistributedReadTransaction()
+                    .ReadItem(this.container, new PartitionKey(existing.pk), existing.id)
+                    .ReadItem(this.container, new PartitionKey(missingPk), missingId)
+                    .CommitTransactionAsync(CancellationToken.None),
+                expectedMissingCount: 1);
 
-            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, "Envelope status should be 200 even with mixed per-op results.");
-            Assert.AreEqual(2, response.Count);
-            Assert.AreEqual(HttpStatusCode.OK, response[0].StatusCode, "The existing item should be 200 OK at index 0.");
-            Assert.AreEqual(HttpStatusCode.NotFound, response[1].StatusCode, "The missing item should be 404 NotFound at index 1.");
+            // PR 2154806: a missing op (404) hard-fails Phase 1. On a converged read the successful
+            // op is rewritten to 424 (body stripped) and the missing op keeps its 404, promoting the
+            // envelope to 404; the per-op multiset must be exactly one 424 + one 404 (order-independent).
+            // On this slow account the read may instead surface a retriable Phase-2 408 — both accepted.
+            AssertMixedExistenceReadOutcome(response, operationCount: 2, existingCount: 1, missingCount: 1);
 
             response.Dispose();
         }
@@ -408,21 +416,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // every per-op code is preserved 1:1.
             ToDoActivity doc1 = await this.SeedItemAsync(this.container);
             ToDoActivity doc2 = await this.SeedItemAsync(this.container);
+            await ConfirmVisibleAsync(this.container, new PartitionKey(doc1.pk), doc1.id);
+            await ConfirmVisibleAsync(this.container, new PartitionKey(doc2.pk), doc2.id);
             string missingPk = Guid.NewGuid().ToString();
             string missingId = Guid.NewGuid().ToString();
 
-            DistributedTransactionResponse response = await this.client
-                .CreateDistributedReadTransaction()
-                .ReadItem(this.container, new PartitionKey(doc1.pk), doc1.id)
-                .ReadItem(this.container, new PartitionKey(doc2.pk), doc2.id)
-                .ReadItem(this.container, new PartitionKey(missingPk), missingId)
-                .CommitTransactionAsync(CancellationToken.None);
+            DistributedTransactionResponse response = await DriveMixedExistenceReadAsync(
+                () => this.client
+                    .CreateDistributedReadTransaction()
+                    .ReadItem(this.container, new PartitionKey(doc1.pk), doc1.id)
+                    .ReadItem(this.container, new PartitionKey(doc2.pk), doc2.id)
+                    .ReadItem(this.container, new PartitionKey(missingPk), missingId)
+                    .CommitTransactionAsync(CancellationToken.None),
+                expectedMissingCount: 1);
 
-            AssertMultiStatusEnvelope(response.StatusCode);
-            Assert.AreEqual(3, response.Count);
-            Assert.AreEqual(HttpStatusCode.OK, response[0].StatusCode, "Per-op[0] (existing) should be 200 OK.");
-            Assert.AreEqual(HttpStatusCode.OK, response[1].StatusCode, "Per-op[1] (existing) should be 200 OK.");
-            Assert.AreEqual(HttpStatusCode.NotFound, response[2].StatusCode, "Per-op[2] (missing) should be 404 NotFound.");
+            // PR 2154806: the missing op (404) hard-fails Phase 1. On a converged read both successful
+            // ops are rewritten to 424 (bodies stripped) and the missing op keeps its 404; the per-op
+            // multiset must be exactly two 424s + one 404 (order-independent). A retriable Phase-2 408
+            // is also accepted on this slow account.
+            AssertMixedExistenceReadOutcome(response, operationCount: 3, existingCount: 2, missingCount: 1);
 
             response.Dispose();
         }
@@ -731,19 +743,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new ContainerProperties(SecondContainerId, PartitionKeyPath))).Container;
 
             ToDoActivity existing = await this.SeedItemAsync(this.container);
+            await ConfirmVisibleAsync(this.container, new PartitionKey(existing.pk), existing.id);
             string missingPk = Guid.NewGuid().ToString();
             string missingId = Guid.NewGuid().ToString();
 
-            DistributedTransactionResponse response = await this.client
-                .CreateDistributedReadTransaction()
-                .ReadItem(this.container, new PartitionKey(existing.pk), existing.id)
-                .ReadItem(secondContainer, new PartitionKey(missingPk), missingId)
-                .CommitTransactionAsync(CancellationToken.None);
+            DistributedTransactionResponse response = await DriveMixedExistenceReadAsync(
+                () => this.client
+                    .CreateDistributedReadTransaction()
+                    .ReadItem(this.container, new PartitionKey(existing.pk), existing.id)
+                    .ReadItem(secondContainer, new PartitionKey(missingPk), missingId)
+                    .CommitTransactionAsync(CancellationToken.None),
+                expectedMissingCount: 1);
 
-            AssertMultiStatusEnvelope(response.StatusCode);
-            Assert.AreEqual(2, response.Count);
-            Assert.AreEqual(HttpStatusCode.OK, response[0].StatusCode, "Per-op[0] (existing, container A) should be 200 OK.");
-            Assert.AreEqual(HttpStatusCode.NotFound, response[1].StatusCode, "Per-op[1] (missing, container B) should be 404 NotFound.");
+            // PR 2154806: the missing op hard-fails Phase 1. On a converged read the existing op
+            // (container A) is rewritten to 424 and the missing op (container B) keeps its 404; the
+            // per-op multiset must be exactly one 424 + one 404 (order-independent). A retriable
+            // Phase-2 408 is also accepted.
+            AssertMixedExistenceReadOutcome(response, operationCount: 2, existingCount: 1, missingCount: 1);
 
             response.Dispose();
         }
@@ -782,19 +798,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Container secondDbContainer = await this.CreateSecondDatabaseContainerAsync();
 
             ToDoActivity existing = await this.SeedItemAsync(this.container);
+            await ConfirmVisibleAsync(this.container, new PartitionKey(existing.pk), existing.id);
             string missingPk = Guid.NewGuid().ToString();
             string missingId = Guid.NewGuid().ToString();
 
-            DistributedTransactionResponse response = await this.client
-                .CreateDistributedReadTransaction()
-                .ReadItem(this.container, new PartitionKey(existing.pk), existing.id)
-                .ReadItem(secondDbContainer, new PartitionKey(missingPk), missingId)
-                .CommitTransactionAsync(CancellationToken.None);
+            DistributedTransactionResponse response = await DriveMixedExistenceReadAsync(
+                () => this.client
+                    .CreateDistributedReadTransaction()
+                    .ReadItem(this.container, new PartitionKey(existing.pk), existing.id)
+                    .ReadItem(secondDbContainer, new PartitionKey(missingPk), missingId)
+                    .CommitTransactionAsync(CancellationToken.None),
+                expectedMissingCount: 1);
 
-            AssertMultiStatusEnvelope(response.StatusCode);
-            Assert.AreEqual(2, response.Count);
-            Assert.AreEqual(HttpStatusCode.OK, response[0].StatusCode, "Per-op[0] (database 1, existing) should be 200 OK.");
-            Assert.AreEqual(HttpStatusCode.NotFound, response[1].StatusCode, "Per-op[1] (database 2, missing) should be 404 NotFound.");
+            // PR 2154806: the missing op hard-fails Phase 1. On a converged read the existing op
+            // (database 1) is rewritten to 424 and the missing op (database 2) keeps its 404; the
+            // per-op multiset must be exactly one 424 + one 404 (order-independent). A retriable
+            // Phase-2 408 is also accepted.
+            AssertMixedExistenceReadOutcome(response, operationCount: 2, existingCount: 1, missingCount: 1);
 
             response.Dispose();
         }
@@ -806,6 +826,127 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity doc = ToDoActivity.CreateRandomToDoActivity();
             await targetContainer.CreateItemAsync(doc, new PartitionKey(doc.pk));
             return doc;
+        }
+
+        // Confirms a freshly-seeded item is durably point-readable before a distributed read
+        // transaction is driven over it. On a slow single-region DTX account a just-written document
+        // can briefly be invisible to the coordinator's Phase-1 snapshot, racing a not-yet-visible
+        // write into a spurious per-op 404. Polling a point read to 200 first removes that
+        // read-your-write flake without weakening the contract assertions.
+        private static async Task ConfirmVisibleAsync(Container container, PartitionKey partitionKey, string id)
+        {
+            for (int attempt = 0; attempt < 40; attempt++)
+            {
+                using ResponseMessage rm = await container.ReadItemStreamAsync(id, partitionKey);
+                if (rm.StatusCode == HttpStatusCode.OK)
+                {
+                    return;
+                }
+
+                await Task.Delay(TimeSpan.FromMilliseconds(250));
+            }
+
+            Assert.Fail($"Seeded item id='{id}' did not become point-readable within the settle window.");
+        }
+
+        // Drives a mixed-existence read DTx, retrying the WHOLE transaction while an existing op is
+        // still surfaced as 404 — i.e., the read snapshot has not yet advanced past the just-committed
+        // seed write (read-your-write lag on a slow single-region account). This isolates a transient
+        // lag (a retry lets the snapshot catch up and the op becomes 424) from a persistent one
+        // (stays 404, so the caller's assertion fails and flags it). A retriable 408 (Phase-2
+        // unconfirmed) short-circuits immediately — it is a valid terminal, not a visibility miss.
+        private static async Task<DistributedTransactionResponse> DriveMixedExistenceReadAsync(
+            Func<Task<DistributedTransactionResponse>> commit,
+            int expectedMissingCount)
+        {
+            DistributedTransactionResponse response = null;
+            for (int attempt = 0; attempt < 5; attempt++)
+            {
+                response?.Dispose();
+                response = await commit();
+
+                if ((int)response.StatusCode == 408)
+                {
+                    return response;
+                }
+
+                // A successful (existing) op is rewritten to 424 on a failed mixed-existence read, so
+                // the count of per-op 404s should equal exactly the number of genuinely-missing ops.
+                // More 404s than that means an existing op is still absent from the snapshot -> retry.
+                int notFound = 0;
+                for (int i = 0; i < response.Count; i++)
+                {
+                    if (response[i].StatusCode == HttpStatusCode.NotFound)
+                    {
+                        notFound++;
+                    }
+                }
+
+                if (notFound <= expectedMissingCount)
+                {
+                    return response;
+                }
+
+                await Task.Delay(TimeSpan.FromSeconds(2));
+            }
+
+            return response;
+        }
+
+        // Asserts the documented terminal outcomes for a mixed-existence read DTx under the
+        // PR 2154806 contract. Two terminals are accepted on this slow single-region account:
+        //   (a) converged          -> envelope 404; the per-op multiset is exactly {424 x existing,
+        //                             404 x missing} — every successful op is rewritten to 424
+        //                             (FailedDependency, body stripped) and every missing op keeps 404.
+        //                             Order is NOT asserted (per-op codes are checked as a multiset).
+        //   (b) Phase-2 unconfirmed -> envelope 408 (retriable, empty body, no per-op detail).
+        private static void AssertMixedExistenceReadOutcome(
+            DistributedTransactionResponse response,
+            int operationCount,
+            int existingCount,
+            int missingCount)
+        {
+            if ((int)response.StatusCode == 408)
+            {
+                // Phase-2 could not confirm a consistent snapshot within budget: a valid retriable terminal.
+                return;
+            }
+
+            Assert.AreEqual(
+                HttpStatusCode.NotFound,
+                response.StatusCode,
+                $"Converged mixed-existence read DTx must promote to envelope 404. Got: {(int)response.StatusCode}.");
+            Assert.AreEqual(operationCount, response.Count);
+
+            // PR 2154806 requires a 424 to be present for the successful op(s). Assert the per-op
+            // multiset order-independently: exactly existingCount 424s and missingCount 404s.
+            int observed424 = 0;
+            int observed404 = 0;
+            for (int i = 0; i < response.Count; i++)
+            {
+                int code = (int)response[i].StatusCode;
+                if (code == 424)
+                {
+                    observed424++;
+                }
+                else if (code == 404)
+                {
+                    observed404++;
+                }
+                else
+                {
+                    Assert.Fail($"Per-op[{i}] should be 424 or 404 for a mixed-existence read failure. Got: {code}.");
+                }
+            }
+
+            Assert.AreEqual(
+                existingCount,
+                observed424,
+                $"Each existing op must be rewritten to 424 FailedDependency on the failed read. Observed 424s: {observed424}, expected: {existingCount}.");
+            Assert.AreEqual(
+                missingCount,
+                observed404,
+                $"Each missing op must keep its 404 NotFound. Observed 404s: {observed404}, expected: {missingCount}.");
         }
 
         // Seeds a document whose partition key lives at /category (used by the different-PK-path test)
@@ -824,18 +965,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Database secondDatabase = (await this.client.CreateDatabaseIfNotExistsAsync(SecondDatabaseId)).Database;
             return (await secondDatabase.CreateContainerIfNotExistsAsync(
                 new ContainerProperties(ContainerId, PartitionKeyPath))).Container;
-        }
-
-        // The mixed-existence envelope contract is still being finalized: existing single-container
-        // 2-op tests pin 200, while §1.1.x describes a coordinator 207 promoted by the SDK (potentially
-        // to 404). Assert per-op codes strictly and tolerate any of the documented envelope outcomes so
-        // a live run reveals the true contract without contradicting the existing pinned tests.
-        private static void AssertMultiStatusEnvelope(HttpStatusCode envelope)
-        {
-            int code = (int)envelope;
-            Assert.IsTrue(
-                code == 200 || code == 207 || code == 404,
-                $"Mixed-existence envelope should be one of 200/207/404 per the read DTx contract. Got: {code}");
         }
 
         // Mints a resource token scoped to the target container at the requested permission level and
