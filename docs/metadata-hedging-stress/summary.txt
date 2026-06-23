@@ -1,0 +1,22 @@
+================= STRESS SUMMARY =================
+Healthy-baseline                   ops=  2000 hedged=     0 budgetExh=  1920 maxSecInFlight=  0 p50=   16.4 p99=    32.4 wall=   0.3s
+        sends West US 2          2000   (wins 2000)
+Degraded-P100-HEDGE_ON             ops=   100 hedged=     8 budgetExh=    92 maxSecInFlight=  8 p50=  728.6 p99=   991.7 wall=   1.0s
+        sends West US 2          100   (wins 92)
+        sends East US            8   (wins 8)
+Degraded-P100-HEDGE_OFF            ops=   100 hedged=     0 budgetExh=     0 maxSecInFlight=  0 p50=  761.8 p99=  1005.7 wall=   1.0s
+        sends West US 2          100   (wins 100)
+Degraded-P10000-HEDGE_ON           ops= 10000 hedged=   800 budgetExh=  9200 maxSecInFlight=  8 p50=  734.1 p99=  1002.1 wall=  18.4s
+        sends West US 2          10000   (wins 9200)
+        sends East US            800   (wins 800)
+Degraded-P10000-HEDGE_OFF          ops= 10000 hedged=     0 budgetExh=     0 maxSecInFlight=  0 p50=  753.9 p99=  1000.7 wall=  19.4s
+        sends West US 2          10000   (wins 10000)
+Degraded-P50000-HEDGE_ON           ops= 50000 hedged=  4054 budgetExh= 45946 maxSecInFlight=  8 p50=  736.5 p99=  1001.5 wall=  89.4s
+        sends West US 2          50000   (wins 45946)
+        sends East US            4054   (wins 4054)
+Degraded-P50000-HEDGE_OFF          ops= 50000 hedged=     0 budgetExh=     0 maxSecInFlight=  0 p50=  755.1 p99=  1001.0 wall=  95.2s
+        sends West US 2          50000   (wins 50000)
+Degraded-P100-REALTIME-HEDGE_ON    ops=   100 hedged=    56 budgetExh=    44 maxSecInFlight=  8 p50= 1573.0 p99=  9914.0 wall=  18.1s
+        sends West US 2          100   (wins 44)
+        sends East US            56   (wins 56)
+=================================================
