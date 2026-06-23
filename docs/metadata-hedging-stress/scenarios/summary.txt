@@ -1,0 +1,26 @@
+================= SCENARIO SUMMARY (PR vs main) =================
+--- S1-Healthy ---
+  ColdStart  main ops=  200 metaRefresh=  200 hedges=    0 budgetExh=    0 p50=    67.7 p99=     98.5
+  ColdStart  PR   ops=  200 metaRefresh=  200 hedges=    0 budgetExh=  179 p50=    64.4 p99=    102.6
+  Ok         main ops= 1500 metaRefresh=    0 hedges=    0 budgetExh=    0 p50=    16.0 p99=     45.2
+  Ok         PR   ops= 1500 metaRefresh=    0 hedges=    0 budgetExh=    0 p50=    16.4 p99=     35.3
+--- S2-BadColdStart ---
+  ColdStart  main ops=  200 metaRefresh=  200 hedges=    0 budgetExh=    0 p50=  1621.6 p99=   2083.5
+  ColdStart  PR   ops=  200 metaRefresh=  200 hedges=  116 budgetExh=  138 p50=  1166.9 p99=   1972.3
+  Ok         main ops= 1500 metaRefresh=    0 hedges=    0 budgetExh=    0 p50=    16.0 p99=     45.4
+  Ok         PR   ops= 1500 metaRefresh=    0 hedges=    0 budgetExh=    0 p50=    16.1 p99=     32.0
+--- S3-BadCold+Degraded ---
+  ColdStart  main ops=  200 metaRefresh=  200 hedges=    0 budgetExh=    0 p50=  1648.5 p99=   2064.2
+  ColdStart  PR   ops=  200 metaRefresh=  200 hedges=  121 budgetExh=  140 p50=  1173.8 p99=   1953.8
+  Degraded   main ops= 3000 metaRefresh=  924 hedges=    0 budgetExh=    0 p50=   124.5 p99=   1110.8
+  Degraded   PR   ops= 3000 metaRefresh=  924 hedges=  543 budgetExh=  381 p50=   124.3 p99=   1081.5
+  Ok         main ops= 1500 metaRefresh=    0 hedges=    0 budgetExh=    0 p50=    16.1 p99=     31.9
+  Ok         PR   ops= 1500 metaRefresh=    0 hedges=    0 budgetExh=    0 p50=    16.0 p99=     46.3
+--- S4-GoodCold+Degraded ---
+  ColdStart  main ops=  200 metaRefresh=  200 hedges=    0 budgetExh=    0 p50=    62.4 p99=     93.3
+  ColdStart  PR   ops=  200 metaRefresh=  200 hedges=    0 budgetExh=  186 p50=    71.0 p99=     93.4
+  Degraded   main ops= 3000 metaRefresh=  924 hedges=    0 budgetExh=    0 p50=   124.2 p99=   1111.5
+  Degraded   PR   ops= 3000 metaRefresh=  924 hedges=  547 budgetExh=  377 p50=   124.1 p99=   1079.6
+  Ok         main ops= 1500 metaRefresh=    0 hedges=    0 budgetExh=    0 p50=    16.0 p99=     31.6
+  Ok         PR   ops= 1500 metaRefresh=    0 hedges=    0 budgetExh=    0 p50=    16.0 p99=     31.8
+===============================================================

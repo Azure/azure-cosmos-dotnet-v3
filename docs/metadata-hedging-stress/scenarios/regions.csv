@@ -1,0 +1,12 @@
+scenario,arm,region,sends
+S1-Healthy,main,West US 2,400
+S1-Healthy,PR,West US 2,400
+S2-BadColdStart,main,West US 2,400
+S2-BadColdStart,PR,East US,178
+S2-BadColdStart,PR,West US 2,400
+S3-BadCold+Degraded,main,West US 2,1324
+S3-BadCold+Degraded,PR,East US,724
+S3-BadCold+Degraded,PR,West US 2,1324
+S4-GoodCold+Degraded,main,West US 2,1324
+S4-GoodCold+Degraded,PR,East US,547
+S4-GoodCold+Degraded,PR,West US 2,1324
