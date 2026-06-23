@@ -1897,6 +1897,140 @@
         }
 
         [TestMethod]
+        public async Task DtxRequest_403_3_WriteForbidden_SingleWriterMultiRegion_MarksRegionDownAndRetriesInSoleWriteRegion()
+        {
+            // SINGLE-WRITER multi-region: only Location1 is a write region (the other regions are read-only).
+            // A DTX commit routes as a write, so 403/3 (WriteForbidden) still marks the write region down and
+            // requests a retry — but there is no second write region to fail over to, so the retry resolves
+            // back to the sole write region (Location1). The 403/3 branch has no canUseMultipleWriteLocations
+            // guard, so ShouldRetry is true regardless of write-region count.
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            await endpointManager.RefreshLocationAsync();
+
+            ClientRetryPolicy policy = new ClientRetryPolicy(
+                endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, isThinClientEnabled: false);
+            DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
+
+            policy.OnBeforeSendRequest(request);
+            Assert.AreEqual(
+                ClientRetryPolicyTests.Location1Endpoint,
+                endpointManager.ResolveServiceEndpoint(request),
+                "The DTX commit's first attempt resolves to the sole write region (Location1).");
+
+            ShouldRetryResult result = await policy.ShouldRetryAsync(
+                new DocumentClientException(
+                    message: "403/3 WriteForbidden on DTX commit (single-writer)",
+                    innerException: null,
+                    statusCode: HttpStatusCode.Forbidden,
+                    substatusCode: SubStatusCodes.WriteForbidden,
+                    requestUri: request.RequestContext.LocationEndpointToRoute,
+                    responseHeaders: new DictionaryNameValueCollection()),
+                CancellationToken.None);
+
+            Assert.IsTrue(
+                result.ShouldRetry,
+                "403/3 must request a retry (write-region markdown + rediscovery) even on a single-writer account.");
+
+            policy.OnBeforeSendRequest(request);
+            Assert.AreEqual(
+                ClientRetryPolicyTests.Location1Endpoint,
+                endpointManager.ResolveServiceEndpoint(request),
+                "With only one write region, the retry resolves back to it — there is no cross-region write failover available.");
+        }
+
+        [TestMethod]
+        public async Task DtxRequest_403_1008_DatabaseAccountNotFound_MultiWriterMultiRegion_NotRetried()
+        {
+            // MULTI-WRITER multi-region: even though the ACCOUNT enables multiple write locations, a DTX
+            // commit is NOT eligible for multi-write routing — canUseMultipleWriteLocations(request) is
+            // false for it. Combined with isReadRequest=false (DTX routes as a write), the 403/1008
+            // failover branch — gated on (isReadRequest || canUseMultipleWriteLocations) — is NOT taken.
+            // 403/1008 is also not a DTX-classifier retriable code (408/449/429/500-infra), so it surfaces
+            // WITHOUT a retry — the same outcome as the single-writer case below. (Proven, not assumed:
+            // an earlier version of this test asserted a cross-region retry and failed here.)
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: true,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false);
+
+            await endpointManager.RefreshLocationAsync();
+
+            ClientRetryPolicy policy = new ClientRetryPolicy(
+                endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, isThinClientEnabled: false);
+            DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
+
+            policy.OnBeforeSendRequest(request);
+            Assert.AreEqual(
+                ClientRetryPolicyTests.Location1Endpoint,
+                endpointManager.ResolveServiceEndpoint(request),
+                "The DTX commit's first attempt resolves to the primary write region (Location1).");
+
+            // Root cause: a DTX commit is not multi-write-location eligible, so the 403/1008 failover
+            // branch is unreachable for it regardless of the account's multi-write capability.
+            Assert.IsFalse(
+                endpointManager.CanUseMultipleWriteLocations(request),
+                "A DTX commit must not be treated as multi-write-location eligible, even on a multi-writer account.");
+
+            ShouldRetryResult result = await policy.ShouldRetryAsync(
+                new DocumentClientException(
+                    message: "403/1008 DatabaseAccountNotFound on DTX commit (multi-writer)",
+                    innerException: null,
+                    statusCode: HttpStatusCode.Forbidden,
+                    substatusCode: SubStatusCodes.DatabaseAccountNotFound,
+                    requestUri: request.RequestContext.LocationEndpointToRoute,
+                    responseHeaders: new DictionaryNameValueCollection()),
+                CancellationToken.None);
+
+            Assert.IsFalse(
+                result.ShouldRetry,
+                "A DTX 403/1008 is not eligible for the endpoint-failover branch (DTX is not multi-write eligible) and is not a DTX-classifier retriable code, so it surfaces without retry even on a multi-writer account.");
+        }
+
+        [TestMethod]
+        public async Task DtxRequest_403_1008_DatabaseAccountNotFound_SingleWriterMultiRegion_NotRetried()
+        {
+            // SINGLE-WRITER multi-region: a DTX commit routes as a write (isReadRequest=false) and
+            // canUseMultipleWriteLocations=false, so the 403/1008 failover branch — gated on
+            // (isReadRequest || canUseMultipleWriteLocations) — is NOT taken. 403/1008 is also not a
+            // DTX-classifier retriable code (408/449/429/500-infra), so it surfaces without a retry.
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            await endpointManager.RefreshLocationAsync();
+
+            ClientRetryPolicy policy = new ClientRetryPolicy(
+                endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, isThinClientEnabled: false);
+            DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
+
+            policy.OnBeforeSendRequest(request);
+
+            ShouldRetryResult result = await policy.ShouldRetryAsync(
+                new DocumentClientException(
+                    message: "403/1008 DatabaseAccountNotFound on DTX commit (single-writer)",
+                    innerException: null,
+                    statusCode: HttpStatusCode.Forbidden,
+                    substatusCode: SubStatusCodes.DatabaseAccountNotFound,
+                    requestUri: request.RequestContext.LocationEndpointToRoute,
+                    responseHeaders: new DictionaryNameValueCollection()),
+                CancellationToken.None);
+
+            Assert.IsFalse(
+                result.ShouldRetry,
+                "On a single-writer account a DTX (write-routed) 403/1008 is not eligible for the endpoint-failover branch and is not a DTX-classifier retriable code, so it must surface without retry.");
+        }
+
+        [TestMethod]
         public async Task NonDtxWriteRequest_408_ShouldNotRetry()
         {
             const bool enableEndpointDiscovery = true;
