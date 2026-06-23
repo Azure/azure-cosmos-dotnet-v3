@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
+    using System;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -14,7 +15,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// It is recommended to follow the same pattern for point operations as well (for consistent error / exception handling).
     /// </remarks>
     /// <example>
-    /// The following example is for query processing.
+    /// The following example is for query processing. The feed response is cast to
+    /// <see cref="IAsyncDisposable"/> and disposed in a <c>finally</c> block so that any
+    /// items the caller skipped or did not enumerate release their pooled buffers (relevant
+    /// when <c>JsonProcessor.Stream</c> is selected on .NET 8+).
     /// <code language="c#">
     /// <![CDATA[
     /// public class ToDoActivity{
@@ -24,23 +28,34 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// }
     ///
     /// QueryDefinition queryDefinition = new QueryDefinition("select * from ToDos");
-    /// using (FeedIterator<DecrytableItem> feedIterator = this.Container.GetItemQueryIterator<DecrytableItem>(
+    /// using (FeedIterator<DecryptableItem> feedIterator = this.Container.GetItemQueryIterator<DecryptableItem>(
     ///     queryDefinition,
     ///     requestOptions: new QueryRequestOptions() { PartitionKey = new PartitionKey("Error")}))
     /// {
     ///     while (feedIterator.HasMoreResults)
     ///     {
     ///         FeedResponse<DecryptableItem> decryptableItems = await feedIterator.ReadNextAsync();
-    ///         foreach(DecryptableItem item in decryptableItems){
+    ///         try
     ///         {
-    ///             try
+    ///             foreach (DecryptableItem item in decryptableItems)
     ///             {
-    ///                 (ToDoActivity toDo, DecryptionContext _) = await item.GetItemAsync<ToDoActivity>();
+    ///                 try
+    ///                 {
+    ///                     (ToDoActivity toDo, DecryptionContext _) = await item.GetItemAsync<ToDoActivity>();
+    ///                 }
+    ///                 catch (EncryptionException encryptionException)
+    ///                 {
+    ///                     string dataEncryptionKeyId = encryptionException.DataEncryptionKeyId;
+    ///                     string rawPayload = encryptionException.EncryptedContent;
+    ///                 }
     ///             }
-    ///             catch (EncryptionException encryptionException)
+    ///         }
+    ///         finally
+    ///         {
+    ///             // Ensures pooled buffers are returned even if the foreach exits early.
+    ///             if (decryptableItems is IAsyncDisposable disposableResponse)
     ///             {
-    ///                 string dataEncryptionKeyId = encryptionException.DataEncryptionKeyId;
-    ///                 string rawPayload = encryptionException.EncryptedContent;
+    ///                 await disposableResponse.DisposeAsync();
     ///             }
     ///         }
     ///     }
@@ -71,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// ]]>
     /// </code>
     /// </example>
-    public abstract class DecryptableItem
+    public abstract class DecryptableItem : IAsyncDisposable
     {
         /// <summary>
         /// Decrypts and deserializes the content.
@@ -79,5 +94,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <typeparam name="T">The type of item to be returned.</typeparam>
         /// <returns>The requested item and the decryption related context.</returns>
         public abstract Task<(T, DecryptionContext)> GetItemAsync<T>();
+
+        /// <summary>
+        /// Disposes any resources held by the decryptable item.
+        /// Default implementation does nothing. Override in derived classes that hold disposable resources.
+        /// </summary>
+        /// <remarks>
+        /// Stream-mode <see cref="DecryptableItem"/> implementations wrap pooled <c>ArrayPool&lt;byte&gt;</c>
+        /// buffers that must be returned to prevent buffer leaks and clear any plaintext residue. Callers
+        /// that obtain a <c>FeedResponse&lt;DecryptableItem&gt;</c> page and abandon iteration (early-exit,
+        /// exception, or never enumerate) should dispose the page through <see cref="IAsyncDisposable"/> so
+        /// that disposal cascades to every item. See the type-level remarks for the recommended pattern.
+        /// </remarks>
+        /// <returns>A ValueTask representing the asynchronous dispose operation.</returns>
+        public virtual ValueTask DisposeAsync()
+        {
+            return default;
+        }
     }
 }

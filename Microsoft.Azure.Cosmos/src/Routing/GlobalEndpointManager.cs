@@ -43,10 +43,21 @@ namespace Microsoft.Azure.Cosmos.Routing
         private bool isBackgroundAccountRefreshActive = false;
         private DateTime LastBackgroundRefreshUtc = DateTime.MinValue;
 
+        // Last observed value of the account-level disableCrossRegionalHedging flag.
+        // Tracked separately so the change event fires when only this flag toggles.
+        private bool lastKnownDisableCrossRegionalHedging = false;
+
         /// <summary>
         /// Event that is raised when PPAF (Per Partition Automatic Failover) enablement status changes
+        /// or when the gateway-controlled disableCrossRegionalHedging flag toggles.
         /// </summary>
-        internal event Action<bool>? OnEnablePartitionLevelFailoverConfigChanged;
+        /// <remarks>
+        /// First argument is the latest <c>EnablePartitionLevelFailover</c> value observed from the
+        /// Gateway (falls back to the existing connection-policy value when the property is absent).
+        /// Second argument is the latest <c>disableCrossRegionalHedging</c> value (false when absent
+        /// from the Gateway response).
+        /// </remarks>
+        internal event Action<bool, bool>? OnEnablePartitionLevelFailoverConfigChanged;
 
         public GlobalEndpointManager(
             IDocumentClientInternal owner,
@@ -58,7 +69,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                 owner.ServiceEndpoint,
                 connectionPolicy.EnableEndpointDiscovery,
                 connectionPolicy.MaxConnectionLimit,
-                connectionPolicy.UseMultipleWriteLocations);
+                connectionPolicy.UseMultipleWriteLocations,
+                isPartitionLevelFailoverEnabled: () => connectionPolicy.EnablePartitionLevelFailover);
 
             this.owner = owner;
             this.defaultEndpoint = owner.ServiceEndpoint;
@@ -108,6 +120,10 @@ namespace Microsoft.Azure.Cosmos.Routing
         public ReadOnlyCollection<Uri> ThinClientReadEndpoints => this.locationCache.ThinClientReadEndpoints;
 
         public ReadOnlyCollection<Uri> ThinClientWriteEndpoints => this.locationCache.ThinClientWriteEndpoints;
+
+        public bool HasThinClientReadLocations => this.locationCache.HasThinClientReadLocations;
+
+        public bool HasThinClientWriteLocations => this.locationCache.HasThinClientWriteLocations;
 
         public int PreferredLocationCount
         {
@@ -612,6 +628,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.connectionPolicy.EnablePartitionLevelFailover = databaseAccount.EnablePartitionLevelFailover.Value;
             }
 
+            // Capture initial disableCrossRegionalHedging baseline so the change-event only fires on
+            // subsequent transitions, not on the first observation.
+            this.lastKnownDisableCrossRegionalHedging = databaseAccount.DisableCrossRegionalHedging ?? false;
+
             GlobalEndpointManager.ParseThinClientLocationsFromAdditionalProperties(databaseAccount);
 
             this.locationCache.OnDatabaseAccountRead(databaseAccount);
@@ -769,11 +789,51 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.LastBackgroundRefreshUtc = DateTime.UtcNow;
                 AccountProperties accountProperties = await this.GetDatabaseAccountAsync(true);
 
-                if (!this.connectionPolicy.DisablePartitionLevelFailoverClientLevelOverride 
+                bool ignorePpafChanges = this.connectionPolicy.DisablePartitionLevelFailoverClientLevelOverride;
+
+                bool ppafEnablementChanged = !ignorePpafChanges
                     && accountProperties.EnablePartitionLevelFailover.HasValue
-                    && (this.connectionPolicy.EnablePartitionLevelFailover != accountProperties.EnablePartitionLevelFailover.Value))
+                    && (this.connectionPolicy.EnablePartitionLevelFailover != accountProperties.EnablePartitionLevelFailover.Value);
+
+                // Hedging change-detection mirrors the PPAF .HasValue guard above:
+                // a missing property in the response is "no signal", NOT an implicit false.
+                // This prevents a transient gateway response that drops the property
+                // (e.g., partial regional failover, stale gateway version) from being
+                // interpreted as a true -> false transition that re-enables hedging
+                // during the very window the operator most wants it disabled.
+                //
+                // Runbook contract: on-call disables via an explicit "false" property
+                // value, not by removing the property override.
+                bool disableHedgingFlagChanged = !ignorePpafChanges
+                    && accountProperties.DisableCrossRegionalHedging.HasValue
+                    && (accountProperties.DisableCrossRegionalHedging.Value != this.lastKnownDisableCrossRegionalHedging);
+
+                if (ppafEnablementChanged || disableHedgingFlagChanged)
                 {
-                    this.OnEnablePartitionLevelFailoverConfigChanged?.Invoke(accountProperties.EnablePartitionLevelFailover.Value);
+                    bool latestPpafEnabled = accountProperties.EnablePartitionLevelFailover
+                        ?? this.connectionPolicy.EnablePartitionLevelFailover;
+
+                    // Only advance lastKnown when the gateway emitted an explicit value; otherwise
+                    // preserve the cached value so a later property-restored response diffs against
+                    // the previously-honored state (rather than against an implicit false baseline).
+                    bool latestDisableHedging = accountProperties.DisableCrossRegionalHedging
+                        ?? this.lastKnownDisableCrossRegionalHedging;
+
+                    bool previousDisableHedging = this.lastKnownDisableCrossRegionalHedging;
+                    this.lastKnownDisableCrossRegionalHedging = latestDisableHedging;
+                    try
+                    {
+                        this.OnEnablePartitionLevelFailoverConfigChanged?.Invoke(latestPpafEnabled, latestDisableHedging);
+                    }
+                    catch
+                    {
+                        // Restore the baseline so the next refresh re-detects and retries the missed
+                        // transition rather than diffing against an already-advanced value and going silent.
+                        // The subscriber reverts its own cached flag in tandem (see
+                        // DocumentClient.UpdatePartitionLevelFailoverConfigWithAccountRefresh).
+                        this.lastKnownDisableCrossRegionalHedging = previousDisableHedging;
+                        throw;
+                    }
                 }
 
                 GlobalEndpointManager.ParseThinClientLocationsFromAdditionalProperties(accountProperties);

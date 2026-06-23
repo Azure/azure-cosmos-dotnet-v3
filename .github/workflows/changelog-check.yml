@@ -1,0 +1,70 @@
+name: Changelog Check (soft, non-blocking)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+    paths:
+      - 'Microsoft.Azure.Cosmos/src/**'
+      - 'Microsoft.Azure.Cosmos/FaultInjection/src/**'
+      - 'changelog.md'
+      - 'Microsoft.Azure.Cosmos/FaultInjection/changelog.md'
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  changelog-soft-check:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.pull_request.labels.*.name, 'no-changelog-needed')"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect which packages were touched
+        id: detect
+        run: |
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          CHANGED=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+
+          MAIN_SRC=$(echo "$CHANGED" | grep -E '^Microsoft\.Azure\.Cosmos/src/' || true)
+          FI_SRC=$(echo "$CHANGED"   | grep -E '^Microsoft\.Azure\.Cosmos/FaultInjection/src/' || true)
+          MAIN_CL=$(echo "$CHANGED" | grep -E '^changelog\.md$' || true)
+          FI_CL=$(echo "$CHANGED"   | grep -E '^Microsoft\.Azure\.Cosmos/FaultInjection/changelog\.md$' || true)
+
+          MAIN_MISSING=$([[ -n "$MAIN_SRC" && -z "$MAIN_CL" ]] && echo "true" || echo "false")
+          FI_MISSING=$([[ -n "$FI_SRC" && -z "$FI_CL" ]]     && echo "true" || echo "false")
+
+          echo "main_missing=$MAIN_MISSING" >> "$GITHUB_OUTPUT"
+          echo "fi_missing=$FI_MISSING"     >> "$GITHUB_OUTPUT"
+
+      - name: Post (or update) soft-check comment
+        if: steps.detect.outputs.main_missing == 'true' || steps.detect.outputs.fi_missing == 'true'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: changelog-soft-check
+          message: |
+            ## :memo: Changelog reminder (non-blocking)
+
+            This PR touches shipped source but does not appear to update the
+            corresponding `changelog.md`.
+
+            Touched (and missing entry for):
+            ${{ steps.detect.outputs.main_missing == 'true' && '- `Microsoft.Azure.Cosmos/src/**` ⇒ expected an entry in `changelog.md` (`### Unreleased`)' || '' }}
+            ${{ steps.detect.outputs.fi_missing == 'true'   && '- `Microsoft.Azure.Cosmos/FaultInjection/src/**` ⇒ expected an entry in `Microsoft.Azure.Cosmos/FaultInjection/changelog.md` (`### Unreleased`)' || '' }}
+
+            ### How to decide
+
+            Use the rubric in `.github/copilot-instructions.md` ("Changelog
+            classifier") or in `CONTRIBUTING.md` ("Changelog entry"). Quick
+            version:
+
+            - Customer-observable change (behavior, perf, memory, API) ⇒ **add an entry**, even if the PR is `[Internal]`.
+            - Test-only / CI-only / doc-only / pure-internal-refactor with zero customer-observable effect ⇒ no entry, add the `no-changelog-needed` label to silence this check.
+            - **Unsure?** Default to adding a one-line entry under `#### Other Changes`. Reviewer will adjust.
+
+            This check is **non-blocking** — merge is not gated on it. The
+            reviewer is responsible for the final classification.

@@ -14,7 +14,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Encryption.Custom;
+    using Microsoft.Azure.Cosmos.Encryption.Custom.Tests;
     using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
+    using EncryptionCrypto = Data.Encryption.Cryptography;
+    using Newtonsoft.Json.Linq;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -40,7 +43,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         public static void Init(TestContext ctx)
         {
             _ = ctx;
-            StreamProcessor.InitialBufferSize = 8; // force multiple resizes / leftover path
+            // Force multiple resizes / leftover path with small initial buffer size
+            PooledStreamConfiguration.SetConfiguration(new PooledStreamConfiguration { StreamProcessorBufferSize = 8 });
 
             mockEncryptor = TestEncryptorFactory.CreateMde(DekId, out mockDek);
         }
@@ -213,8 +217,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
 
             // Choose very small initial buffer so _ei object is fragmented.
-            int original = StreamProcessor.InitialBufferSize;
-            StreamProcessor.InitialBufferSize = 32;
+            PooledStreamConfiguration original = PooledStreamConfiguration.Current;
+            PooledStreamConfiguration.SetConfiguration(new PooledStreamConfiguration { StreamProcessorBufferSize = 32 });
             try
             {
                 // Act
@@ -234,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             }
             finally
             {
-                StreamProcessor.InitialBufferSize = original; // restore
+                PooledStreamConfiguration.SetConfiguration(original); // restore
             }
         }
 
@@ -592,6 +596,282 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         // and the encryption pipeline never emits comments. Altering the static readonly field or constructing a custom reader just for coverage would add fragility.
         // The switch case exists defensively; functional risk is negligible.
 
+        [TestMethod]
+        public async Task DecryptJsonArrayStreamInPlaceAsync_PropagatesCancellation()
+        {
+            (CosmosEncryptor cosmosEncryptor, MemoryStream feedPayloadStream, _) =
+                await CreateBenchmarkFeedPayloadAsync(documentCount: 3, documentSizeInKb: 1).ConfigureAwait(false);
+
+            using (feedPayloadStream)
+            using (CancellationTokenSource cts = new ())
+            {
+                cts.Cancel();
+
+                StreamProcessor processor = new ();
+                CosmosDiagnosticsContext diagnostics = new ();
+
+                try
+                {
+                    await processor.DecryptJsonArrayStreamInPlaceAsync(
+                        feedPayloadStream, cosmosEncryptor, diagnostics, cts.Token).ConfigureAwait(false);
+                    Assert.Fail("Expected an OperationCanceledException-derived exception.");
+                }
+                catch (OperationCanceledException)
+                {
+                    // expected — TaskCanceledException is also acceptable since it derives from this.
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task DecryptJsonArrayStreamInPlaceAsync_DecryptsFeedPayloadInPlace()
+        {
+            const int documentCount = 5;
+            const int documentSizeInKb = 1;
+
+            int originalBufferSize = StreamProcessor.InitialBufferSize;
+            StreamProcessor.InitialBufferSize = 32;
+
+            try
+            {
+                (CosmosEncryptor cosmosEncryptor, MemoryStream feedPayloadStream, IReadOnlyList<FeedDoc> originalDocs) =
+                    await CreateBenchmarkFeedPayloadAsync(documentCount, documentSizeInKb).ConfigureAwait(false);
+
+                using (feedPayloadStream)
+                {
+                    StreamProcessor processor = new();
+                    CosmosDiagnosticsContext diagnostics = new();
+
+                    await processor.DecryptJsonArrayStreamInPlaceAsync(
+                        feedPayloadStream,
+                        cosmosEncryptor,
+                        diagnostics,
+                        CancellationToken.None).ConfigureAwait(false);
+
+                    feedPayloadStream.Position = 0;
+                    using StreamReader reader = new(feedPayloadStream, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, leaveOpen: true);
+                    string decryptedJson = await reader.ReadToEndAsync().ConfigureAwait(false);
+                    JObject decryptedPayload = JObject.Parse(decryptedJson);
+                    JToken documentsToken = decryptedPayload[Constants.DocumentsResourcePropertyName];
+                    Assert.IsNotNull(documentsToken, "Feed payload missing Documents array after decryption.");
+                    Assert.IsInstanceOfType(documentsToken, typeof(JArray), "Documents payload expected to be a JSON array.");
+
+                    JArray decryptedArray = (JArray)documentsToken;
+
+                    Assert.AreEqual(originalDocs.Count, decryptedArray.Count, "Decrypted array length mismatch");
+                    Assert.AreEqual(originalDocs.Count, decryptedPayload.Value<int>("_count"), "Feed metadata _count mismatch.");
+
+                    for (int i = 0; i < originalDocs.Count; i++)
+                    {
+                        FeedDoc expected = originalDocs[i];
+                        JObject decryptedDoc = (JObject)decryptedArray[i];
+
+                        Assert.AreEqual(expected.Id, decryptedDoc.Value<string>("id"));
+                        Assert.AreEqual(expected.NonSensitive, decryptedDoc.Value<string>(nameof(FeedDoc.NonSensitive)));
+                        Assert.AreEqual(expected.SensitiveStr, decryptedDoc.Value<string>(nameof(FeedDoc.SensitiveStr)));
+                        Assert.AreEqual(expected.SensitiveInt, decryptedDoc.Value<int>(nameof(FeedDoc.SensitiveInt)));
+
+                        JToken dictToken = decryptedDoc[nameof(FeedDoc.SensitiveDict)];
+                        Assert.IsTrue(dictToken is JObject, "SensitiveDict should round-trip as JObject");
+                        JObject decryptedDict = (JObject)dictToken;
+                        Assert.AreEqual(expected.SensitiveDict.Count, decryptedDict.Count, "SensitiveDict entry count mismatch");
+
+                        foreach (KeyValuePair<string, string> kvp in expected.SensitiveDict)
+                        {
+                            Assert.AreEqual(kvp.Value, decryptedDict.Value<string>(kvp.Key), $"Mismatch for dictionary key '{kvp.Key}'");
+                        }
+
+                        Assert.IsNull(decryptedDoc.Property(Constants.EncryptedInfo), "Encrypted metadata should be removed");
+                    }
+                }
+            }
+            finally
+            {
+                StreamProcessor.InitialBufferSize = originalBufferSize;
+            }
+        }
+
+        [TestMethod]
+        public async Task DecryptJsonArrayStreamInPlaceAsync_ReturnsNullContextWhenNoEncryptedObjects()
+        {
+            JObject payload = new()
+            {
+                ["_rid"] = "testRid==",
+                [Constants.DocumentsResourcePropertyName] = new JArray(
+                    new JObject
+                    {
+                        ["id"] = "1",
+                        ["value"] = 10,
+                    },
+                    new JObject
+                    {
+                        ["id"] = "2",
+                        ["value"] = 20,
+                    }),
+                ["_count"] = 2,
+            };
+
+            string json = payload.ToString(Newtonsoft.Json.Formatting.None);
+            JObject expectedPayload = JObject.Parse(json);
+
+            using MemoryStream input = new();
+            using (StreamWriter writer = new(input, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), bufferSize: 1024, leaveOpen: true))
+            {
+                writer.Write(json);
+                writer.Flush();
+            }
+
+            input.Position = 0;
+
+            int originalBufferSize = StreamProcessor.InitialBufferSize;
+            StreamProcessor.InitialBufferSize = 4;
+
+            try
+            {
+                StreamProcessor processor = new();
+                CosmosDiagnosticsContext diagnostics = new();
+
+                await processor.DecryptJsonArrayStreamInPlaceAsync(
+                    input,
+                    mockEncryptor.Object,
+                    diagnostics,
+                    CancellationToken.None).ConfigureAwait(false);
+
+                input.Position = 0;
+                using StreamReader reader = new(input, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, leaveOpen: true);
+                string roundTripped = await reader.ReadToEndAsync().ConfigureAwait(false);
+                JObject roundTrippedPayload = JObject.Parse(roundTripped);
+
+                Assert.IsTrue(JToken.DeepEquals(expectedPayload, roundTrippedPayload), "Plain payload should round-trip unchanged.");
+            }
+            finally
+            {
+                StreamProcessor.InitialBufferSize = originalBufferSize;
+            }
+        }
+
+        [TestMethod]
+        public async Task Decrypt_ViaTrickleStream_SucceedsWithLeftover()
+        {
+            // Regression test for isFinalBlock fix: feed encrypted payload 1 byte at a time
+            // so dataLength==0 with leftOver>0 occurs. Before the fix, isFinalBlock would be
+            // false causing infinite buffer growth. With the fix, isFinalBlock = (dataLength==0)
+            // terminates correctly.
+            var doc = new
+            {
+                id = "1",
+                SensitiveStr = "secret-data",
+            };
+            string[] paths = new[] { "/SensitiveStr" };
+            EncryptionOptions options = CreateOptions(paths);
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+            // Re-wrap encrypted data in a TrickleStream that delivers small chunks per read
+            // to force the leftover accumulation path. We use 7-byte chunks (not 1) to avoid
+            // pathological buffer doubling: with 1-byte reads, the buffer doubles on every
+            // byte of every partial JSON token, overflowing before the stream is consumed.
+            byte[] encryptedBytes = encrypted.ToArray();
+            using TrickleStream trickleInput = new(encryptedBytes, bytesPerRead: 7);
+            MemoryStream output = new();
+
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(10));
+            try
+            {
+                DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(
+                    trickleInput, output, mockEncryptor.Object, props,
+                    new CosmosDiagnosticsContext(), cts.Token);
+
+                // Verify decryption succeeded
+                output.Position = 0;
+                using JsonDocument jd = JsonDocument.Parse(output);
+                Assert.AreEqual("secret-data", jd.RootElement.GetProperty("SensitiveStr").GetString());
+                Assert.IsTrue(ctx.DecryptionInfoList[0].PathsDecrypted.Contains("/SensitiveStr"));
+            }
+            catch (OperationCanceledException)
+            {
+                Assert.Fail("Timed out — isFinalBlock bug caused infinite buffer growth");
+            }
+        }
+
+        private static async Task<(CosmosEncryptor cosmosEncryptor, MemoryStream feedPayloadStream, IReadOnlyList<FeedDoc> sourceDocuments)> CreateBenchmarkFeedPayloadAsync(int documentCount, int documentSizeInKb)
+        {
+            byte[] wrappedDek = Enumerable.Range(0, 32).Select(i => (byte)i).ToArray();
+            DataEncryptionKeyProperties dekProperties = new(
+                DekId,
+                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                wrappedDek,
+                new EncryptionKeyWrapMetadata("name", "value"),
+                DateTime.UtcNow);
+
+            TestEncryptionKeyStoreProvider storeProvider = new ();
+
+            Mock<DataEncryptionKeyProvider> keyProvider = new();
+            keyProvider
+                .Setup(p => p.FetchDataEncryptionKeyWithoutRawKeyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .Returns(async () => await MdeEncryptionAlgorithm.CreateAsync(dekProperties, EncryptionCrypto.EncryptionType.Randomized, storeProvider, cacheTimeToLive: TimeSpan.MaxValue, withRawKey: false, cancellationToken: default));
+
+            CosmosEncryptor cosmosEncryptor = new(keyProvider.Object);
+
+            EncryptionOptions options = new()
+            {
+                DataEncryptionKeyId = DekId,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                PathsToEncrypt = FeedDoc.PathsToEncrypt,
+            };
+
+            EncryptionItemRequestOptions encryptionRequest = RequestOptionsOverrideHelper.Create(options, JsonProcessor.Stream);
+
+            List<FeedDoc> sourceDocs = new(documentCount);
+            List<JObject> encryptedDocuments = new(documentCount);
+            for (int i = 0; i < documentCount; i++)
+            {
+                FeedDoc doc = FeedDoc.Create(documentSizeInKb * 1024);
+                sourceDocs.Add(doc);
+
+                JObject jobj = JObject.FromObject(doc);
+                using Stream docStream = EncryptionProcessor.BaseSerializer.ToStream(jobj);
+                using Stream encryptedDoc = await EncryptionProcessor.EncryptAsync(
+                        docStream,
+                        cosmosEncryptor,
+                        encryptionRequest,
+                        CosmosDiagnosticsContext.Create(null),
+                        CancellationToken.None).ConfigureAwait(false);
+
+                if (encryptedDoc.CanSeek)
+                {
+                    encryptedDoc.Position = 0;
+                }
+
+                JObject encryptedJObject = EncryptionProcessor.BaseSerializer.FromStream<JObject>(encryptedDoc);
+                encryptedDocuments.Add(encryptedJObject);
+            }
+
+            JObject feedPayload = new()
+            {
+                ["_rid"] = "benchmarkRid==",
+                [Constants.DocumentsResourcePropertyName] = new JArray(encryptedDocuments),
+                ["_count"] = encryptedDocuments.Count,
+            };
+
+            byte[] feedPayloadBytes;
+            using (MemoryStream buffer = new())
+            using (StreamWriter writer = new(buffer, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), bufferSize: 1024, leaveOpen: true))
+            using (Newtonsoft.Json.JsonTextWriter jsonWriter = new(writer))
+            {
+                feedPayload.WriteTo(jsonWriter);
+                jsonWriter.Flush();
+                writer.Flush();
+                feedPayloadBytes = buffer.ToArray();
+            }
+
+            MemoryStream feedPayloadStream = new(feedPayloadBytes, writable: true)
+            {
+                Position = 0
+            };
+
+            return (cosmosEncryptor, feedPayloadStream, sourceDocs);
+        }
+
         private class NullMarkerMdeEncryptor : MdeEncryptor
         {
             internal override (byte[] plainText, int plainTextLength) Decrypt(DataEncryptionKey encryptionKey, byte[] cipherText, int cipherTextLength, ArrayPoolManager arrayPoolManager)
@@ -625,6 +905,59 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             }
         }
 
+        private sealed class FeedDoc
+        {
+            internal static readonly IReadOnlyCollection<string> PathsToEncrypt = new[] { "/SensitiveStr", "/SensitiveInt", "/SensitiveDict" };
+
+            [Newtonsoft.Json.JsonProperty("id")]
+            public string Id { get; set; } = string.Empty;
+
+            public string NonSensitive { get; set; } = string.Empty;
+
+            public string SensitiveStr { get; set; } = string.Empty;
+
+            public int SensitiveInt { get; set; }
+
+            public Dictionary<string, string> SensitiveDict { get; set; } = new();
+
+            internal static FeedDoc Create(int approximateSizeBytes)
+            {
+                return new FeedDoc
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    NonSensitive = Guid.NewGuid().ToString(),
+                    SensitiveStr = Guid.NewGuid().ToString(),
+                    SensitiveInt = Random.Shared.Next(),
+                    SensitiveDict = GenerateDictionary(approximateSizeBytes),
+                };
+            }
+
+            private static Dictionary<string, string> GenerateDictionary(int approximateSizeBytes)
+            {
+                const int stringSize = 100;
+                int items = Math.Max(1, approximateSizeBytes / stringSize);
+                Dictionary<string, string> dict = new(items);
+                for (int i = 0; i < items; i++)
+                {
+                    dict.Add(i.ToString(), GenerateRandomString(stringSize));
+                }
+
+                return dict;
+            }
+
+            private static string GenerateRandomString(int size)
+            {
+                const string characters = "abcdefghijklmnopqrstuvwxyz0123456789";
+                char[] buffer = new char[size];
+                for (int i = 0; i < size; i++)
+                {
+                    buffer[i] = characters[Random.Shared.Next(characters.Length)];
+                }
+
+                return new string(buffer);
+            }
+        }
+
         private class MutablePlaintextMdeEncryptor : MdeEncryptor
         {
             public byte[] Payload { get; set; } = Array.Empty<byte>();
@@ -640,6 +973,109 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             }
         }
 
+        [TestMethod]
+        public async Task DecryptStreamAsync_IBufferWriterOverload_WritesDirectlyToBufferWriter()
+        {
+            var doc = new { id = "1", SensitiveStr = "secret" };
+            string[] paths = new[] { "/SensitiveStr" };
+            EncryptionOptions options = CreateOptions(paths);
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+            using RentArrayBufferWriter bw = new ();
+            DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, bw, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+
+            Assert.IsNotNull(ctx);
+            Assert.IsTrue(bw.BytesWritten > 0);
+
+            byte[] bytes = bw.WrittenSpan.ToArray();
+            using JsonDocument parsed = JsonDocument.Parse(bytes);
+            Assert.AreEqual("secret", parsed.RootElement.GetProperty("SensitiveStr").GetString());
+            Assert.IsFalse(parsed.RootElement.TryGetProperty(Constants.EncryptedInfo, out _));
+        }
+
+        [TestMethod]
+        public async Task DecryptStreamAsync_IBufferWriterOverload_ThrowsOnNullArguments()
+        {
+            using MemoryStream input = new ();
+            using RentArrayBufferWriter bw = new ();
+            CosmosDiagnosticsContext diag = new ();
+            EncryptionProperties anyProps = new (EncryptionFormatVersion.Mde, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized, "k", null, System.Array.Empty<string>());
+
+            await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => new StreamProcessor().DecryptStreamAsync(null, bw, mockEncryptor.Object, anyProps, diag, default));
+            await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => new StreamProcessor().DecryptStreamAsync(input, (System.Buffers.IBufferWriter<byte>)null, mockEncryptor.Object, anyProps, diag, default));
+            await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => new StreamProcessor().DecryptStreamAsync(input, bw, null, anyProps, diag, default));
+            await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => new StreamProcessor().DecryptStreamAsync(input, bw, mockEncryptor.Object, null, diag, default));
+        }
+
+        [TestMethod]
+        public async Task Decrypt_DoesNotMatchNestedPropertyWithSameName()
+        {
+            // Arrange: top-level "SensitiveStr" is configured for encryption; a same-named property at depth 2 must NOT be touched.
+            var doc = new
+            {
+                id = "1",
+                SensitiveStr = "top",
+                Nested = new { SensitiveStr = "inner", Other = 1 }
+            };
+            EncryptionOptions options = CreateOptions(new[] { "/SensitiveStr" });
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+            MemoryStream output = new();
+            DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+
+            output.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(output);
+            JsonElement root = jd.RootElement;
+            Assert.AreEqual("top", root.GetProperty("SensitiveStr").GetString());
+            Assert.AreEqual("inner", root.GetProperty("Nested").GetProperty("SensitiveStr").GetString());
+            Assert.AreEqual(1, root.GetProperty("Nested").GetProperty("Other").GetInt32());
+            Assert.AreEqual(1, ctx.DecryptionInfoList[0].PathsDecrypted.Count);
+            Assert.IsTrue(ctx.DecryptionInfoList[0].PathsDecrypted.Contains("/SensitiveStr"));
+        }
+    }
+
+    /// <summary>
+    /// Delivers at most N bytes per ReadAsync to force the StreamProcessor leftover path.
+    /// </summary>
+    internal sealed class TrickleStream : Stream
+    {
+        private readonly byte[] data;
+        private readonly int bytesPerRead;
+        private int pos;
+
+        public TrickleStream(byte[] data, int bytesPerRead)
+        {
+            this.data = data;
+            this.bytesPerRead = bytesPerRead;
+        }
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => this.data.Length;
+        public override long Position { get => this.pos; set => throw new NotSupportedException(); }
+        public override void Flush() { }
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException("Use ReadAsync");
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            int remaining = this.data.Length - this.pos;
+            if (remaining <= 0) return ValueTask.FromResult(0);
+            int toRead = Math.Min(Math.Min(this.bytesPerRead, remaining), buffer.Length);
+            this.data.AsMemory(this.pos, toRead).CopyTo(buffer);
+            this.pos += toRead;
+            return ValueTask.FromResult(toRead);
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            var result = ReadAsync(buffer.AsMemory(offset, count), cancellationToken);
+            return result.AsTask();
+        }
     }
 }
 #endif
