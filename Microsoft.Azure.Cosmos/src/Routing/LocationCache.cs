@@ -1039,9 +1039,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             HashSet<Uri> endpoints = new HashSet<Uri>();
 
             LocationCache.CollectThinClientEndpointsBestEffort(
-                snapshot.AvailableReadLocations, snapshot.ThinClientReadEndpointByLocation, endpoints);
+                snapshot.ThinClientReadLocations, snapshot.ThinClientReadEndpointByLocation, endpoints);
             LocationCache.CollectThinClientEndpointsBestEffort(
-                snapshot.AvailableWriteLocations, snapshot.ThinClientWriteEndpointByLocation, endpoints);
+                snapshot.ThinClientWriteLocations, snapshot.ThinClientWriteEndpointByLocation, endpoints);
 
             return endpoints;
         }

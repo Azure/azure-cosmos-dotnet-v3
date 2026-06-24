@@ -330,7 +330,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                         Regions.WestUS
                     },
                     ConnectionMode = ConnectionMode.Gateway,
-                    EnableHttp2 = true,
                     HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object)),
                 };
 
@@ -492,7 +491,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                         Regions.WestUS
                     },
                     ConnectionMode = ConnectionMode.Gateway,
-                    EnableHttp2 = true,
                     HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object)),
                 };
 
@@ -658,7 +656,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                         Regions.WestUS
                     },
                     ConnectionMode = ConnectionMode.Gateway,
-                    EnableHttp2 = true,
                     HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object)),
                 };
 

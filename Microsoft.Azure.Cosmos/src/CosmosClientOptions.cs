@@ -318,22 +318,6 @@ namespace Microsoft.Azure.Cosmos
         public TimeSpan RequestTimeout { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether HTTP/2 is enabled for the client.
-        /// HTTP/2 is a prerequisite for thin client routing: the thin client proxy (Gateway V2) and the
-        /// connectivity probe both require HTTP/2. When enabled and the account advertises thin client
-        /// endpoints, the SDK probes the proxy regional endpoints over HTTP/2 and routes the data plane
-        /// through the proxy only when the probe succeeds; otherwise it falls back to the regular gateway
-        /// (Gateway V1) path.
-        /// <value>Default value is false.</value>
-        /// </summary>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        bool? EnableHttp2 { get; set; }
-
-        /// <summary>
         /// Gets or sets the request timeout for inference service operations (e.g., semantic reranking).
         /// The number specifies the time to wait for a response from the inference service before the request is cancelled.
         /// This is a single-attempt timeout with no retries.
@@ -1188,7 +1172,6 @@ namespace Microsoft.Azure.Cosmos
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
                 EnableAdvancedReplicaSelectionForTcp = this.EnableAdvancedReplicaSelectionForTcp,
-                EnableHttp2 = this.EnableHttp2 ?? false,
                 HttpClientFactory = this.httpClientFactory,
                 ServerCertificateCustomValidationCallback = this.ServerCertificateCustomValidationCallback,
                 CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions(),

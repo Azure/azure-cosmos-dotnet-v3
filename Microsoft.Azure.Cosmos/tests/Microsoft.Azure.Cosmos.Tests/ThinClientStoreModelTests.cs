@@ -217,6 +217,7 @@ namespace Microsoft.Azure.Cosmos
 
             GlobalEndpointManager endpointManager = new(mockDocumentClient.Object, new ConnectionPolicy());
             TestUtils.EnableThinClientLocationsForTest(endpointManager);
+            TestUtils.MarkThinClientEndpointsHealthyForTest(endpointManager);
 
             Mock<GlobalPartitionEndpointManager> globalPartitionEndpointManager = new();
             globalPartitionEndpointManager
@@ -287,6 +288,7 @@ namespace Microsoft.Azure.Cosmos
 
             GlobalEndpointManager endpointManager = new(mockDocumentClient.Object, new ConnectionPolicy());
             TestUtils.EnableThinClientLocationsForTest(endpointManager);
+            TestUtils.MarkThinClientEndpointsHealthyForTest(endpointManager);
 
             Mock<GlobalPartitionEndpointManager> globalPartitionEndpointManager = new();
             globalPartitionEndpointManager
@@ -412,6 +414,7 @@ namespace Microsoft.Azure.Cosmos
             if (advertiseThinClientLocations)
             {
                 TestUtils.EnableThinClientLocationsForTest(endpointManager);
+                TestUtils.MarkThinClientEndpointsHealthyForTest(endpointManager);
             }
 
             SessionContainer sessionContainer = new("testhost");

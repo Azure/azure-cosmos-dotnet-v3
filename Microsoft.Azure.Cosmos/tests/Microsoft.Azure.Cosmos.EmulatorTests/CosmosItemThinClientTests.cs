@@ -35,13 +35,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private Container container;
         private MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer cosmosSystemTextJsonSerializer;
         private const int ItemCount = 100;
+        private const int ThinClientProxyPort = 10250;
 
         [TestInitialize]
         public async Task TestInitAsync()
         {
             Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
             this.connectionString = Environment.GetEnvironmentVariable("COSMOSDB_THINCLIENT");
-
             if (string.IsNullOrEmpty(this.connectionString))
             {
                 Assert.Fail("Set environment variable COSMOSDB_THINCLIENT to run the tests");
@@ -60,7 +60,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ConnectionMode = ConnectionMode.Gateway,
                 ApplicationPreferredRegions = PreferredRegions,
                 Serializer = this.cosmosSystemTextJsonSerializer,
-                EnableHttp2 = true,
             };
             clientOptions.CustomHandlers.Add(new ExcludeRegionsInjectingHandler(ExcludeRegions));
 
@@ -180,7 +179,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 ConnectionMode = ConnectionMode.Gateway,
                 Serializer = serializer,
-                EnableHttp2 = true,
                 SendingRequestEventArgs = async (sender, e) =>
                 {
                     if (e.HttpRequest.Version == new Version(2, 0))
@@ -257,7 +255,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         {
                             ConnectionMode = ConnectionMode.Gateway,
                             Serializer = localSerializer,
-                            EnableHttp2 = true,
                         });
 
                 string uniqueDbName = "TestDbStoreProc_" + Guid.NewGuid().ToString();
@@ -371,7 +368,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         {
                             ConnectionMode = ConnectionMode.Gateway,
                             Serializer = localSerializer,
-                            EnableHttp2 = true,
                         });
 
                 string uniqueDbName = "TestDbStoreProc_" + Guid.NewGuid().ToString();
@@ -473,7 +469,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientOptions options = new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Gateway,
-                EnableHttp2 = true,
                 SendingRequestEventArgs = (sender, e) =>
                 {
                     if (e.HttpRequest.Method == HttpMethod.Post
@@ -538,7 +533,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         ConnectionMode = ConnectionMode.Gateway,
                         ApplicationPreferredRegions = PreferredRegions,
                         Serializer = this.cosmosSystemTextJsonSerializer,
-                        EnableHttp2 = true,
                         SendingRequestEventArgs = (sender, e) =>
                         {
                             if (e.HttpRequest.Method == HttpMethod.Post
@@ -632,6 +626,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClient localClient = null;
             Database localDatabase = null;
             Container localContainer = null;
+            ConcurrentBag<int> requestPorts = new ConcurrentBag<int>();
 
             try
             {
@@ -655,6 +650,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                       {
                           ConnectionMode = ConnectionMode.Gateway,
                           Serializer = localSerializer,
+                          SendingRequestEventArgs = (sender, e) =>
+                          {
+                              if (e.HttpRequest.RequestUri != null)
+                              {
+                                  requestPorts.Add(e.HttpRequest.RequestUri.Port);
+                              }
+                          },
                       });
 
                 string uniqueDbName = "TestDb2_" + Guid.NewGuid().ToString();
@@ -669,9 +671,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     ItemResponse<TestObject> response = await localContainer.CreateItemAsync(item, new PartitionKey(item.Pk));
                     Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
-                    string diagnostics = response.Diagnostics.ToString();
-                    Assert.IsFalse(diagnostics.Contains("|F14"), "Diagnostics User Agent should NOT contain '|F14' for Gateway");
                 }
+
+                // The account does not advertise thin-client (proxy) endpoints, so no request - data-plane or
+                // connectivity-probe - must ever target the proxy port (10250). All traffic stays on Gateway V1.
+                Assert.IsFalse(
+                    requestPorts.Contains(ThinClientProxyPort),
+                    $"No request should target the ThinClient proxy port {ThinClientProxyPort} when the account does not advertise thin-client endpoints. Observed ports: {string.Join(", ", requestPorts.Distinct())}");
             }
             finally
             {
@@ -848,7 +854,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ConnectionMode = ConnectionMode.Gateway,
                 ApplicationPreferredRegions = PreferredRegions,
                 Serializer = this.cosmosSystemTextJsonSerializer,
-                EnableHttp2 = true,
                 AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
                     threshold: TimeSpan.FromMilliseconds(100),
                     thresholdStep: TimeSpan.FromMilliseconds(50)),
@@ -906,7 +911,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ConnectionMode = ConnectionMode.Gateway,
                 ApplicationPreferredRegions = PreferredRegions,
                 Serializer = this.cosmosSystemTextJsonSerializer,
-                EnableHttp2 = true,
             };
 
             using CosmosClient fallbackClient = new CosmosClient(this.connectionString, fallbackClientOptions);
@@ -1173,7 +1177,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                          ConnectionMode = ConnectionMode.Gateway,
                          RequestTimeout = TimeSpan.FromSeconds(60),
                          ConsistencyLevel = Microsoft.Azure.Cosmos.ConsistencyLevel.Strong,
-                         EnableHttp2 = true,
                      });
 
                 string uniqueDbName = "TestDbTC_" + Guid.NewGuid().ToString();
@@ -1246,7 +1249,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                          ConnectionMode = ConnectionMode.Gateway,
                          RequestTimeout = TimeSpan.FromSeconds(60),
                          ConsistencyLevel = Microsoft.Azure.Cosmos.ConsistencyLevel.Session,
-                         EnableHttp2 = true,
                      });
 
                 string uniqueDbName = "TestDbTC_" + Guid.NewGuid().ToString();
@@ -1737,7 +1739,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         ConnectionMode = ConnectionMode.Gateway,
                         Serializer = this.cosmosSystemTextJsonSerializer,
-                        EnableHttp2 = true,
                         HttpClientFactory = () => new HttpClient(bodyCapturingHandler),
                     });
 

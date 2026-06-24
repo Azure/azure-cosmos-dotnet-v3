@@ -182,11 +182,67 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(new Version(2, 0), probeRequest.Version, "Probe must be issued over HTTP/2.");
         }
 
+        [TestMethod]
+        [Owner("aavasthy")]
+        public async Task RunProbeCycle_HandlerThrows_TreatedRedAndCycleDoesNotThrow()
+        {
+            using EndpointProbeClient probeClient = BuildProbeClient(
+                (request, _) => Task.FromException<HttpResponseMessage>(new HttpRequestException("simulated transport failure")));
+
+            await probeClient.RunProbeCycleAsync(new[] { Region1 }, CancellationToken.None);
+
+            Assert.IsFalse(
+                probeClient.IsEndpointHealthy(Region1),
+                "A probe whose send throws must be treated RED, not cached healthy.");
+        }
+
+        [TestMethod]
+        [Owner("aavasthy")]
+        public async Task RunProbeCycle_OverlappingCycle_SkippedBySingleFlight()
+        {
+            int requestCount = 0;
+            TaskCompletionSource<bool> gate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            using EndpointProbeClient probeClient = BuildProbeClient(
+                async (request, _) =>
+                {
+                    Interlocked.Increment(ref requestCount);
+                    await gate.Task;
+                    return new HttpResponseMessage(HttpStatusCode.OK)
+                    {
+                        Content = new ByteArrayContent(Array.Empty<byte>()),
+                        Version = request.Version,
+                    };
+                });
+
+            // First cycle enters the handler and parks on the gate (still in flight).
+            Task firstCycle = probeClient.RunProbeCycleAsync(new[] { Region1 }, CancellationToken.None);
+            Assert.IsTrue(
+                SpinWait.SpinUntil(() => Volatile.Read(ref requestCount) == 1, TimeSpan.FromSeconds(5)),
+                "First cycle should have issued its probe and be awaiting the gate.");
+
+            // Second cycle overlaps the first -> single-flight guard skips it, issuing no new probe.
+            await probeClient.RunProbeCycleAsync(new[] { Region1 }, CancellationToken.None);
+            Assert.AreEqual(1, Volatile.Read(ref requestCount), "An overlapping cycle must not issue a second probe.");
+
+            gate.SetResult(true);
+            await firstCycle;
+            Assert.IsTrue(probeClient.IsEndpointHealthy(Region1), "The first cycle's green probe must still cache the endpoint.");
+        }
+
         private static EndpointProbeClient BuildProbeClient(
             Func<HttpRequestMessage, HttpStatusCode> statusSelector,
             int maxRetries = 0)
         {
             return new EndpointProbeClient(BuildHttpClient(statusSelector), maxRetries);
+        }
+
+        private static EndpointProbeClient BuildProbeClient(
+            Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> asyncResponder,
+            int maxRetries = 0)
+        {
+            MockProbeMessageHandler handler = new MockProbeMessageHandler(asyncResponder);
+            CosmosHttpClient httpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(handler));
+            return new EndpointProbeClient(httpClient, maxRetries);
         }
 
         private static CosmosHttpClient BuildHttpClient(Func<HttpRequestMessage, HttpStatusCode> statusSelector)
@@ -198,14 +254,25 @@ namespace Microsoft.Azure.Cosmos.Tests
         private sealed class MockProbeMessageHandler : HttpMessageHandler
         {
             private readonly Func<HttpRequestMessage, HttpStatusCode> statusSelector;
+            private readonly Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> asyncResponder;
 
             public MockProbeMessageHandler(Func<HttpRequestMessage, HttpStatusCode> statusSelector)
             {
                 this.statusSelector = statusSelector;
             }
 
+            public MockProbeMessageHandler(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> asyncResponder)
+            {
+                this.asyncResponder = asyncResponder;
+            }
+
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
+                if (this.asyncResponder != null)
+                {
+                    return this.asyncResponder(request, cancellationToken);
+                }
+
                 HttpStatusCode status = this.statusSelector(request);
                 HttpResponseMessage response = new HttpResponseMessage(status)
                 {

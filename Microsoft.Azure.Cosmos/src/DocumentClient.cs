@@ -1147,13 +1147,12 @@ namespace Microsoft.Azure.Cosmos
                 this.ConnectionPolicy.EnablePartitionLevelFailover = this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.Value;
             }
 
-            // Thin-client mode: feature-flag + gateway mode + HTTP/2 opt-in. It is
-            // intentionally not gated on advertised thin-client locations; whether a given request actually
-            // routes to the proxy is decided per request by IsThinClientRoutable and the connectivity
-            // probe gate, so the SDK can switch between the proxy and Gateway V1 mid-session without a restart.
+            // Thin-client mode: feature-flag + gateway mode. HTTP/2 is used implicitly for thin-client
+            // traffic; whether a given request actually routes to the proxy is decided per request
+            // by IsThinClientRoutable and the connectivity probe gate, so the SDK can switch between
+            // the proxy and Gateway V1 mid-session without a restart.
             this.isThinClientEnabled = this.isThinClientFeatureFlagEnabled
-                && (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway)
-                && this.ConnectionPolicy.EnableHttp2;
+                && (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway);
 
             if (this.isThinClientEnabled)
             {
@@ -7039,13 +7038,10 @@ namespace Microsoft.Azure.Cosmos
                 featureFlag += (int)UserAgentFeatureFlags.PerPartitionCircuitBreaker;
             }
 
-            if (this.isThinClientEnabled)
+            if (this.isThinClientEnabled
+                && (this.GlobalEndpointManager.HasThinClientWriteLocations || this.GlobalEndpointManager.HasThinClientReadLocations))
             {
                 featureFlag += (int)UserAgentFeatureFlags.ThinClient;
-            }
-
-            if (this.ConnectionPolicy.EnableHttp2)
-            {
                 featureFlag += (int)UserAgentFeatureFlags.Http2;
             }
 

@@ -129,20 +129,20 @@ namespace Microsoft.Azure.Cosmos.Routing
         public bool HasThinClientWriteLocations => this.locationCache.HasThinClientWriteLocations;
 
         /// <summary>
-        /// Returns true when has been confirmed healthy by the
-        /// connectivity probe, or when no probe client is wired. An endpoint reports
-        /// unhealthy until its first successful probe, so the routing site uses the proxy only for healthy
-        /// regions and Gateway V1 otherwise.
+        /// Returns true only when the endpoint has been confirmed healthy by the connectivity probe.
+        /// Fails closed: an un-probed or failed endpoint, or a missing probe client, reports unhealthy, so the
+        /// routing site uses the proxy only for probe-confirmed regions and Gateway V1 otherwise.
         /// </summary>
         public bool IsProxyEndpointHealthy(Uri thinClientEndpoint)
         {
             EndpointProbeClient? probeClient = this.thinClientProbeClient;
-            return probeClient == null || probeClient.IsEndpointHealthy(thinClientEndpoint);
+            return probeClient != null && probeClient.IsEndpointHealthy(thinClientEndpoint);
         }
 
         /// <summary>
         /// True only when every advertised thin client READ regional endpoint is probe-healthy. Used by the
-        /// failover walk, which routes a whole read-endpoint list rather than a single endpoint. 
+        /// failover walk, which routes a whole read-endpoint list rather than a single endpoint. Fails closed:
+        /// returns false when no probe client is wired or no read endpoints are advertised.
         /// </summary>
         public bool AreAllThinClientReadEndpointsHealthy
         {
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 EndpointProbeClient? probeClient = this.thinClientProbeClient;
                 if (probeClient == null)
                 {
-                    return true;
+                    return false;
                 }
 
                 ReadOnlyCollection<Uri> readEndpoints = this.ThinClientReadEndpoints;
@@ -903,8 +903,13 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.locationCache.OnDatabaseAccountRead(accountProperties);
 
                 // Probe the thin client regional endpoints after every account-topology refresh so the
-                // routing gate reflects the latest proxy connectivity health.
-                await this.RunThinClientProbeCycleAsync();
+                // routing gate reflects the latest proxy connectivity health. Fire-and-forget (not awaited):
+                // this method is shared with the forced-refresh path that ClientRetryPolicy invokes inline on
+                // a request's failover retry, and an unreachable endpoint can take seconds to time out. The
+                // probe is self-guarded (never throws, single-flight, permanent success cache) and the next
+                // dispatch safely falls back to Gateway V1 until a region is confirmed healthy, so there is no
+                // need to block the refresh on it.
+                _ = this.RunThinClientProbeCycleAsync();
             }
             catch (Exception ex)
             {
@@ -968,7 +973,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <summary>
         /// Wires the thin client HTTP/2 <see cref="CosmosHttpClient"/> used by the connectivity probe. Must run
         /// before the first topology refresh. Never trips client construction: if the probe client cannot be
-        /// created it is left null and <see cref="IsProxyEndpointHealthy"/> stays optimistic.
+        /// created it is left null and <see cref="IsProxyEndpointHealthy"/> fails closed, so all traffic uses
+        /// Gateway V1 until a probe client is wired and an endpoint is confirmed healthy.
         /// </summary>
         public void SetThinClientHttpClient(CosmosHttpClient httpClient)
         {
@@ -984,7 +990,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             catch (Exception ex)
             {
                 DefaultTrace.TraceWarning(
-                    "Failed to wire thin client connectivity-probe client; thin client routing will proceed without probe gating. Exception: {0}",
+                    "Failed to wire thin client connectivity-probe client; thin client routing will stay on Gateway V1. Exception: {0}",
                     ex.Message);
             }
         }
