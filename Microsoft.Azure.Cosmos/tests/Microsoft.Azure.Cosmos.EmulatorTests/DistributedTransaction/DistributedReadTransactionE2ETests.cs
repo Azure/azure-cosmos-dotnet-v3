@@ -248,6 +248,89 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Description("Read DTx over 2 existing + 1 missing doc: the missing op (404) hard-fails Phase 1, " +
+            "both successful ops are rewritten to 424, and the envelope promotes to 404. Per-op multiset: {424, 424, 404}.")]
+        public async Task ReadTransaction_TwoExistingOneMissing_EnvelopeNotFound_PerOp424_424_404()
+        {
+            ToDoActivity existing1 = await this.SeedItemAsync(this.container);
+            ToDoActivity existing2 = await this.SeedItemAsync(this.container);
+            await ConfirmVisibleAsync(this.container, new PartitionKey(existing1.pk), existing1.id);
+            await ConfirmVisibleAsync(this.container, new PartitionKey(existing2.pk), existing2.id);
+            string missingPk = Guid.NewGuid().ToString();
+            string missingId = Guid.NewGuid().ToString();
+
+            DistributedTransactionResponse response = await DriveMixedExistenceReadAsync(
+                () => this.client
+                    .CreateDistributedReadTransaction()
+                    .ReadItem(this.container, new PartitionKey(existing1.pk), existing1.id)
+                    .ReadItem(this.container, new PartitionKey(existing2.pk), existing2.id)
+                    .ReadItem(this.container, new PartitionKey(missingPk), missingId)
+                    .CommitTransactionAsync(CancellationToken.None),
+                expectedMissingCount: 1);
+
+            // Converged: envelope 404; the per-op multiset is exactly {424 x 2 existing, 404 x 1 missing}
+            // (order-independent). A retriable Phase-2 408 is also accepted on a slow single-region account.
+            AssertMixedExistenceReadOutcome(response, operationCount: 3, existingCount: 2, missingCount: 1);
+
+            response.Dispose();
+        }
+
+        [TestMethod]
+        [Description("Read DTx over 1 existing + 2 missing docs: each missing op (404) hard-fails Phase 1, " +
+            "the single successful op is rewritten to 424, and the envelope promotes to 404. Per-op multiset: {424, 404, 404}.")]
+        public async Task ReadTransaction_OneExistingTwoMissing_EnvelopeNotFound_PerOp424_404_404()
+        {
+            ToDoActivity existing = await this.SeedItemAsync(this.container);
+            await ConfirmVisibleAsync(this.container, new PartitionKey(existing.pk), existing.id);
+            string missingPk1 = Guid.NewGuid().ToString();
+            string missingId1 = Guid.NewGuid().ToString();
+            string missingPk2 = Guid.NewGuid().ToString();
+            string missingId2 = Guid.NewGuid().ToString();
+
+            DistributedTransactionResponse response = await DriveMixedExistenceReadAsync(
+                () => this.client
+                    .CreateDistributedReadTransaction()
+                    .ReadItem(this.container, new PartitionKey(existing.pk), existing.id)
+                    .ReadItem(this.container, new PartitionKey(missingPk1), missingId1)
+                    .ReadItem(this.container, new PartitionKey(missingPk2), missingId2)
+                    .CommitTransactionAsync(CancellationToken.None),
+                expectedMissingCount: 2);
+
+            // Converged: envelope 404; the per-op multiset is exactly {424 x 1 existing, 404 x 2 missing}
+            // (order-independent). A retriable Phase-2 408 is also accepted on a slow single-region account.
+            AssertMixedExistenceReadOutcome(response, operationCount: 3, existingCount: 1, missingCount: 2);
+
+            response.Dispose();
+        }
+
+        [TestMethod]
+        [Description("Strict variant: 2 existing + 1 missing read DTx MUST converge to envelope 404 with " +
+            "per-op multiset {424, 424, 404}. Unlike the tolerant variant, a Phase-2 408 is NOT accepted — " +
+            "it is retried through until the deterministic 404 terminal is observed.")]
+        public async Task ReadTransaction_TwoExistingOneMissing_StrictEnvelopeNotFound_PerOp424_424_404()
+        {
+            ToDoActivity existing1 = await this.SeedItemAsync(this.container);
+            ToDoActivity existing2 = await this.SeedItemAsync(this.container);
+            await ConfirmVisibleAsync(this.container, new PartitionKey(existing1.pk), existing1.id);
+            await ConfirmVisibleAsync(this.container, new PartitionKey(existing2.pk), existing2.id);
+            string missingPk = Guid.NewGuid().ToString();
+            string missingId = Guid.NewGuid().ToString();
+
+            DistributedTransactionResponse response = await DriveStrictNotFoundReadAsync(
+                () => this.client
+                    .CreateDistributedReadTransaction()
+                    .ReadItem(this.container, new PartitionKey(existing1.pk), existing1.id)
+                    .ReadItem(this.container, new PartitionKey(existing2.pk), existing2.id)
+                    .ReadItem(this.container, new PartitionKey(missingPk), missingId)
+                    .CommitTransactionAsync(CancellationToken.None),
+                expectedMissingCount: 1);
+
+            AssertStrictNotFoundReadOutcome(response, operationCount: 3, existingCount: 2, missingCount: 1);
+
+            response.Dispose();
+        }
+
+        [TestMethod]
         public async Task ReadTransaction_ReturnsBodyForAllOps()
         {
             ToDoActivity doc1 = await this.SeedItemAsync(this.container);
@@ -947,6 +1030,84 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 missingCount,
                 observed404,
                 $"Each missing op must keep its 404 NotFound. Observed 404s: {observed404}, expected: {missingCount}.");
+        }
+
+        // Strict converge loop for a mixed-existence read that MUST resolve to envelope 404. Retries the
+        // whole transaction through BOTH transient signals — an existing op still surfaced as 404
+        // (read-your-write lag) and a Phase-2 408 (snapshot not yet confirmed) — until the deterministic
+        // 404 terminal is observed or the attempt budget is exhausted. Unlike DriveMixedExistenceReadAsync,
+        // a 408 is NOT a valid terminal here: it is retried, not returned.
+        private static async Task<DistributedTransactionResponse> DriveStrictNotFoundReadAsync(
+            Func<Task<DistributedTransactionResponse>> commit,
+            int expectedMissingCount)
+        {
+            DistributedTransactionResponse response = null;
+            for (int attempt = 0; attempt < 10; attempt++)
+            {
+                response?.Dispose();
+                response = await commit();
+
+                if ((int)response.StatusCode == 408)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(2));
+                    continue;
+                }
+
+                int notFound = 0;
+                for (int i = 0; i < response.Count; i++)
+                {
+                    if (response[i].StatusCode == HttpStatusCode.NotFound)
+                    {
+                        notFound++;
+                    }
+                }
+
+                if (notFound <= expectedMissingCount)
+                {
+                    return response;
+                }
+
+                await Task.Delay(TimeSpan.FromSeconds(2));
+            }
+
+            return response;
+        }
+
+        // Strict assertion: the envelope MUST be 404 (no 408 tolerance) and the per-op multiset MUST be
+        // exactly {424 x existing, 404 x missing} (order-independent).
+        private static void AssertStrictNotFoundReadOutcome(
+            DistributedTransactionResponse response,
+            int operationCount,
+            int existingCount,
+            int missingCount)
+        {
+            Assert.AreEqual(
+                HttpStatusCode.NotFound,
+                response.StatusCode,
+                $"Mixed-existence read DTx must converge to envelope 404 (strict — Phase-2 408 not accepted). Got: {(int)response.StatusCode}.");
+            Assert.AreEqual(operationCount, response.Count);
+
+            int observed424 = 0;
+            int observed404 = 0;
+            for (int i = 0; i < response.Count; i++)
+            {
+                int code = (int)response[i].StatusCode;
+                if (code == 424)
+                {
+                    observed424++;
+                }
+                else if (code == 404)
+                {
+                    observed404++;
+                }
+                else
+                {
+                    Assert.Fail($"Per-op[{i}] should be 424 or 404 for a mixed-existence read failure. Got: {code}.");
+                }
+            }
+
+            Assert.AreEqual(existingCount, observed424, $"Each existing op must be rewritten to 424 FailedDependency. Observed: {observed424}, expected: {existingCount}.");
+            Assert.AreEqual(missingCount, observed404, $"Each missing op must keep its 404 NotFound. Observed: {observed404}, expected: {missingCount}.");
         }
 
         // Seeds a document whose partition key lives at /category (used by the different-PK-path test)

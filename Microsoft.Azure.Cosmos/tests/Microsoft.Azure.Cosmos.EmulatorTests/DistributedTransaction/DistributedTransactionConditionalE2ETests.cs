@@ -79,6 +79,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        #region Read Transaction Conditional Tests
+
         // ─── Baseline: all items exist, no conditionals ─────────────────────────
 
         /// <summary>
@@ -291,77 +293,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             response.Dispose();
         }
 
-        // ─── Write DTx: stale IfMatch → 412 ────────────────────────────────────
-
-        /// <summary>
-        /// Verifies that a write DTx with a stale IfMatchEtag returns 412 PreconditionFailed.
-        /// The 412 should be promoted as the envelope status code.
-        /// </summary>
-        [TestMethod]
-        public async Task WriteDtx_WithStaleIfMatch_Returns412()
-        {
-            string pk = $"stale-match-{Guid.NewGuid():N}";
-            string id = Guid.NewGuid().ToString();
-
-            var createResponse = await this.container.CreateItemAsync<object>(
-                new { id, pk, value = "original" }, new PartitionKey(pk));
-            string originalETag = createResponse.ETag;
-
-            // Replace the item so its ETag changes.
-            await this.container.ReplaceItemAsync(
-                new { id, pk, value = "replaced" }, id, new PartitionKey(pk));
-
-            DistributedTransactionResponse response = await this.client
-                .CreateDistributedWriteTransaction()
-                .ReplaceItem(this.container, new PartitionKey(pk), id,
-                    new { id, pk, value = "dtx-replace" },
-                    new DistributedTransactionRequestOptions { IfMatchEtag = originalETag })
-                .CommitTransactionAsync(CancellationToken.None);
-
-            Assert.AreEqual(HttpStatusCode.PreconditionFailed, response.StatusCode,
-                $"Envelope should be 412 with stale IfMatch. Got: {response.StatusCode}");
-            Assert.IsFalse(response.IsSuccessStatusCode);
-
-            if (response.Count > 0)
-            {
-                Assert.AreEqual(HttpStatusCode.PreconditionFailed, response[0].StatusCode,
-                    "Op[0] should be 412 (PreconditionFailed).");
-            }
-
-            response.Dispose();
-        }
-
-        // ─── Write DTx: current IfMatch → success ──────────────────────────────
-
-        /// <summary>
-        /// Verifies that a write DTx with a current (valid) IfMatchEtag succeeds.
-        /// </summary>
-        [TestMethod]
-        public async Task WriteDtx_WithCurrentIfMatch_Succeeds()
-        {
-            string pk = $"current-match-{Guid.NewGuid():N}";
-            string id = Guid.NewGuid().ToString();
-
-            var createResponse = await this.container.CreateItemAsync<object>(
-                new { id, pk, value = "original" }, new PartitionKey(pk));
-            string currentETag = createResponse.ETag;
-
-            DistributedTransactionResponse response = await this.client
-                .CreateDistributedWriteTransaction()
-                .ReplaceItem(this.container, new PartitionKey(pk), id,
-                    new { id, pk, value = "dtx-replaced" },
-                    new DistributedTransactionRequestOptions { IfMatchEtag = currentETag })
-                .CommitTransactionAsync(CancellationToken.None);
-
-            Assert.IsTrue(response.IsSuccessStatusCode,
-                $"Replace with current IfMatch should succeed. Got: {response.StatusCode}");
-            Assert.IsTrue(response.Count > 0);
-            Assert.IsTrue(response[0].IsSuccessStatusCode,
-                $"Op[0] should succeed. Got: {response[0].StatusCode}");
-
-            response.Dispose();
-        }
-
         // ─── 304 inspectability ─────────────────────────────────────────────────
 
         /// <summary>
@@ -450,6 +381,81 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             response.Dispose();
         }
 
+        #endregion
+
+        #region Write Transaction Conditional Tests
+
+        // ─── Write DTx: stale IfMatch → 412 ────────────────────────────────────
+
+        /// <summary>
+        /// Verifies that a write DTx with a stale IfMatchEtag returns 412 PreconditionFailed.
+        /// The 412 should be promoted as the envelope status code.
+        /// </summary>
+        [TestMethod]
+        public async Task WriteDtx_WithStaleIfMatch_Returns412()
+        {
+            string pk = $"stale-match-{Guid.NewGuid():N}";
+            string id = Guid.NewGuid().ToString();
+
+            var createResponse = await this.container.CreateItemAsync<object>(
+                new { id, pk, value = "original" }, new PartitionKey(pk));
+            string originalETag = createResponse.ETag;
+
+            // Replace the item so its ETag changes.
+            await this.container.ReplaceItemAsync(
+                new { id, pk, value = "replaced" }, id, new PartitionKey(pk));
+
+            DistributedTransactionResponse response = await this.client
+                .CreateDistributedWriteTransaction()
+                .ReplaceItem(this.container, new PartitionKey(pk), id,
+                    new { id, pk, value = "dtx-replace" },
+                    new DistributedTransactionRequestOptions { IfMatchEtag = originalETag })
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.PreconditionFailed, response.StatusCode,
+                $"Envelope should be 412 with stale IfMatch. Got: {response.StatusCode}");
+            Assert.IsFalse(response.IsSuccessStatusCode);
+
+            if (response.Count > 0)
+            {
+                Assert.AreEqual(HttpStatusCode.PreconditionFailed, response[0].StatusCode,
+                    "Op[0] should be 412 (PreconditionFailed).");
+            }
+
+            response.Dispose();
+        }
+
+        // ─── Write DTx: current IfMatch → success ──────────────────────────────
+
+        /// <summary>
+        /// Verifies that a write DTx with a current (valid) IfMatchEtag succeeds.
+        /// </summary>
+        [TestMethod]
+        public async Task WriteDtx_WithCurrentIfMatch_Succeeds()
+        {
+            string pk = $"current-match-{Guid.NewGuid():N}";
+            string id = Guid.NewGuid().ToString();
+
+            var createResponse = await this.container.CreateItemAsync<object>(
+                new { id, pk, value = "original" }, new PartitionKey(pk));
+            string currentETag = createResponse.ETag;
+
+            DistributedTransactionResponse response = await this.client
+                .CreateDistributedWriteTransaction()
+                .ReplaceItem(this.container, new PartitionKey(pk), id,
+                    new { id, pk, value = "dtx-replaced" },
+                    new DistributedTransactionRequestOptions { IfMatchEtag = currentETag })
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.IsTrue(response.IsSuccessStatusCode,
+                $"Replace with current IfMatch should succeed. Got: {response.StatusCode}");
+            Assert.IsTrue(response.Count > 0);
+            Assert.IsTrue(response[0].IsSuccessStatusCode,
+                $"Op[0] should succeed. Got: {response[0].StatusCode}");
+
+            response.Dispose();
+        }
+
         /// <summary>
         /// When both IfMatchEtag and IfNoneMatchEtag are set on a WRITE operation,
         /// only IfMatch is honoured (IfNoneMatch is ignored for writes).
@@ -528,6 +534,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             response.Dispose();
         }
+
+        #endregion
 
         // ─── Helpers ────────────────────────────────────────────────────────────
 
