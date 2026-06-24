@@ -161,6 +161,50 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             }
         }
 
+        /// <summary>
+        /// End-to-end regression test for the real customer scenario: an operation that ends in a
+        /// <see cref="CosmosOperationCanceledException"/> (request timeout / cancellation). That exception is
+        /// created by the retry handler - which sits BELOW the DiagnosticsHandler - and captures the trace
+        /// lazily. This verifies the System Info attached in the DiagnosticsHandler's finally (during unwind)
+        /// is included in the exception's own Diagnostics, not just in a directly-serialized live trace.
+        /// </summary>
+        [TestMethod]
+        [Timeout(60000)]
+        public async Task SystemInfoIsCapturedWhenOperationIsCanceledAsync()
+        {
+            DiagnosticHandlerHelperTests.ResetDiagnosticsHandlerHelper();
+            await DiagnosticHandlerHelperTests.WaitForDiagnosticsSystemHistoryAsync();
+
+            // The inner handler mimics AbstractRetryHandler: on cancellation it captures the trace into a
+            // CosmosOperationCanceledException at an inner layer, exactly as the real pipeline does. The
+            // exception is therefore created BEFORE the DiagnosticsHandler's finally attaches System Info.
+            DiagnosticsHandler handler = new DiagnosticsHandler
+            {
+                InnerHandler = new TestHandler((request, token) =>
+                    throw new CosmosOperationCanceledException(
+                        new OperationCanceledException("Simulated request timeout"),
+                        request.Trace)),
+            };
+
+            using (ITrace rootTrace = Tracing.Trace.GetRootTrace("CancelRoot"))
+            {
+                RequestMessage request = new RequestMessage(HttpMethod.Get, new Uri("https://dummy.documents.azure.com:443/dbs"))
+                {
+                    Trace = rootTrace,
+                };
+
+                CosmosOperationCanceledException caught = await Assert.ThrowsExceptionAsync<CosmosOperationCanceledException>(
+                    () => handler.SendAsync(request, default),
+                    "The CosmosOperationCanceledException should propagate to the caller unchanged.");
+
+                // The exception's own diagnostics (what the customer sees) must contain System Info.
+                string diagnostics = caught.Diagnostics.ToString();
+                Assert.IsTrue(
+                    diagnostics.Contains("System Info"),
+                    $"System Info should be present in the diagnostics of a canceled operation. Diagnostics: {diagnostics}");
+            }
+        }
+
         private static async Task WaitForDiagnosticsSystemHistoryAsync()
         {
             DiagnosticsHandlerHelper helper = DiagnosticsHandlerHelper.GetInstance();
