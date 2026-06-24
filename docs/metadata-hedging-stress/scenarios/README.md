@@ -1,5 +1,11 @@
 # Metadata Hedging — Phased PR-vs-main Scenarios (PR #5923)
 
+> **⚠️ SUPERSEDED.** Like the parent harness, this one *simulates* latency with `Task.Delay`
+> and calls `MetadataHedgingStrategy.ExecuteAsync` directly. Its "−65 % p50" headline is a
+> **refresh-subset** number (end-to-end p50 is unchanged). For the authoritative **real
+> fault-injection** validation, see [`../faultinjection/README.md`](../faultinjection/README.md).
+> Kept here for history.
+
 Companion to [`../README.md`](../README.md). These artifacts compare the **PR (metadata
 hedging)** against **main (no metadata hedging)** across four phased timelines requested
 for review. Both arms run the **exact same workload** against the same live 5-region

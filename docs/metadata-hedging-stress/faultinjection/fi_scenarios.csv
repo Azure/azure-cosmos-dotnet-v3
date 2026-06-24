@@ -1,0 +1,11 @@
+arm,hedgingOn,scenario,regime,n,meterFires,budgetExhausted,failures,p50Ms,p95Ms,p99Ms,maxMs
+main(OFF),0,coldstart,single,8,0,0,0,12462.89,12622.32,12622.32,12622.32
+main(OFF),0,refresh,low,30,0,0,0,4033.07,4044.22,4047.11,4047.11
+main(OFF),0,refresh,saturating,48,0,0,0,4034.24,4088.22,4105.20,4105.20
+main(OFF),0,mixed,end-to-end,60,0,0,0,47.65,4044.33,4045.28,4045.28
+main(OFF),0,mixed,refresh-subset,15,0,0,0,3920.88,4045.28,4045.28,4045.28
+PR(ON),1,coldstart,single,8,16,0,0,3692.96,3749.85,3749.85,3749.85
+PR(ON),1,refresh,low,30,30,0,0,1591.85,1605.04,1761.61,1761.61
+PR(ON),1,refresh,saturating,48,32,16,0,1603.67,4033.32,4057.16,4057.16
+PR(ON),1,mixed,end-to-end,60,1,0,0,33.61,1921.54,1922.77,1922.77
+PR(ON),1,mixed,refresh-subset,15,1,0,0,1859.10,1922.77,1922.77,1922.77

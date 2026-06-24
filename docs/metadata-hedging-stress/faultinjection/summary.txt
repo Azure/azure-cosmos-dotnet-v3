@@ -1,0 +1,17 @@
+===================== FI HEDGING SUMMARY (PR vs main) =====================
+--- coldstart/single ---
+  main(OFF)  n=   8 fires=   0 budgetExh=   0 fail=  0 p50=   12463 p95=   12622 p99=   12622
+  PR(ON)     n=   8 fires=  16 budgetExh=   0 fail=  0 p50=    3693 p95=    3750 p99=    3750
+--- refresh/low ---
+  main(OFF)  n=  30 fires=   0 budgetExh=   0 fail=  0 p50=    4033 p95=    4044 p99=    4047
+  PR(ON)     n=  30 fires=  30 budgetExh=   0 fail=  0 p50=    1592 p95=    1605 p99=    1762
+--- refresh/saturating ---
+  main(OFF)  n=  48 fires=   0 budgetExh=   0 fail=  0 p50=    4034 p95=    4088 p99=    4105
+  PR(ON)     n=  48 fires=  32 budgetExh=  16 fail=  0 p50=    1604 p95=    4033 p99=    4057
+--- mixed/end-to-end ---
+  main(OFF)  n=  60 fires=   0 budgetExh=   0 fail=  0 p50=      48 p95=    4044 p99=    4045
+  PR(ON)     n=  60 fires=   1 budgetExh=   0 fail=  0 p50=      34 p95=    1922 p99=    1923
+--- mixed/refresh-subset ---
+  main(OFF)  n=  15 fires=   0 budgetExh=   0 fail=  0 p50=    3921 p95=    4045 p99=    4045
+  PR(ON)     n=  15 fires=   1 budgetExh=   0 fail=  0 p50=    1859 p95=    1923 p99=    1923
+==========================================================================

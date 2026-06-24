@@ -1,5 +1,11 @@
 # Metadata Hedging — Worst-Case Stress Test (PR #5923)
 
+> **⚠️ SUPERSEDED.** This harness *simulates* latency with `Task.Delay` constants and calls
+> `MetadataHedgingStrategy.ExecuteAsync` directly (only the region topology is live). For the
+> authoritative **real fault-injection** validation — real transport delays through the real
+> SDK read path, with end-to-end *and* refresh-subset latency reported — see
+> [`faultinjection/README.md`](./faultinjection/README.md). Kept here for history.
+
 This folder holds the artifacts for a **worst-case stress test** of the metadata
 hedging feature added in PR #5923. It validates the behaviour reviewers care about:
 when the SDK goes from healthy → **the hub (write) region's gateway has a 5–10 s delay
