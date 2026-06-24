@@ -434,7 +434,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     (DistributedTransactionSerializer.Id, JsonValueKind.String),
                     (DistributedTransactionSerializer.ResourceBody, JsonValueKind.Object),
                     (DistributedTransactionSerializer.SessionToken, JsonValueKind.String),
-                    (DistributedTransactionSerializer.ETag, JsonValueKind.String),
+                    (DistributedTransactionSerializer.IfMatch, JsonValueKind.String),
+                    (DistributedTransactionSerializer.IfNoneMatch, JsonValueKind.String),
                 };
 
                 foreach ((string property, JsonValueKind expectedKind) in optionalFields)
@@ -451,7 +452,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         // ETag conditions
 
         [TestMethod]
-        [Description("A replace operation with IfMatchEtag set serializes the etag field to the request.")]
+        [Description("A replace operation with IfMatchEtag set serializes the ifMatch field to the request.")]
         public async Task ReplaceItem_WithIfMatchEtag_EtagSerializedToRequest()
         {
             ToDoActivity doc = ToDoActivity.CreateRandomToDoActivity();
@@ -476,14 +477,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             JsonElement operation = requestJson.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
             Assert.IsTrue(operation.TryGetProperty(DistributedTransactionSerializer.Id, out JsonElement idElement), "id field should be present for replace operation");
             Assert.AreEqual(doc.id, idElement.GetString());
-            Assert.IsTrue(operation.TryGetProperty(DistributedTransactionSerializer.ETag, out JsonElement etagElement), "etag field should be present when IfMatchEtag is set");
+            Assert.IsTrue(operation.TryGetProperty(DistributedTransactionSerializer.IfMatch, out JsonElement etagElement), "ifMatch field should be present when IfMatchEtag is set");
             Assert.AreEqual(expectedEtag, etagElement.GetString());
 
             response.Dispose();
         }
 
         [TestMethod]
-        [Description("A delete operation with IfMatchEtag set serializes the etag field to the request.")]
+        [Description("A delete operation with IfMatchEtag set serializes the ifMatch field to the request.")]
         public async Task DeleteItem_WithIfMatchEtag_EtagSerializedToRequest()
         {
             string expectedEtag = "\"test-etag-delete\"";
@@ -506,14 +507,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             JsonElement operation = requestJson.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
             Assert.IsTrue(operation.TryGetProperty(DistributedTransactionSerializer.Id, out JsonElement idElement), "id field should be present for delete operation");
             Assert.AreEqual("delete-id", idElement.GetString());
-            Assert.IsTrue(operation.TryGetProperty(DistributedTransactionSerializer.ETag, out JsonElement etagElement), "etag field should be present when IfMatchEtag is set");
+            Assert.IsTrue(operation.TryGetProperty(DistributedTransactionSerializer.IfMatch, out JsonElement etagElement), "ifMatch field should be present when IfMatchEtag is set");
             Assert.AreEqual(expectedEtag, etagElement.GetString());
 
             response.Dispose();
         }
 
         [TestMethod]
-        [Description("A patch operation with IfMatchEtag set serializes the etag field to the request.")]
+        [Description("A patch operation with IfMatchEtag set serializes the ifMatch field to the request.")]
         public async Task PatchItem_WithIfMatchEtag_EtagSerializedToRequest()
         {
             string expectedEtag = "\"test-etag-patch\"";
@@ -538,7 +539,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             JsonElement operation = requestJson.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
             Assert.IsTrue(operation.TryGetProperty(DistributedTransactionSerializer.Id, out JsonElement idElement), "id field should be present for patch operation");
             Assert.AreEqual("patch-id", idElement.GetString());
-            Assert.IsTrue(operation.TryGetProperty(DistributedTransactionSerializer.ETag, out JsonElement etagElement), "etag field should be present when IfMatchEtag is set");
+            Assert.IsTrue(operation.TryGetProperty(DistributedTransactionSerializer.IfMatch, out JsonElement etagElement), "ifMatch field should be present when IfMatchEtag is set");
             Assert.AreEqual(expectedEtag, etagElement.GetString());
 
             response.Dispose();
@@ -580,7 +581,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Description("Operations without IfMatchEtag set do not include an etag field in the serialized request.")]
+        [Description("Operations without conditional ETags set do not include ifMatch or ifNoneMatch fields in the serialized request.")]
         public async Task Operations_WithoutIfMatchEtag_NoEtagFieldSerialized()
         {
             ToDoActivity createDoc = ToDoActivity.CreateRandomToDoActivity();
@@ -600,7 +601,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             JsonElement ops = requestJson.RootElement.GetProperty(DistributedTransactionSerializer.Operations);
             foreach (JsonElement operation in ops.EnumerateArray())
             {
-                Assert.IsFalse(operation.TryGetProperty(DistributedTransactionSerializer.ETag, out _), "etag field should not be present when IfMatchEtag is not set");
+                Assert.IsFalse(operation.TryGetProperty(DistributedTransactionSerializer.IfMatch, out _), "ifMatch field should not be present when IfMatchEtag is not set");
+                Assert.IsFalse(operation.TryGetProperty(DistributedTransactionSerializer.IfNoneMatch, out _), "ifNoneMatch field should not be present when IfNoneMatchEtag is not set");
             }
 
             response.Dispose();
