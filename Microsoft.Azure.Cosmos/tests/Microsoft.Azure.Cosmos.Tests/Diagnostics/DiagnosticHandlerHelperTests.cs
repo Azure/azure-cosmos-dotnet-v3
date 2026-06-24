@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
+    [DoNotParallelize]
     public class DiagnosticHandlerHelperTests
     {
         [ClassInitialize]
@@ -209,6 +210,10 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         {
             DiagnosticsHandlerHelper helper = DiagnosticsHandlerHelper.GetInstance();
             Stopwatch stopwatch = Stopwatch.StartNew();
+
+            // The monitor samples on DiagnosticsRefreshInterval (10s); poll generously (well above the
+            // interval) so the first sample is available even on a slow/loaded CI agent. If it never
+            // arrives we fail loudly below rather than letting the test pass without validating capture.
             while (stopwatch.Elapsed < TimeSpan.FromSeconds(45))
             {
                 Documents.Rntbd.SystemUsageHistory history = helper.GetDiagnosticsSystemHistory();

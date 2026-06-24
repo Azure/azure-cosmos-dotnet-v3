@@ -50,6 +50,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
         /// </summary>
         private static void TryAddSystemInfoToTrace(RequestMessage request)
         {
+            if (request?.Trace == null)
+            {
+                return;
+            }
+
             try
             {
                 SystemUsageHistory systemUsageHistory = DiagnosticsHandlerHelper.GetInstance().GetDiagnosticsSystemHistory();
