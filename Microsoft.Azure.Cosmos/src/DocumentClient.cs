@@ -1151,9 +1151,8 @@ namespace Microsoft.Azure.Cosmos
             // traffic; whether a given request actually routes to the proxy is decided per request
             // by IsThinClientRoutable and the connectivity probe gate, so the SDK can switch between
             // the proxy and Gateway V1 mid-session without a restart.
-            this.isThinClientEnabled = this.isThinClientFeatureFlagEnabled
-                && (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway);
-
+            this.isThinClientEnabled = this.isThinClientFeatureFlagEnabled && (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway) &&
+                (this.accountServiceConfiguration.AccountProperties?.ThinClientWritableLocationsInternal?.Count ?? 0) > 0;
             if (this.isThinClientEnabled)
             {
                 // Wire the HTTP/2 http client for the connectivity probe and run an initial probe against the
@@ -7038,11 +7037,9 @@ namespace Microsoft.Azure.Cosmos
                 featureFlag += (int)UserAgentFeatureFlags.PerPartitionCircuitBreaker;
             }
 
-            if (this.isThinClientEnabled
-                && (this.GlobalEndpointManager.HasThinClientWriteLocations || this.GlobalEndpointManager.HasThinClientReadLocations))
+            if (this.isThinClientEnabled)
             {
                 featureFlag += (int)UserAgentFeatureFlags.ThinClient;
-                featureFlag += (int)UserAgentFeatureFlags.Http2;
             }
 
             if (ConfigurationManager.IsBinaryEncodingEnabled())

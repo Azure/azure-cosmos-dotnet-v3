@@ -320,7 +320,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(HttpStatusCode.OK, executeResponse.StatusCode);
                 Assert.IsNotNull(executeResponse.Resource);
                 string diagnostics = executeResponse.Diagnostics.ToString();
-                Assert.IsTrue(diagnostics.Contains("|F14"), "Diagnostics User Agent should contain '|F14' for ThinClient");
+                Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
 
                 // Delete stored procedure
                 await localContainer.Scripts.DeleteStoredProcedureAsync(sprocId);
@@ -433,7 +433,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.AreEqual(HttpStatusCode.OK, executeResponse.StatusCode);
                     Assert.IsNotNull(executeResponse.Content);
                     string diagnostics = executeResponse.Diagnostics.ToString();
-                    Assert.IsTrue(diagnostics.Contains("|F14"), "Diagnostics User Agent should contain '|F14' for ThinClient");
+                    Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
                 }
 
                 // Delete stored procedure
@@ -509,7 +509,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// through the proxy. Routing is gated by <c>ThinClientStoreModel.IsThinClientRoutable</c> (the live
         /// topology signal — the account returned proxy endpoints) AND the per-region connectivity-probe gate
         /// (<c>GlobalEndpointManager.IsProxyEndpointHealthy</c> against the request's resolved regional
-        /// endpoint), so the presence of the <c>|F14</c> ThinClient
+        /// endpoint), so the presence of the <c>|F4</c> ThinClient
         /// user-agent flag on the diagnostics is proof that BOTH the proxy endpoints were returned and the
         /// probe came back healthy (HTTP 200). The HTTP/2.0 request version on the data-plane POST confirms
         /// the client and Gateway V2 successfully negotiated HTTP/2.
@@ -562,12 +562,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Other = "probe end-to-end"
                 };
 
-                // Create routes through the proxy: |F14 proves proxy endpoints were returned AND the probe was green.
+                // Create routes through the proxy: |F4 proves proxy endpoints were returned AND the probe was green.
                 ItemResponse<TestObject> createResponse = await localContainer.CreateItemAsync(item, new PartitionKey(item.Pk));
                 Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
                 string createDiagnostics = createResponse.Diagnostics.ToString();
                 Assert.IsTrue(
-                    createDiagnostics.Contains("|F14"),
+                    createDiagnostics.Contains("|F4"),
                     $"Create must route via the ThinClient proxy when the account returns proxy endpoints and the probe is healthy. Diagnostics:\n{createDiagnostics}");
 
                 // Read must also route through the proxy.
@@ -576,7 +576,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(item.Id, readResponse.Resource.Id);
                 string readDiagnostics = readResponse.Diagnostics.ToString();
                 Assert.IsTrue(
-                    readDiagnostics.Contains("|F14"),
+                    readDiagnostics.Contains("|F4"),
                     $"Read must route via the ThinClient proxy. Diagnostics:\n{readDiagnostics}");
 
                 // At least one data-plane POST must have been sent over HTTP/2.0 to the proxy, confirming the
@@ -614,7 +614,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ItemResponse<TestObject> response = await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
                 Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
                 string diagnostics = response.Diagnostics.ToString();
-                Assert.IsTrue(diagnostics.Contains("|F14"), "Diagnostics User Agent should contain '|F14' for ThinClient");
+                Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
                 AssertExcludedRegionsNotInDiagnostics(diagnostics);
             }
         }
@@ -804,7 +804,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     ItemResponse<TestObject> response = await localContainer.CreateItemAsync(item, new PartitionKey(item.Pk));
                     Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
                     string diagnostics = response.Diagnostics.ToString();
-                    Assert.IsFalse(diagnostics.Contains("|F14"), "Diagnostics User Agent should NOT contain '|F14' for Gateway");
+                    Assert.IsFalse(diagnostics.Contains("|F4"), "Diagnostics User Agent should NOT contain '|F4' for Gateway");
                 }
             }
             finally
@@ -840,7 +840,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string diagnostics = response.Diagnostics.ToString();
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
                 Assert.AreEqual(item.Id, response.Resource.Id);
-                Assert.IsTrue(diagnostics.Contains("|F14"), "Diagnostics User Agent should contain '|F14' for ThinClient");
+                Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
                 AssertExcludedRegionsNotInDiagnostics(diagnostics);
             }
         }
@@ -886,8 +886,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
             Assert.AreEqual(seed.Id, readResponse.Resource.Id);
             Assert.IsTrue(
-                diagnostics.Contains("|F14"),
-                "Read should route through the thin client pipeline (|F14 user agent token).");
+                diagnostics.Contains("|F4"),
+                "Read should route through the thin client pipeline (|F4 user agent token).");
             Assert.IsTrue(
                 diagnostics.Contains($"\"Hedge Context\":[\"{EastUs2}\"]"),
                 $"Diagnostics should contain Hedge Context with only the non-excluded preferred region ('{EastUs2}'). Diagnostics: {diagnostics}");
@@ -947,8 +947,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
             Assert.AreEqual(seed.Id, createResponse.Resource.Id);
             Assert.IsTrue(
-                diagnostics.Contains("|F14"),
-                "Create should route through the thin client pipeline (|F14 user agent token).");
+                diagnostics.Contains("|F4"),
+                "Create should route through the thin client pipeline (|F4 user agent token).");
         }
 
         [TestMethod]
@@ -973,7 +973,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string diagnostics = response.Diagnostics.ToString();
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
                 Assert.AreEqual("Updated " + item.Other, response.Resource.Other);
-                Assert.IsTrue(diagnostics.Contains("|F14"), "Diagnostics User Agent should contain '|F14' for ThinClient");
+                Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
                 AssertExcludedRegionsNotInDiagnostics(diagnostics);
             }
         }
@@ -991,7 +991,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ItemResponse<TestObject> response = await this.container.UpsertItemAsync(item, new PartitionKey(item.Pk));
                 string diagnostics = response.Diagnostics.ToString();
                 Assert.IsTrue(response.StatusCode == HttpStatusCode.Created || response.StatusCode == HttpStatusCode.OK);
-                Assert.IsTrue(diagnostics.Contains("|F14"), "Diagnostics User Agent should contain '|F14' for ThinClient");
+                Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
                 AssertExcludedRegionsNotInDiagnostics(diagnostics);
             }
         }
@@ -1010,7 +1010,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ItemResponse<TestObject> response = await this.container.DeleteItemAsync<TestObject>(item.Id, new PartitionKey(item.Pk));
                 string diagnostics = response.Diagnostics.ToString();
                 Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
-                Assert.IsTrue(diagnostics.Contains("|F14"), "Diagnostics User Agent should contain '|F14' for ThinClient");
+                Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
                 AssertExcludedRegionsNotInDiagnostics(diagnostics);
             }
         }
@@ -1030,7 +1030,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         string diagnostics = response.Diagnostics.ToString();
                         Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
-                        Assert.IsTrue(diagnostics.Contains("|F14"), "Diagnostics User Agent should contain '|F14' for ThinClient");
+                        Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
                         AssertExcludedRegionsNotInDiagnostics(diagnostics);
                     }
                 }
@@ -1052,7 +1052,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     string diagnostics = response.Diagnostics.ToString();
                     Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
-                    Assert.IsTrue(diagnostics.Contains("|F14"), "Diagnostics User Agent should contain '|F14' for ThinClient");
+                    Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
                     AssertExcludedRegionsNotInDiagnostics(diagnostics);
                 }
             }
@@ -1082,7 +1082,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         string diagnostics = response.Diagnostics.ToString();
                         Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
-                        Assert.IsTrue(diagnostics.Contains("|F14"), "Diagnostics User Agent should contain '|F14' for ThinClient");
+                        Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
                         AssertExcludedRegionsNotInDiagnostics(diagnostics);
                     }
                 }
@@ -1104,7 +1104,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         string diagnostics = response.Diagnostics.ToString();
                         Assert.IsTrue(response.StatusCode == HttpStatusCode.Created || response.StatusCode == HttpStatusCode.OK);
-                        Assert.IsTrue(diagnostics.Contains("|F14"), "Diagnostics User Agent should contain '|F14' for ThinClient");
+                        Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
                         AssertExcludedRegionsNotInDiagnostics(diagnostics);
                     }
                 }
@@ -1126,7 +1126,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     string diagnostics = response.Diagnostics.ToString();
                     Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
-                    Assert.IsTrue(diagnostics.Contains("|F14"), "Diagnostics User Agent should contain '|F14' for ThinClient");
+                    Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
                     AssertExcludedRegionsNotInDiagnostics(diagnostics);
                 }
             }
@@ -1440,7 +1440,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     pageCount++;
 
                     string diagnostics = response.Diagnostics.ToString();
-                    Assert.IsTrue(diagnostics.Contains("|F14"), $"Page {pageCount}: Should use ThinClient");
+                    Assert.IsTrue(diagnostics.Contains("|F4"), $"Page {pageCount}: Should use ThinClient");
                     AssertExcludedRegionsNotInDiagnostics(diagnostics);
                 }
 
@@ -1509,7 +1509,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     pageCount++;
 
                     string diagnostics = response.Diagnostics.ToString();
-                    Assert.IsTrue(diagnostics.Contains("|F14"), $"Page {pageCount}: Should use ThinClient");
+                    Assert.IsTrue(diagnostics.Contains("|F4"), $"Page {pageCount}: Should use ThinClient");
                     AssertExcludedRegionsNotInDiagnostics(diagnostics);
                 }
 
@@ -1590,7 +1590,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     thinClientResults.AddRange(response);
 
                     string diagnostics = response.Diagnostics.ToString();
-                    Assert.IsTrue(diagnostics.Contains("|F14"), "Should use ThinClient mode");
+                    Assert.IsTrue(diagnostics.Contains("|F4"), "Should use ThinClient mode");
                     AssertExcludedRegionsNotInDiagnostics(diagnostics);
                 }
 
@@ -1675,7 +1675,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 string diagnostics = response.Diagnostics.ToString();
-                Assert.IsTrue(diagnostics.Contains("|F14"), "Diagnostics User Agent should contain '|F14' for ThinClient change feed");
+                Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient change feed");
                 AssertExcludedRegionsNotInDiagnostics(diagnostics);
 
                 changeFeedResults.AddRange(response);
@@ -1787,8 +1787,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 Assert.IsTrue(
-                    readDiagnostics.Contains("|F14"),
-                    $"Diagnostics user-agent should contain '|F14' indicating the read with strategy '{strategyName}' was routed via the ThinClient proxy. Diagnostics:\n{readDiagnostics}");
+                    readDiagnostics.Contains("|F4"),
+                    $"Diagnostics user-agent should contain '|F4' indicating the read with strategy '{strategyName}' was routed via the ThinClient proxy. Diagnostics:\n{readDiagnostics}");
 
                 // With the HTTP/2 connectivity-probe gate, the SDK only routes the data plane to the proxy
                 // when the probe is green. If the target account does not (yet) enable the
