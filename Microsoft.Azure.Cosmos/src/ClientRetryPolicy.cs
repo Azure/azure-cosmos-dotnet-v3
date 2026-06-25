@@ -426,9 +426,14 @@ namespace Microsoft.Azure.Cosmos
                     this.documentServiceRequest?.ResourceAddress ?? string.Empty);
 
                 // Do not mark the endpoint unavailable when the 408 is synthesized by
-                // ConsistencyWriter for barrier throttling (substatus 21013). That 408 is
-                // an early-yield signal, not a connectivity failure, and marking the
-                // endpoint unavailable would trigger unnecessary cross-region failover.
+                // ConsistencyWriter for barrier throttling (substatus 21013).
+                //
+                // Flow: Replica returns 429 during write barrier → ConsistencyWriter
+                // (in the Direct transport layer) converts it to a 408 with substatus
+                // 21013 (Server_WriteBarrierThrottled) as an early-yield signal → SDK
+                // receives 408/21013 here. This is NOT a connectivity failure, and
+                // marking the endpoint unavailable would trigger unnecessary cross-region
+                // failover.
                 //
                 // For DTX commits, a 408 from the coordinator means "transaction in-progress" — NOT
                 // an endpoint reachability problem. Marking the endpoint unavailable here would poison
