@@ -1824,7 +1824,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             Collection<AccountRegion> thinClientWrites = new Collection<AccountRegion>()
             {
-                new AccountRegion { Name = "ThinClientWriteLocation", Endpoint = "https://thinclient-write.documents.azure.com:10650/" }
+                new AccountRegion { Name = "ThinClientWriteLocation", Endpoint = "https://thinclient-write.documents.azure.com:10250/" }
             };
 
             AccountProperties accountProps = new AccountProperties
@@ -1851,7 +1851,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 Uri resolvedReadEndpoint = cache.ResolveThinClientEndpoint(readRequest, isReadRequest: true);
 
                 // Assert:
-                Assert.AreEqual("https://thinclient-write.documents.azure.com:10650/", resolvedReadEndpoint.AbsoluteUri,
+                Assert.AreEqual("https://thinclient-write.documents.azure.com:10250/", resolvedReadEndpoint.AbsoluteUri,
                     "Read request should fallback to thin client write endpoint when no thin client read endpoint is available.");
             }
         }
@@ -1872,12 +1872,12 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             Collection<AccountRegion> thinClientReads = new Collection<AccountRegion>()
             {
-                new AccountRegion { Name = "ThinClientReadLocation", Endpoint = "https://thinclient-read.documents.azure.com:10650/" }
+                new AccountRegion { Name = "ThinClientReadLocation", Endpoint = "https://thinclient-read.documents.azure.com:10250/" }
             };
 
             Collection<AccountRegion> thinClientWrites = new Collection<AccountRegion>()
             {
-                new AccountRegion { Name = "ThinClientWriteLocation", Endpoint = "https://thinclient-write.documents.azure.com:10650/" }
+                new AccountRegion { Name = "ThinClientWriteLocation", Endpoint = "https://thinclient-write.documents.azure.com:10250/" }
             };
 
             AccountProperties accountProps = new AccountProperties
@@ -1916,10 +1916,10 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             Uri resolvedThinWrite = cache.ResolveThinClientEndpoint(writeRequest, isReadRequest: false);
 
             // Assert:
-            Assert.AreEqual("https://thinclient-read.documents.azure.com:10650/", resolvedThinRead.AbsoluteUri,
+            Assert.AreEqual("https://thinclient-read.documents.azure.com:10250/", resolvedThinRead.AbsoluteUri,
                 "ThinClient read endpoint must match the one we provided in ThinClientReadableLocationsInternal");
 
-            Assert.AreEqual("https://thinclient-write.documents.azure.com:10650/", resolvedThinWrite.AbsoluteUri,
+            Assert.AreEqual("https://thinclient-write.documents.azure.com:10250/", resolvedThinWrite.AbsoluteUri,
                 "ThinClient write endpoint must match the one we provided in ThinClientWritableLocationsInternal");
 
             Assert.AreEqual("https://readlocation.documents.azure.com/", cache.ReadEndpoints[0].AbsoluteUri);
@@ -1951,8 +1951,8 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             // Service advertises both directions → both flags true.
             cache.OnDatabaseAccountRead(BuildAccountProperties(
-                thinClientReadEndpoint: "https://thin-read.documents.azure.com:10650/",
-                thinClientWriteEndpoint: "https://thin-write.documents.azure.com:10650/"));
+                thinClientReadEndpoint: "https://thin-read.documents.azure.com:10250/",
+                thinClientWriteEndpoint: "https://thin-write.documents.azure.com:10250/"));
             Assert.IsTrue(cache.HasThinClientReadLocations);
             Assert.IsTrue(cache.HasThinClientWriteLocations);
 
@@ -1960,7 +1960,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             // independence: a regression that aliased the two flags would fail here).
             cache.OnDatabaseAccountRead(BuildAccountProperties(
                 thinClientReadEndpoint: null,
-                thinClientWriteEndpoint: "https://thin-write.documents.azure.com:10650/"));
+                thinClientWriteEndpoint: "https://thin-write.documents.azure.com:10250/"));
             Assert.IsFalse(cache.HasThinClientReadLocations);
             Assert.IsTrue(cache.HasThinClientWriteLocations);
 
@@ -1973,8 +1973,8 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             // Service re-advertises both directions → both flags come back true (re-engagement).
             cache.OnDatabaseAccountRead(BuildAccountProperties(
-                thinClientReadEndpoint: "https://thin-read.documents.azure.com:10650/",
-                thinClientWriteEndpoint: "https://thin-write.documents.azure.com:10650/"));
+                thinClientReadEndpoint: "https://thin-read.documents.azure.com:10250/",
+                thinClientWriteEndpoint: "https://thin-write.documents.azure.com:10250/"));
             Assert.IsTrue(cache.HasThinClientReadLocations);
             Assert.IsTrue(cache.HasThinClientWriteLocations);
         }
@@ -2004,6 +2004,166 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 ThinClientWritableLocationsInternal = ToCollection(thinClientWriteEndpoint),
                 EnableMultipleWriteLocations = false
             };
+        }
+
+
+        [DataTestMethod]
+        [DataRow(true, "https://region2-read.documents.azure.com:10250/", DisplayName = "Read request honors ExcludeRegions on multi-write account")]
+        [DataRow(false, "https://region2-write.documents.azure.com:10250/", DisplayName = "Write request honors ExcludeRegions on multi-write account")]
+        public void ValidateResolveThinClientEndpoint_MultiWriteAccount_HonorsExcludeRegionsForBothReadAndWriteTest(
+            bool isReadRequest,
+            string expectedThinClientEndpointUri)
+        {
+            LocationCache cache = BuildMultiWriteThinClientCacheForExcludeRegionsTest();
+
+            DocumentServiceRequest request = DocumentServiceRequest.Create(
+                isReadRequest ? OperationType.Read : OperationType.Create,
+                ResourceType.Document,
+                AuthorizationTokenType.PrimaryMasterKey);
+            request.RequestContext.ExcludeRegions = new List<string> { "Region1", "Region3" };
+
+            Uri resolved = cache.ResolveThinClientEndpoint(request, isReadRequest);
+
+            Assert.AreEqual(
+                expectedThinClientEndpointUri,
+                resolved.AbsoluteUri,
+                $"isReadRequest={isReadRequest} must pin to Region2's thin client {(isReadRequest ? "read" : "write")} endpoint (the only non-excluded preferred region).");
+        }
+
+        [DataTestMethod]
+        [DataRow(true, DisplayName = "Read request falls back to ThinClientWriteEndpoints[0] when all preferred regions excluded")]
+        [DataRow(false, DisplayName = "Write request falls back to ThinClientWriteEndpoints[0] when all preferred regions excluded")]
+        public void ValidateResolveThinClientEndpoint_AllPreferredRegionsExcluded_FallsBackToPrimaryThinClientWriteEndpointTest(bool isReadRequest)
+        {
+            LocationCache cache = BuildMultiWriteThinClientCacheForExcludeRegionsTest();
+
+            Uri expectedFallback = cache.ThinClientWriteEndpoints[0];
+
+            DocumentServiceRequest request = DocumentServiceRequest.Create(
+                isReadRequest ? OperationType.Read : OperationType.Create,
+                ResourceType.Document,
+                AuthorizationTokenType.PrimaryMasterKey);
+            request.RequestContext.ExcludeRegions = new List<string> { "Region1", "Region2", "Region3" };
+
+            Uri resolved = cache.ResolveThinClientEndpoint(request, isReadRequest);
+
+            Assert.AreEqual(
+                expectedFallback,
+                resolved,
+                "When every preferred region is excluded, resolution must fall back to ThinClientWriteEndpoints[0] regardless of read/write.");
+        }
+
+        [TestMethod]
+        public void ValidateResolveThinClientEndpoint_SingleWriteAccount_ReadHonorsExcludeRegions_WriteFallsBackToPrimaryTest()
+        {
+            // Single-master account: 1 write region (Region1) + 3 read regions (Region1, Region2, Region3).
+            // Reads honor ExcludeRegions; writes always pin to the single write region (regardless of ExcludeRegions).
+            // Distinct read vs write thin client hostnames so wrong-dictionary regressions fail the assertion.
+            Collection<AccountRegion> writeRegions = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "Region1", Endpoint = "https://region1.documents.azure.com" },
+            };
+
+            Collection<AccountRegion> readRegions = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "Region1", Endpoint = "https://region1.documents.azure.com" },
+                new AccountRegion { Name = "Region2", Endpoint = "https://region2.documents.azure.com" },
+                new AccountRegion { Name = "Region3", Endpoint = "https://region3.documents.azure.com" },
+            };
+
+            Collection<AccountRegion> thinClientWrites = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "Region1", Endpoint = "https://region1-write.documents.azure.com:10250/" },
+            };
+
+            Collection<AccountRegion> thinClientReads = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "Region1", Endpoint = "https://region1-read.documents.azure.com:10250/" },
+                new AccountRegion { Name = "Region2", Endpoint = "https://region2-read.documents.azure.com:10250/" },
+                new AccountRegion { Name = "Region3", Endpoint = "https://region3-read.documents.azure.com:10250/" },
+            };
+
+            AccountProperties accountProps = new AccountProperties
+            {
+                ReadLocationsInternal = readRegions,
+                WriteLocationsInternal = writeRegions,
+                ThinClientReadableLocationsInternal = thinClientReads,
+                ThinClientWritableLocationsInternal = thinClientWrites,
+                EnableMultipleWriteLocations = false,
+            };
+
+            LocationCache cache = new LocationCache(
+                preferredLocations: new List<string> { "Region1", "Region2", "Region3" }.AsReadOnly(),
+                defaultEndpoint: new Uri("https://defaultendpoint.documents.azure.com"),
+                enableEndpointDiscovery: true,
+                connectionLimit: 50,
+                useMultipleWriteLocations: false);
+
+            cache.OnDatabaseAccountRead(accountProps);
+
+            List<string> excludeRegions = new List<string> { "Region1", "Region2" };
+
+            DocumentServiceRequest readRequest = DocumentServiceRequest.Create(
+                OperationType.Read, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
+            readRequest.RequestContext.ExcludeRegions = excludeRegions;
+            Assert.AreEqual(
+                "https://region3-read.documents.azure.com:10250/",
+                cache.ResolveThinClientEndpoint(readRequest, isReadRequest: true).AbsoluteUri,
+                "Single-master read with two preferred regions excluded must pin to the remaining preferred read region.");
+
+            DocumentServiceRequest writeRequest = DocumentServiceRequest.Create(
+                OperationType.Create, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
+            writeRequest.RequestContext.ExcludeRegions = excludeRegions;
+            Assert.AreEqual(
+                "https://region1-write.documents.azure.com:10250/",
+                cache.ResolveThinClientEndpoint(writeRequest, isReadRequest: false).AbsoluteUri,
+                "Single-master write must route to the only thin client write endpoint regardless of ExcludeRegions.");
+        }
+
+        private static LocationCache BuildMultiWriteThinClientCacheForExcludeRegionsTest()
+        {
+            // Gateway regions are shared (gateway port 443) but thin client read and write endpoints
+            // use distinct hostnames so a wrong-dictionary regression (e.g., reads accidentally
+            // resolving from the write dictionary or vice versa) fails the assertion.
+            Collection<AccountRegion> regions = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "Region1", Endpoint = "https://region1.documents.azure.com" },
+                new AccountRegion { Name = "Region2", Endpoint = "https://region2.documents.azure.com" },
+                new AccountRegion { Name = "Region3", Endpoint = "https://region3.documents.azure.com" },
+            };
+
+            Collection<AccountRegion> thinClientWriteRegions = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "Region1", Endpoint = "https://region1-write.documents.azure.com:10250/" },
+                new AccountRegion { Name = "Region2", Endpoint = "https://region2-write.documents.azure.com:10250/" },
+                new AccountRegion { Name = "Region3", Endpoint = "https://region3-write.documents.azure.com:10250/" },
+            };
+
+            Collection<AccountRegion> thinClientReadRegions = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "Region1", Endpoint = "https://region1-read.documents.azure.com:10250/" },
+                new AccountRegion { Name = "Region2", Endpoint = "https://region2-read.documents.azure.com:10250/" },
+                new AccountRegion { Name = "Region3", Endpoint = "https://region3-read.documents.azure.com:10250/" },
+            };
+
+            AccountProperties accountProps = new AccountProperties
+            {
+                ReadLocationsInternal = regions,
+                WriteLocationsInternal = regions,
+                ThinClientReadableLocationsInternal = thinClientReadRegions,
+                ThinClientWritableLocationsInternal = thinClientWriteRegions,
+                EnableMultipleWriteLocations = true,
+            };
+
+            LocationCache cache = new LocationCache(
+                preferredLocations: new List<string> { "Region1", "Region2", "Region3" }.AsReadOnly(),
+                defaultEndpoint: new Uri("https://defaultendpoint.documents.azure.com"),
+                enableEndpointDiscovery: true,
+                connectionLimit: 50,
+                useMultipleWriteLocations: true);
+
+            cache.OnDatabaseAccountRead(accountProps);
+            return cache;
         }
 
 
@@ -2517,6 +2677,165 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             // Reads should be directed to available read endpoints regardless of resource type
             Assert.AreEqual(firstAvailableReadEndpoint, this.ResolveEndpointForReadRequest(true));
             Assert.AreEqual(firstAvailableReadEndpoint, this.ResolveEndpointForReadRequest(false));
+        }
+
+        /// <summary>
+        /// Regression guard: a distributed-transaction read is dispatched as <see cref="OperationType.Read"/>
+        /// but MUST route to the write region (where the transaction coordinator lives), never to a read-only
+        /// region. This test fails loudly if DTX reads ever start resolving to read endpoints again.
+        /// </summary>
+        [TestMethod]
+        public void ResolveServiceEndpoint_DistributedTransactionRead_RoutesToWriteEndpoint_WhenUsePreferredLocationsIsFalse()
+        {
+            // Single-master account where the most-preferred read region differs from the write region,
+            // so a read endpoint and a write endpoint are distinguishable.
+            Collection<AccountRegion> reads = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "ReadRegion", Endpoint = LocationCacheTests.Location2Endpoint.ToString() },
+                new AccountRegion { Name = "WriteRegion", Endpoint = LocationCacheTests.Location1Endpoint.ToString() },
+            };
+            Collection<AccountRegion> writes = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "WriteRegion", Endpoint = LocationCacheTests.Location1Endpoint.ToString() },
+            };
+
+            AccountProperties accountProps = new AccountProperties
+            {
+                ReadLocationsInternal = reads,
+                WriteLocationsInternal = writes,
+                EnableMultipleWriteLocations = false,
+            };
+
+            LocationCache cache = new LocationCache(
+                preferredLocations: new ReadOnlyCollection<string>(new List<string>() { "ReadRegion", "WriteRegion" }),
+                defaultEndpoint: LocationCacheTests.DefaultEndpoint,
+                enableEndpointDiscovery: true,
+                connectionLimit: 50,
+                useMultipleWriteLocations: false);
+
+            cache.OnDatabaseAccountRead(accountProps);
+
+            // Sanity: read and write endpoints must actually differ for this test to be meaningful.
+            Assert.AreEqual(LocationCacheTests.Location2Endpoint, cache.ReadEndpoints[0], "The most-preferred read region should be the read endpoint.");
+            Assert.AreEqual(LocationCacheTests.Location1Endpoint, cache.WriteEndpoints[0], "The single write region should be the write endpoint.");
+
+            // A plain document read resolves to the read region (proves the setup distinguishes the two).
+            using (DocumentServiceRequest plainRead = DocumentServiceRequest.Create(OperationType.Read, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey))
+            {
+                Assert.AreEqual(LocationCacheTests.Location2Endpoint, cache.ResolveServiceEndpoint(plainRead), "A non-DTX read must resolve to the read region.");
+            }
+
+            // A distributed-transaction read with UsePreferredLocations=false (as set by ClientRetryPolicy)
+            // must route to the WRITE region — never the read region.
+            using (DocumentServiceRequest dtxRead = DocumentServiceRequest.Create(OperationType.Read, ResourceType.DistributedTransactionBatch, AuthorizationTokenType.PrimaryMasterKey))
+            {
+                dtxRead.RequestContext.RouteToLocation(0, usePreferredLocations: false);
+                Uri resolved = cache.ResolveServiceEndpoint(dtxRead);
+                Assert.AreEqual(LocationCacheTests.Location1Endpoint, resolved, "A DTX read with UsePreferredLocations=false must resolve to the write region.");
+                Assert.AreNotEqual(LocationCacheTests.Location2Endpoint, resolved, "A DTX read with UsePreferredLocations=false must NOT resolve to the read region.");
+            }
+
+            // A distributed-transaction commit must also route to the write region (it's a write operation,
+            // single-master, so it naturally enters the write branch).
+            using (DocumentServiceRequest dtxCommit = DocumentServiceRequest.Create(OperationType.CommitDistributedTransaction, ResourceType.DistributedTransactionBatch, AuthorizationTokenType.PrimaryMasterKey))
+            {
+                Assert.AreEqual(LocationCacheTests.Location1Endpoint, cache.ResolveServiceEndpoint(dtxCommit), "A DTX commit must resolve to the write region.");
+            }
+        }
+
+        /// <summary>
+        /// Topology-agnostic guard: in a multi-master account (multiple write regions) a
+        /// distributed-transaction read with UsePreferredLocations=false (set by ClientRetryPolicy)
+        /// must resolve to the write region, exactly like a DTX commit.
+        /// </summary>
+        [TestMethod]
+        public void ResolveServiceEndpoint_MultiMaster_DistributedTransactionRead_RoutesAsWrite()
+        {
+            Collection<AccountRegion> regions = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "Region1", Endpoint = LocationCacheTests.Location1Endpoint.ToString() },
+                new AccountRegion { Name = "Region2", Endpoint = LocationCacheTests.Location2Endpoint.ToString() },
+            };
+
+            AccountProperties accountProps = new AccountProperties
+            {
+                ReadLocationsInternal = regions,
+                WriteLocationsInternal = regions,
+                EnableMultipleWriteLocations = true,
+            };
+
+            LocationCache cache = new LocationCache(
+                preferredLocations: new ReadOnlyCollection<string>(new List<string>() { "Region2", "Region1" }),
+                defaultEndpoint: LocationCacheTests.DefaultEndpoint,
+                enableEndpointDiscovery: true,
+                connectionLimit: 50,
+                useMultipleWriteLocations: true);
+
+            cache.OnDatabaseAccountRead(accountProps);
+
+            using (DocumentServiceRequest dtxRead = DocumentServiceRequest.Create(OperationType.Read, ResourceType.DistributedTransactionBatch, AuthorizationTokenType.PrimaryMasterKey))
+            {
+                // Simulate ClientRetryPolicy setting UsePreferredLocations=false
+                dtxRead.RequestContext.RouteToLocation(0, usePreferredLocations: false);
+                Uri dtxReadEndpoint = cache.ResolveServiceEndpoint(dtxRead);
+
+                Assert.IsTrue(cache.WriteEndpoints.Contains(dtxReadEndpoint), "A DTX read must resolve to a write-capable endpoint regardless of topology.");
+                Assert.IsFalse(
+                    LocationCacheTests.IsReadOnlyEndpoint(cache, dtxReadEndpoint),
+                    "A DTX read must never resolve to a read-only region, even in multi-master.");
+            }
+        }
+
+        // True only when the endpoint is a read endpoint that is NOT also a write endpoint (read-only region).
+        private static bool IsReadOnlyEndpoint(LocationCache cache, Uri endpoint)
+        {
+            return cache.ReadEndpoints.Contains(endpoint) && !cache.WriteEndpoints.Contains(endpoint);
+        }
+
+        /// <summary>
+        /// Validates that <see cref="LocationCache.GetApplicableEndpoints(DocumentServiceRequest, bool)"/>
+        /// returns write endpoints when the caller passes <c>isReadRequest: false</c> for a DTX request.
+        /// The caller (ClientRetryPolicy) is responsible for classifying DTX as non-read.
+        /// </summary>
+        [TestMethod]
+        public void GetApplicableEndpoints_DistributedTransactionRead_ReturnsWriteEndpoints_WhenCallerPassesIsReadFalse()
+        {
+            Collection<AccountRegion> reads = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "ReadRegion", Endpoint = LocationCacheTests.Location2Endpoint.ToString() },
+                new AccountRegion { Name = "WriteRegion", Endpoint = LocationCacheTests.Location1Endpoint.ToString() },
+            };
+            Collection<AccountRegion> writes = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "WriteRegion", Endpoint = LocationCacheTests.Location1Endpoint.ToString() },
+            };
+
+            AccountProperties accountProps = new AccountProperties
+            {
+                ReadLocationsInternal = reads,
+                WriteLocationsInternal = writes,
+                EnableMultipleWriteLocations = false,
+            };
+
+            LocationCache cache = new LocationCache(
+                preferredLocations: new ReadOnlyCollection<string>(new List<string>() { "ReadRegion", "WriteRegion" }),
+                defaultEndpoint: LocationCacheTests.DefaultEndpoint,
+                enableEndpointDiscovery: true,
+                connectionLimit: 50,
+                useMultipleWriteLocations: false);
+
+            cache.OnDatabaseAccountRead(accountProps);
+
+            // A DTX read passed with isReadRequest: false (as ClientRetryPolicy does) must return write endpoints.
+            using (DocumentServiceRequest dtxRead = DocumentServiceRequest.Create(OperationType.Read, ResourceType.DistributedTransactionBatch, AuthorizationTokenType.PrimaryMasterKey))
+            {
+                ReadOnlyCollection<Uri> endpoints = cache.GetApplicableEndpoints(dtxRead, isReadRequest: false);
+
+                Assert.AreEqual(cache.WriteEndpoints[0], endpoints[0], "A DTX read with isReadRequest: false must return write endpoints.");
+                Assert.IsFalse(
+                    LocationCacheTests.IsReadOnlyEndpoint(cache, endpoints[0]),
+                    "A DTX read must never resolve to a read-only region when caller passes isReadRequest: false.");
+            }
         }
 
         private Uri ResolveEndpointForReadRequest(bool masterResourceType)
