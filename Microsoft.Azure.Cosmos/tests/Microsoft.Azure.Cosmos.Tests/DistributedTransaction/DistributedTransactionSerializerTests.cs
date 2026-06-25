@@ -30,8 +30,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class DistributedTransactionSerializerTests
     {
-        private const string Database = "testDb";
-        private const string Container = "testContainer";
+        private const string DatabaseName = "testDb";
+        private const string ContainerName = "testContainer";
 
         // id field presence per operation type
 
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             const string itemId = "create-item";
             string capturedJson = await this.CaptureCommitBodyAsync(tx =>
-                tx.CreateItem(Database, Container, new PartitionKey("pk"), itemId, new TestItem(itemId)));
+                tx.CreateItem(BuildMockContainer(), new PartitionKey("pk"), itemId, new TestItem(itemId)));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             const string itemId = "replace-item-id";
 
             string capturedJson = await this.CaptureCommitBodyAsync(tx =>
-                tx.ReplaceItem(Database, Container, new PartitionKey("pk"), itemId, new TestItem(itemId)));
+                tx.ReplaceItem(BuildMockContainer(), new PartitionKey("pk"), itemId, new TestItem(itemId)));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             const string itemId = "delete-item-id";
 
             string capturedJson = await this.CaptureCommitBodyAsync(tx =>
-                tx.DeleteItem(Database, Container, new PartitionKey("pk"), itemId));
+                tx.DeleteItem(BuildMockContainer(), new PartitionKey("pk"), itemId));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             const string itemId = "upsert-item";
             string capturedJson = await this.CaptureCommitBodyAsync(tx =>
-                tx.UpsertItem(Database, Container, new PartitionKey("pk"), itemId, new TestItem(itemId)));
+                tx.UpsertItem(BuildMockContainer(), new PartitionKey("pk"), itemId, new TestItem(itemId)));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             const string expectedId = "exact-replace-id";
 
             string capturedJson = await this.CaptureCommitBodyAsync(tx =>
-                tx.ReplaceItem(Database, Container, new PartitionKey("pk"), expectedId, new TestItem(expectedId)));
+                tx.ReplaceItem(BuildMockContainer(), new PartitionKey("pk"), expectedId, new TestItem(expectedId)));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             const string expectedId = "exact-delete-id";
 
             string capturedJson = await this.CaptureCommitBodyAsync(tx =>
-                tx.DeleteItem(Database, Container, new PartitionKey("pk"), expectedId));
+                tx.DeleteItem(BuildMockContainer(), new PartitionKey("pk"), expectedId));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task CreateItem_SerializedBody_ResourceBodyIsValidJson()
         {
             string capturedJson = await this.CaptureCommitBodyAsync(tx =>
-                tx.CreateItem(Database, Container, new PartitionKey("pk"), "json-check", new TestItem("json-check")));
+                tx.CreateItem(BuildMockContainer(), new PartitionKey("pk"), "json-check", new TestItem("json-check")));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
@@ -172,11 +172,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             IReadOnlyList<PatchOperation> patchOps = new[] { PatchOperation.Add("/value", "v") };
 
             string capturedJson = await this.CaptureCommitBodyAsync(tx =>
-                tx.CreateItem(Database, Container, new PartitionKey("pk"), "c", new TestItem("c"))
-                  .ReplaceItem(Database, Container, new PartitionKey("pk"), "r", new TestItem("r"))
-                  .DeleteItem(Database, Container, new PartitionKey("pk"), "d")
-                  .UpsertItem(Database, Container, new PartitionKey("pk"), "u", new TestItem("u"))
-                  .PatchItem(Database, Container, new PartitionKey("pk"), "p", patchOps),
+                tx.CreateItem(BuildMockContainer(), new PartitionKey("pk"), "c", new TestItem("c"))
+                  .ReplaceItem(BuildMockContainer(), new PartitionKey("pk"), "r", new TestItem("r"))
+                  .DeleteItem(BuildMockContainer(), new PartitionKey("pk"), "d")
+                  .UpsertItem(BuildMockContainer(), new PartitionKey("pk"), "u", new TestItem("u"))
+                  .PatchItem(BuildMockContainer(), new PartitionKey("pk"), "p", patchOps),
                 expectedResultCount: 5);
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
@@ -197,11 +197,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             IReadOnlyList<PatchOperation> patchOps = new[] { PatchOperation.Add("/value", "v") };
 
             string capturedJson = await this.CaptureCommitBodyAsync(tx =>
-                tx.CreateItem(Database, Container, new PartitionKey("pk"), "c", new TestItem("c"))
-                  .ReplaceItem(Database, Container, new PartitionKey("pk"), "r", new TestItem("r"))
-                  .DeleteItem(Database, Container, new PartitionKey("pk"), "d")
-                  .UpsertItem(Database, Container, new PartitionKey("pk"), "u", new TestItem("u"))
-                  .PatchItem(Database, Container, new PartitionKey("pk"), "p", patchOps),
+                tx.CreateItem(BuildMockContainer(), new PartitionKey("pk"), "c", new TestItem("c"))
+                  .ReplaceItem(BuildMockContainer(), new PartitionKey("pk"), "r", new TestItem("r"))
+                  .DeleteItem(BuildMockContainer(), new PartitionKey("pk"), "d")
+                  .UpsertItem(BuildMockContainer(), new PartitionKey("pk"), "u", new TestItem("u"))
+                  .PatchItem(BuildMockContainer(), new PartitionKey("pk"), "p", patchOps),
                 expectedResultCount: 5);
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
@@ -225,7 +225,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             const string itemId = "type-check-id";
 
             string capturedJson = await this.CaptureCommitBodyAsync(tx =>
-                tx.ReplaceItem(Database, Container, new PartitionKey("pk"), itemId, new TestItem(itemId)));
+                tx.ReplaceItem(BuildMockContainer(), new PartitionKey("pk"), itemId, new TestItem(itemId)));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
@@ -252,7 +252,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             byte[] docBytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new TestItem(itemId)));
             using MemoryStream stream = new MemoryStream(docBytes);
             string capturedJson = await this.CaptureCommitBodyAsync(
-                tx => tx.CreateItemStream(Database, Container, new PartitionKey("pk"), itemId, stream));
+                tx => tx.CreateItemStream(BuildMockContainer(), new PartitionKey("pk"), itemId, stream));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
@@ -273,7 +273,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             byte[] docBytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new TestItem(itemId)));
             using MemoryStream stream = new MemoryStream(docBytes);
             string capturedJson = await this.CaptureCommitBodyAsync(
-                tx => tx.ReplaceItemStream(Database, Container, new PartitionKey("pk"), itemId, stream));
+                tx => tx.ReplaceItemStream(BuildMockContainer(), new PartitionKey("pk"), itemId, stream));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
@@ -292,7 +292,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             byte[] patchBytes = Encoding.UTF8.GetBytes(@"{""operations"":[{""op"":""add"",""path"":""/description"",""value"":""patched""}]}");
             using MemoryStream stream = new MemoryStream(patchBytes);
             string capturedJson = await this.CaptureCommitBodyAsync(
-                tx => tx.PatchItemStream(Database, Container, new PartitionKey("pk"), itemId, stream));
+                tx => tx.PatchItemStream(BuildMockContainer(), new PartitionKey("pk"), itemId, stream));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
@@ -311,7 +311,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             byte[] docBytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new TestItem(itemId)));
             using MemoryStream stream = new MemoryStream(docBytes);
             string capturedJson = await this.CaptureCommitBodyAsync(
-                tx => tx.UpsertItemStream(Database, Container, new PartitionKey("pk"), itemId, stream));
+                tx => tx.UpsertItemStream(BuildMockContainer(), new PartitionKey("pk"), itemId, stream));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
@@ -327,123 +327,136 @@ namespace Microsoft.Azure.Cosmos.Tests
         // IfNoneMatchEtag for ReadItem
 
         [TestMethod]
-        [Description("ReadItem with IfNoneMatchEtag set must serialize an 'etag' field in the operation JSON.")]
+        [Description("ReadItem with IfNoneMatchEtag set must serialize an 'ifNoneMatch' field in the operation JSON.")]
         public async Task ReadItem_WithIfNoneMatchEtag_SerializesEtagField()
         {
             const string etag = "\"test-etag\"";
             const string itemId = "etag-read-id";
 
             string capturedJson = await this.CaptureReadCommitBodyAsync(tx =>
-                tx.ReadItem(Database, Container, new PartitionKey("pk"), itemId,
+                tx.ReadItem(BuildMockContainer(), new PartitionKey("pk"), itemId,
                     new DistributedTransactionRequestOptions { IfNoneMatchEtag = etag }));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
 
-            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.ETag, out JsonElement etagElement),
-                "Read operation with IfNoneMatchEtag must include an 'etag' field.");
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.IfNoneMatch, out JsonElement etagElement),
+                "Read operation with IfNoneMatchEtag must include an 'ifNoneMatch' field.");
             Assert.AreEqual(etag, etagElement.GetString());
+            Assert.IsFalse(op.TryGetProperty(DistributedTransactionSerializer.IfMatch, out _),
+                "Read operation with only IfNoneMatchEtag must not include an 'ifMatch' field.");
         }
 
         [TestMethod]
-        [Description("ReadItem without any etag option must not include an 'etag' field in the serialized JSON.")]
+        [Description("ReadItem without any etag options must not include either conditional field in the serialized JSON.")]
         public async Task ReadItem_WithoutEtag_DoesNotIncludeEtagField()
         {
             string capturedJson = await this.CaptureReadCommitBodyAsync(tx =>
-                tx.ReadItem(Database, Container, new PartitionKey("pk"), "read-no-etag"));
+                tx.ReadItem(BuildMockContainer(), new PartitionKey("pk"), "read-no-etag"));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
 
-            Assert.IsFalse(op.TryGetProperty(DistributedTransactionSerializer.ETag, out _),
-                "Read operation without etag options must NOT include an 'etag' field.");
+            Assert.IsFalse(op.TryGetProperty(DistributedTransactionSerializer.IfMatch, out _),
+                "Read operation without etag options must NOT include an 'ifMatch' field.");
+            Assert.IsFalse(op.TryGetProperty(DistributedTransactionSerializer.IfNoneMatch, out _),
+                "Read operation without etag options must NOT include an 'ifNoneMatch' field.");
         }
 
         [TestMethod]
-        [Description("ReadItem with IfMatchEtag (write-side etag) must NOT serialize an 'etag' field; reads use IfNoneMatchEtag only.")]
-        public async Task ReadItem_WithIfMatchEtag_DoesNotSerializeEtagField()
+        [Description("ReadItem with IfMatchEtag set must serialize an 'ifMatch' field in the operation JSON.")]
+        public async Task ReadItem_WithIfMatchEtag_SerializesIfMatchField()
         {
             const string etag = "\"write-etag\"";
             const string itemId = "read-ifmatch-id";
 
             string capturedJson = await this.CaptureReadCommitBodyAsync(tx =>
-                tx.ReadItem(Database, Container, new PartitionKey("pk"), itemId,
+                tx.ReadItem(BuildMockContainer(), new PartitionKey("pk"), itemId,
                     new DistributedTransactionRequestOptions { IfMatchEtag = etag }));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
 
-            Assert.IsFalse(op.TryGetProperty(DistributedTransactionSerializer.ETag, out _),
-                "Read operation must not use IfMatchEtag; only IfNoneMatchEtag is serialized for reads.");
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.IfMatch, out JsonElement etagElement),
+                "Read operation with IfMatchEtag must include an 'ifMatch' field.");
+            Assert.AreEqual(etag, etagElement.GetString());
+            Assert.IsFalse(op.TryGetProperty(DistributedTransactionSerializer.IfNoneMatch, out _),
+                "Read operation with only IfMatchEtag must not include an 'ifNoneMatch' field.");
         }
 
         // IfMatchEtag
 
         [TestMethod]
-        [Description("ReplaceItem with IfMatchEtag set must serialize an 'etag' field in the operation JSON.")]
+        [Description("ReplaceItem with IfMatchEtag set must serialize an 'ifMatch' field in the operation JSON.")]
         public async Task ReplaceItem_WithIfMatchEtag_SerializesEtagField()
         {
             const string etag = "\"test-etag\"";
             const string itemId = "etag-replace-id";
 
             string capturedJson = await this.CaptureCommitBodyAsync(tx =>
-                tx.ReplaceItem(Database, Container, new PartitionKey("pk"), itemId, new TestItem(itemId),
+                tx.ReplaceItem(BuildMockContainer(), new PartitionKey("pk"), itemId, new TestItem(itemId),
                     new DistributedTransactionRequestOptions { IfMatchEtag = etag }));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
 
-            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.ETag, out JsonElement etagElement),
-                "Replace operation with IfMatchEtag must include an 'etag' field.");
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.IfMatch, out JsonElement etagElement),
+                "Replace operation with IfMatchEtag must include an 'ifMatch' field.");
             Assert.AreEqual(etag, etagElement.GetString());
+            Assert.IsFalse(op.TryGetProperty(DistributedTransactionSerializer.IfNoneMatch, out _),
+                "Replace operation with only IfMatchEtag must not include an 'ifNoneMatch' field.");
         }
 
         [TestMethod]
-        [Description("DeleteItem with IfMatchEtag set must serialize an 'etag' field in the operation JSON.")]
+        [Description("DeleteItem with IfMatchEtag set must serialize an 'ifMatch' field in the operation JSON.")]
         public async Task DeleteItem_WithIfMatchEtag_SerializesEtagField()
         {
             const string etag = "\"test-etag\"";
             const string itemId = "etag-delete-id";
 
             string capturedJson = await this.CaptureCommitBodyAsync(tx =>
-                tx.DeleteItem(Database, Container, new PartitionKey("pk"), itemId,
+                tx.DeleteItem(BuildMockContainer(), new PartitionKey("pk"), itemId,
                     new DistributedTransactionRequestOptions { IfMatchEtag = etag }));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
 
-            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.ETag, out JsonElement etagElement),
-                "Delete operation with IfMatchEtag must include an 'etag' field.");
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.IfMatch, out JsonElement etagElement),
+                "Delete operation with IfMatchEtag must include an 'ifMatch' field.");
             Assert.AreEqual(etag, etagElement.GetString());
+            Assert.IsFalse(op.TryGetProperty(DistributedTransactionSerializer.IfNoneMatch, out _),
+                "Delete operation with only IfMatchEtag must not include an 'ifNoneMatch' field.");
         }
 
         [TestMethod]
-        [Description("PatchItem with IfMatchEtag set must serialize an 'etag' field in the operation JSON.")]
+        [Description("PatchItem with IfMatchEtag set must serialize an 'ifMatch' field in the operation JSON.")]
         public async Task PatchItem_WithIfMatchEtag_SerializesEtagField()
         {
             const string etag = "\"test-etag\"";
             const string itemId = "etag-patch-id";
 
             string capturedJson = await this.CaptureCommitBodyAsync(tx =>
-                tx.PatchItem(Database, Container, new PartitionKey("pk"), itemId,
+                tx.PatchItem(BuildMockContainer(), new PartitionKey("pk"), itemId,
                     new[] { PatchOperation.Add("/value", "v") },
                     new DistributedTransactionRequestOptions { IfMatchEtag = etag }));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
 
-            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.ETag, out JsonElement etagElement),
-                "Patch operation with IfMatchEtag must include an 'etag' field.");
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.IfMatch, out JsonElement etagElement),
+                "Patch operation with IfMatchEtag must include an 'ifMatch' field.");
             Assert.AreEqual(etag, etagElement.GetString());
+            Assert.IsFalse(op.TryGetProperty(DistributedTransactionSerializer.IfNoneMatch, out _),
+                "Patch operation with only IfMatchEtag must not include an 'ifNoneMatch' field.");
         }
 
         [TestMethod]
-        [Description("Operations without IfMatchEtag must not include an 'etag' field in the serialized JSON for any operation.")]
-        public async Task Operations_WithoutIfMatchEtag_DoNotIncludeEtagField()
+        [Description("Operations without conditional ETags must not include 'ifMatch' or 'ifNoneMatch' fields in serialized JSON.")]
+        public async Task Operations_WithoutConditionalEtags_DoNotIncludeConditionalFields()
         {
             string capturedJson = await this.CaptureCommitBodyAsync(tx =>
-                tx.CreateItem(Database, Container, new PartitionKey("pk"), "create-no-etag", new TestItem("create-no-etag"))
-                  .ReplaceItem(Database, Container, new PartitionKey("pk"), "replace-no-etag", new TestItem("replace-no-etag")),
+                tx.CreateItem(BuildMockContainer(), new PartitionKey("pk"), "create-no-etag", new TestItem("create-no-etag"))
+                  .ReplaceItem(BuildMockContainer(), new PartitionKey("pk"), "replace-no-etag", new TestItem("replace-no-etag")),
                 expectedResultCount: 2);
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
@@ -451,9 +464,59 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             for (int i = 0; i < ops.GetArrayLength(); i++)
             {
-                Assert.IsFalse(ops[i].TryGetProperty(DistributedTransactionSerializer.ETag, out _),
-                    $"Operation[{i}] without IfMatchEtag must NOT include an 'etag' field.");
+                Assert.IsFalse(ops[i].TryGetProperty(DistributedTransactionSerializer.IfMatch, out _),
+                    $"Operation[{i}] without conditional etags must NOT include an 'ifMatch' field.");
+                Assert.IsFalse(ops[i].TryGetProperty(DistributedTransactionSerializer.IfNoneMatch, out _),
+                    $"Operation[{i}] without conditional etags must NOT include an 'ifNoneMatch' field.");
             }
+        }
+
+        [TestMethod]
+        [Description("An operation with both IfMatchEtag and IfNoneMatchEtag must serialize both wire fields.")]
+        public async Task ReadItem_WithBothConditionalEtags_SerializesBothFields()
+        {
+            const string ifMatch = "\"if-match-etag\"";
+            const string ifNoneMatch = "\"if-none-match-etag\"";
+
+            string capturedJson = await this.CaptureReadCommitBodyAsync(tx =>
+                tx.ReadItem(BuildMockContainer(), new PartitionKey("pk"), "read-both-etags",
+                    new DistributedTransactionRequestOptions
+                    {
+                        IfMatchEtag = ifMatch,
+                        IfNoneMatchEtag = ifNoneMatch
+                    }));
+
+            using JsonDocument doc = JsonDocument.Parse(capturedJson);
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
+
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.IfMatch, out JsonElement ifMatchElement),
+                "Read operation with IfMatchEtag must include an 'ifMatch' field.");
+            Assert.AreEqual(ifMatch, ifMatchElement.GetString());
+
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.IfNoneMatch, out JsonElement ifNoneMatchElement),
+                "Read operation with IfNoneMatchEtag must include an 'ifNoneMatch' field.");
+            Assert.AreEqual(ifNoneMatch, ifNoneMatchElement.GetString());
+        }
+
+        [TestMethod]
+        [Description("A write operation (ReplaceItem) with IfNoneMatchEtag set must serialize an 'ifNoneMatch' field in the operation JSON.")]
+        public async Task ReplaceItem_WithIfNoneMatchEtag_SerializesIfNoneMatchField()
+        {
+            const string etag = "\"test-etag\"";
+            const string itemId = "etag-replace-ifnonematch-id";
+
+            string capturedJson = await this.CaptureCommitBodyAsync(tx =>
+                tx.ReplaceItem(BuildMockContainer(), new PartitionKey("pk"), itemId, new TestItem(itemId),
+                    new DistributedTransactionRequestOptions { IfNoneMatchEtag = etag }));
+
+            using JsonDocument doc = JsonDocument.Parse(capturedJson);
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
+
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.IfNoneMatch, out JsonElement etagElement),
+                "Replace operation with IfNoneMatchEtag must include an 'ifNoneMatch' field.");
+            Assert.AreEqual(etag, etagElement.GetString());
+            Assert.IsFalse(op.TryGetProperty(DistributedTransactionSerializer.IfMatch, out _),
+                "Replace operation with only IfNoneMatchEtag must not include an 'ifMatch' field.");
         }
 
         [TestMethod]
@@ -462,7 +525,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             DistributedWriteTransaction tx = new DistributedWriteTransactionCore(this.BuildContextSetup().Object);
             Assert.ThrowsException<ArgumentNullException>(() =>
-                tx.CreateItem(Database, Container, new PartitionKey("pk"), id: null, new TestItem("body-id")));
+                tx.CreateItem(BuildMockContainer(), new PartitionKey("pk"), id: null, new TestItem("body-id")));
         }
 
         [TestMethod]
@@ -471,7 +534,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             DistributedWriteTransaction tx = new DistributedWriteTransactionCore(this.BuildContextSetup().Object);
             Assert.ThrowsException<ArgumentNullException>(() =>
-                tx.UpsertItem(Database, Container, new PartitionKey("pk"), id: string.Empty, new TestItem("body-id")));
+                tx.UpsertItem(BuildMockContainer(), new PartitionKey("pk"), id: string.Empty, new TestItem("body-id")));
         }
 
         [TestMethod]
@@ -481,7 +544,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             DistributedWriteTransaction tx = new DistributedWriteTransactionCore(this.BuildContextSetup().Object);
             using MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(@"{""value"":1}"));
             Assert.ThrowsException<ArgumentNullException>(() =>
-                tx.CreateItemStream(Database, Container, new PartitionKey("pk"), id: null, stream));
+                tx.CreateItemStream(BuildMockContainer(), new PartitionKey("pk"), id: null, stream));
         }
 
         [TestMethod]
@@ -491,10 +554,29 @@ namespace Microsoft.Azure.Cosmos.Tests
             DistributedWriteTransaction tx = new DistributedWriteTransactionCore(this.BuildContextSetup().Object);
             using MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(@"{""value"":1}"));
             Assert.ThrowsException<ArgumentNullException>(() =>
-                tx.UpsertItemStream(Database, Container, new PartitionKey("pk"), id: "   ", stream));
+                tx.UpsertItemStream(BuildMockContainer(), new PartitionKey("pk"), id: "   ", stream));
         }
 
         // Helpers
+
+        /// <summary>
+        /// Builds a mock <see cref="Cosmos.Container"/> that returns <see cref="DatabaseName"/>
+        /// and <see cref="ContainerName"/> from its <see cref="Cosmos.Container.Database"/>/<see cref="Cosmos.Container.Id"/>
+        /// accessors.
+        /// </summary>
+        private static Cosmos.Container BuildMockContainer(
+            string databaseId = DatabaseName,
+            string containerId = ContainerName)
+        {
+            Mock<Cosmos.Database> databaseMock = new Mock<Cosmos.Database>();
+            databaseMock.Setup(d => d.Id).Returns(databaseId);
+
+            Mock<Cosmos.Container> containerMock = new Mock<Cosmos.Container>();
+            containerMock.Setup(c => c.Id).Returns(containerId);
+            containerMock.Setup(c => c.Database).Returns(databaseMock.Object);
+
+            return containerMock.Object;
+        }
 
         /// <summary>
         /// Builds a transaction using <paramref name="buildTransaction"/>, intercepts the HTTP
@@ -599,6 +681,21 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<ITrace>(),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(containerProps);
+
+            contextMock
+                .Setup(c => c.OperationHelperAsync<DistributedTransactionResponse>(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<Func<ITrace, Task<DistributedTransactionResponse>>>(),
+                    It.IsAny<(string OperationName, Func<DistributedTransactionResponse, Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryAttributes> GetAttributes)?>(),
+                    It.IsAny<ResourceType?>(),
+                    It.IsAny<TraceComponent>(),
+                    It.IsAny<TraceLevel>()))
+                .Returns<string, string, string, OperationType, RequestOptions, Func<ITrace, Task<DistributedTransactionResponse>>, (string, Func<DistributedTransactionResponse, Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryAttributes>)?, ResourceType?, TraceComponent, TraceLevel>(
+                    (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, resourceType, comp, level) => func(NoOpTrace.Singleton));
 
             return contextMock;
         }

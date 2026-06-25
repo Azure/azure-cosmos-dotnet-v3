@@ -33,6 +33,7 @@ namespace Microsoft.Azure.Cosmos
             this.Container = container;
             this.Id = id;
             this.RequestOptions = requestOptions;
+            this.SessionToken = string.IsNullOrWhiteSpace(requestOptions?.SessionToken) ? null : requestOptions.SessionToken;
         }
 
         public PartitionKey PartitionKey { get; internal set; }
@@ -57,9 +58,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal string SessionToken { get; set; }
 
-        internal string ETag => this.OperationType == OperationType.Read
-            ? this.RequestOptions?.IfNoneMatchEtag
-            : this.RequestOptions?.IfMatchEtag;
+        internal string IfMatch => this.RequestOptions?.IfMatchEtag;
+
+        internal string IfNoneMatch => this.RequestOptions?.IfNoneMatchEtag;
 
         internal Stream ResourceStream { get; set; }
 

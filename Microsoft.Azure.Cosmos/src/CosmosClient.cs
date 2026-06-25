@@ -607,6 +607,15 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>This property is read-only. Modifying any options after the client has been created has no effect on the existing client instance.</remarks>
         public virtual CosmosClientOptions ClientOptions => this.ClientContext.ClientOptions;
 
+#if PREVIEW
+        /// <summary>
+        /// Gets the client-wide <see cref="ICosmosEmbeddingGenerator"/>, or <c>null</c> if none was set.
+        /// Set via <see cref="CosmosClientOptions.EmbeddingGenerator"/> or
+        /// <see cref="Fluent.CosmosClientBuilder.WithEmbeddingGenerator"/>.
+        /// </summary>
+        public virtual ICosmosEmbeddingGenerator EmbeddingGenerator => this.ClientContext.ClientOptions.EmbeddingGenerator;
+#endif
+
         /// <summary>
         /// The response factory used to create CosmosClient response types.
         /// </summary>
@@ -1167,7 +1176,7 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a new instance of a distributed write transaction.
         /// </summary>
         /// <returns>An instance of Distributed transaction.</returns>
-#if INTERNAL
+#if PREVIEW
         public 
 #else
         internal
@@ -1181,7 +1190,7 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a new instance of a distributed read transaction.
         /// </summary>
         /// <returns>An instance of <see cref="DistributedReadTransaction"/>.</returns>
-#if INTERNAL
+#if PREVIEW
         public
 #else
         internal
