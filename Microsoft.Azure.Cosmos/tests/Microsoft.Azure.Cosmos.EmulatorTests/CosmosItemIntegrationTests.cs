@@ -44,6 +44,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task TestInitAsync()
         {
             this.connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", null);
+            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "False");
 
             JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions()
             {
