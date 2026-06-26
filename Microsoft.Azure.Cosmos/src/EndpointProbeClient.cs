@@ -26,9 +26,6 @@ namespace Microsoft.Azure.Cosmos
         private const string ConnectivityProbeOperationType = "ConnectivityProbe";
         private const string ProbePath = "/connectivity-probe";
 
-        // Default in-cycle probe retries per endpoint.
-        private const int DefaultMaxRetries = 3;
-
         // HttpVersionPolicy.RequestVersionExact, set via reflection so the SDK keeps compiling on frameworks
         // (e.g. netstandard2.0) lacking HttpRequestMessage.VersionPolicy. Exact policy fails instead of
         // downgrading to HTTP/1.1 when client and proxy cannot negotiate HTTP/2, so the SDK falls back to Gateway V1.
@@ -41,21 +38,17 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly CosmosHttpClient httpClient;
 
-        // In-cycle retries per endpoint; N allows up to 1 + N attempts, stopping at the first HTTP 200.
-        private readonly int maxRetries;
-
         // Endpoints that have returned HTTP 200 at least once. Membership is permanent for the client lifetime.
         private readonly ConcurrentDictionary<Uri, byte> healthyEndpoints = new ConcurrentDictionary<Uri, byte>();
 
         private int closed = 0;
         private int cycleInProgress = 0;
 
-        public EndpointProbeClient(CosmosHttpClient httpClient, int maxRetries = DefaultMaxRetries)
+        public EndpointProbeClient(CosmosHttpClient httpClient)
         {
             this.httpClient = httpClient ?? throw new ArgumentNullException(
                 nameof(httpClient),
                 "EndpointProbeClient requires a non-null thin client CosmosHttpClient (HTTP/2).");
-            this.maxRetries = Math.Max(0, maxRetries);
         }
 
         /// <summary>
@@ -164,33 +157,13 @@ namespace Microsoft.Azure.Cosmos
                 return (regionalEndpoint, false);
             }
 
-            // Up to 1 + maxRetries attempts, stopping at the first HTTP 200, so a transient blip does not flap
-            // the region to Gateway V1.
-            int totalAttempts = this.maxRetries + 1;
-            for (int attempt = 1; attempt <= totalAttempts; attempt++)
+            if (cancellationToken.IsCancellationRequested || Volatile.Read(ref this.closed) == 1)
             {
-                if (cancellationToken.IsCancellationRequested || Volatile.Read(ref this.closed) == 1)
-                {
-                    return (regionalEndpoint, false);
-                }
-
-                bool ok = await this.ProbeEndpointOnceAsync(probeUri, regionalEndpoint, attempt, totalAttempts, cancellationToken);
-                if (ok)
-                {
-                    return (regionalEndpoint, true);
-                }
+                return (regionalEndpoint, false);
             }
 
-            return (regionalEndpoint, false);
-        }
-
-        private async Task<bool> ProbeEndpointOnceAsync(
-            Uri probeUri,
-            Uri regionalEndpoint,
-            int attempt,
-            int totalAttempts,
-            CancellationToken cancellationToken)
-        {
+            // A single probe per cycle; no in-cycle retries. A red endpoint stays on Gateway V1 until a later
+            // cycle (after the next topology refresh) re-probes and succeeds.
             using CancellationTokenSource perProbeCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             perProbeCts.CancelAfter(EndpointProbeClient.PerProbeTimeout);
 
@@ -208,18 +181,18 @@ namespace Microsoft.Azure.Cosmos
                 if (!ok)
                 {
                     DefaultTrace.TraceVerbose(
-                        "Thin client probe to {0} returned status {1} (attempt {2}/{3})",
-                        regionalEndpoint, (int)responseMessage.StatusCode, attempt, totalAttempts);
+                        "Thin client probe to {0} returned status {1}",
+                        regionalEndpoint, (int)responseMessage.StatusCode);
                 }
 
-                return ok;
+                return (regionalEndpoint, ok);
             }
             catch (Exception ex)
             {
                 DefaultTrace.TraceVerbose(
-                    "Thin client probe to {0} failed (attempt {1}/{2}): {3}",
-                    regionalEndpoint, attempt, totalAttempts, ex.Message);
-                return false;
+                    "Thin client probe to {0} failed: {1}",
+                    regionalEndpoint, ex.Message);
+                return (regionalEndpoint, false);
             }
         }
 

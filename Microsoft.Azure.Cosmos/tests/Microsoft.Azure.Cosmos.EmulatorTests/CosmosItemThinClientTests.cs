@@ -602,6 +602,189 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        /// <summary>
+        /// A region advertises a Gateway V2 (proxy) endpoint, but its connectivity probe is forced to fail
+        /// (simulating a region that does not yet support <c>POST /connectivity-probe</c>). The other region
+        /// probes green. This proves the per-region probe gate: requests resolved to the healthy region route
+        /// through the proxy (port 10250), while requests resolved to the un-probeable region fall back to
+        /// Gateway V1 (port 443) and NEVER target that region's proxy port.
+        /// </summary>
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        [Owner("aavasthy")]
+        public async Task EndToEnd_RegionWithoutConnectivityProbe_FallsBackToGatewayForThatRegion()
+        {
+            string failedRegionFragment = RegionHostFragment(EastUs2);
+            string healthyRegionFragment = RegionHostFragment(CentralUs);
+
+            ConnectivityProbeFailingHandler probeHandler = new ConnectivityProbeFailingHandler(failedRegionFragment);
+
+            CosmosClient localClient = null;
+            Database localDatabase = null;
+            try
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
+
+                localClient = new CosmosClient(
+                    this.connectionString,
+                    new CosmosClientOptions
+                    {
+                        ConnectionMode = ConnectionMode.Gateway,
+                        ApplicationPreferredRegions = PreferredRegions,
+                        Serializer = this.cosmosSystemTextJsonSerializer,
+                        HttpClientFactory = () => new HttpClient(probeHandler),
+                    });
+
+                string dbName = "TestDbProbeRed_" + Guid.NewGuid().ToString();
+                localDatabase = await localClient.CreateDatabaseIfNotExistsAsync(dbName);
+                string containerName = "TestContainerProbeRed_" + Guid.NewGuid().ToString();
+                Container localContainer = await localDatabase.CreateContainerIfNotExistsAsync(containerName, "/pk");
+
+                TestObject item = new TestObject
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = "pk_probe_red_" + Guid.NewGuid().ToString(),
+                    Other = "probe red region"
+                };
+
+                // Seed the item and let the (fire-and-forget) probe cycle run against both regional endpoints.
+                await WarmUpThinClientProbeAsync(localContainer, item);
+
+                // Read steered to the healthy region (Central US) by excluding the un-probeable region.
+                await ReadItemWithRegionRetryAsync(localContainer, item, new List<string> { EastUs2 });
+
+                // Read steered to the un-probeable region (East US 2) by excluding the healthy region.
+                ItemResponse<TestObject> redRegionRead = await ReadItemWithRegionRetryAsync(localContainer, item, new List<string> { CentralUs });
+                Assert.AreEqual(
+                    HttpStatusCode.OK,
+                    redRegionRead.StatusCode,
+                    "A read steered to the un-probeable region must still succeed via the Gateway V1 fallback.");
+
+                bool healthyRegionUsedProxy = ProxyWasUsedForRegion(probeHandler, healthyRegionFragment);
+                bool failedRegionUsedProxy = ProxyWasUsedForRegion(probeHandler, failedRegionFragment);
+
+                if (!healthyRegionUsedProxy)
+                {
+                    Assert.Inconclusive(
+                        "The thin-client proxy was never used for the healthy region (Central US). This happens when the " +
+                        "client and Gateway V2 could not negotiate HTTP/2 in this environment, so the per-region probe gate " +
+                        "cannot be observed.");
+                }
+
+                Assert.IsFalse(
+                    failedRegionUsedProxy,
+                    $"A region whose connectivity probe fails ('{EastUs2}') must NEVER receive data-plane traffic on the proxy " +
+                    $"port {ThinClientProxyPort}; it must fall back to Gateway V1. Proxy hosts observed: " +
+                    string.Join(", ", ProxyRequestHosts(probeHandler)));
+            }
+            finally
+            {
+                if (localDatabase != null)
+                {
+                    try
+                    {
+                        await localDatabase.DeleteAsync();
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                localClient?.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// One region's connectivity probe is forced to fail (a region without probe support); the other probes
+        /// green. While requests target the un-probeable region they fall back to Gateway V1 (port 443). Once that
+        /// region is removed from consideration (so requests resolve to the healthy region), routing returns to the
+        /// Gateway V2 proxy (port 10250).
+        /// </summary>
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        [Owner("aavasthy")]
+        public async Task EndToEnd_RemovingRegionWithoutConnectivityProbe_RestoresThinClientRouting()
+        {
+            string failedRegionFragment = RegionHostFragment(EastUs2);
+            string healthyRegionFragment = RegionHostFragment(CentralUs);
+
+            ConnectivityProbeFailingHandler probeHandler = new ConnectivityProbeFailingHandler(failedRegionFragment);
+
+            CosmosClient localClient = null;
+            Database localDatabase = null;
+            try
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
+
+                localClient = new CosmosClient(
+                    this.connectionString,
+                    new CosmosClientOptions
+                    {
+                        ConnectionMode = ConnectionMode.Gateway,
+                        ApplicationPreferredRegions = PreferredRegions,
+                        Serializer = this.cosmosSystemTextJsonSerializer,
+                        HttpClientFactory = () => new HttpClient(probeHandler),
+                    });
+
+                string dbName = "TestDbProbeRemove_" + Guid.NewGuid().ToString();
+                localDatabase = await localClient.CreateDatabaseIfNotExistsAsync(dbName);
+                string containerName = "TestContainerProbeRemove_" + Guid.NewGuid().ToString();
+                Container localContainer = await localDatabase.CreateContainerIfNotExistsAsync(containerName, "/pk");
+
+                TestObject item = new TestObject
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = "pk_probe_remove_" + Guid.NewGuid().ToString(),
+                    Other = "probe remove region"
+                };
+
+                await WarmUpThinClientProbeAsync(localContainer, item);
+
+                // Phase 1: target the un-probeable region (exclude the healthy region) -> must fall back to Gateway V1.
+                ItemResponse<TestObject> phase1Read = await ReadItemWithRegionRetryAsync(localContainer, item, new List<string> { CentralUs });
+                Assert.AreEqual(
+                    HttpStatusCode.OK,
+                    phase1Read.StatusCode,
+                    "Phase 1: a read steered to the un-probeable region must succeed via the Gateway V1 fallback.");
+                Assert.IsFalse(
+                    ProxyWasUsedForRegion(probeHandler, failedRegionFragment),
+                    $"Phase 1: the un-probeable region '{EastUs2}' must not receive data-plane traffic on the proxy port {ThinClientProxyPort}.");
+
+                // Phase 2: remove the un-probeable region from consideration (exclude it) -> resolves to the healthy region.
+                await ReadItemWithRegionRetryAsync(localContainer, item, new List<string> { EastUs2 });
+
+                bool healthyRegionUsedProxy = ProxyWasUsedForRegion(probeHandler, healthyRegionFragment);
+                if (!healthyRegionUsedProxy)
+                {
+                    Assert.Inconclusive(
+                        "After removing the un-probeable region, the healthy region (Central US) did not route via the proxy. " +
+                        "This happens when the client and Gateway V2 could not negotiate HTTP/2 in this environment.");
+                }
+
+                Assert.IsTrue(
+                    healthyRegionUsedProxy,
+                    $"After removing the un-probeable region, reads should route back to the Gateway V2 proxy (port {ThinClientProxyPort}) for the healthy region.");
+                Assert.IsFalse(
+                    ProxyWasUsedForRegion(probeHandler, failedRegionFragment),
+                    $"The un-probeable region '{EastUs2}' must never receive proxy traffic at any point.");
+            }
+            finally
+            {
+                if (localDatabase != null)
+                {
+                    try
+                    {
+                        await localDatabase.DeleteAsync();
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                localClient?.Dispose();
+            }
+        }
+
         [TestMethod]
         [TestCategory("ThinClient")]
         public async Task CreateItemsTest()
@@ -1840,6 +2023,48 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        private static string RegionHostFragment(string region)
+        {
+            return region.Replace(" ", string.Empty).ToLowerInvariant();
+        }
+
+        private static bool ProxyWasUsedForRegion(ConnectivityProbeFailingHandler handler, string regionHostFragment)
+        {
+            return handler.DataPlaneRequestUris.Any(uri =>
+                uri != null
+                && uri.Port == ThinClientProxyPort
+                && uri.Host.IndexOf(regionHostFragment, StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+
+        private static IEnumerable<string> ProxyRequestHosts(ConnectivityProbeFailingHandler handler)
+        {
+            return handler.DataPlaneRequestUris
+                .Where(uri => uri != null && uri.Port == ThinClientProxyPort)
+                .Select(uri => uri.Host)
+                .Distinct();
+        }
+
+        private static async Task<ItemResponse<TestObject>> ReadItemWithRegionRetryAsync(
+            Container container,
+            TestObject item,
+            IReadOnlyList<string> excludeRegions)
+        {
+            for (int attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    return await container.ReadItemAsync<TestObject>(
+                        item.Id,
+                        new PartitionKey(item.Pk),
+                        new ItemRequestOptions { ExcludeRegions = new List<string>(excludeRegions) });
+                }
+                catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.NotFound && attempt < 11)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(5));
+                }
+            }
+        }
+
         private static bool ContainsByteSequence(byte[] haystack, byte[] needle)
         {
             if (haystack == null || needle == null || needle.Length == 0 || haystack.Length < needle.Length)
@@ -1932,6 +2157,54 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+
+        /// <summary>
+        /// DelegatingHandler that simulates a region whose Gateway V2 endpoint does not support the connectivity
+        /// probe. Any <c>POST /connectivity-probe</c> whose host matches <c>regionHostFragmentToFail</c> is answered
+        /// with a synthetic non-200 (without contacting the service), so the SDK marks that region red and keeps it
+        /// on Gateway V1. Probes for other regions and all data-plane traffic pass through unchanged; the target URI
+        /// of every non-probe request is recorded so a test can tell which port (proxy 10250 vs gateway 443) and
+        /// region each request used.
+        /// </summary>
+        private sealed class ConnectivityProbeFailingHandler : DelegatingHandler
+        {
+            private const string ConnectivityProbePath = "/connectivity-probe";
+
+            private readonly string regionHostFragmentToFail;
+
+            public ConnectivityProbeFailingHandler(string regionHostFragmentToFail)
+                : base(new HttpClientHandler())
+            {
+                this.regionHostFragmentToFail = regionHostFragmentToFail;
+            }
+
+            public ConcurrentQueue<Uri> DataPlaneRequestUris { get; } = new ConcurrentQueue<Uri>();
+
+            protected override Task<HttpResponseMessage> SendAsync(
+                HttpRequestMessage request,
+                CancellationToken cancellationToken)
+            {
+                bool isConnectivityProbe = request.Method == HttpMethod.Post
+                    && string.Equals(request.RequestUri?.AbsolutePath, ConnectivityProbePath, StringComparison.OrdinalIgnoreCase);
+
+                if (isConnectivityProbe)
+                {
+                    if (request.RequestUri.Host.IndexOf(this.regionHostFragmentToFail, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        return Task.FromResult(new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
+                        {
+                            RequestMessage = request
+                        });
+                    }
+                }
+                else
+                {
+                    this.DataPlaneRequestUris.Enqueue(request.RequestUri);
+                }
+
+                return base.SendAsync(request, cancellationToken);
+            }
+        }
 
         private sealed class ExcludeRegionsInjectingHandler : RequestHandler
         {

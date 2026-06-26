@@ -84,40 +84,21 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         [TestMethod]
         [Owner("aavasthy")]
-        public async Task RunProbeCycle_RedEndpoint_RetriesUpToMaxRetriesThenStaysUnhealthy()
+        public async Task RunProbeCycle_RedEndpoint_AttemptedOnceThenStaysUnhealthy()
         {
-            // A persistently red endpoint is retried 1 + maxRetries times in a single cycle, then left un-cached.
+            // A red endpoint is probed exactly once per cycle (no in-cycle retries) and left un-cached.
             int requestCount = 0;
-            const int maxRetries = 2;
             using EndpointProbeClient probeClient = BuildProbeClient(
                 _ =>
                 {
                     Interlocked.Increment(ref requestCount);
                     return HttpStatusCode.ServiceUnavailable;
-                },
-                maxRetries: maxRetries);
+                });
 
             await probeClient.RunProbeCycleAsync(new[] { Region1 }, CancellationToken.None);
 
-            Assert.AreEqual(maxRetries + 1, requestCount, "A red endpoint must be attempted 1 + maxRetries times.");
-            Assert.IsFalse(probeClient.IsEndpointHealthy(Region1), "An endpoint that fails every attempt stays un-cached.");
-        }
-
-        [TestMethod]
-        [Owner("aavasthy")]
-        public async Task RunProbeCycle_RedThenGreenWithinCycle_StopsRetryingOnFirstGreen()
-        {
-            // With retries enabled, a transient red followed by a green within the same cycle caches the
-            // endpoint and stops issuing further attempts.
-            int requestCount = 0;
-            using EndpointProbeClient probeClient = BuildProbeClient(
-                _ => Interlocked.Increment(ref requestCount) == 1 ? HttpStatusCode.ServiceUnavailable : HttpStatusCode.OK,
-                maxRetries: 3);
-
-            await probeClient.RunProbeCycleAsync(new[] { Region1 }, CancellationToken.None);
-
-            Assert.AreEqual(2, requestCount, "First attempt red, second attempt green -> exactly two attempts, no more.");
-            Assert.IsTrue(probeClient.IsEndpointHealthy(Region1), "A green attempt within the retry budget caches the endpoint.");
+            Assert.AreEqual(1, requestCount, "A red endpoint must be probed exactly once per cycle (no retries).");
+            Assert.IsFalse(probeClient.IsEndpointHealthy(Region1), "An endpoint that fails its probe stays un-cached.");
         }
 
         [TestMethod]
@@ -230,19 +211,17 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         private static EndpointProbeClient BuildProbeClient(
-            Func<HttpRequestMessage, HttpStatusCode> statusSelector,
-            int maxRetries = 0)
+            Func<HttpRequestMessage, HttpStatusCode> statusSelector)
         {
-            return new EndpointProbeClient(BuildHttpClient(statusSelector), maxRetries);
+            return new EndpointProbeClient(BuildHttpClient(statusSelector));
         }
 
         private static EndpointProbeClient BuildProbeClient(
-            Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> asyncResponder,
-            int maxRetries = 0)
+            Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> asyncResponder)
         {
             MockProbeMessageHandler handler = new MockProbeMessageHandler(asyncResponder);
             CosmosHttpClient httpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(handler));
-            return new EndpointProbeClient(httpClient, maxRetries);
+            return new EndpointProbeClient(httpClient);
         }
 
         private static CosmosHttpClient BuildHttpClient(Func<HttpRequestMessage, HttpStatusCode> statusSelector)
