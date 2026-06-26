@@ -1610,6 +1610,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task AvailabilityStrategy_HedgePicksUpHubHeaderAfter_404_1002_And_403_3()
         {
             // ── Tracking counters (thread-safe for concurrent primary + hedge) ──
+            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "False");
             int noHubHeaderRequestCount = 0;
             int hubHeaderRequestCount = 0;
             int return403Count = 0;
