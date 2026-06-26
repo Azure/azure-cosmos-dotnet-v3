@@ -1,17 +1,20 @@
 # Microsoft.Azure.Cosmos.NativeDriverBenchmark
 
-Apples-to-apples single-item CRUD benchmarks comparing three drivers:
+Apples-to-apples single-item CRUD + single-partition query benchmarks
+comparing three drivers:
 
 | Path | API used | Transport | Role |
 |---|---|---|---|
-| **V3 SDK Gateway** (`Microsoft.Azure.Cosmos` NuGet) | `Container.*StreamAsync` | Gateway (HTTPS) | **Baseline** — apples-to-apples with native |
-| **V3 SDK Direct** (`Microsoft.Azure.Cosmos` NuGet) | `Container.*StreamAsync` | Direct (TCP) | Production-typical reference |
+| **V3 SDK Gateway** (`Microsoft.Azure.Cosmos` NuGet) | `Container.*StreamAsync` / `GetItemQueryStreamIterator` | Gateway (HTTPS) | **Baseline** — apples-to-apples with native |
+| **V3 SDK Direct** (`Microsoft.Azure.Cosmos` NuGet) | `Container.*StreamAsync` / `GetItemQueryStreamIterator` | Direct (TCP) | Production-typical reference |
 | **Native driver** (PR #4515 cdylib) | `NativeCosmosClient.*Async` | Gateway (HTTPS) | The new thing |
 
-Four operations are covered — Read, Create, Replace, Delete — one BDN class
-per op (12 benchmark methods total). All three drivers run the same op
-against the same payload shape, returning raw bytes / status codes — no
-typed deserialization on any side. V3 SDK Gateway is the BDN baseline
+Five operations are covered — Read, Create, Replace, Delete, **Query** — one
+BDN class per op (15 benchmark methods + the 3 read methods = **18 total**:
+4 CRUD classes × 3 methods + 1 Query class × 6 methods). The Query class
+exercises two SHAPES — *SinglePage* (whole result fits in one round-trip)
+and *Paginated* (`MaxItemCount=2` forces multi-page walk) — across all
+three drivers. V3 SDK Gateway is the BDN baseline
 (`Ratio = 1.00`) for each class because it shares a transport with the
 native driver, so the native ratio is meaningful. V3 SDK Direct shows the
 TCP-direct headroom — that's the gap the native driver eventually needs
@@ -82,13 +85,21 @@ dotnet run -c Release --project .\tools\Microsoft.Azure.Cosmos.NativeDriverBench
 dotnet run -c Release --project .\tools\Microsoft.Azure.Cosmos.NativeDriverBenchmark -- validate --crud
 # Expected: "PASS — all three modes completed CREATE/READ/REPLACE/READ/DELETE."
 
-# Full benchmark matrix (4 classes x 3 methods = 12 benchmarks).
+# Sanity check 3: query shapes per mode (seeds 5 docs in a fresh PK, runs
+# both shapes via all three drivers, asserts doc counts, cleans up).
+dotnet run -c Release --project .\tools\Microsoft.Azure.Cosmos.NativeDriverBenchmark -- validate --query
+# Expected: "PASS — all three modes returned the expected doc counts in both shapes."
+
+# Full benchmark matrix (5 classes; CRUD ×3 each + Query ×6 = 18 benchmarks).
 dotnet run -c Release --project .\tools\Microsoft.Azure.Cosmos.NativeDriverBenchmark
 
 # Filter to a subset (BDN's --filter is glob-style on FullName.Method):
 dotnet run -c Release --project .\tools\Microsoft.Azure.Cosmos.NativeDriverBenchmark -- --filter "*ReadItem*"
 dotnet run -c Release --project .\tools\Microsoft.Azure.Cosmos.NativeDriverBenchmark -- --filter "*Create*"
+dotnet run -c Release --project .\tools\Microsoft.Azure.Cosmos.NativeDriverBenchmark -- --filter "*QueryItems*"
 dotnet run -c Release --project .\tools\Microsoft.Azure.Cosmos.NativeDriverBenchmark -- --filter "*Native*"
+dotnet run -c Release --project .\tools\Microsoft.Azure.Cosmos.NativeDriverBenchmark -- --filter "*SinglePage*"
+dotnet run -c Release --project .\tools\Microsoft.Azure.Cosmos.NativeDriverBenchmark -- --filter "*Paginated*"
 
 # Discover without running.
 dotnet run -c Release --project .\tools\Microsoft.Azure.Cosmos.NativeDriverBenchmark -- --list flat
@@ -115,6 +126,7 @@ RU costs reasonable.
 | Create | 0 (pool is in-memory) | 52 measured + 5 warmup = 57 | ~1,200 (~170 creates × 7 RU + cleanup deletes) | pool of 256 ids per mode |
 | Replace | ~20 (3 pre-seed creates) | 52 measured + 5 warmup = 57 | ~1,900 (~170 replaces × 11 RU) | one target doc per mode |
 | Delete | ~5,400 (256 × 3 × ~7 RU) | 52 measured + 5 warmup = 57 | ~6,500 (pre-seed dominates) | pre-creates 768 docs |
+| **Query** | ~70 (10 pre-seed creates × ~7 RU) | 104 measured + 15 warmup = 119 per shape; 2 shapes × 3 modes = 6 methods | ~3,500 (~700 SinglePage @ ~5 RU + ~700 Paginated × 5 pages @ ~3 RU) | seeds 10 docs in a fresh PK, deletes them in cleanup |
 
 A **full-matrix run** on a 400 RU/s container takes about **3 minutes** wall
 time and consumes about **10,000 RU** (well under throttle limit if the

@@ -106,13 +106,32 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
         public string? ActivityId { get; }
         public string? SessionToken { get; }
         public string? ETag { get; }
+
+        /// <summary>
+        /// Raw server-header continuation (from
+        /// <c>cosmos_response_continuation_token</c>) — valid only for
+        /// trivial single-partition reads. For feed pagination prefer
+        /// <see cref="NextContinuation"/>, which is the planner-derived
+        /// token (azurecosmosdriver.h §1683-1697).
+        /// </summary>
         public string? ContinuationToken { get; }
+
+        /// <summary>
+        /// Next-page continuation token for feed responses
+        /// (<c>cosmos_response_next_continuation</c>). NULL on the last
+        /// page, on non-feed responses, and on degenerate end-of-stream
+        /// responses (status code 0). Pass back as the
+        /// <c>continuationToken</c> argument to the next
+        /// <c>QueryItemsPageAsync</c> call to fetch the following page.
+        /// </summary>
+        public string? NextContinuation { get; }
+
         public byte[] Body { get; }
 
         public CosmosNativeResponse(
             ushort http, double ru,
             string? activityId, string? sessionToken,
-            string? etag, string? continuation,
+            string? etag, string? continuation, string? nextContinuation,
             byte[] body)
         {
             this.HttpStatusCode = http;
@@ -121,6 +140,7 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
             this.SessionToken = sessionToken;
             this.ETag = etag;
             this.ContinuationToken = continuation;
+            this.NextContinuation = nextContinuation;
             this.Body = body;
         }
 

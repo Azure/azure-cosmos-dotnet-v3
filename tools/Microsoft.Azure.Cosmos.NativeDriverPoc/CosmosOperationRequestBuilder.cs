@@ -257,9 +257,9 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
 
             return bucket switch
             {
-                OperationBucket.Singleton => cosmos_driver_execute_singleton_operation_submit(
+                OperationBucket.Singleton => cosmos_submit_singleton_operation(
                     driver, in request, queue, userData, out preError),
-                OperationBucket.Feed => cosmos_driver_execute_operation_submit(
+                OperationBucket.Feed => cosmos_submit_operation(
                     driver, in request, queue, userData, out preError),
                 _ => throw new ArgumentOutOfRangeException(nameof(bucket)),
             };
@@ -338,9 +338,9 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
     /// </summary>
     internal enum OperationBucket
     {
-        /// <summary>Point op / single-result — calls <c>cosmos_driver_execute_singleton_operation_submit</c>.</summary>
+        /// <summary>Point op / single-result — calls <c>cosmos_submit_singleton_operation</c>.</summary>
         Singleton,
-        /// <summary>Paginated / feed — calls <c>cosmos_driver_execute_operation_submit</c>.</summary>
+        /// <summary>Paginated / feed — calls <c>cosmos_submit_operation</c>.</summary>
         Feed,
     }
 }

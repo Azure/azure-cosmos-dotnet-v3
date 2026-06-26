@@ -14,12 +14,21 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
     /// </summary>
     internal static class Program
     {
+        // Defaults target the local emulator. Every value can be overridden via
+        // environment variables so the same harness runs against a real account
+        // without code changes (mirrors the COSMOS_* convention used by the
+        // sample programs):
+        //   COSMOS_ENDPOINT      — account URI       (default: emulator)
+        //   COSMOS_KEY           — master key        (default: emulator well-known)
+        //   COSMOS_DATABASE      — database id       (default: pocdb)
+        //   COSMOS_CONTAINER     — container id       (default: items, PK path /pk)
+        //   COSMOS_PARTITIONKEY  — partition-key value (default: p)
         private const string EmulatorEndpoint = "https://localhost:8081/";
         private const string EmulatorKey =
             "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
-        private const string DatabaseId = "pocdb";
-        private const string ContainerId = "items";
-        private const string PartitionKey = "p";
+        private const string DefaultDatabase = "pocdb";
+        private const string DefaultContainer = "items";
+        private const string DefaultPartitionKey = "p";
         private const string ItemId = "x";
 
         public static async Task<int> Main(string[] args)
@@ -30,11 +39,38 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
             {
                 return await Samples.CrudSample.RunAsync().ConfigureAwait(false);
             }
+            if (args.Length > 0 && string.Equals(args[0], "query", StringComparison.OrdinalIgnoreCase))
+            {
+                return await Samples.QuerySample.RunAsync().ConfigureAwait(false);
+            }
+            if (args.Length > 0 && string.Equals(args[0], "cancel", StringComparison.OrdinalIgnoreCase))
+            {
+                return await Samples.CancellationSample.RunAsync().ConfigureAwait(false);
+            }
+            if (args.Length > 0 && string.Equals(args[0], "hpkcrud", StringComparison.OrdinalIgnoreCase))
+            {
+                return await Samples.HpkCrudSample.RunAsync().ConfigureAwait(false);
+            }
+            if (args.Length > 0 && string.Equals(args[0], "querypk", StringComparison.OrdinalIgnoreCase))
+            {
+                return await Samples.QueryPartitionKeySample.RunAsync().ConfigureAwait(false);
+            }
+            if (args.Length > 0 && string.Equals(args[0], "ryow", StringComparison.OrdinalIgnoreCase))
+            {
+                return await Samples.ReadYourWritesSample.RunAsync().ConfigureAwait(false);
+            }
+
+            string endpoint  = Environment.GetEnvironmentVariable("COSMOS_ENDPOINT")     ?? EmulatorEndpoint;
+            string masterKey = Environment.GetEnvironmentVariable("COSMOS_KEY")          ?? EmulatorKey;
+            string database  = Environment.GetEnvironmentVariable("COSMOS_DATABASE")     ?? DefaultDatabase;
+            string container = Environment.GetEnvironmentVariable("COSMOS_CONTAINER")    ?? DefaultContainer;
+            string pkValue   = Environment.GetEnvironmentVariable("COSMOS_PARTITIONKEY") ?? DefaultPartitionKey;
+            bool   isEmulator = string.Equals(endpoint, EmulatorEndpoint, StringComparison.OrdinalIgnoreCase);
 
             Console.WriteLine("=== Async-FFI POC V2 — PR #4515 .NET host ===");
-            Console.WriteLine($"  endpoint   = {EmulatorEndpoint}");
-            Console.WriteLine($"  db/cont    = {DatabaseId}/{ContainerId}");
-            Console.WriteLine($"  pk/id      = {PartitionKey}/{ItemId}");
+            Console.WriteLine($"  endpoint   = {endpoint}{(isEmulator ? "  (emulator)" : "  (real account)")}");
+            Console.WriteLine($"  db/cont    = {database}/{container}");
+            Console.WriteLine($"  pk/id      = {pkValue}/{ItemId}");
             Console.WriteLine($"  dll        = {NativeMethods.LibraryName}.dll");
             Console.WriteLine();
 
@@ -56,8 +92,31 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
             Console.WriteLine($"[bootstrap] cosmos_version() = {versionString ?? "(unavailable)"}");
 
             using var client = new NativeCosmosClient(
-                EmulatorEndpoint, EmulatorKey,
-                DatabaseId, ContainerId, PartitionKey);
+                endpoint, masterKey,
+                database, container, pkValue);
+
+            // Self-seed the item F1-F4 read, so the harness is turnkey on any
+            // account (emulator OR a fresh real account) and does not depend on
+            // a document left behind by a previous run. The body carries the
+            // marker string F1 asserts on. UPSERT is idempotent across re-runs.
+            // NOTE: this assumes the database/container already exist with PK
+            // path /pk. The emulator retains them across runs; for a brand-new
+            // real account, provision them first (e.g. run the `query` sample,
+            // which creates pocdb/items via the V3 SDK, or create them in the
+            // portal).
+            string seedBody =
+                $$"""{"id":"{{ItemId}}","pk":"{{pkValue}}","message":"hello from native async poc","version":1}""";
+            try
+            {
+                CosmosNativeResponse seed = await client.UpsertItemAsync(ItemId, seedBody).ConfigureAwait(false);
+                Console.WriteLine($"[seed] upsert '{ItemId}' http={seed.HttpStatusCode} ru={seed.RequestCharge:F2}");
+            }
+            catch (CosmosNativeException ex)
+            {
+                Console.WriteLine($"[seed] upsert '{ItemId}' FAILED code={ex.CoarseCode} http={ex.HttpStatusCode} — " +
+                    "ensure the database/container exist (PK path /pk). F1-F4 will likely fail.");
+            }
+            Console.WriteLine();
 
             int rc = 0;
             rc |= await RunCheckAsync("F1 single read returns success with seeded body", F1SingleRead, client);

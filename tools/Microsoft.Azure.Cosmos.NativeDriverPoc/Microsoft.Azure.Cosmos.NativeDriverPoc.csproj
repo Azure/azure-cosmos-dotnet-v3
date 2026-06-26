@@ -59,6 +59,19 @@
     </Content>
   </ItemGroup>
 
+  <ItemGroup>
+    <!--
+      V3 SDK is used ONLY by the QuerySample's one-time emulator-setup
+      helper to ensure the HPK-enabled container exists (the native FFI
+      does expose CREATE_CONTAINER as an op kind, but it requires the
+      management-plane body shape that we have not bound in the POC).
+      All actual query traffic in the sample still goes through the
+      native driver — the SDK call is hydration-only.
+    -->
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.61.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
   <Target Name="ReportDriverNativeArtifactStatus" BeforeTargets="Build">
     <Message Importance="high"
              Condition="Exists('$(DriverNativeArtifactDir)azurecosmosdriver.dll')"

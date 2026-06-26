@@ -7,8 +7,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{07C2787E
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Azure.Cosmos.NativeDriverPoc", "tools\Microsoft.Azure.Cosmos.NativeDriverPoc\Microsoft.Azure.Cosmos.NativeDriverPoc.csproj", "{ABDA5430-4B0C-4EFD-8547-46FC5BC6B5D2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Azure.Cosmos.NativeAsyncPoc", "tools\Microsoft.Azure.Cosmos.NativeAsyncPoc\Microsoft.Azure.Cosmos.NativeAsyncPoc.csproj", "{FA7C8A09-806E-4D39-9503-7A7373D3DFA4}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Azure.Cosmos.NativeDriverBenchmark", "tools\Microsoft.Azure.Cosmos.NativeDriverBenchmark\Microsoft.Azure.Cosmos.NativeDriverBenchmark.csproj", "{5F01440E-E34E-4EE9-9544-D831DA8372FB}"
 EndProject
 Global
@@ -33,17 +31,6 @@ Global
 		{ABDA5430-4B0C-4EFD-8547-46FC5BC6B5D2}.Release|x64.Build.0 = Release|x64
 		{ABDA5430-4B0C-4EFD-8547-46FC5BC6B5D2}.Release|x86.ActiveCfg = Release|x64
 		{ABDA5430-4B0C-4EFD-8547-46FC5BC6B5D2}.Release|x86.Build.0 = Release|x64
-		{FA7C8A09-806E-4D39-9503-7A7373D3DFA4}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{FA7C8A09-806E-4D39-9503-7A7373D3DFA4}.Debug|Any CPU.Build.0 = Debug|x64
-		{FA7C8A09-806E-4D39-9503-7A7373D3DFA4}.Debug|x64.ActiveCfg = Debug|x64
-		{FA7C8A09-806E-4D39-9503-7A7373D3DFA4}.Debug|x64.Build.0 = Debug|x64
-		{FA7C8A09-806E-4D39-9503-7A7373D3DFA4}.Debug|x86.ActiveCfg = Debug|x64
-		{FA7C8A09-806E-4D39-9503-7A7373D3DFA4}.Debug|x86.Build.0 = Debug|x64
-		{FA7C8A09-806E-4D39-9503-7A7373D3DFA4}.Release|Any CPU.ActiveCfg = Release|x64
-		{FA7C8A09-806E-4D39-9503-7A7373D3DFA4}.Release|Any CPU.Build.0 = Release|x64
-		{FA7C8A09-806E-4D39-9503-7A7373D3DFA4}.Release|x64.ActiveCfg = Release|x64
-		{FA7C8A09-806E-4D39-9503-7A7373D3DFA4}.Release|x64.Build.0 = Release|x64
-		{FA7C8A09-806E-4D39-9503-7A7373D3DFA4}.Release|x86.ActiveCfg = Release|x64
 		{FA7C8A09-806E-4D39-9503-7A7373D3DFA4}.Release|x86.Build.0 = Release|x64
 		{5F01440E-E34E-4EE9-9544-D831DA8372FB}.Debug|Any CPU.ActiveCfg = Debug|x64
 		{5F01440E-E34E-4EE9-9544-D831DA8372FB}.Debug|Any CPU.Build.0 = Debug|x64
@@ -63,7 +50,6 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{ABDA5430-4B0C-4EFD-8547-46FC5BC6B5D2} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
-		{FA7C8A09-806E-4D39-9503-7A7373D3DFA4} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
 		{5F01440E-E34E-4EE9-9544-D831DA8372FB} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
 	EndGlobalSection
 EndGlobal

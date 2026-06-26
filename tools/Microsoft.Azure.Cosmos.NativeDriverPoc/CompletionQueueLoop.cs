@@ -250,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
         {
             if (response == IntPtr.Zero)
             {
-                return new CosmosNativeResponse(0, 0.0, null, null, null, null, Array.Empty<byte>());
+                return new CosmosNativeResponse(0, 0.0, null, null, null, null, null, Array.Empty<byte>());
             }
 
             ushort http = cosmos_response_status_code(response);
@@ -259,6 +259,9 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
             string? sessionToken = PtrToUtf8(cosmos_response_session_token(response));
             string? etag = PtrToUtf8(cosmos_response_etag(response));
             string? continuation = PtrToUtf8(cosmos_response_continuation_token(response));
+            // Header §1683 — planner-derived next-page token; the correct
+            // token to thread into the next request for feed pagination.
+            string? nextContinuation = PtrToUtf8(cosmos_response_next_continuation(response));
 
             byte[] body = Array.Empty<byte>();
             if (cosmos_response_body(response, out IntPtr dataPtr, out UIntPtr lenNative) == CosmosErrorCode.Success
@@ -272,7 +275,8 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
                 }
             }
 
-            return new CosmosNativeResponse(http, ru, activityId, sessionToken, etag, continuation, body);
+            return new CosmosNativeResponse(
+                http, ru, activityId, sessionToken, etag, continuation, nextContinuation, body);
         }
 
         public void Dispose()

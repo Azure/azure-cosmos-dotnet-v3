@@ -3,6 +3,8 @@
 namespace Microsoft.Azure.Cosmos.NativeDriverPoc
 {
     using System;
+    using System.Collections.Generic;
+    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using System.Threading;
     using System.Threading.Tasks;
@@ -26,6 +28,10 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
         private readonly CompletionQueueLoop cq;
         private int disposed;
 
+        /// <summary>
+        /// Construct a client pinned to a single-component partition key.
+        /// All CRUD + query operations on this client will target that PK.
+        /// </summary>
         public NativeCosmosClient(
             string endpoint,
             string masterKey,
@@ -33,6 +39,70 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
             string containerId,
             string partitionKeyValue,
             string? userAgentSuffix = "cosmos-native-driver-poc")
+            : this(endpoint, masterKey, databaseId, containerId,
+                   () => BuildPartitionKey(new[] { (object)partitionKeyValue }),
+                   userAgentSuffix)
+        {
+        }
+
+        /// <summary>
+        /// Construct a client pinned to a hierarchical partition key
+        /// (multi-component, e.g. <c>["tenant-A","region-1","user-42"]</c>).
+        /// Each component is added to the builder via
+        /// <c>cosmos_partition_key_builder_add_string</c> in array order;
+        /// the resulting PK must match the container's HPK definition
+        /// (same number of paths, in the same order).
+        /// </summary>
+        public NativeCosmosClient(
+            string endpoint,
+            string masterKey,
+            string databaseId,
+            string containerId,
+            string[] hpkComponents,
+            string? userAgentSuffix = "cosmos-native-driver-poc-hpk")
+            : this(endpoint, masterKey, databaseId, containerId,
+                   () => BuildPartitionKey(Array.ConvertAll(hpkComponents ?? throw new ArgumentNullException(nameof(hpkComponents)), c => (object)c)),
+                   userAgentSuffix)
+        {
+        }
+
+        /// <summary>
+        /// Construct a client with NO pinned partition key. Only
+        /// cross-partition query methods are valid on the returned
+        /// client; calling any CRUD method will throw. Cross-partition
+        /// queries omit <c>WithPartitionKey</c> entirely on the request
+        /// (header §449 makes <c>partition_key</c> optional for
+        /// <c>QueryItems</c>), which signals the driver to fan out.
+        /// </summary>
+        public static NativeCosmosClient CreateCrossPartition(
+            string endpoint,
+            string masterKey,
+            string databaseId,
+            string containerId,
+            string? userAgentSuffix = "cosmos-native-driver-poc-xpart")
+        {
+            return new NativeCosmosClient(
+                endpoint, masterKey, databaseId, containerId,
+                buildPk: () => IntPtr.Zero,
+                userAgentSuffix: userAgentSuffix);
+        }
+
+        /// <summary>
+        /// Canonical ctor. The PK-construction strategy is supplied as
+        /// a delegate so the three public surfaces (single-PK, HPK,
+        /// cross-partition) share the rest of the wiring. The delegate
+        /// is invoked inside the staged-rollback try block, so a PK
+        /// build failure does not leak the runtime/account/etc. The
+        /// delegate may return <see cref="IntPtr.Zero"/> to signal "no
+        /// pinned PK" (cross-partition queries only).
+        /// </summary>
+        private NativeCosmosClient(
+            string endpoint,
+            string masterKey,
+            string databaseId,
+            string containerId,
+            Func<IntPtr> buildPk,
+            string? userAgentSuffix)
         {
             IntPtr builder = IntPtr.Zero;
             IntPtr stagedRuntime = IntPtr.Zero;
@@ -40,7 +110,6 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
             IntPtr stagedDatabase = IntPtr.Zero;
             IntPtr stagedDriver = IntPtr.Zero;
             IntPtr stagedContainer = IntPtr.Zero;
-            IntPtr pkBuilder = IntPtr.Zero;
             IntPtr stagedPk = IntPtr.Zero;
             CompletionQueueLoop? stagedCq = null;
 
@@ -94,18 +163,9 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
                     out stagedContainer, out IntPtr contErr);
                 ThrowOnRich(rc, contErr, "cosmos_driver_resolve_container_blocking");
 
-                // 6. Partition key — string-only convenience does NOT
-                //    exist; must use the builder.
-                pkBuilder = cosmos_partition_key_builder_new();
-                if (pkBuilder == IntPtr.Zero)
-                {
-                    throw new InvalidOperationException("cosmos_partition_key_builder_new returned NULL");
-                }
-                ThrowOn(cosmos_partition_key_builder_add_string(pkBuilder, partitionKeyValue),
-                    "cosmos_partition_key_builder_add_string");
-                rc = cosmos_partition_key_builder_build(pkBuilder, out stagedPk);
-                pkBuilder = IntPtr.Zero;  // consumed by build per header §1499
-                ThrowOn(rc, "cosmos_partition_key_builder_build");
+                // 6. Partition key — delegated. Returning IntPtr.Zero
+                //    means "no pinned PK" (cross-partition client).
+                stagedPk = buildPk();
 
                 // 7. Completion queue
                 stagedCq = new CompletionQueueLoop(stagedRuntime);
@@ -125,7 +185,6 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
             finally
             {
                 if (builder != IntPtr.Zero) cosmos_runtime_builder_free(builder);
-                if (pkBuilder != IntPtr.Zero) cosmos_partition_key_builder_free(pkBuilder);
                 stagedCq?.Dispose();
                 if (stagedPk != IntPtr.Zero) cosmos_partition_key_free(stagedPk);
                 if (stagedContainer != IntPtr.Zero) cosmos_container_ref_free(stagedContainer);
@@ -136,54 +195,387 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
             }
         }
 
+        /// <summary>
+        /// Build a (possibly multi-component) opaque partition-key handle.
+        /// Each component is added via the typed
+        /// <c>cosmos_partition_key_builder_add_*</c> entry point matching
+        /// its CLR type. The builder is consumed by
+        /// <c>cosmos_partition_key_builder_build</c> on the success path
+        /// and freed inline if any add/build step fails.
+        /// </summary>
+        private static IntPtr BuildPartitionKey(object[] components)
+        {
+            if (components is null || components.Length == 0)
+            {
+                throw new ArgumentException(
+                    "Partition key needs at least one component.", nameof(components));
+            }
+
+            IntPtr pkBuilder = cosmos_partition_key_builder_new();
+            if (pkBuilder == IntPtr.Zero)
+            {
+                throw new InvalidOperationException("cosmos_partition_key_builder_new returned NULL");
+            }
+            try
+            {
+                foreach (object? component in components)
+                {
+                    CosmosErrorCode addRc = component switch
+                    {
+                        null => cosmos_partition_key_builder_add_null(pkBuilder),
+                        string s => cosmos_partition_key_builder_add_string(pkBuilder, s),
+                        bool b => cosmos_partition_key_builder_add_bool(pkBuilder, b),
+                        double d => cosmos_partition_key_builder_add_number(pkBuilder, d),
+                        float f => cosmos_partition_key_builder_add_number(pkBuilder, f),
+                        int i => cosmos_partition_key_builder_add_number(pkBuilder, i),
+                        long l => cosmos_partition_key_builder_add_number(pkBuilder, l),
+                        _ => throw new ArgumentException(
+                            $"Unsupported partition-key component type {component.GetType()}", nameof(components)),
+                    };
+                    ThrowOn(addRc, $"cosmos_partition_key_builder_add_* for {component?.GetType().Name ?? "null"}");
+                }
+
+                CosmosErrorCode buildRc = cosmos_partition_key_builder_build(pkBuilder, out IntPtr pk);
+                pkBuilder = IntPtr.Zero;  // consumed by build per header §1499
+                ThrowOn(buildRc, "cosmos_partition_key_builder_build");
+                return pk;
+            }
+            finally
+            {
+                if (pkBuilder != IntPtr.Zero) cosmos_partition_key_builder_free(pkBuilder);
+            }
+        }
+
+        /// <summary>
+        /// Resolves a partition-key handle into a single-partition feed range
+        /// against this client's container, via
+        /// <c>cosmos_feed_range_for_partition_key</c>. This is the path the
+        /// driver actually honors for scoping a <c>QueryItems</c> operation —
+        /// its <c>build_operation</c> reads only <c>req.feed_range</c> for
+        /// queries and never <c>req.partition_key</c> (op_request.rs:685). The
+        /// returned handle must be freed with <c>cosmos_feed_range_free</c>.
+        /// </summary>
+        private IntPtr BuildFeedRangeForPartitionKey(IntPtr pk)
+        {
+            CosmosErrorCode rc = cosmos_feed_range_for_partition_key(this.container, pk, out IntPtr fr);
+            ThrowOn(rc, "cosmos_feed_range_for_partition_key");
+            return fr;
+        }
+
         public CompletionQueueLoop CompletionQueue => this.cq;
 
-        public Task<CosmosNativeResponse> ReadItemAsync(string itemId, CancellationToken ct = default) =>
-            this.RunSingletonAsync(b => b
+        /// <summary>
+        /// True when this client was constructed via
+        /// <see cref="CreateCrossPartition"/> — i.e. it has no pinned
+        /// partition key and can only serve cross-partition queries.
+        /// </summary>
+        public bool IsCrossPartition => this.partitionKey == IntPtr.Zero;
+
+        public Task<CosmosNativeResponse> ReadItemAsync(string itemId, CancellationToken ct = default)
+        {
+            this.RequirePinnedPartitionKey(nameof(ReadItemAsync));
+            return this.RunRequestAsync(b => b
                 .WithKind(CosmosOperationKind.ReadItem)
                 .WithContainer(this.container)
                 .WithPartitionKey(this.partitionKey)
-                .WithItemId(itemId), ct);
+                .WithItemId(itemId), OperationBucket.Singleton, ct);
+        }
 
-        public Task<CosmosNativeResponse> CreateItemAsync(string itemId, string bodyJson, CancellationToken ct = default) =>
-            this.RunSingletonAsync(b => b
+        public Task<CosmosNativeResponse> CreateItemAsync(string itemId, string bodyJson, CancellationToken ct = default)
+        {
+            this.RequirePinnedPartitionKey(nameof(CreateItemAsync));
+            return this.RunRequestAsync(b => b
                 .WithKind(CosmosOperationKind.CreateItem)
                 .WithContainer(this.container)
                 .WithPartitionKey(this.partitionKey)
                 .WithItemId(itemId)
-                .WithJsonBody(bodyJson), ct);
+                .WithJsonBody(bodyJson), OperationBucket.Singleton, ct);
+        }
 
-        public Task<CosmosNativeResponse> UpsertItemAsync(string itemId, string bodyJson, CancellationToken ct = default) =>
-            this.RunSingletonAsync(b => b
+        public Task<CosmosNativeResponse> UpsertItemAsync(string itemId, string bodyJson, CancellationToken ct = default)
+        {
+            this.RequirePinnedPartitionKey(nameof(UpsertItemAsync));
+            return this.RunRequestAsync(b => b
                 .WithKind(CosmosOperationKind.UpsertItem)
                 .WithContainer(this.container)
                 .WithPartitionKey(this.partitionKey)
                 .WithItemId(itemId)
-                .WithJsonBody(bodyJson), ct);
+                .WithJsonBody(bodyJson), OperationBucket.Singleton, ct);
+        }
 
-        public Task<CosmosNativeResponse> ReplaceItemAsync(string itemId, string bodyJson, CancellationToken ct = default) =>
-            this.RunSingletonAsync(b => b
+        public Task<CosmosNativeResponse> ReplaceItemAsync(string itemId, string bodyJson, CancellationToken ct = default)
+        {
+            this.RequirePinnedPartitionKey(nameof(ReplaceItemAsync));
+            return this.RunRequestAsync(b => b
                 .WithKind(CosmosOperationKind.ReplaceItem)
                 .WithContainer(this.container)
                 .WithPartitionKey(this.partitionKey)
                 .WithItemId(itemId)
-                .WithJsonBody(bodyJson), ct);
+                .WithJsonBody(bodyJson), OperationBucket.Singleton, ct);
+        }
 
-        public Task<CosmosNativeResponse> DeleteItemAsync(string itemId, CancellationToken ct = default) =>
-            this.RunSingletonAsync(b => b
+        public Task<CosmosNativeResponse> DeleteItemAsync(string itemId, CancellationToken ct = default)
+        {
+            this.RequirePinnedPartitionKey(nameof(DeleteItemAsync));
+            return this.RunRequestAsync(b => b
                 .WithKind(CosmosOperationKind.DeleteItem)
                 .WithContainer(this.container)
                 .WithPartitionKey(this.partitionKey)
-                .WithItemId(itemId), ct);
+                .WithItemId(itemId), OperationBucket.Singleton, ct);
+        }
+
+        private void RequirePinnedPartitionKey(string memberName)
+        {
+            if (this.partitionKey == IntPtr.Zero)
+            {
+                throw new InvalidOperationException(
+                    $"{memberName} requires a pinned partition key. Construct " +
+                    "NativeCosmosClient with a partition-key value (single or HPK) " +
+                    "instead of using CreateCrossPartition for CRUD.");
+            }
+        }
+
+        /// <summary>
+        /// Issue a single page of a SQL query against the container's
+        /// fixed partition key. To walk all pages, either loop while
+        /// <see cref="CosmosNativeResponse.NextContinuation"/> is non-null
+        /// (passing it back as <paramref name="continuationToken"/>), or
+        /// use <see cref="QueryItemsAsync"/>.
+        /// </summary>
+        /// <param name="queryText">SQL query text (e.g. <c>"SELECT * FROM c WHERE c.tag = @tag"</c>).</param>
+        /// <param name="continuationToken">
+        /// NULL on the first call; for subsequent pages, pass the value
+        /// of <see cref="CosmosNativeResponse.NextContinuation"/> from
+        /// the previous page.
+        /// </param>
+        /// <param name="maxItemCount">
+        /// Page-size hint. NULL leaves the field unset
+        /// (<c>MaxItemCount = -1</c>), letting the driver pick a default.
+        /// </param>
+        /// <param name="parameters">
+        /// Optional parameters for the query body
+        /// (e.g. <c>[("@tag", "abc")]</c>). Pass NULL or empty for an
+        /// unparameterized query.
+        /// </param>
+        public Task<CosmosNativeResponse> QueryItemsPageAsync(
+            string queryText,
+            string? continuationToken = null,
+            int? maxItemCount = null,
+            IReadOnlyList<(string Name, object? Value)>? parameters = null,
+            CancellationToken ct = default)
+        {
+            if (string.IsNullOrEmpty(queryText))
+            {
+                throw new ArgumentException("Query text must be non-empty.", nameof(queryText));
+            }
+
+            byte[] body = QueryBodyBuilder.Build(queryText, parameters);
+            // The driver scopes QueryItems by feed_range, not partition_key
+            // (op_request.rs:685 reads only req.feed_range). Resolve the
+            // pinned PK into a single-partition feed range; NULL pinned PK =
+            // whole-container fan-out (leave feed_range unset).
+            IntPtr feedRange = (this.partitionKey != IntPtr.Zero)
+                ? BuildFeedRangeForPartitionKey(this.partitionKey)
+                : IntPtr.Zero;
+            try
+            {
+                return this.RunRequestAsync(b =>
+                {
+                    b.WithKind(CosmosOperationKind.QueryItems)
+                     .WithContainer(this.container)
+                     .WithBody(body);
+                    if (feedRange != IntPtr.Zero)
+                    {
+                        // Scopes the query to the pinned PK's single logical
+                        // partition. When omitted, the driver fans out across
+                        // all physical partitions (cross-partition query).
+                        b.WithFeedRange(feedRange);
+                    }
+                    if (!string.IsNullOrEmpty(continuationToken))
+                    {
+                        b.WithContinuationToken(continuationToken);
+                    }
+                    if (maxItemCount.HasValue)
+                    {
+                        b.WithMaxItemCount(maxItemCount.Value);
+                    }
+                }, OperationBucket.Feed, ct);
+            }
+            finally
+            {
+                // Safe to free here: RunRequestAsync has run the configure
+                // delegate and the synchronous submit (which deep-copies the
+                // borrowed feed range) before returning the Task.
+                if (feedRange != IntPtr.Zero)
+                {
+                    cosmos_feed_range_free(feedRange);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Walks every page of a SQL query against the container's fixed
+        /// partition key, threading the planner-derived continuation
+        /// token internally. Yields one
+        /// <see cref="CosmosNativeResponse"/> per page; iteration ends
+        /// when the driver signals end-of-stream (NULL
+        /// <see cref="CosmosNativeResponse.NextContinuation"/>).
+        /// </summary>
+        public async IAsyncEnumerable<CosmosNativeResponse> QueryItemsAsync(
+            string queryText,
+            int? maxItemCount = null,
+            IReadOnlyList<(string Name, object? Value)>? parameters = null,
+            [EnumeratorCancellation] CancellationToken ct = default)
+        {
+            string? continuation = null;
+            while (true)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                CosmosNativeResponse page = await this.QueryItemsPageAsync(
+                    queryText, continuation, maxItemCount, parameters, ct).ConfigureAwait(false);
+
+                // Degenerate end-of-stream pages (status code 0, NULL next
+                // token per header §1685) carry no useful data; skip them
+                // rather than surfacing an empty page to the caller.
+                if (page.HttpStatusCode != 0)
+                {
+                    yield return page;
+                }
+
+                if (string.IsNullOrEmpty(page.NextContinuation))
+                {
+                    yield break;
+                }
+                continuation = page.NextContinuation;
+            }
+        }
+
+        /// <summary>
+        /// Per-request query page — the real-world shape where the partition
+        /// key is an ARGUMENT to the call, not pinned at client construction.
+        ///
+        /// <paramref name="partitionKey"/> semantics:
+        ///   * non-empty (e.g. <c>["user-1"]</c> single, or
+        ///     <c>["tenant-A","region-east","user-1"]</c> hierarchical) — the
+        ///     query is scoped to that one logical partition; the driver should
+        ///     route to a single physical partition and return only that
+        ///     partition's matching documents.
+        ///   * <c>null</c> or empty — the query is a cross-partition fan-out;
+        ///     the driver visits every physical partition and merges results.
+        ///
+        /// The opaque <c>cosmos_partition_key_t*</c> is built on entry and freed
+        /// once the synchronous submit returns. The wrapper deep-copies every
+        /// borrowed request pointer (including the partition key) before submit
+        /// returns (lifetime contract above on <see cref="RunRequestAsync"/>),
+        /// so a per-call key has no lifetime hazard.
+        /// </summary>
+        public Task<CosmosNativeResponse> QueryPageAsync(
+            string queryText,
+            object[]? partitionKey,
+            string? continuationToken = null,
+            int? maxItemCount = null,
+            IReadOnlyList<(string Name, object? Value)>? parameters = null,
+            CancellationToken ct = default)
+        {
+            if (string.IsNullOrEmpty(queryText))
+            {
+                throw new ArgumentException("Query text must be non-empty.", nameof(queryText));
+            }
+
+            byte[] body = QueryBodyBuilder.Build(queryText, parameters);
+            // Build the per-request PK only as an intermediate: the driver
+            // scopes QueryItems by feed_range, not partition_key
+            // (op_request.rs:685 reads only req.feed_range). Resolve the key
+            // into a single-partition feed range; no key = cross-partition.
+            IntPtr pk = (partitionKey is { Length: > 0 })
+                ? BuildPartitionKey(partitionKey)
+                : IntPtr.Zero;
+            IntPtr feedRange = (pk != IntPtr.Zero)
+                ? BuildFeedRangeForPartitionKey(pk)
+                : IntPtr.Zero;
+            try
+            {
+                return this.RunRequestAsync(b =>
+                {
+                    b.WithKind(CosmosOperationKind.QueryItems)
+                     .WithContainer(this.container)
+                     .WithBody(body);
+                    if (feedRange != IntPtr.Zero)
+                    {
+                        b.WithFeedRange(feedRange);
+                    }
+                    if (!string.IsNullOrEmpty(continuationToken))
+                    {
+                        b.WithContinuationToken(continuationToken);
+                    }
+                    if (maxItemCount.HasValue)
+                    {
+                        b.WithMaxItemCount(maxItemCount.Value);
+                    }
+                }, OperationBucket.Feed, ct);
+            }
+            finally
+            {
+                // Safe to free here: RunRequestAsync has already run the
+                // configure delegate and the synchronous submit (which
+                // deep-copies the borrowed handles) before returning the Task.
+                if (feedRange != IntPtr.Zero)
+                {
+                    cosmos_feed_range_free(feedRange);
+                }
+                if (pk != IntPtr.Zero)
+                {
+                    cosmos_partition_key_free(pk);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Walks every page of a per-request query (see
+        /// <see cref="QueryPageAsync"/>), threading the planner-derived
+        /// continuation token internally. The same <paramref name="partitionKey"/>
+        /// is applied to every page; pass <c>null</c> for a cross-partition
+        /// fan-out.
+        /// </summary>
+        public async IAsyncEnumerable<CosmosNativeResponse> QueryPagesAsync(
+            string queryText,
+            object[]? partitionKey,
+            int? maxItemCount = null,
+            IReadOnlyList<(string Name, object? Value)>? parameters = null,
+            [EnumeratorCancellation] CancellationToken ct = default)
+        {
+            string? continuation = null;
+            while (true)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                CosmosNativeResponse page = await this.QueryPageAsync(
+                    queryText, partitionKey, continuation, maxItemCount, parameters, ct).ConfigureAwait(false);
+
+                if (page.HttpStatusCode != 0)
+                {
+                    yield return page;
+                }
+
+                if (string.IsNullOrEmpty(page.NextContinuation))
+                {
+                    yield break;
+                }
+                continuation = page.NextContinuation;
+            }
+        }
 
         /// <summary>
         /// Core dispatch path against the post-PR-#4515 spec.
         ///
         /// Builds a <see cref="CosmosOperationRequest"/> via the supplied
-        /// <paramref name="configure"/> action, dispatches through
-        /// <c>cosmos_driver_execute_singleton_operation_submit</c>, and
-        /// wires the resulting opaque handle into the CQ pump (which
-        /// completes the TCS once the Rust side posts a completion).
+        /// <paramref name="configure"/> action, dispatches through either
+        /// <c>cosmos_submit_singleton_operation</c> or
+        /// <c>cosmos_submit_operation</c> based on
+        /// <paramref name="bucket"/>, and wires the resulting opaque
+        /// handle into the CQ pump (which completes the TCS once the
+        /// Rust side posts a completion).
         ///
         /// Routing model: Aaron Robinson + Kevin Jones + Ashley Schroder
         /// consensus (May 2026 Teams thread). The <c>user_data</c> cookie
@@ -210,8 +602,9 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
         ///     NULL), where we free it inline here because no completion
         ///     will ever arrive.
         /// </summary>
-        private Task<CosmosNativeResponse> RunSingletonAsync(
+        private Task<CosmosNativeResponse> RunRequestAsync(
             Action<CosmosOperationRequestBuilder> configure,
+            OperationBucket bucket,
             CancellationToken ct)
         {
             var op = new NativeAsyncOperation();
@@ -249,7 +642,7 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
                 //    allocated memory is safe to release on `using` exit.
                 opHandle = builder.Submit(
                     this.driver, this.cq.Handle, userData,
-                    OperationBucket.Singleton, out preError);
+                    bucket, out preError);
             }
 
             if (opHandle == IntPtr.Zero)
@@ -258,7 +651,7 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
                 // arrive, so we own the GCHandle free.
                 GCHandle.FromIntPtr(userData).Free();
                 op.Tcs.TrySetException(new InvalidOperationException(
-                    $"cosmos_driver_execute_singleton_operation_submit pre-flight rejected: {preError} (op#{op.Id})"));
+                    $"cosmos_driver_execute_{(bucket == OperationBucket.Singleton ? "singleton_" : string.Empty)}operation_submit pre-flight rejected: {preError} (op#{op.Id})"));
                 return op.Tcs.Task;
             }
 
@@ -326,7 +719,10 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
             }
             // Free children before parents.
             this.cq.Dispose();
-            cosmos_partition_key_free(this.partitionKey);
+            if (this.partitionKey != IntPtr.Zero)
+            {
+                cosmos_partition_key_free(this.partitionKey);
+            }
             cosmos_container_ref_free(this.container);
             cosmos_driver_free(this.driver);
             cosmos_database_ref_free(this.database);

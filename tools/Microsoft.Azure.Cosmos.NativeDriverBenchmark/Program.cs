@@ -16,14 +16,20 @@ namespace Microsoft.Azure.Cosmos.NativeDriverBenchmark
         {
             // `dotnet run -- validate`          — reads-only sanity check.
             // `dotnet run -- validate --crud`   — full CRUD sanity per mode.
-            // Both are cheap pre-flights; run before kicking off a full
+            // `dotnet run -- validate --query`  — query-shape sanity per mode.
+            // All three are cheap pre-flights; run before kicking off a full
             // benchmark suite to catch env-var / DLL / firewall issues.
             if (args.Length > 0 && string.Equals(args[0], "validate", StringComparison.OrdinalIgnoreCase))
             {
-                bool crud = args.Length > 1 && string.Equals(args[1], "--crud", StringComparison.OrdinalIgnoreCase);
-                return crud
-                    ? await ValidateCrudAsync().ConfigureAwait(false)
-                    : await ValidateAsync().ConfigureAwait(false);
+                if (args.Length > 1 && string.Equals(args[1], "--crud", StringComparison.OrdinalIgnoreCase))
+                {
+                    return await ValidateCrudAsync().ConfigureAwait(false);
+                }
+                if (args.Length > 1 && string.Equals(args[1], "--query", StringComparison.OrdinalIgnoreCase))
+                {
+                    return await ValidateQueryAsync().ConfigureAwait(false);
+                }
+                return await ValidateAsync().ConfigureAwait(false);
             }
 
             // Everything else goes to BenchmarkSwitcher, which discovers
@@ -358,6 +364,285 @@ namespace Microsoft.Azure.Cosmos.NativeDriverBenchmark
             {
                 try { await native.DeleteItemAsync(id).ConfigureAwait(false); } catch { }
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Query-shape sanity. Seeds N small docs into a fresh PK, runs
+        /// the same parameterized single-partition query through each
+        /// of the three drivers in both shapes (single-page MaxItemCount
+        /// large enough for the full set, and paginated MaxItemCount=2),
+        /// asserts the doc counts match, then deletes the seed. Mirrors
+        /// the query-benchmark's GlobalSetup minus the warm-up loop.
+        /// </summary>
+        private static async Task<int> ValidateQueryAsync()
+        {
+            const int SeedCount = 5;
+            const int SinglePageMaxItems = 20;
+            const int PaginatedMaxItems = 2;
+            const string QueryText = "SELECT * FROM c WHERE c.tag = @tag";
+
+            BenchmarkSettings settings;
+            try
+            {
+                settings = BenchmarkSettings.FromEnvironment();
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"FAIL — configuration: {ex.Message}");
+                return 2;
+            }
+
+            Console.WriteLine($"validate --query: {settings.Describe()}");
+            Console.WriteLine();
+
+            string runGuid = Guid.NewGuid().ToString("N").Substring(0, 8);
+            string pk = $"validate-q-pk-{runGuid}";
+            string tag = $"validate-q-{runGuid}";
+            var sdkPk = new PartitionKey(pk);
+
+            // Seed using SDK Gateway up front — independent of the
+            // path-under-test so per-mode failures are isolated.
+            CosmosClient seedClient = new CosmosClient(
+                settings.Endpoint, settings.Key,
+                new CosmosClientOptions
+                {
+                    ConnectionMode = ConnectionMode.Gateway,
+                    ApplicationName = "cosmos-bench-validate-q-seed",
+                    EnableContentResponseOnWrite = false,
+                });
+            Container seedContainer = seedClient.GetDatabase(settings.Database).GetContainer(settings.Container);
+            var seededIds = new string[SeedCount];
+            try
+            {
+                for (int i = 0; i < SeedCount; i++)
+                {
+                    string id = $"{tag}-doc-{i:D2}";
+                    seededIds[i] = id;
+                    string body = "{\"id\":\"" + id + "\",\"pk\":\"" + pk + "\",\"tag\":\"" + tag + "\",\"ordinal\":" + i + "}";
+                    using var ms = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(body));
+                    using ResponseMessage rm = await seedContainer
+                        .CreateItemStreamAsync(ms, sdkPk).ConfigureAwait(false);
+                    if ((int)rm.StatusCode != 201)
+                    {
+                        Console.Error.WriteLine($"FAIL — seed: HTTP {(int)rm.StatusCode} for id={id}");
+                        return 1;
+                    }
+                }
+                Console.WriteLine($"[seed] {SeedCount} docs into pk='{pk}' tag='{tag}'");
+                Console.WriteLine();
+
+                int failures = 0;
+
+                // --- V3 SDK Gateway -----------------------------------
+                try
+                {
+                    await RunSdkQueryShapesAsync(
+                        seedContainer, sdkPk, tag,
+                        SinglePageMaxItems, PaginatedMaxItems, SeedCount,
+                        "V3 SDK Gateway").ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"FAIL — V3 SDK Gateway query: {ex.GetType().Name}: {ex.Message}");
+                    failures++;
+                }
+
+                // --- V3 SDK Direct ------------------------------------
+                try
+                {
+                    using var sdk = new CosmosClient(
+                        settings.Endpoint, settings.Key,
+                        new CosmosClientOptions
+                        {
+                            ConnectionMode = ConnectionMode.Direct,
+                            ApplicationName = "cosmos-bench-validate-q-dir",
+                            EnableContentResponseOnWrite = false,
+                        });
+                    Container c = sdk.GetDatabase(settings.Database).GetContainer(settings.Container);
+                    await RunSdkQueryShapesAsync(
+                        c, sdkPk, tag,
+                        SinglePageMaxItems, PaginatedMaxItems, SeedCount,
+                        "V3 SDK Direct").ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"FAIL — V3 SDK Direct query: {ex.GetType().Name}: {ex.Message}");
+                    failures++;
+                }
+
+                // --- Native driver ------------------------------------
+                try
+                {
+                    using var native = new NativeCosmosClient(
+                        settings.Endpoint, settings.Key,
+                        settings.Database, settings.Container, pk,
+                        userAgentSuffix: "cosmos-bench-vq");
+                    await RunNativeQueryShapesAsync(
+                        native, QueryText, tag,
+                        SinglePageMaxItems, PaginatedMaxItems, SeedCount,
+                        "Native driver").ConfigureAwait(false);
+                }
+                catch (DllNotFoundException ex)
+                {
+                    Console.Error.WriteLine($"FAIL — Native driver query: {ex.GetType().Name}: {ex.Message}");
+                    Console.Error.WriteLine("  Cause: azurecosmosdriver.dll is not on the probing path.");
+                    failures++;
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"FAIL — Native driver query: {ex.GetType().Name}: {ex.Message}");
+                    failures++;
+                }
+
+                Console.WriteLine();
+                if (failures == 0)
+                {
+                    Console.WriteLine("PASS — all three modes returned the expected doc counts in both shapes.");
+                    return 0;
+                }
+                Console.Error.WriteLine($"FAIL — {failures}/3 modes had query errors.");
+                return 1;
+            }
+            finally
+            {
+                // Best-effort cleanup.
+                for (int i = 0; i < seededIds.Length; i++)
+                {
+                    if (seededIds[i] == null) continue;
+                    try
+                    {
+                        (await seedContainer.DeleteItemStreamAsync(seededIds[i]!, sdkPk).ConfigureAwait(false)).Dispose();
+                    }
+                    catch
+                    {
+                        // leaked docs share the validate-q-* prefix
+                    }
+                }
+                seedClient.Dispose();
+            }
+        }
+
+        private static async Task RunSdkQueryShapesAsync(
+            Container container, PartitionKey pk, string tag,
+            int singlePageMaxItems, int paginatedMaxItems, int expectedCount,
+            string label)
+        {
+            QueryDefinition Def() =>
+                new QueryDefinition("SELECT * FROM c WHERE c.tag = @tag").WithParameter("@tag", tag);
+            QueryRequestOptions Opts(int n) =>
+                new QueryRequestOptions { PartitionKey = pk, MaxItemCount = n };
+
+            int singleDocs;
+            using (FeedIterator iter = container.GetItemQueryStreamIterator(Def(), null, Opts(singlePageMaxItems)))
+            {
+                if (!iter.HasMoreResults)
+                {
+                    throw new InvalidOperationException($"[{label}] SinglePage: iterator empty");
+                }
+                using ResponseMessage rm = await iter.ReadNextAsync().ConfigureAwait(false);
+                if ((int)rm.StatusCode != 200)
+                {
+                    throw new InvalidOperationException($"[{label}] SinglePage HTTP {(int)rm.StatusCode}");
+                }
+                singleDocs = CountDocumentsFromStream(rm.Content);
+                Console.WriteLine($"[{label}] SinglePage  http={(int)rm.StatusCode} docs={singleDocs} ru={rm.Headers?.RequestCharge:F2}");
+            }
+            if (singleDocs != expectedCount)
+            {
+                throw new InvalidOperationException($"[{label}] SinglePage expected {expectedCount} docs, got {singleDocs}");
+            }
+
+            int paginatedDocs = 0;
+            int pages = 0;
+            double pageRu = 0;
+            using (FeedIterator iter = container.GetItemQueryStreamIterator(Def(), null, Opts(paginatedMaxItems)))
+            {
+                while (iter.HasMoreResults)
+                {
+                    using ResponseMessage rm = await iter.ReadNextAsync().ConfigureAwait(false);
+                    if ((int)rm.StatusCode != 200)
+                    {
+                        throw new InvalidOperationException($"[{label}] Paginated page {pages + 1} HTTP {(int)rm.StatusCode}");
+                    }
+                    pages++;
+                    paginatedDocs += CountDocumentsFromStream(rm.Content);
+                    pageRu += rm.Headers?.RequestCharge ?? 0;
+                }
+                Console.WriteLine($"[{label}] Paginated   pages={pages} totalDocs={paginatedDocs} ru={pageRu:F2}");
+            }
+            if (paginatedDocs != expectedCount)
+            {
+                throw new InvalidOperationException($"[{label}] Paginated expected {expectedCount} docs, got {paginatedDocs} across {pages} pages");
+            }
+        }
+
+        private static async Task RunNativeQueryShapesAsync(
+            NativeCosmosClient native, string queryText, string tag,
+            int singlePageMaxItems, int paginatedMaxItems, int expectedCount,
+            string label)
+        {
+            var parms = new (string Name, object? Value)[] { ("@tag", tag) };
+
+            CosmosNativeResponse single = await native.QueryItemsPageAsync(
+                queryText, null, singlePageMaxItems, parms).ConfigureAwait(false);
+            if (single.HttpStatusCode != 200)
+            {
+                throw new InvalidOperationException($"[{label}] SinglePage HTTP {single.HttpStatusCode}");
+            }
+            int singleDocs = CountDocumentsFromBytes(single.Body);
+            Console.WriteLine($"[{label}] SinglePage  http={single.HttpStatusCode} docs={singleDocs} ru={single.RequestCharge:F2}");
+            if (singleDocs != expectedCount)
+            {
+                throw new InvalidOperationException($"[{label}] SinglePage expected {expectedCount} docs, got {singleDocs}");
+            }
+
+            int paginatedDocs = 0;
+            int pages = 0;
+            double pageRu = 0;
+            await foreach (CosmosNativeResponse page in native.QueryItemsAsync(
+                queryText, paginatedMaxItems, parms).ConfigureAwait(false))
+            {
+                pages++;
+                paginatedDocs += CountDocumentsFromBytes(page.Body);
+                pageRu += page.RequestCharge;
+            }
+            Console.WriteLine($"[{label}] Paginated   pages={pages} totalDocs={paginatedDocs} ru={pageRu:F2}");
+            if (paginatedDocs != expectedCount)
+            {
+                throw new InvalidOperationException($"[{label}] Paginated expected {expectedCount} docs, got {paginatedDocs} across {pages} pages");
+            }
+        }
+
+        private static int CountDocumentsFromStream(Stream? content)
+        {
+            if (content == null) return 0;
+            using var ms = new MemoryStream();
+            content.CopyTo(ms);
+            return CountDocumentsFromBytes(ms.ToArray());
+        }
+
+        private static int CountDocumentsFromBytes(byte[] body)
+        {
+            if (body == null || body.Length == 0) return 0;
+            try
+            {
+                using System.Text.Json.JsonDocument doc = System.Text.Json.JsonDocument.Parse(body);
+                if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object
+                    && doc.RootElement.TryGetProperty("Documents", out System.Text.Json.JsonElement docs)
+                    && docs.ValueKind == System.Text.Json.JsonValueKind.Array)
+                {
+                    return docs.GetArrayLength();
+                }
+                if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Array)
+                {
+                    return doc.RootElement.GetArrayLength();
+                }
+                return 0;
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                return 0;
             }
         }
     }

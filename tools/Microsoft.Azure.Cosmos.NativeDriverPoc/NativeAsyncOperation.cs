@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
     /// freed in exactly one place: the CQ pump's dispatch path, right
     /// after it has read <see cref="Tcs"/> and called <c>TrySet*</c>.
     /// The only other freeing path is the pre-flight rollback in
-    /// <c>NativeCosmosClient.RunSingletonAsync</c> when
+    /// <c>NativeCosmosClient.RunRequestAsync</c> when
     /// <c>cosmos_driver_execute_*_submit</c> returns NULL — there will
     /// never be a completion in that case, so the submitter owns the free.
     /// </para>

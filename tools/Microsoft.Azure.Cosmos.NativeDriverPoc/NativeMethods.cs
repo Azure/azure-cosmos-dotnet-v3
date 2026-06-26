@@ -30,8 +30,8 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
     ///   <item>One flat <see cref="CosmosOperationOptions"/> struct mirroring
     ///   the driver-side options bag, with tri-state encoding for every
     ///   field (<c>0</c> = inherit, &lt; 0 = unset numeric, NULL = unset string).</item>
-    ///   <item>Two submit entry points: <see cref="cosmos_driver_execute_singleton_operation_submit"/>
-    ///   for point ops and <see cref="cosmos_driver_execute_operation_submit"/>
+    ///   <item>Two submit entry points: <see cref="cosmos_submit_singleton_operation"/>
+    ///   for point ops and <see cref="cosmos_submit_operation"/>
     ///   for feed / paginated ops.</item>
     /// </list>
     /// </para>
@@ -279,14 +279,8 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
             public CosmosReadConsistencyStrategy ReadConsistencyStrategy;
             public CosmosContentResponseOnWriteOpt ContentResponseOnWrite;
             public sbyte SessionCapturingDisabled;
-            public sbyte PerPartitionCircuitBreakerEnabled;
             public int MaxFailoverRetryCount;
             public int MaxSessionRetryCount;
-            public int CircuitBreakerFailureCountForReads;
-            public int CircuitBreakerFailureCountForWrites;
-            public int CircuitBreakerTimeoutCounterResetWindowInMinutes;
-            public int AllowedPartitionUnavailabilityDurationInSeconds;
-            public int PpcbStalePartitionUnavailabilityRefreshIntervalInSeconds;
             public long EndToEndTimeoutMs;
             public long EndpointUnavailabilityTtlMs;
             public IntPtr ThroughputControlGroup;
@@ -319,6 +313,12 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
             public IntPtr ItemId;
             public IntPtr ResourceLink;
             public IntPtr PartitionKey;
+            // PR #4515 added an explicit multi-component partition-key path
+            // alongside the opaque PartitionKey handle: a pointer to an array
+            // of cosmos_partition_key_component_t plus its length. Leave both
+            // zero/NULL to keep using the PartitionKey handle field.
+            public IntPtr PartitionKeyComponents;
+            public UIntPtr PartitionKeyLen;
             public IntPtr FeedRange;
             public CosmosBytesView Body;
             public IntPtr SessionToken;
@@ -355,17 +355,11 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
         public static extern void cosmos_string_free(IntPtr s);
 
         // -----------------------------------------------------------------
-        // Opaque bytes handle — Phase 0 (header lines 405–694)
+        // Response body bytes are read via cosmos_response_body (out ptr/len).
+        // The former opaque cosmos_bytes_* handle accessors
+        // (cosmos_bytes_data / _len / _free) were removed in PR #4515's
+        // redesign — cosmos_bytes_t is now a by-value { ptr, len } struct.
         // -----------------------------------------------------------------
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr cosmos_bytes_data(IntPtr b);
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern UIntPtr cosmos_bytes_len(IntPtr b);
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void cosmos_bytes_free(IntPtr b);
 
         // -----------------------------------------------------------------
         // Runtime builder — Phase 2 (header lines 1649–1747)
@@ -432,9 +426,6 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
 
         [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr cosmos_cq_wait(IntPtr cq, uint timeoutMs);
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr cosmos_cq_try_wait(IntPtr cq);
 
         [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
         public static extern uint cosmos_cq_wait_batch(
@@ -591,6 +582,26 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
         public static extern void cosmos_partition_key_free(IntPtr pk);
 
         // -----------------------------------------------------------------
+        // Feed range (feed_range.rs)
+        //
+        // The driver's QueryItems contract is feed-range-based, NOT
+        // partition-key-based: build_operation's QueryItems arm reads only
+        // req.feed_range and never req.partition_key (op_request.rs:685).
+        // To scope a query to one logical partition the host must resolve
+        // the partition key into a feed range via
+        // cosmos_feed_range_for_partition_key (mirrors
+        // FeedRange::for_partition(pk, container.partition_key_definition()))
+        // and set req.feed_range. A NULL feed_range = whole-container query.
+        // -----------------------------------------------------------------
+
+        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern CosmosErrorCode cosmos_feed_range_for_partition_key(
+            IntPtr container, IntPtr pk, out IntPtr outFeedRange);
+
+        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void cosmos_feed_range_free(IntPtr feedRange);
+
+        // -----------------------------------------------------------------
         // PR #4515 redesign — Phase 6
         //
         // What was REMOVED (do NOT re-add):
@@ -605,8 +616,8 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
         //
         // What was ADDED:
         //   - cosmos_operation_options_default     (helper to seed the opts struct)
-        //   - cosmos_driver_execute_singleton_operation_submit  (point ops)
-        //   - cosmos_driver_execute_operation_submit            (feed ops, paginated)
+        //   - cosmos_submit_singleton_operation                 (point ops)
+        //   - cosmos_submit_operation                           (feed ops, paginated)
         //   - cosmos_response_next_continuation                 (feed-page token)
         //   - cosmos_response_take_driver / _container          (degenerate-response payloads)
         //
@@ -627,14 +638,14 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
         public static extern CosmosOperationOptions cosmos_operation_options_default();
 
         /// <summary>
-        /// Header lines 1921-1925. Submits a singleton (single-result)
-        /// operation. Use for point operations and anything that returns
-        /// exactly one result — item CRUD/patch, database/container CRUD,
-        /// read/replace offer. Feed kinds MUST go through
-        /// <see cref="cosmos_driver_execute_operation_submit"/>.
+        /// Submits a singleton (single-result) operation. Use for point
+        /// operations and anything that returns exactly one result — item
+        /// CRUD/patch, database/container CRUD, read/replace offer. Feed
+        /// kinds MUST go through
+        /// <see cref="cosmos_submit_operation"/>.
         /// </summary>
         [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr cosmos_driver_execute_singleton_operation_submit(
+        public static extern IntPtr cosmos_submit_singleton_operation(
             IntPtr driver,
             in CosmosOperationRequest request,
             IntPtr queue,
@@ -649,7 +660,7 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
         /// arrives as a degenerate response: status code 0 + NULL next token.
         /// </summary>
         [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr cosmos_driver_execute_operation_submit(
+        public static extern IntPtr cosmos_submit_operation(
             IntPtr driver,
             in CosmosOperationRequest request,
             IntPtr queue,
