@@ -95,8 +95,9 @@ namespace Microsoft.Azure.Cosmos
         /// operation to enforce read-your-writes session consistency for that op.
         /// </summary>
         /// <remarks>
-        /// In canonical <c>{pkRangeId}:{lsn}</c> format when the coordinator behaves
-        /// correctly; <c>null</c> when the response omitted the token field.
+        /// Treat the value as opaque: pass it back unchanged via
+        /// <c>DistributedTransactionRequestOptions.SessionToken</c>. It may be <c>null</c> or
+        /// non-canonical if the coordinator omits or misformats the token.
         /// </remarks>
         public virtual string SessionToken { get; internal set; }
 
