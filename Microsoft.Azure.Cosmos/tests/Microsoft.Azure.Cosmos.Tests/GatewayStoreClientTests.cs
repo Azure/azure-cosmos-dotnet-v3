@@ -374,6 +374,38 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Verifies that a read distributed transaction (OperationType.Read on
+        /// ResourceType.DistributedTransactionBatch) is prepared as an HTTP POST with its
+        /// request body intact. Read DTX carries the batch of read operations in the body, so a
+        /// regression to GET (the method a plain Read uses) would silently drop the payload.
+        /// </summary>
+        [TestMethod]
+        public async Task PrepareRequestMessageAsync_ReadDistributedTransaction_UsesPostWithBody()
+        {
+            System.Diagnostics.Trace.CorrelationManager.ActivityId = Guid.NewGuid();
+
+            GatewayStoreClient storeClient = new GatewayStoreClient(
+                httpClient: null,
+                eventSource: null,
+                globalPartitionEndpointManager: null);
+
+            using DocumentServiceRequest dsRequest = DocumentServiceRequest.Create(
+                OperationType.Read,
+                ResourceType.DistributedTransactionBatch,
+                "operations/dtc",
+                new System.IO.MemoryStream(Encoding.UTF8.GetBytes("{\"operations\":[]}")),
+                AuthorizationTokenType.PrimaryMasterKey,
+                null);
+
+            using HttpRequestMessage requestMessage = await storeClient.PrepareRequestMessageAsync(
+                dsRequest,
+                new Uri("https://test.documents.azure.com/operations/dtc"));
+
+            Assert.AreEqual(HttpMethod.Post, requestMessage.Method);
+            Assert.IsNotNull(requestMessage.Content, "Read DTX must keep its request body on the wire.");
+        }
+
+        /// <summary>
         /// Verifies that Extensions.ToCosmosResponseMessage preserves the response body
         /// for DTX error responses, so DistributedTransactionResponse can parse per-op results,
         /// while also populating CosmosException for consumers that check it.

@@ -124,12 +124,29 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         /// <summary>
         /// This method determines if there is an availability strategy that the request can use.
-        /// Note that the request level availability strategy options override the client level options.
+        /// Note that the request level availability strategy options override the client level options,
+        /// but the Gateway-driven operator override (<see cref="DocumentClient.IsHedgingDisabledByGateway"/>)
+        /// takes absolute precedence over both — when the Gateway flag
+        /// <c>disableCrossRegionalHedging</c> is <c>true</c>, hedging is OFF for every request on this
+        /// client regardless of where the strategy was configured.
         /// </summary>
         /// <param name="request"></param>
         /// <returns>whether the request should be a parallel hedging request.</returns>
         public AvailabilityStrategyInternal AvailabilityStrategy(RequestMessage request)
         {
+            // Gateway-driven operator override has absolute precedence over any request-level or
+            // client-level AvailabilityStrategy. See spec.md → "Gateway flag disables all hedging
+            // when true" and tasks.md item 4.1.
+            //
+            // Note: this flag read and the ConnectionPolicy.AvailabilityStrategy read below are not a single
+            // atomic snapshot. The only guarantee is one-directional — a true flag always suppresses hedging
+            // for this request; the reverse is not symmetric, which is fine because the kill-switch only needs
+            // to win when true.
+            if (this.client.DocumentClient.IsHedgingDisabledByGateway)
+            {
+                return null;
+            }
+
             AvailabilityStrategy strategy = request.RequestOptions?.AvailabilityStrategy
                     ?? this.client.DocumentClient.ConnectionPolicy.AvailabilityStrategy;
 
@@ -399,6 +416,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 operationType == OperationType.QueryPlan ||
                 operationType == OperationType.Batch ||
                 operationType == OperationType.CommitDistributedTransaction ||
+                (resourceType == ResourceType.DistributedTransactionBatch && operationType == OperationType.Read) ||
                 operationType == OperationType.ExecuteJavaScript ||
                 operationType == OperationType.CompleteUserTransaction ||
                 (resourceType == ResourceType.PartitionKey && operationType == OperationType.Delete))
