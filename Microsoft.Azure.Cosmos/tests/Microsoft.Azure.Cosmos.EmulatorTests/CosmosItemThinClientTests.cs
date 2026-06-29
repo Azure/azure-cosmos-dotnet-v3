@@ -854,6 +854,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     ItemResponse<TestObject> response = await localContainer.CreateItemAsync(item, new PartitionKey(item.Pk));
                     Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                    Assert.IsFalse(
+                        response.Diagnostics.ToString().Contains("|F4"),
+                        "User agent must not advertise the ThinClient capability (|F4) when the account does not advertise thin-client endpoints.");
                 }
 
                 // The account does not advertise thin-client (proxy) endpoints, so no request - data-plane or

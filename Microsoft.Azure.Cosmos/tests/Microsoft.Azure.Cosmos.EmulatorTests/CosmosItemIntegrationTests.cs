@@ -89,6 +89,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 //Do not delete the resources (except MM Write test object), georeplication is slow and we want to reuse the resources
                 this.client?.Dispose();
                 Environment.SetEnvironmentVariable(ConfigurationManager.StalePartitionUnavailabilityRefreshIntervalInSeconds, null);
+                Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, null);
             }
         }
 
