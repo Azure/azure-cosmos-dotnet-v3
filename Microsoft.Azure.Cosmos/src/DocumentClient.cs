@@ -6855,6 +6855,17 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.storeClientFactory = storeClientFactory;
                 this.isStoreClientFactoryCreatedInternally = false;
+
+                // Note: EnableBarrierEarlyYieldOn429 has no effect when an external
+                // IStoreClientFactory is supplied (e.g., the compute-gateway reuse path).
+                // The external factory owns its own StoreClient configuration. If the flag
+                // is explicitly set, log a trace so misconfigurations are diagnosable.
+                if (!this.ConnectionPolicy.EnableBarrierEarlyYieldOn429)
+                {
+                    DefaultTrace.TraceWarning(
+                        "EnableBarrierEarlyYieldOn429 is set to false but has no effect "
+                        + "when an external IStoreClientFactory is provided.");
+                }
             }
             else
             {
@@ -6898,7 +6909,8 @@ namespace Microsoft.Azure.Cosmos
                         ? DnsDotSuffixHelper.ResolveHostAsync
                         : null,
                     chaosInterceptor: this.chaosInterceptor,
-                    enableBarrierEarlyYieldOn429: this.ConnectionPolicy.EnableBarrierEarlyYieldOn429);
+                    enableBarrierEarlyYieldOn429: this.ConnectionPolicy.EnableBarrierEarlyYieldOn429
+                        && ConfigurationManager.IsBarrierEarlyYieldOn429Enabled());
 
                 if (this.transportClientHandlerFactory != null)
                 {

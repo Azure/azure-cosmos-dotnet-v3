@@ -74,6 +74,45 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         [TestMethod]
+        public async Task RequestTimeoutWithWriteBarrierThrottledSubStatusReturnsNoRetry()
+        {
+            using GlobalEndpointManager endpointManager = CreateGlobalEndpointManager(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: true,
+                includePreferredLocations: true);
+            GlobalPartitionEndpointManager partitionKeyRangeLocationCache = CreatePartitionKeyRangeLocationCache(endpointManager);
+            DocumentServiceRequest request = CreateWriteRequest();
+            request.RequestContext.ResolvedPartitionKeyRange = TestPartitionKeyRange;
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery: true,
+                isThinClientEnabled: false);
+
+            retryPolicy.OnBeforeSendRequest(request);
+
+            DocumentClientException requestTimeoutException = CreateDocumentClientException(
+                request,
+                HttpStatusCode.RequestTimeout,
+                SubStatusCodes.Server_WriteBarrierThrottled);
+
+            ShouldRetryResult result = await retryPolicy.ShouldRetryAsync(requestTimeoutException, CancellationToken.None);
+
+            // The synthetic 408/21013 is NOT retried by the SDK — Direct handles retries
+            // internally. The SDK only ensures no unnecessary cross-region failover.
+            Assert.IsFalse(result.ShouldRetry);
+
+            GlobalPartitionEndpointManagerCore.PartitionKeyRangeFailoverInfo failoverInfo = GetPartitionKeyRangeFailoverInfo(
+                partitionKeyRangeLocationCache,
+                request.RequestContext.ResolvedPartitionKeyRange,
+                isReadOnlyOrMultiMasterWriteRequest: false);
+
+            Assert.IsNull(failoverInfo);
+        }
+
+        [TestMethod]
         public async Task RequestTimeoutWithoutSubStatusMarksEndpointUnavailable()
         {
             using GlobalEndpointManager endpointManager = CreateGlobalEndpointManager(
@@ -152,54 +191,6 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                     enableBarrierEarlyYieldOn429,
                     connectionPolicy.EnableBarrierEarlyYieldOn429);
             }
-        }
-
-        [TestMethod]
-        public void ConsistencyWriterEarlyYieldFieldSetViaConstructor()
-        {
-            ConsistencyWriter writer = CreateConsistencyWriter(enableBarrierEarlyYieldOn429: true);
-
-            FieldInfo field = typeof(ConsistencyWriter).GetField(
-                "enableBarrierEarlyYieldOn429",
-                BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.IsNotNull(field);
-            Assert.IsTrue((bool)field.GetValue(writer));
-        }
-
-        [TestMethod]
-        public void ConsistencyWriterEarlyYieldDisabledByDefault()
-        {
-            ConsistencyWriter writer = CreateConsistencyWriter(enableBarrierEarlyYieldOn429: false);
-
-            FieldInfo field = typeof(ConsistencyWriter).GetField(
-                "enableBarrierEarlyYieldOn429",
-                BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.IsNotNull(field);
-            Assert.IsFalse((bool)field.GetValue(writer));
-        }
-
-        [TestMethod]
-        public void QuorumReaderEarlyYieldFieldSetViaConstructor()
-        {
-            QuorumReader reader = CreateQuorumReader(enableBarrierEarlyYieldOn429: true);
-
-            FieldInfo field = typeof(QuorumReader).GetField(
-                "enableBarrierEarlyYieldOn429",
-                BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.IsNotNull(field);
-            Assert.IsTrue((bool)field.GetValue(reader));
-        }
-
-        [TestMethod]
-        public void QuorumReaderEarlyYieldDisabledByDefault()
-        {
-            QuorumReader reader = CreateQuorumReader(enableBarrierEarlyYieldOn429: false);
-
-            FieldInfo field = typeof(QuorumReader).GetField(
-                "enableBarrierEarlyYieldOn429",
-                BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.IsNotNull(field);
-            Assert.IsFalse((bool)field.GetValue(reader));
         }
 
         [TestMethod]
@@ -607,24 +598,6 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             Assert.IsNotNull(readerFlagField);
             Assert.AreEqual(enableFlag, (bool)readerFlagField.GetValue(quorumReader),
                 $"QuorumReader.enableBarrierEarlyYieldOn429 must be {enableFlag} through the full constructor chain.");
-        }
-
-        private static ConsistencyWriter CreateConsistencyWriter(bool enableBarrierEarlyYieldOn429)
-        {
-            return CreateConsistencyWriterForBarrierTest(
-                enableBarrierEarlyYieldOn429,
-                Mock.Of<TransportClient>(),
-                new AddressSelector(Mock.Of<IAddressResolver>(), Protocol.Tcp));
-        }
-
-        private static QuorumReader CreateQuorumReader(bool enableBarrierEarlyYieldOn429)
-        {
-            AddressSelector addressSelector = new AddressSelector(Mock.Of<IAddressResolver>(), Protocol.Tcp);
-            return CreateQuorumReaderForBarrierTest(
-                enableBarrierEarlyYieldOn429,
-                CreateStoreReader(Mock.Of<TransportClient>(), addressSelector),
-                addressSelector,
-                Mock.Of<TransportClient>());
         }
 
         private static DocumentClientException CreateDocumentClientException(
