@@ -1877,22 +1877,17 @@ namespace Microsoft.Azure.Cosmos.Json
                 bool isFieldName,
                 IJsonStringDictionary jsonStringDictionary)
             {
-                if ((uint)targetOffset >= (uint)rootBuffer.Length)
-                {
-                    throw new JsonInvalidTokenException();
-                }
-
-                byte targetTypeMarker = rootBuffer.Span[targetOffset];
-                if (!JsonBinaryEncoding.TypeMarker.IsString(targetTypeMarker)
-                    || JsonBinaryEncoding.TypeMarker.IsReferenceString(targetTypeMarker))
+                if (!JsonBinaryEncoding.IsValidReferenceStringTarget(rootBuffer, targetOffset))
                 {
                     // Writer invariant (see FixReferenceStringOffsets): an StrR
                     // marker always resolves to a string literal in exactly one
                     // hop. Anything else (another reference, an array/object
-                    // marker, a number, etc.) is malformed and -- left alone --
-                    // would let a hostile buffer build cycles or non-string
-                    // targets that recurse through ForceRewriteRawJsonValue.
-                    // Reject up front.
+                    // marker, a number, etc.) -- including an out-of-bounds or
+                    // negative offset -- is malformed and, left alone, would let
+                    // a hostile buffer build cycles or non-string targets that
+                    // recurse through ForceRewriteRawJsonValue. The shared
+                    // IsValidReferenceStringTarget predicate is the same gate the
+                    // binary reader uses; reject up front.
                     throw new JsonInvalidTokenException();
                 }
 

@@ -526,7 +526,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
+            FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken)
             {
                 return mockIterator.Object;
             }
