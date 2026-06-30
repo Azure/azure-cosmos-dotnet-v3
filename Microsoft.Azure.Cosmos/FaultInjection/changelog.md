@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### <a name="unreleased-faultinjection"/> Unreleased
 
 #### Features Added
+- Distributed Transactions: Adds fault injection support for distributed transactions
 
 #### Breaking Changes
 

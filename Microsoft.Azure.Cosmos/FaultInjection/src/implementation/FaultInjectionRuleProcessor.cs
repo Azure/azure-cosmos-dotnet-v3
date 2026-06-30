@@ -195,7 +195,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     result.GetSuppressServiceRequests(),
                     result.GetInjectionRate(),
                     this.applicationContext, 
-                    this.globalEndpointManager));
+                    this.globalEndpointManager,
+                    result.GetDistributedTransactionResponse(),
+                    result.GetDistributedTransactionResponses()));
         }
 
         private async Task<IFaultInjectionRuleInternal> GetEffectiveCustomServerErrorRule(FaultInjectionRule rule)
@@ -354,6 +356,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 FaultInjectionOperationType.MetadataPartitionKeyRange => OperationType.ReadFeed,
                 FaultInjectionOperationType.MetadataRefreshAddresses => OperationType.Invalid,
                 FaultInjectionOperationType.MetadataQueryPlan => OperationType.QueryPlan,
+                FaultInjectionOperationType.DistributedReadTransaction => OperationType.Read,
+                FaultInjectionOperationType.DistributedWriteTransaction => OperationType.CommitDistributedTransaction,
                 _ => throw new ArgumentException($"FaultInjectionOperationType: {faultInjectionOperationType} is not supported"),
             };
         }
@@ -376,6 +380,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 FaultInjectionOperationType.MetadataPartitionKeyRange => ResourceType.PartitionKeyRange,
                 FaultInjectionOperationType.MetadataRefreshAddresses => ResourceType.Address,
                 FaultInjectionOperationType.MetadataQueryPlan => ResourceType.Document,
+                FaultInjectionOperationType.DistributedReadTransaction => ResourceType.DistributedTransactionBatch,
+                FaultInjectionOperationType.DistributedWriteTransaction => ResourceType.DistributedTransactionBatch,
                 _ => throw new ArgumentException($"FaultInjectionOperationType: {faultInjectionOperationType} is not supported"),
             };
         }

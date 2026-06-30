@@ -990,6 +990,43 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     .ReadItem(null, new PartitionKey("pk"), "item-id"));
         }
 
+        // Fault injection: wire-contract + retry-flow coverage for the full DTX SDK response catalog.
+
+        [TestMethod]
+        [Description("A1+A5 (core): A retriable error body (isRetriable:true) drives the committer outer loop to retry; " +
+            "after N failures it succeeds, and the wire contract (idempotency token, operation type, resource type/URI, " +
+            "request body) is byte-identical across every attempt.")]
+        public async Task WriteTransaction_RetriableFault_RetriesAndPreservesWireContract()
+        {
+            const int failuresBeforeSuccess = 2;
+            int attempt = 0;
+
+            DistributedTransactionMockHandler handler = new DistributedTransactionMockHandler(request =>
+            {
+                int current = Interlocked.Increment(ref attempt);
+                return Task.FromResult(current <= failuresBeforeSuccess
+                    ? this.BuildMockResponse((HttpStatusCode)449, BuildRetriableErrorJson(), (SubStatusCodes)5352)
+                    : this.BuildMockResponse(HttpStatusCode.OK, BuildSuccessResponseJson(1)));
+            });
+
+            using CosmosClient client = this.CreateMockClient(handler);
+            ToDoActivity doc = ToDoActivity.CreateRandomToDoActivity();
+
+            DistributedTransactionResponse response = await client.CreateDistributedWriteTransaction()
+                .CreateItem(this.GetContainerForClient(client, this.container), new PartitionKey(doc.pk), doc.id, doc)
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.IsTrue(response.IsSuccessStatusCode, "Committer should retry the retriable fault and ultimately succeed.");
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+
+            AssertWireContractStableAcrossRequests(
+                handler,
+                OperationType.CommitDistributedTransaction.ToOperationTypeString(),
+                failuresBeforeSuccess + 1);
+
+            response.Dispose();
+        }
+
         // Helpers
 
         private Container GetContainerForClient(CosmosClient client, Container sourceContainer)
@@ -1050,18 +1087,131 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return $@"{{""operationResponses"":[{string.Join(",", results)}]}}";
         }
 
+        // Fault-injection helpers
+
+        /// <summary>
+        /// Builds a mock DTC <see cref="ResponseMessage"/> and, optionally, stamps the wire
+        /// sub-status (<c>x-ms-substatus</c>) and <c>Retry-After</c> headers the SDK reads from the
+        /// gateway response. The committer derives the surfaced sub-status from
+        /// <see cref="Headers.SubStatusCode"/> and the retry delay hint from
+        /// <see cref="Headers.RetryAfter"/>, so simulating those wire codes requires setting them here.
+        /// </summary>
+        private ResponseMessage BuildMockResponse(
+            HttpStatusCode statusCode,
+            string responseBody,
+            SubStatusCodes? subStatusCode,
+            TimeSpan? retryAfter = null)
+        {
+            ResponseMessage response = this.BuildMockResponse(statusCode, responseBody);
+
+            if (subStatusCode.HasValue)
+            {
+                response.Headers.SubStatusCode = subStatusCode.Value;
+            }
+
+            if (retryAfter.HasValue)
+            {
+                response.Headers.RetryAfter = retryAfter.Value;
+            }
+
+            return response;
+        }
+
+        /// <summary>
+        /// Builds the minimal JSON body the coordinator returns to mark a transaction outcome as
+        /// retriable. The committer's outer loop retries iff the response carries
+        /// <c>isRetriable:true</c> in its body (see <c>DistributedTransactionResponse</c>).
+        /// </summary>
+        private static string BuildRetriableErrorJson(string diagnosticString = "injected-retriable-fault")
+        {
+            return $@"{{""{DistributedTransactionSerializer.IsRetriable}"":true,""{DistributedTransactionSerializer.DiagnosticString}"":""{diagnosticString}""}}";
+        }
+
+        /// <summary>
+        /// Asserts that every DTC request the committer issued is byte-identical on the wire:
+        /// same idempotency token, operation type, resource type, resource URI and request body.
+        /// This is the core retry-flow invariant — a retry must replay the exact same transaction.
+        /// </summary>
+        private static void AssertWireContractStableAcrossRequests(
+            DistributedTransactionMockHandler handler,
+            string expectedOperationType,
+            int expectedRequestCount)
+        {
+            Assert.AreEqual(expectedRequestCount, handler.RequestCount,
+                $"Committer should have issued exactly {expectedRequestCount} wire request(s).");
+            Assert.IsTrue(handler.RequestCount > 0, "At least one DTC request must have been captured.");
+
+            CapturedDtcRequest first = handler.CapturedRequests[0];
+
+            Assert.IsFalse(string.IsNullOrEmpty(first.IdempotencyToken), "Idempotency token header must be present on the wire.");
+            Assert.IsTrue(Guid.TryParse(first.IdempotencyToken, out _), "Idempotency token must be a valid GUID.");
+            Assert.AreEqual(expectedOperationType, first.OperationType, "Operation type header mismatch.");
+            Assert.AreEqual(ResourceType.DistributedTransactionBatch.ToResourceTypeString(), first.ResourceType, "Resource type header mismatch.");
+            Assert.IsTrue(first.RequestUri?.EndsWith("/dtc", StringComparison.OrdinalIgnoreCase) == true,
+                $"Resource URI must target the '/dtc' endpoint but was '{first.RequestUri}'.");
+
+            for (int i = 1; i < handler.RequestCount; i++)
+            {
+                CapturedDtcRequest current = handler.CapturedRequests[i];
+                Assert.AreEqual(first.IdempotencyToken, current.IdempotencyToken,
+                    $"Idempotency token changed on retry attempt {i}: '{first.IdempotencyToken}' -> '{current.IdempotencyToken}'.");
+                Assert.AreEqual(first.OperationType, current.OperationType,
+                    $"Operation type changed on retry attempt {i}.");
+                Assert.AreEqual(first.ResourceType, current.ResourceType,
+                    $"Resource type changed on retry attempt {i}.");
+                Assert.AreEqual(first.RequestUri, current.RequestUri,
+                    $"Resource URI changed on retry attempt {i}.");
+                Assert.AreEqual(first.Body, current.Body,
+                    $"Request body changed on retry attempt {i}; the wire contract must be replayed byte-identically.");
+            }
+        }
+
         // Mock handler
+
+        /// <summary>
+        /// Immutable snapshot of a single DTC request as it appeared on the wire, captured by
+        /// <see cref="DistributedTransactionMockHandler"/>. Used by the fault-injection tests to
+        /// assert that the wire contract (idempotency token, operation type, resource type,
+        /// resource URI and request body) is preserved byte-identically across committer retries.
+        /// </summary>
+        private sealed class CapturedDtcRequest
+        {
+            public string Body { get; set; }
+
+            public string IdempotencyToken { get; set; }
+
+            public string OperationType { get; set; }
+
+            public string ResourceType { get; set; }
+
+            public string RequestUri { get; set; }
+        }
 
         /// <summary>
         /// Intercepts DTC commit requests (URLs ending in "/dtc"), captures the serialized
         /// request body, and returns the response produced by <see cref="MockResponseFactory"/>.
         /// All other requests are forwarded to the next handler in the pipeline (the emulator).
+        ///
+        /// In addition to <see cref="CapturedRequestBody"/> (the body of the most recent request,
+        /// preserved for existing tests), the handler records a per-request <see cref="CapturedDtcRequest"/>
+        /// snapshot in <see cref="CapturedRequests"/> so retry-flow tests can assert wire-contract
+        /// stability across every attempt the committer issues.
         /// </summary>
         private class DistributedTransactionMockHandler : RequestHandler
         {
             private readonly Func<RequestMessage, Task<ResponseMessage>> mockResponseFactory;
+            private readonly List<CapturedDtcRequest> capturedRequests = new List<CapturedDtcRequest>();
 
             public string CapturedRequestBody { get; private set; }
+
+            /// <summary>
+            /// The full ordered list of DTC requests intercepted by this handler, one entry per
+            /// attempt. <see cref="RequestCount"/> therefore equals the number of wire requests the
+            /// committer issued (1 = no retry, N+1 = N retries).
+            /// </summary>
+            public IReadOnlyList<CapturedDtcRequest> CapturedRequests => this.capturedRequests;
+
+            public int RequestCount => this.capturedRequests.Count;
 
             public DistributedTransactionMockHandler(Func<RequestMessage, Task<ResponseMessage>> mockResponseFactory)
             {
@@ -1074,13 +1224,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 if (request.RequestUriString?.EndsWith("/dtc", StringComparison.OrdinalIgnoreCase) == true)
                 {
+                    string body = null;
                     if (request.Content != null)
                     {
                         using MemoryStream ms = new MemoryStream();
                         await request.Content.CopyToAsync(ms);
-                        this.CapturedRequestBody = Encoding.UTF8.GetString(ms.ToArray());
+                        body = Encoding.UTF8.GetString(ms.ToArray());
                         request.Content.Position = 0;
                     }
+
+                    this.CapturedRequestBody = body;
+                    this.capturedRequests.Add(new CapturedDtcRequest
+                    {
+                        Body = body,
+                        IdempotencyToken = request.Headers[HttpConstants.HttpHeaders.IdempotencyToken],
+                        OperationType = request.Headers[HttpConstants.HttpHeaders.OperationType],
+                        ResourceType = request.Headers[HttpConstants.HttpHeaders.ResourceType],
+                        RequestUri = request.RequestUriString,
+                    });
 
                     return await this.mockResponseFactory(request);
                 }

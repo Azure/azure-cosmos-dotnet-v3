@@ -89,6 +89,16 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <summary>
         /// 401:5013 AAD token revoked
         /// </summary>
-        AadTokenRevoked
+        AadTokenRevoked,
+
+        /// <summary>
+        /// Injects a synthesized distributed-transaction coordinator error response. The injected envelope
+        /// can be any documented coordinator outcome — retriable or terminal — described by
+        /// <see cref="FaultInjectionServerErrorResultBuilder.WithDistributedTransactionResponse"/>
+        /// (status / sub-status, per-operation results, and the body <c>isRetriable</c> flag).
+        /// Only supported for <see cref="FaultInjectionOperationType.DistributedReadTransaction"/>
+        /// and <see cref="FaultInjectionOperationType.DistributedWriteTransaction"/> operation types.
+        /// </summary>
+        DistributedTransactionCoordinatorError
     }
 }

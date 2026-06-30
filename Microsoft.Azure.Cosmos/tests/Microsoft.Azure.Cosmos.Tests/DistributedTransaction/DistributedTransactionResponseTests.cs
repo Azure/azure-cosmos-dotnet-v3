@@ -328,6 +328,52 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "Status must remain 207 when all operation results are FailedDependency (excluded from promotion).");
         }
 
+        [TestMethod]
+        [Description("A 207 MultiStatus response with a leading FailedDependency (424) skips the 424 marker and promotes the next genuine failure (409).")]
+        public async Task FromResponseMessage_MultiStatus_SkipsFailedDependency_PromotesNextFailure()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 2);
+
+            // index 0 is a FailedDependency (424) cascade marker — excluded; index 1 fails with 409
+            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":{(int)StatusCodes.FailedDependency}}},{{""index"":1,""statusCode"":409}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage((HttpStatusCode)StatusCodes.MultiStatus, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.Conflict, response.StatusCode,
+                "Promotion must skip the leading FailedDependency (424) marker and promote the next genuine failure (409).");
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.AreEqual(2, response.Count);
+        }
+
+        [TestMethod]
+        [Description("A 207 MultiStatus response with a per-op RetryWith (449) followed by NotFound (404) promotes the overall status to 449 (449 is not excluded from promotion).")]
+        public async Task FromResponseMessage_MultiStatus_PromotesRetryWith449()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 2);
+
+            // index 0 fails with 449 RetryWith; index 1 fails with 404 NotFound
+            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":{(int)StatusCodes.RetryWith}}},{{""index"":1,""statusCode"":404}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage((HttpStatusCode)StatusCodes.MultiStatus, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual((HttpStatusCode)StatusCodes.RetryWith, response.StatusCode,
+                "The first failing operation status (449 RetryWith) must be promoted to the overall response status.");
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.AreEqual(2, response.Count);
+        }
+
         // Idempotency token resolution
 
         [DataTestMethod]
@@ -1270,6 +1316,227 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(typed.Resource);
         }
 
+        // Non-seekable response content / stream buffering (Negative Tests.md - Response Content section)
+        //
+        // FromResponseMessageAsync must buffer a non-seekable response stream into a seekable
+        // MemoryStream (DistributedTransactionResponse.cs L239-245) before parsing, so that every
+        // parse path (success, per-op error, malformed JSON, 207 promotion) behaves identically
+        // whether or not the transport handed back a seekable stream. The buffered MemoryStream is
+        // disposed in the finally block (L295); the returned response must remain usable afterwards
+        // because it holds the parsed results, not the stream.
+        //
+        // NOTE: mid-copy cancellation is intentionally NOT tested. The source calls
+        // Content.CopyToAsync(memoryStream) WITHOUT a CancellationToken (L242), so the SDK does not
+        // honor cancellation during buffering. Only the entry-point ThrowIfCancellationRequested
+        // (L224) is observable and is covered below.
+
+        [TestMethod]
+        [Description("A seekable stream positioned at 0 (the common transport case) parses successfully without rewinding.")]
+        public async Task FromResponseMessage_SeekableContent_AtPositionZero_ParsesSuccessfully()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            Assert.IsTrue(responseMessage.Content.CanSeek);
+            Assert.AreEqual(0, responseMessage.Content.Position);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.IsTrue(response.IsSuccessStatusCode);
+            Assert.AreEqual(1, response.Count);
+            Assert.AreEqual(HttpStatusCode.Created, response[0].StatusCode);
+        }
+
+        [TestMethod]
+        [Description("A seekable stream positioned at EOF is parsed from its current position (the SDK does not rewind seekable streams), so the body reads as empty. On a success status this surfaces as InternalServerError (invalid server response), locking down the no-rewind behavior.")]
+        public async Task FromResponseMessage_SeekableContent_AtPositionEnd_SuccessStatus_ReturnsInternalServerError()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            Assert.IsTrue(responseMessage.Content.CanSeek);
+
+            // Position the seekable stream at EOF. The SDK only buffers/rewinds non-seekable
+            // streams, so a seekable stream is parsed from its current position -> empty read.
+            responseMessage.Content.Seek(0, SeekOrigin.End);
+            Assert.AreEqual(responseMessage.Content.Length, responseMessage.Content.Position);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.InternalServerError, response.StatusCode,
+                "A success status with an empty (EOF) body must surface as InternalServerError because the server contract requires a parseable body on success.");
+            Assert.IsFalse(response.IsSuccessStatusCode);
+        }
+
+        [TestMethod]
+        [Description("A non-seekable success response is buffered into a seekable stream and parsed, yielding the per-op results.")]
+        public async Task FromResponseMessage_NonSeekableContent_SuccessStatus_BuffersAndParses()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
+            ResponseMessage responseMessage = BuildNonSeekableResponseMessage(HttpStatusCode.OK, json);
+
+            Assert.IsFalse(responseMessage.Content.CanSeek, "Test setup must provide a non-seekable stream.");
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.IsTrue(response.IsSuccessStatusCode);
+            Assert.AreEqual(1, response.Count);
+            Assert.AreEqual(HttpStatusCode.Created, response[0].StatusCode);
+        }
+
+        [TestMethod]
+        [Description("A non-seekable error response is buffered and parsed, surfacing the per-operation error status.")]
+        public async Task FromResponseMessage_NonSeekableContent_ErrorStatus_SurfacesPerOpError()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":409}]}";
+            ResponseMessage responseMessage = BuildNonSeekableResponseMessage(HttpStatusCode.Conflict, json);
+
+            Assert.IsFalse(responseMessage.Content.CanSeek);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.Conflict, response.StatusCode);
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.AreEqual(1, response.Count);
+            Assert.AreEqual(HttpStatusCode.Conflict, response[0].StatusCode);
+        }
+
+        [TestMethod]
+        [Description("A non-seekable response with malformed JSON and a success status is buffered, fails to deserialize, and surfaces 500 with a deserialization-failure message.")]
+        public async Task FromResponseMessage_NonSeekableContent_MalformedJson_SuccessStatus_ReturnsInternalServerError()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            ResponseMessage responseMessage = BuildNonSeekableResponseMessage(HttpStatusCode.OK, "{invalid-json");
+
+            Assert.IsFalse(responseMessage.Content.CanSeek);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.InternalServerError, response.StatusCode);
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.AreEqual(ClientResources.ServerResponseDeserializationFailure, response.ErrorMessage);
+        }
+
+        [TestMethod]
+        [Description("A non-seekable response with malformed JSON and an error status is buffered and its results are padded with the error status code.")]
+        public async Task FromResponseMessage_NonSeekableContent_MalformedJson_ErrorStatus_PadsResults()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 2);
+            ResponseMessage responseMessage = BuildNonSeekableResponseMessage(HttpStatusCode.Conflict, "{invalid-json");
+
+            Assert.IsFalse(responseMessage.Content.CanSeek);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.Conflict, response.StatusCode);
+            Assert.AreEqual(2, response.Count);
+
+            for (int i = 0; i < response.Count; i++)
+            {
+                Assert.AreEqual(HttpStatusCode.Conflict, response[i].StatusCode);
+            }
+        }
+
+        [TestMethod]
+        [Description("A non-seekable 207 MultiStatus response is buffered and promotes the first non-dependency failure to the overall status, identically to the seekable path.")]
+        public async Task FromResponseMessage_NonSeekableContent_MultiStatus_PromotesFirstFailure()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 2);
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201},{""index"":1,""statusCode"":409}]}";
+            ResponseMessage responseMessage = BuildNonSeekableResponseMessage((HttpStatusCode)StatusCodes.MultiStatus, json);
+
+            Assert.IsFalse(responseMessage.Content.CanSeek);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.Conflict, response.StatusCode,
+                "Non-seekable 207 must promote to the first failing op (409), matching seekable behavior.");
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.AreEqual(2, response.Count);
+        }
+
+        [TestMethod]
+        [Description("A pre-cancelled CancellationToken short-circuits at the entry point and throws OperationCanceledException before any parsing.")]
+        public async Task FromResponseMessage_PreCancelledToken_ThrowsOperationCanceled()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+                () => DistributedTransactionResponse.FromResponseMessageAsync(
+                    responseMessage,
+                    serverRequest,
+                    MockCosmosUtil.Serializer,
+                    NoOpTrace.Singleton,
+                    cts.Token));
+        }
+
+        [TestMethod]
+        [Description("After a non-seekable response is parsed, the internally buffered MemoryStream is disposed but the returned response remains fully usable (Count, indexer, status).")]
+        public async Task FromResponseMessage_NonSeekableContent_InternalBufferDisposed_ResponseRemainsUsable()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
+            ResponseMessage responseMessage = BuildNonSeekableResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            // The internal buffer is disposed in the finally block; the response must still be readable.
+            Assert.AreEqual(1, response.Count);
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.AreEqual(HttpStatusCode.Created, response[0].StatusCode);
+        }
+
         // Helpers
 
         private sealed class TestDocument
@@ -1314,6 +1581,72 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 Content = new MemoryStream(Encoding.UTF8.GetBytes(json))
             };
+        }
+
+        /// <summary>
+        /// Builds a <see cref="ResponseMessage"/> whose content stream is NOT seekable, forcing
+        /// <see cref="DistributedTransactionResponse.FromResponseMessageAsync"/> to buffer it into a
+        /// seekable <see cref="MemoryStream"/> before parsing.
+        /// </summary>
+        private static ResponseMessage BuildNonSeekableResponseMessage(HttpStatusCode statusCode, string json)
+        {
+            return new ResponseMessage(statusCode)
+            {
+                Content = new NonSeekableStream(Encoding.UTF8.GetBytes(json))
+            };
+        }
+
+        /// <summary>
+        /// A forward-only, non-seekable read stream backed by a byte buffer. Mirrors the kind of
+        /// stream the transport may hand back when a response is not seekable.
+        /// </summary>
+        private sealed class NonSeekableStream : Stream
+        {
+            private readonly MemoryStream inner;
+
+            public NonSeekableStream(byte[] buffer)
+            {
+                this.inner = new MemoryStream(buffer);
+            }
+
+            public override bool CanRead => true;
+
+            public override bool CanSeek => false;
+
+            public override bool CanWrite => false;
+
+            public override long Length => throw new NotSupportedException();
+
+            public override long Position
+            {
+                get => throw new NotSupportedException();
+                set => throw new NotSupportedException();
+            }
+
+            public override void Flush()
+            {
+            }
+
+            public override int Read(byte[] buffer, int offset, int count) => this.inner.Read(buffer, offset, count);
+
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+                => this.inner.ReadAsync(buffer, offset, count, cancellationToken);
+
+            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+            public override void SetLength(long value) => throw new NotSupportedException();
+
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    this.inner.Dispose();
+                }
+
+                base.Dispose(disposing);
+            }
         }
 
         /// <summary>

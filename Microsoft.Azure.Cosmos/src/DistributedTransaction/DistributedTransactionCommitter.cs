@@ -27,10 +27,10 @@ namespace Microsoft.Azure.Cosmos
         // against unbounded wire-request amplification when delays are degenerate.
         internal const int MaxIsRetriableRetryCount = 10;
         // Default cumulative planned-delay budget. With default 1s base and maxExponent=5 (±25% jitter),
-        // the budget is the binding constraint (~4-5 retries) rather than the attempt-count cap (10).
+        // the budget is the binding constraint (~7-8 retries) rather than the attempt-count cap (10).
         // Mirrors ResourceThrottleRetryPolicy's cumulative cap pattern. Overridable via the internal
         // constructor for tests that need to exercise the attempt-count cap with realistic delays.
-        internal static readonly TimeSpan MaxCumulativeRetryDelay = TimeSpan.FromSeconds(30);
+        internal static readonly TimeSpan MaxCumulativeRetryDelay = TimeSpan.FromSeconds(120);
         private const int RetryMaxExponent = 5; // ~32 s max base delay before jitter
         private static readonly TimeSpan DefaultRetryBaseDelay = TimeSpan.FromSeconds(1);
         private static readonly string ResourceUri = Paths.OperationsPathSegment + "/" + Paths.Operations_Dtc;
