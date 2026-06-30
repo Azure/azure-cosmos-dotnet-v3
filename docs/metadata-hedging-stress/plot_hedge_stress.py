@@ -3,6 +3,7 @@
 import csv
 import os
 import sys
+import textwrap
 
 import matplotlib
 matplotlib.use("Agg")
@@ -10,6 +11,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else "."
+
+
+def add_analysis(fig, shows, proves, width=140):
+    """Embed a 'what it shows / what it proves' analysis box at the bottom of the figure."""
+    body = (textwrap.fill("WHAT IT SHOWS:   " + shows, width=width) + "\n\n" +
+            textwrap.fill("WHAT IT PROVES:  " + proves, width=width))
+    nlines = body.count("\n") + 1
+    reserve_in = 0.95 + nlines * 0.145
+    bottom = min(0.46, reserve_in / fig.get_size_inches()[1])
+    fig.subplots_adjust(bottom=bottom)
+    fig.text(0.012, 0.012, body, ha="left", va="bottom", fontsize=8.4, linespacing=1.3,
+             bbox=dict(boxstyle="round,pad=0.6", facecolor="#f4f7f5", edgecolor="#1e8449", linewidth=1.0))
 
 def load_scenarios(path):
     rows = []
@@ -35,7 +48,7 @@ part_counts = [100, 10000, 50000]
 labels = [f"Degraded-P{p}-HEDGE_ON" for p in part_counts]
 region_order = ["West US 2", "East US", "South Central US", "Central US", "North Central US"]
 
-fig, axes = plt.subplots(1, len(labels), figsize=(16, 5), sharey=False)
+fig, axes = plt.subplots(1, len(labels), figsize=(16, 7.2), sharey=False)
 for ax, lab, p in zip(axes, labels, part_counts):
     sends = {r["region"]: int(r["sendCount"]) for r in regions if r["label"] == lab}
     vals = [sends.get(rg, 0) for rg in region_order]
@@ -51,11 +64,16 @@ fig.suptitle("Per-region metadata calls under degraded hub (West US 2 = slow hub
              "Hedge fan-out concentrates on the 2nd preferred region (East US); other regions untouched",
              fontsize=12)
 fig.tight_layout(rect=[0, 0, 1, 0.92])
+add_analysis(fig,
+    "[Simulated worst-case] Per-region metadata calls under a degraded hub (red = slow hub West US 2) for 100, 10k and "
+    "50k partitions, hedging ON.",
+    "Even at 50,000 partitions the hedge fan-out concentrates on the single 2nd-preferred region (East US); the other "
+    "three regions receive nothing — fan-out does not scale with partition count.")
 fig.savefig(os.path.join(OUT, "g1_calls_per_region.png"), dpi=130)
 plt.close(fig)
 
 # ---- Graph 2: PkRange refresh reads spawned vs hedged vs budget-exhausted ----
-fig, ax = plt.subplots(figsize=(10, 6))
+fig, ax = plt.subplots(figsize=(10, 7.8))
 x = np.arange(len(part_counts))
 w = 0.27
 spawned = [int(by_label[l]["totalOps"]) for l in labels]
@@ -76,11 +94,16 @@ for bars in (b1, b2, b3):
         h = b.get_height()
         ax.text(b.get_x() + b.get_width()/2, h, f"{int(h):,}", ha="center", va="bottom", fontsize=8)
 fig.tight_layout()
+add_analysis(fig,
+    "[Simulated] PkRange refresh reads spawned vs how many hedged vs how many were budget-exhausted, by partition count "
+    "(log scale), hedging ON.",
+    "Hedges fired stay far below reads spawned as partitions grow (most spill to budget-exhausted primary-only) — the "
+    "number of secondary requests is bounded by the budget, not by partition count.")
 fig.savefig(os.path.join(OUT, "g2_spawned_vs_hedged.png"), dpi=130)
 plt.close(fig)
 
 # ---- Graph 3: REAL-timing latency win (production threshold 1.5s, hub 5-10s) ----
-fig, ax = plt.subplots(figsize=(11, 6))
+fig, ax = plt.subplots(figsize=(11, 7.8))
 rt = by_label.get("Degraded-P100-REALTIME-HEDGE_ON")
 if rt:
     pcts = ["p50", "p95", "p99", "max"]
@@ -100,11 +123,16 @@ if rt:
                  f"{int(rt['hedgeFired'])}/100 ops hedged")
     ax.legend(loc="center right")
 fig.tight_layout()
+add_analysis(fig,
+    "[Simulated] PkRange refresh latency percentiles at TRUE production timing (1.5 s threshold, 5-10 s hub delay, no "
+    "compression), 100 partitions, hedging ON, against the OFF 5-10 s baseline band.",
+    "At real production timing the median refresh recovers to ~1.5 s (hedge wins from East US) versus the 5-10 s every-op "
+    "stall with hedging off — the win is not an artifact of the 10x time-compression used in the other graphs.")
 fig.savefig(os.path.join(OUT, "g3_realtime_latency_win.png"), dpi=130)
 plt.close(fig)
 
 # ---- Graph 4: max concurrent secondary in-flight vs partitions (budget cap = 8) ----
-fig, ax = plt.subplots(figsize=(10, 6))
+fig, ax = plt.subplots(figsize=(10, 7.8))
 maxsec = [int(by_label[l]["maxConcurrentSecondary"]) for l in labels]
 bars = ax.bar([f"{p:,}" for p in part_counts], maxsec, color="#8e44ad", width=0.5)
 ax.axhline(8, color="red", linestyle="--", linewidth=2, label="per-client budget cap = 8")
@@ -117,11 +145,16 @@ for b, v in zip(bars, maxsec):
     ax.text(b.get_x() + b.get_width()/2, v, str(v), ha="center", va="bottom", fontsize=11, fontweight="bold")
 ax.legend()
 fig.tight_layout()
+add_analysis(fig,
+    "[Simulated] Maximum number of concurrent secondary (hedge) requests in flight for 100, 10k and 50k simultaneous "
+    "PkRange-Gone refreshes; dashed line = budget cap 8.",
+    "The concurrent secondary fan-out stays pinned at 8 (the per-client budget) even under a 50,000-refresh storm — the "
+    "Gateway is structurally protected from a hedge flood.")
 fig.savefig(os.path.join(OUT, "g4_secondary_inflight_cap.png"), dpi=130)
 plt.close(fig)
 
 # ---- Graph 5: healthy baseline — no amplification ----
-fig, ax = plt.subplots(figsize=(9, 5.5))
+fig, ax = plt.subplots(figsize=(9, 7.4))
 hb = by_label.get("Healthy-baseline")
 if hb:
     cats = ["ops", "hedges fired", "secondary calls"]
@@ -135,6 +168,10 @@ if hb:
                  "No amplification when the primary is healthy")
     ax.set_ylabel("count")
 fig.tight_layout()
+add_analysis(fig,
+    "[Simulated] Healthy baseline (hub fast): total ops vs hedges fired vs secondary calls, hedging ON.",
+    "With a healthy hub, hedges fired = 0 and secondary calls = 0 — confirming no amplification or extra load when the "
+    "primary is responsive.")
 fig.savefig(os.path.join(OUT, "g5_healthy_no_amplification.png"), dpi=130)
 plt.close(fig)
 

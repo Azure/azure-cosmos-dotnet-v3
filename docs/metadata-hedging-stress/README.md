@@ -61,15 +61,14 @@ See `scenarios.csv`, `regions.csv`, `summary.txt`.
 | **P=100 REAL timing (1.5 s / 5–10 s)** | 100 | 56 | 44 | **8** | **1.57 s** | 9.91 s |
 
 ### Graphs
-* `g1_calls_per_region.png` — per‑region metadata calls. The hub takes every primary send;
-  hedge fan‑out concentrates on the **2nd preferred region (East US)**; the other three
-  regions are never touched.
-* `g2_spawned_vs_hedged.png` — PkRange refreshes spawned vs hedged vs budget‑exhausted.
-* `g3_realtime_latency_win.png` — production‑timing latency: median recovered to **1.57 s**
-  vs **5–10 s** with hedging off.
-* `g4_secondary_inflight_cap.png` — **the key graph**: max concurrent secondary requests
-  stays **= 8** (the per‑client budget) whether 100 or **50,000** partitions storm at once.
-* `g5_healthy_no_amplification.png` — healthy hub ⇒ **zero** hedges, **zero** secondary calls.
+
+Each PNG now carries an embedded **"What it shows / What it proves"** analysis box.
+
+* **`g1_calls_per_region.png`** — *Shows:* per-region metadata calls under a degraded hub for 100/10k/50k partitions. *Proves:* even at 50,000 partitions the hedge fan-out stays on the single 2nd-preferred region (East US); fan-out does not scale with partition count.
+* **`g2_spawned_vs_hedged.png`** — *Shows:* PkRange refreshes spawned vs hedged vs budget-exhausted by partition count. *Proves:* hedges fired stay far below reads spawned (most spill to primary-only) — secondary requests are bounded by the budget, not partition count.
+* **`g3_realtime_latency_win.png`** — *Shows:* refresh latency at true production timing (1.5 s threshold, 5–10 s hub, no compression). *Proves:* median recovered to **1.57 s** vs **5–10 s** off — the win isn't an artifact of time-compression.
+* **`g4_secondary_inflight_cap.png`** — **the key graph.** *Shows:* max concurrent secondary requests for 100/10k/50k simultaneous refreshes. *Proves:* fan-out stays pinned at **8** (the per-client budget) even under a 50,000-refresh storm — the Gateway can't be flooded.
+* **`g5_healthy_no_amplification.png`** — *Shows:* healthy baseline ops/hedges/secondary calls. *Proves:* healthy hub ⇒ **zero** hedges, **zero** secondary calls.
 
 ## Conclusions
 

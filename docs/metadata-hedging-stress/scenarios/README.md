@@ -59,13 +59,14 @@ first reads; OK period = 1,500 reads; degraded = 3,000 reads with ~30 % hitting
 (Times are 10×-compressed; multiply by ~10 for the production-scale equivalent.)
 
 ### Graphs
-* `s1_refresh_latency_pr_vs_main.png` — refresh-bearing read latency, PR vs main (headline).
-* `s2_timeline_s3.png` — S3 timeline (cold → OK → degraded): main's high stall band vs PR's
-  recovered band.
-* `s3_calls_per_region.png` — per-region metadata calls: main hits only the hub; PR adds
-  bounded hedges to **one** secondary (East US); the other three regions are untouched.
-* `s4_hedges_vs_budget.png` — bounded amplification: hedged vs budget-exhausted per phase.
-* `s5_healthy_no_amplification.png` — S1: PR == main, 0 hedges, 0 secondary calls.
+
+Each PNG now carries an embedded **"What it shows / What it proves"** analysis box.
+
+* **`s1_refresh_latency_pr_vs_main.png`** — *Shows:* p50/p99 of only the refresh-bearing reads, PR vs main. *Proves:* among reads that trigger a refresh, hedging cuts the median ~65 % in the degraded phase.
+* **`s2_timeline_s3.png`** — *Shows:* per-op latency over the S3 run (cold → OK → degraded). *Proves:* main stalls on every slow refresh (high band); PR collapses most via one hedge (lower band) — visualizes when/why the win occurs.
+* **`s3_calls_per_region.png`** — *Shows:* metadata calls per region, main vs PR. *Proves:* main hits only the hub; PR adds bounded hedges to **one** secondary (East US); the other three regions are untouched.
+* **`s4_hedges_vs_budget.png`** — *Shows:* per phase, hedged vs budget-exhausted (PR). *Proves:* bounded amplification — beyond the budget (8) excess refreshes revert to primary-only.
+* **`s5_healthy_no_amplification.png`** — *Shows:* S1 healthy, main vs PR + hedge/secondary counts. *Proves:* healthy hub ⇒ PR == main, **0** hedges, **0** secondary calls.
 
 ## Conclusions
 1. **Healthy (S1):** PR is identical to main — **0 hedges, 0 secondary calls**.

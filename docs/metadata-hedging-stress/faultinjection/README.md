@@ -51,13 +51,21 @@ OFF lands at ~4 s; ON dispatches a hedge to a healthy secondary at the 1.5 s thr
 | Mixed — **end-to-end** (70 % warm reads) | 48 ms | 34 ms | ~0 | 4,045 ms | 1,923 ms | 1 / 0 |
 
 ### Graphs
-- `fi1_latency_pr_vs_main.png` — headline p50/p99, PR vs main, at the four points.
-- `fi2_meter_crosscheck.png` — hedges fire **only** with the PR; main = 0 (SDK meter).
-- `fi3_saturating_budget_cdf.png` — latency CDF of the saturating storm: ~67 % of PR ops
-  recover at ~1.6 s (hedged), the **budget-exhausted ~33 % (16/48)** fall back to
-  primary-only and match main at ~4 s. This is the per-client budget (8) bound, observed.
-- `fi4_mixed_e2e_honest.png` — mixed workload end-to-end: **p50 unchanged** (warm reads
-  dominate), only the metadata-refresh tail (p95/p99) improves.
+
+Each PNG now carries an embedded **"What it shows / What it proves"** analysis box.
+
+- **`fi1_latency_pr_vs_main.png`**
+  - *Shows:* real fault-injected p50 & p99 of main(OFF) vs PR(ON) at the four points (cold start, low/saturating refresh, mixed refresh subset).
+  - *Proves:* hedging cuts real latency when the hub is slow — cold start −70 %, refresh −60 %. The one place PR p99 meets main is the saturating storm (the budget-bounded fallback, see fi3), not a regression.
+- **`fi2_meter_crosscheck.png`**
+  - *Shows:* hedges fired per scenario, read from the SDK meter `Azure.Cosmos.Client.MetadataHedging`.
+  - *Proves:* the wins are causal and the A/B is wired right — hedges fire only with PR ON (16/30/32), main = 0.
+- **`fi3_saturating_budget_cdf.png`**
+  - *Shows:* latency CDF of the saturating storm (12 distinct containers concurrent, > budget 8).
+  - *Proves:* the per-client budget is real — ~67 % hedge and recover at ~1.6 s; the budget-exhausted **16/48** fall back to primary-only at ~4 s. Hedging never exceeds the budget, so the Gateway isn't flooded.
+- **`fi4_mixed_e2e_honest.png`**
+  - *Shows:* end-to-end p50/p95/p99 of a mixed workload (70 % warm reads + 30 % refresh).
+  - *Proves:* **end-to-end p50 is unchanged** (warm reads dominate); only the metadata-refresh tail (p95/p99) improves. A targeted tail win, not a blanket p50 win.
 
 ## Conclusions
 1. **Behaviour actually changes** — ON fires hedges (meter-confirmed: 16/30/32), OFF fires
