@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos
         //Auth
         internal readonly AuthorizationTokenProvider cosmosAuthorization;
 
-        private readonly bool isThinClientFeatureFlagEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: false);
+        private readonly bool isThinClientFeatureFlagEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: true);
 
         // Serializes the (disableCrossRegionalHedging, customerConfiguredAvailabilityStrategy,
         // ConnectionPolicy.AvailabilityStrategy) mutation sequence performed by the gateway-driven
@@ -1147,8 +1147,20 @@ namespace Microsoft.Azure.Cosmos
                 this.ConnectionPolicy.EnablePartitionLevelFailover = this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.Value;
             }
 
+            // Thin-client mode: feature-flag + gateway mode. HTTP/2 is used implicitly for thin-client
+            // traffic; whether a given request actually routes to the proxy is decided per request
+            // by IsThinClientRoutable and the connectivity probe gate, so the SDK can switch between
+            // the proxy and Gateway V1 mid-session without a restart.
             this.isThinClientEnabled = this.isThinClientFeatureFlagEnabled && (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway) &&
                 (this.accountServiceConfiguration.AccountProperties?.ThinClientWritableLocationsInternal?.Count ?? 0) > 0;
+            if (this.isThinClientEnabled)
+            {
+                // Wire the HTTP/2 http client for the connectivity probe and run an initial probe against the
+                // endpoints discovered during gateway-configuration initialization.
+                this.GlobalEndpointManager.SetThinClientHttpClient(this.httpClient);
+                _ = this.GlobalEndpointManager.RunThinClientProbeCycleAsync();
+            }
+
             this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker |= this.ConnectionPolicy.EnablePartitionLevelFailover;
             this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
             this.InitializePartitionLevelFailoverWithDefaultHedging();
@@ -6720,6 +6732,14 @@ namespace Microsoft.Azure.Cosmos
             // we return the Gateway store model
             if (request.UseGatewayMode)
             {
+                // When thin client is enabled the gateway HTTP path is the thin client
+                // proxy, so route thin-client-routable requests through the ThinClientStoreModel.
+                if (this.StoreModel is ThinClientStoreModel
+                    && ThinClientStoreModel.IsThinClientRoutable(this.GlobalEndpointManager, request))
+                {
+                    return this.StoreModel;
+                }
+
                 return this.GatewayStoreModel;
             }
 
