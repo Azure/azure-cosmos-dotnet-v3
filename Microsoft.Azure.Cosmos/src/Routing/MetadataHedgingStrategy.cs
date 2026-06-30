@@ -28,8 +28,8 @@ namespace Microsoft.Azure.Cosmos.Routing
     /// Design: <c>docs/PPAF_Metadata_Hedging_ColdStart_Design.md</c>. Hedging is
     /// restricted to the supported metadata request types but is NOT limited to
     /// cold start; refresh reads are hedged on the same terms. The historical
-    /// "ColdStart" tokens in the env var / opt-in / design-doc names are retained
-    /// for the broader feature.
+    /// "ColdStart" token is retained only in the design-doc filename for the
+    /// broader feature.
     /// </remarks>
     internal sealed class MetadataHedgingStrategy : IDisposable
     {
@@ -93,8 +93,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// default when PPAF is enabled, disabled otherwise. An explicit
         /// <c>true</c> enables hedging even when PPAF is disabled, and an
         /// explicit <c>false</c> disables it regardless of PPAF — see design
-        /// §5.1. (The env-var name retains the historical "COLDSTART" token; the
-        /// feature now covers refresh reads too.)
+        /// §5.1. (Hedging covers both first-population and refresh reads.)
         /// </summary>
         internal static bool ResolveOptIn(bool? customerOptIn, bool isPpafEnabled)
         {
@@ -116,12 +115,12 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// kill-switch is hard-wired to <c>false</c> in Phase 1; see design §5.1.
         /// </summary>
         internal static MetadataHedgingStrategy CreateIfEnabled(
-            bool? enableMetadataHedgingForColdStart,
+            bool? enableMetadataHedging,
             IGlobalEndpointManager globalEndpointManager,
             Func<bool> isPpafEnabled)
         {
             // Explicit customer kill-switch: hedging is suppressed regardless of PPAF.
-            if (enableMetadataHedgingForColdStart == false)
+            if (enableMetadataHedging == false)
             {
                 return null;
             }
@@ -135,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 globalEndpointManager: globalEndpointManager,
                 isHedgingDisabledByGateway: () => false,
                 isPpafEnabled: isPpafEnabled,
-                customerOptIn: enableMetadataHedgingForColdStart,
+                customerOptIn: enableMetadataHedging,
                 threshold: threshold,
                 perClientConcurrencyBudget: DefaultPerClientConcurrencyBudget);
         }

@@ -1146,7 +1146,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         public void CreateIfEnabled_NullOptIn_BuildsStrategy_DefersToPpafAtRequestTime()
         {
             using MetadataHedgingStrategy strategy = MetadataHedgingStrategy.CreateIfEnabled(
-                enableMetadataHedgingForColdStart: null,
+                enableMetadataHedging: null,
                 globalEndpointManager: BuildEndpointManagerMock(new[] { PrimaryEndpoint, HedgeEndpoint }).Object,
                 isPpafEnabled: () => true);
 
@@ -1158,7 +1158,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         public void CreateIfEnabled_ExplicitFalse_ReturnsNull()
         {
             MetadataHedgingStrategy strategy = MetadataHedgingStrategy.CreateIfEnabled(
-                enableMetadataHedgingForColdStart: false,
+                enableMetadataHedging: false,
                 globalEndpointManager: BuildEndpointManagerMock(new[] { PrimaryEndpoint }).Object,
                 isPpafEnabled: () => true);
 
@@ -1170,7 +1170,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         public void CreateIfEnabled_ExplicitTrue_BuildsStrategyWithDefaultThreshold()
         {
             using MetadataHedgingStrategy strategy = MetadataHedgingStrategy.CreateIfEnabled(
-                enableMetadataHedgingForColdStart: true,
+                enableMetadataHedging: true,
                 globalEndpointManager: BuildEndpointManagerMock(new[] { PrimaryEndpoint, HedgeEndpoint }).Object,
                 isPpafEnabled: () => true);
 
@@ -1211,21 +1211,35 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
         [TestMethod]
         [Owner("dkunda")]
-        public void GetMetadataHedgingOptIn_NullOption_UnsetEnv_ReturnsNull_FollowsPpaf()
+        public void GetMetadataHedgingOptIn_NullOption_UnsetEnv_FollowsBuildDefault()
         {
             RunWithMetadataHedgingEnvVar(null, () =>
             {
-                Assert.IsNull(Microsoft.Azure.Cosmos.ConfigurationManager.GetMetadataHedgingOptIn());
+                bool? resolved = Microsoft.Azure.Cosmos.ConfigurationManager.GetMetadataHedgingOptIn();
+#if PREVIEW
+                // Metadata hedging is enabled by default in the preview package.
+                Assert.AreEqual(true, resolved);
+#else
+                // GA follows the account's PPAF state when the env var is unset.
+                Assert.IsNull(resolved);
+#endif
             });
         }
 
         [TestMethod]
         [Owner("dkunda")]
-        public void GetMetadataHedgingOptIn_NullOption_NonBooleanEnv_ReturnsNull()
+        public void GetMetadataHedgingOptIn_NullOption_NonBooleanEnv_FollowsBuildDefault()
         {
             RunWithMetadataHedgingEnvVar("not-a-bool", () =>
             {
-                Assert.IsNull(Microsoft.Azure.Cosmos.ConfigurationManager.GetMetadataHedgingOptIn());
+                bool? resolved = Microsoft.Azure.Cosmos.ConfigurationManager.GetMetadataHedgingOptIn();
+#if PREVIEW
+                // A non-boolean env value is ignored; preview still defaults to enabled.
+                Assert.AreEqual(true, resolved);
+#else
+                // A non-boolean env value is ignored; GA follows PPAF (null).
+                Assert.IsNull(resolved);
+#endif
             });
         }
 

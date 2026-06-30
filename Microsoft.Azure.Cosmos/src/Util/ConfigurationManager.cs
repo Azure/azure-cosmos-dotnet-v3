@@ -161,9 +161,10 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// A read-only string containing the environment variable name for opting in to
-        /// metadata cache hedging. When unset, metadata hedging follows the account's PPAF
-        /// state (off by default for non-PPAF accounts). Setting the variable to <c>true</c> force-enables
-        /// hedging even when PPAF is disabled; setting it to <c>false</c> acts as a kill switch.
+        /// metadata cache hedging. Metadata hedging is enabled by default for the preview
+        /// package and follows the account's PPAF state for GA (off by default for non-PPAF
+        /// accounts). Setting the variable to <c>true</c> force-enables hedging even when PPAF
+        /// is disabled; setting it to <c>false</c> acts as a kill switch for both preview and GA.
         /// </summary>
         internal static readonly string MetadataHedgingEnabled = "AZURE_COSMOS_METADATA_HEDGING_ENABLED";
 
@@ -250,9 +251,11 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Resolves the effective tri-state opt-in for metadata cache hedging from the
         /// <c>AZURE_COSMOS_METADATA_HEDGING_ENABLED</c> environment variable. When the
-        /// variable is unset (or not a valid boolean) the result is <c>null</c> so hedging follows the
-        /// account's PPAF state (off by default for non-PPAF accounts); when it is <c>true</c> hedging is
-        /// force-enabled even for non-PPAF accounts; and when it is <c>false</c> it acts as a kill switch.
+        /// variable is set to a valid boolean it always wins: <c>true</c> force-enables hedging
+        /// even for non-PPAF accounts and <c>false</c> acts as a kill switch. When the variable
+        /// is unset (or not a valid boolean) the result is <c>true</c> for the preview package
+        /// (metadata hedging is enabled by default in preview) and <c>null</c> for GA, so GA
+        /// hedging follows the account's PPAF state (off by default for non-PPAF accounts).
         /// </summary>
         /// <returns>The resolved tri-state opt-in passed to the metadata hedging strategy factory.</returns>
         public static bool? GetMetadataHedgingOptIn()
@@ -263,7 +266,12 @@ namespace Microsoft.Azure.Cosmos
                 return parsed;
             }
 
+#if PREVIEW
+            // Metadata hedging is enabled by default in the preview package.
+            return true;
+#else
             return null;
+#endif
         }
 
         /// <summary>

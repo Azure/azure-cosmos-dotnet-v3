@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly bool IsLocalQuorumConsistency = false;
         private readonly bool isReplicaAddressValidationEnabled;
         private readonly bool enableAsyncCacheExceptionNoSharing;
-        private readonly bool? enableMetadataHedgingForColdStart;
+        private readonly bool? enableMetadataHedging;
 
         //Fault Injection
         private readonly IChaosInterceptorFactory chaosInterceptorFactory;
@@ -517,7 +517,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="chaosInterceptorFactory">This is the chaos interceptor used for fault injection</param>
         /// <param name="enableAsyncCacheExceptionNoSharing">A boolean flag indicating if stack trace optimization is enabled.</param>
         /// <param name="useLengthAwareRangeComparer">A boolean flag indicating if length-aware range comparators should be used for EPK range comparisons.</param>
-        /// <param name="enableMetadataHedgingForColdStart">Customer-supplied tri-state opt-in for cold-start cross-region metadata cache hedging (PPAF). See <c>docs/PPAF_Metadata_Hedging_ColdStart_Design.md</c>.</param>
+        /// <param name="enableMetadataHedging">Customer-supplied tri-state opt-in for cross-region metadata cache hedging (PPAF). Applies to both first-population and refresh metadata reads. See <c>docs/PPAF_Metadata_Hedging_ColdStart_Design.md</c>.</param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -549,7 +549,7 @@ namespace Microsoft.Azure.Cosmos
                               IChaosInterceptorFactory chaosInterceptorFactory = null,
                               bool enableAsyncCacheExceptionNoSharing = true,
                               bool useLengthAwareRangeComparer = false,
-                              bool? enableMetadataHedgingForColdStart = null)
+                              bool? enableMetadataHedging = null)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -578,7 +578,7 @@ namespace Microsoft.Azure.Cosmos
             this.chaosInterceptorFactory = chaosInterceptorFactory;
             this.chaosInterceptor = chaosInterceptorFactory?.CreateInterceptor(this);
             this.UseLengthAwareRangeComparer = useLengthAwareRangeComparer;
-            this.enableMetadataHedgingForColdStart = enableMetadataHedgingForColdStart;
+            this.enableMetadataHedging = enableMetadataHedging;
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
@@ -7136,7 +7136,7 @@ namespace Microsoft.Azure.Cosmos
         private Cosmos.Routing.MetadataHedgingStrategy CreateMetadataHedgingStrategyIfEnabled()
         {
             return Cosmos.Routing.MetadataHedgingStrategy.CreateIfEnabled(
-                enableMetadataHedgingForColdStart: this.enableMetadataHedgingForColdStart,
+                enableMetadataHedging: this.enableMetadataHedging,
                 globalEndpointManager: this.GlobalEndpointManager,
                 isPpafEnabled: () => this.ConnectionPolicy.EnablePartitionLevelFailover);
         }
