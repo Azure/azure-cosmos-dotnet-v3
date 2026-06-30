@@ -91,6 +91,7 @@ namespace Microsoft.Azure.Cosmos
         public void IsThinClientReadRoutable_IgnoresRequestDirection(bool hasReadLocations, bool expected)
         {
             Mock<IGlobalEndpointManager> endpointManager = new();
+            endpointManager.SetupGet(m => m.AreAllThinClientReadEndpointsHealthy).Returns(true);
             endpointManager.SetupGet(m => m.HasThinClientReadLocations).Returns(hasReadLocations);
             // Write locations are intentionally left default (false) to prove the read-direction
             // variant does not consult them.
@@ -103,6 +104,26 @@ namespace Microsoft.Azure.Cosmos
                 authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
 
             Assert.AreEqual(expected, ThinClientStoreModel.IsThinClientReadRoutable(endpointManager.Object, writeRequest));
+        }
+
+        [DataTestMethod]
+        [Owner("aavasthy")]
+        [DataRow(true,  true,  DisplayName = "All read endpoints probe-healthy -> read-routable")]
+        [DataRow(false, false, DisplayName = "Not all read endpoints probe-healthy -> not read-routable (Gateway V1 fallback)")]
+        public void IsThinClientReadRoutable_GatedByAllReadEndpointsHealthy(bool allReadEndpointsHealthy, bool expected)
+        {
+            Mock<IGlobalEndpointManager> endpointManager = new();
+            endpointManager.SetupGet(m => m.AreAllThinClientReadEndpointsHealthy).Returns(allReadEndpointsHealthy);
+            endpointManager.SetupGet(m => m.HasThinClientReadLocations).Returns(true);
+
+            DocumentServiceRequest readRequest = DocumentServiceRequest.Create(
+                operationType: OperationType.Read,
+                resourceType: ResourceType.Document,
+                resourceId: TestResourceId,
+                body: null,
+                authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
+
+            Assert.AreEqual(expected, ThinClientStoreModel.IsThinClientReadRoutable(endpointManager.Object, readRequest));
         }
 
        
@@ -196,6 +217,7 @@ namespace Microsoft.Azure.Cosmos
 
             GlobalEndpointManager endpointManager = new(mockDocumentClient.Object, new ConnectionPolicy());
             TestUtils.EnableThinClientLocationsForTest(endpointManager);
+            TestUtils.MarkThinClientEndpointsHealthyForTest(endpointManager);
 
             Mock<GlobalPartitionEndpointManager> globalPartitionEndpointManager = new();
             globalPartitionEndpointManager
@@ -266,6 +288,7 @@ namespace Microsoft.Azure.Cosmos
 
             GlobalEndpointManager endpointManager = new(mockDocumentClient.Object, new ConnectionPolicy());
             TestUtils.EnableThinClientLocationsForTest(endpointManager);
+            TestUtils.MarkThinClientEndpointsHealthyForTest(endpointManager);
 
             Mock<GlobalPartitionEndpointManager> globalPartitionEndpointManager = new();
             globalPartitionEndpointManager
@@ -391,6 +414,7 @@ namespace Microsoft.Azure.Cosmos
             if (advertiseThinClientLocations)
             {
                 TestUtils.EnableThinClientLocationsForTest(endpointManager);
+                TestUtils.MarkThinClientEndpointsHealthyForTest(endpointManager);
             }
 
             SessionContainer sessionContainer = new("testhost");

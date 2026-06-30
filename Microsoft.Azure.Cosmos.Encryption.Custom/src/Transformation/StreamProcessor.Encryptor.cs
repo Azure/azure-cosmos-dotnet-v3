@@ -67,7 +67,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                     if (leftOver == dataSize)
                     {
-                        byte[] newBuffer = arrayPoolManager.Rent(buffer.Length * 2);
+                        int newSize = checked(buffer.Length * 2);
+                        if (newSize > MaxBufferSize)
+                        {
+                            throw new InvalidOperationException($"JSON document or token does not fit within the maximum buffer size of {MaxBufferSize} bytes");
+                        }
+
+                        byte[] newBuffer = arrayPoolManager.Rent(newSize);
                         buffer.AsSpan().CopyTo(newBuffer);
                         buffer = newBuffer;
                     }
@@ -200,19 +206,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                             break;
                         case JsonTokenType.PropertyName:
-                            string matchedPath = null;
-                            for (int i = 0; i < encryptedPathsTable.Length; i++)
+                            if (reader.CurrentDepth == 1)
                             {
-                                if (reader.ValueTextEquals(encryptedPathsTable[i].nameBytes))
+                                string matchedPath = null;
+                                for (int i = 0; i < encryptedPathsTable.Length; i++)
                                 {
-                                    matchedPath = encryptedPathsTable[i].fullPath;
-                                    break;
+                                    if (reader.ValueTextEquals(encryptedPathsTable[i].nameBytes))
+                                    {
+                                        matchedPath = encryptedPathsTable[i].fullPath;
+                                        break;
+                                    }
                                 }
-                            }
 
-                            if (matchedPath != null)
-                            {
-                                encryptPropertyName = matchedPath;
+                                if (matchedPath != null)
+                                {
+                                    encryptPropertyName = matchedPath;
+                                }
                             }
 
                             currentWriter.WritePropertyName(reader.ValueSpan);
