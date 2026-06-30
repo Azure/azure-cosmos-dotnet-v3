@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [TestMethod]
         [DynamicData(nameof(JsonProcessors))]
 
-        internal async Task InvalidPathToEncrypt(JsonProcessor jsonProcessor)
+        public async Task InvalidPathToEncrypt(JsonProcessor jsonProcessor)
         {
             TestDoc testDoc = TestDoc.Create();
             EncryptionOptions encryptionOptionsWithInvalidPathToEncrypt = new ()
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [TestMethod]
         [DynamicData(nameof(JsonProcessors))]
-        internal async Task EncryptDecryptPropertyWithNullValue(JsonProcessor jsonProcessor)
+        public async Task EncryptDecryptPropertyWithNullValue(JsonProcessor jsonProcessor)
         {
             TestDoc testDoc = TestDoc.Create();
             testDoc.SensitiveStr = null;
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [TestMethod]
         [DynamicData(nameof(JsonProcessors))]
-        internal async Task ValidateEncryptDecryptDocument(JsonProcessor jsonProcessor)
+        public async Task ValidateEncryptDecryptDocument(JsonProcessor jsonProcessor)
         {
             TestDoc testDoc = TestDoc.Create();
 
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [TestMethod]
         [DynamicData(nameof(JsonProcessors))]
-        internal async Task ValidateDecryptStream(JsonProcessor jsonProcessor)
+        public async Task ValidateDecryptStream(JsonProcessor jsonProcessor)
         {
             TestDoc testDoc = TestDoc.Create();
 
@@ -163,6 +163,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.AreEqual(docStream.Length, decryptedStream.Length);
             Assert.IsNull(decryptionContext);
         }
+
+#if NET8_0_OR_GREATER
+        // Locks the contract that justifies removing JsonProcessor.Stream from JsonProcessors above: the legacy
+        // AEAD algorithm does not support the Stream processor, so EncryptAsync rejects it at Validate. Without this
+        // the unsupported combination would be silently uncovered once the dead data row is gone.
+        [TestMethod]
+        public async Task EncryptAsync_AeadStream_Throws_NotSupported()
+        {
+            TestDoc testDoc = TestDoc.Create();
+
+            await Assert.ThrowsExceptionAsync<NotSupportedException>(() => EncryptionProcessor.EncryptAsync(
+                testDoc.ToStream(),
+                LegacyEncryptionProcessorTests.mockEncryptor.Object,
+                LegacyEncryptionProcessorTests.encryptionOptions,
+                JsonProcessor.Stream,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None));
+        }
+#endif
 
         private static async Task<JObject> VerifyEncryptionSucceeded(TestDoc testDoc, JsonProcessor jsonProcessor)
         {
@@ -223,14 +242,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
         }
 
+        // AEAD (AEAes256CbcHmacSha256Randomized) is Newtonsoft-only by design: the Stream processor is rejected at
+        // EncryptionOptions.Validate with NotSupportedException (locked by EncryptAsync_AeadStream_Throws_NotSupported
+        // below). A JsonProcessor.Stream row here only ever threw - it was dead/misleading data once these
+        // [TestMethod]s actually run (they were 'internal' before, so MSTest silently skipped them, UTA007) - so it
+        // has been removed. The parameterized AEAD round-trip tests run under Newtonsoft only.
         public static IEnumerable<object[]> JsonProcessors
         {
             get
             {
-                    yield return new object[] { JsonProcessor.Newtonsoft };
-#if NET8_0_OR_GREATER
-                    yield return new object[] { JsonProcessor.Stream };
-#endif
+                yield return new object[] { JsonProcessor.Newtonsoft };
             }
         }
     }

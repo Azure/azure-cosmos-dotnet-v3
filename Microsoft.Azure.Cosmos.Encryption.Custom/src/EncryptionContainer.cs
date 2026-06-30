@@ -16,6 +16,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     {
         private readonly Container container;
 
+        private readonly JsonProcessor defaultJsonProcessor;
+
         public CosmosSerializer CosmosSerializer { get; }
 
         public Encryptor Encryptor { get; }
@@ -23,16 +25,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public CosmosResponseFactory ResponseFactory { get; }
 
         /// <summary>
+        /// Gets the container-wide default <see cref="JsonProcessor"/> threaded into every encrypt / decrypt
+        /// operation (including feed, query and change-feed reads) unless overridden per request.
+        /// </summary>
+        internal JsonProcessor DefaultJsonProcessor => this.defaultJsonProcessor;
+
+        /// <summary>
         /// All the operations / requests for exercising client-side encryption functionality need to be made using this EncryptionContainer instance.
         /// </summary>
         /// <param name="container">Regular cosmos container.</param>
         /// <param name="encryptor">Provider that allows encrypting and decrypting data.</param>
+        /// <param name="defaultJsonProcessor">Container-wide default <see cref="JsonProcessor"/> applied to every operation unless overridden per request.</param>
         public EncryptionContainer(
             Container container,
-            Encryptor encryptor)
+            Encryptor encryptor,
+            JsonProcessor defaultJsonProcessor = JsonProcessor.Newtonsoft)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.Encryptor = encryptor ?? throw new ArgumentNullException(nameof(encryptor));
+            this.defaultJsonProcessor = defaultJsonProcessor;
             this.ResponseFactory = this.Database.Client.ResponseFactory;
             this.CosmosSerializer = this.Database.Client.ClientOptions.Serializer;
         }
@@ -156,6 +167,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 streamPayload,
                 this.Encryptor,
                 encryptionItemRequestOptions,
+                this.defaultJsonProcessor,
                 diagnosticsContext,
                 cancellationToken);
 
@@ -172,6 +184,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     this.Encryptor,
                     diagnosticsContext,
                     requestOptions,
+                    this.defaultJsonProcessor,
                     cancellationToken);
             }
 
@@ -287,6 +300,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     this.Encryptor,
                     diagnosticsContext,
                     requestOptions,
+                    this.defaultJsonProcessor,
                     cancellationToken);
             }
 
@@ -414,6 +428,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 streamPayload,
                 this.Encryptor,
                 encryptionItemRequestOptions,
+                this.defaultJsonProcessor,
                 diagnosticsContext,
                 cancellationToken);
 
@@ -431,6 +446,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     this.Encryptor,
                     diagnosticsContext,
                     requestOptions,
+                    this.defaultJsonProcessor,
                     cancellationToken);
             }
 
@@ -548,6 +564,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 streamPayload,
                 this.Encryptor,
                 encryptionItemRequestOptions,
+                this.defaultJsonProcessor,
                 diagnosticsContext,
                 cancellationToken);
 
@@ -564,6 +581,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     this.Encryptor,
                     diagnosticsContext,
                     requestOptions,
+                    this.defaultJsonProcessor,
                     cancellationToken);
             }
 
@@ -576,7 +594,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return new EncryptionTransactionalBatch(
                 this.container.CreateTransactionalBatch(partitionKey),
                 this.Encryptor,
-                this.CosmosSerializer);
+                this.CosmosSerializer,
+                this.defaultJsonProcessor);
         }
 
         public override Task<ContainerResponse> DeleteContainerAsync(
@@ -724,7 +743,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     continuationToken,
                     requestOptions),
                 this.Encryptor,
-                this.CosmosSerializer);
+                this.CosmosSerializer,
+                requestOptions,
+                this.defaultJsonProcessor);
         }
 
         public override FeedIterator GetItemQueryStreamIterator(
@@ -738,7 +759,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     continuationToken,
                     requestOptions),
                 this.Encryptor,
-                this.CosmosSerializer);
+                this.CosmosSerializer,
+                requestOptions,
+                this.defaultJsonProcessor);
         }
 
         public override Task<ThroughputResponse> ReplaceThroughputAsync(
@@ -771,7 +794,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     continuationToken,
                     requestOptions),
                 this.Encryptor,
-                this.CosmosSerializer);
+                this.CosmosSerializer,
+                requestOptions,
+                this.defaultJsonProcessor);
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
@@ -807,7 +832,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     changeFeedMode,
                     changeFeedRequestOptions),
                 this.Encryptor,
-                this.CosmosSerializer);
+                this.CosmosSerializer,
+                changeFeedRequestOptions,
+                this.defaultJsonProcessor);
         }
 
         public override FeedIterator<T> GetChangeFeedIterator<T>(
@@ -917,6 +944,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     Stream decryptedChanges = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
                         changes,
                         this.Encryptor,
+                        requestOptions: null,
+                        this.defaultJsonProcessor,
                         cancellationToken);
 
                     // Call the original passed in delegate
@@ -939,6 +968,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     Stream decryptedChanges = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
                         changes,
                         this.Encryptor,
+                        requestOptions: null,
+                        this.defaultJsonProcessor,
                         cancellationToken);
 
                     // Call the original passed in delegate
@@ -1036,6 +1067,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Stream decryptedContent = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
                 responseMessage.Content,
                 this.Encryptor,
+                readManyRequestOptions,
+                this.defaultJsonProcessor,
                 cancellationToken);
 
             return new DecryptedResponseMessage(responseMessage, decryptedContent);
@@ -1069,6 +1102,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                             document,
                             this.Encryptor,
                             diagnosticsContext,
+                            this.defaultJsonProcessor,
                             cancellationToken);
 
                         decryptItems.Add(decryptedDocument.ToObject<T>());

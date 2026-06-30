@@ -35,7 +35,8 @@
     <Compile Include="..\..\..\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests\Utils\ConfigurationManager.cs" Link="Utils\ConfigurationManager.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests\settings.json">
+    <!-- Local emulator settings (HTTP vnext-preview Linux emulator). Overrides the shared HTTPS settings.json. -->
+    <None Update="settings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

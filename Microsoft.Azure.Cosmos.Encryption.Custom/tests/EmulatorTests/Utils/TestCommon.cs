@@ -52,6 +52,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests.Utils
                 accountEndpoint: endpoint,
                 authKeyOrResourceToken: resourceToken ?? authKey);
 
+            // The local (vnext-preview Linux) Cosmos emulator is reachable only over the single
+            // gateway endpoint, so force Gateway mode and limit discovery to that endpoint.
+            clientBuilder
+                .WithConnectionModeGateway()
+                .WithLimitToEndpoint(true);
+
             return clientBuilder;
         }
 

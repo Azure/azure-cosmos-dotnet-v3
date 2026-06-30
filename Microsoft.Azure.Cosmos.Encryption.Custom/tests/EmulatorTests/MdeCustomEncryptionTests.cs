@@ -520,6 +520,125 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 $"Expected to capture newtonsoft decrypt scope. Scopes: {string.Join(", ", scopes)}");
         }
 
+        // --- BLOCKING 2: genuine end-to-end LINQ ToEncryptionFeedIterator read on a default-Stream container ----
+        // Writes encrypted docs to a fresh container whose container-level default JsonProcessor is Stream (no
+        // per-request override anywhere), then reads them back via GetItemLinqQueryable + ToEncryptionFeedIterator
+        // + ReadNextAsync. Asserts (a) the decrypted data round-trips and (b) white-box via the encryption
+        // ActivitySource that the 'EncryptionProcessor.Decrypt.Mde.Stream' selection scope fired once per document.
+        // If the container default is not threaded into the LINQ feed iterator the decrypt silently drops to the
+        // Newtonsoft (JObject) path, which emits no Mde.Stream selection scope and fails the white-box assertion.
+        [TestMethod]
+        public async Task ToEncryptionFeedIterator_DefaultStreamContainer_DecryptsAndSelectsStream_EndToEnd()
+        {
+            Container rawContainer = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/PK", 400);
+            try
+            {
+                Container streamContainer = rawContainer.WithEncryptor(encryptor, JsonProcessor.Stream);
+
+                // Encrypt+write using the container default (GetRequestOptions carries no per-request processor).
+                TestDoc testDoc1 = (await CreateItemAsync(streamContainer, dekId, TestDoc.PathsToEncrypt)).Resource;
+                TestDoc testDoc2 = (await CreateItemAsync(streamContainer, dekId, TestDoc.PathsToEncrypt)).Resource;
+
+                List<TestDoc> readDocs = new();
+                List<string> scopes = await CaptureEncryptionScopesAsync(async () =>
+                {
+                    IOrderedQueryable<TestDoc> linqQueryable = streamContainer.GetItemLinqQueryable<TestDoc>();
+                    FeedIterator<TestDoc> iterator = streamContainer.ToEncryptionFeedIterator(linqQueryable);
+                    while (iterator.HasMoreResults)
+                    {
+                        FeedResponse<TestDoc> page = await iterator.ReadNextAsync();
+                        readDocs.AddRange(page.Resource);
+                    }
+                });
+
+                Assert.IsTrue(readDocs.Count >= 2, $"Expected at least 2 documents from the LINQ iterator, got {readDocs.Count}.");
+                VerifyExpectedDocResponse(testDoc1, readDocs.Single(d => d.Id == testDoc1.Id));
+                VerifyExpectedDocResponse(testDoc2, readDocs.Single(d => d.Id == testDoc2.Id));
+
+                (_, int streamDecrypt, _, int newtonsoftDecrypt) = CountJsonProcessorScopes(scopes);
+                Assert.IsTrue(
+                    streamDecrypt >= 2,
+                    $"Expected the Stream decrypt-selection scope at least once per document on the LINQ ToEncryptionFeedIterator path. Scopes: {string.Join(", ", scopes)}");
+                Assert.AreEqual(
+                    0,
+                    newtonsoftDecrypt,
+                    $"A default-Stream container must not select Newtonsoft on the LINQ read path. Scopes: {string.Join(", ", scopes)}");
+            }
+            finally
+            {
+                using (await rawContainer.DeleteContainerStreamAsync()) { }
+            }
+        }
+
+        // --- BLOCKING 2 (change-feed-processor path): genuine end-to-end typed GetChangeFeedProcessorBuilder<T> ----
+        // A default-Stream container's typed change-feed-processor handler must decrypt via the Stream processor.
+        // Writes encrypted docs to a fresh container (container default Stream), runs the typed processor with a
+        // lease container, and asserts the decrypted round-trip plus the per-document Stream decrypt-selection scope.
+        // This is the end-to-end counterpart of the BLOCKING 1 fix in DecryptChangeFeedDocumentsAsync<T>.
+        [TestMethod]
+        public async Task ChangeFeedProcessor_DefaultStreamContainer_DecryptsAndSelectsStream_EndToEnd()
+        {
+            Container rawContainer = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/PK", 400);
+            Database leaseDatabase = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            try
+            {
+                Container streamContainer = rawContainer.WithEncryptor(encryptor, JsonProcessor.Stream);
+                Container leaseContainer = await leaseDatabase.CreateContainerIfNotExistsAsync(
+                    new ContainerProperties(id: "leases", partitionKeyPath: "/id"));
+
+                TestDoc testDoc1 = (await CreateItemAsync(streamContainer, dekId, TestDoc.PathsToEncrypt)).Resource;
+                TestDoc testDoc2 = (await CreateItemAsync(streamContainer, dekId, TestDoc.PathsToEncrypt)).Resource;
+
+                List<TestDoc> changeFeedReturnedDocs = new();
+                ManualResetEvent allDocsProcessed = new(false);
+
+                List<string> scopes = await CaptureEncryptionScopesAsync(async () =>
+                {
+                    int processedDocCount = 0;
+                    ChangeFeedProcessor cfp = streamContainer.GetChangeFeedProcessorBuilder<TestDoc>(
+                        "streamDefaultCFP",
+                        (IReadOnlyCollection<TestDoc> changes, CancellationToken cancellationToken) =>
+                        {
+                            changeFeedReturnedDocs.AddRange(changes);
+                            processedDocCount += changes.Count;
+                            if (processedDocCount >= 2)
+                            {
+                                allDocsProcessed.Set();
+                            }
+
+                            return Task.CompletedTask;
+                        })
+                        .WithInstanceName("random")
+                        .WithLeaseContainer(leaseContainer)
+                        .WithStartTime(DateTime.MinValue.ToUniversalTime())
+                        .Build();
+
+                    await cfp.StartAsync();
+                    bool processed = allDocsProcessed.WaitOne(60000);
+                    await cfp.StopAsync();
+                    Assert.IsTrue(processed, "Change feed processor did not surface the expected documents within 60s.");
+                });
+
+                Assert.IsTrue(changeFeedReturnedDocs.Count >= 2, $"Expected at least 2 documents from the change-feed processor, got {changeFeedReturnedDocs.Count}.");
+                VerifyExpectedDocResponse(testDoc1, changeFeedReturnedDocs.Single(d => d.Id == testDoc1.Id));
+                VerifyExpectedDocResponse(testDoc2, changeFeedReturnedDocs.Single(d => d.Id == testDoc2.Id));
+
+                (_, int streamDecrypt, _, int newtonsoftDecrypt) = CountJsonProcessorScopes(scopes);
+                Assert.IsTrue(
+                    streamDecrypt >= 2,
+                    $"Expected the Stream decrypt-selection scope at least once per document on the change-feed-processor path. Scopes: {string.Join(", ", scopes)}");
+                Assert.AreEqual(
+                    0,
+                    newtonsoftDecrypt,
+                    $"A default-Stream container must not select Newtonsoft on the change-feed-processor path. Scopes: {string.Join(", ", scopes)}");
+            }
+            finally
+            {
+                using (await leaseDatabase.DeleteStreamAsync()) { }
+                using (await rawContainer.DeleteContainerStreamAsync()) { }
+            }
+        }
+
         private static async Task<List<string>> CaptureEncryptionScopesAsync(Func<Task> action)
         {
             List<string> scopes = new List<string>();
@@ -600,6 +719,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 encryptor,
                 new CosmosDiagnosticsContext(),
                 new ItemRequestOptions { Properties = new Dictionary<string, object> { { "encryption-json-processor", "Stream" } } },
+                JsonProcessor.Newtonsoft,
                 CancellationToken.None);
             Assert.IsNotNull(ctx);
             Assert.AreEqual(0, output.Position); // rewound for caller consumption
@@ -636,6 +756,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 encryptor,
                 new CosmosDiagnosticsContext(),
                 new ItemRequestOptions { Properties = new Dictionary<string, object> { { "encryption-json-processor", "Stream" } } },
+                JsonProcessor.Newtonsoft,
                 CancellationToken.None);
         }
 

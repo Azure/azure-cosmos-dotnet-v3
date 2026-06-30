@@ -180,6 +180,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 mockEncryptor.Object,
                 new CosmosDiagnosticsContext(),
                 requestOptions: null,
+                JsonProcessor.Newtonsoft,
                 CancellationToken.None);
 
             JObject decryptedDoc = EncryptionProcessor.BaseSerializer.FromStream<JObject>(decryptedStream);
@@ -212,6 +213,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 mockEncryptor.Object,
                 new CosmosDiagnosticsContext(),
                 RequestOptionsOverrideHelper.Create(decryptionJsonProcessor),
+                JsonProcessor.Newtonsoft,
                 CancellationToken.None);
 
             JObject decryptedDoc = EncryptionProcessor.BaseSerializer.FromStream<JObject>(decryptedStream);
@@ -245,6 +247,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 mockEncryptor.Object,
                 new CosmosDiagnosticsContext(),
                 RequestOptionsOverrideHelper.Create(decryptionJsonProcessor),
+                JsonProcessor.Newtonsoft,
                 CancellationToken.None);
 
             JsonNode decryptedDoc = JsonNode.Parse(decryptedStream);
@@ -269,6 +272,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 mockEncryptor.Object,
                 new CosmosDiagnosticsContext(),
                 RequestOptionsOverrideHelper.Create(processor),
+                JsonProcessor.Newtonsoft,
                 CancellationToken.None);
 
             Assert.IsTrue(decryptedStream.CanSeek);

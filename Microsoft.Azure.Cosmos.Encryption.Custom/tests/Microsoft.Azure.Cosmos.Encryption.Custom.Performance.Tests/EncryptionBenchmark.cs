@@ -165,6 +165,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests
                     this.encryptor,
                     new CosmosDiagnosticsContext(),
                     RequestOptionsOverrideHelper.Create(this.JsonProcessor),
+                    JsonProcessor.Newtonsoft,
                     CancellationToken.None);
             }
         }
@@ -182,6 +183,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests
                     this.encryptor,
                     new CosmosDiagnosticsContext(),
                     RequestOptionsOverrideHelper.Create(this.JsonProcessor),
+                    JsonProcessor.Newtonsoft,
                     CancellationToken.None);
             }
         }

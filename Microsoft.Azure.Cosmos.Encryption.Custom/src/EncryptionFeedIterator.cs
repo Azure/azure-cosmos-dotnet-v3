@@ -16,15 +16,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         private readonly FeedIterator feedIterator;
         private readonly Encryptor encryptor;
         private readonly CosmosSerializer cosmosSerializer;
+        private readonly RequestOptions requestOptions;
+        private readonly JsonProcessor defaultJsonProcessor;
 
         public EncryptionFeedIterator(
             FeedIterator feedIterator,
             Encryptor encryptor,
-            CosmosSerializer cosmosSerializer)
+            CosmosSerializer cosmosSerializer,
+            RequestOptions requestOptions = null,
+            JsonProcessor defaultJsonProcessor = JsonProcessor.Newtonsoft)
         {
             this.feedIterator = feedIterator;
             this.encryptor = encryptor;
             this.cosmosSerializer = cosmosSerializer;
+            this.requestOptions = requestOptions;
+            this.defaultJsonProcessor = defaultJsonProcessor;
         }
 
         public override bool HasMoreResults => this.feedIterator.HasMoreResults;
@@ -41,6 +47,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     Stream decryptedContent = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
                         responseMessage.Content,
                         this.encryptor,
+                        this.requestOptions,
+                        this.defaultJsonProcessor,
                         cancellationToken);
 
                     return new DecryptedResponseMessage(responseMessage, decryptedContent);

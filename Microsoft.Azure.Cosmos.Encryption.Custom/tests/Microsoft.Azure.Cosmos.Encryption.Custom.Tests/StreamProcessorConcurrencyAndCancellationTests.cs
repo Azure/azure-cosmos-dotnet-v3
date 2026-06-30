@@ -77,6 +77,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                     mockEncryptor.Object,
                     new CosmosDiagnosticsContext(),
                     RequestOptionsOverrideHelper.Create(JsonProcessor.Stream),
+                    JsonProcessor.Newtonsoft,
                     CancellationToken.None);
 
                 Assert.IsNotNull(ctx);
@@ -108,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                     var doc = new { id = Guid.NewGuid().ToString(), Large = large, P1 = i.ToString(), P2 = (i * 2).ToString() };
                     EncryptionOptions options = CreateEncryptionOptions(new[] { "/Large", "/P1", "/P2" });
                     Stream encrypted = await EncryptionProcessor.EncryptAsync(TestCommon.ToStream(doc), mockEncryptor.Object, options, JsonProcessor.Stream, new CosmosDiagnosticsContext(), CancellationToken.None);
-                    (Stream decrypted, DecryptionContext ctx) = await EncryptionProcessor.DecryptAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), RequestOptionsOverrideHelper.Create(JsonProcessor.Stream), CancellationToken.None);
+                    (Stream decrypted, DecryptionContext ctx) = await EncryptionProcessor.DecryptAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), RequestOptionsOverrideHelper.Create(JsonProcessor.Stream), JsonProcessor.Newtonsoft, CancellationToken.None);
                     decrypted.Position = 0;
                     using JsonDocument jd = JsonDocument.Parse(decrypted);
                     JsonElement root = jd.RootElement;
@@ -180,6 +181,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 mockEncryptor.Object,
                 new CosmosDiagnosticsContext(),
                 RequestOptionsOverrideHelper.Create(JsonProcessor.Stream),
+                JsonProcessor.Newtonsoft,
                 cts.Token);
 
             cts.CancelAfter(5);

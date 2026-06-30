@@ -16,16 +16,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     {
         private readonly Encryptor encryptor;
         private readonly CosmosSerializer cosmosSerializer;
+        private readonly JsonProcessor defaultJsonProcessor;
         private TransactionalBatch transactionalBatch;
 
         public EncryptionTransactionalBatch(
             TransactionalBatch transactionalBatch,
             Encryptor encryptor,
-            CosmosSerializer cosmosSerializer)
+            CosmosSerializer cosmosSerializer,
+            JsonProcessor defaultJsonProcessor = JsonProcessor.Newtonsoft)
         {
             this.transactionalBatch = transactionalBatch ?? throw new ArgumentNullException(nameof(transactionalBatch));
             this.encryptor = encryptor ?? throw new ArgumentNullException(nameof(encryptor));
             this.cosmosSerializer = cosmosSerializer ?? throw new ArgumentNullException(nameof(cosmosSerializer));
+            this.defaultJsonProcessor = defaultJsonProcessor;
         }
 
         public override TransactionalBatch CreateItem<T>(
@@ -62,6 +65,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         streamPayload,
                         this.encryptor,
                         encryptionItemRequestOptions,
+                        this.defaultJsonProcessor,
                         diagnosticsContext,
                         cancellationToken: default).Result;
                 }
@@ -134,6 +138,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         streamPayload,
                         this.encryptor,
                         encryptionItemRequestOptions,
+                        this.defaultJsonProcessor,
                         diagnosticsContext,
                         cancellationToken: default).Result;
                 }
@@ -181,6 +186,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         streamPayload,
                         this.encryptor,
                         encryptionItemRequestOptions,
+                        this.defaultJsonProcessor,
                         diagnosticsContext,
                         cancellationToken: default).Result;
                 }
@@ -238,6 +244,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         this.encryptor,
                         diagnosticsContext,
                         requestOptions: null,
+                        this.defaultJsonProcessor,
                         cancellationToken);
 
                     decryptedTransactionalBatchOperationResults.Add(new EncryptionTransactionalBatchOperationResult(result, decryptedStream));

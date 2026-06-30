@@ -126,6 +126,46 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             Assert.IsFalse(found);
             Assert.AreEqual(JsonProcessor.Newtonsoft, jp);
         }
+
+        [TestMethod]
+        public void GetJsonProcessor_NoOverride_ReturnsContainerDefault()
+        {
+            RequestOptions ro = new ItemRequestOptions(); // no per-request override
+            Assert.AreEqual(JsonProcessor.Stream, ro.GetJsonProcessor(JsonProcessor.Stream));
+        }
+
+        [TestMethod]
+        public void GetJsonProcessor_NoOverride_NoDefault_ReturnsNewtonsoft()
+        {
+            RequestOptions ro = new ItemRequestOptions(); // no per-request override, no explicit default
+            Assert.AreEqual(JsonProcessor.Newtonsoft, ro.GetJsonProcessor());
+        }
+
+        [TestMethod]
+        public void GetJsonProcessor_PerRequestOverride_WinsOverContainerDefault()
+        {
+            RequestOptions streamOverride = new ItemRequestOptions
+            {
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Stream" }
+                }
+            };
+
+            // Per-request Stream override wins even though the container default is Newtonsoft.
+            Assert.AreEqual(JsonProcessor.Stream, streamOverride.GetJsonProcessor(JsonProcessor.Newtonsoft));
+
+            RequestOptions newtonsoftOverride = new ItemRequestOptions
+            {
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Newtonsoft" }
+                }
+            };
+
+            // Per-request Newtonsoft override wins even though the container default is Stream.
+            Assert.AreEqual(JsonProcessor.Newtonsoft, newtonsoftOverride.GetJsonProcessor(JsonProcessor.Stream));
+        }
     }
 }
 #endif

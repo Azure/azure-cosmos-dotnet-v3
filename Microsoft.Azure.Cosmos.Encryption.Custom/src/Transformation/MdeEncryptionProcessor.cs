@@ -62,6 +62,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             Encryptor encryptor,
             CosmosDiagnosticsContext diagnosticsContext,
             RequestOptions requestOptions,
+            JsonProcessor defaultJsonProcessor,
             CancellationToken cancellationToken)
         {
             if (input == null)
@@ -71,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             ArgumentValidation.ThrowIfNull(diagnosticsContext);
 
-            JsonProcessor jsonProcessor = this.GetRequestedJsonProcessor(requestOptions);
+            JsonProcessor jsonProcessor = this.GetRequestedJsonProcessor(requestOptions, defaultJsonProcessor);
             using IDisposable selectionScope = diagnosticsContext.CreateScope(CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + jsonProcessor);
 
             IMdeJsonProcessorAdapter adapter = this.GetAdapter(jsonProcessor);
@@ -84,6 +85,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             Encryptor encryptor,
             CosmosDiagnosticsContext diagnosticsContext,
             RequestOptions requestOptions,
+            JsonProcessor defaultJsonProcessor,
             CancellationToken cancellationToken)
         {
             if (input == null)
@@ -93,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             ArgumentValidation.ThrowIfNull(diagnosticsContext);
 
-            JsonProcessor jsonProcessor = this.GetRequestedJsonProcessor(requestOptions);
+            JsonProcessor jsonProcessor = this.GetRequestedJsonProcessor(requestOptions, defaultJsonProcessor);
 #if NET8_0_OR_GREATER
             using IDisposable selectionScope = diagnosticsContext.CreateScope(CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + jsonProcessor);
 #endif
@@ -171,7 +173,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         }
 #endif
 
-        private JsonProcessor GetRequestedJsonProcessor(RequestOptions requestOptions)
+        private JsonProcessor GetRequestedJsonProcessor(RequestOptions requestOptions, JsonProcessor defaultJsonProcessor)
         {
 #if NET8_0_OR_GREATER
             if (requestOptions != null && requestOptions.TryReadJsonProcessorOverride(out JsonProcessor overrideProcessor))
@@ -180,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
 #endif
 
-            return JsonProcessor.Newtonsoft;
+            return defaultJsonProcessor;
         }
 
         private IMdeJsonProcessorAdapter GetAdapter(JsonProcessor jsonProcessor)

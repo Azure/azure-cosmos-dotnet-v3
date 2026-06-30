@@ -5,20 +5,27 @@
 namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     /// <summary>
-    /// API for JSON processing
+    /// Specifies the JSON processing implementation used by the encryption layer when
+    /// encrypting and decrypting documents.
     /// </summary>
-    internal enum JsonProcessor
+    /// <remarks>
+    /// A processor can be selected per request through the request options property bag,
+    /// or configured as a container-wide default when the encryption container is created
+    /// via <c>WithEncryptor(container, encryptor, defaultJsonProcessor)</c>. A per-request
+    /// selection always overrides the container default.
+    /// </remarks>
+    public enum JsonProcessor
     {
         /// <summary>
-        /// Newtonsoft.Json
+        /// Newtonsoft.Json based (JObject) processing. This is the default.
         /// </summary>
         Newtonsoft,
 
 #if NET8_0_OR_GREATER
         /// <summary>
-        /// Ut8JsonReader/Writer
+        /// System.Text.Json based (Utf8JsonReader/Utf8JsonWriter, stream oriented) processing.
         /// </summary>
-        /// <remarks>Available with .NET8.0 package only.</remarks>
+        /// <remarks>Available with the .NET 8.0 package only; supported for the MDE encryption algorithm.</remarks>
         Stream,
 #endif
     }

@@ -66,6 +66,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Stream input,
             Encryptor encryptor,
             EncryptionItemRequestOptions requestOptions,
+            JsonProcessor defaultJsonProcessor,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -73,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 input,
                 encryptor,
                 requestOptions.EncryptionOptions,
-                requestOptions.GetJsonProcessor(),
+                requestOptions.GetJsonProcessor(defaultJsonProcessor),
                 diagnosticsContext,
                 cancellationToken);
         }
@@ -82,6 +83,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Stream input,
             Encryptor encryptor,
             EncryptionTransactionalBatchItemRequestOptions requestOptions,
+            JsonProcessor defaultJsonProcessor,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -89,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 input,
                 encryptor,
                 requestOptions.EncryptionOptions,
-                requestOptions.GetJsonProcessor(),
+                requestOptions.GetJsonProcessor(defaultJsonProcessor),
                 diagnosticsContext,
                 cancellationToken);
         }
@@ -171,6 +173,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Encryptor encryptor,
             CosmosDiagnosticsContext diagnosticsContext,
             RequestOptions requestOptions,
+            JsonProcessor defaultJsonProcessor,
             CancellationToken cancellationToken)
         {
             if (input == null)
@@ -216,7 +219,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 input.Position = 0;
             }
 
-            return await MdeEncryptionProcessor.DecryptAsync(input, encryptor, diagnosticsContext, requestOptions, cancellationToken);
+            return await MdeEncryptionProcessor.DecryptAsync(input, encryptor, diagnosticsContext, requestOptions, defaultJsonProcessor, cancellationToken);
         }
 
         public static async Task<DecryptionContext> DecryptAsync(
@@ -225,9 +228,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Encryptor encryptor,
             CosmosDiagnosticsContext diagnosticsContext,
             RequestOptions requestOptions,
+            JsonProcessor defaultJsonProcessor,
             CancellationToken cancellationToken)
         {
-            return await MdeEncryptionProcessor.DecryptAsync(input, output, encryptor, diagnosticsContext, requestOptions, cancellationToken);
+            return await MdeEncryptionProcessor.DecryptAsync(input, output, encryptor, diagnosticsContext, requestOptions, defaultJsonProcessor, cancellationToken);
         }
 
 #if NET8_0_OR_GREATER
@@ -298,6 +302,68 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             DecryptionContext decryptionContext = await DecryptInternalAsync(encryptor, diagnosticsContext, document, encryptionPropertiesJObj, cancellationToken);
 
             return (document, decryptionContext);
+        }
+
+        /// <summary>
+        /// Decrypts a single document already materialized as a <see cref="JObject"/> (for example the
+        /// change-feed-processor typed handlers, which surface documents as <see cref="JObject"/>) honoring the
+        /// container-wide <paramref name="defaultJsonProcessor"/>.
+        /// </summary>
+        /// <remarks>
+        /// When the effective processor is <c>JsonProcessor.Stream</c> the MDE document is decrypted through
+        /// the System.Text.Json streaming adapter (emitting the <c>EncryptionProcessor.Decrypt.Mde.Stream</c>
+        /// diagnostics scope), matching the point-read / feed-read semantics instead of silently dropping to the
+        /// Newtonsoft (JObject) decryptor. Legacy AEAD documents and the Newtonsoft default keep the existing JObject
+        /// decrypt behavior. This path carries no per-request <see cref="RequestOptions"/>, so only the container
+        /// default selects the processor.
+        /// </remarks>
+        public static async Task<(JObject, DecryptionContext)> DecryptAsync(
+            JObject document,
+            Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
+            JsonProcessor defaultJsonProcessor,
+            CancellationToken cancellationToken)
+        {
+            Debug.Assert(document != null);
+            Debug.Assert(encryptor != null);
+
+#if NET8_0_OR_GREATER
+            if (defaultJsonProcessor == JsonProcessor.Stream)
+            {
+                Stream documentStream = BaseSerializer.ToStream(document);
+                Stream decryptedStream = null;
+                try
+                {
+                    DecryptionContext decryptionContext;
+                    (decryptedStream, decryptionContext) = await DecryptAsync(
+                        documentStream,
+                        encryptor,
+                        diagnosticsContext,
+                        requestOptions: null,
+                        defaultJsonProcessor,
+                        cancellationToken);
+
+                    return decryptionContext != null
+                        ? (BaseSerializer.FromStream<JObject>(decryptedStream), decryptionContext)
+                        : (document, null);
+                }
+                finally
+                {
+                    if (decryptedStream != null && !ReferenceEquals(decryptedStream, documentStream))
+                    {
+                        await decryptedStream.DisposeCompatAsync();
+                    }
+
+                    await documentStream.DisposeCompatAsync();
+                }
+            }
+#endif
+
+            return await DecryptAsync(
+                document,
+                encryptor,
+                diagnosticsContext,
+                cancellationToken);
         }
 
         private static async Task<DecryptionContext> DecryptInternalAsync(Encryptor encryptor, CosmosDiagnosticsContext diagnosticsContext, JObject itemJObj, JObject encryptionPropertiesJObj, CancellationToken cancellationToken)
@@ -381,9 +447,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return encryptionPropertiesJObj;
         }
 
+        /// <remarks>
+        /// Decrypts every document in a feed / query / change-feed response body. The JSON processor used for
+        /// the per-document decryption is resolved from <paramref name="requestOptions"/> (per-request override
+        /// via <see cref="RequestOptions.Properties"/>) falling back to <paramref name="defaultJsonProcessor"/>
+        /// (the container-wide default). This keeps the feed/query decrypt path consistent with the point-read
+        /// and write paths: when the effective processor is <c>JsonProcessor.Stream</c> the MDE documents are
+        /// decrypted through the System.Text.Json streaming adapter rather than silently dropping to Newtonsoft.
+        /// </remarks>
         internal static async Task<Stream> DeserializeAndDecryptResponseAsync(
             Stream content,
             Encryptor encryptor,
+            RequestOptions requestOptions,
+            JsonProcessor defaultJsonProcessor,
             CancellationToken cancellationToken)
         {
             JObject contentJObj = BaseSerializer.FromStream<JObject>(content);
@@ -393,6 +469,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 throw new InvalidOperationException("Feed Response body contract was violated. Feed response did not have an array of Documents");
             }
 
+#if NET8_0_OR_GREATER
+            JsonProcessor jsonProcessor = requestOptions != null
+                ? requestOptions.GetJsonProcessor(defaultJsonProcessor)
+                : defaultJsonProcessor;
+
+            if (jsonProcessor == JsonProcessor.Stream)
+            {
+                await DecryptFeedDocumentsWithStreamProcessorAsync(
+                    documents,
+                    encryptor,
+                    requestOptions,
+                    defaultJsonProcessor,
+                    cancellationToken);
+
+                // the contents of contentJObj get decrypted in place for MDE algorithm model, and for legacy model _ei property is removed
+                // and corresponding decrypted properties are added back in the documents.
+                return BaseSerializer.ToStream(contentJObj);
+            }
+#endif
+
             foreach (JToken value in documents)
             {
                 if (value is not JObject document)
@@ -400,7 +496,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     continue;
                 }
 
-                CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(null);
+                CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
                 await DecryptAsync(
                     document,
                     encryptor,
@@ -412,5 +508,60 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             // and corresponding decrypted properties are added back in the documents.
             return BaseSerializer.ToStream(contentJObj);
         }
+
+#if NET8_0_OR_GREATER
+        /// <summary>
+        /// Decrypts every document of a feed response using the per-request / container-default Stream
+        /// (System.Text.Json) processor. Each document is routed through the same single-document
+        /// <see cref="DecryptAsync(Stream, Encryptor, CosmosDiagnosticsContext, RequestOptions, JsonProcessor, CancellationToken)"/>
+        /// entry point used by point reads, so MDE documents are decrypted with the streaming adapter (emitting the
+        /// <c>EncryptionProcessor.Decrypt.Mde.Stream</c> diagnostics scope) while legacy AEAD documents still fall back
+        /// to the Newtonsoft decryptor, matching point-read semantics.
+        /// </summary>
+        private static async Task DecryptFeedDocumentsWithStreamProcessorAsync(
+            JArray documents,
+            Encryptor encryptor,
+            RequestOptions requestOptions,
+            JsonProcessor defaultJsonProcessor,
+            CancellationToken cancellationToken)
+        {
+            for (int index = 0; index < documents.Count; index++)
+            {
+                if (documents[index] is not JObject document)
+                {
+                    continue;
+                }
+
+                CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
+                Stream documentStream = BaseSerializer.ToStream(document);
+                Stream decryptedStream = null;
+                try
+                {
+                    DecryptionContext decryptionContext;
+                    (decryptedStream, decryptionContext) = await DecryptAsync(
+                        documentStream,
+                        encryptor,
+                        diagnosticsContext,
+                        requestOptions,
+                        defaultJsonProcessor,
+                        cancellationToken);
+
+                    if (decryptionContext != null)
+                    {
+                        documents[index] = BaseSerializer.FromStream<JObject>(decryptedStream);
+                    }
+                }
+                finally
+                {
+                    if (decryptedStream != null && !ReferenceEquals(decryptedStream, documentStream))
+                    {
+                        await decryptedStream.DisposeCompatAsync();
+                    }
+
+                    await documentStream.DisposeCompatAsync();
+                }
+            }
+        }
+#endif
     }
 }

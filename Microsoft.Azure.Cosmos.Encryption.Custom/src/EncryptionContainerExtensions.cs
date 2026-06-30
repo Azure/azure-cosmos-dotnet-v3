@@ -29,6 +29,34 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
 
         /// <summary>
+        /// Get container with <see cref="Encryptor"/> for performing operations using client-side encryption,
+        /// using the supplied <see cref="JsonProcessor"/> as the container-wide default for every operation.
+        /// </summary>
+        /// <param name="container">Regular cosmos container.</param>
+        /// <param name="encryptor">Provider that allows encrypting and decrypting data.</param>
+        /// <param name="defaultJsonProcessor">
+        /// The JSON processor used by default for all encrypt, decrypt, query and feed operations on the
+        /// returned container. Individual requests can still override this default by supplying the
+        /// JsonProcessor through <see cref="RequestOptions.Properties"/>.
+        /// </param>
+        /// <returns>Container to perform operations supporting client-side encryption / decryption.</returns>
+        /// <remarks>
+        /// <c>JsonProcessor.Stream</c> is available on the .NET 8.0 package only and is supported for the
+        /// MDE encryption algorithm. Writing AEAD (legacy) encrypted data with a Stream default still throws a
+        /// <see cref="NotSupportedException"/> at write time, consistent with the per-request behavior.
+        /// </remarks>
+        public static Container WithEncryptor(
+            this Container container,
+            Encryptor encryptor,
+            JsonProcessor defaultJsonProcessor)
+        {
+            return new EncryptionContainer(
+                container,
+                encryptor,
+                defaultJsonProcessor);
+        }
+
+        /// <summary>
         /// This method gets the FeedIterator from LINQ IQueryable to execute query asynchronously.
         /// This will create the fresh new FeedIterator when called which will support decryption.
         /// </summary>
@@ -90,7 +118,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return new EncryptionFeedIterator(
                 query.ToStreamIterator(),
                 encryptionContainer.Encryptor,
-                encryptionContainer.CosmosSerializer);
+                encryptionContainer.CosmosSerializer,
+                requestOptions: null,
+                encryptionContainer.DefaultJsonProcessor);
         }
     }
 }
