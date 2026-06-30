@@ -443,6 +443,16 @@ namespace Microsoft.Azure.Cosmos
                         {
                             return responseMessage;
                         }
+
+                        // The response is retriable and retries remain, so it will not be returned
+                        // to the caller. Dispose it now so the underlying response stream is torn
+                        // down deterministically instead of being left to GC finalization. Over
+                        // HTTP/2 (thin-client path) an undisposed response can leave the stream's
+                        // read loop to finalization, where an abort surfaces as an unobserved
+                        // Http2StreamException ("stream aborted").
+                        // See https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5982 and
+                        // https://github.com/dotnet/runtime/issues/46961.
+                        responseMessage.Dispose();
                     }
                     catch (Exception e)
                     {

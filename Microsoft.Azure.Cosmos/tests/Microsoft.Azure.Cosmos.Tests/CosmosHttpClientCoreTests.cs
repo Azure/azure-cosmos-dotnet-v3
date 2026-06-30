@@ -800,6 +800,60 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreSame(HttpTimeoutPolicyDefault.Instance, thinClientPolicy);
         }
 
+        [TestMethod]
+        public async Task ThinClientRetriableResponsesAreDisposedBeforeRetryAsync()
+        {
+            // Regression test for https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5982.
+            // On the HTTP/2 thin-client path a 408 response is retried (ShouldRetryBasedOnResponse).
+            // The dropped 408 response must be disposed before the retry so the underlying stream is
+            // torn down deterministically instead of being left to GC finalization, where an HTTP/2
+            // stream abort would surface as an unobserved Http2StreamException ("stream aborted").
+            List<DisposeTrackingContent> droppedResponseContents = new List<DisposeTrackingContent>();
+            int count = 0;
+            Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                count++;
+
+                if (count <= 2)
+                {
+                    DisposeTrackingContent content = new DisposeTrackingContent();
+                    droppedResponseContents.Add(content);
+                    return Task.FromResult(new HttpResponseMessage(HttpStatusCode.RequestTimeout) { Content = content });
+                }
+
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("ok") });
+            }
+
+            DocumentServiceRequest documentServiceRequest = CreateDocumentServiceRequestByOperation(ResourceType.Document, OperationType.Read);
+            HttpTimeoutPolicy thinClientPolicy = HttpTimeoutPolicy.GetTimeoutPolicy(
+                documentServiceRequest: documentServiceRequest,
+                isPartitionLevelFailoverEnabled: false,
+                isThinClientEnabled: true);
+
+            HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+            using CosmosHttpClient cosmosHttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
+
+            using (ITrace trace = Trace.GetRootTrace(nameof(ThinClientRetriableResponsesAreDisposedBeforeRetryAsync)))
+            {
+                HttpResponseMessage responseMessage = await cosmosHttpClient.SendHttpAsync(() =>
+                    new ValueTask<HttpRequestMessage>(
+                        result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
+                    resourceType: ResourceType.Document,
+                    timeoutPolicy: thinClientPolicy,
+                    clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace),
+                    cancellationToken: default,
+                    documentServiceRequest: documentServiceRequest);
+
+                Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+            }
+
+            Assert.AreEqual(2, droppedResponseContents.Count, "Two 408 responses should be produced before success.");
+            foreach (DisposeTrackingContent content in droppedResponseContents)
+            {
+                Assert.IsTrue(content.IsDisposed, "Dropped retriable (408) response should be disposed before the retry (issue #5982).");
+            }
+        }
+
         private static DocumentServiceRequest CreateDocumentServiceRequestByOperation(
             ResourceType resourceType,
             OperationType operationType)
@@ -825,6 +879,28 @@ namespace Microsoft.Azure.Cosmos.Tests
             protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
                 return await this.sendFunc(request, cancellationToken);
+            }
+        }
+
+        private sealed class DisposeTrackingContent : HttpContent
+        {
+            public bool IsDisposed { get; private set; }
+
+            protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
+            {
+                return Task.CompletedTask;
+            }
+
+            protected override bool TryComputeLength(out long length)
+            {
+                length = 0;
+                return true;
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                this.IsDisposed = true;
+                base.Dispose(disposing);
             }
         }
     }
