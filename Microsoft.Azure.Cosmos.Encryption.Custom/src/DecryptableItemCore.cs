@@ -16,15 +16,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         private readonly JToken decryptableContent;
         private readonly Encryptor encryptor;
         private readonly CosmosSerializer cosmosSerializer;
+        private readonly JsonProcessor jsonProcessor;
 
         public DecryptableItemCore(
             JToken decryptableContent,
             Encryptor encryptor,
-            CosmosSerializer cosmosSerializer)
+            CosmosSerializer cosmosSerializer,
+            JsonProcessor jsonProcessor = JsonProcessor.Newtonsoft)
         {
             this.decryptableContent = decryptableContent ?? throw new ArgumentNullException(nameof(decryptableContent));
             this.encryptor = encryptor ?? throw new ArgumentNullException(nameof(encryptor));
             this.cosmosSerializer = cosmosSerializer ?? throw new ArgumentNullException(nameof(cosmosSerializer));
+            this.jsonProcessor = jsonProcessor;
         }
 
         public override async Task<(T, DecryptionContext)> GetItemAsync<T>()
@@ -40,6 +43,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     document,
                     this.encryptor,
                     new CosmosDiagnosticsContext(),
+                    this.jsonProcessor,
                     cancellationToken: default);
 
                 return (this.cosmosSerializer.FromStream<T>(EncryptionProcessor.BaseSerializer.ToStream(decryptedItem)), decryptionContext);

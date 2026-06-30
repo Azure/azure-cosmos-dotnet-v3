@@ -30,9 +30,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="decryptableContent">The encrypted content which is yet to be decrypted.</param>
         /// <param name="encryptor">Encryptor instance which will be used for decryption.</param>
         /// <param name="cosmosSerializer">Serializer instance which will be used for deserializing the content after decryption.</param>
+        /// <param name="jsonProcessor">The effective <see cref="JsonProcessor"/> used to decrypt the content on lazy access.</param>
         protected internal abstract void SetDecryptableItem(
             JToken decryptableContent,
             Encryptor encryptor,
-            CosmosSerializer cosmosSerializer);
+            CosmosSerializer cosmosSerializer,
+            JsonProcessor jsonProcessor = JsonProcessor.Newtonsoft);
     }
 }

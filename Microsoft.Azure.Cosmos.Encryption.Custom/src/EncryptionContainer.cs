@@ -100,7 +100,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     encryptableItem.SetDecryptableItem(
                         EncryptionProcessor.BaseSerializer.FromStream<JObject>(responseMessage.Content),
                         this.Encryptor,
-                        this.CosmosSerializer);
+                        this.CosmosSerializer,
+                        requestOptions.GetJsonProcessor(this.defaultJsonProcessor));
 
                     return new EncryptionItemResponse<T>(
                         responseMessage,
@@ -241,7 +242,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     DecryptableItemCore decryptableItem = new (
                         EncryptionProcessor.BaseSerializer.FromStream<JObject>(responseMessage.Content),
                         this.Encryptor,
-                        this.CosmosSerializer);
+                        this.CosmosSerializer,
+                        requestOptions.GetJsonProcessor(this.defaultJsonProcessor));
 
                     return new EncryptionItemResponse<T>(
                         responseMessage,
@@ -355,7 +357,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     encryptableItem.SetDecryptableItem(
                         EncryptionProcessor.BaseSerializer.FromStream<JObject>(responseMessage.Content),
                         this.Encryptor,
-                        this.CosmosSerializer);
+                        this.CosmosSerializer,
+                        requestOptions.GetJsonProcessor(this.defaultJsonProcessor));
 
                     return new EncryptionItemResponse<T>(
                         responseMessage,
@@ -497,7 +500,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     encryptableItem.SetDecryptableItem(
                         EncryptionProcessor.BaseSerializer.FromStream<JObject>(responseMessage.Content),
                         this.Encryptor,
-                        this.CosmosSerializer);
+                        this.CosmosSerializer,
+                        requestOptions.GetJsonProcessor(this.defaultJsonProcessor));
 
                     return new EncryptionItemResponse<T>(
                         responseMessage,
@@ -1086,7 +1090,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     DecryptableItemCore item = new (
                         value,
                         this.Encryptor,
-                        this.CosmosSerializer);
+                        this.CosmosSerializer,
+                        this.defaultJsonProcessor);
 
                     decryptItems.Add((T)(object)item);
                 }

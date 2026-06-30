@@ -56,7 +56,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         protected internal override void SetDecryptableItem(
             JToken decryptableContent,
             Encryptor encryptor,
-            CosmosSerializer cosmosSerializer)
+            CosmosSerializer cosmosSerializer,
+            JsonProcessor jsonProcessor = JsonProcessor.Newtonsoft)
         {
             if (this.decryptableItem != null)
             {
@@ -66,7 +67,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this.decryptableItem = new DecryptableItemCore(
                 decryptableContent,
                 encryptor,
-                cosmosSerializer);
+                cosmosSerializer,
+                jsonProcessor);
         }
 
         /// <inheritdoc/>

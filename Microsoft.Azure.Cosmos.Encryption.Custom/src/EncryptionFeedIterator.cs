@@ -88,6 +88,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 throw new InvalidOperationException("Feed Response body contract was violated. Feed Response did not have an array of Documents.");
             }
 
+            JsonProcessor jsonProcessor = this.requestOptions.GetJsonProcessor(this.defaultJsonProcessor);
+
             List<T> decryptableItems = new (documents.Count);
 
             foreach (JToken value in documents)
@@ -95,7 +97,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 DecryptableItemCore item = new (
                     value,
                     this.encryptor,
-                    this.cosmosSerializer);
+                    this.cosmosSerializer,
+                    jsonProcessor);
 
                 decryptableItems.Add((T)(object)item);
             }

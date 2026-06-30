@@ -431,6 +431,121 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 $"Newtonsoft-default change-feed path must not select Stream. Captured: {string.Join(", ", scopes)}");
         }
 
+        // --- Lazy DecryptableItem honors the container default (A1) ------------------------------------
+        // The lazy read paths (point-read and query/feed iterator) surface an undecrypted DecryptableItem whose
+        // GetItemAsync<T>() performs the actual decryption on demand. Before A1 that decryption was hard-wired to the
+        // Newtonsoft (JObject) decryptor and silently ignored a container default of JsonProcessor.Stream. These tests
+        // drive the production lazy paths end-to-end over mocked encrypted responses (no emulator) and assert both the
+        // correct decrypted round-trip AND that the configured processor was actually used (Stream emits the
+        // 'EncryptionProcessor.Decrypt.Mde.Stream' selection scope; Newtonsoft never does).
+
+        [DataTestMethod]
+        [DataRow(JsonProcessor.Newtonsoft)]
+        [DataRow(JsonProcessor.Stream)]
+        public async Task ReadItemAsync_DecryptableItem_DefaultProcessor_DecryptsAndHonorsProcessor(JsonProcessor processor)
+        {
+            Mock<Encryptor> encryptor = CreateMdeEncryptor();
+            TestDoc doc = TestDoc.Create();
+            byte[] documentBytes = await BuildEncryptedItemBytesAsync(encryptor, doc);
+            EncryptionContainer container = BuildMockPointReadContainer(encryptor, processor, documentBytes);
+
+            ItemResponse<DecryptableItem> response = await container.ReadItemAsync<DecryptableItem>(doc.Id, new PartitionKey(doc.PK));
+            Assert.AreEqual(
+                processor,
+                ReadDecryptableItemProcessor(response.Resource),
+                "Point-read DecryptableItem must carry the container default processor.");
+
+            await AssertLazyItemDecryptsWithProcessor(response.Resource, doc, processor);
+        }
+
+        [DataTestMethod]
+        [DataRow(JsonProcessor.Newtonsoft)]
+        [DataRow(JsonProcessor.Stream)]
+        public async Task GetItemQueryIterator_DecryptableItem_DefaultProcessor_DecryptsAndHonorsProcessor(JsonProcessor processor)
+        {
+            Mock<Encryptor> encryptor = CreateMdeEncryptor();
+            TestDoc doc = TestDoc.Create();
+            byte[] feedBytes = await BuildEncryptedFeedAsync(encryptor, doc);
+            EncryptionContainer container = BuildMockEncryptionContainer(encryptor, processor, feedBytes);
+
+            FeedIterator<DecryptableItem> iterator = container.GetItemQueryIterator<DecryptableItem>(new QueryDefinition("SELECT * FROM c"));
+            Assert.IsTrue(iterator.HasMoreResults);
+            FeedResponse<DecryptableItem> page = await iterator.ReadNextAsync();
+            DecryptableItem item = page.Single();
+            Assert.AreEqual(
+                processor,
+                ReadDecryptableItemProcessor(item),
+                "Feed/query DecryptableItem must carry the container default processor.");
+
+            await AssertLazyItemDecryptsWithProcessor(item, doc, processor);
+        }
+
+        // Guardrail (release blocker if it fails): the SAME encrypted document decrypted lazily via Newtonsoft and via
+        // Stream must yield byte-for-byte identical plaintext and an equivalent DecryptionContext. Proves A1 honors the
+        // processor choice without changing the decrypted result on either path.
+        [TestMethod]
+        public async Task DecryptableItem_NewtonsoftAndStream_ProduceIdenticalPlaintextAndContext()
+        {
+            Mock<Encryptor> encryptor = CreateMdeEncryptor();
+            TestDoc doc = TestDoc.Create();
+            JObject encrypted = await BuildEncryptedDocumentAsync(encryptor, doc);
+
+            DecryptableItemCore newtonsoftItem = new((JObject)encrypted.DeepClone(), encryptor.Object, TestSerializer, JsonProcessor.Newtonsoft);
+            DecryptableItemCore streamItem = new((JObject)encrypted.DeepClone(), encryptor.Object, TestSerializer, JsonProcessor.Stream);
+
+            (JObject plaintextNewtonsoft, DecryptionContext contextNewtonsoft) = await newtonsoftItem.GetItemAsync<JObject>();
+            (JObject plaintextStream, DecryptionContext contextStream) = await streamItem.GetItemAsync<JObject>();
+
+            byte[] bytesNewtonsoft = ReadAllBytes(EncryptionProcessor.BaseSerializer.ToStream(plaintextNewtonsoft));
+            byte[] bytesStream = ReadAllBytes(EncryptionProcessor.BaseSerializer.ToStream(plaintextStream));
+            CollectionAssert.AreEqual(
+                bytesNewtonsoft,
+                bytesStream,
+                "Stream and Newtonsoft lazy decryption must produce byte-for-byte identical plaintext.");
+
+            // Both must also faithfully reconstruct the original document.
+            Assert.AreEqual(doc, plaintextNewtonsoft.ToObject<TestDoc>());
+            Assert.AreEqual(doc, plaintextStream.ToObject<TestDoc>());
+
+            AssertDecryptionContextEquivalent(contextNewtonsoft, contextStream);
+        }
+
+        // Write-path wrappers: CreateItem/ReplaceItem/UpsertItem build an EncryptableItem<T>/EncryptableItemStream and
+        // call SetDecryptableItem(...) to expose lazy decryption of the server echo. A1 threads the container default
+        // through that signature; these tests prove the produced DecryptableItem carries the processor and decrypts
+        // with it.
+        [DataTestMethod]
+        [DataRow(JsonProcessor.Newtonsoft)]
+        [DataRow(JsonProcessor.Stream)]
+        public async Task SetDecryptableItem_EncryptableItemT_ThreadsProcessorIntoLazyDecrypt(JsonProcessor processor)
+        {
+            Mock<Encryptor> encryptor = CreateMdeEncryptor();
+            TestDoc doc = TestDoc.Create();
+            JObject encrypted = await BuildEncryptedDocumentAsync(encryptor, doc);
+
+            EncryptableItem<TestDoc> encryptableItem = new(doc);
+            encryptableItem.SetDecryptableItem((JObject)encrypted.DeepClone(), encryptor.Object, TestSerializer, processor);
+
+            Assert.AreEqual(processor, ReadDecryptableItemProcessor(encryptableItem.DecryptableItem));
+            await AssertLazyItemDecryptsWithProcessor(encryptableItem.DecryptableItem, doc, processor);
+        }
+
+        [DataTestMethod]
+        [DataRow(JsonProcessor.Newtonsoft)]
+        [DataRow(JsonProcessor.Stream)]
+        public async Task SetDecryptableItem_EncryptableItemStream_ThreadsProcessorIntoLazyDecrypt(JsonProcessor processor)
+        {
+            Mock<Encryptor> encryptor = CreateMdeEncryptor();
+            TestDoc doc = TestDoc.Create();
+            JObject encrypted = await BuildEncryptedDocumentAsync(encryptor, doc);
+
+            using EncryptableItemStream encryptableItem = new(doc.ToStream());
+            encryptableItem.SetDecryptableItem((JObject)encrypted.DeepClone(), encryptor.Object, TestSerializer, processor);
+
+            Assert.AreEqual(processor, ReadDecryptableItemProcessor(encryptableItem.DecryptableItem));
+            await AssertLazyItemDecryptsWithProcessor(encryptableItem.DecryptableItem, doc, processor);
+        }
+
         // --- Helpers for the genuine round-trip tests --------------------------------------------------
         private const string DekId = "dekId";
 
@@ -628,6 +743,110 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             FieldInfo field = target.GetType().GetField("defaultJsonProcessor", BindingFlags.NonPublic | BindingFlags.Instance);
             Assert.IsNotNull(field, "Expected EncryptionFeedIterator to expose a private 'defaultJsonProcessor' field.");
             return (JsonProcessor)field.GetValue(target);
+        }
+
+        private static async Task AssertLazyItemDecryptsWithProcessor(DecryptableItem item, TestDoc expected, JsonProcessor processor)
+        {
+            List<string> scopes = new();
+            TestDoc decrypted;
+            DecryptionContext decryptionContext;
+            using (RegisterDecryptScopeListener(scopes))
+            {
+                (decrypted, decryptionContext) = await item.GetItemAsync<TestDoc>();
+            }
+
+            Assert.AreEqual(expected, decrypted);
+            Assert.AreEqual(expected.SensitiveStr, decrypted.SensitiveStr);
+            AssertProcessorSelection(processor, scopes);
+            AssertDecryptedDekId(decryptionContext);
+        }
+
+        private static void AssertProcessorSelection(JsonProcessor processor, List<string> scopes)
+        {
+            string streamScope = CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream;
+            if (processor == JsonProcessor.Stream)
+            {
+                CollectionAssert.Contains(
+                    scopes,
+                    streamScope,
+                    $"Lazy decryption under the Stream default must select the Stream processor. Captured: {string.Join(", ", scopes)}");
+            }
+            else
+            {
+                CollectionAssert.DoesNotContain(
+                    scopes,
+                    streamScope,
+                    $"Lazy decryption under the Newtonsoft default must not select the Stream processor. Captured: {string.Join(", ", scopes)}");
+            }
+        }
+
+        private static void AssertDecryptedDekId(DecryptionContext decryptionContext)
+        {
+            Assert.IsNotNull(decryptionContext);
+            Assert.IsTrue(decryptionContext.DecryptionInfoList.Count > 0, "Expected at least one DecryptionInfo entry.");
+            foreach (DecryptionInfo info in decryptionContext.DecryptionInfoList)
+            {
+                Assert.AreEqual(DekId, info.DataEncryptionKeyId);
+                Assert.IsTrue(info.PathsDecrypted.Count > 0, "Expected the decrypted paths to be reported.");
+            }
+        }
+
+        private static void AssertDecryptionContextEquivalent(DecryptionContext expected, DecryptionContext actual)
+        {
+            Assert.IsNotNull(expected);
+            Assert.IsNotNull(actual);
+            Assert.AreEqual(
+                expected.DecryptionInfoList.Count,
+                actual.DecryptionInfoList.Count,
+                "DecryptionContext entry count differs between processors.");
+            for (int i = 0; i < expected.DecryptionInfoList.Count; i++)
+            {
+                Assert.AreEqual(
+                    expected.DecryptionInfoList[i].DataEncryptionKeyId,
+                    actual.DecryptionInfoList[i].DataEncryptionKeyId,
+                    "DataEncryptionKeyId differs between processors.");
+                CollectionAssert.AreEquivalent(
+                    expected.DecryptionInfoList[i].PathsDecrypted.ToList(),
+                    actual.DecryptionInfoList[i].PathsDecrypted.ToList(),
+                    "Decrypted paths differ between processors.");
+            }
+        }
+
+        private static JsonProcessor ReadDecryptableItemProcessor(DecryptableItem item)
+        {
+            FieldInfo field = item.GetType().GetField("jsonProcessor", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.IsNotNull(field, "Expected DecryptableItemCore to expose a private 'jsonProcessor' field.");
+            return (JsonProcessor)field.GetValue(item);
+        }
+
+        private static readonly CosmosSerializer TestSerializer = new JObjectCosmosSerializer();
+
+        private static byte[] ReadAllBytes(Stream stream)
+        {
+            if (stream.CanSeek)
+            {
+                stream.Position = 0;
+            }
+
+            using MemoryStream memoryStream = new();
+            stream.CopyTo(memoryStream);
+            return memoryStream.ToArray();
+        }
+
+        // Minimal CosmosSerializer for directly constructing DecryptableItemCore / driving SetDecryptableItem in
+        // tests. The production point-read/feed paths supply the container's CosmosSerializer; here we wrap the same
+        // JSON.NET serializer the package uses internally so deserialization matches production exactly.
+        private sealed class JObjectCosmosSerializer : CosmosSerializer
+        {
+            public override T FromStream<T>(Stream stream)
+            {
+                return EncryptionProcessor.BaseSerializer.FromStream<T>(stream);
+            }
+
+            public override Stream ToStream<T>(T input)
+            {
+                return EncryptionProcessor.BaseSerializer.ToStream(input);
+            }
         }
 #endif
     }

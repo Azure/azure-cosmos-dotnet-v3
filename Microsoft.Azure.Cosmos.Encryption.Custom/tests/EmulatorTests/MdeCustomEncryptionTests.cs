@@ -760,6 +760,97 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 CancellationToken.None);
         }
 
+        // --- Lazy DecryptableItem on a default-Stream container (A1) end-to-end ------------------------
+        // The lazy read APIs (write-wrapper EncryptableItem<T>/EncryptableItemStream.DecryptableItem, point-read
+        // ReadItemAsync<DecryptableItem>, and query GetItemQueryIterator<DecryptableItem>) defer decryption to
+        // DecryptableItem.GetItemAsync<T>(). On a container whose default JsonProcessor is Stream that deferred
+        // decryption must run through the Stream processor; before A1 it silently used the Newtonsoft (JObject)
+        // decryptor and ignored the container default. This drives all three lazy entry points end-to-end and
+        // white-box-asserts (via the encryption ActivitySource) that the deferred decrypt selected Stream and never
+        // Newtonsoft, while VerifyExpectedDocResponse proves the plaintext round-trips.
+        [TestMethod]
+        public async Task LazyDecryptableItem_DefaultStreamContainer_DecryptsAndSelectsStream_EndToEnd()
+        {
+            Container rawContainer = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/PK", 400);
+            try
+            {
+                Container streamContainer = rawContainer.WithEncryptor(encryptor, JsonProcessor.Stream);
+
+                // (1) Write-path lazy: CreateItemAsync(EncryptableItem<T>) exposes a DecryptableItem of the echo.
+                TestDoc writeDoc = TestDoc.Create();
+                ItemResponse<EncryptableItem<TestDoc>> createResponse = await streamContainer.CreateItemAsync(
+                    new EncryptableItem<TestDoc>(writeDoc),
+                    new PartitionKey(writeDoc.PK),
+                    GetRequestOptions(dekId, TestDoc.PathsToEncrypt));
+                Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+
+                List<string> writeLazyScopes = await CaptureEncryptionScopesAsync(
+                    () => ValidateDecryptableItem(createResponse.Resource.DecryptableItem, writeDoc));
+                AssertLazyDecryptSelectedStream(writeLazyScopes, expectedDocuments: 1);
+
+                // Also exercise the stream write-wrapper (EncryptableItemStream).
+                TestDoc writeDocStream = TestDoc.Create();
+                ItemResponse<EncryptableItemStream> createStreamResponse = await streamContainer.CreateItemAsync(
+                    new EncryptableItemStream(TestCommon.ToStream(writeDocStream)),
+                    new PartitionKey(writeDocStream.PK),
+                    GetRequestOptions(dekId, TestDoc.PathsToEncrypt));
+                Assert.AreEqual(HttpStatusCode.Created, createStreamResponse.StatusCode);
+
+                List<string> writeStreamLazyScopes = await CaptureEncryptionScopesAsync(
+                    () => ValidateDecryptableItem(createStreamResponse.Resource.DecryptableItem, writeDocStream));
+                AssertLazyDecryptSelectedStream(writeStreamLazyScopes, expectedDocuments: 1);
+
+                // (2) Point-read lazy: ReadItemAsync<DecryptableItem>.
+                List<string> pointReadScopes = await CaptureEncryptionScopesAsync(async () =>
+                {
+                    ItemResponse<DecryptableItem> readResponse = await streamContainer.ReadItemAsync<DecryptableItem>(
+                        writeDoc.Id,
+                        new PartitionKey(writeDoc.PK));
+                    await ValidateDecryptableItem(readResponse.Resource, writeDoc);
+                });
+                AssertLazyDecryptSelectedStream(pointReadScopes, expectedDocuments: 1);
+
+                // (3) Query/feed lazy: GetItemQueryIterator<DecryptableItem>.
+                string query = $"SELECT * FROM c WHERE c.PK in ('{writeDoc.PK}', '{writeDocStream.PK}')";
+                List<string> feedScopes = await CaptureEncryptionScopesAsync(async () =>
+                {
+                    FeedIterator<DecryptableItem> iterator = streamContainer.GetItemQueryIterator<DecryptableItem>(query);
+                    int decrypted = 0;
+                    while (iterator.HasMoreResults)
+                    {
+                        FeedResponse<DecryptableItem> page = await iterator.ReadNextAsync();
+                        foreach (DecryptableItem item in page)
+                        {
+                            (TestDoc readDoc, DecryptionContext context) = await item.GetItemAsync<TestDoc>();
+                            Assert.IsNotNull(context);
+                            TestDoc expected = readDoc.Id == writeDoc.Id ? writeDoc : writeDocStream;
+                            VerifyExpectedDocResponse(expected, readDoc);
+                            decrypted++;
+                        }
+                    }
+
+                    Assert.AreEqual(2, decrypted, "Expected both documents from the lazy query iterator.");
+                });
+                AssertLazyDecryptSelectedStream(feedScopes, expectedDocuments: 2);
+            }
+            finally
+            {
+                using (await rawContainer.DeleteContainerStreamAsync()) { }
+            }
+        }
+
+        private static void AssertLazyDecryptSelectedStream(List<string> scopes, int expectedDocuments)
+        {
+            (_, int streamDecrypt, _, int newtonsoftDecrypt) = CountJsonProcessorScopes(scopes);
+            Assert.IsTrue(
+                streamDecrypt >= expectedDocuments,
+                $"Expected the Stream decrypt-selection scope at least once per lazily decrypted document. Scopes: {string.Join(", ", scopes)}");
+            Assert.AreEqual(
+                0,
+                newtonsoftDecrypt,
+                $"A default-Stream container must not select Newtonsoft on the lazy decrypt path. Scopes: {string.Join(", ", scopes)}");
+        }
+
         private class TestItem
         {
             [JsonProperty("id")] public string Id { get; set; }
