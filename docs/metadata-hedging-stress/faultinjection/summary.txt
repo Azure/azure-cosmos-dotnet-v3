@@ -1,17 +1,20 @@
 ===================== FI HEDGING SUMMARY (PR vs main) =====================
 --- coldstart/single ---
-  main(OFF)  n=   8 fires=   0 budgetExh=   0 fail=  0 p50=   12463 p95=   12622 p99=   12622
-  PR(ON)     n=   8 fires=  16 budgetExh=   0 fail=  0 p50=    3693 p95=    3750 p99=    3750
+  main(OFF)  n=   8 fires=   0 budgetExh=   0 fail=  0 p50=   12365 p95=   12513 p99=   12513
+  PR(ON)     n=   8 fires=  16 budgetExh=   0 fail=  0 p50=    3686 p95=    3739 p99=    3739
 --- refresh/low ---
-  main(OFF)  n=  30 fires=   0 budgetExh=   0 fail=  0 p50=    4033 p95=    4044 p99=    4047
-  PR(ON)     n=  30 fires=  30 budgetExh=   0 fail=  0 p50=    1592 p95=    1605 p99=    1762
+  main(OFF)  n=  30 fires=   0 budgetExh=   0 fail=  0 p50=    4033 p95=    4052 p99=    4052
+  PR(ON)     n=  30 fires=  30 budgetExh=   0 fail=  0 p50=    1592 p95=    1607 p99=    1804
 --- refresh/saturating ---
-  main(OFF)  n=  48 fires=   0 budgetExh=   0 fail=  0 p50=    4034 p95=    4088 p99=    4105
-  PR(ON)     n=  48 fires=  32 budgetExh=  16 fail=  0 p50=    1604 p95=    4033 p99=    4057
+  main(OFF)  n=  48 fires=   0 budgetExh=   0 fail=  0 p50=    4033 p95=    4048 p99=    4064
+  PR(ON)     n=  48 fires=  32 budgetExh=  16 fail=  0 p50=    1598 p95=    4039 p99=    4047
 --- mixed/end-to-end ---
-  main(OFF)  n=  60 fires=   0 budgetExh=   0 fail=  0 p50=      48 p95=    4044 p99=    4045
-  PR(ON)     n=  60 fires=   1 budgetExh=   0 fail=  0 p50=      34 p95=    1922 p99=    1923
+  main(OFF)  n=  60 fires=   0 budgetExh=   0 fail=  0 p50=      49 p95=    4037 p99=    4039
+  PR(ON)     n=  60 fires=   1 budgetExh=   0 fail=  0 p50=      40 p95=    1819 p99=    1820
 --- mixed/refresh-subset ---
-  main(OFF)  n=  15 fires=   0 budgetExh=   0 fail=  0 p50=    3921 p95=    4045 p99=    4045
-  PR(ON)     n=  15 fires=   1 budgetExh=   0 fail=  0 p50=    1859 p95=    1923 p99=    1923
+  main(OFF)  n=  15 fires=   0 budgetExh=   0 fail=  0 p50=    3978 p95=    4039 p99=    4039
+  PR(ON)     n=  15 fires=   1 budgetExh=   0 fail=  0 p50=    1758 p95=    1820 p99=    1820
+--- fastfail/brownout ---
+  main(OFF)  n=  48 fires=   0 budgetExh=   0 fail=  0 p50=      82 p95=     347 p99=     385
+  PR(ON)     n=  48 fires=  32 budgetExh=  33 fail=  0 p50=      82 p95=     297 p99=     325
 ==========================================================================

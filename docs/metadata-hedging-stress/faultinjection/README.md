@@ -50,6 +50,32 @@ OFF lands at ~4 s; ON dispatches a hedge to a healthy secondary at the 1.5 s thr
 | Mixed — refresh subset | 3,921 ms | 1,859 ms | **−53 %** | 4,045 ms | 1,923 ms | 1 / 0 |
 | Mixed — **end-to-end** (70 % warm reads) | 48 ms | 34 ms | ~0 | 4,045 ms | 1,923 ms | 1 / 0 |
 
+### Primary-brownout fast-fail soak (answers the PR review at `MetadataHedgingStrategy.cs` line 319)
+
+The review raised: when the primary *fast-fails* before the threshold (503 / `HttpRequestException`), the
+hedge dispatches **immediately** (skipping the 1.5 s wait); during a primary brownout every eligible refresh
+fast-fails and instantly hedges, so the worry is unbounded secondary amplification. This soak injects a hub
+`ServiceUnavailable` (503, **no delay**) and fires a wide simultaneous wave of distinct containers (> budget 8)
+so the per-client budget is forced to engage on that exact fast-fail path:
+
+| Arm | hedges fired | budget-exhausted (primary-only) | failures | p50 | p99 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| main (OFF) | 0 | 0 | 0 | 82 ms | 385 ms |
+| PR (ON) | 32 | **33** | 0 | 82 ms | 325 ms |
+
+**Finding:** the per-client `SemaphoreSlim(8)` engages on the fast-fail path exactly as on the threshold-elapsed
+path — even when *every* primary instantly fails, only the budget's worth hedge and the rest fall back to
+primary-only (**33 budget-exhausted**). The fast-fail path does **not** bypass the budget. The fleet-wide
+`8×N` concern (N clients) is per-client-bounded by construction; a real multi-client fleet brownout drill and
+the default-on decision remain a pre-GA step (design §12) — and the feature is internal/opt-in in Phase 1, not
+default-on.
+
+> Harness note: the wide fast-fail wave incidentally surfaced a pre-existing thread-safety race in the
+> **FaultInjection test framework** (`FaultInjectionServerErrorResultInternal.IsApplicable` enumerates a
+> per-rule execution-history list while a concurrent request appends to it). It is unrelated to the
+> metadata-hedging code and does not affect the strategy/budget behaviour; the soak retries that transient so
+> the reported numbers are clean (`failures = 0`).
+
 ### Graphs
 
 Each PNG now carries an embedded **"What it shows / What it proves"** analysis box.
@@ -66,6 +92,9 @@ Each PNG now carries an embedded **"What it shows / What it proves"** analysis b
 - **`fi4_mixed_e2e_honest.png`**
   - *Shows:* end-to-end p50/p95/p99 of a mixed workload (70 % warm reads + 30 % refresh).
   - *Proves:* **end-to-end p50 is unchanged** (warm reads dominate); only the metadata-refresh tail (p95/p99) improves. A targeted tail win, not a blanket p50 win.
+- **`fi5_fastfail_brownout_budget.png`**
+  - *Shows:* hedges fired vs budget-exhausted under a fast-fail (503, no-delay) brownout where every primary instantly hedges.
+  - *Proves:* the per-client budget engages on the immediate-hedge path too — PR fires 32 but is capped (**33 budget-exhausted → primary-only**); main = 0. Fast-fail does not bypass the budget. (Addresses the line-319 review.)
 
 ## Conclusions
 1. **Behaviour actually changes** — ON fires hedges (meter-confirmed: 16/30/32), OFF fires

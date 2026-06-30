@@ -154,6 +154,36 @@ add_analysis(fig,
     "blanket p50 win.")
 fig.savefig(os.path.join(OUT,"fi4_mixed_e2e_honest.png"), dpi=130); plt.close(fig)
 
+# ---- G5: fast-fail (503) brownout — budget engages on the immediate-hedge path ----
+rpF = row("fastfail", "brownout", "1"); rmF = row("fastfail", "brownout", "0")
+if rpF and rmF:
+    fig, ax = plt.subplots(figsize=(11, 7.8))
+    cats = ["hedges fired", "budget-exhausted\n(primary-only)"]
+    onv = [int(rpF["meterFires"]), int(rpF["budgetExhausted"])]
+    offv = [int(rmF["meterFires"]), int(rmF["budgetExhausted"])]
+    xx = np.arange(len(cats)); w = 0.38
+    b1 = ax.bar(xx-w/2, offv, w, label="main (OFF)", color=MAIN_C)
+    b2 = ax.bar(xx+w/2, onv, w, label="PR (ON)", color=PR_C)
+    ax.set_xticks(xx); ax.set_xticklabels(cats)
+    ax.set_ylabel("metadata refresh reads")
+    ax.set_title("Primary-brownout FAST-FAIL soak (hub 503, no delay → instant hedge)\n"
+                 f"PR budget engages on the fast-fail path: {rpF['budgetExhausted']} of {rpF['n']} ops budget-exhausted "
+                 f"(capped to primary-only); main never hedges", fontsize=11)
+    ax.legend()
+    for b, v in zip(list(b1)+list(b2), offv+onv):
+        ax.text(b.get_x()+b.get_width()/2, v, str(v), ha="center", va="bottom", fontsize=10)
+    fig.tight_layout()
+    add_analysis(fig,
+        "A primary-brownout soak: the hub's Gateway metadata returns 503 with NO delay, so every eligible refresh "
+        "fast-fails and the strategy dispatches the hedge IMMEDIATELY (skipping the 1.5 s threshold). A wide simultaneous "
+        "wave of distinct containers (> budget 8) is fired so the per-client budget is forced to engage.",
+        "The per-client SemaphoreSlim(8) caps fast-fail hedges exactly like threshold-elapsed ones — even when every "
+        "primary instantly fails, only the budget's worth hedge and the rest fall back to primary-only "
+        f"({rpF['budgetExhausted']} budget-exhausted). The fast-fail path does NOT bypass the budget; main (OFF) issues "
+        "zero hedges. Per-client bound confirmed; fleet-wide 8xN and the default-on decision remain a pre-GA drill.")
+    fig.savefig(os.path.join(OUT, "fi5_fastfail_brownout_budget.png"), dpi=130); plt.close(fig)
+
 print("wrote FI graphs to", OUT)
-for fn in ["fi1_latency_pr_vs_main.png","fi2_meter_crosscheck.png","fi3_saturating_budget_cdf.png","fi4_mixed_e2e_honest.png"]:
+for fn in ["fi1_latency_pr_vs_main.png","fi2_meter_crosscheck.png","fi3_saturating_budget_cdf.png",
+           "fi4_mixed_e2e_honest.png","fi5_fastfail_brownout_budget.png"]:
     print("  ", fn)

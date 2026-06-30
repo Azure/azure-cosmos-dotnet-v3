@@ -104,9 +104,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             (TimeSpan hubDelay, int coldClients, int lowRefresh, int satRounds, int containerCount, int mixedOps) cfg = mode switch
             {
                 "probe" => (TimeSpan.FromSeconds(3), 3, 6, 2, 10, 12),
+                "fastonly" => (TimeSpan.FromSeconds(3), 0, 0, 4, 12, 0),
                 "realtime" => (TimeSpan.FromSeconds(8), 4, 10, 2, 12, 16),
                 _ => (TimeSpan.FromSeconds(3), 8, 30, 4, 12, 60),
             };
+            bool fastOnly = mode == "fastonly";
 
             Console.WriteLine($"[fi-harness] mode={mode} hubDelay={cfg.hubDelay.TotalSeconds}s outDir={OutDir}");
 
@@ -135,19 +137,27 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 Console.WriteLine($"\n========== ARM {arm} ==========");
 
                 // 1) COLD START end-to-end: fresh client per sample, rule enabled, time the FIRST ReadItemAsync.
-                await this.RunColdStartAsync(arm, on, cfg.hubDelay, cfg.coldClients, rows, opRows);
+                if (!fastOnly)
+                {
+                    await this.RunColdStartAsync(arm, on, cfg.hubDelay, cfg.coldClients, rows, opRows);
 
-                // 2) STEADY-STATE metadata refresh — LOW contention: sequential, so each forced
-                //    refresh is a DISTINCT (non-coalesced) metadata read that can hedge.
-                await this.RunRefreshLowAsync(arm, on, cfg.hubDelay, cfg.lowRefresh, rows, opRows);
+                    // 2) STEADY-STATE metadata refresh — LOW contention: sequential, so each forced
+                    //    refresh is a DISTINCT (non-coalesced) metadata read that can hedge.
+                    await this.RunRefreshLowAsync(arm, on, cfg.hubDelay, cfg.lowRefresh, rows, opRows);
 
-                // 3) STEADY-STATE metadata refresh — SATURATING storm across many distinct containers
-                //    (> budget 8) so the per-client budget is genuinely exhausted (BudgetExhausted > 0).
-                await this.RunRefreshSaturatingAsync(arm, on, cfg.hubDelay, cfg.satRounds, cfg.containerCount, rows, opRows);
+                    // 3) STEADY-STATE metadata refresh — SATURATING storm across many distinct containers
+                    //    (> budget 8) so the per-client budget is genuinely exhausted (BudgetExhausted > 0).
+                    await this.RunRefreshSaturatingAsync(arm, on, cfg.hubDelay, cfg.satRounds, cfg.containerCount, rows, opRows);
 
-                // 4) MIXED end-to-end workload: warm reads (untouched) + refresh-bearing ops. Shows
-                //    end-to-end p50 ~unchanged (warm reads dominate) while the refresh tail improves.
-                await this.RunMixedWorkloadAsync(arm, on, cfg.hubDelay, cfg.mixedOps, concurrency: 20, rows, opRows);
+                    // 4) MIXED end-to-end workload: warm reads (untouched) + refresh-bearing ops. Shows
+                    //    end-to-end p50 ~unchanged (warm reads dominate) while the refresh tail improves.
+                    await this.RunMixedWorkloadAsync(arm, on, cfg.hubDelay, cfg.mixedOps, concurrency: 20, rows, opRows);
+                }
+
+                // 5) PRIMARY-BROWNOUT FAST-FAIL soak (PR review concern @ line 319): hub metadata
+                //    returns 503 with NO delay, so every refresh fast-fails and hedges immediately.
+                //    A wide simultaneous wave proves the per-client budget still caps fast-fail hedges.
+                await this.RunFastFailBrownoutAsync(arm, on, cfg.satRounds, cfg.containerCount, rows, opRows);
             }
 
             WriteScenarioCsv(rows);
@@ -281,7 +291,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                     Stopwatch sw = Stopwatch.StartNew();
                     try
                     {
-                        await pkCache.TryGetOverlappingRangesAsync(rid, FeedRangeEpk.FullRange.Range, NoOpTrace.Singleton, forceRefresh: true);
+                        await ForceRefreshAsync(pkCache, rid);
                         sw.Stop();
                         lat.Add(sw.Elapsed.TotalMilliseconds);
                         opRows.Add(new OpRow { Arm = arm, Scenario = "refresh", Regime = "saturating", LatencyMs = sw.Elapsed.TotalMilliseconds, Hedged = false });
@@ -301,6 +311,68 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             row.Failures = failures;
             rows.Add(row);
             Console.WriteLine($"  [refresh {arm}/saturating] n={lat.Count} fires={meter.Fires} budgetExh={meter.BudgetExhausted} failures={failures} " +
+                $"p50={Pct(lat.ToList(),0.5):F0}ms p99={Pct(lat.ToList(),0.99):F0}ms");
+        }
+
+        // Primary-brownout fast-fail soak (PR review concern, MetadataHedgingStrategy.cs line 319):
+        // every eligible metadata refresh hits a 503 on the hub and INSTANTLY hedges (no 1.5 s wait).
+        // Fires a wide simultaneous wave of distinct containers (> budget 8) so the per-client
+        // SemaphoreSlim(8) is forced to engage on the fast-fail path. Proves the budget bound is
+        // path-independent: fast-fail hedges are capped per client exactly like threshold-elapsed ones.
+        private async Task RunFastFailBrownoutAsync(string arm, bool on, int rounds, int containerCount,
+            List<ScenarioRow> rows, ConcurrentBag<OpRow> opRows)
+        {
+            FaultInjectionRule c = this.HubMetadata503Rule(FaultInjectionOperationType.MetadataContainer);
+            FaultInjectionRule p = this.HubMetadata503Rule(FaultInjectionOperationType.MetadataPartitionKeyRange);
+            FaultInjector injector = new FaultInjector(new List<FaultInjectionRule> { c, p });
+
+            using HedgeMeter meter = new HedgeMeter();
+            using CosmosClient client = this.NewClient(injector, hedgingOptIn: on);
+            PartitionKeyRangeCache pkCache = await client.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
+
+            List<string> rids = new List<string>();
+            for (int i = 0; i < containerCount; i++)
+            {
+                Container ci = client.GetContainer(TestCommon.FaultInjectionDatabaseName, ExtraContainerId(i));
+                await ci.ReadItemAsync<FaultInjectionTestObject>("k", new PartitionKey("k"));
+                rids.Add(await ((ContainerInternal)ci).GetCachedRIDAsync(CancellationToken.None));
+            }
+
+            c.Enable();
+            p.Enable();
+            meter.Reset();
+
+            ConcurrentBag<double> lat = new ConcurrentBag<double>();
+            int failures = 0;
+            for (int round = 0; round < rounds; round++)
+            {
+                // One simultaneous burst of all distinct containers (no gate) → containerCount
+                // near-instant fast-fails competing for the 8 budget permits at once.
+                List<Task> tasks = rids.Select(rid => Task.Run(async () =>
+                {
+                    Stopwatch sw = Stopwatch.StartNew();
+                    try
+                    {
+                        await ForceRefreshAsync(pkCache, rid);
+                        sw.Stop();
+                        lat.Add(sw.Elapsed.TotalMilliseconds);
+                        opRows.Add(new OpRow { Arm = arm, Scenario = "fastfail", Regime = "brownout", LatencyMs = sw.Elapsed.TotalMilliseconds, Hedged = false });
+                    }
+                    catch (Exception ex)
+                    {
+                        sw.Stop();
+                        Interlocked.Increment(ref failures);
+                        lat.Add(sw.Elapsed.TotalMilliseconds);
+                        LogFailureSample(arm, "fastfail", ex);
+                    }
+                })).ToList();
+                await Task.WhenAll(tasks);
+            }
+
+            ScenarioRow row = ScenarioRow.From(arm, on, "fastfail", "brownout", lat.ToList(), meter.Fires, meter.BudgetExhausted, maxConcSecondary: -1);
+            row.Failures = failures;
+            rows.Add(row);
+            Console.WriteLine($"  [fastfail {arm}/brownout] n={lat.Count} fires={meter.Fires} budgetExh={meter.BudgetExhausted} failures={failures} " +
                 $"p50={Pct(lat.ToList(),0.5):F0}ms p99={Pct(lat.ToList(),0.99):F0}ms");
         }
 
@@ -342,7 +414,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                     {
                         if (isRefresh)
                         {
-                            await pkCache.TryGetOverlappingRangesAsync(rid, FeedRangeEpk.FullRange.Range, NoOpTrace.Singleton, forceRefresh: true);
+                            await ForceRefreshAsync(pkCache, rid);
                         }
                         else
                         {
@@ -390,16 +462,45 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             // Surface only the first few distinct failures to keep the log readable. Budget-exhausted
             // primary-only ops on a hard-degraded hub can legitimately error/time out — that is the
             // bounded-amplification trade-off being measured, not a harness bug.
-            if (Interlocked.Increment(ref failureSamplesLogged) <= 6)
+            int n = Interlocked.Increment(ref failureSamplesLogged);
+            if (n <= 6)
             {
                 string status = ex is CosmosException ce ? ce.StatusCode.ToString()
                     : ex is Microsoft.Azure.Documents.DocumentClientException dce ? dce.StatusCode?.ToString() ?? "?"
                     : "n/a";
                 Console.WriteLine($"      [failure {arm}/{regime}] {ex.GetType().Name} status={status}: {ex.Message.Split('\n')[0]}");
+                if (n == 1)
+                {
+                    Console.WriteLine("      [first-failure-stack] " + ex.ToString().Replace("\n", "\n      "));
+                }
             }
         }
 
         private static string ExtraContainerId(int i) => $"fihedge{i}";
+
+        // A forced PkRange refresh that retries the transient thread-safety race in the
+        // FaultInjection TEST framework (FaultInjectionServerErrorResultInternal.IsApplicable
+        // enumerates a per-rule execution-history List while another concurrent request appends
+        // to it). That race is exposed by the wide simultaneous waves below and is unrelated to
+        // the metadata-hedging code under test — the strategy/budget behaviour is unaffected, so
+        // the soak retries it rather than counting it as a hedging failure.
+        private static async Task ForceRefreshAsync(PartitionKeyRangeCache pkCache, string rid)
+        {
+            for (int attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    await pkCache.TryGetOverlappingRangesAsync(
+                        rid, FeedRangeEpk.FullRange.Range, NoOpTrace.Singleton, forceRefresh: true);
+                    return;
+                }
+                catch (InvalidOperationException ex)
+                    when (attempt < 5 && ex.Message.Contains("Collection was modified", StringComparison.Ordinal))
+                {
+                    await Task.Delay(5).ConfigureAwait(false);
+                }
+            }
+        }
 
         private async Task EnsureExtraContainersAsync(CosmosClient client, int count)
         {
@@ -436,6 +537,29 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 result: FaultInjectionResultBuilder
                     .GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
                     .WithDelay(delay)
+                    .WithTimes(int.MaxValue)
+                    .Build())
+                .WithDuration(TimeSpan.FromMinutes(30))
+                .Build();
+            rule.Disable();
+            return rule;
+        }
+
+        // Fast-fail (503 ServiceUnavailable, NO delay) on the hub metadata path. 503 is a
+        // regional failure (MetadataRegionalFailureClassifier), so the primary fails fast and
+        // the strategy dispatches the hedge IMMEDIATELY (the fast-fail fall-through that skips
+        // the 1.5 s threshold) — the exact path raised in the PR's brownout-amplification review.
+        private FaultInjectionRule HubMetadata503Rule(FaultInjectionOperationType opType)
+        {
+            FaultInjectionRule rule = new FaultInjectionRuleBuilder(
+                id: $"hub-503-{opType}-{Guid.NewGuid()}",
+                condition: new FaultInjectionConditionBuilder()
+                    .WithRegion(this.hubRegion)
+                    .WithConnectionType(FaultInjectionConnectionType.Gateway)
+                    .WithOperationType(opType)
+                    .Build(),
+                result: FaultInjectionResultBuilder
+                    .GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
                     .WithTimes(int.MaxValue)
                     .Build())
                 .WithDuration(TimeSpan.FromMinutes(30))
