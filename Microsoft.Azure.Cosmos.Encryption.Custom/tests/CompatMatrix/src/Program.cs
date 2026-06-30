@@ -21,6 +21,7 @@ namespace CompatMatrix
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -32,8 +33,10 @@ namespace CompatMatrix
     {
 #if CEC_NEW
         public const string Version = "new";
+        private const string ExpectedPackageVersion = "2.0.0-preview01";
 #else
         public const string Version = "old";
+        private const string ExpectedPackageVersion = "1.0.0-preview07";
 #endif
         private const string StreamKey = "encryption-json-processor"; // JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey
         private const string MdeDekId = "matrix-mde-dek";
@@ -89,6 +92,11 @@ namespace CompatMatrix
             string db = a.GetValueOrDefault("db", "compat-matrix");
             string endpoint = a.GetValueOrDefault("endpoint", Environment.GetEnvironmentVariable("COSMOS_ENDPOINT") ?? "https://127.0.0.1:8081/");
             string key = a.GetValueOrDefault("key", Environment.GetEnvironmentVariable("COSMOS_KEY") ?? "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==");
+            if (role == "version")
+            {
+                Console.WriteLine(VersionLine());
+                return 0;
+            }
 
             CosmosClient client;
             Database database;
@@ -125,6 +133,14 @@ namespace CompatMatrix
                 "tamper" => await Tamper(item),
                 _ => await Read(enc, item, peer, processor),
             };
+        }
+
+        private static string VersionLine()
+        {
+            Assembly assembly = typeof(EncryptionContainerExtensions).Assembly;
+            string informational = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "<missing>";
+            string assemblyVersion = assembly.GetName().Version?.ToString() ?? "<missing>";
+            return $"VERSION|{Version}|{ExpectedPackageVersion}|{informational}|{assemblyVersion}";
         }
 
         private static IEnumerable<(string algo, string proc)> Cells()

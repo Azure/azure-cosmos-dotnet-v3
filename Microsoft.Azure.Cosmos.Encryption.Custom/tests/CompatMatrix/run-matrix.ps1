@@ -18,6 +18,33 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 if (-not $Endpoint) { $Endpoint = 'http://127.0.0.1:8081/' }
 if (-not $Key) { $Key = 'C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==' }
+$old = "$root\Old\bin\Release\net8.0\CompatMatrix.Old.dll"
+$new = "$root\New\bin\Release\net8.0\CompatMatrix.New.dll"
+if (-not $NoBuild) {
+  dotnet build "$root\New\CompatMatrix.New.csproj" -c Release -v q | Out-Null
+  dotnet build "$root\Old\CompatMatrix.Old.csproj" -c Release -v q | Out-Null
+}
+
+function VersionInfo($dll){ & dotnet $dll "--role=version" 2>&1 }
+function Assert-Version($line,$node,$expected) {
+  if ($line -notmatch "^VERSION\|$node\|$expected\|([^|]+)\|([^|]+)$") {
+    Write-Host "VERSION BREAK: $node subprocess did not report expected package $expected." -ForegroundColor Red
+    Write-Host "  $line"; exit 1
+  }
+  $informationalBase = $Matches[1].Split('+')[0]
+  if ($informationalBase -ne $expected) {
+    Write-Host "VERSION BREAK: $node loaded informational version '$($Matches[1])', expected '$expected'." -ForegroundColor Red
+    exit 1
+  }
+  return $informationalBase
+}
+$oldVersion = Assert-Version (VersionInfo $old) 'old' '1.0.0-preview07'
+$newVersion = Assert-Version (VersionInfo $new) 'new' '2.0.0-preview01'
+if ($oldVersion -eq $newVersion) {
+  Write-Host "VERSION BREAK: OLD and NEW loaded the same Microsoft.Azure.Cosmos.Encryption.Custom version '$oldVersion'." -ForegroundColor Red
+  exit 1
+}
+Write-Host "Versions: OLD=$oldVersion NEW=$newVersion"
 
 function Reachable($ep) {
   foreach ($u in @($ep, ($ep -replace '^https','http'), ($ep -replace '^http:','https:'))) {
@@ -37,12 +64,6 @@ if (-not $live) {
 $Endpoint = $live
 Write-Host "Emulator: $Endpoint  DB: $Database"
 
-$old = "$root\Old\bin\Release\net8.0\CompatMatrix.Old.dll"
-$new = "$root\New\bin\Release\net8.0\CompatMatrix.New.dll"
-if (-not $NoBuild) {
-  dotnet build "$root\New\CompatMatrix.New.csproj" -c Release -v q | Out-Null
-  dotnet build "$root\Old\CompatMatrix.Old.csproj" -c Release -v q | Out-Null
-}
 $ea = @("--endpoint=$Endpoint","--key=$Key","--db=$Database","--processor=$Processor")
 $cells = @()
 function Run($dll,$role,$peer){ & dotnet $dll "--role=$role" "--peer=$peer" @ea 2>&1 }

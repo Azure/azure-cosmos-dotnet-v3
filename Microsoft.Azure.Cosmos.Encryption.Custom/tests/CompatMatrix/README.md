@@ -14,6 +14,11 @@ emulator.
 - `nuget.config` – nuget.org + local-feed.
 - `run-matrix.ps1` – launcher (emulator check, build, cross run, grid, exit code).
 
+Before any data cells run, the launcher asks each subprocess for its loaded
+`Microsoft.Azure.Cosmos.Encryption.Custom` informational version and fails if
+OLD is not `1.0.0-preview07`, NEW is not `2.0.0-preview01`, or both nodes
+accidentally load the same assembly version.
+
 ## Run
 ```powershell
 docker run -d --name cosmos-emu -p 8081:8081 -p 1234:1234 `
