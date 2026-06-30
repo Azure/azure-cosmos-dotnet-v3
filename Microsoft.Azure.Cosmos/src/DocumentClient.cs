@@ -7134,48 +7134,56 @@ namespace Microsoft.Azure.Cosmos
                     return;
                 }
 
-                // Capture the kill-switch flag so it can be reverted if the reconcile below throws; otherwise
-                // the GEM re-fire (which reverts its own baseline) would be short-circuited by the no-op guard
-                // above and the missed hedging transition would never retry. Scoped to the hedging flag —
-                // PPAF-enablement recovery is tracked separately.
+                // Capture the prior applied state so it can be reverted if any mutation or the reconcile
+                // below throws; otherwise the GEM re-fire (which reverts its own baseline) would be
+                // short-circuited by the no-op guard above and the missed transition would never retry.
+                // Both the hedging kill-switch and the PPAF-enablement state are captured so a throwing
+                // subscriber leaves either transition re-detectable end-to-end.
                 bool previousDisableCrossRegionalHedging = this.disableCrossRegionalHedging;
+                bool previousEnablePartitionLevelFailover = this.ConnectionPolicy.EnablePartitionLevelFailover;
+                bool previousEnablePartitionLevelCircuitBreaker = this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker;
 
-                if (ppafEnablementChanged)
-                {
-                    DefaultTrace.TraceInformation(
-                        "DocumentClient: PPAF Account Level Config Updated. Updating EnablePartitionLevelFailover to {0}",
-                        latestIsEnabled);
-
-                    // Step 1: Enable partition level failover.
-                    this.PartitionKeyRangeLocation.SetIsPPAFEnabled(latestIsEnabled);
-                    this.ConnectionPolicy.EnablePartitionLevelFailover = latestIsEnabled;
-
-                    // Step 2: Enable partition level circuit breaker.
-                    this.PartitionKeyRangeLocation.SetIsPPCBEnabled(latestIsEnabled);
-                    this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker = latestIsEnabled;
-                }
-
-                if (hedgingFlagChanged)
-                {
-                    DefaultTrace.TraceInformation(
-                        "DocumentClient: Gateway disableCrossRegionalHedging flag changed to {0}",
-                        latestDisableCrossRegionalHedging);
-                    this.disableCrossRegionalHedging = latestDisableCrossRegionalHedging;
-                }
-
-                // Step 3: Reconcile the AvailabilityStrategy with the latest account state.
-                //
-                // Note: this call is intentionally outside the `if (hedgingFlagChanged)` block above
-                // because reconciliation is also required when PPAF enablement toggles without the
-                // hedging flag changing. Specifically:
-                //   • PPAF transitioned off  → drop the SDK-default strategy we previously installed.
-                //   • PPAF transitioned on with no customer strategy → install the SDK default.
-                // The early-return at the top of the method already guarantees we get here only when
-                // at least one of (ppafEnablementChanged, hedgingFlagChanged) is true, so this call
-                // is never wasted. The gateway disable flag has the highest precedence — when true,
-                // hedging is OFF regardless of any explicit or default configuration.
+                // All applied-state mutations live inside the try so the revert in the catch is
+                // crash-consistent: if any individual mutation throws after an earlier one has
+                // committed, the catch restores every captured baseline before rethrowing, leaving
+                // the connection policy and partition-key-range location in their pre-change state so
+                // the next refresh re-detects and retries the missed transition.
                 try
                 {
+                    if (ppafEnablementChanged)
+                    {
+                        DefaultTrace.TraceInformation(
+                            "DocumentClient: PPAF Account Level Config Updated. Updating EnablePartitionLevelFailover to {0}",
+                            latestIsEnabled);
+
+                        // Step 1: Enable partition level failover.
+                        this.PartitionKeyRangeLocation.SetIsPPAFEnabled(latestIsEnabled);
+                        this.ConnectionPolicy.EnablePartitionLevelFailover = latestIsEnabled;
+
+                        // Step 2: Enable partition level circuit breaker.
+                        this.PartitionKeyRangeLocation.SetIsPPCBEnabled(latestIsEnabled);
+                        this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker = latestIsEnabled;
+                    }
+
+                    if (hedgingFlagChanged)
+                    {
+                        DefaultTrace.TraceInformation(
+                            "DocumentClient: Gateway disableCrossRegionalHedging flag changed to {0}",
+                            latestDisableCrossRegionalHedging);
+                        this.disableCrossRegionalHedging = latestDisableCrossRegionalHedging;
+                    }
+
+                    // Step 3: Reconcile the AvailabilityStrategy with the latest account state.
+                    //
+                    // Note: this call is intentionally outside the `if (hedgingFlagChanged)` block above
+                    // because reconciliation is also required when PPAF enablement toggles without the
+                    // hedging flag changing. Specifically:
+                    //   • PPAF transitioned off  → drop the SDK-default strategy we previously installed.
+                    //   • PPAF transitioned on with no customer strategy → install the SDK default.
+                    // The early-return at the top of the method already guarantees we get here only when
+                    // at least one of (ppafEnablementChanged, hedgingFlagChanged) is true, so this call
+                    // is never wasted. The gateway disable flag has the highest precedence — when true,
+                    // hedging is OFF regardless of any explicit or default configuration.
                     this.ApplyHedgingStrategyForCurrentState();
 
                     if (ppafEnablementChanged)
@@ -7196,10 +7204,22 @@ namespace Microsoft.Azure.Cosmos
                 }
                 catch
                 {
-                    // Revert the kill-switch flag so the GEM re-fire (which reverts its own baseline) is not
+                    // Revert the applied state so the GEM re-fire (which reverts its own baseline) is not
                     // short-circuited by the no-op guard above; the next refresh re-detects and retries the
-                    // missed hedging transition rather than going permanently silent.
+                    // missed transition rather than going permanently silent.
                     this.disableCrossRegionalHedging = previousDisableCrossRegionalHedging;
+
+                    if (ppafEnablementChanged)
+                    {
+                        // Mirror the hedging revert for PPAF enablement: restore the connection-policy flags
+                        // and the partition-key-range location PPAF/PPCB state to their pre-change values so the
+                        // no-op guard at the top of this method does not swallow the GEM-re-fired transition.
+                        this.PartitionKeyRangeLocation.SetIsPPAFEnabled(previousEnablePartitionLevelFailover);
+                        this.ConnectionPolicy.EnablePartitionLevelFailover = previousEnablePartitionLevelFailover;
+                        this.PartitionKeyRangeLocation.SetIsPPCBEnabled(previousEnablePartitionLevelCircuitBreaker);
+                        this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker = previousEnablePartitionLevelCircuitBreaker;
+                    }
+
                     throw;
                 }
             }
@@ -7223,6 +7243,11 @@ namespace Microsoft.Azure.Cosmos
         {
             lock (this.hedgingStrategyLock)
             {
+                // Test-only failure injection so the revert-on-throw path in
+                // UpdatePartitionLevelFailoverConfigWithAccountRefresh can be exercised deterministically.
+                // Always null in production (see the ForTests accessor block below for the rationale).
+                this.reconcileFailureHookForTests?.Invoke();
+
                 if (this.disableCrossRegionalHedging)
                 {
                     AvailabilityStrategy currentStrategy = this.ConnectionPolicy.AvailabilityStrategy;
@@ -7372,6 +7397,27 @@ namespace Microsoft.Azure.Cosmos
                     return this.customerConfiguredAvailabilityStrategy;
                 }
             }
+        }
+
+        // Test-only seam: when set, ApplyHedgingStrategyForCurrentState invokes this hook (under
+        // hedgingStrategyLock) before doing any reconciliation, allowing a unit test to force the
+        // reconcile to throw. This is the only way to drive the revert-on-throw branch of
+        // UpdatePartitionLevelFailoverConfigWithAccountRefresh deterministically — the production
+        // reconcile has no naturally-injectable failure point. Always null in production.
+        private Action reconcileFailureHookForTests;
+
+        internal Action ReconcileFailureHookForTests
+        {
+            get => this.reconcileFailureHookForTests;
+            set => this.reconcileFailureHookForTests = value;
+        }
+
+        // Test-only seam: lets a unit test install a stub GlobalPartitionEndpointManager so the
+        // PPAF-enablement path (SetIsPPAFEnabled / SetIsPPCBEnabled) can run without a fully-opened
+        // client, whose PartitionKeyRangeLocation is otherwise only assigned during initialization.
+        internal GlobalPartitionEndpointManager PartitionKeyRangeLocationForTests
+        {
+            set => this.PartitionKeyRangeLocation = value;
         }
 
         internal void CaptureSessionToken(DocumentServiceRequest request, DocumentServiceResponse response)
