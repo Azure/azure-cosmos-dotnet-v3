@@ -527,6 +527,76 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             response.Dispose();
         }
 
+        // ─── Write DTx: conditional Patch via FilterPredicate ──────────────────
+
+        /// <summary>
+        /// Verifies that a write DTx Patch with a satisfied <see cref="DistributedTransactionPatchItemRequestOptions.FilterPredicate"/>
+        /// applies the patch (the server evaluates the predicate atomically before patching).
+        /// </summary>
+        [TestMethod]
+        public async Task WriteDtx_PatchWithSatisfiedFilterPredicate_Succeeds()
+        {
+            string pk = $"patch-filter-ok-{Guid.NewGuid():N}";
+            string id = Guid.NewGuid().ToString();
+
+            await this.container.CreateItemAsync<object>(
+                new { id, pk, status = "pending", value = 1 }, new PartitionKey(pk));
+
+            DistributedTransactionResponse response = await this.client
+                .CreateDistributedWriteTransaction()
+                .PatchItem(this.container, new PartitionKey(pk), id,
+                    new[] { PatchOperation.Replace("/status", "done") },
+                    new DistributedTransactionPatchItemRequestOptions
+                    {
+                        FilterPredicate = "from c where c.status = 'pending'"
+                    })
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.IsTrue(response.IsSuccessStatusCode,
+                $"Patch with a satisfied FilterPredicate should succeed. Got: {response.StatusCode}");
+            Assert.IsTrue(response.Count > 0);
+            Assert.IsTrue(response[0].IsSuccessStatusCode,
+                $"Op[0] should succeed. Got: {response[0].StatusCode}");
+
+            response.Dispose();
+        }
+
+        /// <summary>
+        /// Verifies that a write DTx Patch with an unsatisfied <see cref="DistributedTransactionPatchItemRequestOptions.FilterPredicate"/>
+        /// fails with 412 PreconditionFailed and does not apply the patch.
+        /// </summary>
+        [TestMethod]
+        public async Task WriteDtx_PatchWithUnsatisfiedFilterPredicate_Returns412()
+        {
+            string pk = $"patch-filter-fail-{Guid.NewGuid():N}";
+            string id = Guid.NewGuid().ToString();
+
+            await this.container.CreateItemAsync<object>(
+                new { id, pk, status = "done", value = 1 }, new PartitionKey(pk));
+
+            DistributedTransactionResponse response = await this.client
+                .CreateDistributedWriteTransaction()
+                .PatchItem(this.container, new PartitionKey(pk), id,
+                    new[] { PatchOperation.Replace("/status", "archived") },
+                    new DistributedTransactionPatchItemRequestOptions
+                    {
+                        FilterPredicate = "from c where c.status = 'pending'"
+                    })
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.PreconditionFailed, response.StatusCode,
+                $"Patch with an unsatisfied FilterPredicate should return 412. Got: {response.StatusCode}");
+            Assert.IsFalse(response.IsSuccessStatusCode);
+
+            if (response.Count > 0)
+            {
+                Assert.AreEqual(HttpStatusCode.PreconditionFailed, response[0].StatusCode,
+                    "Op[0] should be 412 (PreconditionFailed).");
+            }
+
+            response.Dispose();
+        }
+
         // ─── Helpers ────────────────────────────────────────────────────────────
 
         private static string[] GetOpStatuses(DistributedTransactionResponse response)

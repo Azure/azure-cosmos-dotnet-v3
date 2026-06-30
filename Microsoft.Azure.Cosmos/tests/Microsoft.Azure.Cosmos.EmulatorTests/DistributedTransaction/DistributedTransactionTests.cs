@@ -531,7 +531,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     new PartitionKey("patch-pk"),
                     "patch-id",
                     patchOps,
-                    new DistributedTransactionRequestOptions { IfMatchEtag = expectedEtag })
+                    new DistributedTransactionPatchItemRequestOptions { IfMatchEtag = expectedEtag })
                 .CommitTransactionAsync(CancellationToken.None);
 
             Assert.IsTrue(response.IsSuccessStatusCode);
