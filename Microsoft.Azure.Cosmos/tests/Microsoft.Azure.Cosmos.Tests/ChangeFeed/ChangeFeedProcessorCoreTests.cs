@@ -41,9 +41,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [ExpectedException(typeof(ArgumentNullException))]
         public void ApplyBuildConfiguration_ValidatesNullInstance()
         {
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(Mock.Of<DocumentServiceLeaseContainer>);
+
             ChangeFeedProcessorCore processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
             processor.ApplyBuildConfiguration(
-                Mock.Of<DocumentServiceLeaseStoreManager>(),
+                leaseStoreManager.Object,
                 null,
                 null,
                 new ChangeFeedLeaseOptions(),
@@ -55,9 +58,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [ExpectedException(typeof(ArgumentNullException))]
         public void ApplyBuildConfiguration_ValidatesNullMonitoredContainer()
         {
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(Mock.Of<DocumentServiceLeaseContainer>);
+
             ChangeFeedProcessorCore processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
             processor.ApplyBuildConfiguration(
-                Mock.Of<DocumentServiceLeaseStoreManager>(),
+                leaseStoreManager.Object,
                 null,
                 "instanceName",
                 new ChangeFeedLeaseOptions(),
@@ -66,11 +72,31 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         [TestMethod]
-        public void ApplyBuildConfiguration_ValidCustomStore()
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void ApplyBuildConfiguration_ValidatesCustomStoreWithNullLeaseContainer()
         {
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns((DocumentServiceLeaseContainer)null);
+
             ChangeFeedProcessorCore processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
             processor.ApplyBuildConfiguration(
-                Mock.Of<DocumentServiceLeaseStoreManager>(),
+                leaseStoreManager.Object,
+                null,
+                "instanceName",
+                new ChangeFeedLeaseOptions(),
+                new ChangeFeedProcessorOptions(),
+                ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
+        }
+
+        [TestMethod]
+        public void ApplyBuildConfiguration_ValidCustomStore()
+        {
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(Mock.Of<DocumentServiceLeaseContainer>);
+
+            ChangeFeedProcessorCore processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
+            processor.ApplyBuildConfiguration(
+                leaseStoreManager.Object,
                 null,
                 "instanceName",
                 new ChangeFeedLeaseOptions(),
@@ -267,6 +293,189 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                     await processor.StopAsync();
                 }
             }
+        }
+
+        // Defends #5268 (https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5268) — AC7.
+        // Symmetric companion to the AVAD test below: explicitly sets Mode = LatestVersion (rather
+        // than relying on the default at ChangeFeedProcessorOptions.cs) so that a future contributor
+        // over-broadening the Mode != AllVersionsAndDeletes guard regresses #5268 loudly.
+        //
+        // Assertion uses start/end-of-call bracket bounds instead of a fixed-tolerance window so the
+        // test cannot be invalidated by CI slowness (a future flake here would silently quarantine
+        // the regression fence — see PR #5852 review for context).
+        [TestMethod]
+        public async Task StartAsync_SetsStartTime_WhenLatestVersionMode_Explicit()
+        {
+            Mock<DocumentServiceLeaseStore> leaseStore = new Mock<DocumentServiceLeaseStore>();
+            leaseStore.Setup(l => l.IsInitializedAsync()).ReturnsAsync(true);
+
+            Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
+            leaseContainer.Setup(l => l.GetOwnedLeasesAsync()).Returns(Task.FromResult(Enumerable.Empty<DocumentServiceLease>()));
+            leaseContainer.Setup(l => l.GetAllLeasesAsync()).ReturnsAsync(new List<DocumentServiceLease>());
+
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(leaseContainer.Object);
+            leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
+            leaseStoreManager.Setup(l => l.LeaseStore).Returns(leaseStore.Object);
+            leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
+
+            ChangeFeedProcessorOptions options = new ChangeFeedProcessorOptions
+            {
+                Mode = ChangeFeedMode.LatestVersion,
+            };
+
+            ChangeFeedProcessorCore processor = null;
+            try
+            {
+                processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
+                processor.ApplyBuildConfiguration(
+                    leaseStoreManager.Object,
+                    null,
+                    "instanceName",
+                    new ChangeFeedLeaseOptions(),
+                    options,
+                    ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
+
+                DateTime lowerBound = DateTime.UtcNow.AddSeconds(-1);
+
+                await processor.StartAsync();
+
+                DateTime upperBound = DateTime.UtcNow.AddSeconds(-1).AddMilliseconds(1);
+
+                Assert.IsTrue(options.StartTime.HasValue);
+                Assert.AreEqual(DateTimeKind.Utc, options.StartTime.Value.Kind);
+                Assert.IsTrue(
+                    options.StartTime.Value >= lowerBound,
+                    $"StartTime {options.StartTime.Value:O} is earlier than pre-call lowerBound {lowerBound:O}.");
+                Assert.IsTrue(
+                    options.StartTime.Value <= upperBound,
+                    $"StartTime {options.StartTime.Value:O} is later than post-call upperBound {upperBound:O}.");
+            }
+            finally
+            {
+                if (processor != null)
+                {
+                    await processor.StopAsync();
+                }
+            }
+        }
+
+        // Defends #5268 (https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5268) AND
+        // #5846 (https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5846).
+        //
+        // AVAD push processor cold-start MUST NOT have StartTime backfilled by the #5617 guard:
+        //   1. AVAD uses LSN-based continuation (IfNoneMatch: *), not RFC1123 IfModifiedSince,
+        //      so the seconds-precision rounding issue from #5268 does not apply.
+        //   2. The AVAD endpoint rejects an explicit StartTime on a null-continuation lease with
+        //      HTTP 400 — the regression introduced by #5617 and tracked as #5846.
+        //
+        // Paired with the LatestVersion test above, this forms a dual-fence: dropping the mode
+        // guard regresses #5846 (this test fails); over-broadening it regresses #5268 (the
+        // LatestVersion test fails). Do not delete either without re-validating both issues.
+        // Functional guard landed via PR #5825; this PR (#5852) carries the cited comment fence
+        // and customer-facing changelog entry.
+        [TestMethod]
+        public async Task StartAsync_DoesNotSetStartTime_WhenAllVersionsAndDeletes()
+        {
+            Mock<DocumentServiceLeaseStore> leaseStore = new Mock<DocumentServiceLeaseStore>();
+            leaseStore.Setup(l => l.IsInitializedAsync()).ReturnsAsync(true);
+
+            Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
+            leaseContainer.Setup(l => l.GetOwnedLeasesAsync()).Returns(Task.FromResult(Enumerable.Empty<DocumentServiceLease>()));
+            leaseContainer.Setup(l => l.GetAllLeasesAsync()).ReturnsAsync(new List<DocumentServiceLease>());
+
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(leaseContainer.Object);
+            leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
+            leaseStoreManager.Setup(l => l.LeaseStore).Returns(leaseStore.Object);
+            leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
+
+            ChangeFeedProcessorOptions options = new ChangeFeedProcessorOptions
+            {
+                Mode = ChangeFeedMode.AllVersionsAndDeletes,
+            };
+
+            ChangeFeedProcessorCore processor = null;
+            try
+            {
+                processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
+                processor.ApplyBuildConfiguration(
+                    leaseStoreManager.Object,
+                    null,
+                    "instanceName",
+                    new ChangeFeedLeaseOptions(),
+                    options,
+                    ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
+
+                await processor.StartAsync();
+
+                Assert.IsNull(
+                    options.StartTime,
+                    "StartTime must remain null for AllVersionsAndDeletes mode (see leading comment).");
+            }
+            finally
+            {
+                if (processor != null)
+                {
+                    await processor.StopAsync();
+                }
+            }
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(InvalidOperationException))]
+        public async Task StartAsync_ThrowsWhenAllVersionsAndDeletes_WithStartFromBeginning()
+        {
+            ChangeFeedProcessorOptions options = new ChangeFeedProcessorOptions
+            {
+                Mode = ChangeFeedMode.AllVersionsAndDeletes,
+                StartFromBeginning = true,
+            };
+
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(Mock.Of<DocumentServiceLeaseContainer>);
+            leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
+            leaseStoreManager.Setup(l => l.LeaseStore).Returns(Mock.Of<DocumentServiceLeaseStore>);
+            leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
+
+            ChangeFeedProcessorCore processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
+            processor.ApplyBuildConfiguration(
+                leaseStoreManager.Object,
+                null,
+                "instanceName",
+                new ChangeFeedLeaseOptions(),
+                options,
+                ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
+
+            await processor.StartAsync();
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(InvalidOperationException))]
+        public async Task StartAsync_ThrowsWhenAllVersionsAndDeletes_WithStartTime()
+        {
+            ChangeFeedProcessorOptions options = new ChangeFeedProcessorOptions
+            {
+                Mode = ChangeFeedMode.AllVersionsAndDeletes,
+                StartTime = DateTime.UtcNow,
+            };
+
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(Mock.Of<DocumentServiceLeaseContainer>);
+            leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
+            leaseStoreManager.Setup(l => l.LeaseStore).Returns(Mock.Of<DocumentServiceLeaseStore>);
+            leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
+
+            ChangeFeedProcessorCore processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
+            processor.ApplyBuildConfiguration(
+                leaseStoreManager.Object,
+                null,
+                "instanceName",
+                new ChangeFeedLeaseOptions(),
+                options,
+                ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
+
+            await processor.StartAsync();
         }
 
         [TestMethod]

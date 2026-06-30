@@ -736,6 +736,70 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        [TestMethod]
+        public void HttpTimeoutPolicyForReadDistributedTransaction_ReturnsDefault()
+        {
+            // Regression guard: read DTX has OperationType.Read on the wire (IsReadOnlyRequest==true)
+            // but must not be classified as a metadata read on the control-plane hot path
+            // (1s/5s/65s) because /operations/dtc can legitimately take many seconds. The
+            // DTX short-circuit in HttpTimeoutPolicy.GetTimeoutPolicy must keep this on the
+            // default policy regardless of partition-level failover or thin-client flags.
+            HttpTimeoutPolicy defaultPolicy = HttpTimeoutPolicy.GetTimeoutPolicy(
+                documentServiceRequest: CosmosHttpClientCoreTests.CreateDocumentServiceRequestByOperation(
+                    ResourceType.DistributedTransactionBatch,
+                    OperationType.Read),
+                isPartitionLevelFailoverEnabled: false,
+                isThinClientEnabled: false);
+            Assert.AreSame(HttpTimeoutPolicyDefault.Instance, defaultPolicy);
+
+            HttpTimeoutPolicy partitionFailoverPolicy = HttpTimeoutPolicy.GetTimeoutPolicy(
+                documentServiceRequest: CosmosHttpClientCoreTests.CreateDocumentServiceRequestByOperation(
+                    ResourceType.DistributedTransactionBatch,
+                    OperationType.Read),
+                isPartitionLevelFailoverEnabled: true,
+                isThinClientEnabled: false);
+            Assert.AreSame(HttpTimeoutPolicyDefault.Instance, partitionFailoverPolicy);
+
+            HttpTimeoutPolicy thinClientPolicy = HttpTimeoutPolicy.GetTimeoutPolicy(
+                documentServiceRequest: CosmosHttpClientCoreTests.CreateDocumentServiceRequestByOperation(
+                    ResourceType.DistributedTransactionBatch,
+                    OperationType.Read),
+                isPartitionLevelFailoverEnabled: false,
+                isThinClientEnabled: true);
+            Assert.AreSame(HttpTimeoutPolicyDefault.Instance, thinClientPolicy);
+        }
+
+        [TestMethod]
+        public void HttpTimeoutPolicyForWriteDistributedTransaction_ReturnsDefault()
+        {
+            // Symmetric guard: write DTX (CommitDistributedTransaction) must continue to use the
+            // default policy in every mode. This was the previous behavior (fallthrough on the
+            // non-read, non-data-plane path) and the DTX short-circuit must preserve it.
+            HttpTimeoutPolicy defaultPolicy = HttpTimeoutPolicy.GetTimeoutPolicy(
+                documentServiceRequest: CosmosHttpClientCoreTests.CreateDocumentServiceRequestByOperation(
+                    ResourceType.DistributedTransactionBatch,
+                    OperationType.CommitDistributedTransaction),
+                isPartitionLevelFailoverEnabled: false,
+                isThinClientEnabled: false);
+            Assert.AreSame(HttpTimeoutPolicyDefault.Instance, defaultPolicy);
+
+            HttpTimeoutPolicy partitionFailoverPolicy = HttpTimeoutPolicy.GetTimeoutPolicy(
+                documentServiceRequest: CosmosHttpClientCoreTests.CreateDocumentServiceRequestByOperation(
+                    ResourceType.DistributedTransactionBatch,
+                    OperationType.CommitDistributedTransaction),
+                isPartitionLevelFailoverEnabled: true,
+                isThinClientEnabled: false);
+            Assert.AreSame(HttpTimeoutPolicyDefault.Instance, partitionFailoverPolicy);
+
+            HttpTimeoutPolicy thinClientPolicy = HttpTimeoutPolicy.GetTimeoutPolicy(
+                documentServiceRequest: CosmosHttpClientCoreTests.CreateDocumentServiceRequestByOperation(
+                    ResourceType.DistributedTransactionBatch,
+                    OperationType.CommitDistributedTransaction),
+                isPartitionLevelFailoverEnabled: false,
+                isThinClientEnabled: true);
+            Assert.AreSame(HttpTimeoutPolicyDefault.Instance, thinClientPolicy);
+        }
+
         private static DocumentServiceRequest CreateDocumentServiceRequestByOperation(
             ResourceType resourceType,
             OperationType operationType)

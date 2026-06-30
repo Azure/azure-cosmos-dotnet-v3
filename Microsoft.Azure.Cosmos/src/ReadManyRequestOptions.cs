@@ -94,5 +94,25 @@ namespace Microsoft.Azure.Cosmos
                 ExcludeRegions = this.ExcludeRegions
             };
         }
+
+        internal ItemRequestOptions ConvertToItemRequestOptions()
+        {
+            // Deliberately does NOT copy IfMatchEtag / IfNoneMatchEtag. Per-item ETags
+            // have no coherent meaning at the ReadMany level (a single ETag value cannot
+            // apply across N (id, partitionKey) tuples), and the legacy multi-id query
+            // path silently ignores them on the wire today. Mirroring that silent-ignore
+            // here keeps caller-observable behavior identical between the two execution
+            // branches and avoids a same-input/different-outcome footgun if the server
+            // ever begins honoring these headers on point reads.
+            return new ItemRequestOptions
+            {
+                ConsistencyLevel = this.ConsistencyLevel,
+                ReadConsistencyStrategy = this.ReadConsistencyStrategy,
+                SessionToken = this.SessionToken,
+                Properties = this.Properties,
+                AddRequestHeaders = this.AddRequestHeaders,
+                ExcludeRegions = this.ExcludeRegions
+            };
+        }
     }
 }

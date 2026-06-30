@@ -35,6 +35,9 @@ namespace Microsoft.Azure.Cosmos.Routing
         private DateTime lastCacheUpdateTimestamp;
         private bool enableMultipleWriteLocations;
 
+        private volatile bool hasThinClientReadLocations;
+        private volatile bool hasThinClientWriteLocations;
+
         public LocationCache(
             ReadOnlyCollection<string> preferredLocations,
             Uri defaultEndpoint,
@@ -242,14 +245,27 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <param name="databaseAccount">Read DatabaseAccoaunt </param>
         public void OnDatabaseAccountRead(AccountProperties databaseAccount)
         {
-            this.UpdateLocationCache(
-                databaseAccount.WritableRegions,
-                databaseAccount.ReadableRegions,
-                thinClientWriteLocations: databaseAccount.ThinClientWritableLocationsInternal,
-                thinClientReadLocations: databaseAccount.ThinClientReadableLocationsInternal,
-                preferenceList: null,
-                enableMultipleWriteLocations: databaseAccount.EnableMultipleWriteLocations);
+            lock (this.lockObject)
+            {
+                // Refresh the per-direction thin-client availability signals on every account read
+                // so dispatch falls back to gateway mode on the next request when the service stops
+                // advertising thin-client endpoints.
+                this.hasThinClientReadLocations = databaseAccount.ThinClientReadableLocationsInternal?.Count > 0;
+                this.hasThinClientWriteLocations = databaseAccount.ThinClientWritableLocationsInternal?.Count > 0;
+
+                this.UpdateLocationCache(
+                    databaseAccount.WritableRegions,
+                    databaseAccount.ReadableRegions,
+                    thinClientWriteLocations: databaseAccount.ThinClientWritableLocationsInternal,
+                    thinClientReadLocations: databaseAccount.ThinClientReadableLocationsInternal,
+                    preferenceList: null,
+                    enableMultipleWriteLocations: databaseAccount.EnableMultipleWriteLocations);
+            }
         }
+
+        public bool HasThinClientReadLocations => this.hasThinClientReadLocations;
+
+        public bool HasThinClientWriteLocations => this.hasThinClientWriteLocations;
 
         /// <summary>
         /// Invoked when <see cref="ConnectionPolicy.PreferredLocations"/> changes
@@ -954,16 +970,99 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return request.RequestContext.LocationEndpointToRoute;
             }
 
-            DatabaseAccountLocationsInfo snapshot = this.locationInfo;
-            ReadOnlyCollection<Uri> endpoints = isReadRequest
-                ? snapshot.ThinClientReadEndpoints
-                : snapshot.ThinClientWriteEndpoints;
-
-            int locationIndex = request.RequestContext.LocationIndexToRoute.GetValueOrDefault(0);
-            Uri chosenEndpoint = endpoints[locationIndex % endpoints.Count];
+            Uri chosenEndpoint = this.GetThinClientEndpointCandidate(request, isReadRequest);
 
             request.RequestContext.RouteToLocation(chosenEndpoint);
             return chosenEndpoint;
+        }
+
+        /// <summary>
+        /// Computes the thin client regional endpoint that would be chosen for <paramref name="request"/>
+        /// <b>without</b> pinning it onto the request context, so the routing layer can evaluate the candidate
+        /// region's probe health before deciding whether to pin the thin client endpoint or fall back to gateway.
+        /// </summary>
+        internal Uri GetThinClientEndpointCandidate(DocumentServiceRequest request, bool isReadRequest)
+        {
+            if (request.RequestContext != null && request.RequestContext.LocationEndpointToRoute != null)
+            {
+                return request.RequestContext.LocationEndpointToRoute;
+            }
+
+            DatabaseAccountLocationsInfo snapshot = this.locationInfo;
+            ReadOnlyCollection<Uri> endpoints = this.GetApplicableThinClientEndpoints(request, isReadRequest, snapshot);
+
+            int locationIndex = request.RequestContext.LocationIndexToRoute.GetValueOrDefault(0);
+            return endpoints[locationIndex % endpoints.Count];
+        }
+
+        /// <summary>
+        /// Resolves the applicable thin client endpoints for a request, honoring per-request
+        /// <see cref="DocumentServiceRequestContext.ExcludeRegions"/>. Uses the same preferred-
+        /// location filter as the gateway path in <see cref="GetApplicableEndpoints(DocumentServiceRequest, bool)"/>,
+        /// differing only in which fallback endpoint is selected.
+        /// </summary>
+        /// <remarks>
+        /// When all preferred regions are excluded, this method always falls back to the first
+        /// thin client write endpoint (<c>snapshot.ThinClientWriteEndpoints[0]</c>) for both reads
+        /// and writes. This deliberately diverges from the gateway path's fallback selection
+        /// (which uses <see cref="defaultEndpoint"/>, or <c>WriteEndpoints[0]</c> under PPAF for
+        /// reads) because <see cref="defaultEndpoint"/> resolves to the gateway port (443) and
+        /// would break thin client port semantics if used here.
+        /// </remarks>
+        private ReadOnlyCollection<Uri> GetApplicableThinClientEndpoints(
+            DocumentServiceRequest request,
+            bool isReadRequest,
+            DatabaseAccountLocationsInfo snapshot)
+        {
+            IReadOnlyList<string> excludeRegions = request.RequestContext?.ExcludeRegions;
+            if (excludeRegions == null || excludeRegions.Count == 0)
+            {
+                return isReadRequest ? snapshot.ThinClientReadEndpoints : snapshot.ThinClientWriteEndpoints;
+            }
+
+            Uri fallbackEndpoint = snapshot.ThinClientWriteEndpoints[0];
+
+            return GetApplicableEndpoints(
+                isReadRequest ? snapshot.ThinClientReadEndpointByLocation : snapshot.ThinClientWriteEndpointByLocation,
+                snapshot.EffectivePreferredLocations,
+                fallbackEndpoint,
+                excludeRegions);
+        }
+
+        /// <summary>
+        /// Returns the set of thin client regional endpoints (read and write) from the most recent
+        /// topology refresh, used by the connectivity probe. 
+        /// </summary>
+        internal HashSet<Uri> GetThinClientRegionalEndpoints()
+        {
+            DatabaseAccountLocationsInfo snapshot = this.locationInfo;
+            HashSet<Uri> endpoints = new HashSet<Uri>();
+
+            LocationCache.CollectThinClientEndpointsBestEffort(
+                snapshot.ThinClientReadLocations, snapshot.ThinClientReadEndpointByLocation, endpoints);
+            LocationCache.CollectThinClientEndpointsBestEffort(
+                snapshot.ThinClientWriteLocations, snapshot.ThinClientWriteEndpointByLocation, endpoints);
+
+            return endpoints;
+        }
+
+        private static void CollectThinClientEndpointsBestEffort(
+            ReadOnlyCollection<string> regions,
+            ReadOnlyDictionary<string, Uri> thinClientEndpointByLocation,
+            HashSet<Uri> sink)
+        {
+            if (regions == null || regions.Count == 0 || thinClientEndpointByLocation == null)
+            {
+                return;
+            }
+
+            foreach (string region in regions)
+            {
+                if (thinClientEndpointByLocation.TryGetValue(region, out Uri endpoint) && endpoint != null)
+                {
+                    sink.Add(endpoint);
+                }
+            }
         }
 
         private void SetServicePointConnectionLimit(Uri endpoint)
