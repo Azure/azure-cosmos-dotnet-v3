@@ -138,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         case JsonTokenType.String:
                             if (decryptPropertyName == null)
                             {
-                                writer.WriteStringValue(reader.ValueSpan);
+                                WriteStringValueVerbatim(writer, ref reader, arrayPoolManager);
                             }
                             else
                             {
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 break;
                             }
 
-                            writer.WritePropertyName(reader.ValueSpan);
+                            WritePropertyNameVerbatim(writer, ref reader, arrayPoolManager);
                             break;
                         case JsonTokenType.Comment: // Skipped via reader options
                             break;
@@ -218,6 +218,43 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                 state = reader.CurrentState;
                 return reader.BytesConsumed;
+            }
+
+            static void WriteDoubleValueNewtonsoftStyle(Utf8JsonWriter writer, double value)
+            {
+                // Non-finite doubles are not representable as JSON numbers. Newtonsoft.Json
+                // (FloatFormatHandling.String, the default used on the Newtonsoft decrypt path)
+                // emits them as quoted string literals; match that exact textual form so both
+                // processors produce equivalent output and so values already encrypted under
+                // TypeMarker.Double remain readable.
+                if (double.IsNaN(value))
+                {
+                    writer.WriteStringValue("NaN");
+                    return;
+                }
+
+                if (double.IsPositiveInfinity(value))
+                {
+                    writer.WriteStringValue("Infinity");
+                    return;
+                }
+
+                if (double.IsNegativeInfinity(value))
+                {
+                    writer.WriteStringValue("-Infinity");
+                    return;
+                }
+
+                // Match the textual form Newtonsoft.Json (JToken/JsonConvert) produces so a
+                // re-encrypt of the decrypted document classifies the value identically
+                // (TypeMarker.Double): integral doubles get an explicit ".0" suffix.
+                string text = value.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
+                if (text.IndexOf('.') < 0 && text.IndexOf('E') < 0 && text.IndexOf('e') < 0)
+                {
+                    text += ".0";
+                }
+
+                writer.WriteRawValue(text, skipInputValidation: true);
             }
 
             void TransformDecryptProperty(ref Utf8JsonReader reader)
@@ -245,7 +282,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         writer.WriteNumberValue(SqlLongSerializer.Deserialize(bytesToWrite));
                         break;
                     case TypeMarker.Double:
-                        writer.WriteNumberValue(SqlDoubleSerializer.Deserialize(bytesToWrite));
+                        WriteDoubleValueNewtonsoftStyle(writer, SqlDoubleSerializer.Deserialize(bytesToWrite));
                         break;
                     case TypeMarker.Boolean:
                         writer.WriteBooleanValue(SqlBoolSerializer.Deserialize(bytesToWrite));
@@ -258,6 +295,42 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         break;
                 }
             }
+        }
+
+        /// <summary>
+        /// Writes a pass-through property name preserving its semantic value.
+        /// <see cref="Utf8JsonReader.ValueSpan"/> holds the raw (still escaped) token text,
+        /// which the writer would escape again; when the token contains escape sequences the
+        /// unescaped bytes are obtained via <see cref="Utf8JsonReader.CopyString(System.Span{byte})"/> first.
+        /// </summary>
+        private static void WritePropertyNameVerbatim(Utf8JsonWriter writer, ref Utf8JsonReader reader, ArrayPoolManager arrayPoolManager)
+        {
+            if (!reader.ValueIsEscaped)
+            {
+                writer.WritePropertyName(reader.ValueSpan);
+                return;
+            }
+
+            byte[] buffer = arrayPoolManager.Rent(reader.ValueSpan.Length);
+            int length = reader.CopyString(buffer);
+            writer.WritePropertyName(buffer.AsSpan(0, length));
+        }
+
+        /// <summary>
+        /// Writes a pass-through string value preserving its semantic value.
+        /// See <see cref="WritePropertyNameVerbatim"/> for the escaping rationale.
+        /// </summary>
+        private static void WriteStringValueVerbatim(Utf8JsonWriter writer, ref Utf8JsonReader reader, ArrayPoolManager arrayPoolManager)
+        {
+            if (!reader.ValueIsEscaped)
+            {
+                writer.WriteStringValue(reader.ValueSpan);
+                return;
+            }
+
+            byte[] buffer = arrayPoolManager.Rent(reader.ValueSpan.Length);
+            int length = reader.CopyString(buffer);
+            writer.WriteStringValue(buffer.AsSpan(0, length));
         }
     }
 }

@@ -200,6 +200,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                             break;
                         case JsonTokenType.PropertyName:
+                            if (reader.CurrentDepth == 1 && reader.ValueTextEquals(this.encryptionPropertiesNameBytes))
+                            {
+                                throw new InvalidOperationException($"The input document already contains a top-level '{Constants.EncryptedInfo}' property. Encrypting an already-encrypted document is not supported.");
+                            }
+
                             string matchedPath = null;
                             for (int i = 0; i < encryptedPathsTable.Length; i++)
                             {
@@ -215,7 +220,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 encryptPropertyName = matchedPath;
                             }
 
-                            currentWriter.WritePropertyName(reader.ValueSpan);
+                            WritePropertyNameVerbatim(currentWriter, ref reader, arrayPoolManager);
                             break;
                         case JsonTokenType.Comment: // Skipped via reader options
                             currentWriter.WriteCommentValue(reader.ValueSpan);
@@ -231,7 +236,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             }
                             else
                             {
-                                currentWriter.WriteStringValue(reader.ValueSpan);
+                                WriteStringValueVerbatim(currentWriter, ref reader, arrayPoolManager);
                             }
 
                             break;
@@ -279,7 +284,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             break;
                         case JsonTokenType.Null:
                             currentWriter.WriteNullValue();
-                            encryptPropertyName = null;
+
+                            // Only clear the pending encrypt target when we are NOT buffering an
+                            // encryption payload. A null nested inside an encrypted object/array
+                            // must not wipe the path being captured, otherwise the payload's _ep
+                            // entry is lost and the value becomes undecryptable.
+                            if (encryptionPayloadWriter == null)
+                            {
+                                encryptPropertyName = null;
+                            }
+
                             break;
                     }
                 }
@@ -341,6 +355,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             if (System.Buffers.Text.Utf8Parser.TryParse(utf8bytes, out long longValue, out int consumedLong) && consumedLong == utf8bytes.Length)
             {
                 return Serialize(longValue, arrayPoolManager);
+            }
+
+            // An integer literal (no '.', 'e' or 'E') that did not fit in Int64 above would be
+            // silently coerced to a lossy double below. Reject it (fail-closed) so a value that
+            // cannot be round-tripped is never persisted.
+            if (utf8bytes.IndexOfAny((byte)'.', (byte)'e', (byte)'E') < 0)
+            {
+                throw new InvalidOperationException("Unsupported Number type: integer literal is outside the supported Int64 range.");
             }
 
             if (System.Buffers.Text.Utf8Parser.TryParse(utf8bytes, out double doubleValue, out int consumedDouble) && consumedDouble == utf8bytes.Length)

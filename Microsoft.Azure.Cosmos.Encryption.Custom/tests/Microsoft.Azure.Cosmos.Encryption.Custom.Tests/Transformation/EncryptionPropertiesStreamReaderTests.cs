@@ -104,13 +104,32 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         }
 
         [TestMethod]
-        public async Task ReadAsync_WhenEiIsNotObject_Throws()
+        public async Task ReadAsync_WhenEiIsNotObject_ReturnsNull()
         {
+            // _ei present but not a JSON object: pass through as a non-encrypted document
+            // (Newtonsoft parity) rather than throwing.
             string json = /*lang=json,strict*/ @"{""_ei"":""notAnObject""}";
             await using MemoryStream stream = new (Encoding.UTF8.GetBytes(json));
 
-            await Assert.ThrowsExceptionAsync<InvalidOperationException>(
-                async () => await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None));
+            EncryptionProperties result = await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None);
+
+            Assert.IsNull(result);
+            Assert.AreEqual(0, stream.Position);
+        }
+
+        [TestMethod]
+        public async Task ReadAsync_WhenEfIsNumericString_ReturnsProperties()
+        {
+            // _ef serialized as a numeric string ("3") must be read as 3 (Newtonsoft parity),
+            // not rejected by System.Text.Json strict number handling.
+            string json = /*lang=json,strict*/ @"{""id"":""a"",""_ei"":{""_ef"":""3"",""_ea"":""AEAD_AES_256_CBC_HMAC_SHA256_RANDOMIZED"",""_en"":""dekId"",""_ep"":[""/p1""]}}";
+            await using MemoryStream stream = new (Encoding.UTF8.GetBytes(json));
+
+            EncryptionProperties result = await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None);
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(3, result.EncryptionFormatVersion);
+            Assert.AreEqual("dekId", result.DataEncryptionKeyId);
         }
 
         [TestMethod]

@@ -58,6 +58,12 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
         try
         {
             DecryptionContext context = await this.streamProcessor.DecryptStreamAsync(input, bufferWriter, encryptor, properties, diagnosticsContext, cancellationToken);
+
+            // Take ownership of the input stream and dispose it on success, matching the
+            // Newtonsoft adapter's stream-ownership contract (and the (Stream, Stream) overload
+            // below). Callers on the feed/query/change-feed paths tolerate this because their
+            // backing MemoryStream dispose is idempotent.
+            await input.DisposeAsync();
             return (new ReadOnlyBufferWriterStream(bufferWriter), context);
         }
         catch
