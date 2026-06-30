@@ -33,12 +33,19 @@ namespace Microsoft.Azure.Cosmos.Fluent
             string defaultLanguage,
             Collection<FullTextPath> fullTextPaths,
             Action<FullTextPolicy> attachCallback)
+#if PREVIEW
+            : this(parent, package: null, defaultSpec: null, fullTextPaths, attachCallback)
+        {
+            this.defaultLanguage = defaultLanguage;
+        }
+#else
         {
             this.parent = parent ?? throw new ArgumentNullException(nameof(parent));
             this.attachCallback = attachCallback ?? throw new ArgumentNullException(nameof(attachCallback));
             this.fullTextPaths = fullTextPaths;
             this.defaultLanguage = defaultLanguage;
         }
+#endif
 
 #if PREVIEW
         /// <summary>

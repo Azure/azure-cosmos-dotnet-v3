@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -966,8 +966,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task TestFullTextSearchPolicyStandardPackageWithQueryExecution()
         {
             string fullTextPath1 = "/title", fullTextPath2 = "/description";
-            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextStandardDB",
-                cancellationToken: this.cancellationToken);
+            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextStandardDB", cancellationToken: this.cancellationToken);
 
             try
             {
@@ -1054,8 +1053,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestFullTextSearchPolicyStandardPackageWithStopWords()
         {
-            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextStopWordsDB",
-                cancellationToken: this.cancellationToken);
+            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextStopWordsDB", cancellationToken: this.cancellationToken);
 
             try
             {
@@ -1128,8 +1126,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestFullTextSearchPolicyStandardPackageUpdateContainer()
         {
-            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextUpdateDB",
-                cancellationToken: this.cancellationToken);
+            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextUpdateDB", cancellationToken: this.cancellationToken);
 
             try
             {
@@ -1189,8 +1186,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestFullTextSearchPolicyStandardPackagePerPathOverrides()
         {
-            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextOverridesDB",
-                cancellationToken: this.cancellationToken);
+            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextOverridesDB", cancellationToken: this.cancellationToken);
 
             try
             {
@@ -1264,8 +1260,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestFullTextSearchPolicyInvalidPackageReturnsError()
         {
-            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextInvalidDB",
-                cancellationToken: this.cancellationToken);
+            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextInvalidDB", cancellationToken: this.cancellationToken);
 
             try
             {
@@ -1311,8 +1306,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestFullTextSearchPolicyAllValidFilterTypes()
         {
-            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextFiltersDB",
-                cancellationToken: this.cancellationToken);
+            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextFiltersDB", cancellationToken: this.cancellationToken);
 
             try
             {
@@ -1359,8 +1353,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestFullTextSearchPolicyInvalidFilterReturnsError()
         {
-            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextInvalidFilterDB",
-                cancellationToken: this.cancellationToken);
+            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextInvalidFilterDB", cancellationToken: this.cancellationToken);
 
             try
             {
@@ -1407,8 +1400,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestFullTextSearchPolicyInvalidTokenizerReturnsError()
         {
-            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextInvalidTokenizerDB",
-                cancellationToken: this.cancellationToken);
+            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextInvalidTokenizerDB", cancellationToken: this.cancellationToken);
 
             try
             {
@@ -1453,8 +1445,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestFullTextSearchPolicyFiltersWithLegacyPackageReturnsError()
         {
-            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextLegacyFiltersDB",
-                cancellationToken: this.cancellationToken);
+            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextLegacyFiltersDB", cancellationToken: this.cancellationToken);
 
             try
             {
@@ -1500,8 +1491,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestFullTextSearchPolicyAllStopWordListKinds()
         {
-            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextStopWordKindsDB",
-                cancellationToken: this.cancellationToken);
+            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextStopWordKindsDB", cancellationToken: this.cancellationToken);
 
             try
             {
@@ -1551,8 +1541,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestFullTextSearchPolicyBothPackageTypesValid()
         {
-            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextBothPackagesDB",
-                cancellationToken: this.cancellationToken);
+            Database databaseForFullText = await this.GetClient().CreateDatabaseAsync("fullTextBothPackagesDB", cancellationToken: this.cancellationToken);
 
             try
             {
