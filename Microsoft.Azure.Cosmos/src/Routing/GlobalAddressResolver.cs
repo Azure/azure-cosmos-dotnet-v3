@@ -298,11 +298,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
                 catch (Exception ex)
                 {
-                    DefaultTrace.TraceWarning("Failed to open connection to all the replica addresses for the PkRange: {0}, collectionRid: {1} and originalFailedLocation: {2}, with exception: {3}",
-                        pkRange.Id,
-                        collectionRid,
-                        originalFailedLocation,
-                        ex.ToTraceSafeString());
+                    if (DefaultTrace.TraceSource.Switch.ShouldTrace(System.Diagnostics.TraceEventType.Warning))
+                    {
+                        DefaultTrace.TraceWarning("Failed to open connection to all the replica addresses for the PkRange: {0}, collectionRid: {1} and originalFailedLocation: {2}, with exception: {3}",
+                            pkRange.Id,
+                            collectionRid,
+                            originalFailedLocation,
+                            ex.Message);
+                    }
                 }
             }
         }

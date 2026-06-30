@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -579,35 +580,57 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         }
 
         [TestMethod]
-        public async Task GetAsync_FailureLogging_DoesNotSerializeCosmosExceptionDiagnostics()
+        public async Task GetAsync_FailureLogging_DoesNotSerializeCosmosExceptionDiagnosticsWhenTracingDisabled()
         {
-            // Call-site regression for #5945: the failure-path DefaultTrace.TraceError must summarize
-            // the exception via ToTraceSafeString() (which never touches Diagnostics), NOT via ex.Message.
-            // The spy's Diagnostics getter throws, and Message evaluates Diagnostics as an argument before
-            // building the string, so a revert of the call site back to ex.Message would surface here as an
-            // InvalidOperationException (and DiagnosticsAccessed == true) instead of the original exception.
-            // A 503 is used because that is a status code where Message eagerly serializes diagnostics in prod.
-            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>(enableAsyncCacheExceptionNoSharing: false);
+            // Call-site regression for #5945: the failure-path DefaultTrace.TraceError is gated behind
+            // DefaultTrace.TraceSource.Switch.ShouldTrace(...), so when tracing is disabled (the default
+            // no-op sink) the heavyweight ex.Message -> Diagnostics serialization is never evaluated. The
+            // spy's Diagnostics getter throws, and Message evaluates Diagnostics as an argument before
+            // building the string, so an UN-gated call site (passing ex.Message without the ShouldTrace
+            // guard) would surface here as DiagnosticsAccessed == true. A 503 is used because that is a
+            // status code where Message eagerly serializes diagnostics in prod.
+            SourceLevels originalLevel = DefaultTrace.TraceSource.Switch.Level;
+            try
+            {
+                // Force the no-op sink scenario deterministically, independent of other tests in the suite.
+                DefaultTrace.TraceSource.Switch.Level = SourceLevels.Off;
 
-            DiagnosticsThrowingCosmosException toThrow = new DiagnosticsThrowingCosmosException(
-                HttpStatusCode.ServiceUnavailable,
-                "boom",
-                new Headers { ActivityId = "activity-5945" });
+                // Precondition (separate instance so we don't poison the thrown instance's lazy Message
+                // cache): a 503 CosmosException really does serialize diagnostics via Message, so the
+                // DiagnosticsAccessed assertion below is meaningful.
+                DiagnosticsThrowingCosmosException precondition = new DiagnosticsThrowingCosmosException(
+                    HttpStatusCode.ServiceUnavailable,
+                    "boom",
+                    new Headers { ActivityId = "activity-5945" });
+                Assert.ThrowsException<InvalidOperationException>(() => _ = precondition.Message);
+                Assert.IsTrue(precondition.DiagnosticsAccessed, "Precondition: Message must serialize diagnostics for 503.");
 
-            DiagnosticsThrowingCosmosException caught = await Assert.ThrowsExceptionAsync<DiagnosticsThrowingCosmosException>(
-                () => asyncCache.GetAsync(
-                    "test",
-                    async (_) =>
-                    {
-                        await Task.Yield();
-                        throw toThrow;
-                    },
-                    (_) => false));
+                AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>(enableAsyncCacheExceptionNoSharing: false);
 
-            Assert.AreSame(toThrow, caught, "The original exception must propagate unchanged.");
-            Assert.IsFalse(
-                toThrow.DiagnosticsAccessed,
-                "Failure-path logging must not serialize CosmosException diagnostics (must use ToTraceSafeString).");
+                DiagnosticsThrowingCosmosException toThrow = new DiagnosticsThrowingCosmosException(
+                    HttpStatusCode.ServiceUnavailable,
+                    "boom",
+                    new Headers { ActivityId = "activity-5945" });
+
+                DiagnosticsThrowingCosmosException caught = await Assert.ThrowsExceptionAsync<DiagnosticsThrowingCosmosException>(
+                    () => asyncCache.GetAsync(
+                        "test",
+                        async (_) =>
+                        {
+                            await Task.Yield();
+                            throw toThrow;
+                        },
+                        (_) => false));
+
+                Assert.AreSame(toThrow, caught, "The original exception must propagate unchanged.");
+                Assert.IsFalse(
+                    toThrow.DiagnosticsAccessed,
+                    "Failure-path logging must not serialize CosmosException diagnostics when tracing is disabled (the DefaultTrace call must be gated by DefaultTrace.TraceSource.Switch.ShouldTrace).");
+            }
+            finally
+            {
+                DefaultTrace.TraceSource.Switch.Level = originalLevel;
+            }
         }
 
         private sealed class DiagnosticsThrowingCosmosException : CosmosException
