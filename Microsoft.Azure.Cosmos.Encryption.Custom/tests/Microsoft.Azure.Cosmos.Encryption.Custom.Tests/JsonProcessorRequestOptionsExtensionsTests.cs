@@ -166,6 +166,53 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             // Per-request Newtonsoft override wins even though the container default is Stream.
             Assert.AreEqual(JsonProcessor.Newtonsoft, newtonsoftOverride.GetJsonProcessor(JsonProcessor.Stream));
         }
+
+        [TestMethod]
+        public void WithEncryptionJsonProcessor_WritesSelection_ReadBackViaGetJsonProcessor()
+        {
+            QueryRequestOptions ro = new QueryRequestOptions()
+                .WithEncryptionJsonProcessor(JsonProcessor.Stream);
+
+            // The per-call selection must win over whatever container default is supplied.
+            Assert.AreEqual(JsonProcessor.Stream, ro.GetJsonProcessor(JsonProcessor.Newtonsoft));
+
+            ro.WithEncryptionJsonProcessor(JsonProcessor.Newtonsoft);
+            Assert.AreEqual(JsonProcessor.Newtonsoft, ro.GetJsonProcessor(JsonProcessor.Stream));
+        }
+
+        [TestMethod]
+        public void WithEncryptionJsonProcessor_ReturnsSameInstance_AndPreservesConcreteType()
+        {
+            QueryRequestOptions ro = new ();
+            QueryRequestOptions result = ro.WithEncryptionJsonProcessor(JsonProcessor.Stream);
+
+            // Generic TRequestOptions keeps the concrete type for fluent chaining, and the same
+            // instance is returned (the call configures, it does not clone the options object).
+            Assert.AreSame(ro, result);
+        }
+
+        [TestMethod]
+        public void WithEncryptionJsonProcessor_DoesNotMutateCallerSuppliedPropertiesDictionary()
+        {
+            // A properties dictionary may be shared with other request-options instances; the extension
+            // must copy into a fresh dictionary rather than mutating the caller's original.
+            Dictionary<string, object> shared = new () { { "unrelated", 123 } };
+            QueryRequestOptions ro = new () { Properties = shared };
+
+            ro.WithEncryptionJsonProcessor(JsonProcessor.Stream);
+
+            Assert.IsFalse(shared.ContainsKey(JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey), "Original dictionary must not be mutated.");
+            Assert.IsFalse(ReferenceEquals(shared, ro.Properties), "A new dictionary should have been assigned.");
+            Assert.IsTrue(ro.Properties.ContainsKey(JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey));
+            Assert.AreEqual(123, ro.Properties["unrelated"], "Pre-existing properties must be preserved in the copy.");
+        }
+
+        [TestMethod]
+        public void WithEncryptionJsonProcessor_NullRequestOptions_Throws()
+        {
+            QueryRequestOptions ro = null;
+            Assert.ThrowsException<ArgumentNullException>(() => ro.WithEncryptionJsonProcessor(JsonProcessor.Stream));
+        }
     }
 }
 #endif

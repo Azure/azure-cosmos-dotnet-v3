@@ -122,5 +122,58 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 requestOptions: null,
                 encryptionContainer.DefaultJsonProcessor);
         }
+
+#if NET8_0_OR_GREATER
+        /// <summary>
+        /// Gets a typed FeedIterator from a LINQ IQueryable, decrypting results using the specified
+        /// <see cref="JsonProcessor"/> for this call (overriding the container default).
+        /// </summary>
+        /// <typeparam name="T">the type of object to query.</typeparam>
+        /// <param name="container">the encryption container.</param>
+        /// <param name="query">the IQueryable{T} to be converted.</param>
+        /// <param name="jsonProcessor">The JSON processor to use when decrypting the results.</param>
+        /// <returns>An iterator to go through the items.</returns>
+        public static FeedIterator<T> ToEncryptionFeedIterator<T>(
+            this Container container,
+            IQueryable<T> query,
+            JsonProcessor jsonProcessor)
+        {
+            if (container is not EncryptionContainer encryptionContainer)
+            {
+                throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionFeedIterator)} is only supported with {nameof(EncryptionContainer)}.");
+            }
+
+            return new EncryptionFeedIterator<T>(
+                (EncryptionFeedIterator)encryptionContainer.ToEncryptionStreamIterator(query, jsonProcessor),
+                encryptionContainer.ResponseFactory);
+        }
+
+        /// <summary>
+        /// Gets a stream FeedIterator from a LINQ IQueryable, decrypting results using the specified
+        /// <see cref="JsonProcessor"/> for this call (overriding the container default).
+        /// </summary>
+        /// <typeparam name="T">the type of object to query.</typeparam>
+        /// <param name="container">the encryption container.</param>
+        /// <param name="query">the IQueryable{T} to be converted.</param>
+        /// <param name="jsonProcessor">The JSON processor to use when decrypting the results.</param>
+        /// <returns>An iterator to go through the items.</returns>
+        public static FeedIterator ToEncryptionStreamIterator<T>(
+            this Container container,
+            IQueryable<T> query,
+            JsonProcessor jsonProcessor)
+        {
+            if (container is not EncryptionContainer encryptionContainer)
+            {
+                throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionStreamIterator)} is only supported with {nameof(EncryptionContainer)}.");
+            }
+
+            return new EncryptionFeedIterator(
+                query.ToStreamIterator(),
+                encryptionContainer.Encryptor,
+                encryptionContainer.CosmosSerializer,
+                requestOptions: null,
+                jsonProcessor);
+        }
+#endif
     }
 }

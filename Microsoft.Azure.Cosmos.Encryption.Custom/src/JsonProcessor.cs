@@ -5,28 +5,32 @@
 namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     /// <summary>
-    /// Specifies the JSON processing implementation used by the encryption layer when
-    /// encrypting and decrypting documents.
+    /// Selects the JSON processing engine used to encrypt and decrypt documents in client-side-encryption
+    /// operations (item CRUD, query, change feed, read-many, and LINQ-sourced iterators).
     /// </summary>
     /// <remarks>
-    /// A processor can be selected per request through the request options property bag,
-    /// or configured as a container-wide default when the encryption container is created
-    /// via <c>WithEncryptor(container, encryptor, defaultJsonProcessor)</c>. A per-request
-    /// selection always overrides the container default.
+    /// The default is <see cref="Newtonsoft"/> on all target frameworks. The lower-allocation
+    /// <c>Stream</c> processor is available only on the net8.0 package and is supported for the MDE
+    /// encryption algorithm. Choose the processor per call with
+    /// <c>requestOptions.WithEncryptionJsonProcessor(...)</c> (or the LINQ overloads that accept a
+    /// <see cref="JsonProcessor"/>) or through the request options property bag, or configure a
+    /// container-wide default via <c>WithEncryptor(container, encryptor, defaultJsonProcessor)</c>.
+    /// A per-request selection always overrides the container default.
     /// </remarks>
     public enum JsonProcessor
     {
         /// <summary>
-        /// Newtonsoft.Json based (JObject) processing. This is the default.
+        /// Newtonsoft.Json based (JObject) processing. The default on all target frameworks.
         /// </summary>
-        Newtonsoft,
+        Newtonsoft = 0,
 
 #if NET8_0_OR_GREATER
         /// <summary>
-        /// System.Text.Json based (Utf8JsonReader/Utf8JsonWriter, stream oriented) processing.
+        /// System.Text.Json streaming processor (<see cref="System.Text.Json.Utf8JsonReader"/> /
+        /// <see cref="System.Text.Json.Utf8JsonWriter"/>). Available on the net8.0 package only;
+        /// supported for the MDE encryption algorithm and reduces allocations on the decrypt path.
         /// </summary>
-        /// <remarks>Available with the .NET 8.0 package only; supported for the MDE encryption algorithm.</remarks>
-        Stream,
+        Stream = 1,
 #endif
     }
 }
