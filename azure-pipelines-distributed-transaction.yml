@@ -1,0 +1,33 @@
+# Distributed-transaction (DTx) live-account CI — MANUAL TRIGGER ONLY.
+#
+# trigger: none + pr: none means this pipeline never runs automatically on CI
+# pushes or pull requests. It can only ever be queued manually ("Run pipeline")
+# from Azure DevOps. This keeps it an optional, on-demand gate: a maintainer runs
+# it against a real DTX-enabled account (e.g. before merging a DTx change, or to
+# validate a fork PR after review) without ever exposing the account secret to
+# automatic fork builds. The underlying test job is also soft / non-blocking
+# (continueOnError) so a failure never blocks anything.
+#
+# Required secret pipeline variables:
+#   COSMOS_DTX_ENDPOINT - https://<dtx-account>.documents.azure.com:443/
+#   COSMOS_DTX_KEY      - master key for the DTX-enabled account
+# Keep "Make secrets available to builds of forks" OFF.
+
+trigger: none
+
+pr: none
+
+variables:
+  Arguments: ' --filter "TestCategory=DistributedTransactionLive" --verbosity normal '
+  BuildConfiguration: Release
+  VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
+
+jobs:
+- template:  templates/build-distributed-transaction-test.yml
+  parameters:
+    BuildConfiguration: $(BuildConfiguration)
+    Arguments: $(Arguments)
+    VmImage: $(VmImage)
+    CategoryListName: ' DistributedTransaction '
+    DistributedTransactionEndpoint: $(COSMOS_DTX_ENDPOINT)
+    DistributedTransactionKey: $(COSMOS_DTX_KEY)
