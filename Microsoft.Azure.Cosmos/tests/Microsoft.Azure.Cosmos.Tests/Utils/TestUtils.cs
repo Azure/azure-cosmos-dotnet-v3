@@ -112,6 +112,25 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         /// <summary>
+        /// Marks every advertised thin-client regional endpoint as probe-healthy by wiring a probe
+        /// client whose HTTP/2 connectivity probes all succeed and running one probe cycle. Required
+        /// because thin-client routing fails closed: without a probe-confirmed endpoint the dispatch
+        /// path falls back to Gateway V1.
+        /// </summary>
+        public static void MarkThinClientEndpointsHealthyForTest(GlobalEndpointManager endpointManager)
+        {
+            CosmosHttpClient probeHttpClient = MockCosmosUtil.CreateMockCosmosHttpClientFromFunc(
+                request => Task.FromResult(new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.OK)
+                {
+                    Content = new System.Net.Http.ByteArrayContent(Array.Empty<byte>()),
+                    RequestMessage = request,
+                }));
+
+            endpointManager.SetThinClientHttpClient(probeHttpClient);
+            endpointManager.RunThinClientProbeCycleAsync().GetAwaiter().GetResult();
+        }
+
+        /// <summary>
         /// Simulates the service withdrawing all thin-client locations
         /// by feeding the LocationCache an AccountProperties snapshot whose
         /// thin-client collections are empty while keeping regular read / write locations.

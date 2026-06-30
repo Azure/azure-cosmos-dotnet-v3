@@ -326,10 +326,21 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 #endif
-            // Resolve the endpoint for the request and pin the resolution to the resolved endpoint
-            this.locationEndpoint = this.isThinClientEnabled
+            // Resolve and pin the endpoint for the request. Per-region thin client gate: route to the proxy only
+            // when the regional endpoint the request would use is probe-healthy; otherwise pin the gateway
+            // endpoint.
+            Uri thinClientCandidate = this.isThinClientEnabled
                 && ThinClientStoreModel.IsThinClientRoutable(this.globalEndpointManager, request)
-                ? this.globalEndpointManager.ResolveThinClientEndpoint(request)
+                ? this.globalEndpointManager.GetThinClientEndpointCandidate(request)
+                : null;
+
+            // When the candidate is probe-healthy, pin the exact URI we just health-checked rather than
+            // re-resolving it (ResolveThinClientEndpoint), which would recompute from a possibly newer topology
+            // snapshot and could pin a different region than the one probed. The RouteToLocation below pins
+            // whichever endpoint we select for both branches.
+            this.locationEndpoint = thinClientCandidate != null
+                && this.globalEndpointManager.IsProxyEndpointHealthy(thinClientCandidate)
+                ? thinClientCandidate
                 : this.globalEndpointManager.ResolveServiceEndpoint(request);
 
             request.RequestContext.RouteToLocation(this.locationEndpoint);
