@@ -49,6 +49,7 @@ Stream, and the `…->A/B|equiv` cell now covers all of them:
 | `Sensitive` = `secret::<id>` | yes | baseline ASCII scalar |
 | `PlainEscaped` (`"` `\` newline `\u00e9`) | **no** (plaintext) | string **double-escape** in the Stream plaintext-passthrough path |
 | `EncEscaped` (`"` `\` newline tab `\u00e9` `\u0001`) | yes | escaped string through encrypt/decrypt (un-escape via `CopyString`) |
+| `EncAstral` = `😀𐍈🜨 日本語 العربية \uD83D\uDE00 Z\u0301` | yes | UTF-16 surrogate pairs, multi-script text, and combining-mark fidelity |
 | property **name** `esc"name\x` | yes | **property-name double-escape** |
 | `EncObj` = `{"a":null,"b":1}` | yes | **null inside an encrypted object** (path-nulling) |
 | `EncArr` = `[1,null,2]` | yes | **null inside an encrypted array** |

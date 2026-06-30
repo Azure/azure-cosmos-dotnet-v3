@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text;
     using Microsoft.Azure.Cosmos.Encryption.Custom;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -42,6 +43,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 yield return new object[] { w, r, algo, wproc, rproc, path };
             }
         }
+
+        private const string EncAstralValue = "😀𐍈🜨 日本語 العربية \uD83D\uDE00 Z\u0301";
 
         // Expected classification for one cell. Mirrors the harness:
         //  * AEAD+Stream is unsupported-by-design on EITHER side (Validate throws): UNSUPPORTED.
@@ -87,6 +90,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             const int harnessEquivalenceCells = 3;
             Assert.AreEqual(harnessGridCellsAtBoth - harnessEquivalenceCells, supported,
                 "the 39 SUPPORTED cells == harness DATA cells (42 grid - 3 equivalence)");
+        }
+
+        [TestMethod]
+        public void HardenedDocument_EncryptedAstralString_RoundTripsExactly()
+        {
+            MatrixDoc expected = new() { EncAstral = EncAstralValue };
+            string json = Newtonsoft.Json.JsonConvert.SerializeObject(expected);
+            MatrixDoc actual = Newtonsoft.Json.JsonConvert.DeserializeObject<MatrixDoc>(json);
+
+            Assert.AreEqual(EncAstralValue, actual.EncAstral, "encrypted astral/multi-script string must round-trip exactly");
+            CollectionAssert.AreEqual(
+                EncAstralValue.EnumerateRunes().Select(r => r.Value).ToArray(),
+                actual.EncAstral.EnumerateRunes().Select(r => r.Value).ToArray(),
+                "encrypted astral/multi-script string code points must be unchanged");
         }
 
         [TestMethod]
@@ -148,6 +165,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Type[] types = typeof(EncryptionOptions).Assembly.GetTypes();
             Assert.IsFalse(types.Any(t => t.Name.Contains("CompressionOptions")), "preview01 must not expose compression.");
             Assert.IsFalse(typeof(EncryptionOptions).GetProperties().Any(p => p.Name.Contains("Compression")));
+        }
+
+        private sealed class MatrixDoc
+        {
+            public string EncAstral { get; set; }
         }
     }
 }

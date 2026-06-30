@@ -51,6 +51,8 @@ namespace CompatMatrix
         // BYTE/VALUE-for-value under Newtonsoft AND Stream, with the A/B equivalence covering them all.
         // Escaped string VALUE on an ENCRYPTED path: quote, backslash, newline, tab, \uXXXX unicode, control char.
         private const string EncEscapedValue = "q=\" b=\\ nl=\n tab=\t u=\u00e9 ctl=\u0001 end";
+        // Astral-plane and multi-script string on an ENCRYPTED path: catches surrogate-pair/combining-mark corruption.
+        private const string EncAstralValue = "😀𐍈🜨 日本語 العربية \uD83D\uDE00 Z\u0301";
         // Escaped string on a NON-encrypted path -> exercises the Stream plaintext-passthrough double-escape fix
         // (encrypted strings are un-escaped via CopyString, so only a passthrough string can catch that bug).
         private const string PlainEscapedValue = "p_q=\" p_b=\\ p_nl=\n p_u=\u00e9 end";
@@ -71,7 +73,7 @@ namespace CompatMatrix
         // inner-null-in-container fix is exercised.
         private static readonly string[] HardenedEncryptedPaths =
         {
-            "/Sensitive", "/EncEscaped", EscPropPath, "/EncObj", "/EncArr", "/EncLong", "/EncIntegralDouble", "/EncNormalDouble",
+            "/Sensitive", "/EncEscaped", "/EncAstral", EscPropPath, "/EncObj", "/EncArr", "/EncLong", "/EncIntegralDouble", "/EncNormalDouble",
         };
 
         public static async Task<int> Main(string[] args)
@@ -372,6 +374,7 @@ namespace CompatMatrix
             Sensitive = $"secret::{id}",
             PlainEscaped = PlainEscapedValue,
             EncEscaped = EncEscapedValue,
+            EncAstral = EncAstralValue,
             EscNameValue = EscNameValue,
             EncObj = new JObject { ["a"] = JValue.CreateNull(), ["b"] = 1 },
             EncArr = new JArray { 1, JValue.CreateNull(), 2 },
@@ -399,6 +402,7 @@ namespace CompatMatrix
                 d.NonSensitive ?? "<null>",
                 d.PlainEscaped ?? "<null>",
                 d.EncEscaped ?? "<null>",
+                d.EncAstral ?? "<null>",
                 d.EscNameValue ?? "<null>",
                 d.EncLong.ToString(CultureInfo.InvariantCulture),
                 d.EncIntegralDouble.ToString("R", CultureInfo.InvariantCulture),
@@ -414,7 +418,7 @@ namespace CompatMatrix
         private static (bool ok, string detail) VerifyDoc(Doc actual, string id)
         {
             if (actual == null) { return (false, "not-found"); }
-            string[] names = { "Sensitive", "NonSensitive", "PlainEscaped", "EncEscaped", "EscName", "EncLong", "EncIntegralDouble", "EncNormalDouble", "EncObj", "EncArr" };
+            string[] names = { "Sensitive", "NonSensitive", "PlainEscaped", "EncEscaped", "EncAstral", "EscName", "EncLong", "EncIntegralDouble", "EncNormalDouble", "EncObj", "EncArr" };
             string[] a = Signature(actual).Split('\u001F');
             string[] e = Signature(BuildDoc(id)).Split('\u001F');
             if (a.Length != e.Length) { return (false, "field-count-mismatch"); }
@@ -439,6 +443,9 @@ namespace CompatMatrix
 
             // Escaped string on an ENCRYPTED path: exercises the un-escape (CopyString) encrypt/decrypt path.
             public string EncEscaped { get; set; }
+
+            // Astral-plane and multi-script encrypted string: exact UTF-16 surrogate-pair fidelity.
+            public string EncAstral { get; set; }
 
             // Encrypted-path property whose NAME carries escapes (quote + backslash).
             [Newtonsoft.Json.JsonProperty(EscPropName)]
