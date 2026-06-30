@@ -430,6 +430,9 @@ namespace Microsoft.Azure.Cosmos
 
                         if (clientSideRequestStatistics is ClientSideRequestStatisticsTraceDatum datum)
                         {
+                            // Diagnostics keep a reference to responseMessage but only read its status
+                            // code/headers later (content length and activity id are captured eagerly),
+                            // so it stays safe to read even after the retriable response is disposed below.
                             datum.RecordHttpResponse(requestMessage, responseMessage, resourceType, requestStartTime);
                         }
 
