@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
+    using System.Globalization;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -18,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         internal static readonly SemaphoreSlim EncryptionKeyCacheSemaphore = new SemaphoreSlim(1, 1);
 
-        private static readonly TimeSpan BackgroundRefreshActivationThreshold = TimeSpan.FromHours(1);
+        private static readonly TimeSpan BackgroundRefreshActivationThreshold = ReadActivationThresholdFromEnv();
 
         private readonly CosmosClient cosmosClient;
 
@@ -266,6 +267,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             this.cosmosClient.Dispose();
+        }
+
+        private static TimeSpan ReadActivationThresholdFromEnv()
+        {
+            string value = Environment.GetEnvironmentVariable("COSMOS_PDEK_BG_REFRESH_MIN_TTL_SECONDS");
+            if (!string.IsNullOrWhiteSpace(value)
+                && double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double seconds)
+                && seconds > 0)
+            {
+                return TimeSpan.FromSeconds(seconds);
+            }
+
+            return TimeSpan.FromHours(1);
         }
 
         private async Task<ClientEncryptionKeyProperties> FetchClientEncryptionKeyPropertiesAsync(

@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
     using System.Collections.Concurrent;
+    using System.Globalization;
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure;
@@ -27,15 +28,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
     internal sealed class PdekCacheRefreshWorker : IDisposable
     {
         private const int MaxRetryAttemptsOn429 = 5;
-        private const double RefreshWindowFraction = 0.9;
+        private const double DefaultRefreshWindowFraction = 0.9;
+        private const string MaxScanIntervalEnvVar = "COSMOS_PDEK_BG_REFRESH_MAX_SCAN_INTERVAL_SECONDS";
+        private const string RefreshWindowFractionEnvVar = "COSMOS_PDEK_BG_REFRESH_WINDOW_FRACTION";
 
-        private static readonly TimeSpan MaxScanInterval = TimeSpan.FromMinutes(5);
+        private static readonly TimeSpan DefaultMaxScanInterval = TimeSpan.FromMinutes(5);
         private static readonly TimeSpan SemaphoreAcquireTimeout = TimeSpan.FromSeconds(30);
 
         private readonly ConcurrentDictionary<string, RefreshEntry> trackedEntries;
         private readonly EncryptionCosmosClient encryptionCosmosClient;
         private readonly TimeSpan keyCacheTimeToLive;
         private readonly TimeSpan scanInterval;
+        private readonly TimeSpan maxScanInterval;
+        private readonly double refreshWindowFraction;
         private readonly CancellationTokenSource cts;
         private readonly Task workerTask;
         private readonly Random jitterRandom;
@@ -47,8 +52,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             this.encryptionCosmosClient = encryptionCosmosClient ?? throw new ArgumentNullException(nameof(encryptionCosmosClient));
             this.keyCacheTimeToLive = keyCacheTimeToLive;
+            this.maxScanInterval = ReadTimeSpanFromEnv(MaxScanIntervalEnvVar, DefaultMaxScanInterval);
+            this.refreshWindowFraction = ReadDoubleFromEnv(RefreshWindowFractionEnvVar, DefaultRefreshWindowFraction);
             this.scanInterval = TimeSpan.FromSeconds(
-                Math.Min(keyCacheTimeToLive.TotalSeconds * 0.1, MaxScanInterval.TotalSeconds));
+                Math.Min(keyCacheTimeToLive.TotalSeconds * 0.1, this.maxScanInterval.TotalSeconds));
             this.trackedEntries = new ConcurrentDictionary<string, RefreshEntry>();
             this.cts = new CancellationTokenSource();
             this.jitterRandom = new Random();
@@ -133,6 +140,33 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return databaseRid + "|" + clientEncryptionKeyId;
         }
 
+        private static TimeSpan ReadTimeSpanFromEnv(string envVarName, TimeSpan defaultValue)
+        {
+            string value = Environment.GetEnvironmentVariable(envVarName);
+            if (!string.IsNullOrWhiteSpace(value)
+                && double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double seconds)
+                && seconds > 0)
+            {
+                return TimeSpan.FromSeconds(seconds);
+            }
+
+            return defaultValue;
+        }
+
+        private static double ReadDoubleFromEnv(string envVarName, double defaultValue)
+        {
+            string value = Environment.GetEnvironmentVariable(envVarName);
+            if (!string.IsNullOrWhiteSpace(value)
+                && double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double parsed)
+                && parsed > 0
+                && parsed < 1.0)
+            {
+                return parsed;
+            }
+
+            return defaultValue;
+        }
+
         private async Task ScanAndRefreshLoopAsync(CancellationToken ct)
         {
             while (!ct.IsCancellationRequested)
@@ -175,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 RefreshEntry entry = kvp.Value;
                 DateTime refreshThreshold = entry.CreatedAtUtc
-                    + TimeSpan.FromSeconds(effectiveTtl.TotalSeconds * RefreshWindowFraction)
+                    + TimeSpan.FromSeconds(effectiveTtl.TotalSeconds * this.refreshWindowFraction)
                     + entry.JitterOffset;
 
                 if (DateTime.UtcNow >= refreshThreshold)
@@ -298,7 +332,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private TimeSpan GenerateJitter(TimeSpan effectiveTtl)
         {
             // Random offset within the refresh window (last refreshWindow% of TTL)
-            double refreshWindowSeconds = effectiveTtl.TotalSeconds * (1.0 - RefreshWindowFraction);
+            double refreshWindowSeconds = effectiveTtl.TotalSeconds * (1.0 - this.refreshWindowFraction);
             double jitterSeconds;
             lock (this.jitterRandom)
             {
