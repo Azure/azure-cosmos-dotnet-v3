@@ -727,7 +727,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             BudgetExhausted,
             AlreadyHedgedThisOperation,
             ExcludedRegionLeavesNoTarget,
-            AuthModeNotEligibleForHedge,
         }
 
         /// <summary>
