@@ -908,6 +908,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [Ignore("Marking as ignore until emulator is updated")]
         [TestMethod]
         public async Task TestFullTextSearchPolicyOptionalLanguage()
         {
