@@ -206,12 +206,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             }
 
                             string matchedPath = null;
-                            for (int i = 0; i < encryptedPathsTable.Length; i++)
+                            if (reader.CurrentDepth == 1)
                             {
-                                if (reader.ValueTextEquals(encryptedPathsTable[i].nameBytes))
+                                // Match configured encrypted paths against TOP-LEVEL property names only.
+                                // The configured paths are JSON Pointers to root properties, so a nested
+                                // property that happens to share a name (e.g. Outer.Sensitive when only
+                                // /Sensitive is configured) must not be encrypted. This mirrors the _ei
+                                // guard above and the Newtonsoft processor's top-level-only behavior.
+                                for (int i = 0; i < encryptedPathsTable.Length; i++)
                                 {
-                                    matchedPath = encryptedPathsTable[i].fullPath;
-                                    break;
+                                    if (reader.ValueTextEquals(encryptedPathsTable[i].nameBytes))
+                                    {
+                                        matchedPath = encryptedPathsTable[i].fullPath;
+                                        break;
+                                    }
                                 }
                             }
 

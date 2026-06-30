@@ -94,6 +94,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             return JsonDocument.Parse(output);
         }
 
+        // Encrypts via the Newtonsoft processor (the canonical top-level-only reference) and returns a
+        // seekable copy of the wire bytes for cross-processor parity assertions.
+        private static async Task<MemoryStream> EncryptNewtonsoftAsync(object doc, EncryptionOptions options)
+        {
+            Stream input = TestCommon.ToStream(doc);
+            Stream encrypted = await EncryptionProcessor.EncryptAsync(input, mockEncryptor.Object, options, JsonProcessor.Newtonsoft, new CosmosDiagnosticsContext(), CancellationToken.None);
+            MemoryStream copy = new();
+            encrypted.Position = 0;
+            await encrypted.CopyToAsync(copy);
+            copy.Position = 0;
+            return copy;
+        }
+
         // Defect #1: pass-through string value containing JSON escape sequences must not be
         // double-escaped during encrypt + decrypt.
         [TestMethod]
@@ -220,8 +233,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
         // Defect #5 negative case: a nested (non-top-level) property named _ei must NOT trigger the
         // top-level _ei guard. Encryption must succeed and the surrounding payload must round-trip.
-        // (Note: the decryptor independently drops any property literally named _ei, which is a
-        // separate pre-existing behavior and out of scope here, so we do not assert on payload._ei.)
+        // The decrypt-side _ei skip is now depth-gated too, so a nested user property literally named
+        // _ei is preserved verbatim — only the top-level _ei metadata block is stripped (matching the
+        // Newtonsoft processor, which removes only the root _ei).
         [TestMethod]
         public async Task Encrypt_NestedEiProperty_DoesNotThrow()
         {
@@ -232,6 +246,72 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
             Assert.AreEqual("x", jd.RootElement.GetProperty("enc").GetString());
             Assert.AreEqual("v", jd.RootElement.GetProperty("payload").GetProperty("keep").GetString());
+
+            // The nested user property named _ei (depth 2) must survive decrypt; only the top-level
+            // metadata _ei (depth 1) is removed. Before the depth==1 guard the decryptor skipped any
+            // property named _ei at any depth, silently dropping this nested value.
+            Assert.AreEqual("userdata", jd.RootElement.GetProperty("payload").GetProperty("_ei").GetString());
+            Assert.IsFalse(jd.RootElement.TryGetProperty(Constants.EncryptedInfo, out _), "Top-level _ei metadata must be stripped on decrypt.");
+        }
+
+        // BLOCKING data-correctness regression: the Stream encryptor matched configured encrypted-path
+        // property names at ANY depth, diverging from the Newtonsoft processor (top-level only). A
+        // nested property sharing a top-level encrypted-path name under a NON-encrypted parent must stay
+        // plaintext, only the top-level value is encrypted, and the result must match Newtonsoft.
+        [TestMethod]
+        public async Task Encrypt_NestedPropertySharingTopLevelEncryptedPathName_OnlyTopLevelEncrypted_MatchesNewtonsoft()
+        {
+            var doc = new { id = "1", Sensitive = "topsecret", Outer = new { Sensitive = "nestedplain" } };
+            EncryptionOptions options = CreateOptions(new[] { "/Sensitive" });
+
+            MemoryStream streamEnc = await EncryptObjAsync(doc, options);
+            MemoryStream nsEnc = await EncryptNewtonsoftAsync(doc, options);
+
+            // Only the top-level path is recorded as encrypted; the nested match must not add a duplicate.
+            CollectionAssert.AreEqual(new[] { "/Sensitive" }, ReadProperties(streamEnc).EncryptedPaths.ToList());
+            CollectionAssert.AreEqual(new[] { "/Sensitive" }, ReadProperties(nsEnc).EncryptedPaths.ToList());
+
+            streamEnc.Position = 0;
+            nsEnc.Position = 0;
+            using JsonDocument streamJd = JsonDocument.Parse(streamEnc, new JsonDocumentOptions { AllowTrailingCommas = true });
+            using JsonDocument nsJd = JsonDocument.Parse(nsEnc, new JsonDocumentOptions { AllowTrailingCommas = true });
+
+            // Nested Outer.Sensitive stays plaintext under both processors (the bug encrypted it in Stream).
+            Assert.AreEqual("nestedplain", streamJd.RootElement.GetProperty("Outer").GetProperty("Sensitive").GetString());
+            Assert.AreEqual("nestedplain", nsJd.RootElement.GetProperty("Outer").GetProperty("Sensitive").GetString());
+
+            // Cross-processor parity: deterministic mock cipher => top-level encrypted value is byte-identical,
+            // and the untouched Outer subtree is structurally identical.
+            Assert.AreEqual(
+                nsJd.RootElement.GetProperty("Sensitive").GetString(),
+                streamJd.RootElement.GetProperty("Sensitive").GetString(),
+                "Top-level encrypted value must match the Newtonsoft processor output.");
+            Assert.AreEqual(
+                nsJd.RootElement.GetProperty("Outer").GetRawText(),
+                streamJd.RootElement.GetProperty("Outer").GetRawText());
+
+            // Full round-trip through the Stream decryptor recovers the original document exactly.
+            using JsonDocument round = await RoundTripAsync(streamEnc);
+            Assert.AreEqual("topsecret", round.RootElement.GetProperty("Sensitive").GetString());
+            Assert.AreEqual("nestedplain", round.RootElement.GetProperty("Outer").GetProperty("Sensitive").GetString());
+        }
+
+        // BLOCKING data-correctness regression (decrypt side): a document produced by the Newtonsoft
+        // processor (top-level encrypted only, nested same-named property left as plaintext) must decrypt
+        // correctly through the Stream processor. Before the depth==1 guard the Stream decryptor matched
+        // the nested property name and tried to Base64-decode the nested plaintext, throwing/corrupting it.
+        [TestMethod]
+        public async Task Decrypt_NestedPropertySharingEncryptedPathName_FromNewtonsoftWire_StaysPlaintext()
+        {
+            var doc = new { id = "1", Sensitive = "topsecret", Outer = new { Sensitive = "nestedplain" } };
+            EncryptionOptions options = CreateOptions(new[] { "/Sensitive" });
+
+            MemoryStream nsEnc = await EncryptNewtonsoftAsync(doc, options);
+
+            using JsonDocument jd = await RoundTripAsync(nsEnc);
+
+            Assert.AreEqual("topsecret", jd.RootElement.GetProperty("Sensitive").GetString());
+            Assert.AreEqual("nestedplain", jd.RootElement.GetProperty("Outer").GetProperty("Sensitive").GetString());
         }
 
         // Defect #8: the (Stream, DecryptionContext) decrypt overload must dispose the input stream

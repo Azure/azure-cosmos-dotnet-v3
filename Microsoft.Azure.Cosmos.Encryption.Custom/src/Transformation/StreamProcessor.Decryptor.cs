@@ -174,12 +174,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             break;
                         case JsonTokenType.PropertyName:
                             string matchedPath = null;
-                            for (int i = 0; i < encryptedPathsTable.Length; i++)
+                            if (reader.CurrentDepth == 1)
                             {
-                                if (reader.ValueTextEquals(encryptedPathsTable[i].nameBytes))
+                                // Match encrypted paths against TOP-LEVEL property names only. The
+                                // encrypted paths metadata describes root properties, so a nested
+                                // property that happens to share a name (e.g. Outer.Sensitive when only
+                                // /Sensitive was encrypted) must be passed through as plaintext rather
+                                // than fed to the decryptor. This mirrors the depth-gated _ei handling
+                                // below and the Newtonsoft processor's top-level-only behavior.
+                                for (int i = 0; i < encryptedPathsTable.Length; i++)
                                 {
-                                    matchedPath = encryptedPathsTable[i].fullPath;
-                                    break;
+                                    if (reader.ValueTextEquals(encryptedPathsTable[i].nameBytes))
+                                    {
+                                        matchedPath = encryptedPathsTable[i].fullPath;
+                                        break;
+                                    }
                                 }
                             }
 
@@ -187,8 +196,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             {
                                 decryptPropertyName = matchedPath;
                             }
-                            else if (reader.ValueTextEquals(this.encryptionPropertiesNameBytes))
+                            else if (reader.CurrentDepth == 1 && reader.ValueTextEquals(this.encryptionPropertiesNameBytes))
                             {
+                                // Only the top-level _ei metadata block is the encryption envelope; a
+                                // nested user property literally named _ei must be preserved verbatim.
                                 if (!reader.TrySkip())
                                 {
                                     isIgnoredBlock = true;
