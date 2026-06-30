@@ -17,6 +17,7 @@ parameters:
   EmulatorPipeline5CategoryListName: ' MultiRegionAad '
   MultiRegionConnectionString : ''
   MultiRegionMultiMasterConnectionString : ''
+  AadAccountEndpoint : ''
   AadTenantId : ''
   AadClientId : ''
   AadClientSecret : ''
@@ -494,7 +495,7 @@ jobs:
       publishTestResults: true
       testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
     env: 
-      COSMOSDB_MULTI_REGION: ${{ parameters.MultiRegionConnectionString }}
+      COSMOSDB_MULTI_REGION_AAD: ${{ parameters.AadAccountEndpoint }}
       AZURE_TENANT_ID: ${{ parameters.AadTenantId }}
       AZURE_CLIENT_ID: ${{ parameters.AadClientId }}
       AZURE_CLIENT_SECRET: ${{ parameters.AadClientSecret }}

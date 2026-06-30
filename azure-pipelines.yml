@@ -52,6 +52,7 @@ jobs:
     VmImage: $(VmImage)
     MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
     MultiRegionMultiMasterConnectionString: $(COSMOSDB_MULTIMASTER)
+    AadAccountEndpoint: $(COSMOSDB_MULTI_REGION_AAD)
     AadTenantId: $(AAD_TENANT_ID)
     AadClientId: $(AAD_CLIENT_ID)
     AadClientSecret: $(AAD_CLIENT_SECRET)

@@ -82,34 +82,59 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         /// <summary>
-        /// Parses the account endpoint out of the live-account connection string (COSMOSDB_MULTI_REGION).
-        /// Used by the live AAD tests so they can target the same real account the key-based
-        /// MultiRegion tests use, while authenticating with a TokenCredential instead of a key.
+        /// Resolves the account endpoint for the live AAD tests. Prefers the dedicated
+        /// COSMOSDB_MULTI_REGION_AAD variable (which may be a bare endpoint URL such as
+        /// "https://acct.documents.azure.com:443/" because AAD-only accounts have no key, or a full
+        /// connection string), and falls back to the AccountEndpoint of the key-based COSMOSDB_MULTI_REGION
+        /// connection string. Returns null when neither is configured so the tests can skip cleanly.
         /// </summary>
-        internal static string GetMultiRegionAccountEndpoint()
+        internal static string GetAadAccountEndpoint()
         {
-            string connectionString = TestCommon.GetMultiRegionConnectionString();
-            if (string.IsNullOrEmpty(connectionString))
+            string aadValue = Cosmos.ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION_AAD", string.Empty);
+            string endpoint = TestCommon.ExtractAccountEndpoint(aadValue);
+            if (!string.IsNullOrEmpty(endpoint))
+            {
+                return endpoint;
+            }
+
+            return TestCommon.ExtractAccountEndpoint(TestCommon.GetMultiRegionConnectionString());
+        }
+
+        /// <summary>
+        /// Returns the account endpoint from a value that is either a bare endpoint URL or a Cosmos
+        /// connection string of the form "AccountEndpoint=...;AccountKey=...". Returns null when no usable
+        /// endpoint is present or when the value is an unresolved Azure DevOps macro.
+        /// </summary>
+        private static string ExtractAccountEndpoint(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value) || value.StartsWith("$(", StringComparison.Ordinal))
             {
                 return null;
             }
 
-            foreach (string segment in connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries))
+            value = value.Trim();
+
+            if (value.IndexOf("AccountEndpoint=", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                int separatorIndex = segment.IndexOf('=');
-                if (separatorIndex <= 0)
+                foreach (string segment in value.Split(';', StringSplitOptions.RemoveEmptyEntries))
                 {
-                    continue;
+                    int separatorIndex = segment.IndexOf('=');
+                    if (separatorIndex <= 0)
+                    {
+                        continue;
+                    }
+
+                    string key = segment.Substring(0, separatorIndex).Trim();
+                    if (string.Equals(key, "AccountEndpoint", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return segment.Substring(separatorIndex + 1).Trim();
+                    }
                 }
 
-                string key = segment.Substring(0, separatorIndex).Trim();
-                if (string.Equals(key, "AccountEndpoint", StringComparison.OrdinalIgnoreCase))
-                {
-                    return segment.Substring(separatorIndex + 1).Trim();
-                }
+                return null;
             }
 
-            return null;
+            return Uri.TryCreate(value, UriKind.Absolute, out _) ? value : null;
         }
 
         /// <summary>
@@ -174,7 +199,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// </summary>
         internal static CosmosClient CreateAadCosmosClient(CosmosClientOptions clientOptions = null)
         {
-            string endpoint = TestCommon.GetMultiRegionAccountEndpoint();
+            string endpoint = TestCommon.GetAadAccountEndpoint();
             global::Azure.Core.TokenCredential tokenCredential = TestCommon.GetAadTokenCredential();
 
             if (string.IsNullOrEmpty(endpoint) || tokenCredential == null)

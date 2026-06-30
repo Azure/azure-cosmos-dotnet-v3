@@ -14,59 +14,68 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     /// Cosmos DB account using a real <see cref="global::Azure.Core.TokenCredential"/> (data-plane RBAC),
     /// in contrast to <see cref="CosmosAadTests"/> which fabricates a token against the local emulator.
     ///
-    /// They are the AAD counterpart to the key-based <c>[TestCategory("MultiRegion")]</c> live tests and
-    /// reuse the same real account: the endpoint is parsed from the <c>COSMOSDB_MULTI_REGION</c>
-    /// connection string, and the test service principal credentials come from the
-    /// <c>AZURE_TENANT_ID</c> / <c>AZURE_CLIENT_ID</c> / <c>AZURE_CLIENT_SECRET</c> environment variables
-    /// (falling back to <see cref="global::Azure.Identity.DefaultAzureCredential"/> for local runs).
+    /// They target a real, AAD-only account (local/key auth disabled). The endpoint comes from the
+    /// <c>COSMOSDB_MULTI_REGION_AAD</c> environment variable (a bare endpoint URL, since an AAD-only
+    /// account has no key), falling back to the endpoint of the key-based <c>COSMOSDB_MULTI_REGION</c>
+    /// connection string. The test service principal credentials come from the
+    /// <c>AZURE_TENANT_ID</c> / <c>AZURE_CLIENT_ID</c> / <c>AZURE_CLIENT_SECRET</c> environment variables.
     ///
-    /// When those values are not configured the tests skip cleanly via <see cref="Assert.Inconclusive(string)"/>
-    /// so the suite stays green until the live account and service principal are provisioned.
+    /// When the endpoint / AAD credentials are not configured, or the test database/container has not been
+    /// pre-created, the tests skip cleanly via <see cref="Assert.Inconclusive(string)"/> so the suite stays
+    /// green until the account is provisioned.
     ///
-    /// The service principal only needs the Cosmos DB data-plane role (Cosmos DB Built-in Data Contributor);
-    /// creating the database/container therefore happens with a key-based client in <see cref="TestInitAsync"/>,
-    /// and the data operations under test run on the AAD client.
+    /// Because the account is AAD-only and the service principal only holds the data-plane role
+    /// (Cosmos DB Built-in Data Contributor), the database/container cannot be created at runtime (that is a
+    /// control-plane operation). They must be pre-created out of band (see the setup runbook); these tests
+    /// only exercise data-plane operations.
     /// </summary>
     [TestClass]
     public class CosmosAadLiveTests
     {
         private const string DatabaseId = "AadLiveTestDb";
         private const string ContainerId = "AadLiveTestContainer";
-        private const string PartitionKeyPath = "/pk";
 
-        private string connectionString;
-        private CosmosClient keyClient;
-        private Database database;
+        private CosmosClient aadClient;
         private Container container;
 
         [TestInitialize]
         public async Task TestInitAsync()
         {
-            this.connectionString = TestCommon.GetMultiRegionConnectionString();
-            if (string.IsNullOrEmpty(this.connectionString)
-                || string.IsNullOrEmpty(TestCommon.GetMultiRegionAccountEndpoint()))
+            if (string.IsNullOrEmpty(TestCommon.GetAadAccountEndpoint()))
             {
-                Assert.Inconclusive("Set environment variable COSMOSDB_MULTI_REGION (with an AccountEndpoint) to run the live AAD tests.");
+                Assert.Inconclusive("Set COSMOSDB_MULTI_REGION_AAD (or COSMOSDB_MULTI_REGION) to the AAD account endpoint to run the live AAD tests.");
             }
 
             if (TestCommon.GetAadTokenCredential() == null)
             {
-                Assert.Inconclusive("Set AZURE_TENANT_ID / AZURE_CLIENT_ID / AZURE_CLIENT_SECRET (or sign in for DefaultAzureCredential) to run the live AAD tests.");
+                Assert.Inconclusive("Set AZURE_TENANT_ID / AZURE_CLIENT_ID / AZURE_CLIENT_SECRET (or COSMOSDB_AAD_USE_DEFAULT_CREDENTIAL=true) to run the live AAD tests.");
             }
 
-            // Provision the database/container with a key-based client because the data-plane RBAC token
-            // used by the AAD client cannot perform control-plane (create database/container) operations.
-            this.keyClient = new CosmosClient(this.connectionString);
-            this.database = await this.keyClient.CreateDatabaseIfNotExistsAsync(DatabaseId);
-            this.container = await this.database.CreateContainerIfNotExistsAsync(ContainerId, PartitionKeyPath);
+            this.aadClient = TestCommon.CreateAadCosmosClient();
+            Assert.IsNotNull(this.aadClient, "Live AAD account/credentials are not configured.");
+            this.container = this.aadClient.GetContainer(DatabaseId, ContainerId);
+
+            // The account is AAD-only and the service principal is data-plane only, so the
+            // database/container must already exist. Verify with a data-plane metadata read and skip
+            // (rather than fail) when the resources or the role assignment are not yet in place.
+            try
+            {
+                await this.container.ReadContainerAsync();
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                Assert.Inconclusive($"Pre-create database '{DatabaseId}' and container '{ContainerId}' (/pk) on the AAD account before running these tests.");
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.Forbidden || ex.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                Assert.Inconclusive("The AAD principal is missing the Cosmos DB data-plane role assignment (Cosmos DB Built-in Data Contributor).");
+            }
         }
 
         [TestCleanup]
         public void TestCleanup()
         {
-            // Intentionally leave the database/container in place for reuse across runs (mirrors the
-            // key-based MultiRegion tests); only dispose the setup client.
-            this.keyClient?.Dispose();
+            this.aadClient?.Dispose();
         }
 
         [TestMethod]
@@ -75,9 +84,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(ConnectionMode.Gateway)]
         public async Task AadReadAccountAsync(ConnectionMode connectionMode)
         {
-            using CosmosClient aadClient = this.CreateAadClient(connectionMode);
+            using CosmosClient client = this.CreateAadClient(connectionMode);
 
-            AccountProperties properties = await aadClient.ReadAccountAsync();
+            AccountProperties properties = await client.ReadAccountAsync();
 
             Assert.IsNotNull(properties, "ReadAccountAsync should succeed with an Entra token.");
             Assert.IsNotNull(properties.Id);
@@ -89,8 +98,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(ConnectionMode.Gateway)]
         public async Task AadItemCrudAsync(ConnectionMode connectionMode)
         {
-            using CosmosClient aadClient = this.CreateAadClient(connectionMode);
-            Container aadContainer = aadClient.GetContainer(DatabaseId, ContainerId);
+            using CosmosClient client = this.CreateAadClient(connectionMode);
+            Container aadContainer = client.GetContainer(DatabaseId, ContainerId);
 
             ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
             PartitionKey partitionKey = new PartitionKey(item.pk);
@@ -119,12 +128,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCategory("MultiRegionAad")]
         public async Task AadQueryAsync()
         {
-            using CosmosClient aadClient = this.CreateAadClient(ConnectionMode.Direct);
-            Container aadContainer = aadClient.GetContainer(DatabaseId, ContainerId);
-
             string pk = "AadQuery" + Guid.NewGuid().ToString();
             ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pk);
-            await aadContainer.CreateItemAsync(item, new PartitionKey(pk));
+            await this.container.CreateItemAsync(item, new PartitionKey(pk));
 
             try
             {
@@ -132,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     .WithParameter("@pk", pk);
 
                 List<ToDoActivity> results = new List<ToDoActivity>();
-                using FeedIterator<ToDoActivity> iterator = aadContainer.GetItemQueryIterator<ToDoActivity>(query);
+                using FeedIterator<ToDoActivity> iterator = this.container.GetItemQueryIterator<ToDoActivity>(query);
                 while (iterator.HasMoreResults)
                 {
                     FeedResponse<ToDoActivity> response = await iterator.ReadNextAsync();
@@ -144,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                await aadContainer.DeleteItemAsync<ToDoActivity>(item.id, new PartitionKey(pk));
+                await this.container.DeleteItemAsync<ToDoActivity>(item.id, new PartitionKey(pk));
             }
         }
 
@@ -152,17 +158,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCategory("MultiRegionAad")]
         public async Task AadChangeFeedAsync()
         {
-            using CosmosClient aadClient = this.CreateAadClient(ConnectionMode.Direct);
-            Container aadContainer = aadClient.GetContainer(DatabaseId, ContainerId);
-
             string pk = "AadChangeFeed" + Guid.NewGuid().ToString();
             ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pk);
-            await aadContainer.CreateItemAsync(item, new PartitionKey(pk));
+            await this.container.CreateItemAsync(item, new PartitionKey(pk));
 
             try
             {
                 int readCount = 0;
-                using FeedIterator<ToDoActivity> changeFeedIterator = aadContainer.GetChangeFeedIterator<ToDoActivity>(
+                using FeedIterator<ToDoActivity> changeFeedIterator = this.container.GetChangeFeedIterator<ToDoActivity>(
                     ChangeFeedStartFrom.Beginning(),
                     ChangeFeedMode.Incremental);
 
@@ -181,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                await aadContainer.DeleteItemAsync<ToDoActivity>(item.id, new PartitionKey(pk));
+                await this.container.DeleteItemAsync<ToDoActivity>(item.id, new PartitionKey(pk));
             }
         }
 
@@ -190,11 +193,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task AadControlPlaneIsForbiddenAsync()
         {
             // A data-plane-only RBAC token cannot perform control-plane operations such as creating a
-            // database; the service rejects it with 403 Forbidden. This documents and guards that behavior.
-            using CosmosClient aadClient = this.CreateAadClient(ConnectionMode.Gateway);
+            // database; on an AAD-only account the service rejects it with 403 Forbidden. This documents
+            // and guards that behavior (and is why the test database/container are pre-created).
+            using CosmosClient client = this.CreateAadClient(ConnectionMode.Gateway);
 
             CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(
-                () => aadClient.CreateDatabaseAsync("AadShouldNotBeCreated" + Guid.NewGuid().ToString()));
+                () => client.CreateDatabaseAsync("AadShouldNotBeCreated" + Guid.NewGuid().ToString()));
 
             Assert.AreEqual(HttpStatusCode.Forbidden, exception.StatusCode,
                 "Creating a database with a data-plane-only AAD token should be Forbidden.");
@@ -204,10 +208,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCategory("MultiRegionAad")]
         public void AadBackgroundTokenRefreshInterval()
         {
-            using CosmosClient aadClient = this.CreateAadClient(ConnectionMode.Direct);
-
             TokenCredentialCache tokenCredentialCache =
-                ((AuthorizationTokenProviderTokenCredential)aadClient.AuthorizationTokenProvider).tokenCredentialCache;
+                ((AuthorizationTokenProviderTokenCredential)this.aadClient.AuthorizationTokenProvider).tokenCredentialCache;
 
             Assert.IsTrue(
                 tokenCredentialCache.BackgroundTokenCredentialRefreshInterval.HasValue,
@@ -221,9 +223,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ConnectionMode = connectionMode,
             };
 
-            CosmosClient aadClient = TestCommon.CreateAadCosmosClient(options);
-            Assert.IsNotNull(aadClient, "Live AAD account/credentials are not configured.");
-            return aadClient;
+            CosmosClient client = TestCommon.CreateAadCosmosClient(options);
+            Assert.IsNotNull(client, "Live AAD account/credentials are not configured.");
+            return client;
         }
     }
 }
