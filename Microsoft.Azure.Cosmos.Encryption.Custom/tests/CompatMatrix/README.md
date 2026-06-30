@@ -38,3 +38,25 @@ Stream is MDE-only + preview01/net8-only (preview07 ignores → Newtonsoft).
 AEAD+Stream is **unsupported-by-design**. Compression is **N/A**.
 Default `-Processor both` yields **42 grid cells** (39 data + 3 equivalence); a single
 processor yields 30. The launcher hard-fails if the exact count is off.
+
+## Hardened document (regression coverage)
+Each cell rides a document built to **exercise the Stream-processor data-corruption fixes**, not just
+a single ASCII scalar. Every field must round-trip **BYTE/VALUE-for-value** under Newtonsoft *and*
+Stream, and the `…->A/B|equiv` cell now covers all of them:
+
+| Field | On encrypted path? | Catches |
+| --- | --- | --- |
+| `Sensitive` = `secret::<id>` | yes | baseline ASCII scalar |
+| `PlainEscaped` (`"` `\` newline `\u00e9`) | **no** (plaintext) | string **double-escape** in the Stream plaintext-passthrough path |
+| `EncEscaped` (`"` `\` newline tab `\u00e9` `\u0001`) | yes | escaped string through encrypt/decrypt (un-escape via `CopyString`) |
+| property **name** `esc"name\x` | yes | **property-name double-escape** |
+| `EncObj` = `{"a":null,"b":1}` | yes | **null inside an encrypted object** (path-nulling) |
+| `EncArr` = `[1,null,2]` | yes | **null inside an encrypted array** |
+| `EncLong` = `9007199254740993` (2^53+1) | yes | large-integer precision (double mis-routing → `…992`) |
+| `EncIntegralDouble` = `5.0`, `EncNormalDouble` = `1234.5` | yes | integral-vs-ordinary double fidelity |
+
+A truly out-of-`Int64` integer is **rejected on write** by the fixed Stream encryptor (throws), so it is
+intentionally *not* in the round-trip doc; that "big-int reject" path is noted in `RUN-REPORT.md` instead
+of breaking every cell. The raw assertion additionally requires `EncObj`/`EncArr` to be stored as opaque
+ciphertext and `_ei._ep` to list every encrypted path with **no null/empty entry** — the direct fingerprint
+of the null-in-container bug.

@@ -8,6 +8,13 @@
 // processor and read under the other is SUPPORTED (MDE _ei docs are processor-interchangeable).
 // Cross-version + cross-processor DATA interop (old<->new, Newtonsoft<->Stream) is proven against the emulator
 // by tests/CompatMatrix/run-matrix.ps1.
+//
+// The harness rides a HARDENED document on every cell (regression coverage for the Stream-processor
+// data-corruption fixes): an escaped string VALUE (quote/backslash/newline/unicode/control) on both an
+// encrypted and a plaintext path, an escaped property NAME on an encrypted path, an encrypted OBJECT and
+// ARRAY each carrying an inner null, a large long (2^53+1), and an integral (5.0) + ordinary double.
+// Enriching the document does NOT change the cell SET, so the classification counts below are unchanged;
+// the per-field BYTE/VALUE round-trip fidelity is asserted live by the harness against the emulator.
 
 namespace Microsoft.Azure.Cosmos.Encryption.Tests
 {
@@ -75,6 +82,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             // The 39 SUPPORTED cells are EXACTLY the data cells the harness runs at -Processor both:
             // run-matrix.ps1 emits 42 grid cells = 39 data cells + 3 cross-processor EQUIVALENCE meta-cells.
+            // The hardened payload enriches each cell's document but does not add/remove cells, so this holds.
             const int harnessGridCellsAtBoth = 42;
             const int harnessEquivalenceCells = 3;
             Assert.AreEqual(harnessGridCellsAtBoth - harnessEquivalenceCells, supported,

@@ -17,6 +17,7 @@ namespace CompatMatrix
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
@@ -42,6 +43,36 @@ namespace CompatMatrix
         private static readonly string AeadAlgo = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized;
 #pragma warning restore CS0618
         private static readonly string MdeAlgo = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized;
+
+        // ---- Hardened payload: regression coverage for the Stream-processor data-corruption fixes ----
+        // The original doc encrypted ONE ASCII scalar (/Sensitive), so it was BLIND to the Stream JSON
+        // processor bugs (string/property-name double-escape, null-inside-encrypted-container, integral
+        // long/double fidelity). These tricky values now ride on every cell and MUST round-trip
+        // BYTE/VALUE-for-value under Newtonsoft AND Stream, with the A/B equivalence covering them all.
+        // Escaped string VALUE on an ENCRYPTED path: quote, backslash, newline, tab, \uXXXX unicode, control char.
+        private const string EncEscapedValue = "q=\" b=\\ nl=\n tab=\t u=\u00e9 ctl=\u0001 end";
+        // Escaped string on a NON-encrypted path -> exercises the Stream plaintext-passthrough double-escape fix
+        // (encrypted strings are un-escaped via CopyString, so only a passthrough string can catch that bug).
+        private const string PlainEscapedValue = "p_q=\" p_b=\\ p_nl=\n p_u=\u00e9 end";
+        // Property NAME carrying escapes (quote + backslash) on an ENCRYPTED path -> exercises the property-name
+        // double-escape fix (the name is emitted as plaintext by both encrypt and decrypt).
+        private const string EscPropName = "esc\"name\\x";
+        private const string EscPropPath = "/" + EscPropName;
+        private const string EscNameValue = "named-secret";
+        // 2^53 + 1: a safe in-range long, but NOT representable as a double. If a large integer is (wrongly)
+        // routed through double it round-trips as 9007199254740992 -> caught. A truly out-of-Int64 integer is
+        // REJECTED by the fixed Stream encryptor on write (would throw), so it is intentionally NOT in the
+        // round-trip doc; that "big-int reject" path is documented in RUN-REPORT instead of breaking every cell.
+        private const long EncLongValue = 9007199254740993L;
+        private const double EncIntegralDoubleValue = 5.0;   // integral-valued double (5.0 fidelity)
+        private const double EncNormalDoubleValue = 1234.5;  // ordinary double
+        // MDE/AEAD encrypted paths carried by the hardened doc. /PlainEscaped and /NonSensitive stay plaintext
+        // (the former on purpose, to exercise the passthrough fix). /EncObj and /EncArr MUST be encrypted so the
+        // inner-null-in-container fix is exercised.
+        private static readonly string[] HardenedEncryptedPaths =
+        {
+            "/Sensitive", "/EncEscaped", EscPropPath, "/EncObj", "/EncArr", "/EncLong", "/EncIntegralDouble", "/EncNormalDouble",
+        };
 
         public static async Task<int> Main(string[] args)
         {
@@ -108,7 +139,7 @@ namespace CompatMatrix
             {
                 string family = algo == MdeAlgo ? "MDE" : "AEAD";
                 string id = $"cell-{family}-{proc}-by-{Version}";
-                Doc d = new() { id = id, PK = Pk, NonSensitive = "plain", Sensitive = $"secret::{id}" };
+                Doc d = BuildDoc(id);
                 bool aeadStream = family == "AEAD" && proc == "Stream";
                 bool mdeStreamOnOld = Version == "old" && proc == "Stream";
                 try
@@ -156,7 +187,9 @@ namespace CompatMatrix
                 // (a) RAW assertion: the stored doc must be ciphertext + carry _ei metadata, never plaintext.
                 (bool rawOk, string rawDetail) = await RawIsEncrypted(plain, id, family, expected);
 
-                // (b) decrypted round-trip must equal the original under EACH selected read processor.
+                // (b) decrypted round-trip must equal the original BYTE/VALUE-for-value for EVERY field (not just
+                // /Sensitive) under EACH selected read processor: escaped string + property name, encrypted
+                // object/array with inner nulls, large long, integral + ordinary double.
                 Dictionary<string, string> decryptedByProc = new();
                 foreach (string rproc in ReadProcessors(family, processorToggle))
                 {
@@ -166,11 +199,11 @@ namespace CompatMatrix
                         try
                         {
                             Doc r = await ReadPath(enc, path, id, rproc);
-                            bool decOk = r != null && r.Sensitive == expected;
-                            if (rawOk && decOk) { Console.WriteLine($"{label}|PASS|{rawDetail}"); decryptedByProc[rproc] = r.Sensitive; }
+                            (bool decOk, string vdetail) = VerifyDoc(r, id);
+                            if (rawOk && decOk) { Console.WriteLine($"{label}|PASS|{rawDetail}"); decryptedByProc[rproc] = Signature(r); }
                             else
                             {
-                                string why = !rawOk ? $"raw:{rawDetail}" : r == null ? "not-found" : $"mismatch '{r.Sensitive}'";
+                                string why = !rawOk ? $"raw:{rawDetail}" : vdetail;
                                 Console.WriteLine($"{label}|FAIL|{why}");
                                 fails++;
                             }
@@ -179,14 +212,16 @@ namespace CompatMatrix
                     }
                 }
 
-                // (c) cross-processor EQUIVALENCE: the SAME _ei doc must decrypt to the IDENTICAL original under
-                // both Newtonsoft and Stream (covers write-N read-S and write-S read-N), proving interchangeability.
+                // (c) cross-processor EQUIVALENCE over the WHOLE hardened doc: the SAME _ei doc must decrypt to the
+                // IDENTICAL original under both Newtonsoft and Stream (covers write-N read-S and write-S read-N),
+                // proving interchangeability for the tricky payloads, not just the ASCII scalar.
                 if (decryptedByProc.TryGetValue("Newtonsoft", out string viaNewtonsoft) &&
                     decryptedByProc.TryGetValue("Stream", out string viaStream))
                 {
                     string label = $"CELL|{peer}-write|{Version}-read|{family}|{wproc}->A/B|equiv";
-                    if (viaNewtonsoft == viaStream && viaNewtonsoft == expected) { Console.WriteLine($"{label}|PASS|N==S (interchangeable)"); }
-                    else { Console.WriteLine($"{label}|FAIL|N='{viaNewtonsoft}' S='{viaStream}'"); fails++; }
+                    string expectedSig = Signature(BuildDoc(id));
+                    if (viaNewtonsoft == viaStream && viaNewtonsoft == expectedSig) { Console.WriteLine($"{label}|PASS|N==S (full doc interchangeable)"); }
+                    else { Console.WriteLine($"{label}|FAIL|N/S/expected signature mismatch"); fails++; }
                 }
             }
             return fails == 0 ? 0 : 1;
@@ -231,6 +266,24 @@ namespace CompatMatrix
             {
                 if (sens == null || sens.Type == JTokenType.Null) { return (false, "MDE-Sensitive-stripped"); }
                 if (sens.Type == JTokenType.String && sens.Value<string>() == expectedPlain) { return (false, "Sensitive-is-plaintext"); }
+
+                // The encrypted OBJECT/ARRAY must be stored as opaque ciphertext (a base64 string), never as a
+                // live object/array, and _ep must list every encrypted path with NO null/empty entry. A null entry
+                // or a missing /EncObj|/EncArr is exactly the fingerprint of the null-inside-encrypted-container
+                // bug (an inner null used to wipe the tracked path before it was recorded).
+                foreach (string container in new[] { "EncObj", "EncArr" })
+                {
+                    JToken c = raw[container];
+                    if (c == null || c.Type == JTokenType.Null) { return (false, $"MDE-{container}-stripped"); }
+                    if (c.Type is JTokenType.Object or JTokenType.Array) { return (false, $"{container}-not-encrypted"); }
+                }
+
+                if (ei["_ep"] is not JArray ep) { return (false, "no-_ep-paths"); }
+                if (ep.Any(t => t.Type == JTokenType.Null || string.IsNullOrEmpty(t.Value<string>()))) { return (false, "null-path-in-_ep"); }
+                foreach (string p in HardenedEncryptedPaths)
+                {
+                    if (!ep.Any(t => t.Value<string>() == p)) { return (false, $"missing-path:{p}"); }
+                }
             }
             else
             {
@@ -246,7 +299,7 @@ namespace CompatMatrix
         {
             string id = $"cell-MDE-Newtonsoft-tamper-by-{Version}";
             string expected = $"secret::{id}";
-            await plain.UpsertItemAsync(new Doc { id = id, PK = Pk, NonSensitive = "plain", Sensitive = expected }, new PartitionKey(Pk));
+            await plain.UpsertItemAsync(BuildDoc(id), new PartitionKey(Pk));
             (bool ok, string detail) = await RawIsEncrypted(plain, id, "MDE", expected);
             Console.WriteLine(ok ? "TAMPER|FAIL|plaintext-passed-as-encrypted" : $"TAMPER|PASS|plaintext-rejected:{detail}");
             return ok ? 1 : 0;
@@ -282,7 +335,9 @@ namespace CompatMatrix
             {
                 DataEncryptionKeyId = algo == MdeAlgo ? MdeDekId : AeadDekId,
                 EncryptionAlgorithm = algo,
-                PathsToEncrypt = new List<string> { "/Sensitive" },
+                // Encrypt the full hardened set. AEAD bundles every path into a single _ed blob and MDE
+                // encrypts each path in-place; both preserve objects/arrays/numbers and inner nulls.
+                PathsToEncrypt = new List<string>(HardenedEncryptedPaths),
             },
             Properties = new Dictionary<string, object> { { StreamKey, proc } },
         };
@@ -307,12 +362,99 @@ namespace CompatMatrix
             return d;
         }
 
+        // Single source of truth for the hardened document. Sensitive is per-cell (encodes the id); every other
+        // tricky field is constant so the expected signature is trivially reproducible by the reader.
+        private static Doc BuildDoc(string id) => new()
+        {
+            id = id,
+            PK = Pk,
+            NonSensitive = "plain",
+            Sensitive = $"secret::{id}",
+            PlainEscaped = PlainEscapedValue,
+            EncEscaped = EncEscapedValue,
+            EscNameValue = EscNameValue,
+            EncObj = new JObject { ["a"] = JValue.CreateNull(), ["b"] = 1 },
+            EncArr = new JArray { 1, JValue.CreateNull(), 2 },
+            EncLong = EncLongValue,
+            EncIntegralDouble = EncIntegralDoubleValue,
+            EncNormalDouble = EncNormalDoubleValue,
+        };
+
+        // Canonical, delimiter-safe fingerprint of every field. Used both to assert a decrypted doc equals the
+        // original and to prove Newtonsoft/Stream decrypt the SAME stored doc IDENTICALLY (A/B equivalence).
+        // Doubles use round-trippable "R" so 5.0 and 1234.5 compare value-for-value regardless of the writer's
+        // textual form (System.Text.Json emits 5.0 as "5"; Newtonsoft as "5.0" — both deserialize to 5.0).
+        private static string Signature(Doc d)
+        {
+            if (d == null) { return "<null-doc>"; }
+            string objSig = d.EncObj == null
+                ? "<null-obj>"
+                : $"{{a={Tok(d.EncObj["a"])},b={Tok(d.EncObj["b"])}}}";
+            string arrSig = d.EncArr == null
+                ? "<null-arr>"
+                : "[" + string.Join(",", d.EncArr.Select(Tok)) + "]";
+            return string.Join("\u001F", new[]
+            {
+                d.Sensitive ?? "<null>",
+                d.NonSensitive ?? "<null>",
+                d.PlainEscaped ?? "<null>",
+                d.EncEscaped ?? "<null>",
+                d.EscNameValue ?? "<null>",
+                d.EncLong.ToString(CultureInfo.InvariantCulture),
+                d.EncIntegralDouble.ToString("R", CultureInfo.InvariantCulture),
+                d.EncNormalDouble.ToString("R", CultureInfo.InvariantCulture),
+                objSig,
+                arrSig,
+            });
+
+            static string Tok(JToken t) => t == null ? "<miss>" : t.Type == JTokenType.Null ? "null" : t.ToString(Newtonsoft.Json.Formatting.None);
+        }
+
+        // Field-by-field round-trip check with a precise mismatch reason (which field, got vs want).
+        private static (bool ok, string detail) VerifyDoc(Doc actual, string id)
+        {
+            if (actual == null) { return (false, "not-found"); }
+            string[] names = { "Sensitive", "NonSensitive", "PlainEscaped", "EncEscaped", "EscName", "EncLong", "EncIntegralDouble", "EncNormalDouble", "EncObj", "EncArr" };
+            string[] a = Signature(actual).Split('\u001F');
+            string[] e = Signature(BuildDoc(id)).Split('\u001F');
+            if (a.Length != e.Length) { return (false, "field-count-mismatch"); }
+            for (int i = 0; i < e.Length; i++)
+            {
+                if (!string.Equals(a[i], e[i], StringComparison.Ordinal)) { return (false, $"{names[i]} got '{Show(a[i])}' want '{Show(e[i])}'"); }
+            }
+            return (true, "all-fields-match");
+
+            static string Show(string s) => (s ?? "<null>").Replace("\n", "\\n").Replace("\t", "\\t").Replace("\u0001", "\\u0001");
+        }
+
         private sealed class Doc
         {
             public string id { get; set; }
             public string PK { get; set; }
             public string NonSensitive { get; set; }
             public string Sensitive { get; set; }
+
+            // Escaped string on a NON-encrypted path: exercises the Stream plaintext-passthrough double-escape fix.
+            public string PlainEscaped { get; set; }
+
+            // Escaped string on an ENCRYPTED path: exercises the un-escape (CopyString) encrypt/decrypt path.
+            public string EncEscaped { get; set; }
+
+            // Encrypted-path property whose NAME carries escapes (quote + backslash).
+            [Newtonsoft.Json.JsonProperty(EscPropName)]
+            public string EscNameValue { get; set; }
+
+            // Encrypted object with an inner null and encrypted array with an inner null (null-in-container fix).
+            public JObject EncObj { get; set; }
+
+            public JArray EncArr { get; set; }
+
+            // Encrypted long beyond 2^53 (precision) and an integral + ordinary double (numeric fidelity).
+            public long EncLong { get; set; }
+
+            public double EncIntegralDouble { get; set; }
+
+            public double EncNormalDouble { get; set; }
         }
     }
 }
