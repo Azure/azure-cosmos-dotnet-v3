@@ -113,13 +113,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         /// <summary>
-        /// Returns a <see cref="global::Azure.Core.TokenCredential"/> for the live AAD tests.
+        /// Returns a <see cref="global::Azure.Core.TokenCredential"/> for the live AAD tests, or null when
+        /// no usable credential is configured (so the tests can skip cleanly).
+        ///
         /// Prefers an explicit <see cref="global::Azure.Identity.ClientSecretCredential"/> built from the
         /// AZURE_TENANT_ID / AZURE_CLIENT_ID / AZURE_CLIENT_SECRET environment variables (the values the
-        /// pipeline injects from its secret variables). When those are not all present it falls back to
-        /// <see cref="global::Azure.Identity.DefaultAzureCredential"/> so the tests can also run locally via
-        /// `az login`, Visual Studio, or a managed identity. Returns null when nothing is available so the
-        /// tests can skip cleanly.
+        /// pipeline injects from its secret variables). Tenant/client must parse as GUIDs and the secret
+        /// must be present; this also guards against unresolved Azure DevOps macros (e.g. the literal
+        /// string "$(AAD_TENANT_ID)" when the pipeline variable is not yet defined), which would otherwise
+        /// look non-empty and cause the tests to fail instead of skip.
+        ///
+        /// For local development, set COSMOSDB_AAD_USE_DEFAULT_CREDENTIAL=true to fall back to
+        /// <see cref="global::Azure.Identity.DefaultAzureCredential"/> (az login / Visual Studio / managed
+        /// identity). This is intentionally opt-in so CI agents never silently authenticate with an
+        /// unintended identity.
         /// </summary>
         internal static global::Azure.Core.TokenCredential GetAadTokenCredential()
         {
@@ -127,22 +134,38 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string clientId = Cosmos.ConfigurationManager.GetEnvironmentVariable<string>("AZURE_CLIENT_ID", string.Empty);
             string clientSecret = Cosmos.ConfigurationManager.GetEnvironmentVariable<string>("AZURE_CLIENT_SECRET", string.Empty);
 
-            if (!string.IsNullOrEmpty(tenantId)
-                && !string.IsNullOrEmpty(clientId)
-                && !string.IsNullOrEmpty(clientSecret))
+            if (Guid.TryParse(tenantId, out _)
+                && Guid.TryParse(clientId, out _)
+                && IsConfiguredValue(clientSecret))
             {
                 return new global::Azure.Identity.ClientSecretCredential(tenantId, clientId, clientSecret);
             }
 
-            try
+            if (Cosmos.ConfigurationManager.GetEnvironmentVariable<bool>("COSMOSDB_AAD_USE_DEFAULT_CREDENTIAL", false))
             {
-                return new global::Azure.Identity.DefaultAzureCredential();
+                try
+                {
+                    return new global::Azure.Identity.DefaultAzureCredential();
+                }
+                catch (Exception)
+                {
+                    return null;
+                }
             }
-            catch (Exception)
-            {
-                return null;
-            }
+
+            return null;
         }
+
+        /// <summary>
+        /// Returns true when an environment value is set to a real value, i.e. it is non-empty and is not an
+        /// unresolved Azure DevOps macro (such as "$(AAD_CLIENT_SECRET)" left behind when the pipeline
+        /// variable is undefined).
+        /// </summary>
+        private static bool IsConfiguredValue(string value)
+        {
+            return !string.IsNullOrWhiteSpace(value) && !value.StartsWith("$(", StringComparison.Ordinal);
+        }
+
 
         /// <summary>
         /// Creates a <see cref="CosmosClient"/> for the live-account AAD tests using the endpoint parsed from
