@@ -848,6 +848,204 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 return EncryptionProcessor.BaseSerializer.ToStream(input);
             }
         }
+
+        // --- A2: eager typed feed/query Stream decryption (stream-through) ------------------------------
+        // These exercise EncryptionProcessor.DeserializeAndDecryptResponseAsync, the eager feed/query path used by
+        // GetItemQueryIterator<T> (T != DecryptableItem). Under JsonProcessor.Stream the new path decrypts the
+        // Documents array straight from the response bytes (no whole-page / per-document Newtonsoft JObject). The
+        // guardrail is element-wise equivalence vs the Newtonsoft path; edge cases and per-document diagnostics
+        // parity are covered explicitly.
+
+        // Guardrail (release blocker if it fails): a multi-document feed decrypted under Stream must be element-wise
+        // identical to the Newtonsoft path AND reconstruct the original plaintext in order.
+        [TestMethod]
+        public async Task DeserializeAndDecryptResponse_MultiDocFeed_StreamMatchesNewtonsoftAndPlaintext()
+        {
+            Mock<Encryptor> encryptor = CreateMdeEncryptor();
+            TestDoc doc1 = TestDoc.Create();
+            TestDoc doc2 = TestDoc.Create();
+            TestDoc doc3 = TestDoc.Create();
+            byte[] feedBytes = BuildFeedBytes(
+                await BuildEncryptedDocumentAsync(encryptor, doc1),
+                await BuildEncryptedDocumentAsync(encryptor, doc2),
+                await BuildEncryptedDocumentAsync(encryptor, doc3));
+
+            JObject newtonsoftFeed = await DecryptFeedAsync(encryptor, JsonProcessor.Newtonsoft, feedBytes);
+            JObject streamFeed = await DecryptFeedAsync(encryptor, JsonProcessor.Stream, feedBytes);
+
+            AssertFeedEqual(newtonsoftFeed, streamFeed);
+
+            JArray streamDocs = (JArray)streamFeed["Documents"];
+            Assert.AreEqual(3, streamDocs.Count);
+            Assert.AreEqual(doc1, streamDocs[0].ToObject<TestDoc>());
+            Assert.AreEqual(doc2, streamDocs[1].ToObject<TestDoc>());
+            Assert.AreEqual(doc3, streamDocs[2].ToObject<TestDoc>());
+            foreach (JToken decrypted in streamDocs)
+            {
+                Assert.IsNull(((JObject)decrypted).Property(Constants.EncryptedInfo), "Decrypted feed document must not carry _ei.");
+            }
+        }
+
+        [TestMethod]
+        public async Task DeserializeAndDecryptResponse_SingleDocFeed_StreamMatchesNewtonsoft()
+        {
+            Mock<Encryptor> encryptor = CreateMdeEncryptor();
+            TestDoc doc = TestDoc.Create();
+            byte[] feedBytes = BuildFeedBytes(await BuildEncryptedDocumentAsync(encryptor, doc));
+
+            JObject newtonsoftFeed = await DecryptFeedAsync(encryptor, JsonProcessor.Newtonsoft, feedBytes);
+            JObject streamFeed = await DecryptFeedAsync(encryptor, JsonProcessor.Stream, feedBytes);
+
+            AssertFeedEqual(newtonsoftFeed, streamFeed);
+            Assert.AreEqual(doc, ((JArray)streamFeed["Documents"]).Single().ToObject<TestDoc>());
+        }
+
+        // Edge case: empty Documents array. The envelope must be preserved and no decryption attempted.
+        [TestMethod]
+        public async Task DeserializeAndDecryptResponse_EmptyFeed_StreamMatchesNewtonsoft()
+        {
+            Mock<Encryptor> encryptor = CreateMdeEncryptor();
+            byte[] feedBytes = BuildFeedBytes();
+
+            JObject newtonsoftFeed = await DecryptFeedAsync(encryptor, JsonProcessor.Newtonsoft, feedBytes);
+            JObject streamFeed = await DecryptFeedAsync(encryptor, JsonProcessor.Stream, feedBytes);
+
+            AssertFeedEqual(newtonsoftFeed, streamFeed);
+            Assert.AreEqual(0, ((JArray)streamFeed["Documents"]).Count);
+            Assert.AreEqual("rid", (string)streamFeed["_rid"], "Envelope must be preserved verbatim.");
+        }
+
+        // Edge case: mixed feed - an encrypted document, an unencrypted (no _ei) document, and a null element.
+        // The Stream path must decrypt the encrypted one and pass the others through unchanged, matching Newtonsoft.
+        [TestMethod]
+        public async Task DeserializeAndDecryptResponse_MixedFeed_StreamMatchesNewtonsoftAndPreservesPassThrough()
+        {
+            Mock<Encryptor> encryptor = CreateMdeEncryptor();
+            TestDoc encDoc = TestDoc.Create();
+            JObject plain = new() { ["id"] = "plain-1", ["value"] = "not encrypted", ["n"] = 42 };
+            byte[] feedBytes = BuildFeedBytes(
+                await BuildEncryptedDocumentAsync(encryptor, encDoc),
+                plain,
+                JValue.CreateNull());
+
+            JObject newtonsoftFeed = await DecryptFeedAsync(encryptor, JsonProcessor.Newtonsoft, feedBytes);
+            JObject streamFeed = await DecryptFeedAsync(encryptor, JsonProcessor.Stream, feedBytes);
+
+            AssertFeedEqual(newtonsoftFeed, streamFeed);
+
+            JArray docs = (JArray)streamFeed["Documents"];
+            Assert.AreEqual(3, docs.Count);
+            Assert.AreEqual(encDoc, docs[0].ToObject<TestDoc>(), "First document must be decrypted.");
+            Assert.AreEqual("not encrypted", (string)docs[1]["value"], "Unencrypted document must pass through unchanged.");
+            Assert.AreEqual(42, (int)docs[1]["n"]);
+            Assert.AreEqual(JTokenType.Null, docs[2].Type, "Null element must be preserved.");
+        }
+
+        // Diagnostics parity: the new Stream path routes every JSON-object document through the same single-document
+        // entry point as the pre-A2 path, so it emits one EncryptionProcessor.Decrypt.Mde.Stream selection scope per
+        // OBJECT document (the Stream processor is selected before _ei is inspected, so unencrypted objects count too);
+        // null / non-object elements are skipped, and the Newtonsoft path emits no Stream scope at all.
+        [TestMethod]
+        public async Task DeserializeAndDecryptResponse_StreamFeed_EmitsMdeStreamScopePerObjectDocument()
+        {
+            Mock<Encryptor> encryptor = CreateMdeEncryptor();
+            JObject plain = new() { ["id"] = "plain-1" };
+            byte[] feedBytes = BuildFeedBytes(
+                await BuildEncryptedDocumentAsync(encryptor, TestDoc.Create()),
+                plain,
+                await BuildEncryptedDocumentAsync(encryptor, TestDoc.Create()),
+                JValue.CreateNull());
+
+            string streamScope = CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream;
+
+            List<string> streamScopes = new();
+            using (RegisterDecryptScopeListener(streamScopes))
+            {
+                await DecryptFeedAsync(encryptor, JsonProcessor.Stream, feedBytes);
+            }
+
+            // 3 object documents -> 3 selection scopes; the trailing null element is skipped.
+            Assert.AreEqual(
+                3,
+                streamScopes.Count(s => string.Equals(s, streamScope, StringComparison.Ordinal)),
+                $"Expected one Mde.Stream selection scope per object document. Captured: {string.Join(", ", streamScopes)}");
+
+            List<string> newtonsoftScopes = new();
+            using (RegisterDecryptScopeListener(newtonsoftScopes))
+            {
+                await DecryptFeedAsync(encryptor, JsonProcessor.Newtonsoft, feedBytes);
+            }
+
+            CollectionAssert.DoesNotContain(
+                newtonsoftScopes,
+                streamScope,
+                "Newtonsoft feed decryption must not select the Stream processor.");
+        }
+
+        // End-to-end eager typed read through the mock EncryptionContainer: proves the typed GetItemQueryIterator<T>
+        // (T != DecryptableItem) decrypts every document and preserves order under both processors.
+        [DataTestMethod]
+        [DataRow(JsonProcessor.Newtonsoft)]
+        [DataRow(JsonProcessor.Stream)]
+        public async Task GetItemQueryIterator_TypedEagerFeed_DefaultProcessor_DecryptsAllDocumentsInOrder(JsonProcessor processor)
+        {
+            Mock<Encryptor> encryptor = CreateMdeEncryptor();
+            TestDoc doc1 = TestDoc.Create();
+            TestDoc doc2 = TestDoc.Create();
+            byte[] feedBytes = BuildFeedBytes(
+                await BuildEncryptedDocumentAsync(encryptor, doc1),
+                await BuildEncryptedDocumentAsync(encryptor, doc2));
+            EncryptionContainer container = BuildMockEncryptionContainer(encryptor, processor, feedBytes);
+
+            FeedIterator<TestDoc> iterator = container.GetItemQueryIterator<TestDoc>(new QueryDefinition("SELECT * FROM c"));
+            Assert.IsTrue(iterator.HasMoreResults);
+            FeedResponse<TestDoc> page = await iterator.ReadNextAsync();
+
+            List<TestDoc> results = page.ToList();
+            Assert.AreEqual(2, results.Count);
+            Assert.AreEqual(doc1, results[0]);
+            Assert.AreEqual(doc2, results[1]);
+        }
+
+        private static byte[] BuildFeedBytes(params JToken[] documents)
+        {
+            JArray array = new();
+            foreach (JToken document in documents)
+            {
+                array.Add(document);
+            }
+
+            JObject feed = new()
+            {
+                ["_rid"] = "rid",
+                ["Documents"] = array,
+                ["_count"] = documents.Length,
+            };
+
+            return Encoding.UTF8.GetBytes(feed.ToString());
+        }
+
+        private static async Task<JObject> DecryptFeedAsync(
+            Mock<Encryptor> encryptor,
+            JsonProcessor processor,
+            byte[] feedBytes)
+        {
+            using MemoryStream content = new(feedBytes, writable: false);
+            Stream decrypted = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
+                content,
+                encryptor.Object,
+                requestOptions: null,
+                defaultJsonProcessor: processor,
+                cancellationToken: CancellationToken.None);
+            return EncryptionProcessor.BaseSerializer.FromStream<JObject>(decrypted);
+        }
+
+        private static void AssertFeedEqual(JObject newtonsoftFeed, JObject streamFeed)
+        {
+            Assert.IsTrue(
+                JToken.DeepEquals(newtonsoftFeed, streamFeed),
+                $"Stream feed decrypt diverged from the Newtonsoft path.\nNewtonsoft: {newtonsoftFeed.ToString(Newtonsoft.Json.Formatting.None)}\nStream:     {streamFeed.ToString(Newtonsoft.Json.Formatting.None)}");
+        }
 #endif
     }
 }

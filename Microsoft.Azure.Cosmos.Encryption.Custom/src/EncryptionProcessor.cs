@@ -462,13 +462,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             JsonProcessor defaultJsonProcessor,
             CancellationToken cancellationToken)
         {
-            JObject contentJObj = BaseSerializer.FromStream<JObject>(content);
-
-            if (contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is not JArray documents)
-            {
-                throw new InvalidOperationException("Feed Response body contract was violated. Feed response did not have an array of Documents");
-            }
-
 #if NET8_0_OR_GREATER
             JsonProcessor jsonProcessor = requestOptions != null
                 ? requestOptions.GetJsonProcessor(defaultJsonProcessor)
@@ -476,18 +469,31 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             if (jsonProcessor == JsonProcessor.Stream)
             {
-                await DecryptFeedDocumentsWithStreamProcessorAsync(
-                    documents,
-                    encryptor,
+                // Stream (System.Text.Json) processor: decrypt the Documents array straight from the response
+                // bytes, splicing each document's decrypted bytes back into the envelope without materializing the
+                // page - or any individual document - as an intermediate Newtonsoft JObject. Per-document AEAD
+                // detection, MDE streaming decryption, and the Decrypt.Mde.Stream diagnostics scope reuse the same
+                // adapter machinery as point reads, preserving exact parity (see DecryptFeedDocumentWithStreamProcessorAsync).
+                return await StreamFeedProcessor.DecryptResponseAsync(
+                    content,
+                    (documentStream, diagnosticsContext) => DecryptFeedDocumentWithStreamProcessorAsync(
+                        documentStream,
+                        encryptor,
+                        diagnosticsContext,
+                        requestOptions,
+                        defaultJsonProcessor,
+                        cancellationToken),
                     requestOptions,
-                    defaultJsonProcessor,
                     cancellationToken);
-
-                // the contents of contentJObj get decrypted in place for MDE algorithm model, and for legacy model _ei property is removed
-                // and corresponding decrypted properties are added back in the documents.
-                return BaseSerializer.ToStream(contentJObj);
             }
 #endif
+
+            JObject contentJObj = BaseSerializer.FromStream<JObject>(content);
+
+            if (contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is not JArray documents)
+            {
+                throw new InvalidOperationException("Feed Response body contract was violated. Feed response did not have an array of Documents");
+            }
 
             foreach (JToken value in documents)
             {
@@ -511,56 +517,70 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
 #if NET8_0_OR_GREATER
         /// <summary>
-        /// Decrypts every document of a feed response using the per-request / container-default Stream
-        /// (System.Text.Json) processor. Each document is routed through the same single-document
-        /// <see cref="DecryptAsync(Stream, Encryptor, CosmosDiagnosticsContext, RequestOptions, JsonProcessor, CancellationToken)"/>
-        /// entry point used by point reads, so MDE documents are decrypted with the streaming adapter (emitting the
-        /// <c>EncryptionProcessor.Decrypt.Mde.Stream</c> diagnostics scope) while legacy AEAD documents still fall back
-        /// to the Newtonsoft decryptor, matching point-read semantics.
+        /// Decrypts a single feed / query / change-feed document under the Stream (System.Text.Json) processor
+        /// without materializing the document as an intermediate Newtonsoft <see cref="JObject"/>.
         /// </summary>
-        private static async Task DecryptFeedDocumentsWithStreamProcessorAsync(
-            JArray documents,
+        /// <remarks>
+        /// The single-document entry point
+        /// (<see cref="DecryptAsync(Stream, Encryptor, CosmosDiagnosticsContext, RequestOptions, JsonProcessor, CancellationToken)"/>)
+        /// parses every document into a Newtonsoft <see cref="JObject"/> purely to detect the legacy AEAD algorithm
+        /// before delegating MDE / unencrypted documents to the streaming adapter. On the feed hot path that per-document
+        /// parse defeats the Stream processor's allocation benefit, so this variant detects AEAD by streaming only the
+        /// <c>_ei</c> metadata - using the exact same reader and algorithm gate the Stream adapter itself applies.
+        /// Because the gate is identical to the adapter's, any document routed to the streaming path is one the adapter
+        /// also accepts (it can never reach the adapter's AEAD throw). Behavior is otherwise identical to the
+        /// single-document entry point: legacy AEAD documents fall back to it (and its Newtonsoft decryption), while MDE
+        /// and unencrypted documents flow through the same <see cref="MdeEncryptionProcessor"/> streaming call - emitting
+        /// the same <c>Decrypt.Mde.Stream</c> scope and returning a <see langword="null"/> context for pass-through
+        /// (unencrypted) documents.
+        /// </remarks>
+        private static async Task<(Stream, DecryptionContext)> DecryptFeedDocumentWithStreamProcessorAsync(
+            Stream input,
             Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
             RequestOptions requestOptions,
             JsonProcessor defaultJsonProcessor,
             CancellationToken cancellationToken)
         {
-            for (int index = 0; index < documents.Count; index++)
+            // Detect a legacy AEAD document by streaming only the _ei metadata, using the same reader and algorithm
+            // gate the Stream adapter applies - so a document we route to the streaming path is one the adapter accepts.
+            bool isLegacyAeadDocument = false;
+            try
             {
-                if (documents[index] is not JObject document)
-                {
-                    continue;
-                }
+                EncryptionProperties encryptionProperties = await EncryptionPropertiesStreamReader.ReadAsync(
+                    input,
+                    PooledJsonSerializer.SerializerOptions,
+                    cancellationToken).ConfigureAwait(false);
 
-                CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
-                Stream documentStream = BaseSerializer.ToStream(document);
-                Stream decryptedStream = null;
-                try
+#pragma warning disable CS0618 // Type or member is obsolete
+                isLegacyAeadDocument = encryptionProperties != null
+                    && string.Equals(encryptionProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized, StringComparison.Ordinal);
+#pragma warning restore CS0618 // Type or member is obsolete
+            }
+            catch
+            {
+                // Malformed JSON or a stream that does not support the streaming peek: fall back to the single-document
+                // entry point, which tolerates these cases via its own try/catch and async reads (matching its behavior).
+            }
+            finally
+            {
+                if (input.CanSeek)
                 {
-                    DecryptionContext decryptionContext;
-                    (decryptedStream, decryptionContext) = await DecryptAsync(
-                        documentStream,
-                        encryptor,
-                        diagnosticsContext,
-                        requestOptions,
-                        defaultJsonProcessor,
-                        cancellationToken);
-
-                    if (decryptionContext != null)
-                    {
-                        documents[index] = BaseSerializer.FromStream<JObject>(decryptedStream);
-                    }
-                }
-                finally
-                {
-                    if (decryptedStream != null && !ReferenceEquals(decryptedStream, documentStream))
-                    {
-                        await decryptedStream.DisposeCompatAsync();
-                    }
-
-                    await documentStream.DisposeCompatAsync();
+                    input.Position = 0;
                 }
             }
+
+            if (isLegacyAeadDocument)
+            {
+                // Legacy AEAD is unsupported by the Stream processor by design; route through the single-document entry
+                // point, which performs the Newtonsoft-based legacy decryption - exactly as the feed path did before.
+                return await DecryptAsync(input, encryptor, diagnosticsContext, requestOptions, defaultJsonProcessor, cancellationToken);
+            }
+
+            // MDE, unencrypted (no _ei), or non-object _ei: decrypt straight through the streaming adapter, exactly as the
+            // single-document entry point does for these documents (same scope, same null-context pass-through), but
+            // without the per-document Newtonsoft parse.
+            return await MdeEncryptionProcessor.DecryptAsync(input, encryptor, diagnosticsContext, requestOptions, defaultJsonProcessor, cancellationToken);
         }
 #endif
     }
