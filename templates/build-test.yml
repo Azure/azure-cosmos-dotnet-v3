@@ -18,9 +18,7 @@ parameters:
   MultiRegionConnectionString : ''
   MultiRegionMultiMasterConnectionString : ''
   AadAccountEndpoint : ''
-  AadTenantId : ''
-  AadClientId : ''
-  AadClientSecret : ''
+  AadServiceConnection : ''
   IncludeEncryption: true
   IncludePerformance: true
   IncludeCoverage: true
@@ -462,7 +460,10 @@ jobs:
 - job:
   displayName: EmulatorTests ${{ parameters.BuildConfiguration }} - ${{ parameters.EmulatorPipeline5CategoryListName }}
   timeoutInMinutes: 60
-  condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
+  # Runs only when an AAD service connection (Workload Identity Federation) is configured. The target
+  # account is AAD-only, so the tests authenticate via the federated service connection identity instead
+  # of a client secret (which is blocked by tenant policy). Stays skipped (green) until the connection is set.
+  condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'), ne('${{ parameters.AadServiceConnection }}', ''))
   pool:
     name: 'OneES'
 
@@ -483,20 +484,29 @@ jobs:
       packageType: 'sdk'
       version: '8.x'
 
-  - task: DotNetCoreCLI@2
+  - task: AzureCLI@2
     displayName: Microsoft.Azure.Cosmos.EmulatorTests
     retryCountOnTaskFailure: 2
     condition: succeeded()
     inputs:
-      command: test
-      projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj'
-      arguments: ${{ parameters.EmulatorPipeline5Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
-      nugetConfigPath: NuGet.config
-      publishTestResults: true
-      testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
+      azureSubscription: ${{ parameters.AadServiceConnection }}
+      scriptType: pscore
+      scriptLocation: inlineScript
+      # The AzureCLI task logs `az` in as the service connection identity; the SDK's
+      # DefaultAzureCredential (AzureCliCredential) then acquires Cosmos data-plane tokens.
+      inlineScript: |
+        dotnet test 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj' `
+          ${{ parameters.EmulatorPipeline5Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }} `
+          --logger 'trx;LogFileName=MultiRegionAad.trx'
     env: 
       COSMOSDB_MULTI_REGION_AAD: ${{ parameters.AadAccountEndpoint }}
-      AZURE_TENANT_ID: ${{ parameters.AadTenantId }}
-      AZURE_CLIENT_ID: ${{ parameters.AadClientId }}
-      AZURE_CLIENT_SECRET: ${{ parameters.AadClientSecret }}
+      COSMOSDB_AAD_USE_DEFAULT_CREDENTIAL: true
       AZURE_COSMOS_NON_STREAMING_ORDER_BY_FLAG_DISABLED: true
+
+  - task: PublishTestResults@2
+    displayName: Publish MultiRegionAad results
+    condition: succeededOrFailed()
+    inputs:
+      testResultsFormat: VSTest
+      testResultsFiles: '**/MultiRegionAad.trx'
+      testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests

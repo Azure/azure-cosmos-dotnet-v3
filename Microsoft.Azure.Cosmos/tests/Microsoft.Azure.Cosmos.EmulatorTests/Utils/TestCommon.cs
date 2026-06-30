@@ -142,16 +142,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// no usable credential is configured (so the tests can skip cleanly).
         ///
         /// Prefers an explicit <see cref="global::Azure.Identity.ClientSecretCredential"/> built from the
-        /// AZURE_TENANT_ID / AZURE_CLIENT_ID / AZURE_CLIENT_SECRET environment variables (the values the
-        /// pipeline injects from its secret variables). Tenant/client must parse as GUIDs and the secret
-        /// must be present; this also guards against unresolved Azure DevOps macros (e.g. the literal
-        /// string "$(AAD_TENANT_ID)" when the pipeline variable is not yet defined), which would otherwise
-        /// look non-empty and cause the tests to fail instead of skip.
+        /// AZURE_TENANT_ID / AZURE_CLIENT_ID / AZURE_CLIENT_SECRET environment variables. Tenant/client must
+        /// parse as GUIDs and the secret must be present; this also guards against unresolved Azure DevOps
+        /// macros (e.g. the literal string "$(AAD_TENANT_ID)" when the pipeline variable is not yet defined),
+        /// which would otherwise look non-empty and cause the tests to fail instead of skip.
         ///
-        /// For local development, set COSMOSDB_AAD_USE_DEFAULT_CREDENTIAL=true to fall back to
-        /// <see cref="global::Azure.Identity.DefaultAzureCredential"/> (az login / Visual Studio / managed
-        /// identity). This is intentionally opt-in so CI agents never silently authenticate with an
-        /// unintended identity.
+        /// When client secrets are unavailable (e.g. blocked by tenant policy), set
+        /// COSMOSDB_AAD_USE_DEFAULT_CREDENTIAL=true to use the ambient identity. In CI this is the Azure
+        /// DevOps service connection (Workload Identity Federation) that the AzureCLI task logs `az` in as;
+        /// locally it is `az login` or Visual Studio. Managed identity is excluded so a build agent's own
+        /// system identity can never be selected ahead of the intended federated identity. This is
+        /// intentionally opt-in so CI agents never silently authenticate with an unintended identity.
         /// </summary>
         internal static global::Azure.Core.TokenCredential GetAadTokenCredential()
         {
@@ -170,7 +171,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 try
                 {
-                    return new global::Azure.Identity.DefaultAzureCredential();
+                    global::Azure.Identity.DefaultAzureCredentialOptions options = new global::Azure.Identity.DefaultAzureCredentialOptions
+                    {
+                        ExcludeManagedIdentityCredential = true,
+                    };
+
+                    if (Guid.TryParse(tenantId, out _))
+                    {
+                        options.TenantId = tenantId;
+                    }
+
+                    return new global::Azure.Identity.DefaultAzureCredential(options);
                 }
                 catch (Exception)
                 {
