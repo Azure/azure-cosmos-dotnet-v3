@@ -32,9 +32,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         //   x read-proc{Newtonsoft,Stream} x path{point,query,feed} = 96 logical cells. write-proc and read-proc
         // are independent, so write-Newtonsoft/read-Stream and write-Stream/read-Newtonsoft are both enumerated.
         private static IEnumerable<object[]> Cells()
+            => CellsForVersions(includeCurrent: false);
+
+        private static IEnumerable<object[]> CellsForVersions(bool includeCurrent)
         {
-            foreach (string w in new[] { "old", "new" })
-            foreach (string r in new[] { "old", "new" })
+            string[] versions = includeCurrent ? new[] { "old", "new", "current" } : new[] { "old", "new" };
+            foreach (string w in versions)
+            foreach (string r in versions)
             foreach (string algo in new[] { "MDE", "AEAD" })
             foreach (string wproc in new[] { "Newtonsoft", "Stream" })
             foreach (string rproc in new[] { "Newtonsoft", "Stream" })
@@ -90,6 +94,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             const int harnessEquivalenceCells = 3;
             Assert.AreEqual(harnessGridCellsAtBoth - harnessEquivalenceCells, supported,
                 "the 39 SUPPORTED cells == harness DATA cells (42 grid - 3 equivalence)");
+        }
+
+        [TestMethod]
+        public void Matrix_WithCurrent_Has_Exact_OptIn_Cell_Counts()
+        {
+            List<object[]> cells = CellsForVersions(includeCurrent: true).ToList();
+            int supported = cells.Count(c => Classify((string)c[0], (string)c[1], (string)c[2], (string)c[3], (string)c[4]) == "SUPPORTED");
+            int unsupported = cells.Count(c => Classify((string)c[0], (string)c[1], (string)c[2], (string)c[3], (string)c[4]) == "UNSUPPORTED");
+            int naOld = cells.Count(c => Classify((string)c[0], (string)c[1], (string)c[2], (string)c[3], (string)c[4]) == "NA-OLD-NO-STREAM");
+
+            Assert.AreEqual(216, cells.Count, "3 write x 3 read x 2 algo x 2 write-proc x 2 read-proc x 3 path");
+            Assert.AreEqual(102, supported, "supported data cells with Current included");
+            Assert.AreEqual(81, unsupported, "AEAD+Stream unsupported-by-design on either side");
+            Assert.AreEqual(33, naOld, "MDE Stream touching an old end = N/A: preview07 has no Stream");
+
+            const int harnessGridCellsAtBoth = 112;
+            const int harnessEquivalenceCells = 10;
+            Assert.AreEqual(harnessGridCellsAtBoth - harnessEquivalenceCells, supported,
+                "the 102 SUPPORTED cells == opt-in Current harness DATA cells (112 grid - 10 equivalence)");
         }
 
         [TestMethod]

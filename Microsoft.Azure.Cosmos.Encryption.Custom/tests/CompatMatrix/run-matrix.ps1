@@ -12,6 +12,7 @@ param(
   [string]$Database = "compat-matrix-$([Guid]::NewGuid().ToString('N').Substring(0,8))",
   [ValidateSet('Newtonsoft','Stream','both')]
   [string]$Processor = 'both',
+  [switch]$IncludeCurrent,
   [switch]$NoBuild
 )
 $ErrorActionPreference = 'Stop'
@@ -20,9 +21,18 @@ if (-not $Endpoint) { $Endpoint = 'http://127.0.0.1:8081/' }
 if (-not $Key) { $Key = 'C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==' }
 $old = "$root\Old\bin\Release\net8.0\CompatMatrix.Old.dll"
 $new = "$root\New\bin\Release\net8.0\CompatMatrix.New.dll"
+$current = "$root\Current\bin\Release\net8.0\CompatMatrix.Current.dll"
+$nodes = @(
+  [pscustomobject]@{ Name='old'; Dll=$old; Project="$root\Old\CompatMatrix.Old.csproj"; Expected='1.0.0-preview07' },
+  [pscustomobject]@{ Name='new'; Dll=$new; Project="$root\New\CompatMatrix.New.csproj"; Expected='2.0.0-preview01' }
+)
+if ($IncludeCurrent) {
+  # Current is opt-in regression infrastructure: it builds Encryption.Custom from this branch's source
+  # through ProjectReference, rather than consuming the shared local-feed package.
+  $nodes += [pscustomobject]@{ Name='current'; Dll=$current; Project="$root\Current\CompatMatrix.Current.csproj"; Expected='1.0.0-preview09' }
+}
 if (-not $NoBuild) {
-  dotnet build "$root\New\CompatMatrix.New.csproj" -c Release -v q | Out-Null
-  dotnet build "$root\Old\CompatMatrix.Old.csproj" -c Release -v q | Out-Null
+  foreach ($n in $nodes) { dotnet build $n.Project -c Release -v q | Out-Null }
 }
 
 function VersionInfo($dll){ & dotnet $dll "--role=version" 2>&1 }
@@ -38,13 +48,17 @@ function Assert-Version($line,$node,$expected) {
   }
   return $informationalBase
 }
-$oldVersion = Assert-Version (VersionInfo $old) 'old' '1.0.0-preview07'
-$newVersion = Assert-Version (VersionInfo $new) 'new' '2.0.0-preview01'
-if ($oldVersion -eq $newVersion) {
-  Write-Host "VERSION BREAK: OLD and NEW loaded the same Microsoft.Azure.Cosmos.Encryption.Custom version '$oldVersion'." -ForegroundColor Red
+$versions = @{}
+foreach ($n in $nodes) {
+  $versions[$n.Name] = Assert-Version (VersionInfo $n.Dll) $n.Name $n.Expected
+}
+$distinctVersionCount = @($versions.Values | Sort-Object -Unique).Count
+if ($distinctVersionCount -ne $nodes.Count) {
+  Write-Host "VERSION BREAK: matrix nodes loaded duplicate Microsoft.Azure.Cosmos.Encryption.Custom versions." -ForegroundColor Red
+  $versions.GetEnumerator() | Sort-Object Name | ForEach-Object { Write-Host ("  {0}={1}" -f $_.Name, $_.Value) }
   exit 1
 }
-Write-Host "Versions: OLD=$oldVersion NEW=$newVersion"
+Write-Host ("Versions: " + (($versions.GetEnumerator() | Sort-Object Name | ForEach-Object { "{0}={1}" -f $_.Name.ToUpperInvariant(), $_.Value }) -join ' '))
 
 function Reachable($ep) {
   foreach ($u in @($ep, ($ep -replace '^https','http'), ($ep -replace '^http:','https:'))) {
@@ -66,24 +80,27 @@ Write-Host "Emulator: $Endpoint  DB: $Database"
 
 $ea = @("--endpoint=$Endpoint","--key=$Key","--db=$Database","--processor=$Processor")
 $cells = @()
+$wrote = @()
 function Run($dll,$role,$peer){ & dotnet $dll "--role=$role" "--peer=$peer" @ea 2>&1 }
 
-Run $old write old | Tee-Object -Variable o1 | Out-Host
-Run $new write new | Tee-Object -Variable o2 | Out-Host
+foreach ($n in $nodes) {
+  Run $n.Dll write $n.Name | Tee-Object -Variable writeOutput | Out-Host
+  $wrote += $writeOutput
+}
 
 # Write-side gate: AEAD+Stream must THROW on a version that supports Stream (NEW=preview01).
 # A WROTE|UNSUPPORTED-DID-NOT-THROW means the no-op slipped through -> hard fail (was silently dropped).
-$wrote = @($o1; $o2)
 $didNotThrow = @($wrote | Where-Object { $_ -match '^WROTE\|UNSUPPORTED-DID-NOT-THROW\|' })
 if ($didNotThrow.Count) {
   Write-Host "WRITE BREAK: unsupported cell did not throw on a Stream-capable version:" -ForegroundColor Red
   $didNotThrow | Out-Host; exit 1
 }
 
-$cells += (Run $new read old)   # old-write x new-read
-$cells += (Run $old read new)   # new-write x old-read
-$cells += (Run $new read new)   # new-write x new-read
-$cells += (Run $old read old)   # old-write x old-read
+foreach ($reader in $nodes) {
+  foreach ($writer in $nodes) {
+    $cells += (Run $reader.Dll read $writer.Name)
+  }
+}
 
 $grid = $cells | Where-Object { $_ -match '^CELL\|' } | ForEach-Object {
   $p = $_.Split('|'); [pscustomobject]@{ Write=$p[1]; Read=$p[2]; Algo=$p[3]; Proc=$p[4]; Path=$p[5]; Status=$p[6]; Msg=$p[7] } }
@@ -96,17 +113,21 @@ if ($fail.Count) { Write-Host "DATA BREAK:" -ForegroundColor Red; $fail|Format-T
 # Exact-tuple enforcement: the grid must contain EXACTLY the cells the A/B toggle produces, so a silently
 # dropped (or duplicated) cell fails the run. 'both' adds the Stream-decrypt + equivalence cells; a single
 # processor decrypts every MDE doc once (no equivalence). Counts are derived in CompatMatrixContractTests.
-$expectedCells = if ($Processor -eq 'both') { 42 } else { 30 }
+$expectedCells = if ($IncludeCurrent) {
+  if ($Processor -eq 'both') { 112 } else { 72 }
+} else {
+  if ($Processor -eq 'both') { 42 } else { 30 }
+}
 if ($grid.Count -ne $expectedCells) {
   Write-Host ("CELL COUNT BREAK: expected {0} cells for -Processor {1}, got {2}." -f $expectedCells, $Processor, $grid.Count) -ForegroundColor Red
   exit 1
 }
 
 # Anti-fake-green control: a plaintext (unencrypted) doc must be REJECTED by the raw assertion.
-$tn = (Run $new tamper new); $to = (Run $old tamper old)
-$tamper = @($tn; $to) | Where-Object { $_ -match '^TAMPER\|' }
+$tamper = foreach ($n in $nodes) { Run $n.Dll tamper $n.Name }
+$tamper = @($tamper) | Where-Object { $_ -match '^TAMPER\|' }
 $tamper | Out-Host
-if (@($tamper | Where-Object { $_ -notmatch '^TAMPER\|PASS\|' }).Count -or $tamper.Count -lt 2) {
+if (@($tamper | Where-Object { $_ -notmatch '^TAMPER\|PASS\|' }).Count -or $tamper.Count -lt $nodes.Count) {
   Write-Host "GUARD BREAK: plaintext doc accepted as encrypted." -ForegroundColor Red; exit 1
 }
 Write-Host "All cross-version cells PASS (no data break); plaintext rejected." -ForegroundColor Green

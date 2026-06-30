@@ -11,6 +11,7 @@
     <DefineConstants>$(DefineConstants);CEC_OLD</DefineConstants>
     <SignAssembly>false</SignAssembly>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoWarn>$(NoWarn);CS0618</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

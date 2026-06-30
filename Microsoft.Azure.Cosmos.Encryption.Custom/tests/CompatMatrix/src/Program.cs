@@ -31,7 +31,10 @@ namespace CompatMatrix
 
     public static class Program
     {
-#if CEC_NEW
+#if CEC_CURRENT
+        public const string Version = "current";
+        private const string ExpectedPackageVersion = "1.0.0-preview09";
+#elif CEC_NEW
         public const string Version = "new";
         private const string ExpectedPackageVersion = "2.0.0-preview01";
 #else
@@ -250,7 +253,7 @@ namespace CompatMatrix
         private static IEnumerable<string> ReadProcessors(string family, string toggle)
         {
             if (family == "AEAD") { yield return "Newtonsoft"; yield break; }
-            bool readerSupportsStream = Version == "new";
+            bool readerSupportsStream = Version != "old";
             switch (toggle)
             {
                 case "newtonsoft":
