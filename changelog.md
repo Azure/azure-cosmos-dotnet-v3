@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Features Added
 
 - [5829](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5829) Routing: Adds Gateway Account Property Flag for Dynamic Hedging Control. Introduces a Gateway-controlled `disableCrossRegionalHedging` account property that lets operators dynamically disable PPAF cross-region hedging (and any customer-configured `AvailabilityStrategy`) without rolling back PPAF entirely. The SDK reconciles `ConnectionPolicy.AvailabilityStrategy` against the Gateway-supplied flag on each account-properties refresh; toggling the flag back to `false` restores the customer-configured strategy or rebuilds the SDK default.
+- ReadConsistencyStrategy: Adds `ReadConsistencyStrategy` to the official (GA) package. The `ReadConsistencyStrategy` enum and the corresponding properties on `CosmosClientOptions`, `ItemRequestOptions`, `QueryRequestOptions`, `ChangeFeedRequestOptions`, `ReadManyRequestOptions`, and `CosmosClientBuilder.WithReadConsistencyStrategy` are now available in the public package (previously preview-only). This lets read and query operations request a read consistency strategy (for example `Eventual`, `Session`, `LatestCommitted`, or `GlobalStrong`) independent of the account's default consistency level.
 
 #### Breaking Changes
 

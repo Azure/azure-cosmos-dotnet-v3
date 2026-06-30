@@ -17,12 +17,7 @@ namespace Microsoft.Azure.Cosmos
     /// <see cref="GlobalStrong"/> is only valid for accounts configured with Strong consistency.
     /// </para>
     /// </remarks>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    enum ReadConsistencyStrategy
+    public enum ReadConsistencyStrategy
     {
         /// <summary>
         /// Eventual consistency - reads from a single random secondary replica.

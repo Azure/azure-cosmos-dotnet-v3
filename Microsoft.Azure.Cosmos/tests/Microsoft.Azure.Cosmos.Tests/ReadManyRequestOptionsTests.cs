@@ -151,11 +151,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         // Properties copied by BOTH ConvertToItemRequestOptions and
         // ConvertToQueryRequestOptions. The expected baseline.
         //
-        // Note: ReadConsistencyStrategy is internal in non-PREVIEW builds and
-        // public in PREVIEW builds (see #if PREVIEW gate in ReadManyRequestOptions.cs).
-        // Classifying it here means the reflection enumeration finds it on PREVIEW
-        // CI builds; in non-PREVIEW it is invisible to GetProperties(Public) but
-        // remains accessible to nameof(...) via the test project's InternalsVisibleTo.
+        // Note: ReadConsistencyStrategy is now public in all builds, so the
+        // reflection enumeration finds it via GetProperties(Public) regardless
+        // of build flavor.
         private static readonly HashSet<string> MappedOnBothMappers = new HashSet<string>(StringComparer.Ordinal)
         {
             nameof(ReadManyRequestOptions.ConsistencyLevel),
