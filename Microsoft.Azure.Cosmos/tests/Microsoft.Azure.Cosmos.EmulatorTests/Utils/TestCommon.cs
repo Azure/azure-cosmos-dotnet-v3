@@ -81,6 +81,87 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return Cosmos.ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", string.Empty);
         }
 
+        /// <summary>
+        /// Parses the account endpoint out of the live-account connection string (COSMOSDB_MULTI_REGION).
+        /// Used by the live AAD tests so they can target the same real account the key-based
+        /// MultiRegion tests use, while authenticating with a TokenCredential instead of a key.
+        /// </summary>
+        internal static string GetMultiRegionAccountEndpoint()
+        {
+            string connectionString = TestCommon.GetMultiRegionConnectionString();
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                return null;
+            }
+
+            foreach (string segment in connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries))
+            {
+                int separatorIndex = segment.IndexOf('=');
+                if (separatorIndex <= 0)
+                {
+                    continue;
+                }
+
+                string key = segment.Substring(0, separatorIndex).Trim();
+                if (string.Equals(key, "AccountEndpoint", StringComparison.OrdinalIgnoreCase))
+                {
+                    return segment.Substring(separatorIndex + 1).Trim();
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Returns a <see cref="global::Azure.Core.TokenCredential"/> for the live AAD tests.
+        /// Prefers an explicit <see cref="global::Azure.Identity.ClientSecretCredential"/> built from the
+        /// AZURE_TENANT_ID / AZURE_CLIENT_ID / AZURE_CLIENT_SECRET environment variables (the values the
+        /// pipeline injects from its secret variables). When those are not all present it falls back to
+        /// <see cref="global::Azure.Identity.DefaultAzureCredential"/> so the tests can also run locally via
+        /// `az login`, Visual Studio, or a managed identity. Returns null when nothing is available so the
+        /// tests can skip cleanly.
+        /// </summary>
+        internal static global::Azure.Core.TokenCredential GetAadTokenCredential()
+        {
+            string tenantId = Cosmos.ConfigurationManager.GetEnvironmentVariable<string>("AZURE_TENANT_ID", string.Empty);
+            string clientId = Cosmos.ConfigurationManager.GetEnvironmentVariable<string>("AZURE_CLIENT_ID", string.Empty);
+            string clientSecret = Cosmos.ConfigurationManager.GetEnvironmentVariable<string>("AZURE_CLIENT_SECRET", string.Empty);
+
+            if (!string.IsNullOrEmpty(tenantId)
+                && !string.IsNullOrEmpty(clientId)
+                && !string.IsNullOrEmpty(clientSecret))
+            {
+                return new global::Azure.Identity.ClientSecretCredential(tenantId, clientId, clientSecret);
+            }
+
+            try
+            {
+                return new global::Azure.Identity.DefaultAzureCredential();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Creates a <see cref="CosmosClient"/> for the live-account AAD tests using the endpoint parsed from
+        /// COSMOSDB_MULTI_REGION and a real Entra <see cref="global::Azure.Core.TokenCredential"/>.
+        /// Returns null when the endpoint or a usable credential is not configured so the caller can skip.
+        /// </summary>
+        internal static CosmosClient CreateAadCosmosClient(CosmosClientOptions clientOptions = null)
+        {
+            string endpoint = TestCommon.GetMultiRegionAccountEndpoint();
+            global::Azure.Core.TokenCredential tokenCredential = TestCommon.GetAadTokenCredential();
+
+            if (string.IsNullOrEmpty(endpoint) || tokenCredential == null)
+            {
+                return null;
+            }
+
+            return new CosmosClient(endpoint, tokenCredential, clientOptions);
+        }
+
         internal static CosmosClientBuilder GetDefaultConfiguration(
             bool useCustomSeralizer = true,
             bool validatePartitionKeyRangeCalls = false,
