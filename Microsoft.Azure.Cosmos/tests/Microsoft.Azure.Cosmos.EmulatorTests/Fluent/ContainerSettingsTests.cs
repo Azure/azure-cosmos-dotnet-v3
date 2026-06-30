@@ -154,7 +154,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ComputedPropertyComparer.AssertAreEqual(containerProperties.ComputedProperties, deserialziedTest.ComputedProperties);
         }
 
-        [Ignore]
         [TestMethod]
         public async Task ContainerNegativeComputedPropertyTest()
         {
@@ -909,7 +908,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [Ignore("Marking as ignore until emulator is updated")]
         [TestMethod]
         public async Task TestFullTextSearchPolicyOptionalLanguage()
         {
@@ -945,7 +943,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // Validate FullText Paths.
                 Assert.IsNotNull(containerSettings.FullTextPolicy);
-                Assert.IsNull(containerSettings.FullTextPolicy.DefaultLanguage);
+                Assert.AreEqual("en-US", containerSettings.FullTextPolicy.DefaultLanguage);
+                Assert.IsNotNull(containerSettings.FullTextPolicy.DefaultSpec);
+                Assert.AreEqual("en-US", containerSettings.FullTextPolicy.DefaultSpec.Language);
                 Assert.IsNotNull(containerSettings.FullTextPolicy.FullTextPaths);
                 Assert.AreEqual(1, containerSettings.FullTextPolicy.FullTextPaths.Count());
                 Assert.IsNull(containerSettings.FullTextPolicy.FullTextPaths[0].Language);
@@ -1609,7 +1609,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 #endif
 
-        [Ignore]
         [TestMethod]
         public async Task WithComputedProperties()
         {
@@ -2057,7 +2056,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [Ignore("Marking as ignore until emulator is updated")]
         [TestMethod]
         [DataRow("en-US")]
         [DataRow("fr-FR")]
@@ -2069,17 +2067,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task TestFullTextSearchPolicyWithAllSupportedDefaultLanguages(string defaultLanguage)
         {
             string fullTextPath1 = "/fts1", fullTextPath2 = "/fts2";
-            string endpoint = "";
-            string key = "";
 
             string databaseName = "TestDatabaseFullTextPolicy";
             string containerName = "TestContainerFullTextPolicy_"+ defaultLanguage;
 
-            CosmosClientOptions clientOptions = new CosmosClientOptions
-            {
-                ConnectionMode = ConnectionMode.Direct,
-            };
-            CosmosClient client = new(endpoint, key, clientOptions);
+            CosmosClient client = this.GetClient();
 
             Database databaseForFullTextSearch = await client.CreateDatabaseIfNotExistsAsync(databaseName);
             try
