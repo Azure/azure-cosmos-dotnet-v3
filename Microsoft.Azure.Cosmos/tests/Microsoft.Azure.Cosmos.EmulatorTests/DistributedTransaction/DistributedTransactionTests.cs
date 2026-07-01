@@ -546,6 +546,39 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Description("A patch operation with FilterPredicate set serializes a 'condition' field inside the operation's resourceBody in the committed request.")]
+        public async Task PatchItem_WithFilterPredicate_ConditionSerializedToRequest()
+        {
+            const string predicate = "from c where c.status = 'pending'";
+            IReadOnlyList<PatchOperation> patchOps = new[] { PatchOperation.Replace("/status", "done") };
+
+            DistributedTransactionMockHandler handler = new DistributedTransactionMockHandler(
+                request => Task.FromResult(this.BuildMockResponse(HttpStatusCode.OK, BuildSuccessResponseJson(1))));
+
+            using CosmosClient client = this.CreateMockClient(handler);
+
+            DistributedTransactionResponse response = await client.CreateDistributedWriteTransaction()
+                .PatchItem(
+                    this.GetContainerForClient(client, this.container),
+                    new PartitionKey("patch-pk"),
+                    "patch-id",
+                    patchOps,
+                    new DistributedTransactionPatchItemRequestOptions { FilterPredicate = predicate })
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.IsTrue(response.IsSuccessStatusCode);
+            using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
+            JsonElement operation = requestJson.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
+            Assert.IsTrue(operation.TryGetProperty(DistributedTransactionSerializer.ResourceBody, out JsonElement resourceBody),
+                "Patch operation must include a 'resourceBody' field.");
+            Assert.IsTrue(resourceBody.TryGetProperty("condition", out JsonElement conditionElement),
+                "resourceBody must include a 'condition' field when FilterPredicate is set.");
+            Assert.AreEqual(predicate, conditionElement.GetString());
+
+            response.Dispose();
+        }
+
+        [TestMethod]
         [Description("A 412 Precondition Failed response marks the transaction and the failing operation as not successful.")]
         public async Task PreconditionFailedResponse_OnReplaceWithStaleEtag_ReturnsFailureStatus()
         {

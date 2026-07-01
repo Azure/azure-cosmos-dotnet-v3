@@ -493,6 +493,39 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [Description("PatchItem with both FilterPredicate and IfMatchEtag set must serialize the operation-level 'ifMatch' field AND the 'condition' field inside the patch resourceBody.")]
+        public async Task PatchItem_WithFilterPredicateAndIfMatchEtag_SerializesBoth()
+        {
+            const string itemId = "filter-and-etag-patch-id";
+            const string predicate = "from c where c.status = 'pending'";
+            const string etag = "\"test-etag\"";
+
+            string capturedJson = await this.CaptureCommitBodyAsync(tx =>
+                tx.PatchItem(BuildMockContainer(), new PartitionKey("pk"), itemId,
+                    new[] { PatchOperation.Replace("/status", "done") },
+                    new DistributedTransactionPatchItemRequestOptions
+                    {
+                        FilterPredicate = predicate,
+                        IfMatchEtag = etag
+                    }));
+
+            using JsonDocument doc = JsonDocument.Parse(capturedJson);
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
+
+            // Operation-level ifMatch (inherited from the base RequestOptions.IfMatchEtag).
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.IfMatch, out JsonElement etagElement),
+                "Patch operation with IfMatchEtag must include an 'ifMatch' field.");
+            Assert.AreEqual(etag, etagElement.GetString());
+
+            // Body-level condition (from the patch-specific FilterPredicate) coexists on the same operation.
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.ResourceBody, out JsonElement resourceBody),
+                "Patch operation must include a 'resourceBody' field.");
+            Assert.IsTrue(resourceBody.TryGetProperty(PatchConstants.PatchSpecAttributes.Condition, out JsonElement conditionElement),
+                "Patch resourceBody must include a 'condition' field when FilterPredicate is set.");
+            Assert.AreEqual(predicate, conditionElement.GetString());
+        }
+
+        [TestMethod]
         [Description("Operations without conditional ETags must not include 'ifMatch' or 'ifNoneMatch' fields in serialized JSON.")]
         public async Task Operations_WithoutConditionalEtags_DoNotIncludeConditionalFields()
         {
