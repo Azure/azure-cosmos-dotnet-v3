@@ -1014,11 +1014,10 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             // Extract per-partition TargetReplicaSetSize from the first address
-
             // (all addresses in a partition share the same TRSS value from the gateway).
             // This flows through to AddressSelector.ResolveAddressesAsync which stashes it
             // on RequestContext for CRSS scale-up detection.
-            int partitionTargetReplicaSetSize = address.PartitionTargetReplicaSetSize ?? 0;
+            int? partitionTargetReplicaSetSize = address.PartitionTargetReplicaSetSize;
 
             return Tuple.Create(
                partitionKeyRangeIdentity,
