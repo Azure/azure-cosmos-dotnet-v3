@@ -430,9 +430,12 @@ namespace Microsoft.Azure.Cosmos
 
                         if (clientSideRequestStatistics is ClientSideRequestStatisticsTraceDatum datum)
                         {
-                            // Diagnostics keep a reference to responseMessage but only read its status
-                            // code/headers later (content length and activity id are captured eagerly),
-                            // so it stays safe to read even after the retriable response is disposed below.
+                            // Diagnostics keep a reference to responseMessage but only read
+                            // post-dispose-safe members later - status code, reason phrase, and response
+                            // headers (content length and activity id are captured eagerly here). The
+                            // OpenTelemetry metrics path may also read the response content headers, but it
+                            // guards any disposed-content access with ObjectDisposedException handling. So it
+                            // stays safe to read even after the retriable response is disposed below.
                             datum.RecordHttpResponse(requestMessage, responseMessage, resourceType, requestStartTime);
                         }
 

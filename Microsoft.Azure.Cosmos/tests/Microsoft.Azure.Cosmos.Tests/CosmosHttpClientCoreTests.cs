@@ -808,6 +808,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             // The dropped 408 response must be disposed before the retry so the underlying stream is
             // torn down deterministically instead of being left to GC finalization, where an HTTP/2
             // stream abort would surface as an unobserved Http2StreamException ("stream aborted").
+            // This validates the disposal mechanism over an in-memory handler; a real-transport
+            // (Kestrel HTTP/2 / emulator) characterization test that reproduces the unobserved-task
+            // symptom is tracked in https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5996.
             List<DisposeTrackingContent> droppedResponseContents = new List<DisposeTrackingContent>();
             int count = 0;
             Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
