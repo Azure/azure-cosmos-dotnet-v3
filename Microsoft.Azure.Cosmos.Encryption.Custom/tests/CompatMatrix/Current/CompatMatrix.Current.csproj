@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- CURRENT subprocess: builds Microsoft.Azure.Cosmos.Encryption.Custom from this branch's source via ProjectReference. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>CompatMatrix.Current</AssemblyName>
+    <RootNamespace>CompatMatrix</RootNamespace>
+    <DefineConstants>$(DefineConstants);CEC_NEW;CEC_CURRENT</DefineConstants>
+    <SignAssembly>false</SignAssembly>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoWarn>$(NoWarn);CS0618</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\src\Program.cs" Link="Program.cs" />
+    <Compile Include="..\src\KeyProviders.cs" Link="KeyProviders.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Microsoft.Azure.Cosmos.Encryption.Custom.csproj" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+</Project>
