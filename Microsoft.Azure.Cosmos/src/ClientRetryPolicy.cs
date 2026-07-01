@@ -33,13 +33,10 @@ namespace Microsoft.Azure.Cosmos
 
         // ----- DTX (Distributed Transaction) inner-loop retry constants -----
         // The outer loop (DistributedTransactionCommitter) handles body-bearing isRetriable failures.
-        // CRP owns envelope failures with empty body: 408, 449/5352, 429/3200 share one budget; 500/5411-5413 use a separate, tighter budget.
-        // The coordinator-retriable budget is bounded both by attempt count and by a cumulative-wait cap (mirroring
-        // ResourceThrottleRetryPolicy's 60s default), so a stream of large server Retry-After values cannot stall a commit indefinitely.
+        // CRP owns envelope failures with empty body: 408, 449/5352 share one budget; 500/5411-5413 use a separate, tighter budget.
         private const int MaxDtxRetryCount = 10;
         private const int MaxDtxInfraFailureRetryCount = 9;
         private const int DtxInfraFailureMaxExponent = 6;
-        private static readonly TimeSpan MaxDtxCoordinatorRetriableCumulativeWait = TimeSpan.FromSeconds(60);
         private static readonly TimeSpan DtxInfraFailureBaseBackoff = TimeSpan.FromMilliseconds(100);
         private static readonly TimeSpan DtxInfraFailureMaxBackoff = TimeSpan.FromSeconds(5);
 
@@ -58,7 +55,6 @@ namespace Microsoft.Azure.Cosmos
         private int serviceUnavailableRetryCount;
         private int caeRevocationRetryCount;
         private int distributedTransactionRetryCount;
-        private TimeSpan distributedTransactionCumulativeRetryDelay;
         private int distributedTransactionInfraFailureRetryCount;
         private bool isReadRequest;
         private bool canUseMultipleWriteLocations;
@@ -210,7 +206,14 @@ namespace Microsoft.Azure.Cosmos
         {
             this.retryContext = null;
 
-            bool hasResponseBody = cosmosResponseMessage?.Content != null;
+            // A DTX gateway 429/3200 (RUBudgetExceeded) arrives as an exceptionless ResponseMessage whose
+            // Content is a non-null but zero-length stream. Treat a seekable empty stream as "no body" so the
+            // DTX classifier does not misread it as a semantic per-operation result and defer it to the outer
+            // commit loop (issue #5975). Length is read only when the stream is seekable; a non-seekable stream
+            // conservatively counts as having a body.
+            System.IO.Stream responseContent = cosmosResponseMessage?.Content;
+            bool hasResponseBody = responseContent != null
+                && (!responseContent.CanSeek || responseContent.Length > 0);
 
             ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
                     cosmosResponseMessage?.StatusCode,
@@ -866,7 +869,7 @@ namespace Microsoft.Azure.Cosmos
         // DTX retry classifier. The coordinator distinguishes envelope failures (no body) from semantic
         // failures (body with per-op results + isRetriable). Body-bearing responses defer to the outer
         // DistributedTransactionCommitter loop; otherwise the inner loop owns retry along one of two
-        // shapes: coordinator-retriable (408/449/429) or infrastructure failure (500/5411-5413).
+        // shapes: coordinator-retriable (408/449) or infrastructure failure (500/5411-5413).
         private ShouldRetryResult ShouldRetryDtxRequest(
             HttpStatusCode? statusCode,
             SubStatusCodes? subStatusCode,
@@ -897,18 +900,17 @@ namespace Microsoft.Azure.Cosmos
 
             if (isCoordinatorRetriable)
             {
-                // 408, 449/5352 and 429/3200 (without body) share the inner coordinator-retriable budget,
-                // bounded by both attempt count and cumulative wait. 429/3200 honors the server's Retry-After
-                // via the retryAfter argument below.
-                TimeSpan delay = retryAfter ?? TimeSpan.FromMilliseconds(ClientRetryPolicy.RetryIntervalInMS);
+                // 429/3200 without body — ResourceThrottleRetryPolicy handles it via Retry-After.
+                if (statusCodeValue == (int)StatusCodes.TooManyRequests)
+                {
+                    return null;
+                }
+
                 int attempt = this.distributedTransactionRetryCount++;
-                this.distributedTransactionCumulativeRetryDelay += delay;
                 return this.RetryDtxWithBudget(
                     attempt,
                     ClientRetryPolicy.MaxDtxRetryCount,
-                    delay,
-                    this.distributedTransactionCumulativeRetryDelay,
-                    ClientRetryPolicy.MaxDtxCoordinatorRetriableCumulativeWait,
+                    retryAfter ?? TimeSpan.FromMilliseconds(ClientRetryPolicy.RetryIntervalInMS),
                     statusCodeValue,
                     subStatusCodeValue);
             }
@@ -924,8 +926,6 @@ namespace Microsoft.Azure.Cosmos
                         ClientRetryPolicy.DtxInfraFailureBaseBackoff,
                         ClientRetryPolicy.DtxInfraFailureMaxBackoff,
                         ClientRetryPolicy.DtxInfraFailureMaxExponent),
-                    TimeSpan.Zero,
-                    TimeSpan.MaxValue,
                     statusCodeValue,
                     subStatusCodeValue);
             }
@@ -934,12 +934,12 @@ namespace Microsoft.Azure.Cosmos
             return null;
         }
 
-        private ShouldRetryResult RetryDtxWithBudget(int attempt, int cap, TimeSpan delay, TimeSpan cumulativeDelay, TimeSpan cumulativeCap, int statusCode, int subStatusCode)
+        private ShouldRetryResult RetryDtxWithBudget(int attempt, int cap, TimeSpan delay, int statusCode, int subStatusCode)
         {
-            if (attempt >= cap || cumulativeDelay > cumulativeCap)
+            if (attempt >= cap)
             {
-                DefaultTrace.TraceInformation("ClientRetryPolicy: DTX retry budget exhausted. attempt={0}, cap={1}, cumulativeDelayMs={2}, cumulativeCapMs={3}, Status={4}, SubStatus={5}.",
-                    attempt, cap, (long)cumulativeDelay.TotalMilliseconds, (long)cumulativeCap.TotalMilliseconds, statusCode, subStatusCode);
+                DefaultTrace.TraceInformation("ClientRetryPolicy: DTX retry budget exhausted. attempt={0}, cap={1}, Status={2}, SubStatus={3}.",
+                    attempt, cap, statusCode, subStatusCode);
                 return ShouldRetryResult.NoRetry();
             }
 

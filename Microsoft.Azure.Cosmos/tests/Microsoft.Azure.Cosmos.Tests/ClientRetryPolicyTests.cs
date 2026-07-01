@@ -1713,9 +1713,10 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         [TestMethod]
         public async Task DtxRequest_429_3200_ShouldRetry_WithDefaultRetryInterval()
         {
-            // Regression for #5975: a bodyless 429/3200 (RUBudgetExceeded) on a DTX commit is classified
-            // coordinator-retriable and must be retried by the inner CRP budget (it previously returned
-            // null to defer to the throttling policy, which never re-sent the DTX commit).
+            // Regression for #5975: a bodyless 429/3200 (RUBudgetExceeded) on a DTX commit must be retried.
+            // The DTX classifier lets a bodyless throttle response fall through to the shared throttling
+            // retry policy (this.throttlingRetry) — the same ResourceThrottleRetryPolicy every non-DTX 429
+            // uses — instead of deferring it to the outer loop, which never re-sent the DTX commit.
             const bool enableEndpointDiscovery = true;
             using GlobalEndpointManager endpointManager = this.Initialize(
                 useMultipleWriteLocations: false,
@@ -1732,9 +1733,9 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             ShouldRetryResult result = await policy.ShouldRetryAsync(response, CancellationToken.None);
 
-            Assert.IsTrue(result.ShouldRetry, "DTX 429/3200 (RUBudgetExceeded) must be retried — it is classified coordinator-retriable.");
-            Assert.AreEqual(TimeSpan.FromSeconds(1), result.BackoffTime,
-                "Without a Retry-After header, CRP should fall back to the standard retry interval (1s) instead of hammering the coordinator with zero-delay retries.");
+            Assert.IsTrue(result.ShouldRetry, "DTX 429/3200 (RUBudgetExceeded) must be retried — it is classified throttle-retriable.");
+            Assert.AreEqual(TimeSpan.FromSeconds(5), result.BackoffTime,
+                "Without a Retry-After header, the shared throttling retry policy (ResourceThrottleRetryPolicy) falls back to its default 5s delay.");
         }
 
         [TestMethod]
@@ -1762,15 +1763,50 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             Assert.AreEqual(serverRetryAfter, result.BackoffTime, "Retry delay must honor the server's Retry-After header.");
         }
 
-        [TestMethod]
-        public async Task DtxRequest_CoordinatorRetriable_StopsWhenCumulativeWaitCapExceeded()
+        [DataTestMethod]
+        [Description("Regression for #5975 (B1): a real gateway bodyless DTX envelope failure arrives with a non-null, zero-length Content stream (429 is exceptionless, so the transport buffers an empty body rather than a null one). CRP must treat a zero-length body as 'no meaningful body' and retry inline. Deferring it to the outer DistributedTransactionCommitter loop is a dead end — the empty body fails to parse, IsRetriable defaults to false, and the commit is never re-sent. Hand-built ResponseMessages set Content == null, so this shape was previously untested and the fix silently did not engage.")]
+        [DataRow((int)HttpStatusCode.RequestTimeout, 0, DisplayName = "408 non-null empty body")]
+        [DataRow((int)StatusCodes.RetryWith, (int)SubStatusCodes.DtcCoordinatorRaceConflict, DisplayName = "449/5352 non-null empty body")]
+        [DataRow((int)StatusCodes.TooManyRequests, (int)SubStatusCodes.RUBudgetExceeded, DisplayName = "429/3200 non-null empty body")]
+        public async Task DtxRequest_NonNullEmptyBody_RetriesInline(int statusCode, int subStatusCode)
         {
-            // The coordinator-retriable budget is bounded by a cumulative-wait cap (60s, mirroring
-            // ResourceThrottleRetryPolicy) in addition to the attempt cap. A stream of large server
-            // Retry-After values must stop the inner loop on the cumulative cap — well before the
-            // 10-attempt cap — so a throttled coordinator cannot stall a commit indefinitely.
             const bool enableEndpointDiscovery = true;
-            TimeSpan serverRetryAfter = TimeSpan.FromSeconds(25); // 25 + 25 = 50 <= 60 (two retries), third pushes to 75 > 60.
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            ClientRetryPolicy policy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+            DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
+            policy.OnBeforeSendRequest(request);
+
+            // Non-null but zero-length Content — the exact shape a bodyless gateway response produces.
+            ResponseMessage response = new ResponseMessage((HttpStatusCode)statusCode)
+            {
+                Content = new MemoryStream(Array.Empty<byte>())
+            };
+            if (subStatusCode != 0)
+            {
+                response.Headers.SubStatusCodeLiteral = subStatusCode.ToString();
+            }
+
+            ShouldRetryResult result = await policy.ShouldRetryAsync(response, CancellationToken.None);
+
+            Assert.IsTrue(result.ShouldRetry,
+                $"DTX {statusCode}/{subStatusCode} with a non-null zero-length body must be retried inline; a zero-length body is not a semantic per-op envelope and must not be deferred to the outer loop.");
+        }
+
+        [TestMethod]
+        public async Task DtxRequest_429_3200_StopsWhenDefaultCumulativeWaitExceeded()
+        {
+            // The DTX 429/3200 path delegates to the shared throttling retry policy (this.throttlingRetry),
+            // which honors the customer's MaxRetryWaitTimeOnRateLimitedRequests — defaulting to 30s
+            // (RetryOptions.MaxRetryWaitTimeInSeconds). A stream of large server Retry-After values must stop
+            // on the cumulative cap — well before the attempt cap — so a throttled coordinator cannot stall a
+            // commit indefinitely.
+            const bool enableEndpointDiscovery = true;
+            TimeSpan serverRetryAfter = TimeSpan.FromSeconds(20); // 20 <= 30 (one retry), second pushes to 40 > 30.
             using GlobalEndpointManager endpointManager = this.Initialize(
                 useMultipleWriteLocations: false,
                 enableEndpointDiscovery: enableEndpointDiscovery,
@@ -1785,16 +1821,76 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             response.Headers.SubStatusCodeLiteral = ((int)SubStatusCodes.RUBudgetExceeded).ToString();
             response.Headers.RetryAfterLiteral = ((long)serverRetryAfter.TotalMilliseconds).ToString();
 
-            for (int i = 1; i <= 2; i++)
+            ShouldRetryResult first = await policy.ShouldRetryAsync(response, CancellationToken.None);
+            Assert.IsTrue(first.ShouldRetry, "First DTX 429/3200 retry (cumulative 20s) is within the default 30s cap.");
+
+            // Cumulative wait would reach 40s (> 30s default cap) on the next retry, so it must be denied.
+            ShouldRetryResult second = await policy.ShouldRetryAsync(response, CancellationToken.None);
+            Assert.IsFalse(second.ShouldRetry, "DTX 429/3200 retries must stop once the cumulative-wait cap is exceeded.");
+        }
+
+        [TestMethod]
+        public async Task DtxRequest_429_3200_HonorsConfiguredMaxRetryAttempts()
+        {
+            // The DTX 429/3200 attempt budget honors the customer's MaxRetryAttemptsOnRateLimitedRequests
+            // (RetryOptions.MaxRetryAttemptsOnThrottledRequests) rather than a hardcoded DTX budget.
+            const bool enableEndpointDiscovery = true;
+            const int configuredAttempts = 3;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            RetryOptions retryOptions = new RetryOptions { MaxRetryAttemptsOnThrottledRequests = configuredAttempts };
+            ClientRetryPolicy policy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, retryOptions, enableEndpointDiscovery, false);
+            DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
+            policy.OnBeforeSendRequest(request);
+
+            // Small Retry-After keeps the cumulative wait well under the 30s cap so the attempt cap governs.
+            ResponseMessage response = new ResponseMessage(HttpStatusCode.TooManyRequests);
+            response.Headers.SubStatusCodeLiteral = ((int)SubStatusCodes.RUBudgetExceeded).ToString();
+            response.Headers.RetryAfterLiteral = ((long)TimeSpan.FromMilliseconds(50).TotalMilliseconds).ToString();
+
+            for (int i = 1; i <= configuredAttempts; i++)
             {
                 ShouldRetryResult retryResult = await policy.ShouldRetryAsync(response, CancellationToken.None);
-                Assert.IsTrue(retryResult.ShouldRetry, $"DTX 429/3200 retry {i} should be allowed while cumulative wait is within the 60s cap.");
+                Assert.IsTrue(retryResult.ShouldRetry, $"DTX 429/3200 retry {i} of {configuredAttempts} should be allowed.");
             }
 
-            // Cumulative wait would reach 75s (> 60s cap) on the next retry, so it must be denied
-            // even though the attempt cap (10) has not been reached.
             ShouldRetryResult finalResult = await policy.ShouldRetryAsync(response, CancellationToken.None);
-            Assert.IsFalse(finalResult.ShouldRetry, "DTX coordinator-retriable retries must stop once the cumulative-wait cap is exceeded.");
+            Assert.IsFalse(finalResult.ShouldRetry, $"DTX 429/3200 must stop after the configured {configuredAttempts} attempts.");
+        }
+
+        [TestMethod]
+        public async Task DtxRequest_429_3200_HonorsConfiguredMaxRetryWaitTime()
+        {
+            // The DTX 429/3200 cumulative-wait cap honors the customer's MaxRetryWaitTimeOnRateLimitedRequests
+            // (RetryOptions.MaxRetryWaitTimeInSeconds).
+            const bool enableEndpointDiscovery = true;
+            const int configuredWaitSeconds = 10;
+            TimeSpan serverRetryAfter = TimeSpan.FromSeconds(6); // 6 <= 10 (one retry), second pushes to 12 > 10.
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            RetryOptions retryOptions = new RetryOptions { MaxRetryWaitTimeInSeconds = configuredWaitSeconds };
+            ClientRetryPolicy policy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, retryOptions, enableEndpointDiscovery, false);
+            DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
+            policy.OnBeforeSendRequest(request);
+
+            ResponseMessage response = new ResponseMessage(HttpStatusCode.TooManyRequests);
+            response.Headers.SubStatusCodeLiteral = ((int)SubStatusCodes.RUBudgetExceeded).ToString();
+            response.Headers.RetryAfterLiteral = ((long)serverRetryAfter.TotalMilliseconds).ToString();
+
+            ShouldRetryResult first = await policy.ShouldRetryAsync(response, CancellationToken.None);
+            Assert.IsTrue(first.ShouldRetry, "First DTX 429/3200 retry (cumulative 6s) is within the configured 10s cap.");
+
+            // Cumulative wait would reach 12s (> configured 10s cap) on the next retry, so it must be denied.
+            ShouldRetryResult second = await policy.ShouldRetryAsync(response, CancellationToken.None);
+            Assert.IsFalse(second.ShouldRetry, "DTX 429/3200 retries must stop once the configured cumulative-wait cap is exceeded.");
         }
 
         [DataTestMethod]
@@ -1889,6 +1985,33 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             ShouldRetryResult finalResult = await policy.ShouldRetryAsync(response, CancellationToken.None);
             Assert.IsFalse(finalResult.ShouldRetry, $"Read DTX retry budget is exhausted after {budget} retries; the next call must be denied.");
+        }
+
+        [TestMethod]
+        public async Task ReadDtxRequest_429_3200_ShouldRetry()
+        {
+            // Regression for #5975: the customer-visible failure was on a DTX *read* as well as a commit.
+            // A bodyless 429/3200 (RUBudgetExceeded) on a DTX read must be classified throttle-retriable and
+            // retried by the shared throttling retry policy (same as the commit path), not dropped.
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            ClientRetryPolicy policy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+            DocumentServiceRequest request = ClientRetryPolicyTests.CreateReadDtxRequest();
+            policy.OnBeforeSendRequest(request);
+
+            ResponseMessage response = new ResponseMessage(HttpStatusCode.TooManyRequests);
+            response.Headers.SubStatusCodeLiteral = ((int)SubStatusCodes.RUBudgetExceeded).ToString();
+
+            ShouldRetryResult result = await policy.ShouldRetryAsync(response, CancellationToken.None);
+
+            Assert.IsTrue(result.ShouldRetry, "Read DTX 429/3200 (RUBudgetExceeded) must be retried — it is classified throttle-retriable.");
+            Assert.AreEqual(TimeSpan.FromSeconds(5), result.BackoffTime,
+                "Without a Retry-After header, the shared throttling retry policy (ResourceThrottleRetryPolicy) falls back to its default 5s delay, matching the commit path.");
         }
 
         [TestMethod]
@@ -1998,10 +2121,9 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         [DataTestMethod]
-        [Description("CRP must defer body-bearing envelope responses (408, 449/5352 and 429/3200) to the outer DistributedTransactionCommitter loop so the two retry budgets do not amplify each other.")]
+        [Description("CRP must defer body-bearing envelope responses (408 and 449/5352) to the outer DistributedTransactionCommitter loop so the two retry budgets do not amplify each other.")]
         [DataRow((int)HttpStatusCode.RequestTimeout, 0, DisplayName = "408 with body deferred to outer loop")]
         [DataRow((int)StatusCodes.RetryWith, (int)SubStatusCodes.DtcCoordinatorRaceConflict, DisplayName = "449/5352 with body deferred to outer loop")]
-        [DataRow((int)StatusCodes.TooManyRequests, (int)SubStatusCodes.RUBudgetExceeded, DisplayName = "429/3200 with body deferred to outer loop")]
         public async Task DtxRequest_WithBody_DeferredToOuterLoop(int statusCode, int subStatusCode)
         {
             const bool enableEndpointDiscovery = true;
