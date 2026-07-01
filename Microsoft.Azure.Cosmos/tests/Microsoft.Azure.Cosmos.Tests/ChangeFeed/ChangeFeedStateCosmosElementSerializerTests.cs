@@ -66,5 +66,24 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
 
             Assert.AreEqual(changeFeedContinuation.ContinuationToken, continuation);
         }
+
+        [TestMethod]
+        public void ContinuationAndStartTime()
+        {
+            CosmosString continuation = CosmosString.Create("someEtag");
+            DateTime startTime = new DateTime(2023, 1, 15, 10, 30, 0, DateTimeKind.Utc);
+            ChangeFeedState state = ChangeFeedState.ContinuationAndStartTime(continuation, startTime);
+            CosmosElement cosmosElement = ChangeFeedStateCosmosElementSerializer.ToCosmosElement(state);
+            TryCatch<ChangeFeedState> monadicState = ChangeFeedStateCosmosElementSerializer.MonadicFromCosmosElement(cosmosElement);
+            Assert.IsTrue(monadicState.Succeeded);
+            if (!(monadicState.Result is ChangeFeedStateContinuationAndStartTime changeFeedContinuationAndStartTime))
+            {
+                Assert.Fail();
+                return;
+            }
+
+            Assert.AreEqual(changeFeedContinuationAndStartTime.ContinuationToken, continuation);
+            Assert.AreEqual(changeFeedContinuationAndStartTime.StartTime, startTime);
+        }
     }
 }

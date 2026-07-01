@@ -14,10 +14,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
     {
         private const string TypePropertyName = "type";
         private const string ValuePropertyName = "value";
+        private const string StartTimePropertyName = "startTime";
 
         private const string BeginningTypeValue = "beginning";
         private const string TimeTypeValue = "time";
         private const string ContinuationTypeValue = "continuation";
+        private const string ContinuationAndStartTimeTypeValue = "continuationAndStartTime";
         private const string NowTypeValue = "now";
 
         public static TryCatch<ChangeFeedState> MonadicFromCosmosElement(CosmosElement cosmosElement)
@@ -85,6 +87,37 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                     }
                     break;
 
+                case ContinuationAndStartTimeTypeValue:
+                    {
+                        if (!cosmosObject.TryGetValue(ValuePropertyName, out CosmosString valuePropertyValue))
+                        {
+                            return TryCatch<ChangeFeedState>.FromException(
+                                new FormatException(
+                                    $"expected change feed state to have a string value property: {cosmosElement}"));
+                        }
+
+                        if (!cosmosObject.TryGetValue(StartTimePropertyName, out CosmosString startTimePropertyValue))
+                        {
+                            return TryCatch<ChangeFeedState>.FromException(
+                                new FormatException(
+                                    $"expected change feed state to have a string startTime property: {cosmosElement}"));
+                        }
+
+                        if (!DateTime.TryParse(
+                            startTimePropertyValue.Value,
+                            CultureInfo.InvariantCulture,
+                            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal | DateTimeStyles.AllowWhiteSpaces,
+                            out DateTime startTimeUtc))
+                        {
+                            return TryCatch<ChangeFeedState>.FromException(
+                                new FormatException(
+                                    $"failed to parse start time value: {cosmosElement}"));
+                        }
+
+                        state = ChangeFeedState.ContinuationAndStartTime(valuePropertyValue, startTimeUtc);
+                    }
+                    break;
+
                 case NowTypeValue:
                     state = ChangeFeedState.Now();
                     break;
@@ -130,6 +163,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
 
             private static readonly CosmosString ContinuationTypeValueSingleton = CosmosString.Create(ContinuationTypeValue);
 
+            private static readonly CosmosString ContinuationAndStartTimeTypeValueSingleton = CosmosString.Create(ContinuationAndStartTimeTypeValue);
+
             public CosmosElement Transform(ChangeFeedStateBeginning changeFeedStateBeginning)
             {
                 return BegininningSingleton;
@@ -157,6 +192,22 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                     {
                         { TypePropertyName, ContinuationTypeValueSingleton },
                         { ValuePropertyName, changeFeedStateContinuation.ContinuationToken }
+                    });
+            }
+
+            public CosmosElement Transform(ChangeFeedStateContinuationAndStartTime changeFeedStateContinuationAndStartTime)
+            {
+                return CosmosObject.Create(
+                    new Dictionary<string, CosmosElement>()
+                    {
+                        { TypePropertyName, ContinuationAndStartTimeTypeValueSingleton },
+                        { ValuePropertyName, changeFeedStateContinuationAndStartTime.ContinuationToken },
+                        {
+                            StartTimePropertyName,
+                            CosmosString.Create(changeFeedStateContinuationAndStartTime.StartTime.ToString(
+                                "o",
+                                CultureInfo.InvariantCulture))
+                        }
                     });
             }
 
