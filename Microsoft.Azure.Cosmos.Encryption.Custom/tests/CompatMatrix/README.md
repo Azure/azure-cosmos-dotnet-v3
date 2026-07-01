@@ -1,7 +1,7 @@
 # CompatMatrix — Encryption.Custom OLD↔NEW interop harness
 
 Proves data interop between **OLD = 1.0.0-preview07** (nuget.org) and
-**NEW = 2.0.0-preview01** (`..\..\..\..\local-feed`) for
+**NEW = 1.1.0-preview01** (`..\..\..\..\local-feed`) for
 `Microsoft.Azure.Cosmos.Encryption.Custom`. Two subprocesses (one binary pinned
 per version) cross-write/read **one shared Cosmos DB** in the Docker Linux
 emulator.
@@ -17,15 +17,17 @@ product changes from another branch.
 - `src/Program.cs` – shared write/read agent (cells, deterministic ids, verify).
 - `src/KeyProviders.cs` – MDE store provider, AEAD wrap provider, encryptor.
 - `Old/CompatMatrix.Old.csproj` – pins 1.0.0-preview07 → `CompatMatrix.Old.dll`.
-- `New/CompatMatrix.New.csproj` – pins 2.0.0-preview01 → `CompatMatrix.New.dll`.
+- `New/CompatMatrix.New.csproj` – pins 1.1.0-preview01 → `CompatMatrix.New.dll`.
 - `Current/CompatMatrix.Current.csproj` – opt-in ProjectReference source build → `CompatMatrix.Current.dll`.
 - `nuget.config` – nuget.org + local-feed.
 - `run-matrix.ps1` – launcher (emulator check, build, cross run, grid, exit code).
 
 Before any data cells run, the launcher asks each subprocess for its loaded
 `Microsoft.Azure.Cosmos.Encryption.Custom` informational version and fails if
-OLD is not `1.0.0-preview07`, NEW is not `2.0.0-preview01`, or both nodes
-accidentally load the same assembly version.
+OLD is not `1.0.0-preview07`, NEW is not `1.1.0-preview01`, CURRENT (when
+included) is not `1.1.0-preview01`, or OLD and NEW accidentally load the same
+assembly version. CURRENT builds this branch's source and is expected to match
+NEW when `local-feed` is fresh.
 
 ## Run
 ```powershell

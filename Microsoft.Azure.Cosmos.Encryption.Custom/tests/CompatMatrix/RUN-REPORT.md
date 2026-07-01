@@ -1,4 +1,4 @@
-# RUN-REPORT — Encryption.Custom 1.0.0-preview07 ↔ 2.0.0-preview01
+# RUN-REPORT — Encryption.Custom 1.0.0-preview07 ↔ 1.1.0-preview01
 
 Date: 2026-06-29 (hardened 2026-06-30) · Emulator:
 `mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview`
@@ -104,7 +104,7 @@ CELL|new-write|new-read|MDE|Stream->Stream|point|FAIL|JsonSerializationException
 ... (further Stream cells FAIL; Newtonsoft-only and AEAD cells still PASS)
 ```
 
-Against the FIXED `2.0.0-preview01` package the identical run is **PASS=42 FAIL=0**. So the grid
+Against the FIXED `1.1.0-preview01` package the identical run is **PASS=42 FAIL=0**. So the grid
 distinguishes fixed from broken: a regression in the string/property-name double-escape or the
 null-in-encrypted-container handling turns at least one hardened Stream cell RED. The fixed
 package is left in place; no source or package was left mutated.

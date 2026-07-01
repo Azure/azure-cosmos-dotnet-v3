@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 // Shared test key providers for the compat-matrix subprocesses.
-// Compiled into BOTH the OLD (1.0.0-preview07) and NEW (2.0.0-preview01) builds,
+// Compiled into BOTH the OLD (1.0.0-preview07) and NEW (1.1.0-preview01) builds,
 // against whichever Microsoft.Data.Encryption.Cryptography each package pins.
 
 namespace CompatMatrix

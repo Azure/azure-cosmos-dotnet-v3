@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [TestMethod]
         public void Compression_NotApplicable_NoCompressionPublicApi()
         {
-            // Compression existed only after preview07 and is removed in 2.0.0-preview01: assert no branch.
+            // Compression existed only after preview07 and is removed in 1.1.0-preview01: assert no branch.
             Type[] types = typeof(EncryptionOptions).Assembly.GetTypes();
             Assert.IsFalse(types.Any(t => t.Name.Contains("CompressionOptions")), "preview01 must not expose compression.");
             Assert.IsFalse(typeof(EncryptionOptions).GetProperties().Any(p => p.Name.Contains("Compression")));

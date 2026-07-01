@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- NEW subprocess: Microsoft.Azure.Cosmos.Encryption.Custom 2.0.0-preview01 from the local feed. -->
+  <!-- NEW subprocess: Microsoft.Azure.Cosmos.Encryption.Custom 1.1.0-preview01 from the local feed. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.Cosmos.Encryption.Custom" Version="2.0.0-preview01" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Encryption.Custom" Version="[1.1.0-preview01]" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 

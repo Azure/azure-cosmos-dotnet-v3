@@ -2,7 +2,7 @@
 # Copyright (c) Microsoft Corporation.  All rights reserved.
 # ------------------------------------------------------------
 # Compat-matrix launcher: starts/uses the Docker Linux emulator, pins two
-# subprocesses (OLD 1.0.0-preview07 from nuget.org, NEW 2.0.0-preview01 from
+# subprocesses (OLD 1.0.0-preview07 from nuget.org, NEW 1.1.0-preview01 from
 # local-feed), cross-writes/reads one shared Cosmos DB, prints a PASS/FAIL grid.
 # Skips gracefully (exit 3) when the emulator is unreachable; exit 1 on data break.
 [CmdletBinding()]
@@ -24,12 +24,13 @@ $new = "$root\New\bin\Release\net8.0\CompatMatrix.New.dll"
 $current = "$root\Current\bin\Release\net8.0\CompatMatrix.Current.dll"
 $nodes = @(
   [pscustomobject]@{ Name='old'; Dll=$old; Project="$root\Old\CompatMatrix.Old.csproj"; Expected='1.0.0-preview07' },
-  [pscustomobject]@{ Name='new'; Dll=$new; Project="$root\New\CompatMatrix.New.csproj"; Expected='2.0.0-preview01' }
+  [pscustomobject]@{ Name='new'; Dll=$new; Project="$root\New\CompatMatrix.New.csproj"; Expected='1.1.0-preview01' }
 )
 if ($IncludeCurrent) {
   # Current is opt-in regression infrastructure: it builds Encryption.Custom from this branch's source
-  # through ProjectReference, rather than consuming the shared local-feed package.
-  $nodes += [pscustomobject]@{ Name='current'; Dll=$current; Project="$root\Current\CompatMatrix.Current.csproj"; Expected='1.0.0-preview09' }
+  # through ProjectReference, rather than consuming the shared local-feed package. On a fresh feed,
+  # CURRENT is expected to match NEW; a mismatch catches source/package staleness.
+  $nodes += [pscustomobject]@{ Name='current'; Dll=$current; Project="$root\Current\CompatMatrix.Current.csproj"; Expected='1.1.0-preview01' }
 }
 if (-not $NoBuild) {
   foreach ($n in $nodes) { dotnet build $n.Project -c Release -v q | Out-Null }
@@ -52,9 +53,9 @@ $versions = @{}
 foreach ($n in $nodes) {
   $versions[$n.Name] = Assert-Version (VersionInfo $n.Dll) $n.Name $n.Expected
 }
-$distinctVersionCount = @($versions.Values | Sort-Object -Unique).Count
-if ($distinctVersionCount -ne $nodes.Count) {
-  Write-Host "VERSION BREAK: matrix nodes loaded duplicate Microsoft.Azure.Cosmos.Encryption.Custom versions." -ForegroundColor Red
+$oldNew = @($versions['old'], $versions['new']) | Sort-Object -Unique
+if ($oldNew.Count -ne 2) {
+  Write-Host "VERSION BREAK: OLD and NEW must load different Microsoft.Azure.Cosmos.Encryption.Custom versions." -ForegroundColor Red
   $versions.GetEnumerator() | Sort-Object Name | ForEach-Object { Write-Host ("  {0}={1}" -f $_.Name, $_.Value) }
   exit 1
 }
@@ -88,7 +89,7 @@ foreach ($n in $nodes) {
   $wrote += $writeOutput
 }
 
-# Write-side gate: AEAD+Stream must THROW on a version that supports Stream (NEW=preview01).
+# Write-side gate: AEAD+Stream must THROW on any version that supports Stream (NEW/CURRENT).
 # A WROTE|UNSUPPORTED-DID-NOT-THROW means the no-op slipped through -> hard fail (was silently dropped).
 $didNotThrow = @($wrote | Where-Object { $_ -match '^WROTE\|UNSUPPORTED-DID-NOT-THROW\|' })
 if ($didNotThrow.Count) {

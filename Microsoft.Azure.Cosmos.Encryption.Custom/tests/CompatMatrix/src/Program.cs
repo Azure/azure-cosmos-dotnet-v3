@@ -33,15 +33,15 @@ namespace CompatMatrix
     {
 #if CEC_CURRENT
         public const string Version = "current";
-        private const string ExpectedPackageVersion = "1.0.0-preview09";
+        private const string ExpectedPackageVersion = "1.1.0-preview01";
 #elif CEC_NEW
         public const string Version = "new";
-        private const string ExpectedPackageVersion = "2.0.0-preview01";
+        private const string ExpectedPackageVersion = "1.1.0-preview01";
 #else
         public const string Version = "old";
         private const string ExpectedPackageVersion = "1.0.0-preview07";
 #endif
-        private const string StreamKey = "encryption-json-processor"; // JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey
+        private const string StreamKey = "encryption-json-processor";
         private const string MdeDekId = "matrix-mde-dek";
         private const string AeadDekId = "matrix-aead-dek";
         private const string Pk = "matrix-pk";
@@ -167,8 +167,8 @@ namespace CompatMatrix
                 {
                     await enc.UpsertItemAsync(d, new PartitionKey(Pk), Options(algo, proc));
                     Console.WriteLine(aeadStream
-                        ? (Version == "new"
-                            ? $"WROTE|UNSUPPORTED-DID-NOT-THROW|{family}|{proc}|{id}"      // preview01 MUST reject AEAD+Stream
+                        ? (Version != "old"
+                            ? $"WROTE|UNSUPPORTED-DID-NOT-THROW|{family}|{proc}|{id}"      // Stream-capable versions MUST reject AEAD+Stream
                             : $"WROTE|OLD-NO-STREAM-EXPECTED|{family}|{proc}|{id}")        // preview07 has no Stream -> AEAD via Newtonsoft (no-op, expected)
                         : $"WROTE|OK|{family}|{proc}|{id}");
                 }
@@ -331,10 +331,9 @@ namespace CompatMatrix
         // Newtonsoft DECRYPT path; preview07 ignores the key and decrypts via its single (Newtonsoft) path.
         private static async Task<Doc> ReadPath(Container enc, string path, string id, string rproc)
         {
-            Dictionary<string, object> props = new() { { StreamKey, rproc } };
             if (path == "point")
             {
-                try { return (await enc.ReadItemAsync<Doc>(id, new PartitionKey(Pk), new ItemRequestOptions { Properties = props })).Resource; }
+                try { return (await enc.ReadItemAsync<Doc>(id, new PartitionKey(Pk), WithProcessor(new ItemRequestOptions(), rproc))).Resource; }
                 catch (CosmosException e) when (e.StatusCode == HttpStatusCode.NotFound) { return null; }
             }
             string q = path == "query"
@@ -342,7 +341,7 @@ namespace CompatMatrix
                 : "SELECT * FROM c";
             QueryDefinition qd = new QueryDefinition(q);
             if (path == "query") { qd = qd.WithParameter("@id", id); }
-            using FeedIterator<Doc> it = enc.GetItemQueryIterator<Doc>(qd, requestOptions: new QueryRequestOptions { PartitionKey = new PartitionKey(Pk), Properties = props });
+            using FeedIterator<Doc> it = enc.GetItemQueryIterator<Doc>(qd, requestOptions: WithProcessor(new QueryRequestOptions { PartitionKey = new PartitionKey(Pk) }, rproc));
             while (it.HasMoreResults)
             {
                 foreach (Doc d in await it.ReadNextAsync()) { if (d.id == id) { return d; } }
@@ -350,18 +349,31 @@ namespace CompatMatrix
             return null;
         }
 
-        private static EncryptionItemRequestOptions Options(string algo, string proc) => new()
+        private static EncryptionItemRequestOptions Options(string algo, string proc)
         {
-            EncryptionOptions = new EncryptionOptions
+            EncryptionItemRequestOptions requestOptions = new()
             {
-                DataEncryptionKeyId = algo == MdeAlgo ? MdeDekId : AeadDekId,
-                EncryptionAlgorithm = algo,
-                // Encrypt the full hardened set. AEAD bundles every path into a single _ed blob and MDE
-                // encrypts each path in-place; both preserve objects/arrays/numbers and inner nulls.
-                PathsToEncrypt = new List<string>(HardenedEncryptedPaths),
-            },
-            Properties = new Dictionary<string, object> { { StreamKey, proc } },
-        };
+                EncryptionOptions = new EncryptionOptions
+                {
+                    DataEncryptionKeyId = algo == MdeAlgo ? MdeDekId : AeadDekId,
+                    EncryptionAlgorithm = algo,
+                    // Encrypt the full hardened set. AEAD bundles every path into a single _ed blob and MDE
+                    // encrypts each path in-place; both preserve objects/arrays/numbers and inner nulls.
+                    PathsToEncrypt = new List<string>(HardenedEncryptedPaths),
+                },
+            };
+            return WithProcessor(requestOptions, proc);
+        }
+
+        private static T WithProcessor<T>(T requestOptions, string proc) where T : RequestOptions
+        {
+            Dictionary<string, object> properties = requestOptions.Properties == null
+                ? new Dictionary<string, object>()
+                : new Dictionary<string, object>(requestOptions.Properties);
+            properties[StreamKey] = proc;
+            requestOptions.Properties = properties;
+            return requestOptions;
+        }
 
         private static async Task TryCreateDek(CosmosDataEncryptionKeyProvider p, string id, string algo)
         {
