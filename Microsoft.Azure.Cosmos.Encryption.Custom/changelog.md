@@ -3,7 +3,7 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### <a name="1.0.0-preview09"/> [1.0.0-preview09](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption.Custom/1.0.0-preview09) - Unreleased
+### <a name="1.1.0-preview01"/> [1.1.0-preview01](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption.Custom/1.1.0-preview01) - Unreleased
 
 #### Added
 - [#5478](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5478) Adds opt-in stream-mode JSON processing for encryption feed iterators (query, LINQ, change-feed) on `net8.0`. Consumers opt in per-call via `RequestOptions.Properties["encryption-json-processor"]` or per-container via the new extension method `EncryptionContainerExtensions.UseStreamingJsonProcessingByDefault(Container)`. The new path decrypts each feed item lazily into a pooled `ArrayPool<byte>` buffer and is targeted at hot-path workloads that need to reduce per-document allocations. Default remains Newtonsoft; existing callers see no behavioral change.
