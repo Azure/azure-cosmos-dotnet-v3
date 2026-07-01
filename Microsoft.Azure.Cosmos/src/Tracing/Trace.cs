@@ -11,12 +11,36 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
     internal sealed class Trace : ITrace
     {
+        /// <summary>
+        /// Default upper bound on the number of child traces retained under a single
+        /// trace node. Guards against pathological, effectively unbounded diagnostics
+        /// tree growth (for example, a background cross-partition query prefetch loop
+        /// retrying transport-generated 410s hundreds/thousands of times, which can
+        /// produce a multi-hundred-megabyte diagnostics string). See
+        /// https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5325.
+        /// </summary>
+        private const int DefaultMaxChildCount = 1000;
+
+        /// <summary>
+        /// Data key used to surface, on the affected node, how many child traces were
+        /// suppressed once <see cref="MaxChildCount"/> was reached. The presence of this
+        /// key signals that the node's children (and therefore any Summary aggregated by
+        /// walking the tree) were truncated.
+        /// </summary>
+        internal const string TruncatedChildTraceCountKey = "Truncated Child Trace Count";
+
         private static readonly IReadOnlyDictionary<string, object> EmptyDictionary = new Dictionary<string, object>();
         private readonly object lockObject;
         private volatile List<ITrace> children;
         private volatile Dictionary<string, object> data;
         private ValueStopwatch stopwatch;
         private volatile bool isBeingWalked;
+
+        /// <summary>
+        /// Number of child traces suppressed under this node once the retained-child
+        /// limit was reached. Guarded by <see cref="lockObject"/>.
+        /// </summary>
+        private int suppressedChildCount;
 
         private Trace(
             string name,
@@ -37,6 +61,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
             this.data = null;
             this.Summary = summary ?? throw new ArgumentNullException(nameof(summary));
         }
+
+        /// <summary>
+        /// Maximum number of child traces retained under a single node before further
+        /// children are suppressed. Exposed internally so it can be tuned and tested;
+        /// defaults to <see cref="DefaultMaxChildCount"/>.
+        /// </summary>
+        internal static int MaxChildCount { get; set; } = DefaultMaxChildCount;
 
         public string Name { get; }
 
@@ -68,6 +99,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 return this.children;
             }
         }
+
+        /// <summary>
+        /// Number of child traces that were suppressed under this node once
+        /// <see cref="MaxChildCount"/> was reached. Zero when the node was not truncated.
+        /// </summary>
+        internal int SuppressedChildCount => this.suppressedChildCount;
 
         // NOTE: no lock necessary here only because this.data is volatile
         // and every reference to it is immutable when isBeingWalked == true
@@ -110,6 +147,19 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 return this.Parent.StartChild(name, component, level);
             }
 
+            // Guardrail against unbounded diagnostics tree growth (issue #5325):
+            // once this node has retained MaxChildCount children (for example a
+            // background prefetch loop retrying transport-generated 410s), stop
+            // building and retaining new subtrees under it. A NoOpTrace is returned so
+            // callers continue to function while the suppressed subtree is not
+            // materialized. This is a lock-free fast check; AddChild enforces the limit
+            // authoritatively under the lock.
+            if (this.children.Count >= MaxChildCount)
+            {
+                this.RecordSuppressedChild();
+                return NoOpTrace.Singleton;
+            }
+
             Trace child = new Trace(
                 name: name,
                 level: level,
@@ -126,6 +176,14 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
             lock (this.lockObject)
             {
+                // Guardrail against unbounded diagnostics tree growth (issue #5325).
+                // Applies to direct AddChild callers as well as StartChild.
+                if (this.children.Count >= MaxChildCount)
+                {
+                    this.RecordSuppressedChildUnderLock();
+                    return;
+                }
+
                 if (!this.isBeingWalked)
                 {
                     this.children.Add(child);
@@ -143,6 +201,34 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 writableSnapshot.Add(child);
                 this.children = writableSnapshot;
             }
+        }
+
+        // Records that a child trace was suppressed because this node reached the
+        // retained-child limit. Acquires the lock; used from the lock-free StartChild
+        // fast path.
+        private void RecordSuppressedChild()
+        {
+            lock (this.lockObject)
+            {
+                this.RecordSuppressedChildUnderLock();
+            }
+        }
+
+        // Caller must hold this.lockObject.
+        private void RecordSuppressedChildUnderLock()
+        {
+            this.suppressedChildCount++;
+
+            // Surface the truncation on the node so consumers can see the diagnostics
+            // tree was bounded. Do not mutate data in place once materialization has
+            // started (preserves the copy-on-write invariant used by AddDatum).
+            if (this.isBeingWalked)
+            {
+                return;
+            }
+
+            this.data ??= new Dictionary<string, object>();
+            this.data[TruncatedChildTraceCountKey] = (long)this.suppressedChildCount;
         }
 
         public static Trace GetRootTrace(string name)

@@ -185,5 +185,104 @@
             // Verify the data dictionary has entries
             Assert.IsTrue(trace.Data.Count > 0);
         }
+
+        [TestMethod]
+        [DoNotParallelize]
+        public void TestMaxChildCountSuppressesExcessChildrenViaStartChild()
+        {
+            int originalMaxChildCount = Trace.MaxChildCount;
+            try
+            {
+                Trace.MaxChildCount = 3;
+                using (Trace rootTrace = Trace.GetRootTrace(name: "RootTrace"))
+                {
+                    List<ITrace> returnedChildren = new List<ITrace>();
+                    for (int i = 0; i < 10; i++)
+                    {
+                        returnedChildren.Add(rootTrace.StartChild($"Child{i}"));
+                    }
+
+                    // The first MaxChildCount children are real traces...
+                    for (int i = 0; i < 3; i++)
+                    {
+                        Assert.AreNotSame(NoOpTrace.Singleton, returnedChildren[i]);
+                    }
+
+                    // ...and everything beyond the limit is suppressed (NoOpTrace).
+                    for (int i = 3; i < 10; i++)
+                    {
+                        Assert.AreSame(NoOpTrace.Singleton, returnedChildren[i]);
+                    }
+
+                    Assert.AreEqual(7, rootTrace.SuppressedChildCount);
+
+                    rootTrace.SetWalkingStateRecursively();
+                    Assert.AreEqual(3, rootTrace.Children.Count);
+                    Assert.IsTrue(
+                        rootTrace.Data.TryGetValue(Trace.TruncatedChildTraceCountKey, out object suppressed),
+                        "Truncation should be surfaced as a datum on the node.");
+                    Assert.AreEqual(7L, suppressed);
+                }
+            }
+            finally
+            {
+                Trace.MaxChildCount = originalMaxChildCount;
+            }
+        }
+
+        [TestMethod]
+        [DoNotParallelize]
+        public void TestMaxChildCountSuppressesExcessChildrenViaAddChild()
+        {
+            int originalMaxChildCount = Trace.MaxChildCount;
+            try
+            {
+                Trace.MaxChildCount = 2;
+                using (Trace rootTrace = Trace.GetRootTrace(name: "RootTrace"))
+                {
+                    for (int i = 0; i < 5; i++)
+                    {
+                        rootTrace.AddChild(Trace.GetRootTrace(name: $"Child{i}"));
+                    }
+
+                    Assert.AreEqual(3, rootTrace.SuppressedChildCount);
+
+                    rootTrace.SetWalkingStateRecursively();
+                    Assert.AreEqual(2, rootTrace.Children.Count);
+                    Assert.IsTrue(
+                        rootTrace.Data.TryGetValue(Trace.TruncatedChildTraceCountKey, out object suppressed),
+                        "Truncation should be surfaced as a datum on the node.");
+                    Assert.AreEqual(3L, suppressed);
+                }
+            }
+            finally
+            {
+                Trace.MaxChildCount = originalMaxChildCount;
+            }
+        }
+
+        [TestMethod]
+        public void TestDefaultMaxChildCountDoesNotTruncateNormalTraces()
+        {
+            // The default limit must be comfortably above realistic per-node breadth so
+            // normal operations (and existing diagnostics baselines) are never truncated.
+            Assert.IsTrue(Trace.MaxChildCount >= 1000);
+
+            using (Trace rootTrace = Trace.GetRootTrace(name: "RootTrace"))
+            {
+                for (int i = 0; i < 50; i++)
+                {
+                    using (rootTrace.StartChild($"Child{i}"))
+                    {
+                    }
+                }
+
+                Assert.AreEqual(0, rootTrace.SuppressedChildCount);
+
+                rootTrace.SetWalkingStateRecursively();
+                Assert.AreEqual(50, rootTrace.Children.Count);
+                Assert.IsFalse(rootTrace.Data.ContainsKey(Trace.TruncatedChildTraceCountKey));
+            }
+        }
     }
 }
