@@ -144,8 +144,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
             int sendCountAfterSeed = sentToEndpoints.Count;
 
-            // Force-refresh: previousValue != null → isColdStart=false. The refresh is
-            // now hedge-ELIGIBLE (hedging is no longer gated on cold start), but the
+            // Force-refresh: previousValue != null is a warm (refresh) read. The refresh is
+            // hedge-ELIGIBLE (hedging is not gated on cold start), but the
             // refresh's first page carries the seeded continuation token, so the mock
             // returns NotModified immediately. The primary wins before the threshold,
             // so no hedge is dispatched → a single primary send.
@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         public async Task WithStrategy_WarmRefresh_PrimarySlow_PageOneHedges()
         {
             // Core regression for the broadened scope on the PKRange path: a
-            // steady-state refresh (previousValue != null → isColdStart=false) whose
+            // steady-state refresh (previousValue != null) whose
             // first page is slow on the primary MUST dispatch a cross-region hedge.
             ConcurrentQueue<Uri> sentToEndpoints = new ConcurrentQueue<Uri>();
             Mock<IStoreModel> storeModel = BuildWarmRefreshHedgingStoreModelMock(sentToEndpoints, refreshPrimaryDelayMs: 500);

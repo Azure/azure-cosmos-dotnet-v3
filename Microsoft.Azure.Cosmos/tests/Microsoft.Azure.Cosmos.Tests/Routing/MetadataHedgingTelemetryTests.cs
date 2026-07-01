@@ -118,7 +118,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
             MetadataHedgingContext ctx = NewColdStartContext();
-            ctx.IsColdStart = false;
 
             MetadataHedgingResult result = await strategy.ExecuteAsync(
                 request,
@@ -316,7 +315,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             return new MetadataHedgingContext
             {
-                IsColdStart = true,
                 IsFirstReadFeedPage = true,
             };
         }

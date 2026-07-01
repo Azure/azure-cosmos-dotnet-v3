@@ -148,10 +148,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 ResourceType.Collection,
                 AuthorizationTokenType.PrimaryMasterKey);
 
-            MetadataHedgingContext hedgeContext = new()
-            {
-                IsColdStart = true,
-            };
+            MetadataHedgingContext hedgeContext = new();
             hedgeContext.AttemptedEndpoints.TryAdd(endpointA.AbsoluteUri, 0);
             hedgeContext.AttemptedEndpoints.TryAdd(endpointB.AbsoluteUri, 0);
 
@@ -196,10 +193,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 ResourceType.Collection,
                 AuthorizationTokenType.PrimaryMasterKey);
 
-            MetadataHedgingContext hedgeContext = new()
-            {
-                IsColdStart = true,
-            };
+            MetadataHedgingContext hedgeContext = new();
             hedgeContext.AttemptedEndpoints.TryAdd(endpointA.AbsoluteUri, 0);
             hedgeContext.AttemptedEndpoints.TryAdd(endpointB.AbsoluteUri, 0);
 

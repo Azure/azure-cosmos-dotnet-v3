@@ -220,32 +220,6 @@ namespace Microsoft.Azure.Cosmos.Common
                                 IClientSideRequestStatistics clientSideRequestStatistics,
                                 CancellationToken cancellationToken);
 
-        // First-population aware overloads. The bool flags whether the read is populating the cache
-        // entry for the first time (a cache miss / cold start) versus a forced refresh of an existing
-        // entry. The flag is forwarded to the hedge context as a diagnostic signal (IsColdStart);
-        // hedging itself is NOT limited to first population — refresh reads are hedged on the same
-        // terms. Default delegates to the existing abstract so subclasses (e.g. encryption-mirrored
-        // caches) keep compiling. See docs/PPAF_Metadata_Hedging_ColdStart_Design.md §5.4 / §5.6.
-        protected virtual Task<ContainerProperties> GetByRidAsync(string apiVersion,
-                                string collectionRid,
-                                ITrace trace,
-                                IClientSideRequestStatistics clientSideRequestStatistics,
-                                bool isFirstPopulation,
-                                CancellationToken cancellationToken)
-        {
-            return this.GetByRidAsync(apiVersion, collectionRid, trace, clientSideRequestStatistics, cancellationToken);
-        }
-
-        protected virtual Task<ContainerProperties> GetByNameAsync(string apiVersion,
-                                string resourceAddress,
-                                ITrace trace,
-                                IClientSideRequestStatistics clientSideRequestStatistics,
-                                bool isFirstPopulation,
-                                CancellationToken cancellationToken)
-        {
-            return this.GetByNameAsync(apiVersion, resourceAddress, trace, clientSideRequestStatistics, cancellationToken);
-        }
-
         private async Task<ContainerProperties> ResolveByPartitionKeyRangeIdentityAsync(string apiVersion, 
                                 PartitionKeyRangeIdentity partitionKeyRangeIdentity, 
                                 ITrace trace, 
@@ -289,10 +263,7 @@ namespace Microsoft.Azure.Cosmos.Common
                 async () =>
                 {
                     DateTime currentTime = DateTime.UtcNow;
-                    // The AsyncCache value factory only runs on a cache miss, i.e. the first population
-                    // of this collection entry — there is no force-refresh path through ResolveByRidAsync —
-                    // so this is always a first population and eligible for cold-start hedging.
-                    ContainerProperties collection = await this.GetByRidAsync(apiVersion, collectionResourceId, trace, clientSideRequestStatistics, isFirstPopulation: true, cancellationToken);
+                    ContainerProperties collection = await this.GetByRidAsync(apiVersion, collectionResourceId, trace, clientSideRequestStatistics, cancellationToken);
                     cache.collectionInfoByIdLastRefreshTime.AddOrUpdate(collectionResourceId, currentTime,
                              (string currentKey, DateTime currentValue) => currentTime);
                     return collection;
@@ -324,9 +295,7 @@ namespace Microsoft.Azure.Cosmos.Common
                 async () =>
                 {
                     DateTime currentTime = DateTime.UtcNow;
-                    // forceRefesh removes the entry above, so the factory re-running here is a forced
-                    // refresh, not a first population; otherwise (cache miss) it is the first population.
-                    ContainerProperties collection = await this.GetByNameAsync(apiVersion, resourceFullName, trace, clientSideRequestStatistics, isFirstPopulation: !forceRefesh, cancellationToken);
+                    ContainerProperties collection = await this.GetByNameAsync(apiVersion, resourceFullName, trace, clientSideRequestStatistics, cancellationToken);
                     cache.collectionInfoById.Set(collection.ResourceId, collection);
                     cache.collectionInfoByNameLastRefreshTime.AddOrUpdate(resourceFullName, currentTime,
                         (string currentKey, DateTime currentValue) => currentTime);
@@ -355,9 +324,7 @@ namespace Microsoft.Azure.Cosmos.Common
                    async () =>
                    {
                        DateTime currentTime = DateTime.UtcNow;
-                       // RefreshAsync is an explicit refresh of an already-resolved collection, never a
-                       // first population, so it is not eligible for cold-start hedging.
-                       ContainerProperties collection = await this.GetByNameAsync(request.Headers[HttpConstants.HttpHeaders.Version], resourceFullName, trace, clientSideRequestStatistics, isFirstPopulation: false, cancellationToken);
+                       ContainerProperties collection = await this.GetByNameAsync(request.Headers[HttpConstants.HttpHeaders.Version], resourceFullName, trace, clientSideRequestStatistics, cancellationToken);
                        cache.collectionInfoById.Set(collection.ResourceId, collection);
                        cache.collectionInfoByNameLastRefreshTime.AddOrUpdate(resourceFullName, currentTime,
                        (string currentKey, DateTime currentValue) => currentTime);

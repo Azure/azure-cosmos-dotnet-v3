@@ -18,9 +18,9 @@ cold start.
 > **Scope change vs. earlier revisions of this PR.** Earlier revisions limited
 > hedging to the cold-start window only. We decided hedging should also cover
 > steady-state refresh reads of the same two caches, because a degraded primary
-> inflates the latency tail on refresh reads just as it does on cold start. The
-> `IsColdStart` signal is retained for **diagnostics only** (cold vs. warm
-> observability) and no longer gates eligibility; the
+> inflates the latency tail on refresh reads just as it does on cold start.
+> Because eligibility no longer depends on cold vs. warm, the cold-start signal
+> was dropped entirely (it was set but never consumed); the
 > `MetadataHedgeSkipReason.NotColdStart` skip reason is retired (never produced).
 > Every amplification safeguard is unchanged — see "Not bombarding the Gateway"
 > below.
@@ -114,8 +114,8 @@ of the following reasons:
 - Concurrency budget exhausted.
 
 > Cold start is **not** in this list. As of the latest revision, a non-cold-start
-> (refresh) read of a supported type is eligible on the same terms as a cold-start
-> read; `IsColdStart` is recorded for diagnostics only.
+> (refresh) read of a supported type is eligible on the same terms as a first-population
+> read; the read's cold vs. warm status is not tracked.
 
 ## Not bombarding the Gateway (amplification safeguards)
 

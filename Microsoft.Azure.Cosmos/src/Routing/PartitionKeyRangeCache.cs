@@ -222,7 +222,6 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             MetadataHedgingStrategy.MetadataHedgingContext hedgeContext = new MetadataHedgingStrategy.MetadataHedgingContext
             {
-                IsColdStart = previousRoutingMap == null,
                 IsFirstReadFeedPage = true,
             };
 

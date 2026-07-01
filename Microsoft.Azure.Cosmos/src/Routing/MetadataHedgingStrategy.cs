@@ -183,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             // first-population (cold-start) read and steady-state refresh reads of
             // the two metadata caches are eligible — the request-type restriction
             // below (IsSupportedResource) is what keeps the surface to metadata
-            // reads. hedgeContext.IsColdStart is retained for diagnostics only.
+            // reads.
             if (hedgeContext.HasHedgedThisOperation)
             {
                 return MetadataHedgeEligibility.Skip(MetadataHedgeSkipReason.AlreadyHedgedThisOperation);
@@ -835,8 +835,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <summary>
         /// Per-logical-operation context shared between
         /// <see cref="MetadataHedgingStrategy"/> and
-        /// <c>MetadataRequestThrottleRetryPolicy</c>. Carries the cold-start signal
-        /// (diagnostics only — hedging is not gated on it), the dedupe set, the
+        /// <c>MetadataRequestThrottleRetryPolicy</c>. Carries the dedupe set, the
         /// winner, the &quot;hedged this operation&quot; latch, and the first-page
         /// flag for PK-range pagination. See
         /// <c>docs/PPAF_Metadata_Hedging_ColdStart_Design.md</c> §5.2 / §6.1.
@@ -845,13 +844,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             private Uri winningEndpoint;
             private int hasHedgedThisOperation;
-
-            /// <summary>
-            /// Whether this read is the first-population (cold-start) read of the
-            /// cache. Recorded for diagnostics/telemetry only; it does NOT gate
-            /// hedging eligibility — refresh reads hedge on the same terms.
-            /// </summary>
-            public bool IsColdStart { get; set; }
 
             public bool IsFirstReadFeedPage { get; set; } = true;
 

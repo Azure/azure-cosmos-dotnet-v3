@@ -15,8 +15,8 @@
 > **refresh / force-refresh** reads of the two metadata caches
 > (`ClientCollectionCache`, `PartitionKeyRangeCache`). The restriction that still
 > holds is by **request type** — only `Collection` `Read` and `PartitionKeyRange`
-> `ReadFeed` (first page) are hedged. The `IsColdStart` signal is retained for
-> **diagnostics only** and no longer gates eligibility; the
+> `ReadFeed` (first page) are hedged. Eligibility no longer depends on cold vs.
+> warm, and the cold-start signal was removed (it was set but never consumed); the
 > `MetadataHedgeSkipReason.NotColdStart` value is retired (never produced). All
 > other amplification safeguards are unchanged (1.5&nbsp;s threshold, per-client
 > concurrency budget, one-hedge-per-operation latch, first-page-only PK-range
@@ -237,7 +237,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     /// </summary>
     internal sealed class MetadataHedgingContext
     {
-        public bool IsColdStart { get; set; }                    // set by caller from previousValue == null
         public ResourceType ResourceType { get; set; }
 
         // -------- Set exactly once after the first attempt's winner is decided --------
@@ -264,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         // -------- Bounded amplification guard (one hedge per logical operation) --------
         // Set to 1 by the first hedge dispatch via Interlocked.Exchange. Subsequent
         // BackoffRetryUtility retries observe this and skip the hedge branch even
-        // when IsColdStart is still true (the cache has not yet been populated
+        // on a first-population read (the cache has not yet been populated
         // because the loop has not yet exited successfully). See §6.1.
         private int hasHedgedThisOperation;   // 0 = no, 1 = yes
         public bool HasHedgedThisOperation => Volatile.Read(ref this.hasHedgedThisOperation) == 1;
@@ -661,6 +660,16 @@ private static async Task BackgroundCleanupAsync(
 
 ### 5.4 Wiring point #1 — `ClientCollectionCache.ReadCollectionAsync`
 
+> **Historical (superseded by PR [#5923](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5923)).**
+> §5.4–§5.6 describe the `isColdStart` / `isFirstPopulation` plumbing that threaded
+> the cold-start signal from each caller into `MetadataHedgingContext`. Because
+> eligibility no longer depends on cold vs. warm, that signal was **removed**: the
+> `MetadataHedgingContext.IsColdStart` field and the `isFirstPopulation` parameter
+> overloads on `CollectionCache` / `ClientCollectionCache` no longer exist. The
+> hedge wiring itself (constructing a `MetadataHedgingContext`, attaching it, and
+> invoking `MetadataHedgingStrategy.ExecuteAsync`) is unchanged. These sections are
+> kept for historical rationale only.
+
 **Before** (current code, `Microsoft.Azure.Cosmos/src/Routing/ClientCollectionCache.cs:230-262`):
 
 ```csharp
@@ -686,7 +695,6 @@ retryPolicyInstance?.OnBeforeSendRequest(request);
 
 MetadataHedgingContext hedgeContext = new MetadataHedgingContext
 {
-    IsColdStart = isFirstPopulation,           // see §5.6 — caller-supplied, NEVER inferred
     ResourceType = ResourceType.Collection,
 };
 
@@ -791,10 +799,8 @@ while (lastStatusCode != HttpStatusCode.NotModified);
 **After:**
 
 ```csharp
-bool isColdStart = previousRoutingMap == null;
 MetadataHedgingContext hedgeContext = new MetadataHedgingContext
 {
-    IsColdStart = isColdStart,
     ResourceType = ResourceType.PartitionKeyRange,
     IsFirstReadFeedPage = true,           // toggled to false after page 1
 };
@@ -1107,23 +1113,23 @@ internal sealed class HttpTimeoutPolicyControlPlaneRetriableHotPath : HttpTimeou
 
 `MetadataHedgingStrategy` reads `FirstAttemptTimeout` exactly once at construction. Today that resolves to **1 s + 500 ms = 1.5 s**. The derivation (rather than a hard-coded constant) ensures the invariant *"hedge threshold > first local HTTP retry timeout"* is preserved automatically if the underlying HTTP policy ever changes again (the 500 ms → 1 s bump in issue #5642 is precedent that this can move). The `ThresholdStep` is 500 ms, mirroring the data-plane default.
 
-### 5.10 Cold-start signal (rationale — now diagnostic only)
+### 5.10 Cold-start signal (rationale — historical; signal removed)
 
 > **Updated by PR [#5923](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5923).**
 > The cold-start signal is **no longer an eligibility gate** — both first-time
-> populations and refresh / force-refresh reads are eligible (§6 rule 5). The
-> signal (`MetadataHedgingContext.IsColdStart`) is still threaded in from the
-> caller and recorded in diagnostics/telemetry so support can distinguish cold
-> from warm hedges, but it never causes a skip. The discussion below is retained
-> for historical context and for how the cold/warm signal is *derived*; the
+> populations and refresh / force-refresh reads are eligible (§6 rule 5). Because
+> nothing consumed the signal once eligibility stopped depending on it, the
+> `MetadataHedgingContext.IsColdStart` field and the `isFirstPopulation` plumbing
+> that fed it were **removed** entirely. The discussion below is retained
+> for historical context and for how the cold/warm signal *was* derived; the
 > conclusions that a force-refresh "would incorrectly hedge" / "do not hedge" no
 > longer apply — those reads now hedge by design, bounded by the same threshold,
 > budget, one-hedge-per-operation latch, and first-page-only PK-range gate.
 
-Cold start is defined **per cache key**, not process-wide. The two caches have different mechanics and must be handled differently — the *signal* is the same ("first time this key is populated") but the *plumbing* is not:
+Cold start is defined **per cache key**, not process-wide. The two caches have different mechanics — the *signal* was the same ("first time this key is populated") but the *plumbing* was not:
 
-- **`ClientCollectionCache`** uses `AsyncCache<string, ContainerProperties>` (`CollectionCache.cs:34`). `AsyncCache.GetAsync` takes `Func<Task<TValue>>` — the factory does **not** receive the previous value. The cold-start signal is **threaded in from the caller** as the `isFirstPopulation` flag (`ResolveByNameAsync` passes `false` on the force-refresh path and `true` on first population). This flag is now used purely to set `MetadataHedgingContext.IsColdStart` for diagnostics; eligibility no longer depends on it, so a force-refresh read is hedged on the same terms as a cold-start read.
-- **`PartitionKeyRangeCache`** uses `AsyncCacheNonBlocking<…, …>` (`PartitionKeyRangeCache.cs:28`). `AsyncCacheNonBlocking.GetAsync` takes `Func<TValue, Task<TValue>>` — the factory **does** receive the previous value, so `IsColdStart = previousValue == null` is derived inside the factory for diagnostics. Refresh reads (non-null `previousRoutingMap`) are hedged on the first ReadFeed page; subsequent pages stay pinned to the page-1 winner (§5.5).
+- **`ClientCollectionCache`** uses `AsyncCache<string, ContainerProperties>` (`CollectionCache.cs:34`). `AsyncCache.GetAsync` takes `Func<Task<TValue>>` — the factory does **not** receive the previous value. The cold-start signal used to be **threaded in from the caller** as an `isFirstPopulation` flag; that plumbing has been removed because eligibility no longer depends on it, so a force-refresh read is hedged on the same terms as a first-population read.
+- **`PartitionKeyRangeCache`** uses `AsyncCacheNonBlocking<…, …>` (`PartitionKeyRangeCache.cs:28`). `AsyncCacheNonBlocking.GetAsync` takes `Func<TValue, Task<TValue>>` — the factory **does** receive the previous value, so cold vs. warm could be derived as `previousValue == null`; that derivation is no longer recorded. Refresh reads (non-null `previousRoutingMap`) are hedged on the first ReadFeed page; subsequent pages stay pinned to the page-1 winner (§5.5).
 
 ### 5.11 Concurrency budget (rationale)
 
@@ -1223,7 +1229,7 @@ A metadata request is eligible for hedging only when **ALL** of the following ar
 2. `ConnectionPolicy.EnablePartitionLevelFailover` is `true` (alignment with PPAF scope — metadata hedging is offered as a PPAF cold-start tail-latency mitigation).
 3. `GlobalEndpointManager.ReadEndpoints.Count > 1` — there is a secondary region to hedge to.
 4. The request is one of: `ResourceType.Collection` Read, or `ResourceType.PartitionKeyRange` ReadFeed **first page**.
-5. *(Updated by PR [#5923](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5923) — no longer an eligibility condition.)* The read is **not** required to be a first-time population. Both cold-start (first-population) and steady-state refresh / force-refresh reads are eligible. The `IsColdStart` signal (§5.10) is still threaded in and recorded for diagnostics, but `EvaluateEligibility` no longer skips on it and `MetadataHedgeSkipReason.NotColdStart` is never produced.
+5. *(Updated by PR [#5923](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5923) — no longer an eligibility condition.)* The read is **not** required to be a first-time population. Both cold-start (first-population) and steady-state refresh / force-refresh reads are eligible. The cold-start signal (§5.10) has been removed — `EvaluateEligibility` no longer inspects it and `MetadataHedgeSkipReason.NotColdStart` is never produced.
 6. The Gateway store model path is in use (no Direct address resolution metadata path is in scope).
 7. The per-client concurrency budget for metadata hedges has capacity. (`EvaluateEligibility` itself does NOT touch the semaphore — capacity is checked atomically in `ExecuteAsync` step 2 via `Wait(TimeSpan.Zero)`. `EvaluateEligibility` may return `IsEligible=true` and `ExecuteAsync` still skip with `SkipReason=BudgetExhausted` — that is by design.)
 8. **`ExcludeRegions` does not leave the secondary set empty.** If `request.RequestContext.ExcludeRegions` filters out every candidate hedge target (including transitively, via PK-range page-2..N pinning to a winning region that is later excluded), `SkipReason=ExcludedRegionLeavesNoTarget` and the primary runs alone. This is a **hard** eligibility rule, not optional — PK-range pages 2..N are pinned to the page-1 winning region (§5.5), so picking an excluded region as the hedge target binds the cached PKR to a region the customer asked the SDK not to use.
@@ -1376,7 +1382,7 @@ Operationally, no customer action is required to enable the feature in steady st
 - **Eligibility matrix test:** N-axis `[DataRow]` over `(PpafEnabled, KillSwitchOn, ResourceType, AlreadyHedgedThisOperation, ExcludeRegionsBlocksAll)` asserting `Eligible` / `SkipReason` combinations.
 - **Cold-start signal test:** first call hedges; second call (cache hit) does not hedge (cache short-circuits before the populate delegate). Note (PR [#5923](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5923)): a force-refresh read is **no longer** asserted to skip — it is now hedge-eligible (see the warm-read tests below).
 - **Warm / non-cold-start tests (PR #5923):**
-  - `MetadataHedgingStrategyTests.EvaluateEligibility_NotColdStart_StillEligible` and `…_PartitionKeyRangeFirstPage_StillEligible` — a warm (`IsColdStart == false`) supported read is `Eligible`.
+  - `MetadataHedgingStrategyTests.EvaluateEligibility_NotColdStart_StillEligible` and `…_PartitionKeyRangeFirstPage_StillEligible` — a warm (non-cold-start) supported read is `Eligible`.
   - `…_NotColdStart_UnsupportedResource_StillSkipsByType` — the request-type restriction still rejects non-metadata resources on warm reads.
   - `MetadataHedgingStrategyTests.ExecuteAsync_WarmRead_PrimarySlowHedgeFast_HedgeWins` and `…_WarmRead_PrimaryWinsBeforeThreshold_DoesNotDispatchHedge` — warm reads hedge on a slow primary and stay primary-only on a fast primary.
   - `ClientCollectionCacheTests.ClientCollectionCache_WithStrategy_WarmRead_PrimarySlow_HedgeFires_TwoSends` / `…_WarmRead_FastPrimary_SingleSend` — the `forceRefresh: true` (warm) collection-read path hedges only when the primary is slow.

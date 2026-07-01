@@ -30,44 +30,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         private static readonly Uri HedgeEndpoint = new Uri("https://acct-westus.documents.azure.com/");
 
         // ---------------------------------------------------------------
-        // CollectionCache plumbing: forceRefresh ↔ isColdStart threading
+        // CollectionCache factory invocation behavior
         // ---------------------------------------------------------------
-
-        [TestMethod]
-        [Owner("dkunda")]
-        public async Task ResolveByNameAsync_ForceRefreshFalse_InvokesFactoryWithIsColdStartTrue()
-        {
-            CapturingCollectionCache cache = new CapturingCollectionCache();
-
-            await cache.ResolveByNameAsync(
-                apiVersion: HttpConstants.Versions.CurrentVersion,
-                resourceAddress: "dbs/db/colls/coll",
-                forceRefesh: false,
-                trace: NoOpTrace.Singleton,
-                clientSideRequestStatistics: null,
-                cancellationToken: CancellationToken.None);
-
-            Assert.AreEqual(1, cache.GetByNameCallCount);
-            Assert.IsTrue(cache.LastIsColdStart);
-        }
-
-        [TestMethod]
-        [Owner("dkunda")]
-        public async Task ResolveByNameAsync_ForceRefreshTrue_InvokesFactoryWithIsColdStartFalse()
-        {
-            CapturingCollectionCache cache = new CapturingCollectionCache();
-
-            await cache.ResolveByNameAsync(
-                apiVersion: HttpConstants.Versions.CurrentVersion,
-                resourceAddress: "dbs/db/colls/coll",
-                forceRefesh: true,
-                trace: NoOpTrace.Singleton,
-                clientSideRequestStatistics: null,
-                cancellationToken: CancellationToken.None);
-
-            Assert.AreEqual(1, cache.GetByNameCallCount);
-            Assert.IsFalse(cache.LastIsColdStart);
-        }
 
         [TestMethod]
         [Owner("dkunda")]
@@ -75,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             CapturingCollectionCache cache = new CapturingCollectionCache();
 
-            // Cold-start populates the cache.
+            // First read populates the cache.
             await cache.ResolveByNameAsync(
                 apiVersion: HttpConstants.Versions.CurrentVersion,
                 resourceAddress: "dbs/db/colls/coll",
@@ -139,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             MetadataHedgingStrategy strategy = BuildStrategy();
             ClientCollectionCache cache = BuildClientCollectionCache(storeModel.Object, strategy);
 
-            // forceRefresh=true → isColdStart=false. The warm read is now eligible to
+            // forceRefresh=true is a warm (refresh) read. The warm read is eligible to
             // hedge, but the primary responds immediately and wins before the
             // threshold, so no hedge is dispatched → exactly one send.
             ContainerProperties result = await cache.ResolveByNameAsync(
@@ -396,13 +360,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         }
 
         // ---------------------------------------------------------------
-        // Test subclass that captures the new virtual overload arguments.
+        // Test subclass that captures factory invocations.
         // ---------------------------------------------------------------
         private sealed class CapturingCollectionCache : CollectionCache
         {
             public int GetByNameCallCount { get; private set; }
             public int GetByRidCallCount { get; private set; }
-            public bool LastIsColdStart { get; private set; }
 
             protected override Task<ContainerProperties> GetByRidAsync(
                 string apiVersion,
@@ -411,44 +374,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 IClientSideRequestStatistics clientSideRequestStatistics,
                 CancellationToken cancellationToken)
             {
-                throw new InvalidOperationException("Cold-start aware overload should be invoked.");
-            }
-
-            protected override Task<ContainerProperties> GetByNameAsync(
-                string apiVersion,
-                string resourceAddress,
-                ITrace trace,
-                IClientSideRequestStatistics clientSideRequestStatistics,
-                CancellationToken cancellationToken)
-            {
-                throw new InvalidOperationException("Cold-start aware overload should be invoked.");
-            }
-
-            protected override Task<ContainerProperties> GetByNameAsync(
-                string apiVersion,
-                string resourceAddress,
-                ITrace trace,
-                IClientSideRequestStatistics clientSideRequestStatistics,
-                bool isColdStart,
-                CancellationToken cancellationToken)
-            {
-                this.GetByNameCallCount++;
-                this.LastIsColdStart = isColdStart;
+                this.GetByRidCallCount++;
                 ContainerProperties props = new ContainerProperties("coll", "/pk");
                 SetResourceIdStatic(props, "JsAtAA==");
                 return Task.FromResult(props);
             }
 
-            protected override Task<ContainerProperties> GetByRidAsync(
+            protected override Task<ContainerProperties> GetByNameAsync(
                 string apiVersion,
-                string collectionRid,
+                string resourceAddress,
                 ITrace trace,
                 IClientSideRequestStatistics clientSideRequestStatistics,
-                bool isColdStart,
                 CancellationToken cancellationToken)
             {
-                this.GetByRidCallCount++;
-                this.LastIsColdStart = isColdStart;
+                this.GetByNameCallCount++;
                 ContainerProperties props = new ContainerProperties("coll", "/pk");
                 SetResourceIdStatic(props, "JsAtAA==");
                 return Task.FromResult(props);

@@ -105,13 +105,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [Owner("dkunda")]
         public void EvaluateEligibility_NotColdStart_StillEligible()
         {
-            // Hedging is no longer gated on cold start: a steady-state refresh
-            // read (IsColdStart == false) of a supported metadata type must be
-            // eligible on the same terms as the cold-start read.
+            // Hedging is not gated on cold start: a steady-state refresh
+            // read of a supported metadata type must be eligible on the same
+            // terms as a first-population read.
             using MetadataHedgingStrategy strategy = BuildStrategy();
             DocumentServiceRequest req = BuildCollectionReadRequest();
-            MetadataHedgingContext ctx = NewColdStartContext();
-            ctx.IsColdStart = false;
+            MetadataHedgingContext ctx = NewWarmContext();
 
             MetadataHedgeEligibility result = strategy.EvaluateEligibility(req, ctx);
 
@@ -383,7 +382,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
-            Assert.IsFalse(ctx.IsColdStart, "this regression specifically exercises the warm-read path");
             Assert.IsTrue(result.HedgeFired, "a warm (non-cold-start) read with a slow primary must still hedge");
             Assert.AreSame(hedgeResp, result.Response);
             Assert.AreEqual(HedgeEndpoint, result.WinningEndpoint);
@@ -1027,7 +1025,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             return new MetadataHedgingContext
             {
-                IsColdStart = true,
                 IsFirstReadFeedPage = true,
             };
         }
@@ -1036,7 +1033,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             return new MetadataHedgingContext
             {
-                IsColdStart = false,
                 IsFirstReadFeedPage = true,
             };
         }
