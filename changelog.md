@@ -38,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Other Changes
 
 - [5916](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5916) Direct: Moves the `OpenTcpConnectionTimeout` negative-value warning trace from `CosmosClientOptions` to `DocumentClient`. The warning is now emitted once per client construction (instead of once per property assignment) and is gated on `ConnectionMode == Direct`, so it no longer false-positives when a negative value is later overwritten with a non-negative one or when running in Gateway mode where the timeout is not consumed.
-- Gateway: Changes 449 (`RetryWith`) retries on the gateway and thin client paths to be consistently orchestrated client-side. The SDK now retries 449 responses itself with a bounded exponential backoff (30-second budget, 60 seconds under Strong consistency) and opts out of the gateway's server-side 449 retry, so the retry behavior is consistent across Gateway and thin client modes.
+- [5990](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5990) Adds retry logic for 449 across Gateway modes: Changes 449 (`RetryWith`) retries on the gateway and thin client paths to be consistently orchestrated client-side. The SDK now retries 449 responses itself with a bounded exponential backoff.
 ### <a name="3.62.0-preview.0"/> [3.62.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.62.0-preview.0) - 2026-6-1
 
 #### Features Added
