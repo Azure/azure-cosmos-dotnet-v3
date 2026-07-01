@@ -30,6 +30,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
         internal const string TruncatedChildTraceCountKey = "Truncated Child Trace Count";
 
         private static readonly IReadOnlyDictionary<string, object> EmptyDictionary = new Dictionary<string, object>();
+        private static int maxChildCount = DefaultMaxChildCount;
         private readonly object lockObject;
         private volatile List<ITrace> children;
         private volatile Dictionary<string, object> data;
@@ -65,9 +66,15 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// <summary>
         /// Maximum number of child traces retained under a single node before further
         /// children are suppressed. Exposed internally so it can be tuned and tested;
-        /// defaults to <see cref="DefaultMaxChildCount"/>.
+        /// defaults to <see cref="DefaultMaxChildCount"/>. Must be positive.
         /// </summary>
-        internal static int MaxChildCount { get; set; } = DefaultMaxChildCount;
+        internal static int MaxChildCount
+        {
+            get => maxChildCount;
+            set => maxChildCount = value > 0
+                ? value
+                : throw new ArgumentOutOfRangeException(nameof(value), value, "MaxChildCount must be positive.");
+        }
 
         public string Name { get; }
 
@@ -150,14 +157,15 @@ namespace Microsoft.Azure.Cosmos.Tracing
             // Guardrail against unbounded diagnostics tree growth (issue #5325):
             // once this node has retained MaxChildCount children (for example a
             // background prefetch loop retrying transport-generated 410s), stop
-            // building and retaining new subtrees under it. A NoOpTrace is returned so
-            // callers continue to function while the suppressed subtree is not
-            // materialized. This is a lock-free fast check; AddChild enforces the limit
-            // authoritatively under the lock.
+            // building and retaining new subtrees under it. The returned NoOpTrace
+            // shares this node's TraceSummary so imperatively-updated aggregates
+            // (failed count, hedging, regions contacted) from the suppressed subtree
+            // are still recorded. This is a lock-free fast check; TryAddChild enforces
+            // the limit authoritatively under the lock.
             if (this.children.Count >= MaxChildCount)
             {
                 this.RecordSuppressedChild();
-                return NoOpTrace.Singleton;
+                return new NoOpTrace(this.Summary);
             }
 
             Trace child = new Trace(
@@ -167,28 +175,41 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 parent: this,
                 summary: this.Summary);
 
-            this.AddChild(child);
+            // Enforce the limit atomically. If the node filled up concurrently between
+            // the lock-free pre-check above and here, suppress rather than orphan the
+            // child (returning it would hand the caller a node never added to the tree).
+            if (!this.TryAddChild(child))
+            {
+                return new NoOpTrace(this.Summary);
+            }
 
             return child;
         }
 
         public void AddChild(ITrace child)
         {
+            this.TryAddChild(child);
+        }
+
+        // Adds a child under the retained-child limit. Returns false (and records the
+        // suppression) when the node is already at capacity. Single choke point for
+        // both StartChild and direct AddChild callers.
+        private bool TryAddChild(ITrace child)
+        {
             lock (this.lockObject)
             {
                 // Guardrail against unbounded diagnostics tree growth (issue #5325).
-                // Applies to direct AddChild callers as well as StartChild.
                 if (this.children.Count >= MaxChildCount)
                 {
                     this.RecordSuppressedChildUnderLock();
-                    return;
+                    return false;
                 }
 
                 if (!this.isBeingWalked)
                 {
                     this.children.Add(child);
 
-                    return;
+                    return true;
                 }
 
                 if (child is Trace traceChild)
@@ -200,6 +221,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 writableSnapshot.AddRange(this.children);
                 writableSnapshot.Add(child);
                 this.children = writableSnapshot;
+                return true;
             }
         }
 
@@ -218,17 +240,21 @@ namespace Microsoft.Azure.Cosmos.Tracing
         private void RecordSuppressedChildUnderLock()
         {
             this.suppressedChildCount++;
+            long count = this.suppressedChildCount;
 
             // Surface the truncation on the node so consumers can see the diagnostics
-            // tree was bounded. Do not mutate data in place once materialization has
-            // started (preserves the copy-on-write invariant used by AddDatum).
+            // tree was bounded. Once materialization has started, copy-on-write so
+            // concurrent walkers see a consistent snapshot (mirrors AddOrUpdateDatum).
             if (this.isBeingWalked)
             {
+                this.data = this.data == null
+                    ? new Dictionary<string, object> { [TruncatedChildTraceCountKey] = count }
+                    : new Dictionary<string, object>(this.data) { [TruncatedChildTraceCountKey] = count };
                 return;
             }
 
             this.data ??= new Dictionary<string, object>();
-            this.data[TruncatedChildTraceCountKey] = (long)this.suppressedChildCount;
+            this.data[TruncatedChildTraceCountKey] = count;
         }
 
         public static Trace GetRootTrace(string name)

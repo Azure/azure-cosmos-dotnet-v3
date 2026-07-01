@@ -16,8 +16,20 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         private static readonly IReadOnlyDictionary<string, object> NoOpData = new Dictionary<string, object>();
 
+        private readonly TraceSummary summary;
+
         private NoOpTrace()
+            : this(NoOpTraceSummary)
         {
+        }
+
+        // Used when a real trace suppresses an over-limit child (see Trace.MaxChildCount):
+        // the returned no-op trace shares the operation's TraceSummary so imperatively
+        // updated aggregates (failed request count, hedging detection state, regions
+        // contacted) are still recorded even though the suppressed subtree is not retained.
+        internal NoOpTrace(TraceSummary summary)
+        {
+            this.summary = summary ?? NoOpTraceSummary;
         }
 
         public string Name => "NoOp";
@@ -30,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public TraceLevel Level => default;
 
-        public TraceSummary Summary => NoOpTraceSummary;
+        public TraceSummary Summary => this.summary;
 
         public TraceComponent Component => default;
 
