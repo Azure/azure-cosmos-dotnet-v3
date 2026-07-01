@@ -142,6 +142,14 @@ namespace Microsoft.Azure.Cosmos
         internal static readonly string TcpDnsDotSuffixEnabled = "AZURE_COSMOS_TCP_DNS_DOT_SUFFIX_ENABLED";
 
         /// <summary>
+        /// Environment variable to disable the barrier early yield on 429 optimization.
+        /// When set to "false", the Direct transport layer will not yield early on barrier
+        /// throttling and will instead spin until timeout (pre-3.44.0 behavior).
+        /// Default: true (enabled).
+        /// </summary>
+        internal static readonly string BarrierEarlyYieldOn429Enabled = "AZURE_COSMOS_BARRIER_EARLY_YIELD_ON_429_ENABLED";
+
+        /// <summary>
         /// Environment variable to override the HTTP/2 PING keep-alive delay (in seconds).
         /// After this many seconds of inactivity on an HTTP/2 connection, a PING frame is sent
         /// to detect broken connections in the pool. Default: 1 second.
@@ -466,6 +474,22 @@ namespace Microsoft.Azure.Cosmos
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.TcpDnsDotSuffixEnabled,
                         defaultValue: false);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating if the barrier early yield on 429 optimization
+        /// is enabled. When true (default), ConsistencyWriter and QuorumReader in the Direct
+        /// transport layer yield early on barrier throttling. Set to false via environment
+        /// variable to revert to pre-3.44.0 spin-until-timeout behavior without an SDK redeploy.
+        /// Default: true.
+        /// </summary>
+        /// <returns>A boolean flag indicating if barrier early yield on 429 is enabled.</returns>
+        public static bool IsBarrierEarlyYieldOn429Enabled()
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.BarrierEarlyYieldOn429Enabled,
+                        defaultValue: true);
         }
 
         /// <summary>
