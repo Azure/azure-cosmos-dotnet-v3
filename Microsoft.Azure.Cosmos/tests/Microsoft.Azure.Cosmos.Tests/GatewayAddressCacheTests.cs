@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly Mock<ICosmosAuthorizationTokenProvider> mockTokenProvider;
         private readonly Mock<IServiceConfigurationReader> mockServiceConfigReader;
         private readonly Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
-        private readonly int targetReplicaSetSize = 4;
+        private int targetReplicaSetSize;
         private readonly PartitionKeyRangeIdentity testPartitionKeyRangeIdentity;
         private readonly ServiceIdentity serviceIdentity;
         private readonly Uri serviceName;
@@ -44,8 +44,7 @@ namespace Microsoft.Azure.Cosmos
             this.mockTokenProvider.Setup(foo => foo.GetUserAuthorizationTokenAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Documents.Collections.INameValueCollection>(), It.IsAny<AuthorizationTokenType>(), It.IsAny<ITrace>()))
                 .Returns(new ValueTask<string>("token!"));
             this.mockServiceConfigReader = new Mock<IServiceConfigurationReader>();
-            this.mockServiceConfigReader.Setup(foo => foo.SystemReplicationPolicy).Returns(new ReplicationPolicy() { MaxReplicaSetSize = this.targetReplicaSetSize });
-            this.mockServiceConfigReader.Setup(foo => foo.UserReplicationPolicy).Returns(new ReplicationPolicy() { MaxReplicaSetSize = this.targetReplicaSetSize });
+            this.ConfigureReplicationPolicy(replicaSetSize: 4);
             this.testPartitionKeyRangeIdentity = new PartitionKeyRangeIdentity("YxM9ANCZIwABAAAAAAAAAA==", "YxM9ANCZIwABAAAAAAAAAA==");
             this.serviceName = new Uri(GatewayAddressCacheTests.DatabaseAccountApiEndpoint);
             this.serviceIdentity = new ServiceIdentity("federation1", this.serviceName, false);
@@ -70,10 +69,14 @@ namespace Microsoft.Azure.Cosmos
                 .Returns(Task.FromResult((IReadOnlyList<PartitionKeyRange>)partitionKeyRanges));
         }
 
-        [TestMethod]
-        public void TestGatewayAddressCacheAutoRefreshOnSuboptimalPartition()
+        [DataTestMethod]
+        [DataRow(4)]
+        [DataRow(3)]
+        public void TestGatewayAddressCacheAutoRefreshOnSuboptimalPartition(int replicaSetSize)
         {
-            FakeMessageHandler messageHandler = new FakeMessageHandler();
+            this.ConfigureReplicationPolicy(replicaSetSize);
+
+            FakeMessageHandler messageHandler = new FakeMessageHandler(replicaSetSize);
             HttpClient httpClient = new HttpClient(messageHandler)
             {
                 Timeout = TimeSpan.FromSeconds(120)
@@ -197,29 +200,27 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsTrue(condition: transportAddressUri.GetCurrentHealthState().GetHealthStatus().Equals(TransportAddressHealthState.HealthStatus.Unhealthy));
         }
 
-        [TestMethod]
-        public async Task TestGatewayAddressCacheAvoidCacheRefresWhenAlreadyUpdatedAsync()
+        [DataTestMethod]
+        [DataRow(4)]
+        [DataRow(3)]
+        public async Task TestGatewayAddressCacheAvoidCacheRefresWhenAlreadyUpdatedAsync(int replicaSetSize)
         {
+            this.ConfigureReplicationPolicy(replicaSetSize);
+
             Mock<IHttpHandler> mockHttpHandler = new Mock<IHttpHandler>(MockBehavior.Strict);
             string oldAddress = "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/4s";
             string newAddress = "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/5s";
             mockHttpHandler.SetupSequence(x => x.SendAsync(
                 It.IsAny<HttpRequestMessage>(),
                 It.IsAny<CancellationToken>()))
-                 .Returns(MockCosmosUtil.CreateHttpResponseOfAddresses(new List<string>()
-                 {
-                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/1p",
-                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/2s",
-                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/3s",
-                     oldAddress,
-                 }))
-                 .Returns(MockCosmosUtil.CreateHttpResponseOfAddresses(new List<string>()
-                 {
-                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/1p",
-                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/2s",
-                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/3s",
-                     newAddress,
-                 }));
+                 .Returns(MockCosmosUtil.CreateHttpResponseOfAddresses(
+                     GatewayAddressCacheTests.CreateGatewayAddressList(
+                         rotatingAddress: oldAddress,
+                         replicaSetSize: this.targetReplicaSetSize)))
+                 .Returns(MockCosmosUtil.CreateHttpResponseOfAddresses(
+                     GatewayAddressCacheTests.CreateGatewayAddressList(
+                         rotatingAddress: newAddress,
+                         replicaSetSize: this.targetReplicaSetSize)));
 
             HttpClient httpClient = new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object));
             GatewayAddressCache cache = new GatewayAddressCache(
@@ -251,7 +252,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: CancellationToken.None);
 
             Assert.AreEqual(request1Addresses, request2Addresses);
-            Assert.AreEqual(4, request1Addresses.AllAddresses.Count());
+            Assert.AreEqual(this.targetReplicaSetSize, request1Addresses.AllAddresses.Count());
             Assert.AreEqual(1, request1Addresses.AllAddresses.Count(x => x.PhysicalUri == oldAddress));
             Assert.AreEqual(0, request1Addresses.AllAddresses.Count(x => x.PhysicalUri == newAddress));
 
@@ -274,7 +275,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: CancellationToken.None);
 
             Assert.AreEqual(request1Addresses, request2Addresses);
-            Assert.AreEqual(4, request1Addresses.AllAddresses.Count());
+            Assert.AreEqual(this.targetReplicaSetSize, request1Addresses.AllAddresses.Count());
             Assert.AreEqual(0, request1Addresses.AllAddresses.Count(x => x.PhysicalUri == oldAddress));
             Assert.AreEqual(1, request1Addresses.AllAddresses.Count(x => x.PhysicalUri == newAddress));
 
@@ -1014,10 +1015,14 @@ namespace Microsoft.Azure.Cosmos
         /// if in case the gateway returns the same address which was previously unhealthy, the gateway address cache resets the returned status
         /// to unhealthy and validates that replica using the open connection handler and finally marks it to connected.
         /// </summary>
-        [TestMethod]
+        [DataTestMethod]
         [Owner("dkunda")]
-        public async Task TryGetAddressesAsync_WhenReplicaVlidationEnabled_ShouldValidateUnhealthyReplicasHealth()
+        [DataRow(4)]
+        [DataRow(3)]
+        public async Task TryGetAddressesAsync_WhenReplicaVlidationEnabled_ShouldValidateUnhealthyReplicasHealth(int replicaSetSize)
         {
+            this.ConfigureReplicationPolicy(replicaSetSize);
+
             // Arrange.
             ManualResetEvent manualResetEvent = new(initialState: false);
             Mock<IHttpHandler> mockHttpHandler = new(MockBehavior.Strict);
@@ -1027,20 +1032,16 @@ namespace Microsoft.Azure.Cosmos
             mockHttpHandler.SetupSequence(x => x.SendAsync(
                 It.IsAny<HttpRequestMessage>(),
                 It.IsAny<CancellationToken>()))
-                 .Returns(MockCosmosUtil.CreateHttpResponseOfAddresses(new List<string>()
-                 {
-                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/1p",
-                     addressTobeMarkedUnhealthy,
-                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/3s",
-                     oldAddress,
-                 }))
-                 .Returns(MockCosmosUtil.CreateHttpResponseOfAddresses(new List<string>()
-                 {
-                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/1p",
-                     addressTobeMarkedUnhealthy,
-                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/3s",
-                     newAddress,
-                 }));
+                 .Returns(MockCosmosUtil.CreateHttpResponseOfAddresses(
+                     GatewayAddressCacheTests.CreateGatewayAddressListWithUnhealthy(
+                         unhealthyAddress: addressTobeMarkedUnhealthy,
+                         rotatingAddress: oldAddress,
+                         replicaSetSize: this.targetReplicaSetSize)))
+                 .Returns(MockCosmosUtil.CreateHttpResponseOfAddresses(
+                     GatewayAddressCacheTests.CreateGatewayAddressListWithUnhealthy(
+                         unhealthyAddress: addressTobeMarkedUnhealthy,
+                         rotatingAddress: newAddress,
+                         replicaSetSize: this.targetReplicaSetSize)));
 
             FakeOpenConnectionHandler fakeOpenConnectionHandler = new(
                 failingIndexes: new HashSet<int>(),
@@ -1088,11 +1089,11 @@ namespace Microsoft.Azure.Cosmos
             GatewayAddressCacheTests.ValidateHealthStatesInDiagnostics(
                 addressInfo: addressInfo,
                 numberOfConnectedReplicas: 0,
-                numberOfUnknownReplicas: 4,
+                numberOfUnknownReplicas: this.targetReplicaSetSize,
                 numberOfUnhealthyPendingReplicas: 0,
                 numberOfUnhealthyReplicas: 0);
 
-            Assert.AreEqual(4, addressInfo.AllAddresses.Count);
+            Assert.AreEqual(this.targetReplicaSetSize, addressInfo.AllAddresses.Count);
             Assert.AreEqual(1, addressInfo.AllAddresses.Count(x => x.PhysicalUri == oldAddress));
             Assert.AreEqual(0, addressInfo.AllAddresses.Count(x => x.PhysicalUri == newAddress));
 
@@ -1110,7 +1111,7 @@ namespace Microsoft.Azure.Cosmos
                 forceRefreshPartitionAddresses: true,
                 cancellationToken: CancellationToken.None);
 
-            Assert.AreEqual(4, addressInfo.AllAddresses.Count);
+            Assert.AreEqual(this.targetReplicaSetSize, addressInfo.AllAddresses.Count);
             Assert.AreEqual(0, addressInfo.AllAddresses.Count(x => x.PhysicalUri == oldAddress));
             Assert.AreEqual(1, addressInfo.AllAddresses.Count(x => x.PhysicalUri == newAddress));
 
@@ -1134,7 +1135,7 @@ namespace Microsoft.Azure.Cosmos
             GatewayAddressCacheTests.ValidateHealthStatesInDiagnostics(
                 addressInfo: addressInfo,
                 numberOfConnectedReplicas: 0,
-                numberOfUnknownReplicas: 3,
+                numberOfUnknownReplicas: this.targetReplicaSetSize - 1,
                 numberOfUnhealthyPendingReplicas: 1,
                 numberOfUnhealthyReplicas: 0);
 
@@ -1151,10 +1152,14 @@ namespace Microsoft.Azure.Cosmos
         /// more, then even though a force refresh is not requested, the unhealthy replicas at least get a chance to re-validate it's status by the
         /// on-demand async non-blocking cache refresh flow and eventually marks itself as healthy once the open connection attempt is successful.
         /// </summary>
-        [TestMethod]
+        [DataTestMethod]
         [Owner("dkunda")]
-        public async Task TryGetAddressesAsync_WhenReplicaVlidationEnabledAndUnhealthyUriExistsForOneMinute_ShouldForceRefreshUnhealthyReplicas()
+        [DataRow(4)]
+        [DataRow(3)]
+        public async Task TryGetAddressesAsync_WhenReplicaVlidationEnabledAndUnhealthyUriExistsForOneMinute_ShouldForceRefreshUnhealthyReplicas(int replicaSetSize)
         {
+            this.ConfigureReplicationPolicy(replicaSetSize);
+
             // Arrange.
             ManualResetEvent manualResetEvent = new(initialState: false);
             Mock<IHttpHandler> mockHttpHandler = new(MockBehavior.Strict);
@@ -1164,27 +1169,21 @@ namespace Microsoft.Azure.Cosmos
             mockHttpHandler.SetupSequence(x => x.SendAsync(
                 It.IsAny<HttpRequestMessage>(),
                 It.IsAny<CancellationToken>()))
-                 .Returns(MockCosmosUtil.CreateHttpResponseOfAddresses(new List<string>()
-                 {
-                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/1p",
-                     addressTobeMarkedUnhealthy,
-                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/3s",
-                     oldAddress,
-                 }))
-                 .Returns(MockCosmosUtil.CreateHttpResponseOfAddresses(new List<string>()
-                 {
-                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/1p",
-                     addressTobeMarkedUnhealthy,
-                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/3s",
-                     newAddress,
-                 }))
-                 .Returns(MockCosmosUtil.CreateHttpResponseOfAddresses(new List<string>()
-                 {
-                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/1p",
-                     addressTobeMarkedUnhealthy,
-                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/3s",
-                     newAddress,
-                 }));
+                 .Returns(MockCosmosUtil.CreateHttpResponseOfAddresses(
+                     GatewayAddressCacheTests.CreateGatewayAddressListWithUnhealthy(
+                         unhealthyAddress: addressTobeMarkedUnhealthy,
+                         rotatingAddress: oldAddress,
+                         replicaSetSize: this.targetReplicaSetSize)))
+                 .Returns(MockCosmosUtil.CreateHttpResponseOfAddresses(
+                     GatewayAddressCacheTests.CreateGatewayAddressListWithUnhealthy(
+                         unhealthyAddress: addressTobeMarkedUnhealthy,
+                         rotatingAddress: newAddress,
+                         replicaSetSize: this.targetReplicaSetSize)))
+                 .Returns(MockCosmosUtil.CreateHttpResponseOfAddresses(
+                     GatewayAddressCacheTests.CreateGatewayAddressListWithUnhealthy(
+                         unhealthyAddress: addressTobeMarkedUnhealthy,
+                         rotatingAddress: newAddress,
+                         replicaSetSize: this.targetReplicaSetSize)));
 
             FakeOpenConnectionHandler fakeOpenConnectionHandler = new(
                 failIndexesByAttempts: new Dictionary<int, HashSet<int>>()
@@ -1229,7 +1228,7 @@ namespace Microsoft.Azure.Cosmos
             GatewayAddressCacheTests.ValidateHealthStatesInDiagnostics(
                 addressInfo: addressInfo,
                 numberOfConnectedReplicas: 0,
-                numberOfUnknownReplicas: 4,
+                numberOfUnknownReplicas: this.targetReplicaSetSize,
                 numberOfUnhealthyPendingReplicas: 0,
                 numberOfUnhealthyReplicas: 0);
 
@@ -1246,7 +1245,7 @@ namespace Microsoft.Azure.Cosmos
                 expected: TransportAddressHealthState.HealthStatus.Unknown,
                 actual: refreshedUri.GetCurrentHealthState().GetHealthStatus());
 
-            Assert.AreEqual(4, addressInfo.AllAddresses.Count);
+            Assert.AreEqual(this.targetReplicaSetSize, addressInfo.AllAddresses.Count);
             Assert.AreEqual(1, addressInfo.AllAddresses.Count(x => x.PhysicalUri == oldAddress));
             Assert.AreEqual(0, addressInfo.AllAddresses.Count(x => x.PhysicalUri == newAddress));
 
@@ -1264,7 +1263,7 @@ namespace Microsoft.Azure.Cosmos
                 forceRefreshPartitionAddresses: true,
                 cancellationToken: CancellationToken.None);
 
-            Assert.AreEqual(4, addressInfo.AllAddresses.Count);
+            Assert.AreEqual(this.targetReplicaSetSize, addressInfo.AllAddresses.Count);
             Assert.AreEqual(0, addressInfo.AllAddresses.Count(x => x.PhysicalUri == oldAddress));
             Assert.AreEqual(1, addressInfo.AllAddresses.Count(x => x.PhysicalUri == newAddress));
 
@@ -1288,7 +1287,7 @@ namespace Microsoft.Azure.Cosmos
             GatewayAddressCacheTests.ValidateHealthStatesInDiagnostics(
                 addressInfo: addressInfo,
                 numberOfConnectedReplicas: 0,
-                numberOfUnknownReplicas: 3,
+                numberOfUnknownReplicas: this.targetReplicaSetSize - 1,
                 numberOfUnhealthyPendingReplicas: 1,
                 numberOfUnhealthyReplicas: 0);
 
@@ -1318,7 +1317,7 @@ namespace Microsoft.Azure.Cosmos
                 manualResetEvent: manualResetEvent,
                 shouldReset: false);
 
-            Assert.AreEqual(4, addressInfo.AllAddresses.Count);
+            Assert.AreEqual(this.targetReplicaSetSize, addressInfo.AllAddresses.Count);
             GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
                 fakeOpenConnectionHandler: fakeOpenConnectionHandler,
                 expectedTotalFailedAddressesToOpenCount: 1,
@@ -1341,7 +1340,7 @@ namespace Microsoft.Azure.Cosmos
             // Because the open connection attempt to the unhealthy replica was successful, the replica was
             // marked as healthy.
             mockHttpHandler.VerifyAll();
-            Assert.AreEqual(4, addressInfo.AllAddresses.Count);
+            Assert.AreEqual(this.targetReplicaSetSize, addressInfo.AllAddresses.Count);
             Assert.IsNotNull(refreshedUri);
             Assert.AreEqual(
                 expected: TransportAddressHealthState.HealthStatus.Connected,
@@ -1501,10 +1500,14 @@ namespace Microsoft.Azure.Cosmos
         /// Test to validate that when replica validation is disabled and there exists some unhealthy replicas, the gateway address
         /// cache doesn't validate the health state of the unhealthy replicas.
         /// </summary>
-        [TestMethod]
+        [DataTestMethod]
         [Owner("dkunda")]
-        public async Task TryGetAddressesAsync_WhenReplicaVlidationDisabled_ShouldNotValidateUnhealthyReplicas()
+        [DataRow(4)]
+        [DataRow(3)]
+        public async Task TryGetAddressesAsync_WhenReplicaVlidationDisabled_ShouldNotValidateUnhealthyReplicas(int replicaSetSize)
         {
+            this.ConfigureReplicationPolicy(replicaSetSize);
+
             // Arrange.
             Mock<IHttpHandler> mockHttpHandler = new(MockBehavior.Strict);
             string oldAddress = "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/4s";
@@ -1513,20 +1516,16 @@ namespace Microsoft.Azure.Cosmos
             mockHttpHandler.SetupSequence(x => x.SendAsync(
                 It.IsAny<HttpRequestMessage>(),
                 It.IsAny<CancellationToken>()))
-                 .Returns(MockCosmosUtil.CreateHttpResponseOfAddresses(new List<string>()
-                 {
-                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/1p",
-                     addressTobeMarkedUnhealthy,
-                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/3s",
-                     oldAddress,
-                 }))
-                 .Returns(MockCosmosUtil.CreateHttpResponseOfAddresses(new List<string>()
-                 {
-                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/1p",
-                     addressTobeMarkedUnhealthy,
-                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/3s",
-                     newAddress,
-                 }));
+                 .Returns(MockCosmosUtil.CreateHttpResponseOfAddresses(
+                     GatewayAddressCacheTests.CreateGatewayAddressListWithUnhealthy(
+                         unhealthyAddress: addressTobeMarkedUnhealthy,
+                         rotatingAddress: oldAddress,
+                         replicaSetSize: this.targetReplicaSetSize)))
+                 .Returns(MockCosmosUtil.CreateHttpResponseOfAddresses(
+                     GatewayAddressCacheTests.CreateGatewayAddressListWithUnhealthy(
+                         unhealthyAddress: addressTobeMarkedUnhealthy,
+                         rotatingAddress: newAddress,
+                         replicaSetSize: this.targetReplicaSetSize)));
 
             FakeOpenConnectionHandler fakeOpenConnectionHandler = new(failingIndexes: new HashSet<int>());
             HttpClient httpClient = new(new HttpHandlerHelper(mockHttpHandler.Object));
@@ -1551,7 +1550,7 @@ namespace Microsoft.Azure.Cosmos
                 forceRefreshPartitionAddresses: false,
                 cancellationToken: CancellationToken.None);
 
-            Assert.AreEqual(4, addressInfo.AllAddresses.Count);
+            Assert.AreEqual(this.targetReplicaSetSize, addressInfo.AllAddresses.Count);
             Assert.AreEqual(1, addressInfo.AllAddresses.Count(x => x.PhysicalUri == oldAddress));
             Assert.AreEqual(0, addressInfo.AllAddresses.Count(x => x.PhysicalUri == newAddress));
 
@@ -1569,7 +1568,7 @@ namespace Microsoft.Azure.Cosmos
                 forceRefreshPartitionAddresses: true,
                 cancellationToken: CancellationToken.None);
 
-            Assert.AreEqual(4, addressInfo.AllAddresses.Count);
+            Assert.AreEqual(this.targetReplicaSetSize, addressInfo.AllAddresses.Count);
             Assert.AreEqual(0, addressInfo.AllAddresses.Count(x => x.PhysicalUri == oldAddress));
             Assert.AreEqual(1, addressInfo.AllAddresses.Count(x => x.PhysicalUri == newAddress));
 
@@ -1704,6 +1703,56 @@ namespace Microsoft.Azure.Cosmos
                 expectedTotalSuccessAddressesToOpenCount: totalSuccessAddressesToOpenCount);
         }
 
+        private void ConfigureReplicationPolicy(int replicaSetSize)
+        {
+            this.targetReplicaSetSize = replicaSetSize;
+            this.mockServiceConfigReader
+                .Setup(foo => foo.SystemReplicationPolicy)
+                .Returns(new ReplicationPolicy() { MaxReplicaSetSize = this.targetReplicaSetSize });
+            this.mockServiceConfigReader
+                .Setup(foo => foo.UserReplicationPolicy)
+                .Returns(new ReplicationPolicy() { MaxReplicaSetSize = this.targetReplicaSetSize });
+        }
+
+        private static List<string> CreateGatewayAddressList(
+            string rotatingAddress,
+            int replicaSetSize)
+        {
+            List<string> addresses = new()
+            {
+                "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/1p",
+                "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/2s",
+            };
+
+            if (replicaSetSize > 3)
+            {
+                addresses.Add("rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/3s");
+            }
+
+            addresses.Add(rotatingAddress);
+            return addresses;
+        }
+
+        private static List<string> CreateGatewayAddressListWithUnhealthy(
+            string unhealthyAddress,
+            string rotatingAddress,
+            int replicaSetSize)
+        {
+            List<string> addresses = new()
+            {
+                "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/1p",
+                unhealthyAddress,
+            };
+
+            if (replicaSetSize > 3)
+            {
+                addresses.Add("rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/3s");
+            }
+
+            addresses.Add(rotatingAddress);
+            return addresses;
+        }
+
         /// <summary>
         /// Blocks the current thread until a completion signal on the ManualResetEvent
         /// is received. A timeout of 5 seconds is added to avoid any thread starvation.
@@ -1784,33 +1833,41 @@ namespace Microsoft.Azure.Cosmos
         {
             private bool returnFullReplicaSet;
             private bool returnUpdatedAddresses;
+            private readonly int targetReplicaSetSize;
 
             public Dictionary<string, string> Headers { get; set; }
 
-            public FakeMessageHandler()
+            public FakeMessageHandler(int targetReplicaSetSize = 4)
             {
                 this.returnFullReplicaSet = false;
                 this.returnUpdatedAddresses = false;
+                this.targetReplicaSetSize = targetReplicaSetSize;
                 this.Headers = new Dictionary<string, string>();
             }
 
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
+                // Secondary replica address pool, large enough for the maximum supported replica set size.
+                string[] secondaryUris = new string[]
+                {
+                    "https://blabla3.com",
+                    "https://blabla2.com",
+                    "https://blabla4.com",
+                };
+
+                // A suboptimal response returns one less than the target replica set size, while a full
+                // response returns exactly the target replica set size.
+                int addressCount = this.returnFullReplicaSet ? this.targetReplicaSetSize : this.targetReplicaSetSize - 1;
+                this.returnFullReplicaSet = !this.returnFullReplicaSet;
+
                 List<Address> addresses = new List<Address>()
                 {
                     new Address() { IsPrimary = true, PhysicalUri = "https://blabla.com", Protocol = RuntimeConstants.Protocols.RNTBD, PartitionKeyRangeId = "YxM9ANCZIwABAAAAAAAAAA==" },
-                    new Address() { IsPrimary = false, PhysicalUri = "https://blabla3.com", Protocol = RuntimeConstants.Protocols.RNTBD, PartitionKeyRangeId = "YxM9ANCZIwABAAAAAAAAAA==" },
-                    new Address() { IsPrimary = false, PhysicalUri = "https://blabla2.com", Protocol = RuntimeConstants.Protocols.RNTBD, PartitionKeyRangeId = "YxM9ANCZIwABAAAAAAAAAA==" },
                 };
 
-                if (this.returnFullReplicaSet)
+                for (int i = 0; i < addressCount - 1; i++)
                 {
-                    addresses.Add(new Address() { IsPrimary = false, PhysicalUri = "https://blabla4.com", Protocol = RuntimeConstants.Protocols.RNTBD, PartitionKeyRangeId = "YxM9ANCZIwABAAAAAAAAAA==" });
-                    this.returnFullReplicaSet = false;
-                }
-                else
-                {
-                    this.returnFullReplicaSet = true;
+                    addresses.Add(new Address() { IsPrimary = false, PhysicalUri = secondaryUris[i], Protocol = RuntimeConstants.Protocols.RNTBD, PartitionKeyRangeId = "YxM9ANCZIwABAAAAAAAAAA==" });
                 }
 
                 if (this.returnUpdatedAddresses)

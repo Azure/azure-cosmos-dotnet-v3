@@ -304,7 +304,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     request.RequestContext.LastPartitionAddressInformationHashCode = addresses.GetHashCode();
                 }
 
-                int targetReplicaSetSize = this.serviceConfigReader.UserReplicationPolicy.MaxReplicaSetSize;
+                int targetReplicaSetSize = addresses.PartitionTargetReplicaSetSize
+                    ?? this.serviceConfigReader.UserReplicationPolicy.MaxReplicaSetSize;
                 if (addresses.AllAddresses.Count() < targetReplicaSetSize)
                 {
                     this.suboptimalServerPartitionTimestamps.TryAdd(partitionKeyRangeIdentity, DateTime.UtcNow);
