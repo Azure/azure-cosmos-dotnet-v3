@@ -23,7 +23,13 @@ namespace Microsoft.Azure.Cosmos
     // Marking it as non-sealed in order to unit test it using Moq framework
     internal class GatewayStoreModel : IStoreModelExtension, IDisposable
     {
+        // Total client-side budget for retrying 449 (RetryWith) responses on the gateway path.
+        // Strong consistency gets a larger budget because RetryWith is more likely under contention.
+        private const int DefaultGatewayRetryWithWaitTimeInSeconds = 30;
+        private const int StrongGatewayRetryWithWaitTimeInSeconds = 60;
+
         private static readonly string sessionConsistencyAsString = ConsistencyLevel.Session.ToString();
+
         private readonly DocumentClientEventSource eventSource;
 
         internal readonly GlobalEndpointManager endpointManager;
@@ -114,7 +120,15 @@ namespace Microsoft.Azure.Cosmos
                         ? this.GetFeedUri(request)
                         : this.GetEntityUri(request);
 
-                response = await this.DispatchAsync(request, physicalAddress, cancellationToken);
+                // Opt out of the gateway's server-side 449 (RetryWith) retry loop so the SDK is the
+                // single client-side authority for 449 retries.
+                // ThinClientStoreModel overrides this to a no-op.
+                this.ApplyGatewayRetryWithHeaders(request);
+
+                response = await BackoffRetryUtility<DocumentServiceResponse>.ExecuteAsync(
+                    () => this.DispatchAsync(request, physicalAddress, cancellationToken),
+                    new GatewayRetryWithRetryPolicy(this.GetRetryWithWaitTimeInSeconds()),
+                    cancellationToken);
             }
             catch (DocumentClientException exception)
             {
@@ -141,6 +155,31 @@ namespace Microsoft.Azure.Cosmos
         protected virtual bool ShouldResolvePartitionKeyRange()
         {
             return this.IsPartitionLevelFailoverEnabled();
+        }
+
+        /// <summary>
+        /// Applies the headers that opt the request out of the gateway's server-side 449
+        /// (<see cref="StatusCodes.RetryWith"/>) retry loop, so the SDK is the single client-side
+        /// authority for 449 retries (see <see cref="GatewayRetryWithRetryPolicy"/>). The base gateway
+        /// (Gateway V1) implementation sets <c>x-ms-noretry-449</c>. Subclasses
+        /// (e.g. <see cref="ThinClientStoreModel"/>) override this to a no-op when their transport does
+        /// not run a server-side 449 retry loop.
+        /// </summary>
+        protected virtual void ApplyGatewayRetryWithHeaders(DocumentServiceRequest request)
+        {
+            request.Headers.Set(HttpConstants.HttpHeaders.NoRetryOn449StatusCode, bool.TrueString);
+        }
+
+        /// <summary>
+        /// Returns the total client-side budget, in seconds, for retrying 449
+        /// (<see cref="StatusCodes.RetryWith"/>) responses. Strong consistency gets a larger budget
+        /// because RetryWith is more likely under contention.
+        /// </summary>
+        private int GetRetryWithWaitTimeInSeconds()
+        {
+            return this.defaultConsistencyLevel == ConsistencyLevel.Strong
+                ? GatewayStoreModel.StrongGatewayRetryWithWaitTimeInSeconds
+                : GatewayStoreModel.DefaultGatewayRetryWithWaitTimeInSeconds;
         }
 
         /// <summary>

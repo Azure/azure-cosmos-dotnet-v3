@@ -70,6 +70,17 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// The thin-client (Gateway V2) transport does not run a server-side 449
+        /// (<see cref="StatusCodes.RetryWith"/>) retry loop, so there is no server-side retry to opt out
+        /// of. The 449 retry is still orchestrated client-side via the inherited
+        /// <see cref="GatewayStoreModel.ProcessMessageAsync"/> loop. 
+        /// </summary>
+        protected override void ApplyGatewayRetryWithHeaders(DocumentServiceRequest request)
+        {
+            // ThinClient does not use the Gateway V1 server-side 449 retry loop.
+        }
+
+        /// <summary>
         /// Routes the request through the thin-client store client when it is currently
         /// thin-client-routable, otherwise transparently falls back to the inherited gateway HTTP
         /// path on the same instance. The decision is taken per request so the model can switch
