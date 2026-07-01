@@ -385,5 +385,51 @@
                 Trace.MaxChildCount = originalMaxChildCount;
             }
         }
+
+        [TestMethod]
+        [DoNotParallelize]
+        public void TestTruncationSurfacesPartialResultsInDiagnosticsJson()
+        {
+            int originalMaxChildCount = Trace.MaxChildCount;
+            try
+            {
+                Trace.MaxChildCount = 3;
+                Trace rootTrace = Trace.GetRootTrace(name: "RootTrace");
+                for (int i = 0; i < 10; i++)
+                {
+                    using (rootTrace.StartChild($"Child{i}"))
+                    {
+                    }
+                }
+
+                CosmosTraceDiagnostics diagnostics = new CosmosTraceDiagnostics(rootTrace);
+                JObject jObject = JObject.Parse(diagnostics.ToString());
+
+                Assert.IsTrue(
+                    (bool)jObject["Summary"]["PartialResults"],
+                    "Truncated diagnostics must be marked with PartialResults in the Summary.");
+            }
+            finally
+            {
+                Trace.MaxChildCount = originalMaxChildCount;
+            }
+        }
+
+        [TestMethod]
+        public void TestNonTruncatedDiagnosticsJsonHasNoPartialResults()
+        {
+            Trace rootTrace = Trace.GetRootTrace(name: "RootTrace");
+            using (rootTrace.StartChild("Child"))
+            {
+            }
+
+            CosmosTraceDiagnostics diagnostics = new CosmosTraceDiagnostics(rootTrace);
+            JObject jObject = JObject.Parse(diagnostics.ToString());
+
+            Assert.IsNotNull(jObject["Summary"], "Root diagnostics should always contain a Summary.");
+            Assert.IsNull(
+                jObject["Summary"]["PartialResults"],
+                "Non-truncated diagnostics must not be marked with PartialResults.");
+        }
     }
 }
