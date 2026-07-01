@@ -41,8 +41,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [TestMethod]
         [DynamicData(nameof(JsonProcessors))]
 
-        public async Task InvalidPathToEncrypt(JsonProcessor jsonProcessor)
+        public async Task InvalidPathToEncrypt(object jsonProcessorValue)
         {
+            JsonProcessor jsonProcessor = (JsonProcessor)jsonProcessorValue;
             TestDoc testDoc = TestDoc.Create();
             EncryptionOptions encryptionOptionsWithInvalidPathToEncrypt = new ()
             {
@@ -77,8 +78,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [TestMethod]
         [DynamicData(nameof(JsonProcessors))]
-        public async Task EncryptDecryptPropertyWithNullValue(JsonProcessor jsonProcessor)
+        public async Task EncryptDecryptPropertyWithNullValue(object jsonProcessorValue)
         {
+            JsonProcessor jsonProcessor = (JsonProcessor)jsonProcessorValue;
             TestDoc testDoc = TestDoc.Create();
             testDoc.SensitiveStr = null;
 
@@ -99,8 +101,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [TestMethod]
         [DynamicData(nameof(JsonProcessors))]
-        public async Task ValidateEncryptDecryptDocument(JsonProcessor jsonProcessor)
+        public async Task ValidateEncryptDecryptDocument(object jsonProcessorValue)
         {
+            JsonProcessor jsonProcessor = (JsonProcessor)jsonProcessorValue;
             TestDoc testDoc = TestDoc.Create();
 
             JObject encryptedDoc = await LegacyEncryptionProcessorTests.VerifyEncryptionSucceeded(testDoc, jsonProcessor);
@@ -120,8 +123,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [TestMethod]
         [DynamicData(nameof(JsonProcessors))]
-        public async Task ValidateDecryptStream(JsonProcessor jsonProcessor)
+        public async Task ValidateDecryptStream(object jsonProcessorValue)
         {
+            JsonProcessor jsonProcessor = (JsonProcessor)jsonProcessorValue;
             TestDoc testDoc = TestDoc.Create();
 
             Stream encryptedStream = await EncryptionProcessor.EncryptAsync(

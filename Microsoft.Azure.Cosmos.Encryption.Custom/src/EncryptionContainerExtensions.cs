@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// MDE encryption algorithm. Writing AEAD (legacy) encrypted data with a Stream default still throws a
         /// <see cref="NotSupportedException"/> at write time, consistent with the per-request behavior.
         /// </remarks>
-        public static Container WithEncryptor(
+        internal static Container WithEncryptor(
             this Container container,
             Encryptor encryptor,
             JsonProcessor defaultJsonProcessor)
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="query">the IQueryable{T} to be converted.</param>
         /// <param name="jsonProcessor">The JSON processor to use when decrypting the results.</param>
         /// <returns>An iterator to go through the items.</returns>
-        public static FeedIterator<T> ToEncryptionFeedIterator<T>(
+        internal static FeedIterator<T> ToEncryptionFeedIterator<T>(
             this Container container,
             IQueryable<T> query,
             JsonProcessor jsonProcessor)
@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="query">the IQueryable{T} to be converted.</param>
         /// <param name="jsonProcessor">The JSON processor to use when decrypting the results.</param>
         /// <returns>An iterator to go through the items.</returns>
-        public static FeedIterator ToEncryptionStreamIterator<T>(
+        internal static FeedIterator ToEncryptionStreamIterator<T>(
             this Container container,
             IQueryable<T> query,
             JsonProcessor jsonProcessor)

@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// Extension methods on <see cref="RequestOptions"/> for configuring client-side-encryption
     /// JSON processing on a per-operation basis.
     /// </summary>
-    public static class EncryptionRequestOptionsExtensions
+    internal static class EncryptionRequestOptionsExtensions
     {
         /// <summary>
         /// Selects the <see cref="JsonProcessor"/> used to encrypt or decrypt this encryption
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// instance keeps only the last selection.
         /// </para>
         /// </remarks>
-        public static TRequestOptions WithEncryptionJsonProcessor<TRequestOptions>(
+        internal static TRequestOptions WithEncryptionJsonProcessor<TRequestOptions>(
             this TRequestOptions requestOptions,
             JsonProcessor jsonProcessor)
             where TRequestOptions : RequestOptions

@@ -442,8 +442,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [DataTestMethod]
         [DataRow(JsonProcessor.Newtonsoft)]
         [DataRow(JsonProcessor.Stream)]
-        public async Task ReadItemAsync_DecryptableItem_DefaultProcessor_DecryptsAndHonorsProcessor(JsonProcessor processor)
+        public async Task ReadItemAsync_DecryptableItem_DefaultProcessor_DecryptsAndHonorsProcessor(object processorValue)
         {
+            JsonProcessor processor = (JsonProcessor)processorValue;
             Mock<Encryptor> encryptor = CreateMdeEncryptor();
             TestDoc doc = TestDoc.Create();
             byte[] documentBytes = await BuildEncryptedItemBytesAsync(encryptor, doc);
@@ -461,8 +462,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [DataTestMethod]
         [DataRow(JsonProcessor.Newtonsoft)]
         [DataRow(JsonProcessor.Stream)]
-        public async Task GetItemQueryIterator_DecryptableItem_DefaultProcessor_DecryptsAndHonorsProcessor(JsonProcessor processor)
+        public async Task GetItemQueryIterator_DecryptableItem_DefaultProcessor_DecryptsAndHonorsProcessor(object processorValue)
         {
+            JsonProcessor processor = (JsonProcessor)processorValue;
             Mock<Encryptor> encryptor = CreateMdeEncryptor();
             TestDoc doc = TestDoc.Create();
             byte[] feedBytes = await BuildEncryptedFeedAsync(encryptor, doc);
@@ -517,8 +519,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [DataTestMethod]
         [DataRow(JsonProcessor.Newtonsoft)]
         [DataRow(JsonProcessor.Stream)]
-        public async Task SetDecryptableItem_EncryptableItemT_ThreadsProcessorIntoLazyDecrypt(JsonProcessor processor)
+        public async Task SetDecryptableItem_EncryptableItemT_ThreadsProcessorIntoLazyDecrypt(object processorValue)
         {
+            JsonProcessor processor = (JsonProcessor)processorValue;
             Mock<Encryptor> encryptor = CreateMdeEncryptor();
             TestDoc doc = TestDoc.Create();
             JObject encrypted = await BuildEncryptedDocumentAsync(encryptor, doc);
@@ -533,8 +536,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [DataTestMethod]
         [DataRow(JsonProcessor.Newtonsoft)]
         [DataRow(JsonProcessor.Stream)]
-        public async Task SetDecryptableItem_EncryptableItemStream_ThreadsProcessorIntoLazyDecrypt(JsonProcessor processor)
+        public async Task SetDecryptableItem_EncryptableItemStream_ThreadsProcessorIntoLazyDecrypt(object processorValue)
         {
+            JsonProcessor processor = (JsonProcessor)processorValue;
             Mock<Encryptor> encryptor = CreateMdeEncryptor();
             TestDoc doc = TestDoc.Create();
             JObject encrypted = await BuildEncryptedDocumentAsync(encryptor, doc);
@@ -987,8 +991,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [DataTestMethod]
         [DataRow(JsonProcessor.Newtonsoft)]
         [DataRow(JsonProcessor.Stream)]
-        public async Task GetItemQueryIterator_TypedEagerFeed_DefaultProcessor_DecryptsAllDocumentsInOrder(JsonProcessor processor)
+        public async Task GetItemQueryIterator_TypedEagerFeed_DefaultProcessor_DecryptsAllDocumentsInOrder(object processorValue)
         {
+            JsonProcessor processor = (JsonProcessor)processorValue;
             Mock<Encryptor> encryptor = CreateMdeEncryptor();
             TestDoc doc1 = TestDoc.Create();
             TestDoc doc2 = TestDoc.Create();

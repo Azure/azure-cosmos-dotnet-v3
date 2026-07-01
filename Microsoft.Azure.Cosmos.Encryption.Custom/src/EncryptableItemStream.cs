@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
 
         /// <inheritdoc/>
-        protected internal override void SetDecryptableItem(
+        internal override void SetDecryptableItem(
             JToken decryptableContent,
             Encryptor encryptor,
             CosmosSerializer cosmosSerializer,

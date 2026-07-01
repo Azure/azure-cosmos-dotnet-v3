@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// container-wide default via <c>WithEncryptor(container, encryptor, defaultJsonProcessor)</c>.
     /// A per-request selection always overrides the container default.
     /// </remarks>
-    public enum JsonProcessor
+    internal enum JsonProcessor
     {
         /// <summary>
         /// Newtonsoft.Json based (JObject) processing. The default on all target frameworks.

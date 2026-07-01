@@ -923,13 +923,6 @@
     "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionContainerExtensions;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.Container Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionContainerExtensions.WithEncryptor(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.Encryption.Custom.Encryptor, Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "ExtensionAttribute"
-          ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Container Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionContainerExtensions.WithEncryptor(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.Encryption.Custom.Encryptor, Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
         "Microsoft.Azure.Cosmos.Container Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionContainerExtensions.WithEncryptor(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.Encryption.Custom.Encryptor)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -937,26 +930,12 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.Container Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionContainerExtensions.WithEncryptor(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.Encryption.Custom.Encryptor);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.FeedIterator Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionContainerExtensions.ToEncryptionStreamIterator[T](Microsoft.Azure.Cosmos.Container, System.Linq.IQueryable`1[T], Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "ExtensionAttribute"
-          ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionContainerExtensions.ToEncryptionStreamIterator[T](Microsoft.Azure.Cosmos.Container, System.Linq.IQueryable`1[T], Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
-        },
         "Microsoft.Azure.Cosmos.FeedIterator Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionContainerExtensions.ToEncryptionStreamIterator[T](Microsoft.Azure.Cosmos.Container, System.Linq.IQueryable`1[T])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionContainerExtensions.ToEncryptionStreamIterator[T](Microsoft.Azure.Cosmos.Container, System.Linq.IQueryable`1[T]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
-        },
-        "Microsoft.Azure.Cosmos.FeedIterator`1[T] Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionContainerExtensions.ToEncryptionFeedIterator[T](Microsoft.Azure.Cosmos.Container, System.Linq.IQueryable`1[T], Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "ExtensionAttribute"
-          ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionContainerExtensions.ToEncryptionFeedIterator[T](Microsoft.Azure.Cosmos.Container, System.Linq.IQueryable`1[T], Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.FeedIterator`1[T] Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionContainerExtensions.ToEncryptionFeedIterator[T](Microsoft.Azure.Cosmos.Container, System.Linq.IQueryable`1[T])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
@@ -1251,19 +1230,6 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionRequestOptionsExtensions;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-      "Subclasses": {},
-      "Members": {
-        "TRequestOptions Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionRequestOptionsExtensions.WithEncryptionJsonProcessor[TRequestOptions](TRequestOptions, Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "ExtensionAttribute"
-          ],
-          "MethodInfo": "TRequestOptions Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionRequestOptionsExtensions.WithEncryptionJsonProcessor[TRequestOptions](TRequestOptions, Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
-        }
-      },
-      "NestedTypes": {}
-    },
     "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionTransactionalBatchItemRequestOptions;Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
@@ -1356,27 +1322,6 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[System.Byte[]] EncryptAsync(Byte[], System.String, System.String, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor;System.Enum;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:True;IsClass:False;IsValueType:True;IsNested:False;IsGenericType:False;IsSerializable:True": {
-      "Subclasses": {},
-      "Members": {
-        "Int32 value__": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "Int32 value__;IsInitOnly:False;IsStatic:False;"
-        },
-        "Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor Newtonsoft": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor Newtonsoft;IsInitOnly:False;IsStatic:True;"
-        },
-        "Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor Stream": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor Stream;IsInitOnly:False;IsStatic:True;"
         }
       },
       "NestedTypes": {}
