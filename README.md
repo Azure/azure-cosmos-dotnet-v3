@@ -49,7 +49,7 @@ For available versions, see [SDK versioning](./docs/versioning.md).
 - [Partitioning](https://docs.microsoft.com/azure/cosmos-db/partition-data)
 - [Introduction to Azure Cosmos DB for NoSQL queries](https://docs.microsoft.com/azure/cosmos-db/sql-api-sql-query)
 - [SDK API](https://docs.microsoft.com/dotnet/api/microsoft.azure.cosmos?view=azure-dotnet)
-- [Using emulator](https://github.com/Azure/azure-documentdb-dotnet/blob/main/docs/documentdb-nosql-local-emulator.md)
+- [Using emulator](https://learn.microsoft.com/en-us/azure/cosmos-db/emulator)
 - [Capture traces](https://github.com/Azure/azure-documentdb-dotnet/blob/main/docs/documentdb-sdk_capture_etl.md)
 - [Release notes](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/main/changelog.md)
 - [Diagnose and troubleshooting](https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk)
