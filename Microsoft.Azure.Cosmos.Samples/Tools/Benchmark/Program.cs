@@ -220,6 +220,7 @@ namespace CosmosBenchmark
                         CommitSha = config.ResolveSdkSourceRef() ?? config.CommitId,
                         ConfigConcurrency = taskCount,
                         ConfigApplicationRegion = config.ApplicationPreferredRegions,
+                        RunTag = config.RunTag,
                     };
 
                     perfReporter = new PerfMetricsReporter(metricsSink, perfRunContext, config.MetricsReportingIntervalInSec);

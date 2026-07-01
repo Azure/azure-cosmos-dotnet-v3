@@ -59,6 +59,9 @@ namespace CosmosBenchmark
         [JsonProperty("config_application_region")]
         public string ConfigApplicationRegion { get; set; }
 
+        [JsonProperty("run_tag")]
+        public string RunTag { get; set; }
+
         [JsonProperty("ru_per_sec")]
         public double RuPerSec { get; set; }
 
@@ -118,6 +121,7 @@ namespace CosmosBenchmark
                 CommitSha = runContext.CommitSha,
                 ConfigConcurrency = runContext.ConfigConcurrency,
                 ConfigApplicationRegion = runContext.ConfigApplicationRegion,
+                RunTag = runContext.RunTag,
                 RuPerSec = window.RuPerSec,
                 GcGen0Count = runtime.GcGen0Count,
                 GcGen1Count = runtime.GcGen1Count,
@@ -147,5 +151,12 @@ namespace CosmosBenchmark
         public int ConfigConcurrency { get; set; }
 
         public string ConfigApplicationRegion { get; set; }
+
+        /// <summary>
+        /// Free-form tag stamped on every row so dashboards can distinguish concurrent or
+        /// sequential runs (e.g. the account / consistency level under test: "session",
+        /// "strong", "eventual"). Set via --run-tag.
+        /// </summary>
+        public string RunTag { get; set; }
     }
 }

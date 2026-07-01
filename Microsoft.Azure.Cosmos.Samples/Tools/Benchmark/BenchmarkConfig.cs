@@ -175,6 +175,9 @@ namespace CosmosBenchmark
         [Option("sdk-source-ref", Required = false, HelpText = "SDK source ref (branch/tag/commit) under test used to tag result rows. Defaults to the COSMOS_PERF_BUILT_SDK_REF environment variable.")]
         public string SdkSourceRef { get; set; } = null;
 
+        [Option("run-tag", Required = false, HelpText = "Free-form tag stamped on every result row (column run_tag) so the dashboard can distinguish concurrent or sequential runs, e.g. the account / consistency under test: session, strong, eventual.")]
+        public string RunTag { get; set; } = null;
+
         [Option("metrics-sink", Required = false, HelpText = "Per-window metrics sink: none (default), console, or adx (Azure Data Explorer).")]
         public string MetricsSink { get; set; } = "none";
 
