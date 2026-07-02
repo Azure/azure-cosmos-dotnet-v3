@@ -1713,10 +1713,10 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         [TestMethod]
         public async Task DtxRequest_429_3200_ShouldRetry_WithDefaultRetryInterval()
         {
-            // Regression for #5975: a bodyless 429/3200 (RUBudgetExceeded) on a DTX commit must be retried.
-            // The DTX classifier lets a bodyless throttle response fall through to the shared throttling
-            // retry policy (this.throttlingRetry) — the same ResourceThrottleRetryPolicy every non-DTX 429
-            // uses — instead of deferring it to the outer loop, which never re-sent the DTX commit.
+            // A bodyless 429/3200 (RUBudgetExceeded) on a DTX commit must be retried. The DTX classifier lets
+            // a bodyless throttle response fall through to the shared throttling retry policy
+            // (this.throttlingRetry) — the same ResourceThrottleRetryPolicy every non-DTX 429 uses — rather
+            // than routing it to the outer commit loop.
             const bool enableEndpointDiscovery = true;
             using GlobalEndpointManager endpointManager = this.Initialize(
                 useMultipleWriteLocations: false,
@@ -1764,7 +1764,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         [DataTestMethod]
-        [Description("Regression for #5975 (B1): a real gateway bodyless DTX envelope failure arrives with a non-null, zero-length Content stream (429 is exceptionless, so the transport buffers an empty body rather than a null one). CRP must treat a zero-length body as 'no meaningful body' and retry inline. Deferring it to the outer DistributedTransactionCommitter loop is a dead end — the empty body fails to parse, IsRetriable defaults to false, and the commit is never re-sent. Hand-built ResponseMessages set Content == null, so this shape was previously untested and the fix silently did not engage.")]
+        [Description("A real gateway bodyless DTX envelope failure arrives with a non-null, zero-length Content stream (429 is exceptionless, so the transport buffers an empty body rather than a null one). CRP must treat a zero-length body as 'no meaningful body' and retry inline; routing it to the outer DistributedTransactionCommitter loop is a dead end because the empty body fails to parse, IsRetriable defaults to false, and the commit is not re-sent. This asserts that a zero-length Content stream — not a null one — engages the inline retry path.")]
         [DataRow((int)HttpStatusCode.RequestTimeout, 0, DisplayName = "408 non-null empty body")]
         [DataRow((int)StatusCodes.RetryWith, (int)SubStatusCodes.DtcCoordinatorRaceConflict, DisplayName = "449/5352 non-null empty body")]
         [DataRow((int)StatusCodes.TooManyRequests, (int)SubStatusCodes.RUBudgetExceeded, DisplayName = "429/3200 non-null empty body")]
@@ -1990,9 +1990,9 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         [TestMethod]
         public async Task ReadDtxRequest_429_3200_ShouldRetry()
         {
-            // Regression for #5975: the customer-visible failure was on a DTX *read* as well as a commit.
-            // A bodyless 429/3200 (RUBudgetExceeded) on a DTX read must be classified throttle-retriable and
-            // retried by the shared throttling retry policy (same as the commit path), not dropped.
+            // The bodyless 429/3200 (RUBudgetExceeded) failure applies to a DTX *read* as well as a commit.
+            // A DTX read must be classified throttle-retriable and retried by the shared throttling retry
+            // policy (same as the commit path), not dropped.
             const bool enableEndpointDiscovery = true;
             using GlobalEndpointManager endpointManager = this.Initialize(
                 useMultipleWriteLocations: false,
