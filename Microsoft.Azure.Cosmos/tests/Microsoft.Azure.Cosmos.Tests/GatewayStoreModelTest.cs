@@ -590,6 +590,159 @@ namespace Microsoft.Azure.Cosmos
 
         }
 
+        /// <summary>
+        /// Gateway V1 must tell the gateway to suppress its server-side 449 (RetryWith) retry by
+        /// sending the <c>x-ms-noretry-449</c> header, so the SDK becomes the single client-side
+        /// authority for RetryWith retries.
+        /// </summary>
+        [TestMethod]
+        [Owner("aavasthy")]
+        public async Task GatewayStoreModel_GatewayV1_SetsNoRetry449Header()
+        {
+            bool noRetry449HeaderSent = false;
+            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = request =>
+            {
+                noRetry449HeaderSent = request.Headers.TryGetValues(
+                        HttpConstants.HttpHeaders.NoRetryOn449StatusCode,
+                        out IEnumerable<string> values)
+                    && values.Any(value => string.Equals(value, bool.TrueString, StringComparison.OrdinalIgnoreCase));
+
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("{}"),
+                    RequestMessage = request
+                });
+            };
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+            mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
+
+            using GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            ISessionContainer sessionContainer = new SessionContainer(string.Empty);
+            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
+            HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+            using GatewayStoreModel storeModel = new GatewayStoreModel(
+                endpointManager,
+                sessionContainer,
+                ConsistencyLevel.Eventual,
+                eventSource,
+                null,
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
+                GlobalPartitionEndpointManagerNoOp.Instance);
+
+            TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
+
+            using (new ActivityScope(Guid.NewGuid()))
+            using (DocumentServiceRequest request = DocumentServiceRequest.Create(
+                Documents.OperationType.Query,
+                Documents.ResourceType.Document,
+                new Uri("https://foo.com/dbs/db1/colls/coll1", UriKind.Absolute),
+                new MemoryStream(Encoding.UTF8.GetBytes("content1")),
+                AuthorizationTokenType.PrimaryMasterKey,
+                null))
+            {
+                await storeModel.ProcessMessageAsync(request);
+            }
+
+            Assert.IsTrue(
+                noRetry449HeaderSent,
+                "Gateway V1 must send x-ms-noretry-449=true so the gateway does not also retry the 449 server-side.");
+        }
+
+        /// <summary>
+        /// Gateway V1 must retry an HTTP 449 (RetryWith) response client-side and then surface the
+        /// subsequent success, proving the retry loop is wired through
+        /// <see cref="GatewayStoreModel.ProcessMessageAsync"/>.
+        /// </summary>
+        [TestMethod]
+        [Owner("aavasthy")]
+        public async Task GatewayStoreModel_GatewayV1_RetriesRetryWith449ThenSucceeds()
+        {
+            int attemptCount = 0;
+            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = request =>
+            {
+                attemptCount++;
+                HttpStatusCode statusCode = attemptCount == 1
+                    ? (HttpStatusCode)StatusCodes.RetryWith
+                    : HttpStatusCode.OK;
+
+                return Task.FromResult(new HttpResponseMessage(statusCode)
+                {
+                    Content = new StringContent("{}"),
+                    RequestMessage = request
+                });
+            };
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+            mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
+
+            using GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            ISessionContainer sessionContainer = new SessionContainer(string.Empty);
+            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
+            HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+            using GatewayStoreModel storeModel = new GatewayStoreModel(
+                endpointManager,
+                sessionContainer,
+                ConsistencyLevel.Eventual,
+                eventSource,
+                null,
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
+                GlobalPartitionEndpointManagerNoOp.Instance);
+
+            TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
+
+            using (new ActivityScope(Guid.NewGuid()))
+            using (DocumentServiceRequest request = DocumentServiceRequest.Create(
+                Documents.OperationType.Query,
+                Documents.ResourceType.Document,
+                new Uri("https://foo.com/dbs/db1/colls/coll1", UriKind.Absolute),
+                new MemoryStream(Encoding.UTF8.GetBytes("content1")),
+                AuthorizationTokenType.PrimaryMasterKey,
+                null))
+            {
+                DocumentServiceResponse response = await storeModel.ProcessMessageAsync(request);
+
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            }
+
+            Assert.AreEqual(
+                2,
+                attemptCount,
+                "The 449 (RetryWith) response must be retried once client-side before the request succeeds.");
+        }
+
+        /// <summary>
+        /// Distributed-transaction requests own their 449 (RetryWith) retry orchestration
+        /// (<see cref="ClientRetryPolicy"/> + the DistributedTransactionCommitter outer loop), so the
+        /// generic gateway 449 mechanism — which gates both the <c>x-ms-noretry-449</c> opt-out header and
+        /// the gateway store-model 449 retry loop on this decision — must exclude them. Every other
+        /// request type participates so its 449 is retried client-side.
+        /// </summary>
+        [TestMethod]
+        [Owner("aavasthy")]
+        public void GatewayStoreModel_IsGatewayRetryWith449Applicable_ExcludesDistributedTransactionRequests()
+        {
+            using (DocumentServiceRequest distributedTransactionRequest = DocumentServiceRequest.Create(
+                Documents.OperationType.Batch,
+                Documents.ResourceType.DistributedTransactionBatch,
+                AuthorizationTokenType.PrimaryMasterKey))
+            {
+                Assert.IsFalse(
+                    GatewayStoreModel.IsGatewayRetryWith449Applicable(distributedTransactionRequest),
+                    "Distributed-transaction requests must be excluded from the generic gateway 449 mechanism; their 449 retry is owned by the distributed-transaction pipeline.");
+            }
+
+            using (DocumentServiceRequest documentRequest = DocumentServiceRequest.Create(
+                Documents.OperationType.Read,
+                Documents.ResourceType.Document,
+                AuthorizationTokenType.PrimaryMasterKey))
+            {
+                Assert.IsTrue(
+                    GatewayStoreModel.IsGatewayRetryWith449Applicable(documentRequest),
+                    "Non-distributed-transaction requests must participate in the generic client-side gateway 449 retry mechanism.");
+            }
+        }
+
         [TestMethod]
         // Verify that for known exceptions, session token is updated
         public async Task GatewayStoreModel_Exception_UpdateSessionTokenOnKnownException()
