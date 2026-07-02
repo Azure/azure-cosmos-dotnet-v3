@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+- [5958](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5958) DistributedTransaction (preview): Adds public `SessionToken` property on `DistributedTransactionOperationResult`, allowing callers to pass per-operation session tokens back via `DistributedTransactionRequestOptions.SessionToken` to enforce read-your-writes session consistency.
 - [5970](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5970) ThinClient: Adds an HTTP/2 connectivity probe (`POST /connectivity-probe`) that validates each discovered thin client (proxy) regional endpoint over HTTP/2 before routing traffic to it. Data-plane traffic uses the proxy only for regions whose endpoint has passed its probe; any other region transparently uses the standard gateway, with no client restart required. Thin client mode is now enabled by default (opt-out via `AZURE_COSMOS_THIN_CLIENT_ENABLED=false`); the probe verifies HTTP/2 reachability per region at runtime, so no client-side HTTP/2 opt-in is required. When enabled, the SDK additionally issues the probe and routes data-plane traffic to the proxy regional endpoints on port `10250` over HTTP/2, which is useful to know when diagnosing unexpected requests or egress rules that only allow `443`.
 - [5829](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5829) Routing: Adds Gateway Account Property Flag for Dynamic Hedging Control. Introduces a Gateway-controlled `disableCrossRegionalHedging` account property that lets operators dynamically disable PPAF cross-region hedging (and any customer-configured `AvailabilityStrategy`) without rolling back PPAF entirely. The SDK reconciles `ConnectionPolicy.AvailabilityStrategy` against the Gateway-supplied flag on each account-properties refresh; toggling the flag back to `false` restores the customer-configured strategy or rebuilds the SDK default.
 
@@ -37,9 +38,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Other Changes
 
+- [5958](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5958) DistributedTransaction (preview): Changes malformed session-token handling on DTX commit responses to match the SDK's standard point-operation pattern. A malformed session token returned by the coordinator was previously skipped silently; it now surfaces as a thrown `CosmosException` (consistent with how a failed point operation throws rather than returning a response). The committed transaction is not retried automatically — use optimistic concurrency (`IfMatch`/ETag) for idempotency. This is a behavior change for preview DTX callers.
 - [5956](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5956) Routing: Fixes `CollectionRoutingMap.GetRangeByEffectivePartitionKey` to use the configured (length-aware-by-default) comparer instead of a hard-coded ordinal comparer, so it agrees with `GetOverlappingRanges` for a short/partial effective partition key on a zero-padded range boundary. This is a defense-in-depth correctness fix; current SDK callers pass full-length effective partition keys, for which the ordinal and length-aware comparers are equivalent, so there is no behavior change for existing workloads.
-
 - [5916](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5916) Direct: Moves the `OpenTcpConnectionTimeout` negative-value warning trace from `CosmosClientOptions` to `DocumentClient`. The warning is now emitted once per client construction (instead of once per property assignment) and is gated on `ConnectionMode == Direct`, so it no longer false-positives when a negative value is later overwritten with a non-negative one or when running in Gateway mode where the timeout is not consumed.
+
 ### <a name="3.62.0-preview.0"/> [3.62.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.62.0-preview.0) - 2026-6-1
 
 #### Features Added

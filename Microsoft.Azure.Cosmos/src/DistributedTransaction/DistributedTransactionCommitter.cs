@@ -78,7 +78,12 @@ namespace Microsoft.Azure.Cosmos
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                await DistributedTransactionCommitterUtils.ResolveCollectionRidsAsync(
+
+                // Resolve effective consistency before the commit and reuse it for the post-commit
+                // token merge. Session-token work only applies under Session consistency. Resolving
+                // here means a transient consistency-lookup failure surfaces before the commit rather
+                // than failing an already-committed transaction.
+                bool isSessionConsistency = await DistributedTransactionCommitterUtils.ResolveCollectionRidsAsync(
                     this.operations,
                     this.clientContext,
                     cancellationToken);
@@ -88,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
                     this.clientContext.SerializerCore,
                     cancellationToken);
 
-                return await this.ExecuteCommitWithRetryAsync(serverRequest, trace, cancellationToken);
+                return await this.ExecuteCommitWithRetryAsync(serverRequest, isSessionConsistency, trace, cancellationToken);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
@@ -99,6 +104,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<DistributedTransactionResponse> ExecuteCommitWithRetryAsync(
             DistributedTransactionServerRequest serverRequest,
+            bool isSessionConsistency,
             ITrace parentTrace,
             CancellationToken cancellationToken)
         {
@@ -111,7 +117,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                DistributedTransactionResponse response = await this.ExecuteCommitAsync(serverRequest, parentTrace, cancellationToken);
+                DistributedTransactionResponse response = await this.ExecuteCommitAsync(serverRequest, isSessionConsistency, parentTrace, cancellationToken);
 
                 if (response.IsSuccessStatusCode || !response.IsRetriable)
                 {
@@ -181,6 +187,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<DistributedTransactionResponse> ExecuteCommitAsync(
             DistributedTransactionServerRequest serverRequest,
+            bool isSessionConsistency,
             ITrace parentTrace,
             CancellationToken cancellationToken)
         {
@@ -210,10 +217,16 @@ namespace Microsoft.Azure.Cosmos
                             attemptTrace,
                             cancellationToken);
 
+                        // Merge per-op session tokens into the SessionContainer (Session consistency
+                        // only). On success the response is returned to the caller and not disposed
+                        // here — it owns no unmanaged resources (the body is a MemoryStream). On a
+                        // malformed token MergeSessionTokens throws and the response is discarded,
+                        // matching the SDK's point-operation pattern.
                         DistributedTransactionCommitter.MergeSessionTokens(
                             response,
                             serverRequest,
-                            this.clientContext.DocumentClient?.sessionContainer);
+                            this.clientContext.DocumentClient?.sessionContainer,
+                            isSessionConsistency);
 
                         return response;
                     }
@@ -233,19 +246,17 @@ namespace Microsoft.Azure.Cosmos
         internal static void MergeSessionTokens(
             DistributedTransactionResponse response,
             DistributedTransactionServerRequest serverRequest,
-            ISessionContainer sessionContainer)
+            ISessionContainer sessionContainer,
+            bool isSessionConsistency)
         {
-            // Mirror the pattern used by GatewayStoreModel.CaptureSessionTokenAndHandleSplitAsync.
-            // after a response is received, store each operation's session token in the SessionContainer
-            // so that subsequent Session-consistency reads on the affected collections can use the latest token
-            // without getting ReadSessionNotAvailable.
-            //
-            // DTC spans multiple collections so the server embeds per-operation session tokens in the JSON body.
-            // DistributedTransactionOperationResult.FromJson assembles each token into canonical SDK session-token
+            // Merge each valid per-op token into the SessionContainer. Under Session consistency on a
+            // committed response, throw on the first malformed token; otherwise trace best-effort.
             if (response == null || response.Count == 0 || serverRequest == null || sessionContainer == null)
             {
                 return;
             }
+
+            bool throwOnMalformed = response.IsSuccessStatusCode && isSessionConsistency;
 
             RequestNameValueCollection headers = new RequestNameValueCollection();
 
@@ -253,40 +264,95 @@ namespace Microsoft.Azure.Cosmos
             {
                 DistributedTransactionOperationResult result = response[i];
 
-                DistributedTransactionOperation operation = null;
+                // Defensive crash-safety only; index correctness is owned upstream. Never throws.
+                if (result.Index < 0 || result.Index >= serverRequest.Operations.Count)
+                {
+                    DefaultTrace.TraceWarning(
+                        $"Distributed transaction response (StatusCode={response.StatusCode}): skipping result {i} " +
+                        $"with out-of-range op Index {result.Index} (request has {serverRequest.Operations.Count} ops).");
+                    continue;
+                }
+
+                DistributedTransactionOperation operation = serverRequest.Operations[result.Index];
+
+                // Skip non-success sub-ops: a failed op (e.g. 404/1002 ReadSessionNotAvailable) may
+                // carry a stale or malformed token that must not be merged or trigger the throw.
+                if (!result.IsSuccessStatusCode)
+                {
+                    continue;
+                }
+
+                // Skip absent/whitespace tokens or unresolved collection ids.
+                if (string.IsNullOrWhiteSpace(result.SessionToken) || string.IsNullOrEmpty(operation.CollectionResourceId))
+                {
+                    continue;
+                }
+
+                // Shape pre-check: reject tokens lacking a '{pkRangeId}:{lsn}' separator. Confirms a
+                // non-empty segment on each side of the colon; full content is validated downstream.
+                int colonIndex = result.SessionToken.IndexOf(':');
+                if (colonIndex <= 0 || colonIndex == result.SessionToken.Length - 1)
+                {
+                    DistributedTransactionCommitter.ThrowOrTraceMalformedSessionToken(
+                        throwOnMalformed,
+                        $"Op {result.Index}: non-canonical session token '{DistributedTransactionCommitter.TruncateForLog(result.SessionToken)}' (expected '{{pkRangeId}}:{{lsn}}')",
+                        response);
+                    continue;
+                }
+
+                headers.Clear();
+                headers[HttpConstants.HttpHeaders.SessionToken] = result.SessionToken;
+
                 try
                 {
-                    operation = serverRequest.Operations[result.Index];
-
-                    if (string.IsNullOrEmpty(result.SessionToken) || string.IsNullOrEmpty(operation.CollectionResourceId))
-                    {
-                        continue;
-                    }
-
-                    // SessionToken is already in canonical SDK session-token format, assembled by FromJson.
-                    // Note: each SetSessionToken call acquires a write lock on the SessionContainer.
-                    // For a future optimization, consider a batch-update API on ISessionContainer to
-                    // reduce lock acquisitions when multiple operations target the same collection.
-                    headers.Clear();
-                    headers[HttpConstants.HttpHeaders.SessionToken] = result.SessionToken;
-
                     sessionContainer.SetSessionToken(
                         operation.CollectionResourceId,
                         DistributedTransactionConstants.GetCollectionFullName(operation.Database, operation.Container),
                         headers);
                 }
-                catch (Exception ex) when (ex is not OperationCanceledException)
+                catch (OperationCanceledException)
                 {
-                    // Session-token bookkeeping must never fail a transaction the server already committed.
-                    // Log and continue so the remaining operations' tokens are still attempted.
-                    DefaultTrace.TraceWarning(
-                        "DTC session token merge failed for operation index {0} (collection {1}): [{2}] {3}",
-                        result.Index,
-                        operation?.CollectionResourceId ?? "<unknown>",
-                        ex.GetType().Name,
-                        ex.Message);
+                    throw;
+                }
+                catch (Exception ex) when (DistributedTransactionCommitterUtils.IsMalformedSessionTokenException(ex))
+                {
+                    DistributedTransactionCommitter.ThrowOrTraceMalformedSessionToken(
+                        throwOnMalformed,
+                        $"Op {result.Index}: SetSessionToken rejected '{DistributedTransactionCommitter.TruncateForLog(result.SessionToken)}' ({ex.GetType().Name}: {ex.Message})",
+                        response);
                 }
             }
+        }
+
+        /// <summary>
+        /// Throws a non-retriable <see cref="CosmosException"/> for the first malformed session token
+        /// on a committed transaction under Session consistency; otherwise traces it.
+        /// </summary>
+        private static void ThrowOrTraceMalformedSessionToken(
+            bool throwOnMalformed,
+            string detail,
+            DistributedTransactionResponse response)
+        {
+            if (!throwOnMalformed)
+            {
+                // Non-success response or non-Session consistency: informational, don't throw.
+                DefaultTrace.TraceWarning(
+                    $"Distributed transaction response (StatusCode={response.StatusCode}) contained a " +
+                    $"malformed session token: {detail}");
+                return;
+            }
+
+            // Transaction committed but session bookkeeping is incomplete; throw and discard the
+            // response per the point-operation pattern. InternalServerError because the token is
+            // server-originated. Retry idempotency is the caller's responsibility via IfMatch/ETag.
+            throw new CosmosException(
+                message:
+                    $"Distributed transaction committed but a malformed session token was returned; " +
+                    $"do not retry. {detail}",
+                statusCode: HttpStatusCode.InternalServerError,
+                subStatusCode: 0,
+                activityId: response.ActivityId,
+                requestCharge: response.RequestCharge);
         }
     }
 }

@@ -39,14 +39,12 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         [Description("Verifies that when the DTC response carries a session token, the token is merged into the SessionContainer")]
         public async Task CommitTransactionAsync_MergesSessionTokensIntoSessionContainer()
         {
-            const string lsnOnly = "1#9#4=8#5=7";
-            const string pkRangeId = "0";
-            const string expectedToken = "0:1#9#4=8#5=7";
+            const string canonicalToken = "0:1#9#4=8#5=7";
 
             SessionContainer sessionContainer = new SessionContainer("testhost");
 
             string responseJson = BuildDtcResponseJson(
-                new[] { (statusCode: 201, subStatusCode: (int?)null, sessionToken: lsnOnly, partitionKeyRangeId: pkRangeId) });
+                new[] { (statusCode: 201, subStatusCode: (int?)null, sessionToken: canonicalToken, partitionKeyRangeId: (string)null) });
 
             Mock<CosmosClientContext> mockContext = this.CreateMockContext(
                 sessionContainer,
@@ -70,12 +68,12 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
 
             string storedToken = sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName));
-            Assert.AreEqual(expectedToken, storedToken,
-                "Session token should be assembled as {pkRangeId}:{lsn} and merged into SessionContainer after a successful DTC commit.");
+            Assert.AreEqual(canonicalToken, storedToken,
+                "Session token in canonical format should be merged into SessionContainer after a successful DTC commit.");
         }
 
         [TestMethod]
-        [Description("When a per-operation session token is absent, SetSessionToken is NOT called for that operation and the SessionContainer is not updated")]
+        [Description("When a per-operation session token is absent, MergeSessionTokens silently skips (mirrors GatewayStoreModel behavior)")]
         public async Task CommitTransactionAsync_SkipsMerge_WhenSessionTokenIsNull()
         {
             // sessionToken: null omits the field from the JSON body entirely
@@ -101,18 +99,16 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 operations, mockContext.Object, OperationType.CommitDistributedTransaction);
 
-            await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
-
-            string storedToken = sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName));
-            Assert.IsTrue(string.IsNullOrEmpty(storedToken),
-                "SessionContainer should not be updated when the operation result has no session token.");
+            // Should NOT throw — silently skips merge like GatewayStoreModel does
+            DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+            Assert.IsNotNull(response);
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
         }
 
         [TestMethod]
         [Description("Verifies that the correct collectionRid and collectionFullname are passed to SetSessionToken for each operation")]
         public async Task CommitTransactionAsync_PassesCorrectCollectionToSetSessionToken()
         {
-            const string lsnOnly = "1#5#4=3";
             const string pkRangeId = "0";
             const string assembledToken = "0:1#5#4=3";
             const string container2 = "testcontainer2";
@@ -152,8 +148,8 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     Encoding.UTF8.GetBytes(BuildDtcResponseJson(
                         new[]
                         {
-                            (statusCode: 200, subStatusCode: (int?)null, sessionToken: lsnOnly, partitionKeyRangeId: pkRangeId),
-                            (statusCode: 200, subStatusCode: (int?)null, sessionToken: lsnOnly, partitionKeyRangeId: pkRangeId),
+                            (statusCode: 200, subStatusCode: (int?)null, sessionToken: assembledToken, partitionKeyRangeId: pkRangeId),
+                            (statusCode: 200, subStatusCode: (int?)null, sessionToken: assembledToken, partitionKeyRangeId: pkRangeId),
                         })))
             };
             mockContext.Setup(c => c.ProcessResourceOperationStreamAsync(
@@ -212,19 +208,17 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
-        [Description("Verifies that session tokens are still merged into the SessionContainer even when the DTC response indicates a failure")]
-        public async Task CommitTransactionAsync_MergesSessionTokens_OnFailureResponse()
+        [Description("When DTC returns a failure response, per-op session tokens are empty (DTC contract). " +
+                     "The SDK silently skips merge — no throw, no session container update.")]
+        public async Task CommitTransactionAsync_SkipsMerge_OnFailureResponse_EmptyTokens()
         {
-            // Deliberately distinct from the success-path token so a copy-paste regression would be caught.
-            const string lsnOnly = "1#3#4=2#5=1";
-            const string pkRangeId = "0";
-            const string expectedToken = "0:1#3#4=2#5=1";
-
+            // DTC contract (verified via E2E): failed transactions return empty session tokens.
+            // The SDK's IsNullOrEmpty check silently skips them — no merge, no throw.
             SessionContainer sessionContainer = new SessionContainer("testhost");
 
             Mock<CosmosClientContext> mockContext = this.CreateMockContext(
                 sessionContainer,
-                responseContent: BuildDtcResponseJson(new[] { (statusCode: 409, subStatusCode: (int?)null, sessionToken: lsnOnly, partitionKeyRangeId: pkRangeId) }),
+                responseContent: BuildDtcResponseJson(new[] { (statusCode: 409, subStatusCode: (int?)null, sessionToken: string.Empty, partitionKeyRangeId: (string)null) }),
                 statusCode: HttpStatusCode.Conflict);
 
             List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
@@ -243,18 +237,21 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
 
+            // No token should be stored — DTC returns empty tokens on failure
             string storedToken = sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName));
-            Assert.AreEqual(expectedToken, storedToken,
-                "Session token should still be merged even when the DTC response indicates a failure.");
+            Assert.IsTrue(string.IsNullOrEmpty(storedToken),
+                "DTC does not emit session tokens on failed transactions; SessionContainer must remain empty.");
         }
 
-        [TestMethod]
-        [Description("When session token is LSN-only and partitionKeyRangeId is present, the token is assembled as {pkRangeId}:{lsn}")]
-        public async Task CommitTransactionAsync_AssemblesSessionToken_WhenPartitionKeyRangeIdIsPresent()
+        [DataTestMethod]
+        [DataRow("0", DisplayName = "LSN-only token with pkRangeId present — SDK no longer assembles tokens")]
+        [DataRow(null, DisplayName = "LSN-only token with pkRangeId absent")]
+        [Description("When the per-op session token is LSN-only (not canonical), FromJson throws " +
+                     "CosmosException with a descriptive message — regardless of whether " +
+                     "partitionKeyRangeId is supplied alongside it.")]
+        public async Task CommitTransactionAsync_Throws_WhenSessionTokenIsNotCanonical(string pkRangeId)
         {
             const string lsnOnly = "1#9#4=8#5=7";
-            const string pkRangeId = "0";
-            const string expectedToken = "0:1#9#4=8#5=7";
 
             SessionContainer sessionContainer = new SessionContainer("testhost");
 
@@ -280,49 +277,13 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 operations, mockContext.Object, OperationType.CommitDistributedTransaction);
 
-            await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+            CosmosException ex = await Assert.ThrowsExceptionAsync<CosmosException>(
+                () => committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None),
+                $"A non-canonical session token (pkRangeId='{pkRangeId ?? "<null>"}') must throw CosmosException.");
 
-            string storedToken = sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName));
-            Assert.AreEqual(expectedToken, storedToken,
-                "Session token should be assembled as {pkRangeId}:{lsn} when partitionKeyRangeId is present.");
-        }
-
-        [TestMethod]
-        [Description("When partitionKeyRangeId is absent, merge is silently skipped")]
-        public async Task CommitTransactionAsync_SkipsMerge_WhenLsnOnlyAndPartitionKeyRangeIdIsAbsent()
-        {
-            const string lsnOnly = "1#9#4=8#5=7";
-
-            SessionContainer sessionContainer = new SessionContainer("testhost");
-
-            // No partitionKeyRangeId; session token is LSN-only (as always returned by the endpoint)
-            string responseJson = BuildDtcResponseJson(
-                new[] { (statusCode: 201, subStatusCode: (int?)null, sessionToken: lsnOnly, partitionKeyRangeId: (string)null) });
-
-            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
-                sessionContainer,
-                responseContent: responseJson,
-                statusCode: HttpStatusCode.OK);
-
-            List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
-            {
-                new DistributedTransactionOperation(
-                    OperationType.Create,
-                    operationIndex: 0,
-                    DatabaseName,
-                    ContainerName,
-                    new PartitionKey("pk1"),
-                    id: "doc1")
-            };
-
-            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                operations, mockContext.Object, OperationType.CommitDistributedTransaction);
-
-            await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
-
-            string storedToken = sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName));
-            Assert.IsTrue(string.IsNullOrEmpty(storedToken),
-                "SessionContainer should not be updated when partitionKeyRangeId is absent.");
+            Assert.IsTrue(
+                ex.Message.Contains("malformed session token") || ex.Message.Contains("canonical"),
+                $"Exception message should mention token format requirement. Actual: {ex.Message}");
         }
 
 
@@ -330,9 +291,9 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         [DataRow("", DisplayName = "Empty string partitionKeyRangeId")]
         [DataRow(" ", DisplayName = "Whitespace-only partitionKeyRangeId")]
         [DataRow("   ", DisplayName = "Multiple whitespace partitionKeyRangeId")]
-        [Description("When partitionKeyRangeId is present but empty or whitespace, merge is silently skipped. " +
-                     "The server has no validation on this field; throwing would risk failing a committed transaction.")]
-        public async Task CommitTransactionAsync_SkipsMerge_WhenPartitionKeyRangeIdIsEmptyOrWhitespace(string pkRangeId)
+        [Description("When sessionToken is LSN-only and partitionKeyRangeId is empty/whitespace, " +
+                     "FromJson throws CosmosException because the token is not canonical.")]
+        public async Task CommitTransactionAsync_Throws_WhenPartitionKeyRangeIdIsEmptyOrWhitespace(string pkRangeId)
         {
             const string lsnOnly = "1#9#4=8#5=7";
 
@@ -360,23 +321,20 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 operations, mockContext.Object, OperationType.CommitDistributedTransaction);
 
-            await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
-
-            string storedToken = sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName));
-            Assert.IsTrue(string.IsNullOrEmpty(storedToken),
-                $"SessionContainer should not be updated when partitionKeyRangeId is '{pkRangeId}' (empty/whitespace).");
+            await Assert.ThrowsExceptionAsync<CosmosException>(
+                () => committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None),
+                $"An LSN-only session token with pkRangeId '{pkRangeId}' must throw CosmosException.");
         }
 
         // ─── Retry / Spec-Compliance Tests ─────────────────────────────────────
 
         [TestMethod]
-        [Description("m8: In a multi-operation response, an op whose pkRangeId is absent is skipped while " +
-                     "subsequent ops with pkRangeId still have their session tokens merged correctly.")]
-        public async Task CommitTransactionAsync_MultiOp_SkipsOpWithMissingPkRangeId_MergesRemainingOps()
+        [Description("In a multi-op response, if op 0 has a malformed token and op 1 has a valid one, " +
+                     "MergeSessionTokens throws on the FIRST malformed token; op 1's later token is NOT merged.")]
+        public async Task CommitTransactionAsync_MultiOp_ThrowsOnFirstMalformed_WithoutMergingLaterOps()
         {
             const string lsnOnly = "1#9#4=8#5=7";
-            const string pkRangeId = "0";
-            const string assembledToken = "0:1#9#4=8#5=7";
+            const string canonicalToken = "0:1#9#4=8#5=7";
             const string container2 = "testcontainer2";
 
             string collectionRid1 = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
@@ -406,12 +364,12 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(containerProperties2);
 
-            // op 0: missing pkRangeId — should be skipped (SessionToken nulled in FromJson)
-            // op 1: has pkRangeId — should be merged
+            // op 0: malformed (LSN-only, not canonical) — throws on the first malformed token
+            // op 1: valid canonical token — NOT merged because op 0 throws first
             string responseJson = BuildDtcResponseJson(new[]
             {
                 (statusCode: 201, subStatusCode: (int?)null, sessionToken: lsnOnly, partitionKeyRangeId: (string)null),
-                (statusCode: 201, subStatusCode: (int?)null, sessionToken: lsnOnly, partitionKeyRangeId: pkRangeId),
+                (statusCode: 201, subStatusCode: (int?)null, sessionToken: canonicalToken, partitionKeyRangeId: (string)null),
             });
 
             ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK)
@@ -446,89 +404,36 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 operations, mockContext.Object, OperationType.CommitDistributedTransaction);
 
-            await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+            await Assert.ThrowsExceptionAsync<CosmosException>(
+                () => committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None),
+                "A malformed session token must throw CosmosException on the first malformed op.");
 
-            // op 0 (missing pkRangeId) must NOT have been merged.
-            mockSessionContainer.Verify(
-                s => s.SetSessionToken(
-                    collectionRid1,
-                    DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName),
-                    It.IsAny<INameValueCollection>()),
-                Times.Never,
-                "SetSessionToken must not be called for an operation whose pkRangeId is absent.");
-
-            // op 1 (has pkRangeId) must have been merged with the assembled token.
+            // The key assertion: op 1's later token was NOT merged — op 0 threw first
             mockSessionContainer.Verify(
                 s => s.SetSessionToken(
                     collectionRid2,
                     DistributedTransactionConstants.GetCollectionFullName(DatabaseName, container2),
-                    It.Is<INameValueCollection>(h => h[HttpConstants.HttpHeaders.SessionToken] == assembledToken)),
-                Times.Once,
-                "SetSessionToken must be called for the operation that has pkRangeId, with the assembled token.");
+                    It.Is<INameValueCollection>(h => h[HttpConstants.HttpHeaders.SessionToken] == canonicalToken)),
+                Times.Never,
+                "Op 1's later token must NOT be merged because op 0 throws on the first malformed token.");
+
+            // Op 0's malformed token must NOT have been merged
+            mockSessionContainer.Verify(
+                s => s.SetSessionToken(
+                    collectionRid1,
+                    It.IsAny<string>(),
+                    It.IsAny<INameValueCollection>()),
+                Times.Never,
+                "Op 0's malformed token must not be merged.");
         }
 
         [TestMethod]
-        [Description("m9: When an operation result has no partitionKeyRangeId, FromJson emits a TraceWarning " +
-                     "so the skip is observable in diagnostic traces.")]
-        public async Task CommitTransactionAsync_EmitsTraceWarning_WhenPartitionKeyRangeIdIsAbsent()
+        // When SetSessionToken throws on a content-invalid token (SessionTokenHelper.Parse throws
+        // BadRequestException after the shape check), the malformed token is surfaced as a
+        // CosmosException under Session consistency on a committed response.
+        public async Task CommitTransactionAsync_AggregatesSetSessionTokenException()
         {
-            const string lsnOnly = "1#9#4=8#5=7";
-
-            SessionContainer sessionContainer = new SessionContainer("testhost");
-
-            string responseJson = BuildDtcResponseJson(
-                new[] { (statusCode: 201, subStatusCode: (int?)null, sessionToken: lsnOnly, partitionKeyRangeId: (string)null) });
-
-            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
-                sessionContainer,
-                responseContent: responseJson,
-                statusCode: HttpStatusCode.OK);
-
-            List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
-            {
-                new DistributedTransactionOperation(
-                    OperationType.Create, operationIndex: 0,
-                    DatabaseName, ContainerName, new PartitionKey("pk1"), id: "doc1")
-            };
-
-            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                operations, mockContext.Object, OperationType.CommitDistributedTransaction);
-
-            List<string> capturedWarnings = new List<string>();
-            System.Diagnostics.TraceListener listener = new DelegatingTraceListener(
-                (eventType, message) =>
-                {
-                    if (eventType == System.Diagnostics.TraceEventType.Warning)
-                    {
-                        capturedWarnings.Add(message);
-                    }
-                });
-
-            System.Diagnostics.SourceLevels previousLevel = DefaultTrace.TraceSource.Switch.Level;
-            DefaultTrace.TraceSource.Switch.Level = System.Diagnostics.SourceLevels.All;
-            DefaultTrace.TraceSource.Listeners.Add(listener);
-            try
-            {
-                await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
-            }
-            finally
-            {
-                DefaultTrace.TraceSource.Listeners.Remove(listener);
-                DefaultTrace.TraceSource.Switch.Level = previousLevel;
-            }
-
-            Assert.IsTrue(
-                capturedWarnings.Any(m => m.Contains("partitionKeyRangeId")),
-                "A TraceWarning mentioning 'partitionKeyRangeId' should be emitted when pkRangeId is absent.");
-        }
-
-
-        [TestMethod]
-        [Description("When SetSessionToken throws, the exception is swallowed and CommitTransactionAsync still returns the response rather than rethrowing")]
-        public async Task CommitTransactionAsync_SwallowsSetSessionTokenException()
-        {
-            const string lsnOnly = "1#9#4=8#5=7";
-            const string pkRangeId = "0";
+            const string canonicalToken = "0:1#9#4=8#5=7";
 
             Mock<ISessionContainer> mockSessionContainer = new Mock<ISessionContainer>();
             mockSessionContainer
@@ -536,7 +441,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     It.IsAny<string>(),
                     It.IsAny<string>(),
                     It.IsAny<INameValueCollection>()))
-                .Throws(new InvalidOperationException("simulated SetSessionToken failure"));
+                .Throws(new BadRequestException("simulated SetSessionToken failure"));
 
             MockDocumentClient documentClient = new MockDocumentClient
             {
@@ -555,7 +460,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 .ReturnsAsync(containerProperties);
 
             string responseJson = BuildDtcResponseJson(
-                new[] { (statusCode: 201, subStatusCode: (int?)null, sessionToken: lsnOnly, partitionKeyRangeId: pkRangeId) });
+                new[] { (statusCode: 201, subStatusCode: (int?)null, sessionToken: canonicalToken, partitionKeyRangeId: (string)null) });
 
             ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK)
             {
@@ -590,18 +495,16 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 operations, mockContext.Object, OperationType.CommitDistributedTransaction);
 
-            // Must not throw even though SetSessionToken throws internally.
-            DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
-            Assert.IsNotNull(response, "CommitTransactionAsync should return a response even when SetSessionToken throws.");
-            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            await Assert.ThrowsExceptionAsync<CosmosException>(
+                () => committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None),
+                "SetSessionToken exception must be aggregated and surfaced as CosmosException.");
         }
 
         [TestMethod]
-        [Description("When SetSessionToken throws OperationCanceledException, the exception must propagate — it must not be swallowed by the MergeSessionTokens catch block.")]
+        [Description("When SetSessionToken throws OperationCanceledException, the exception propagates.")]
         public async Task CommitTransactionAsync_PropagatesOperationCanceledException_FromSetSessionToken()
         {
-            const string lsnOnly = "1#9#4=8#5=7";
-            const string pkRangeId = "0";
+            const string canonicalToken = "0:1#9#4=8#5=7";
 
             Mock<ISessionContainer> mockSessionContainer = new Mock<ISessionContainer>();
             mockSessionContainer
@@ -614,7 +517,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             Mock<CosmosClientContext> mockContext = this.CreateMockContext(
                 mockSessionContainer.Object,
                 responseContent: BuildDtcResponseJson(
-                    new[] { (statusCode: 201, subStatusCode: (int?)null, sessionToken: lsnOnly, partitionKeyRangeId: pkRangeId) }),
+                    new[] { (statusCode: 201, subStatusCode: (int?)null, sessionToken: canonicalToken, partitionKeyRangeId: (string)null) }),
                 statusCode: HttpStatusCode.OK);
 
             List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
@@ -634,6 +537,697 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             await Assert.ThrowsExceptionAsync<OperationCanceledException>(
                 () => committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None),
                 "OperationCanceledException from SetSessionToken must propagate, not be swallowed.");
+        }
+
+        [TestMethod]
+        // When CollectionResourceId is null (e.g., resolve failed or serverless/system resources),
+        // MergeSessionTokens skips the op instead of crashing with a NullReferenceException
+        // from SessionContainer.SetSessionToken → ResourceId.Parse(null).
+        public async Task MergeSessionTokens_SkipsMerge_WhenCollectionResourceIdIsNull()
+        {
+            const string canonicalToken = "0:1#9#4=8#5=7";
+
+            Mock<ISessionContainer> mockSessionContainer = new Mock<ISessionContainer>();
+
+            // Build a mock response with a valid session token
+            DistributedTransactionOperationResult result = new DistributedTransactionOperationResult();
+            result.Index = 0;
+            result.StatusCode = HttpStatusCode.Created;
+            result.SessionToken = canonicalToken;
+
+            Mock<DistributedTransactionResponse> mockResponse = new Mock<DistributedTransactionResponse>();
+            mockResponse.Setup(r => r.Count).Returns(1);
+            mockResponse.Setup(r => r[0]).Returns(result);
+
+            // Operation has NULL CollectionResourceId (never resolved)
+            DistributedTransactionOperation operation = new DistributedTransactionOperation(
+                OperationType.Create, operationIndex: 0,
+                DatabaseName, ContainerName, new PartitionKey("pk1"), id: "doc1");
+            // CollectionResourceId defaults to null — do not set it
+
+            DistributedTransactionServerRequest serverRequest = await DistributedTransactionServerRequest.CreateAsync(
+                new List<DistributedTransactionOperation> { operation },
+                MockCosmosUtil.Serializer,
+                CancellationToken.None);
+
+            // Should not throw — skips the merge gracefully
+            DistributedTransactionCommitter.MergeSessionTokens(
+                mockResponse.Object, serverRequest, mockSessionContainer.Object, isSessionConsistency: true);
+
+            // SetSessionToken must NOT have been called (skipped due to null CollectionResourceId)
+            mockSessionContainer.Verify(
+                s => s.SetSessionToken(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<INameValueCollection>()),
+                Times.Never,
+                "SetSessionToken must not be called when CollectionResourceId is null.");
+        }
+
+        [TestMethod]
+        // A non-success sub-op carrying a non-empty malformed token must be skipped: neither merged
+        // nor allowed to trigger the commit-wide throw, even on an overall-success response.
+        public async Task MergeSessionTokens_SkipsFailedOp_WithNonEmptyMalformedToken_DoesNotThrow()
+        {
+            const string malformedToken = "no-colon-lsn-only";
+
+            Mock<ISessionContainer> mockSessionContainer = new Mock<ISessionContainer>();
+
+            // op 0: non-success (404/1002) result carrying a malformed token — must be skipped.
+            DistributedTransactionOperationResult failedResult = new DistributedTransactionOperationResult();
+            failedResult.Index = 0;
+            failedResult.StatusCode = HttpStatusCode.NotFound;
+            failedResult.SubStatusCode = SubStatusCodes.ReadSessionNotAvailable;
+            failedResult.SessionToken = malformedToken;
+
+            Mock<DistributedTransactionResponse> mockResponse = new Mock<DistributedTransactionResponse>();
+            mockResponse.Setup(r => r.Count).Returns(1);
+            mockResponse.Setup(r => r[0]).Returns(failedResult);
+            mockResponse.Setup(r => r.IsSuccessStatusCode).Returns(true);
+            mockResponse.Setup(r => r.StatusCode).Returns(HttpStatusCode.OK);
+
+            DistributedTransactionOperation operation = new DistributedTransactionOperation(
+                OperationType.Create, operationIndex: 0,
+                DatabaseName, ContainerName, new PartitionKey("pk1"), id: "doc1");
+            operation.CollectionResourceId = CollectionResourceId;
+
+            DistributedTransactionServerRequest serverRequest = await DistributedTransactionServerRequest.CreateAsync(
+                new List<DistributedTransactionOperation> { operation },
+                MockCosmosUtil.Serializer,
+                CancellationToken.None);
+
+            // Must NOT throw despite the malformed token, because the carrying op did not succeed.
+            DistributedTransactionCommitter.MergeSessionTokens(
+                mockResponse.Object, serverRequest, mockSessionContainer.Object, isSessionConsistency: true);
+
+            mockSessionContainer.Verify(
+                s => s.SetSessionToken(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<INameValueCollection>()),
+                Times.Never,
+                "A failed sub-op's token must not be merged.");
+        }
+
+        [TestMethod]
+        // When SetSessionToken throws on op 0 (e.g., SessionTokenHelper.Parse rejects a content-invalid
+        // token that passed the colon-shape check), MergeSessionTokens throws on that FIRST malformed
+        // op; op 1's later token is NOT merged. Cancellation still propagates as-is.
+        public async Task MergeSessionTokens_SetSessionTokenThrows_ThrowsOnFirstWithoutMergingLaterOps()
+        {
+            const string token0 = "0:bad-content";
+            const string token1 = "1:1#9#4=8#5=7";
+            const string container2 = "testcontainer2";
+            string collectionRid1 = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            string collectionRid2 = ResourceId.NewDocumentCollectionId(42, 200).DocumentCollectionId.ToString();
+
+            Mock<ISessionContainer> mockSessionContainer = new Mock<ISessionContainer>();
+            // Only op 0's call throws (content-invalid token → BadRequestException, what
+            // SessionTokenHelper.Parse actually throws); op 1's call would succeed.
+            mockSessionContainer
+                .Setup(s => s.SetSessionToken(collectionRid1, It.IsAny<string>(), It.IsAny<INameValueCollection>()))
+                .Throws(new BadRequestException("simulated parse failure"));
+
+            DistributedTransactionOperationResult result0 = new DistributedTransactionOperationResult();
+            result0.Index = 0;
+            result0.StatusCode = HttpStatusCode.Created;
+            result0.SessionToken = token0;
+
+            DistributedTransactionOperationResult result1 = new DistributedTransactionOperationResult();
+            result1.Index = 1;
+            result1.StatusCode = HttpStatusCode.Created;
+            result1.SessionToken = token1;
+
+            Mock<DistributedTransactionResponse> mockResponse = new Mock<DistributedTransactionResponse>();
+            mockResponse.Setup(r => r.IsSuccessStatusCode).Returns(true);
+            mockResponse.Setup(r => r.Count).Returns(2);
+            mockResponse.Setup(r => r[0]).Returns(result0);
+            mockResponse.Setup(r => r[1]).Returns(result1);
+
+            DistributedTransactionOperation op0 = new DistributedTransactionOperation(
+                OperationType.Create, operationIndex: 0,
+                DatabaseName, ContainerName, new PartitionKey("pk1"), id: "doc1");
+            op0.CollectionResourceId = collectionRid1;
+
+            DistributedTransactionOperation op1 = new DistributedTransactionOperation(
+                OperationType.Create, operationIndex: 1,
+                DatabaseName, container2, new PartitionKey("pk2"), id: "doc2");
+            op1.CollectionResourceId = collectionRid2;
+
+            DistributedTransactionServerRequest serverRequest = await DistributedTransactionServerRequest.CreateAsync(
+                new List<DistributedTransactionOperation> { op0, op1 },
+                MockCosmosUtil.Serializer,
+                CancellationToken.None);
+
+            // Aggregated exception should surface; op 1's later token must NOT be merged (op 0 threw first)
+            Assert.ThrowsException<CosmosException>(
+                () => DistributedTransactionCommitter.MergeSessionTokens(
+                    mockResponse.Object, serverRequest, mockSessionContainer.Object, isSessionConsistency: true),
+                "CosmosException must surface on the first malformed op.");
+
+            mockSessionContainer.Verify(
+                s => s.SetSessionToken(
+                    collectionRid2,
+                    DistributedTransactionConstants.GetCollectionFullName(DatabaseName, container2),
+                    It.Is<INameValueCollection>(h => h[HttpConstants.HttpHeaders.SessionToken] == token1)),
+                Times.Never,
+                "Op 1's later token must NOT be merged because op 0 throws on the first malformed token.");
+        }
+
+        [TestMethod]
+        // Regression: SessionContainer.SetSessionToken throws InternalServerErrorException on a benign
+        // concurrent-dictionary add race (NOT a malformed token). It must propagate unchanged and must
+        // NOT be reclassified as a malformed session token (which would surface a spurious 500 for a
+        // transaction that actually committed).
+        public async Task MergeSessionTokens_InternalServerErrorFromRace_PropagatesUnchanged()
+        {
+            const string canonicalToken = "0:1#9#4=8#5=7";
+            string collectionRid = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+
+            Mock<ISessionContainer> mockSessionContainer = new Mock<ISessionContainer>();
+            mockSessionContainer
+                .Setup(s => s.SetSessionToken(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<INameValueCollection>()))
+                .Throws(new InternalServerErrorException("AddSessionToken failed to get or add the session token dictionary."));
+
+            DistributedTransactionOperationResult result = new DistributedTransactionOperationResult
+            { Index = 0, StatusCode = HttpStatusCode.Created, SessionToken = canonicalToken };
+
+            Mock<DistributedTransactionResponse> mockResponse = new Mock<DistributedTransactionResponse>();
+            mockResponse.Setup(r => r.IsSuccessStatusCode).Returns(true);
+            mockResponse.Setup(r => r.Count).Returns(1);
+            mockResponse.Setup(r => r[0]).Returns(result);
+
+            DistributedTransactionOperation operation = new DistributedTransactionOperation(
+                OperationType.Create, operationIndex: 0,
+                DatabaseName, ContainerName, new PartitionKey("pk1"), id: "doc1");
+            operation.CollectionResourceId = collectionRid;
+
+            DistributedTransactionServerRequest serverRequest = await DistributedTransactionServerRequest.CreateAsync(
+                new List<DistributedTransactionOperation> { operation },
+                MockCosmosUtil.Serializer,
+                CancellationToken.None);
+
+            // The race exception must propagate as-is, NOT be swallowed and rethrown as a CosmosException.
+            Assert.ThrowsException<InternalServerErrorException>(
+                () => DistributedTransactionCommitter.MergeSessionTokens(
+                    mockResponse.Object, serverRequest, mockSessionContainer.Object, isSessionConsistency: true),
+                "A benign concurrent-add race (InternalServerErrorException) must not be reclassified as a malformed token.");
+        }
+
+        [TestMethod]
+        // OperationCanceledException from SetSessionToken must NOT be caught/aggregated — it propagates
+        // immediately to honor the cancellation token.
+        public async Task MergeSessionTokens_OperationCanceledException_Propagates()
+        {
+            const string canonicalToken = "0:1#9#4=8#5=7";
+            string collectionRid = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+
+            Mock<ISessionContainer> mockSessionContainer = new Mock<ISessionContainer>();
+            mockSessionContainer
+                .Setup(s => s.SetSessionToken(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<INameValueCollection>()))
+                .Throws(new OperationCanceledException("simulated cancellation"));
+
+            DistributedTransactionOperationResult result = new DistributedTransactionOperationResult();
+            result.Index = 0;
+            result.StatusCode = HttpStatusCode.Created;
+            result.SessionToken = canonicalToken;
+
+            Mock<DistributedTransactionResponse> mockResponse = new Mock<DistributedTransactionResponse>();
+            mockResponse.Setup(r => r.Count).Returns(1);
+            mockResponse.Setup(r => r[0]).Returns(result);
+
+            DistributedTransactionOperation operation = new DistributedTransactionOperation(
+                OperationType.Create, operationIndex: 0,
+                DatabaseName, ContainerName, new PartitionKey("pk1"), id: "doc1");
+            operation.CollectionResourceId = collectionRid;
+
+            DistributedTransactionServerRequest serverRequest = await DistributedTransactionServerRequest.CreateAsync(
+                new List<DistributedTransactionOperation> { operation },
+                MockCosmosUtil.Serializer,
+                CancellationToken.None);
+
+            Assert.ThrowsException<OperationCanceledException>(
+                () => DistributedTransactionCommitter.MergeSessionTokens(
+                    mockResponse.Object, serverRequest, mockSessionContainer.Object, isSessionConsistency: true),
+                "OperationCanceledException must propagate, not be caught/aggregated.");
+        }
+
+        [TestMethod]
+        // Defensive: a malformed server response with an out-of-range op Index must not crash
+        // the merge loop or skip remaining ops. The bad index is traced and skipped, and
+        // subsequent valid ops still get merged (no exception thrown).
+        public async Task MergeSessionTokens_OutOfRangeIndex_SkippedAndTraced()
+        {
+            const string canonicalToken = "0:1#9#4=8#5=7";
+            string collectionRid = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+
+            Mock<ISessionContainer> mockSessionContainer = new Mock<ISessionContainer>();
+
+            // Result 0: out-of-range Index (99 when request only has 1 op)
+            DistributedTransactionOperationResult badResult = new DistributedTransactionOperationResult();
+            badResult.Index = 99;
+            badResult.StatusCode = HttpStatusCode.Created;
+            badResult.SessionToken = canonicalToken;
+
+            // Result 1: valid in-range Index
+            DistributedTransactionOperationResult validResult = new DistributedTransactionOperationResult();
+            validResult.Index = 0;
+            validResult.StatusCode = HttpStatusCode.Created;
+            validResult.SessionToken = canonicalToken;
+
+            Mock<DistributedTransactionResponse> mockResponse = new Mock<DistributedTransactionResponse>();
+            mockResponse.Setup(r => r.Count).Returns(2);
+            mockResponse.Setup(r => r[0]).Returns(badResult);
+            mockResponse.Setup(r => r[1]).Returns(validResult);
+
+            DistributedTransactionOperation operation = new DistributedTransactionOperation(
+                OperationType.Create, operationIndex: 0,
+                DatabaseName, ContainerName, new PartitionKey("pk1"), id: "doc1");
+            operation.CollectionResourceId = collectionRid;
+
+            DistributedTransactionServerRequest serverRequest = await DistributedTransactionServerRequest.CreateAsync(
+                new List<DistributedTransactionOperation> { operation },
+                MockCosmosUtil.Serializer,
+                CancellationToken.None);
+
+            // Out-of-range Index is skipped (traced), not treated as a malformed-token throw; it must
+            // not raise ArgumentOutOfRangeException and must not abort the loop.
+            DistributedTransactionCommitter.MergeSessionTokens(
+                mockResponse.Object, serverRequest, mockSessionContainer.Object, isSessionConsistency: true);
+
+            // The valid in-range op was still merged after the bad-index result was skipped
+            mockSessionContainer.Verify(
+                s => s.SetSessionToken(collectionRid, It.IsAny<string>(), It.IsAny<INameValueCollection>()),
+                Times.Once,
+                "Valid in-range op must still be merged after a bad-index op is skipped.");
+        }
+
+        // ─── v2 edge case coverage ───────────────────────────────────────────────
+
+        [TestMethod]
+        // v2 edge case #1: a token like "0:-1" that passes the colon-shape check but causes
+        // SessionTokenHelper.Parse to throw internally must be classified as malformed (caught
+        // by the per-op try/catch). Under Session consistency on a committed response the merge
+        // throws on this FIRST malformed op; op 1's later token is NOT merged.
+        public async Task MergeSessionTokens_ShapeValidButContentInvalid_ClassifiedAsMalformed()
+        {
+            // op 0: structurally valid (passes colon check) but content is invalid for the parser
+            const string shapeValidContentInvalid = "0:not-a-valid-lsn";
+            // op 1: fully canonical — must still be merged
+            const string canonicalToken = "1:1#9#4=8#5=7";
+            const string container2 = "testcontainer2";
+            string collectionRid1 = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            string collectionRid2 = ResourceId.NewDocumentCollectionId(42, 200).DocumentCollectionId.ToString();
+
+            Mock<ISessionContainer> mockSessionContainer = new Mock<ISessionContainer>();
+            // Simulate SessionTokenHelper.Parse rejecting op 0's content (BadRequestException is what
+            // the real parser would throw on a non-numeric LSN)
+            mockSessionContainer
+                .Setup(s => s.SetSessionToken(
+                    collectionRid1,
+                    It.IsAny<string>(),
+                    It.Is<INameValueCollection>(h => h[HttpConstants.HttpHeaders.SessionToken] == shapeValidContentInvalid)))
+                .Throws(new BadRequestException("Invalid session token content"));
+
+            DistributedTransactionOperationResult result0 = new DistributedTransactionOperationResult
+            { Index = 0, StatusCode = HttpStatusCode.Created, SessionToken = shapeValidContentInvalid };
+            DistributedTransactionOperationResult result1 = new DistributedTransactionOperationResult
+            { Index = 1, StatusCode = HttpStatusCode.Created, SessionToken = canonicalToken };
+
+            Mock<DistributedTransactionResponse> mockResponse = new Mock<DistributedTransactionResponse>();
+            mockResponse.Setup(r => r.IsSuccessStatusCode).Returns(true);
+            mockResponse.Setup(r => r.Count).Returns(2);
+            mockResponse.Setup(r => r[0]).Returns(result0);
+            mockResponse.Setup(r => r[1]).Returns(result1);
+
+            DistributedTransactionOperation op0 = new DistributedTransactionOperation(
+                OperationType.Create, operationIndex: 0,
+                DatabaseName, ContainerName, new PartitionKey("pk1"), id: "doc1");
+            op0.CollectionResourceId = collectionRid1;
+
+            DistributedTransactionOperation op1 = new DistributedTransactionOperation(
+                OperationType.Create, operationIndex: 1,
+                DatabaseName, container2, new PartitionKey("pk2"), id: "doc2");
+            op1.CollectionResourceId = collectionRid2;
+
+            DistributedTransactionServerRequest serverRequest = await DistributedTransactionServerRequest.CreateAsync(
+                new List<DistributedTransactionOperation> { op0, op1 },
+                MockCosmosUtil.Serializer,
+                CancellationToken.None);
+
+            CosmosException ex = Assert.ThrowsException<CosmosException>(
+                () => DistributedTransactionCommitter.MergeSessionTokens(
+                    mockResponse.Object, serverRequest, mockSessionContainer.Object, isSessionConsistency: true));
+
+            Assert.IsTrue(ex.Message.Contains(shapeValidContentInvalid) || ex.Message.Contains("Op 0"),
+                $"Aggregated message should identify the bad op. Actual: {ex.Message}");
+
+            // Op 1's later token must NOT have been merged — op 0 throws on the first malformed token
+            mockSessionContainer.Verify(
+                s => s.SetSessionToken(
+                    collectionRid2,
+                    It.IsAny<string>(),
+                    It.Is<INameValueCollection>(h => h[HttpConstants.HttpHeaders.SessionToken] == canonicalToken)),
+                Times.Never,
+                "Op 1's later token must NOT be merged because op 0 throws on the first malformed token.");
+        }
+
+        [TestMethod]
+        [Description("Session tokens must be in canonical '{pkRangeId}:{lsn}' format. " +
+            "An LSN-only token without a colon separator is classified as malformed.")]
+        public async Task MergeSessionTokens_LegacyTwoFieldFormat_TreatedAsMalformed()
+        {
+            // LSN-only token without colon separator is malformed.
+            const string lsnOnly = "1#9#4=8#5=7";
+            string collectionRid = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+
+            Mock<ISessionContainer> mockSessionContainer = new Mock<ISessionContainer>();
+
+            DistributedTransactionOperationResult result0 = new DistributedTransactionOperationResult
+            { Index = 0, StatusCode = HttpStatusCode.Created, SessionToken = lsnOnly };
+
+            Mock<DistributedTransactionResponse> mockResponse = new Mock<DistributedTransactionResponse>();
+            mockResponse.Setup(r => r.Count).Returns(1);
+            mockResponse.Setup(r => r[0]).Returns(result0);
+            mockResponse.Setup(r => r.IsSuccessStatusCode).Returns(true);
+            mockResponse.Setup(r => r.ActivityId).Returns("test-activity-id");
+            mockResponse.Setup(r => r.RequestCharge).Returns(3.14);
+
+            DistributedTransactionOperation op0 = new DistributedTransactionOperation(
+                OperationType.Create, operationIndex: 0,
+                DatabaseName, ContainerName, new PartitionKey("pk1"), id: "doc1");
+            op0.CollectionResourceId = collectionRid;
+
+            DistributedTransactionServerRequest serverRequest = await DistributedTransactionServerRequest.CreateAsync(
+                new List<DistributedTransactionOperation> { op0 },
+                MockCosmosUtil.Serializer,
+                CancellationToken.None);
+
+            CosmosException ex = Assert.ThrowsException<CosmosException>(
+                () => DistributedTransactionCommitter.MergeSessionTokens(
+                    mockResponse.Object, serverRequest, mockSessionContainer.Object, isSessionConsistency: true));
+
+            Assert.AreEqual(HttpStatusCode.InternalServerError, ex.StatusCode);
+            Assert.IsTrue(ex.Message.Contains("committed"),
+                $"Exception must indicate the transaction committed. Actual: {ex.Message}");
+            Assert.IsTrue(ex.Message.Contains(lsnOnly) || ex.Message.Contains("Op 0"),
+                $"Exception must identify the malformed token. Actual: {ex.Message}");
+            Assert.AreEqual("test-activity-id", ex.ActivityId,
+                "ActivityId from the response must be propagated to the exception for support tickets.");
+            Assert.AreEqual(3.14, ex.RequestCharge,
+                "RequestCharge from the response must be propagated to the exception.");
+
+            // SetSessionToken must NOT have been called — no token was canonical
+            mockSessionContainer.Verify(
+                s => s.SetSessionToken(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<INameValueCollection>()),
+                Times.Never,
+                "An LSN-only token without colon separator must not be merged.");
+        }
+
+        [TestMethod]
+        // Gating: under non-Session consistency (isSessionConsistency == false) a malformed token must
+        // NOT throw — it is traced best-effort and the loop continues, so a subsequent valid op's token
+        // is still merged. This locks in the throwOnMalformed = IsSuccessStatusCode && isSessionConsistency
+        // gate (mirrors GatewayStoreModel: session-token bookkeeping is only enforced under Session).
+        public async Task MergeSessionTokens_NonSessionConsistency_DoesNotThrow_AndMergesValidOps()
+        {
+            const string malformedToken = "1#9#4=8#5=7"; // LSN-only, no colon → malformed
+            const string canonicalToken = "1:1#9#4=8#5=7";
+            const string container2 = "testcontainer2";
+            string collectionRid1 = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            string collectionRid2 = ResourceId.NewDocumentCollectionId(42, 200).DocumentCollectionId.ToString();
+
+            Mock<ISessionContainer> mockSessionContainer = new Mock<ISessionContainer>();
+
+            DistributedTransactionOperationResult result0 = new DistributedTransactionOperationResult
+            { Index = 0, StatusCode = HttpStatusCode.Created, SessionToken = malformedToken };
+            DistributedTransactionOperationResult result1 = new DistributedTransactionOperationResult
+            { Index = 1, StatusCode = HttpStatusCode.Created, SessionToken = canonicalToken };
+
+            Mock<DistributedTransactionResponse> mockResponse = new Mock<DistributedTransactionResponse>();
+            mockResponse.Setup(r => r.IsSuccessStatusCode).Returns(true);
+            mockResponse.Setup(r => r.Count).Returns(2);
+            mockResponse.Setup(r => r[0]).Returns(result0);
+            mockResponse.Setup(r => r[1]).Returns(result1);
+
+            DistributedTransactionOperation op0 = new DistributedTransactionOperation(
+                OperationType.Create, operationIndex: 0,
+                DatabaseName, ContainerName, new PartitionKey("pk1"), id: "doc1");
+            op0.CollectionResourceId = collectionRid1;
+
+            DistributedTransactionOperation op1 = new DistributedTransactionOperation(
+                OperationType.Create, operationIndex: 1,
+                DatabaseName, container2, new PartitionKey("pk2"), id: "doc2");
+            op1.CollectionResourceId = collectionRid2;
+
+            DistributedTransactionServerRequest serverRequest = await DistributedTransactionServerRequest.CreateAsync(
+                new List<DistributedTransactionOperation> { op0, op1 },
+                MockCosmosUtil.Serializer,
+                CancellationToken.None);
+
+            // No throw despite op 0's malformed token — isSessionConsistency is false.
+            DistributedTransactionCommitter.MergeSessionTokens(
+                mockResponse.Object, serverRequest, mockSessionContainer.Object, isSessionConsistency: false);
+
+            // op 0's malformed token was traced and skipped (not merged).
+            mockSessionContainer.Verify(
+                s => s.SetSessionToken(
+                    collectionRid1, It.IsAny<string>(), It.IsAny<INameValueCollection>()),
+                Times.Never,
+                "Op 0's malformed token must not be merged.");
+
+            // op 1's valid token was still merged — the loop did not abort.
+            mockSessionContainer.Verify(
+                s => s.SetSessionToken(
+                    collectionRid2,
+                    DistributedTransactionConstants.GetCollectionFullName(DatabaseName, container2),
+                    It.Is<INameValueCollection>(h => h[HttpConstants.HttpHeaders.SessionToken] == canonicalToken)),
+                Times.Once,
+                "Op 1's valid token must still be merged when a malformed token is suppressed (no throw).");
+        }
+
+        [TestMethod]
+        // Auto-resolution: under Session consistency, ResolveCollectionRidsAsync resolves a per-operation
+        // session token from the SessionContainer for ops without an explicit token, and stamps the
+        // collection resource id. When the routing map is unavailable (MockDocumentClient returns a null
+        // CollectionRoutingMap), resolution falls back to the compound collection-wide token (mirrors
+        // GatewayStoreModel's best-effort behavior).
+        public async Task ResolveCollectionRidsAsync_ResolvesCompoundToken_WhenRoutingMapUnavailable()
+        {
+            const string compoundToken = "0:1#9#4=8#5=7";
+            string collectionPath = DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName);
+
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+            INameValueCollection seedHeaders = new RequestNameValueCollection();
+            seedHeaders[HttpConstants.HttpHeaders.SessionToken] = compoundToken;
+            sessionContainer.SetSessionToken(CollectionResourceId, collectionPath, seedHeaders);
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer, responseContent: null, statusCode: HttpStatusCode.OK);
+
+            DistributedTransactionOperation operation = new DistributedTransactionOperation(
+                OperationType.Create, operationIndex: 0,
+                DatabaseName, ContainerName, new PartitionKey("pk1"), id: "doc1");
+
+            await DistributedTransactionCommitterUtils.ResolveCollectionRidsAsync(
+                new List<DistributedTransactionOperation> { operation },
+                mockContext.Object,
+                CancellationToken.None);
+
+            Assert.AreEqual(CollectionResourceId, operation.CollectionResourceId,
+                "ResolveCollectionRidsAsync must stamp the resolved collection resource id on the operation.");
+            Assert.AreEqual(compoundToken, operation.SessionToken,
+                "Under Session consistency, an op without an explicit token must be resolved from the SessionContainer " +
+                "(compound-token fallback when the routing map is unavailable).");
+        }
+
+        [TestMethod]
+        // Auto-resolution must NOT override a user-provided session token: if the operation already
+        // carries a token, ResolveCollectionRidsAsync leaves it untouched (it still stamps the rid).
+        public async Task ResolveCollectionRidsAsync_PreservesUserProvidedToken()
+        {
+            const string userToken = "0:1#42";
+            string collectionPath = DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName);
+
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+            // Seed a DIFFERENT token; it must be ignored because the op already carries one.
+            INameValueCollection seedHeaders = new RequestNameValueCollection();
+            seedHeaders[HttpConstants.HttpHeaders.SessionToken] = "0:1#9#4=8#5=7";
+            sessionContainer.SetSessionToken(CollectionResourceId, collectionPath, seedHeaders);
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer, responseContent: null, statusCode: HttpStatusCode.OK);
+
+            DistributedTransactionOperation operation = new DistributedTransactionOperation(
+                OperationType.Create, operationIndex: 0,
+                DatabaseName, ContainerName, new PartitionKey("pk1"), id: "doc1");
+            operation.SessionToken = userToken;
+
+            await DistributedTransactionCommitterUtils.ResolveCollectionRidsAsync(
+                new List<DistributedTransactionOperation> { operation },
+                mockContext.Object,
+                CancellationToken.None);
+
+            Assert.AreEqual(userToken, operation.SessionToken,
+                "A user-provided session token must not be overridden by auto-resolution.");
+        }
+
+        [TestMethod]
+        // Deserialization correctness: if the coordinator ever includes a session token alongside
+        // a failed op (the current contract returns empty, but the field is still parsed),
+        // the SDK preserves it on the result object without crashing or discarding.
+        public async Task OperationResult_SessionTokenAccessible_AfterFailedOpStatus()
+        {
+            const string canonicalToken = "0:1#9#4=8#5=7";
+
+            DistributedTransactionServerRequest serverRequest = await DistributedTransactionServerRequest.CreateAsync(
+                CreateTestOperations(),
+                MockCosmosUtil.Serializer,
+                CancellationToken.None);
+
+            // Simulate a failure status (412) with a valid session token in the response body
+            string responseJson = BuildDtcResponseJson(new[]
+            {
+                (statusCode: 412, subStatusCode: (int?)null, sessionToken: canonicalToken, partitionKeyRangeId: (string)null),
+            });
+
+            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new MemoryStream(Encoding.UTF8.GetBytes(responseJson))
+            };
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.PreconditionFailed, response[0].StatusCode,
+                "Status code should reflect the op-level failure.");
+            Assert.AreEqual(canonicalToken, response[0].SessionToken,
+                "SessionToken must be accessible on failed op results so callers can pass it forward " +
+                "for read-your-writes consistency on subsequent ops.");
+        }
+
+        [TestMethod]
+        // v2 edge case #3 documentation: SessionContainer.SetSessionToken is internally thread-safe
+        // (rwlock-protected). Concurrent MergeSessionTokens calls produce a consistent final state
+        // — this matches GatewayStoreModel's behavior and is acceptable eventually-consistent semantics.
+        public async Task MergeSessionTokens_ConcurrentInvocations_DoNotCorruptSessionContainer()
+        {
+            const string token0 = "0:1#5";
+            const string token1 = "0:1#10"; // higher LSN — should win
+            string collectionRid = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            string collectionPath = DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName);
+
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+            // Pre-register the collection so SetSessionToken is known
+            INameValueCollection seedHeaders = new RequestNameValueCollection();
+            seedHeaders[HttpConstants.HttpHeaders.SessionToken] = "0:1#1";
+            sessionContainer.SetSessionToken(collectionRid, collectionPath, seedHeaders);
+
+            DistributedTransactionOperation MakeOp(int idx)
+            {
+                DistributedTransactionOperation op = new DistributedTransactionOperation(
+                    OperationType.Create, operationIndex: idx,
+                    DatabaseName, ContainerName, new PartitionKey($"pk{idx}"), id: $"doc{idx}");
+                op.CollectionResourceId = collectionRid;
+                return op;
+            }
+
+            DistributedTransactionServerRequest serverRequest = await DistributedTransactionServerRequest.CreateAsync(
+                new List<DistributedTransactionOperation> { MakeOp(0), MakeOp(1) },
+                MockCosmosUtil.Serializer,
+                CancellationToken.None);
+
+            Mock<DistributedTransactionResponse> BuildResp(string tA, string tB)
+            {
+                DistributedTransactionOperationResult r0 = new DistributedTransactionOperationResult
+                { Index = 0, StatusCode = HttpStatusCode.Created, SessionToken = tA };
+                DistributedTransactionOperationResult r1 = new DistributedTransactionOperationResult
+                { Index = 1, StatusCode = HttpStatusCode.Created, SessionToken = tB };
+                Mock<DistributedTransactionResponse> m = new Mock<DistributedTransactionResponse>();
+                m.Setup(r => r.Count).Returns(2);
+                m.Setup(r => r[0]).Returns(r0);
+                m.Setup(r => r[1]).Returns(r1);
+                return m;
+            }
+
+            // Fire many concurrent merges with interleaved tokens
+            const int parallelism = 50;
+            Task[] tasks = new Task[parallelism];
+            for (int i = 0; i < parallelism; i++)
+            {
+                bool useHigh = (i % 2 == 0);
+                Mock<DistributedTransactionResponse> resp = useHigh
+                    ? BuildResp(token0, token1)
+                    : BuildResp(token1, token0);
+                tasks[i] = Task.Run(() => DistributedTransactionCommitter.MergeSessionTokens(
+                    resp.Object, serverRequest, sessionContainer, isSessionConsistency: true));
+            }
+
+            await Task.WhenAll(tasks);
+
+            // SessionContainer survived concurrent updates without throwing or corrupting
+            string finalToken = sessionContainer.GetSessionToken(collectionPath);
+            Assert.IsFalse(string.IsNullOrEmpty(finalToken),
+                "SessionContainer should hold a valid token after concurrent merges.");
+            Assert.IsTrue(finalToken.StartsWith("0:"),
+                $"Final token should still be canonical. Actual: {finalToken}");
+        }
+
+        [TestMethod]
+        // CosmosException from MergeSessionTokens (malformed token) does NOT
+        // trigger the DTX retry loop — it propagates immediately. The transaction is already
+        // committed at this point; retrying would duplicate it.
+        public async Task CommitTransactionAsync_MalformedToken_DoesNotTriggerRetry()
+        {
+            const string lsnOnly = "1#9#4=8#5=7"; // malformed — no colon separator
+            int callCount = 0;
+
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            string responseJson = BuildDtcResponseJson(
+                new[] { (statusCode: 201, subStatusCode: (int?)null, sessionToken: lsnOnly, partitionKeyRangeId: (string)null) });
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: responseJson,
+                statusCode: HttpStatusCode.OK);
+
+            // Track how many times ProcessResourceOperationStreamAsync is called
+            mockContext.Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    ResourceType.DistributedTransactionBatch,
+                    OperationType.CommitDistributedTransaction,
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<Cosmos.PartitionKey?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(() =>
+                {
+                    callCount++;
+                    return Task.FromResult(new ResponseMessage(HttpStatusCode.OK)
+                    {
+                        Content = new MemoryStream(Encoding.UTF8.GetBytes(responseJson))
+                    });
+                });
+
+            List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Create, operationIndex: 0,
+                    DatabaseName, ContainerName, new PartitionKey("pk1"), id: "doc1")
+            };
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                operations, mockContext.Object, OperationType.CommitDistributedTransaction);
+
+            await Assert.ThrowsExceptionAsync<CosmosException>(
+                () => committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None));
+
+            Assert.AreEqual(1, callCount,
+                "The HTTP call must happen exactly once — CosmosException from token validation " +
+                "must NOT trigger the retry loop (the transaction is already committed).");
         }
 
 
@@ -1540,6 +2134,570 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             }
         }
 
+        [TestMethod]
+        [Description("Session tokens from DTX read response are merged into SessionContainer")]
+        public async Task CommitTransactionAsync_MergesSessionTokens_ForReadOperations()
+        {
+            const string canonicalToken = "0:1#9#4=8#5=7";
+
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            string responseJson = BuildDtcResponseJson(
+                new[] { (statusCode: 200, subStatusCode: (int?)null, sessionToken: canonicalToken, partitionKeyRangeId: (string)null) });
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: responseJson,
+                statusCode: HttpStatusCode.OK);
+
+            List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Read,
+                    operationIndex: 0,
+                    DatabaseName,
+                    ContainerName,
+                    new PartitionKey("pk1"),
+                    id: "doc1")
+            };
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                operations, mockContext.Object, OperationType.CommitDistributedTransaction);
+
+            await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+
+            string storedToken = sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName));
+            Assert.AreEqual(canonicalToken, storedToken,
+                "Session token from a DTX read response must be merged into SessionContainer.");
+        }
+
+        [TestMethod]
+        [Description("DTX write followed by DTX read: write response session tokens are merged and auto-resolved into subsequent read request")]
+        public async Task CommitTransactionAsync_WriteTokensMerged_ThenAutoResolvedIntoSubsequentRead()
+        {
+            const string writeToken = "0:1#9#4=8#5=7";
+
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            // First: DTX write commits and merges its session token
+            string writeResponseJson = BuildDtcResponseJson(
+                new[] { (statusCode: 201, subStatusCode: (int?)null, sessionToken: writeToken, partitionKeyRangeId: (string)null) });
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: writeResponseJson,
+                statusCode: HttpStatusCode.OK);
+
+            List<DistributedTransactionOperation> writeOps = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Create,
+                    operationIndex: 0,
+                    DatabaseName,
+                    ContainerName,
+                    new PartitionKey("pk1"),
+                    id: "doc1")
+            };
+
+            DistributedTransactionCommitter writeCommitter = new DistributedTransactionCommitter(
+                writeOps, mockContext.Object, OperationType.CommitDistributedTransaction);
+
+            await writeCommitter.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+
+            // Verify write token was merged
+            string storedToken = sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName));
+            Assert.AreEqual(writeToken, storedToken, "Write token must be merged into SessionContainer.");
+
+            // Second: DTX read — auto-resolution should pick up the merged write token
+            byte[] capturedReadBody = null;
+            string readResponseJson = BuildDtcResponseJson(
+                new[] { (statusCode: 200, subStatusCode: (int?)null, sessionToken: "0:1#9#4=8#5=7", partitionKeyRangeId: (string)null) });
+
+            Mock<CosmosClientContext> readMockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: readResponseJson,
+                statusCode: HttpStatusCode.OK);
+
+            readMockContext
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<Cosmos.PartitionKey?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .Callback<string, ResourceType, OperationType, RequestOptions, ContainerInternal, Cosmos.PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
+                    (_, _, _, _, _, _, _, stream, _, _, _) =>
+                    {
+                        using MemoryStream copy = new MemoryStream();
+                        stream.CopyTo(copy);
+                        capturedReadBody = copy.ToArray();
+                    })
+                .ReturnsAsync(new ResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new MemoryStream(Encoding.UTF8.GetBytes(readResponseJson))
+                });
+
+            List<DistributedTransactionOperation> readOps = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Read,
+                    operationIndex: 0,
+                    DatabaseName,
+                    ContainerName,
+                    new PartitionKey("pk1"),
+                    id: "doc1")
+            };
+
+            DistributedTransactionCommitter readCommitter = new DistributedTransactionCommitter(
+                readOps, readMockContext.Object, OperationType.CommitDistributedTransaction);
+
+            await readCommitter.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+
+            Assert.IsNotNull(capturedReadBody);
+            string bodyJson = Encoding.UTF8.GetString(capturedReadBody);
+            Assert.IsTrue(bodyJson.Contains($"\"sessionToken\":\"{writeToken}\""),
+                $"Auto-resolved session token from SessionContainer must appear in read request body. Body: {bodyJson}");
+        }
+
+        [TestMethod]
+        [Description("DTX write followed by DTX read: explicit requestOptions.SessionToken on read takes precedence over auto-resolved token from SessionContainer")]
+        public async Task CommitTransactionAsync_ExplicitSessionTokenOnRead_TakesPrecedenceOverAutoResolved()
+        {
+            const string writeToken = "0:1#9#4=8#5=7";
+            const string explicitReadToken = "0:2#10#4=9#5=8";
+
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            // First: DTX write commits and merges its session token
+            string writeResponseJson = BuildDtcResponseJson(
+                new[] { (statusCode: 201, subStatusCode: (int?)null, sessionToken: writeToken, partitionKeyRangeId: (string)null) });
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: writeResponseJson,
+                statusCode: HttpStatusCode.OK);
+
+            List<DistributedTransactionOperation> writeOps = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Create,
+                    operationIndex: 0,
+                    DatabaseName,
+                    ContainerName,
+                    new PartitionKey("pk1"),
+                    id: "doc1")
+            };
+
+            DistributedTransactionCommitter writeCommitter = new DistributedTransactionCommitter(
+                writeOps, mockContext.Object, OperationType.CommitDistributedTransaction);
+
+            await writeCommitter.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+
+            // Verify write token was merged
+            string storedToken = sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName));
+            Assert.AreEqual(writeToken, storedToken);
+
+            // Second: DTX read with EXPLICIT session token (should override auto-resolved)
+            byte[] capturedReadBody = null;
+            string readResponseJson = BuildDtcResponseJson(
+                new[] { (statusCode: 200, subStatusCode: (int?)null, sessionToken: "0:2#10#4=9#5=8", partitionKeyRangeId: (string)null) });
+
+            Mock<CosmosClientContext> readMockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: readResponseJson,
+                statusCode: HttpStatusCode.OK);
+
+            readMockContext
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<Cosmos.PartitionKey?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .Callback<string, ResourceType, OperationType, RequestOptions, ContainerInternal, Cosmos.PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
+                    (_, _, _, _, _, _, _, stream, _, _, _) =>
+                    {
+                        using MemoryStream copy = new MemoryStream();
+                        stream.CopyTo(copy);
+                        capturedReadBody = copy.ToArray();
+                    })
+                .ReturnsAsync(new ResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new MemoryStream(Encoding.UTF8.GetBytes(readResponseJson))
+                });
+
+            List<DistributedTransactionOperation> readOps = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Read,
+                    operationIndex: 0,
+                    DatabaseName,
+                    ContainerName,
+                    new PartitionKey("pk1"),
+                    id: "doc1",
+                    requestOptions: new DistributedTransactionRequestOptions { SessionToken = explicitReadToken })
+            };
+
+            DistributedTransactionCommitter readCommitter = new DistributedTransactionCommitter(
+                readOps, readMockContext.Object, OperationType.CommitDistributedTransaction);
+
+            await readCommitter.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+
+            Assert.IsNotNull(capturedReadBody);
+            string bodyJson = Encoding.UTF8.GetString(capturedReadBody);
+            Assert.IsTrue(bodyJson.Contains($"\"sessionToken\":\"{explicitReadToken}\""),
+                $"Explicit session token must appear in request body (not the auto-resolved one). Body: {bodyJson}");
+            Assert.IsFalse(bodyJson.Contains($"\"sessionToken\":\"{writeToken}\""),
+                $"Auto-resolved write token must NOT appear when explicit token is set. Body: {bodyJson}");
+        }
+
+        [TestMethod]
+        [Description("Session tokens in both DTX write and read responses are validated for canonical format during deserialization")]
+        public async Task CommitTransactionAsync_ValidatesSessionToken_InBothWriteAndReadResponses()
+        {
+            const string malformedToken = "1#9#4=8#5=7"; // LSN-only, missing pkRangeId prefix
+
+            // Test write response with malformed token
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+            string writeResponseJson = BuildDtcResponseJson(
+                new[] { (statusCode: 201, subStatusCode: (int?)null, sessionToken: malformedToken, partitionKeyRangeId: (string)null) });
+
+            Mock<CosmosClientContext> writeMockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: writeResponseJson,
+                statusCode: HttpStatusCode.OK);
+
+            List<DistributedTransactionOperation> writeOps = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Create,
+                    operationIndex: 0,
+                    DatabaseName,
+                    ContainerName,
+                    new PartitionKey("pk1"),
+                    id: "doc1")
+            };
+
+            DistributedTransactionCommitter writeCommitter = new DistributedTransactionCommitter(
+                writeOps, writeMockContext.Object, OperationType.CommitDistributedTransaction);
+
+            await Assert.ThrowsExceptionAsync<CosmosException>(
+                () => writeCommitter.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None),
+                "Malformed session token in write response must throw CosmosException.");
+
+            // Test read response with malformed token
+            string readResponseJson = BuildDtcResponseJson(
+                new[] { (statusCode: 200, subStatusCode: (int?)null, sessionToken: malformedToken, partitionKeyRangeId: (string)null) });
+
+            Mock<CosmosClientContext> readMockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: readResponseJson,
+                statusCode: HttpStatusCode.OK);
+
+            List<DistributedTransactionOperation> readOps = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Read,
+                    operationIndex: 0,
+                    DatabaseName,
+                    ContainerName,
+                    new PartitionKey("pk1"),
+                    id: "doc1")
+            };
+
+            DistributedTransactionCommitter readCommitter = new DistributedTransactionCommitter(
+                readOps, readMockContext.Object, OperationType.CommitDistributedTransaction);
+
+            await Assert.ThrowsExceptionAsync<CosmosException>(
+                () => readCommitter.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None),
+                "Malformed session token in read response must throw CosmosException.");
+        }
+
+        [TestMethod]
+        [Description("Session tokens merged from DTX write are usable in subsequent point reads via SessionContainer")]
+        public async Task CommitTransactionAsync_MergedTokens_UsableInSubsequentPointReads()
+        {
+            const string canonicalToken = "0:1#9#4=8#5=7";
+
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            string responseJson = BuildDtcResponseJson(
+                new[] { (statusCode: 201, subStatusCode: (int?)null, sessionToken: canonicalToken, partitionKeyRangeId: (string)null) });
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: responseJson,
+                statusCode: HttpStatusCode.OK);
+
+            List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Create,
+                    operationIndex: 0,
+                    DatabaseName,
+                    ContainerName,
+                    new PartitionKey("pk1"),
+                    id: "doc1")
+            };
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                operations, mockContext.Object, OperationType.CommitDistributedTransaction);
+
+            await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+
+            // Verify the token is retrievable from SessionContainer (same call path that
+            // GatewayStoreModel.ApplySessionTokenAsync uses for point-reads)
+            string collectionFullName = DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName);
+            string resolvedToken = sessionContainer.GetSessionToken(collectionFullName);
+            Assert.AreEqual(canonicalToken, resolvedToken,
+                "Merged DTX session token must be retrievable from SessionContainer for subsequent point-read resolution.");
+        }
+
+        [TestMethod]
+        [Description("Session tokens are only merged on success attempts; retriable failure responses have empty tokens (DTC contract)")]
+        public async Task CommitTransactionAsync_MergesSessionTokens_OnlyOnSuccessAttempt()
+        {
+            const string successToken = "0:1#9#4=8#5=7";
+
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            // First attempt: retriable failure with empty session token (DTC contract)
+            string retriableResponseJson = $"{{\"isRetriable\":true,\"operationResponses\":[{{\"index\":0,\"statuscode\":503,\"sessionToken\":\"\"}}]}}";
+            // Second attempt: success with valid token
+            string successResponseJson = BuildDtcResponseJson(
+                new[] { (statusCode: 201, subStatusCode: (int?)null, sessionToken: successToken, partitionKeyRangeId: (string)null) });
+
+            int callCount = 0;
+
+            MockDocumentClient documentClient = new MockDocumentClient
+            {
+                sessionContainer = sessionContainer
+            };
+
+            ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId(CollectionResourceId);
+            containerProperties.Id = "TestContainerId";
+            containerProperties.PartitionKeyPath = "/pk";
+
+            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+            mockContext.Setup(c => c.DocumentClient).Returns(documentClient);
+            mockContext.Setup(c => c.SerializerCore).Returns(MockCosmosUtil.Serializer);
+            mockContext.Setup(c => c.GetCachedContainerPropertiesAsync(
+                    It.IsAny<string>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(containerProperties);
+
+            mockContext
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<Cosmos.PartitionKey?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(() =>
+                {
+                    callCount++;
+                    if (callCount == 1)
+                    {
+                        return Task.FromResult(new ResponseMessage(HttpStatusCode.ServiceUnavailable)
+                        {
+                            Content = new MemoryStream(Encoding.UTF8.GetBytes(retriableResponseJson))
+                        });
+                    }
+
+                    return Task.FromResult(new ResponseMessage(HttpStatusCode.OK)
+                    {
+                        Content = new MemoryStream(Encoding.UTF8.GetBytes(successResponseJson))
+                    });
+                });
+
+            List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Create,
+                    operationIndex: 0,
+                    DatabaseName,
+                    ContainerName,
+                    new PartitionKey("pk1"),
+                    id: "doc1")
+            };
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                operations, mockContext.Object, OperationType.CommitDistributedTransaction, retryBaseDelay: TimeSpan.Zero);
+
+            await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+
+            // Only the success attempt's token should be in SessionContainer
+            string collectionFullName = DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName);
+            string resolvedToken = sessionContainer.GetSessionToken(collectionFullName);
+            Assert.AreEqual(successToken, resolvedToken,
+                "Only the success attempt's session token should be merged (DTC returns empty tokens on failures).");
+            Assert.AreEqual(2, callCount, "Should have made exactly 2 attempts (1 retry + 1 success).");
+        }
+
+        [TestMethod]
+        [Description("DTX write with multiple ops on the same partition — SessionContainer merges to the latest (highest LSN) token")]
+        public async Task CommitTransactionAsync_SamePartition_MergesLatestToken()
+        {
+            // Two ops on same collection, same pkRangeId (0) but different LSNs
+            const string lowerToken = "0:1#5#4=3#5=2";
+            const string higherToken = "0:1#9#4=8#5=7";
+
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            string responseJson = BuildDtcResponseJson(
+                new[]
+                {
+                    (statusCode: 201, subStatusCode: (int?)null, sessionToken: lowerToken, partitionKeyRangeId: (string)null),
+                    (statusCode: 201, subStatusCode: (int?)null, sessionToken: higherToken, partitionKeyRangeId: (string)null),
+                });
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: responseJson,
+                statusCode: HttpStatusCode.OK);
+
+            List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Create,
+                    operationIndex: 0,
+                    DatabaseName,
+                    ContainerName,
+                    new PartitionKey("pk1"),
+                    id: "doc1"),
+                new DistributedTransactionOperation(
+                    OperationType.Create,
+                    operationIndex: 1,
+                    DatabaseName,
+                    ContainerName,
+                    new PartitionKey("pk1"),
+                    id: "doc2"),
+            };
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                operations, mockContext.Object, OperationType.CommitDistributedTransaction);
+
+            await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+
+            string collectionFullName = DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName);
+            string resolvedToken = sessionContainer.GetSessionToken(collectionFullName);
+            Assert.AreEqual(higherToken, resolvedToken,
+                "When multiple ops target the same partition, SessionContainer must merge to the highest LSN token.");
+        }
+
+        [TestMethod]
+        [Description("End user can extract SessionToken from DistributedTransactionOperationResult and pass it back via DistributedTransactionRequestOptions.SessionToken")]
+        public async Task CommitTransactionAsync_UserCanExtractAndPassBackSessionToken()
+        {
+            const string responseToken = "0:1#9#4=8#5=7";
+
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            // First DTX write returns a session token
+            string writeResponseJson = BuildDtcResponseJson(
+                new[] { (statusCode: 201, subStatusCode: (int?)null, sessionToken: responseToken, partitionKeyRangeId: (string)null) });
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: writeResponseJson,
+                statusCode: HttpStatusCode.OK);
+
+            List<DistributedTransactionOperation> writeOps = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Create,
+                    operationIndex: 0,
+                    DatabaseName,
+                    ContainerName,
+                    new PartitionKey("pk1"),
+                    id: "doc1")
+            };
+
+            DistributedTransactionCommitter writeCommitter = new DistributedTransactionCommitter(
+                writeOps, mockContext.Object, OperationType.CommitDistributedTransaction);
+
+            DistributedTransactionResponse writeResponse = await writeCommitter.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+
+            // User extracts the session token from the response
+            string extractedToken = writeResponse[0].SessionToken;
+            Assert.AreEqual(responseToken, extractedToken,
+                "User must be able to extract SessionToken from DistributedTransactionOperationResult.");
+
+            // User passes extracted token back on a subsequent DTX operation via requestOptions
+            byte[] capturedBody = null;
+            string readResponseJson = BuildDtcResponseJson(
+                new[] { (statusCode: 200, subStatusCode: (int?)null, sessionToken: responseToken, partitionKeyRangeId: (string)null) });
+
+            Mock<CosmosClientContext> readMockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: readResponseJson,
+                statusCode: HttpStatusCode.OK);
+
+            readMockContext
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<Cosmos.PartitionKey?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .Callback<string, ResourceType, OperationType, RequestOptions, ContainerInternal, Cosmos.PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
+                    (_, _, _, _, _, _, _, stream, _, _, _) =>
+                    {
+                        using MemoryStream copy = new MemoryStream();
+                        stream.CopyTo(copy);
+                        capturedBody = copy.ToArray();
+                    })
+                .ReturnsAsync(new ResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new MemoryStream(Encoding.UTF8.GetBytes(readResponseJson))
+                });
+
+            List<DistributedTransactionOperation> readOps = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Read,
+                    operationIndex: 0,
+                    DatabaseName,
+                    ContainerName,
+                    new PartitionKey("pk1"),
+                    id: "doc1",
+                    requestOptions: new DistributedTransactionRequestOptions { SessionToken = extractedToken })
+            };
+
+            DistributedTransactionCommitter readCommitter = new DistributedTransactionCommitter(
+                readOps, readMockContext.Object, OperationType.CommitDistributedTransaction);
+
+            await readCommitter.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+
+            Assert.IsNotNull(capturedBody);
+            string bodyJson = Encoding.UTF8.GetString(capturedBody);
+            Assert.IsTrue(bodyJson.Contains($"\"sessionToken\":\"{extractedToken}\""),
+                $"User-provided session token (extracted from prior response) must appear in request body. Body: {bodyJson}");
+        }
+
         // ─── Helpers ───────────────────────────────────────────────────────────
 
         private static string BuildDtcResponseJson(
@@ -1742,7 +2900,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     json.Append(",");
                 }
 
-                json.Append($"{{\"index\":{i},\"statuscode\":200,\"substatuscode\":0}}");
+                json.Append($"{{\"index\":{i},\"statuscode\":200,\"substatuscode\":0,\"sessionToken\":\"{i}:1#100#1=50\"}}");
             }
 
             json.Append("]}");
