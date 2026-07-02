@@ -126,11 +126,20 @@ namespace Microsoft.Azure.Cosmos
         private readonly bool isReplicaAddressValidationEnabled;
         private readonly bool enableAsyncCacheExceptionNoSharing;
 
+        // Cross-region metadata hedging (Collection Read + PartitionKeyRange ReadFeed).
+        // Tri-state opt-in resolved once at construction. See
+        // docs/metadata-hedging-simple-design.md.
+        private readonly bool? enableMetadataHedging;
+
         //Fault Injection
         private readonly IChaosInterceptorFactory chaosInterceptorFactory;
         private readonly IChaosInterceptor chaosInterceptor;
 
         private bool isChaosInterceptorInititalized = false;
+
+        // Metadata hedging strategy for this client; created during initialization and
+        // null when hedging is disabled.
+        private Cosmos.Routing.MetadataHedgingStrategy metadataHedgingStrategy;
 
         //Auth
         internal readonly AuthorizationTokenProvider cosmosAuthorization;
@@ -514,6 +523,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="chaosInterceptorFactory">This is the chaos interceptor used for fault injection</param>
         /// <param name="enableAsyncCacheExceptionNoSharing">A boolean flag indicating if stack trace optimization is enabled.</param>
         /// <param name="useLengthAwareRangeComparer">A boolean flag indicating if length-aware range comparators should be used for EPK range comparisons.</param>
+        /// <param name="enableMetadataHedging">Tri-state opt-in for cross-region metadata cache hedging (Collection Read and PartitionKeyRange ReadFeed). Null follows the account's PPAF state. See <c>docs/metadata-hedging-simple-design.md</c>.</param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -544,7 +554,8 @@ namespace Microsoft.Azure.Cosmos
                               CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null,
                               IChaosInterceptorFactory chaosInterceptorFactory = null,
                               bool enableAsyncCacheExceptionNoSharing = true,
-                              bool useLengthAwareRangeComparer = false)
+                              bool useLengthAwareRangeComparer = false,
+                              bool? enableMetadataHedging = null)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -573,6 +584,7 @@ namespace Microsoft.Azure.Cosmos
             this.chaosInterceptorFactory = chaosInterceptorFactory;
             this.chaosInterceptor = chaosInterceptorFactory?.CreateInterceptor(this);
             this.UseLengthAwareRangeComparer = useLengthAwareRangeComparer;
+            this.enableMetadataHedging = enableMetadataHedging;
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
@@ -752,8 +764,9 @@ namespace Microsoft.Azure.Cosmos
                     tokenProvider: this, 
                     retryPolicy: this.retryPolicy,
                     telemetryToServiceHelper: this.telemetryToServiceHelper,
-                    enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
-                this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.enableAsyncCacheExceptionNoSharing);
+                    enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing,
+                    metadataHedgingStrategy: this.metadataHedgingStrategy);
+                this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.UseLengthAwareRangeComparer, this.enableAsyncCacheExceptionNoSharing, this.metadataHedgingStrategy);
 
                 DefaultTrace.TraceWarning("Exception occurred while OpenAsync. Exception Message: {0}", ex.Message);
             }
@@ -1196,14 +1209,17 @@ namespace Microsoft.Azure.Cosmos
 
             this.GatewayStoreModel = gatewayStoreModel;
 
+            this.metadataHedgingStrategy = this.CreateMetadataHedgingStrategyIfEnabled();
+
             this.collectionCache = new ClientCollectionCache(
                     sessionContainer: this.sessionContainer, 
                     storeModel: this.GatewayStoreModel, 
                     tokenProvider: this, 
                     retryPolicy: this.retryPolicy,
                     telemetryToServiceHelper: this.telemetryToServiceHelper,
-                    enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
-            this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.UseLengthAwareRangeComparer, this.enableAsyncCacheExceptionNoSharing);
+                    enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing,
+                    metadataHedgingStrategy: this.metadataHedgingStrategy);
+            this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.UseLengthAwareRangeComparer, this.enableAsyncCacheExceptionNoSharing, this.metadataHedgingStrategy);
             this.ResetSessionTokenRetryPolicy = new ResetSessionTokenRetryPolicyFactory(this.sessionContainer, this.collectionCache, this.retryPolicy);
 
             gatewayStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
@@ -7099,6 +7115,21 @@ namespace Microsoft.Azure.Cosmos
                         thresholdStep: TimeSpan.FromMilliseconds(DocumentClient.DefaultHedgingThresholdStepInMilliseconds));
                 }
             }
+        }
+
+        /// <summary>
+        /// Creates the cross-region metadata hedging strategy for this client, or returns
+        /// <c>null</c> when hedging is explicitly disabled. The effective on/off decision for
+        /// the <c>null</c> (unset) opt-in is deferred to the per-request eligibility check,
+        /// which follows the account's live PPAF state. See
+        /// <c>docs/metadata-hedging-simple-design.md</c>.
+        /// </summary>
+        private Cosmos.Routing.MetadataHedgingStrategy CreateMetadataHedgingStrategyIfEnabled()
+        {
+            return Cosmos.Routing.MetadataHedgingStrategy.CreateIfEnabled(
+                enableMetadataHedging: this.enableMetadataHedging,
+                globalEndpointManager: this.GlobalEndpointManager,
+                isPpafEnabled: () => this.ConnectionPolicy.EnablePartitionLevelFailover);
         }
 
         internal void UpdatePartitionLevelFailoverConfigWithAccountRefresh(

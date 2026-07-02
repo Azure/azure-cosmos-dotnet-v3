@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly CollectionCache collectionCache;
         private readonly IGlobalEndpointManager endpointManager;
         private readonly bool useLengthAwareRangeComparer;
+        private readonly MetadataHedgingStrategy metadataHedgingStrategy;
 
         public PartitionKeyRangeCache(
             ICosmosAuthorizationTokenProvider authorizationTokenProvider,
@@ -39,7 +40,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             CollectionCache collectionCache,
             IGlobalEndpointManager endpointManager,
             bool useLengthAwareRangeComparer,
-            bool enableAsyncCacheExceptionNoSharing = true)
+            bool enableAsyncCacheExceptionNoSharing = true,
+            MetadataHedgingStrategy metadataHedgingStrategy = null)
         {
             this.routingMapCache = new AsyncCacheNonBlocking<string, CollectionRoutingMap>(
                     keyEqualityComparer: StringComparer.Ordinal,
@@ -49,6 +51,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.collectionCache = collectionCache;
             this.endpointManager = endpointManager;
             this.useLengthAwareRangeComparer = useLengthAwareRangeComparer;
+            this.metadataHedgingStrategy = metadataHedgingStrategy;
         }
 
         public virtual async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
@@ -198,6 +201,12 @@ namespace Microsoft.Azure.Cosmos.Routing
                     endpointManager: this.endpointManager,
                     maxRetryAttemptsOnThrottledRequests: retryOptions.MaxRetryAttemptsOnThrottledRequests,
                     maxRetryWaitTimeInSeconds: retryOptions.MaxRetryWaitTimeInSeconds);
+
+            // Only the first change-feed page is hedged. If a hedge wins on the first page,
+            // subsequent pages are pinned to the winning region so the continuation ETag chain
+            // stays consistent (a continuation token is meaningful only to the region that issued it).
+            bool isFirstReadFeedPage = true;
+            Uri pinnedEndpoint = null;
             do
             {
                 INameValueCollection headers = new RequestNameValueCollection();
@@ -209,8 +218,18 @@ namespace Microsoft.Azure.Cosmos.Routing
                     headers.Set(HttpConstants.HttpHeaders.IfNoneMatch, changeFeedNextIfNoneMatch);
                 }
 
+                bool currentIsFirstReadFeedPage = isFirstReadFeedPage;
+                Uri currentPinnedEndpoint = pinnedEndpoint;
                 using (DocumentServiceResponse response = await BackoffRetryUtility<DocumentServiceResponse>.ExecuteAsync(
-                    () => this.ExecutePartitionKeyRangeReadChangeFeedAsync(collectionRid, headers, trace, clientSideRequestStatistics, metadataRetryPolicy),
+                    () => this.ExecutePartitionKeyRangeReadChangeFeedAsync(
+                        collectionRid,
+                        headers,
+                        trace,
+                        clientSideRequestStatistics,
+                        metadataRetryPolicy,
+                        currentIsFirstReadFeedPage,
+                        currentPinnedEndpoint,
+                        winningEndpoint => pinnedEndpoint = winningEndpoint),
                     retryPolicy: metadataRetryPolicy))
                 {
                     lastStatusCode = response.StatusCode;
@@ -232,6 +251,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                         ranges.AddRange(feedResource);
                     }
                 }
+
+                isFirstReadFeedPage = false;
             }
             while (lastStatusCode != HttpStatusCode.NotModified);
 
@@ -270,7 +291,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                                                                                 INameValueCollection headers, 
                                                                                 ITrace trace,
                                                                                 IClientSideRequestStatistics clientSideRequestStatistics,
-                                                                                IDocumentClientRetryPolicy retryPolicy)
+                                                                                IDocumentClientRetryPolicy retryPolicy,
+                                                                                bool isFirstReadFeedPage,
+                                                                                Uri pinnedEndpoint,
+                                                                                Action<Uri> onWinningEndpoint)
         {
             using (ITrace childTrace = trace.StartChild("Read PartitionKeyRange Change Feed", TraceComponent.Transport, Tracing.TraceLevel.Info))
             {
@@ -282,6 +306,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                     headers))
                 {
                     retryPolicy.OnBeforeSendRequest(request);
+
+                    // Pages 2..N after a first-page hedge win: pin to the winning region so the
+                    // change-feed continuation completes against the region that issued the ETag.
+                    if (pinnedEndpoint != null)
+                    {
+                        request.RequestContext.RouteToLocation(pinnedEndpoint);
+                    }
+
                     string authorizationToken = null;
                     try
                     {
@@ -323,6 +355,25 @@ namespace Microsoft.Azure.Cosmos.Routing
                     {
                         try
                         {
+                            // Hedge only the first change-feed page (and only when not already
+                            // pinned to a prior page's winning region). Later pages take the
+                            // pinned/primary path unchanged.
+                            if (this.metadataHedgingStrategy != null && isFirstReadFeedPage && pinnedEndpoint == null)
+                            {
+                                MetadataHedgingStrategy.MetadataHedgingResult hedgeResult = await this.metadataHedgingStrategy.ExecuteAsync(
+                                    request,
+                                    sendToEndpoint: MetadataHedgingStrategy.StoreModelSender(this.storeModel),
+                                    isFirstReadFeedPage: true,
+                                    cancellationToken: default);
+
+                                childTrace.AddDatum(
+                                    MetadataHedgingStrategy.TraceDatumKey,
+                                    $"HedgeFired={hedgeResult.HedgeFired}; WinningRegion={hedgeResult.WinningRegion}");
+
+                                onWinningEndpoint?.Invoke(hedgeResult.WinningEndpoint);
+                                return hedgeResult.Response;
+                            }
+
                             return await this.storeModel.ProcessMessageAsync(request);
                         }
                         catch (DocumentClientException ex)
