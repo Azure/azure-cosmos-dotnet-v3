@@ -334,3 +334,13 @@ ASALocalRun/
 
 # Coding Agent Harness session artifacts (local-only)
 .coding-harness/
+
+# Fuzz testing outputs (SharpFuzz + libfuzzer-dotnet)
+.fuzz-runs/
+LocalFuzzing/
+Microsoft.Azure.Cosmos.FuzzTests/corpus/
+crash-*
+oom-*
+timeout-*
+slow-unit-*
+leak-*
