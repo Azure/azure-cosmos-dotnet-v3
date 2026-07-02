@@ -27,6 +27,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly IRetryPolicyFactory retryPolicy;
         private readonly ISessionContainer sessionContainer;
         private readonly TelemetryToServiceHelper telemetryToServiceHelper;
+        private readonly MetadataHedgingStrategy metadataHedgingStrategy;
+        private readonly IGlobalEndpointManager globalEndpointManager;
 
         public ClientCollectionCache(
             ISessionContainer sessionContainer,
@@ -35,6 +37,27 @@ namespace Microsoft.Azure.Cosmos.Routing
             IRetryPolicyFactory retryPolicy,
             TelemetryToServiceHelper telemetryToServiceHelper,
             bool enableAsyncCacheExceptionNoSharing = true)
+            : this(
+                sessionContainer,
+                storeModel,
+                tokenProvider,
+                retryPolicy,
+                telemetryToServiceHelper,
+                enableAsyncCacheExceptionNoSharing,
+                metadataHedgingStrategy: null,
+                globalEndpointManager: null)
+        {
+        }
+
+        public ClientCollectionCache(
+            ISessionContainer sessionContainer,
+            IStoreModel storeModel,
+            ICosmosAuthorizationTokenProvider tokenProvider,
+            IRetryPolicyFactory retryPolicy,
+            TelemetryToServiceHelper telemetryToServiceHelper,
+            bool enableAsyncCacheExceptionNoSharing,
+            MetadataHedgingStrategy metadataHedgingStrategy,
+            IGlobalEndpointManager globalEndpointManager)
             : base(enableAsyncCacheExceptionNoSharing)
         {
             this.storeModel = storeModel ?? throw new ArgumentNullException("storeModel");
@@ -42,6 +65,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.retryPolicy = retryPolicy;
             this.sessionContainer = sessionContainer;
             this.telemetryToServiceHelper = telemetryToServiceHelper;
+            this.metadataHedgingStrategy = metadataHedgingStrategy;
+            this.globalEndpointManager = globalEndpointManager;
         }
 
         protected override Task<ContainerProperties> GetByRidAsync(string apiVersion,
@@ -230,27 +255,45 @@ namespace Microsoft.Azure.Cosmos.Routing
                     {
                         retryPolicyInstance?.OnBeforeSendRequest(request);
 
+                        if (this.metadataHedgingStrategy != null)
+                        {
+                            MetadataHedgingStrategy.MetadataHedgingContext hedgeContext = new MetadataHedgingStrategy.MetadataHedgingContext();
+
+                            // Attach via the narrow IMetadataHedgeContextReceiver seam (not a concrete-type
+                            // cast). NOTE: for Collection reads the dedup context does NOT propagate through
+                            // ClearingSessionContainerClientRetryPolicy to MetadataRequestThrottleRetryPolicy
+                            // because ClientRetryPolicy (the inner policy used here) does not implement
+                            // IMetadataHedgeContextReceiver. Dedup via AttachHedgeContext is effective only
+                            // for PKR reads, where MetadataRequestThrottleRetryPolicy is used directly.
+                            (retryPolicyInstance as IMetadataHedgeContextReceiver)?.AttachHedgeContext(hedgeContext);
+
+                            try
+                            {
+                                MetadataHedgingStrategy.MetadataHedgingResult hedgeResult = await this.metadataHedgingStrategy.ExecuteAsync(
+                                    request,
+                                    sendToEndpoint: MetadataHedgingStrategy.StoreModelSender(this.storeModel),
+                                    hedgeContext: hedgeContext,
+                                    trace: childTrace,
+                                    cancellationToken: cancellationToken);
+
+                                using (DocumentServiceResponse response = hedgeResult.Response)
+                                {
+                                    return this.MaterializeContainerProperties(response, request, collectionLink);
+                                }
+                            }
+                            catch (DocumentClientException ex)
+                            {
+                                childTrace.AddDatum("Exception Message", ex.Message);
+                                throw;
+                            }
+                        }
+
                         try
                         {
                             using (DocumentServiceResponse response =
                                 await this.storeModel.ProcessMessageAsync(request))
                             {
-                                ContainerProperties containerProperties = CosmosResource.FromStream<ContainerProperties>(response);
-                                
-                                this.telemetryToServiceHelper.GetCollector().CollectCacheInfo(
-                                     ClientCollectionCache.TelemetrySourceName,
-                                     () => new TelemetryInformation
-                                     {
-                                         RegionsContactedList = response.RequestStats.RegionsContacted,
-                                         RequestLatency = response.RequestStats.RequestLatency,
-                                         StatusCode = response.StatusCode,
-                                         OperationType = request.OperationType,
-                                         ResourceType = request.ResourceType,
-                                         SubStatusCode = response.SubStatusCode,
-                                         CollectionLink = collectionLink
-                                     });
-
-                                return containerProperties;
+                                return this.MaterializeContainerProperties(response, request, collectionLink);
                             }
                         }
                         catch (DocumentClientException ex)
@@ -261,6 +304,29 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
                 }
             }
+        }
+
+        private ContainerProperties MaterializeContainerProperties(
+            DocumentServiceResponse response,
+            DocumentServiceRequest request,
+            string collectionLink)
+        {
+            ContainerProperties containerProperties = CosmosResource.FromStream<ContainerProperties>(response);
+
+            this.telemetryToServiceHelper.GetCollector().CollectCacheInfo(
+                 ClientCollectionCache.TelemetrySourceName,
+                 () => new TelemetryInformation
+                 {
+                     RegionsContactedList = response.RequestStats.RegionsContacted,
+                     RequestLatency = response.RequestStats.RequestLatency,
+                     StatusCode = response.StatusCode,
+                     OperationType = request.OperationType,
+                     ResourceType = request.ResourceType,
+                     SubStatusCode = response.SubStatusCode,
+                     CollectionLink = collectionLink,
+                 });
+
+            return containerProperties;
         }
     }
 }

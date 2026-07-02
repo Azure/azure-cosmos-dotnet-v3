@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Metadata Request Throttle Retry Policy is combination of endpoint change retry + throttling retry.
     /// </summary>
-    internal sealed class MetadataRequestThrottleRetryPolicy : IDocumentClientRetryPolicy
+    internal sealed class MetadataRequestThrottleRetryPolicy : IDocumentClientRetryPolicy, IMetadataHedgeContextReceiver
     {
         /// <summary>
         /// A constant integer defining the default maximum retry wait time in seconds.
@@ -57,6 +57,16 @@ namespace Microsoft.Azure.Cosmos
         /// The request being sent to the service.
         /// </summary>
         private DocumentServiceRequest request;
+
+        /// <summary>
+        /// Optional per-logical-operation hedging context. When non-null, the
+        /// bounded probe loop in
+        /// <see cref="IncrementRetryIndexOnUnavailableEndpointForMetadataRead"/>
+        /// skips any preferred-location index that resolves to an endpoint the
+        /// hedge has already attempted. See
+        /// <c>docs/PPAF_Metadata_Hedging_ColdStart_Design.md</c> §5.7.4.
+        /// </summary>
+        private MetadataHedgingStrategy.MetadataHedgingContext hedgeContext;
 
         /// <summary>
         /// The constructor to initialize an instance of <see cref="MetadataRequestThrottleRetryPolicy"/>.
@@ -149,10 +159,11 @@ namespace Microsoft.Azure.Cosmos
                 return this.throttlingRetryPolicy.ShouldRetryAsync(exception, cancellationToken);
             }
 
-            if (statusCode == HttpStatusCode.ServiceUnavailable 
-                || statusCode == HttpStatusCode.InternalServerError
-                || (statusCode == HttpStatusCode.Gone && subStatus == SubStatusCodes.LeaseNotFound)
-                || (statusCode == HttpStatusCode.Forbidden && subStatus == SubStatusCodes.DatabaseAccountNotFound))
+            if (MetadataRegionalFailureClassifier.IsRegionalFailure(
+                statusCode: statusCode,
+                subStatus: subStatus,
+                exception: null,
+                callerToken: CancellationToken.None))
             {
                 if (this.IncrementRetryIndexOnUnavailableEndpointForMetadataRead())
                 {
@@ -191,10 +202,11 @@ namespace Microsoft.Azure.Cosmos
                 return this.throttlingRetryPolicy.ShouldRetryAsync(responseMessage, cancellationToken);
             }
 
-            if (statusCode == HttpStatusCode.ServiceUnavailable 
-                || statusCode == HttpStatusCode.InternalServerError
-                || (statusCode == HttpStatusCode.Gone && subStatus == SubStatusCodes.LeaseNotFound)
-                || (statusCode == HttpStatusCode.Forbidden && subStatus == SubStatusCodes.DatabaseAccountNotFound))
+            if (MetadataRegionalFailureClassifier.IsRegionalFailure(
+                statusCode: statusCode,
+                subStatus: subStatus,
+                exception: null,
+                callerToken: CancellationToken.None))
             {
                 if (this.IncrementRetryIndexOnUnavailableEndpointForMetadataRead())
                 {
@@ -231,27 +243,83 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Attach a metadata hedging context. Allows the bounded probe loop in
+        /// <see cref="IncrementRetryIndexOnUnavailableEndpointForMetadataRead"/>
+        /// to skip preferred-location indices that resolve to an endpoint a
+        /// hedge already attempted on this operation, capping total attempts at
+        /// <c>preferred-region-count</c>. Safe no-op when <paramref name="context"/>
+        /// is <c>null</c>. See
+        /// <c>docs/PPAF_Metadata_Hedging_ColdStart_Design.md</c> §5.7.3.
+        /// </summary>
+        internal void AttachHedgeContext(MetadataHedgingStrategy.MetadataHedgingContext context)
+        {
+            this.hedgeContext = context;
+        }
+
+        /// <inheritdoc />
+        void IMetadataHedgeContextReceiver.AttachHedgeContext(MetadataHedgingStrategy.MetadataHedgingContext context)
+        {
+            this.AttachHedgeContext(context);
+        }
+
+        /// <summary>
         /// Increments the location index when a unavailable endpoint exception ocurrs, for any future read requests.
         /// </summary>
         /// <returns>A boolean flag indicating if the operation was successful.</returns>
         private bool IncrementRetryIndexOnUnavailableEndpointForMetadataRead()
         {
-            if (this.unavailableEndpointRetryCount++ >= this.maxUnavailableEndpointRetryCount)
+            // Bounded probe loop: in the no-hedge case (hedgeContext == null) this
+            // collapses to a single iteration matching the legacy monotonic counter.
+            // When a hedge attached an AttemptedEndpoints set, advance past any
+            // preferred-location index whose resolved endpoint is already in that
+            // set, so the next BackoffRetryUtility iteration does not retry into a
+            // region the hedge just used. See design §5.7.4.
+            int maxIndices = this.globalEndpointManager.ReadEndpoints?.Count ?? 1;
+
+            for (int probe = 0; probe < maxIndices; probe++)
             {
-                DefaultTrace.TraceWarning("MetadataRequestThrottleRetryPolicy: Retry count: {0} has exceeded the maximum permitted retry count on unavailable endpoint: {1}.", this.unavailableEndpointRetryCount, this.maxUnavailableEndpointRetryCount);
-                return false;
+                if (this.unavailableEndpointRetryCount++ >= this.maxUnavailableEndpointRetryCount)
+                {
+                    DefaultTrace.TraceWarning("MetadataRequestThrottleRetryPolicy: Retry count: {0} has exceeded the maximum permitted retry count on unavailable endpoint: {1}.", this.unavailableEndpointRetryCount, this.maxUnavailableEndpointRetryCount);
+                    return false;
+                }
+
+                // Side-effect: every `return true` path leaves
+                // this.retryContext.RetryLocationIndex == this.unavailableEndpointRetryCount
+                // so OnBeforeSendRequest on the next BackoffRetryUtility iteration
+                // routes to the advanced index. Mutate in place so RetryRequestOnPreferredLocations
+                // is preserved across probes.
+                this.retryContext.RetryLocationIndex = this.unavailableEndpointRetryCount;
+                this.retryContext.RetryRequestOnPreferredLocations = true;
+
+                if (this.hedgeContext == null || this.request == null)
+                {
+                    DefaultTrace.TraceWarning("MetadataRequestThrottleRetryPolicy: Incrementing the metadata retry location index to: {0}.", this.unavailableEndpointRetryCount);
+                    return true;
+                }
+
+                // Tentatively resolve the would-be endpoint for the new RetryLocationIndex.
+                // ResolveServiceEndpoint is read-only against LocationCache (no mutation per
+                // probe); this is a hard invariant for any future LocationCache refactor.
+                this.request.RequestContext.ClearRouteToLocation();
+                this.request.RequestContext.RouteToLocation(
+                    this.unavailableEndpointRetryCount,
+                    usePreferredLocations: true);
+                Uri probedEndpoint = this.globalEndpointManager.ResolveServiceEndpoint(this.request);
+
+                if (probedEndpoint == null
+                    || !this.hedgeContext.AttemptedEndpoints.ContainsKey(probedEndpoint.AbsoluteUri))
+                {
+                    DefaultTrace.TraceWarning("MetadataRequestThrottleRetryPolicy: Incrementing the metadata retry location index to: {0}.", this.unavailableEndpointRetryCount);
+                    return true;
+                }
+
+                // Hedge already tried this region; advance.
+                DefaultTrace.TraceInformation("MetadataRequestThrottleRetryPolicy: Skipping retry location index {0} because endpoint {1} is in hedgeContext.AttemptedEndpoints.", this.unavailableEndpointRetryCount, probedEndpoint);
             }
 
-            // Retrying on second PreferredLocations.
-            // RetryCount is used as zero-based index.
-            DefaultTrace.TraceWarning("MetadataRequestThrottleRetryPolicy: Incrementing the metadata retry location index to: {0}.", this.unavailableEndpointRetryCount);
-            this.retryContext = new MetadataRetryContext()
-            {
-                RetryLocationIndex = this.unavailableEndpointRetryCount,
-                RetryRequestOnPreferredLocations = true,
-            };
-
-            return true;
+            DefaultTrace.TraceWarning("MetadataRequestThrottleRetryPolicy: All preferred regions exhausted by hedge attempts; terminating retry.");
+            return false;
         }
 
         /// <summary>

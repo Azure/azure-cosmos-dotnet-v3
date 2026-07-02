@@ -18,6 +18,19 @@ namespace Microsoft.Azure.Cosmos
 
         public virtual bool ShouldThrow503OnTimeout => false;
 
+        // Used by cold-start metadata hedging to derive its default threshold
+        // (firstAttempt + 500ms) and to enforce the invariant
+        // `hedgeThreshold > firstAttemptTimeout` in unit tests. See
+        // docs/PPAF_Metadata_Hedging_ColdStart_Design.md §5.9 / §8.
+        public virtual TimeSpan FirstAttemptTimeout
+        {
+            get
+            {
+                using IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> e = this.GetTimeoutEnumerator();
+                return e.MoveNext() ? e.Current.requestTimeout : TimeSpan.Zero;
+            }
+        }
+
         public static HttpTimeoutPolicy GetTimeoutPolicy(
            DocumentServiceRequest documentServiceRequest,
            bool isPartitionLevelFailoverEnabled = false,

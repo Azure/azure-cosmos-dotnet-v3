@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -18,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
     /// The expectation that is the outer retry policy in the retry policy chain and nobody can overwrite ShouldRetryResult.
     /// Once we clear the session we expect call to fail and throw exceptio to the client. Otherwise we may violate session consistency.
     /// </summary>
-    internal sealed class ClearingSessionContainerClientRetryPolicy : IDocumentClientRetryPolicy
+    internal sealed class ClearingSessionContainerClientRetryPolicy : IDocumentClientRetryPolicy, IMetadataHedgeContextReceiver
     {
         private readonly IDocumentClientRetryPolicy retryPolicy;
         private readonly ISessionContainer sessionContainer;
@@ -29,6 +30,16 @@ namespace Microsoft.Azure.Cosmos
         {
             this.retryPolicy = retryPolicy;
             this.sessionContainer = sessionContainer;
+        }
+
+        /// <summary>
+        /// Forwards the metadata hedging context to the wrapped inner policy when it participates in
+        /// metadata hedge dedup. This outer policy does not consume the context itself; forwarding
+        /// keeps the attach robust to wrapping instead of relying on a concrete-type cast at the call site.
+        /// </summary>
+        public void AttachHedgeContext(MetadataHedgingStrategy.MetadataHedgingContext context)
+        {
+            (this.retryPolicy as IMetadataHedgeContextReceiver)?.AttachHedgeContext(context);
         }
 
         public void OnBeforeSendRequest(DocumentServiceRequest request)

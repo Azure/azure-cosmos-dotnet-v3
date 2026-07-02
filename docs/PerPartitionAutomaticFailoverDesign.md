@@ -23,6 +23,7 @@ Right now, the .NET SDK depends upon the `GlobalPartitionEndpointManagerCore` to
 
 ## References
 
+- [PPAF Metadata Hedging for Cold-Start Cache Population.](./PPAF_Metadata_Hedging_ColdStart_Design.md) Companion design covering the bounded cross-region hedging the SDK applies to the Collection and PartitionKeyRange metadata caches on first population for PPAF-enabled multi-region accounts.
 - [SDK not retrying with next region in case address resolution call to Gateway call fails with 503.](https://msdata.visualstudio.com/CosmosDB/_workitems/edit/2475521/)
 - [First client write request after failover is failing with 503(21005)](https://msdata.visualstudio.com/CosmosDB/_workitems/edit/2492475/)
 - [PPAF Testing in Test, Staging and Prod.](https://microsoft.sharepoint.com/:w:/r/teams/DocumentDB/_layouts/15/doc2.aspx?sourcedoc=%7B7587D267-212F-47BE-AAD6-18FC53482B68%7D&file=PPAF%20Testing%20in%20Test%2C%20Staging%20and%20Prod.docx&action=default&mobileredirect=true)
