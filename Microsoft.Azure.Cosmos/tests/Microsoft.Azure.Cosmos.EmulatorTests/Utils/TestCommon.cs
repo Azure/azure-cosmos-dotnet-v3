@@ -81,6 +81,146 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return Cosmos.ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", string.Empty);
         }
 
+        /// <summary>
+        /// Resolves the account endpoint for the live AAD tests. Prefers the dedicated
+        /// COSMOSDB_MULTI_REGION_AAD variable (which may be a bare endpoint URL such as
+        /// "https://acct.documents.azure.com:443/" because AAD-only accounts have no key, or a full
+        /// connection string), and falls back to the AccountEndpoint of the key-based COSMOSDB_MULTI_REGION
+        /// connection string. Returns null when neither is configured so the tests can skip cleanly.
+        /// </summary>
+        internal static string GetAadAccountEndpoint()
+        {
+            string aadValue = Cosmos.ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION_AAD", string.Empty);
+            string endpoint = TestCommon.ExtractAccountEndpoint(aadValue);
+            if (!string.IsNullOrEmpty(endpoint))
+            {
+                return endpoint;
+            }
+
+            return TestCommon.ExtractAccountEndpoint(TestCommon.GetMultiRegionConnectionString());
+        }
+
+        /// <summary>
+        /// Returns the account endpoint from a value that is either a bare endpoint URL or a Cosmos
+        /// connection string of the form "AccountEndpoint=...;AccountKey=...". Returns null when no usable
+        /// endpoint is present or when the value is an unresolved Azure DevOps macro.
+        /// </summary>
+        private static string ExtractAccountEndpoint(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value) || value.StartsWith("$(", StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            value = value.Trim();
+
+            if (value.IndexOf("AccountEndpoint=", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                foreach (string segment in value.Split(';', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    int separatorIndex = segment.IndexOf('=');
+                    if (separatorIndex <= 0)
+                    {
+                        continue;
+                    }
+
+                    string key = segment.Substring(0, separatorIndex).Trim();
+                    if (string.Equals(key, "AccountEndpoint", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return segment.Substring(separatorIndex + 1).Trim();
+                    }
+                }
+
+                return null;
+            }
+
+            return Uri.TryCreate(value, UriKind.Absolute, out _) ? value : null;
+        }
+
+        /// <summary>
+        /// Returns a <see cref="global::Azure.Core.TokenCredential"/> for the live AAD tests, or null when
+        /// no usable credential is configured (so the tests can skip cleanly).
+        ///
+        /// Prefers an explicit <see cref="global::Azure.Identity.ClientSecretCredential"/> built from the
+        /// AZURE_TENANT_ID / AZURE_CLIENT_ID / AZURE_CLIENT_SECRET environment variables. Tenant/client must
+        /// parse as GUIDs and the secret must be present; this also guards against unresolved Azure DevOps
+        /// macros (e.g. the literal string "$(AAD_TENANT_ID)" when the pipeline variable is not yet defined),
+        /// which would otherwise look non-empty and cause the tests to fail instead of skip.
+        ///
+        /// When client secrets are unavailable (e.g. blocked by tenant policy), set
+        /// COSMOSDB_AAD_USE_DEFAULT_CREDENTIAL=true to use the ambient identity. In CI this is the Azure
+        /// DevOps service connection (Workload Identity Federation) that the AzureCLI task logs `az` in as;
+        /// locally it is `az login` or Visual Studio. Managed identity is excluded so a build agent's own
+        /// system identity can never be selected ahead of the intended federated identity. This is
+        /// intentionally opt-in so CI agents never silently authenticate with an unintended identity.
+        /// </summary>
+        internal static global::Azure.Core.TokenCredential GetAadTokenCredential()
+        {
+            string tenantId = Cosmos.ConfigurationManager.GetEnvironmentVariable<string>("AZURE_TENANT_ID", string.Empty);
+            string clientId = Cosmos.ConfigurationManager.GetEnvironmentVariable<string>("AZURE_CLIENT_ID", string.Empty);
+            string clientSecret = Cosmos.ConfigurationManager.GetEnvironmentVariable<string>("AZURE_CLIENT_SECRET", string.Empty);
+
+            if (Guid.TryParse(tenantId, out _)
+                && Guid.TryParse(clientId, out _)
+                && IsConfiguredValue(clientSecret))
+            {
+                return new global::Azure.Identity.ClientSecretCredential(tenantId, clientId, clientSecret);
+            }
+
+            if (Cosmos.ConfigurationManager.GetEnvironmentVariable<bool>("COSMOSDB_AAD_USE_DEFAULT_CREDENTIAL", false))
+            {
+                try
+                {
+                    global::Azure.Identity.DefaultAzureCredentialOptions options = new global::Azure.Identity.DefaultAzureCredentialOptions
+                    {
+                        ExcludeManagedIdentityCredential = true,
+                    };
+
+                    if (Guid.TryParse(tenantId, out _))
+                    {
+                        options.TenantId = tenantId;
+                    }
+
+                    return new global::Azure.Identity.DefaultAzureCredential(options);
+                }
+                catch (Exception)
+                {
+                    return null;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Returns true when an environment value is set to a real value, i.e. it is non-empty and is not an
+        /// unresolved Azure DevOps macro (such as "$(AAD_CLIENT_SECRET)" left behind when the pipeline
+        /// variable is undefined).
+        /// </summary>
+        private static bool IsConfiguredValue(string value)
+        {
+            return !string.IsNullOrWhiteSpace(value) && !value.StartsWith("$(", StringComparison.Ordinal);
+        }
+
+
+        /// <summary>
+        /// Creates a <see cref="CosmosClient"/> for the live-account AAD tests using the endpoint parsed from
+        /// COSMOSDB_MULTI_REGION and a real Entra <see cref="global::Azure.Core.TokenCredential"/>.
+        /// Returns null when the endpoint or a usable credential is not configured so the caller can skip.
+        /// </summary>
+        internal static CosmosClient CreateAadCosmosClient(CosmosClientOptions clientOptions = null)
+        {
+            string endpoint = TestCommon.GetAadAccountEndpoint();
+            global::Azure.Core.TokenCredential tokenCredential = TestCommon.GetAadTokenCredential();
+
+            if (string.IsNullOrEmpty(endpoint) || tokenCredential == null)
+            {
+                return null;
+            }
+
+            return new CosmosClient(endpoint, tokenCredential, clientOptions);
+        }
+
         internal static CosmosClientBuilder GetDefaultConfiguration(
             bool useCustomSeralizer = true,
             bool validatePartitionKeyRangeCalls = false,

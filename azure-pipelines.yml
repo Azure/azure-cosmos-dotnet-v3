@@ -52,6 +52,10 @@ jobs:
     VmImage: $(VmImage)
     MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
     MultiRegionMultiMasterConnectionString: $(COSMOSDB_MULTIMASTER)
+    AadAccountEndpoint: 'https://dotnet-v3-multiregion.documents.azure.com:443/'
+    # Set to the name of the Azure Resource Manager (Workload Identity Federation) service connection
+    # whose identity holds the Cosmos DB data-plane role on the AAD account. Leave blank to skip the job.
+    AadServiceConnection: ''
     IncludePerformance: true
     IncludeCoverage: true
 
