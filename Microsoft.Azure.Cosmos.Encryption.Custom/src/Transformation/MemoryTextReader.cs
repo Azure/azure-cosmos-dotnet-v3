@@ -103,9 +103,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 throw new InvalidOperationException("Reader is closed");
             }
 
+            int start = this.pos;
+            int count = this.length - start;
             this.pos = this.length;
-            Memory<char> remaining = this.chars.Slice(this.pos, this.length - this.pos);
-            return new string(remaining.ToArray());
+            if (count == 0)
+            {
+                return string.Empty;
+            }
+
+            return this.chars.Span.Slice(start, count).ToString();
         }
 
         public override string ReadLine()

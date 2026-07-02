@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -77,6 +77,88 @@ namespace Microsoft.Azure.Cosmos.Tests
                 ).Returns(Task.FromResult(containerProperties));
 
             storeModel.SetCaches(partitionKeyRangeCache.Object, clientCollectionCache.Object);
+        }
+
+        public static void EnableThinClientLocationsForTest(
+            GlobalEndpointManager endpointManager,
+            string thinClientEndpoint = "https://mock.thinclient.com/")
+        {
+            AccountProperties accountProperties = new AccountProperties
+            {
+                ReadLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "region1", Endpoint = thinClientEndpoint }
+                },
+                WriteLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "region1", Endpoint = thinClientEndpoint }
+                },
+                ThinClientWritableLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "region1", Endpoint = thinClientEndpoint }
+                },
+                ThinClientReadableLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "region1", Endpoint = thinClientEndpoint }
+                }
+            };
+
+            FieldInfo locationCacheField = typeof(GlobalEndpointManager).GetField(
+                "locationCache",
+                BindingFlags.NonPublic | BindingFlags.Instance)
+                ?? throw new InvalidOperationException("Could not find 'locationCache' field on GlobalEndpointManager");
+            LocationCache locationCache = (LocationCache)locationCacheField.GetValue(endpointManager);
+            locationCache.OnDatabaseAccountRead(accountProperties);
+        }
+
+        /// <summary>
+        /// Marks every advertised thin-client regional endpoint as probe-healthy by wiring a probe
+        /// client whose HTTP/2 connectivity probes all succeed and running one probe cycle. Required
+        /// because thin-client routing fails closed: without a probe-confirmed endpoint the dispatch
+        /// path falls back to Gateway V1.
+        /// </summary>
+        public static void MarkThinClientEndpointsHealthyForTest(GlobalEndpointManager endpointManager)
+        {
+            CosmosHttpClient probeHttpClient = MockCosmosUtil.CreateMockCosmosHttpClientFromFunc(
+                request => Task.FromResult(new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.OK)
+                {
+                    Content = new System.Net.Http.ByteArrayContent(Array.Empty<byte>()),
+                    RequestMessage = request,
+                }));
+
+            endpointManager.SetThinClientHttpClient(probeHttpClient);
+            endpointManager.RunThinClientProbeCycleAsync().GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// Simulates the service withdrawing all thin-client locations
+        /// by feeding the LocationCache an AccountProperties snapshot whose
+        /// thin-client collections are empty while keeping regular read / write locations.
+        /// </summary>
+        public static void DisableThinClientLocationsForTest(
+            GlobalEndpointManager endpointManager,
+            string regularEndpoint = "https://mock.proxy.com/")
+        {
+            AccountProperties accountProperties = new AccountProperties
+            {
+                ReadLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "region1", Endpoint = regularEndpoint }
+                },
+                WriteLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "region1", Endpoint = regularEndpoint }
+                },
+                ThinClientWritableLocationsInternal = new Collection<AccountRegion>(),
+                ThinClientReadableLocationsInternal = new Collection<AccountRegion>()
+            };
+
+            FieldInfo locationCacheField = typeof(GlobalEndpointManager).GetField(
+                "locationCache",
+                BindingFlags.NonPublic | BindingFlags.Instance)
+                ?? throw new InvalidOperationException("Could not find 'locationCache' field on GlobalEndpointManager");
+            LocationCache locationCache = (LocationCache)locationCacheField.GetValue(endpointManager);
+            locationCache.OnDatabaseAccountRead(accountProperties);
         }
     }
 }

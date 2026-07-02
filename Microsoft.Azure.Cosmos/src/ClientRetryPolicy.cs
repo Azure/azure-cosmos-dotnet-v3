@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
 
     /// <summary>
     /// Client policy is combination of endpoint change retry + throttling retry.
@@ -23,24 +24,48 @@ namespace Microsoft.Azure.Cosmos
         private const int RetryIntervalInMS = 1000; // Once we detect failover wait for 1 second before retrying request.
         private const int MaxRetryCount = 120;
         private const int MaxServiceUnavailableRetryCount = 1;
+#if !INTERNAL
+        private const int MaxSessionTokenRetryCount = 2;
+#else
+        private const int MaxSessionTokenRetryCount = 1;
+#endif
+        private const int MaxCaeRevocationRetryCount = 1;
+
+        // ----- DTX (Distributed Transaction) inner-loop retry constants -----
+        // The outer loop (DistributedTransactionCommitter) handles body-bearing isRetriable failures.
+        // CRP owns envelope failures with empty body: 408, 449/5352 share one budget; 500/5411-5413 use a separate, tighter budget.
+        private const int MaxDtxRetryCount = 10;
+        private const int MaxDtxInfraFailureRetryCount = 9;
+        private const int DtxInfraFailureMaxExponent = 6;
+        private static readonly TimeSpan DtxInfraFailureBaseBackoff = TimeSpan.FromMilliseconds(100);
+        private static readonly TimeSpan DtxInfraFailureMaxBackoff = TimeSpan.FromSeconds(5);
 
         private readonly IDocumentClientRetryPolicy throttlingRetry;
         private readonly GlobalEndpointManager globalEndpointManager;
         private readonly GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private readonly bool enableEndpointDiscovery;
         private readonly bool isThinClientEnabled;
+#if !INTERNAL
+        private readonly bool isHubRegionProcessingEnabled;
+#endif
+        private readonly AuthorizationTokenProvider authorizationTokenProvider;
         private int failoverRetryCount;
 
         private int sessionTokenRetryCount;
         private int serviceUnavailableRetryCount;
+        private int caeRevocationRetryCount;
+        private int distributedTransactionRetryCount;
+        private int distributedTransactionInfraFailureRetryCount;
         private bool isReadRequest;
         private bool canUseMultipleWriteLocations;
         private bool isMultiMasterWriteRequest;
+        private bool isDtxRequest;
         private Uri locationEndpoint;
         private RetryContext retryContext;
         private DocumentServiceRequest documentServiceRequest;
 #if !INTERNAL
         private volatile bool addHubRegionProcessingOnlyHeader;
+        private CrossRegionAvailabilityContext crossRegionAvailabilityContext;
 #endif
 
         public ClientRetryPolicy(
@@ -48,7 +73,9 @@ namespace Microsoft.Azure.Cosmos
             GlobalPartitionEndpointManager partitionKeyRangeLocationCache,
             RetryOptions retryOptions,
             bool enableEndpointDiscovery,
-            bool isThinClientEnabled)
+            bool isThinClientEnabled,
+            bool isHubRegionProcessingEnabled = true,
+            AuthorizationTokenProvider authorizationTokenProvider = null)
         {
             this.throttlingRetry = new ResourceThrottleRetryPolicy(
                 retryOptions.MaxRetryAttemptsOnThrottledRequests,
@@ -60,9 +87,14 @@ namespace Microsoft.Azure.Cosmos
             this.enableEndpointDiscovery = enableEndpointDiscovery;
             this.sessionTokenRetryCount = 0;
             this.serviceUnavailableRetryCount = 0;
+            this.caeRevocationRetryCount = 0;
             this.canUseMultipleWriteLocations = false;
             this.isMultiMasterWriteRequest = false;
             this.isThinClientEnabled = isThinClientEnabled;
+#if !INTERNAL
+            this.isHubRegionProcessingEnabled = isHubRegionProcessingEnabled;
+#endif
+            this.authorizationTokenProvider = authorizationTokenProvider;
         }
 
         /// <summary> 
@@ -85,7 +117,7 @@ namespace Microsoft.Azure.Cosmos
 
                 // In the event of the routing gateway having outage on region A, mark the partition as unavailable assuming that the
                 // partition has been failed over to region B, when per partition automatic failover is enabled.
-                this.TryMarkEndpointUnavailableForPkRange(isSystemResourceUnavailableForWrite: false);
+                this.TryMarkEndpointUnavailableForPkRange(shouldMarkEndpointUnavailableForPkRange: false);
 
                 // Mark both read and write requests because it gateway exception.
                 // This means all requests going to the region will fail.
@@ -117,7 +149,9 @@ namespace Microsoft.Azure.Cosmos
 
                 ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
                     clientException?.StatusCode,
-                    clientException?.GetSubStatus());
+                    clientException?.GetSubStatus(),
+                    clientException?.Headers,
+                    clientException?.RetryAfter);
                 if (shouldRetryResult != null)
                 {
                     return shouldRetryResult;
@@ -131,7 +165,9 @@ namespace Microsoft.Azure.Cosmos
             {
                 ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
                     cosmosException.StatusCode,
-                    cosmosException.Headers.SubStatusCode);
+                    cosmosException.Headers.SubStatusCode,
+                    cosmosException.Headers,
+                    cosmosException.RetryAfter);
                 if (shouldRetryResult != null)
                 {
                     return shouldRetryResult;
@@ -170,9 +206,14 @@ namespace Microsoft.Azure.Cosmos
         {
             this.retryContext = null;
 
+            bool hasResponseBody = cosmosResponseMessage?.Content != null;
+
             ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
                     cosmosResponseMessage?.StatusCode,
-                    cosmosResponseMessage?.Headers.SubStatusCode);
+                    cosmosResponseMessage?.Headers.SubStatusCode,
+                    cosmosResponseMessage?.Headers,
+                    cosmosResponseMessage?.Headers.RetryAfter,
+                    hasResponseBody);
             if (shouldRetryResult != null)
             {
                 return shouldRetryResult;
@@ -205,10 +246,17 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="request">The request being sent to the service.</param>
         public void OnBeforeSendRequest(DocumentServiceRequest request)
         {
-            this.isReadRequest = request.IsReadOnlyRequest;
+            this.isDtxRequest = DistributedTransactionConstants.IsDistributedTransactionRequest(
+                request.OperationType,
+                request.ResourceType);
+
+            // Distributed transaction requests (including reads, which are sent as OperationType.Read)
+            // must always route to the write region where the transaction coordinator lives. Treat them
+            // as non-read for routing/failover purposes so they are never directed to read-only regions.
+            this.isReadRequest = request.IsReadOnlyRequest && !this.isDtxRequest;
             this.canUseMultipleWriteLocations = this.globalEndpointManager.CanUseMultipleWriteLocations(request);
             this.documentServiceRequest = request;
-            this.isMultiMasterWriteRequest = !this.isReadRequest
+            this.isMultiMasterWriteRequest = !request.IsReadOnlyRequest
                 && (this.globalEndpointManager?.CanSupportMultipleWriteLocations(request.ResourceType, request.OperationType) ?? false);
 
             // clear previous location-based routing directive
@@ -222,30 +270,157 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    // set location-based routing directive based on request retry context
-                    request.RequestContext.RouteToLocation(this.retryContext.RetryLocationIndex, this.retryContext.RetryRequestOnPreferredLocations);
+                    // set location-based routing directive based on request retry context.
+                    // For DTX requests, always disable preferred locations so the request enters
+                    // the write-region flip-flop branch in LocationCache.ResolveServiceEndpoint,
+                    // ensuring it never routes to a read-only region.
+                    request.RequestContext.RouteToLocation(
+                        this.retryContext.RetryLocationIndex,
+                        this.isDtxRequest ? false : this.retryContext.RetryRequestOnPreferredLocations);
                 }
             }
-#if !INTERNAL
-            // If previous attempt failed with 404/1002, add the hub-region-processing-only header to all subsequent retry attempts
-            if (this.addHubRegionProcessingOnlyHeader)
+            else if (this.isDtxRequest)
             {
-                request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
+                // First attempt (no retry context): disable preferred locations so the request
+                // enters the write-region branch in LocationCache.ResolveServiceEndpoint.
+                request.RequestContext.RouteToLocation(0, usePreferredLocations: false);
+            }
+
+#if !INTERNAL
+            // Initialize CrossRegionAvailabilityContext from Properties if not already set.
+            // In hedging scenarios, Properties carries the shared context instance injected by
+            // CrossRegionHedgingAvailabilityStrategy before cloning.
+            if (this.crossRegionAvailabilityContext == null
+                && request.Properties != null
+                && request.Properties.TryGetValue(CrossRegionAvailabilityContext.PropertyKey, out object ctxObj)
+                && ctxObj is CrossRegionAvailabilityContext sharedCtx)
+            {
+                this.crossRegionAvailabilityContext = sharedCtx;
+            }
+
+            // Hub-region cache + header handling for single-master reads.
+            // On a retry (sessionTokenRetryCount > 0), check the per-partition hub cache. On HIT,
+            // route directly to the cached hub URI — the warm-cache fast path (2 wires instead of
+            // discovery). The hub-region-processing-only header is attached only when the cold-cache
+            // flag is set (after 2 × 404/1002, or propagated via the shared hedge context), so it
+            // never appears on wire 1 or on a warm-cache wire 2.
+            bool hubHeaderFlagSet = this.addHubRegionProcessingOnlyHeader
+                || this.crossRegionAvailabilityContext?.ShouldAddHubRegionProcessingOnlyHeader == true;
+
+            if (this.isHubRegionProcessingEnabled
+                && request.IsReadOnlyRequest
+                && (this.sessionTokenRetryCount > 0 || hubHeaderFlagSet))
+            {
+                bool pkRangeLocationCacheHit = this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(
+                    request, checkHubRegionOverrideInCache: true);
+
+                if (hubHeaderFlagSet)
+                {
+                    request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
+                }
+
+                if (pkRangeLocationCacheHit)
+                {
+                    this.locationEndpoint = request.RequestContext.LocationEndpointToRoute;
+                    return;
+                }
             }
 #endif
-            // Resolve the endpoint for the request and pin the resolution to the resolved endpoint
-            // This enables marking the endpoint unavailability on endpoint failover/unreachability
-            this.locationEndpoint = this.isThinClientEnabled
-                && GatewayStoreModel.IsOperationSupportedByThinClient(request)
-                ? this.globalEndpointManager.ResolveThinClientEndpoint(request)
+            // Resolve and pin the endpoint for the request. Per-region thin client gate: route to the proxy only
+            // when the regional endpoint the request would use is probe-healthy; otherwise pin the gateway
+            // endpoint.
+            Uri thinClientCandidate = this.isThinClientEnabled
+                && ThinClientStoreModel.IsThinClientRoutable(this.globalEndpointManager, request)
+                ? this.globalEndpointManager.GetThinClientEndpointCandidate(request)
+                : null;
+
+            // When the candidate is probe-healthy, pin the exact URI we just health-checked rather than
+            // re-resolving it (ResolveThinClientEndpoint), which would recompute from a possibly newer topology
+            // snapshot and could pin a different region than the one probed. The RouteToLocation below pins
+            // whichever endpoint we select for both branches.
+            this.locationEndpoint = thinClientCandidate != null
+                && this.globalEndpointManager.IsProxyEndpointHealthy(thinClientCandidate)
+                ? thinClientCandidate
                 : this.globalEndpointManager.ResolveServiceEndpoint(request);
 
             request.RequestContext.RouteToLocation(this.locationEndpoint);
+
+            // Force UsePreferredLocations=false for DTX after endpoint pinning so that any
+            // downstream re-resolution (e.g. on retry) stays on the write-region branch.
+            if (this.isDtxRequest)
+            {
+                request.RequestContext.RouteToLocation(
+                    this.retryContext?.RetryLocationIndex ?? 0,
+                    usePreferredLocations: false);
+            }
+
+            // Hedging-Detection API: tag the upcoming dispatch reason on Properties so that
+            // the downstream dispatch site (TransportHandler / GatewayStoreModel) can append
+            // a RequestedRegion entry with the correct reason. Only override when this is a
+            // genuine retry attempt — first-attempt dispatches default to Initial (set by
+            // the dispatch site), and hedge-arm dispatches have their Hedging reason set by
+            // CrossRegionHedgingAvailabilityStrategy before reaching this policy.
+            //
+            // Hedging preservation invariant: when a hedge arm itself triggers a retry (e.g.
+            // 410 Gone / 449), this method is re-entered with retryContext != null on the
+            // same cloned RequestMessage. The Hedging value previously seeded by
+            // CrossRegionHedgingAvailabilityStrategy.CloneAndSendAsync must NOT be silently
+            // overwritten with OperationRetry / RegionFailover, otherwise the hedge origin
+            // is lost from the GetRequestedRegions() sequence. Preserve the existing value
+            // if it is already Hedging.
+            if (this.retryContext != null && request.Properties != null)
+            {
+                bool alreadyTaggedAsHedging =
+                    request.Properties.TryGetValue(Tracing.HedgingDetectionState.DispatchReasonPropertyKey, out object existingReasonObj)
+                    && existingReasonObj is RequestedRegionReason existingReason
+                    && existingReason == RequestedRegionReason.Hedging;
+
+                if (!alreadyTaggedAsHedging)
+                {
+                    RequestedRegionReason reason = this.retryContext.RetryRequestOnPreferredLocations
+                        ? RequestedRegionReason.RegionFailover
+                        : RequestedRegionReason.OperationRetry;
+                    request.Properties[Tracing.HedgingDetectionState.DispatchReasonPropertyKey] = reason;
+                }
+            }
         }
 
         private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
             HttpStatusCode? statusCode,
-            SubStatusCodes? subStatusCode)
+            SubStatusCodes? subStatusCode,
+            INameValueCollection responseHeaders,
+            TimeSpan? retryAfter = null,
+            bool hasResponseBody = false)
+        {
+            return await this.ShouldRetryInternalAsync(
+                statusCode,
+                subStatusCode,
+                responseHeaders?.Get(HttpConstants.HttpHeaders.WwwAuthenticate),
+                retryAfter,
+                hasResponseBody);
+        }
+
+        private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
+            HttpStatusCode? statusCode,
+            SubStatusCodes? subStatusCode,
+            Headers responseHeaders,
+            TimeSpan? retryAfter = null,
+            bool hasResponseBody = false)
+        {
+            return await this.ShouldRetryInternalAsync(
+                statusCode,
+                subStatusCode,
+                responseHeaders?[HttpConstants.HttpHeaders.WwwAuthenticate],
+                retryAfter,
+                hasResponseBody);
+        }
+
+        private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
+            HttpStatusCode? statusCode,
+            SubStatusCodes? subStatusCode,
+            string wwwAuthenticateHeaderValue,
+            TimeSpan? retryAfter = null,
+            bool hasResponseBody = false)
         {
             if (!statusCode.HasValue
                 && (!subStatusCode.HasValue
@@ -261,17 +436,27 @@ namespace Microsoft.Azure.Cosmos
                     this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
                     this.documentServiceRequest?.ResourceAddress ?? string.Empty);
 
-                // Mark the partition key range as unavailable to retry future request on a new region.
-                this.TryMarkEndpointUnavailableForPkRange(isSystemResourceUnavailableForWrite: false);
+                // For DTX commits, a 408 from the coordinator means "transaction in-progress" — NOT
+                // an endpoint reachability problem. Marking the endpoint unavailable here would poison
+                // routing for non-DTX traffic sharing the same partition-key-range cache.
+                if (!this.isDtxRequest)
+                {
+                    // Mark the partition key range as unavailable to retry future request on a new region.
+                    this.TryMarkEndpointUnavailableForPkRange(shouldMarkEndpointUnavailableForPkRange: false);
+                }
             }
 
-            // Received 403.3 on write region, initiate the endpoint rediscovery
+            // Received 403.3 on write region or a read region, initiate the endpoint rediscovery
             if (statusCode == HttpStatusCode.Forbidden
                 && subStatusCode == SubStatusCodes.WriteForbidden)
             {
-                // It's a write forbidden so it safe to retry
-                if (this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
-                     this.documentServiceRequest))
+                // A 403.3 can be returned for both read or write requests. The read request will return a 403.3 only when
+                // the region, with the hub region processing only header determines that it is not the current hub region
+                // for the partition. In either of the case, we mark the endpoint unavailable for the partition key range.
+                // If we exhaust all the region level mark down for the partition key range, then we will mark the endpoint
+                // unavailable for writes in that region.
+                if (this.TryMarkEndpointUnavailableForPkRange(
+                    shouldMarkEndpointUnavailableForPkRange: true))
                 {
                     return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
                 }
@@ -305,6 +490,8 @@ namespace Microsoft.Azure.Cosmos
                     return retryResult;
                 }
 
+                // Note: This can be triggered by the read requests as well. In that case, we will set the isReadRequest to
+                // false to ensure that we mark the endpoint unavailable for writes only.
                 return await this.ShouldRetryOnEndpointFailureAsync(
                     isReadRequest: false,
                     markBothReadAndWriteAsUnavailable: false,
@@ -331,14 +518,6 @@ namespace Microsoft.Azure.Cosmos
 
             if (statusCode == HttpStatusCode.NotFound && subStatusCode == SubStatusCodes.ReadSessionNotAvailable)
             {
-#if !INTERNAL
-                // Only set the hub region processing header for single master accounts
-                // Set header only after the first retry attempt fails with 404/1002
-                if (!this.canUseMultipleWriteLocations && this.sessionTokenRetryCount >= 1)
-                {
-                    this.addHubRegionProcessingOnlyHeader = true;
-                }
-#endif
                 return this.ShouldRetryOnSessionNotAvailable(this.documentServiceRequest);
             }
 
@@ -349,14 +528,60 @@ namespace Microsoft.Azure.Cosmos
                     isSystemResourceUnavailableForWrite: false);
             }
 
-            // Recieved 500 status code or lease not found
-            if ((statusCode == HttpStatusCode.InternalServerError && this.isReadRequest)
+            // Recieved 500 status code or lease not found.
+            // DTX requests (including read DTX whose IsReadOnlyRequest is true) defer to the
+            // DTX-specific retry classifier below so the dedicated 500/5411-5413 budget applies
+            // instead of generic endpoint-unavailable retry.
+            // Note: 410/1022 (LeaseNotFound) is not emitted by DTX coordinator; this branch never hit for DTX.
+            if ((statusCode == HttpStatusCode.InternalServerError && this.isReadRequest && !this.isDtxRequest)
                 || (statusCode == HttpStatusCode.Gone && subStatusCode == SubStatusCodes.LeaseNotFound))
             {
                 return this.ShouldRetryOnUnavailableEndpointStatusCodes();
             }
 
+            if (statusCode == HttpStatusCode.Unauthorized
+                && (subStatusCode == SubStatusCodes.AadTokenRevoked
+                    || !string.IsNullOrEmpty(wwwAuthenticateHeaderValue)))
+            {
+                return this.HandleUnauthorizedResponse(wwwAuthenticateHeaderValue);
+            }
+
+            if (this.isDtxRequest)
+            {
+                return this.ShouldRetryDtxRequest(statusCode, subStatusCode, retryAfter, hasResponseBody);
+            }
+
             return null;
+        }
+
+        private ShouldRetryResult HandleUnauthorizedResponse(string wwwAuthenticateHeaderValue)
+        {
+            if (!(this.authorizationTokenProvider is AuthorizationTokenProviderTokenCredential tokenProvider)
+                || this.documentServiceRequest == null)
+            {
+                return null;
+            }
+
+            if (this.caeRevocationRetryCount >= ClientRetryPolicy.MaxCaeRevocationRetryCount)
+            {
+                DefaultTrace.TraceWarning(
+                    "ClientRetryPolicy: Token revocation max retry count ({0}) exceeded. Not retrying.",
+                    ClientRetryPolicy.MaxCaeRevocationRetryCount);
+                return ShouldRetryResult.NoRetry();
+            }
+
+            if (!tokenProvider.TryHandleTokenRevocation(
+                HttpStatusCode.Unauthorized,
+                wwwAuthenticateHeaderValue))
+            {
+                return null;
+            }
+
+            this.caeRevocationRetryCount++;
+            DefaultTrace.TraceInformation(
+                "ClientRetryPolicy: AAD token revocation handled. Retrying with fresh token. RetryCount={0}",
+                this.caeRevocationRetryCount);
+            return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
         }
 
         private async Task<ShouldRetryResult> ShouldRetryOnEndpointFailureAsync(
@@ -436,7 +661,6 @@ namespace Microsoft.Azure.Cosmos
                 if (this.canUseMultipleWriteLocations)
                 {
                     ReadOnlyCollection<Uri> endpoints = this.globalEndpointManager.GetApplicableEndpoints(request, this.isReadRequest);
-
                     if (this.sessionTokenRetryCount > endpoints.Count)
                     {
                         // When use multiple write locations is true and the request has been tried 
@@ -456,14 +680,38 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    if (this.sessionTokenRetryCount > 1)
+#if !INTERNAL
+                    // Hub region discovery: only for single-master accounts AND read-only requests.
+                    // The hub-region-processing-only header is meaningful only on reads (the backend
+                    // routes reads to the partition's hub based on this header); writes already go to
+                    // the write region by default and the header has no defined semantics for them.
+                    if (this.isHubRegionProcessingEnabled
+                        && request.IsReadOnlyRequest
+                        && this.sessionTokenRetryCount >= MaxSessionTokenRetryCount)
                     {
-                        // When cannot use multiple write locations, then don't retry the request if 
-                        // we have already tried this request on the write location
+                        this.addHubRegionProcessingOnlyHeader = true;
+
+                        // Propagate to shared context so hedged requests
+                        // (running in parallel with their own ClientRetryPolicy)
+                        // pick up the hub region header immediately.
+                        if (this.crossRegionAvailabilityContext != null)
+                        {
+                            this.crossRegionAvailabilityContext.ShouldAddHubRegionProcessingOnlyHeader = true;
+                        }
+                    }
+#endif
+
+                    if (this.sessionTokenRetryCount > MaxSessionTokenRetryCount)
+                    {
                         return ShouldRetryResult.NoRetry();
                     }
                     else
                     {
+                        // Single-master 404/1002 retry. Set retryContext to the write region as
+                        // a fallback. OnBeforeSendRequest will do a cache lookup first: warm cache
+                        // HIT routes wire 2 to the cached hub (no header); MISS falls through to
+                        // this fallback (write region, no header) until the 2 × 404/1002 threshold
+                        // triggers the hub-region-processing-only header on the next wire.
                         this.retryContext = new RetryContext
                         {
                             RetryLocationIndex = 0,
@@ -546,14 +794,15 @@ namespace Microsoft.Azure.Cosmos
         /// Attempts to mark the endpoint associated with the current partition key range as unavailable
         /// which will influence future routing decisions.
         /// </summary>
-        /// <param name="isSystemResourceUnavailableForWrite">A boolean flag indicating if the system resource was unavailable. If true,
-        /// the endpoint will be marked unavailable for the pk-range of a multi master write request, bypassing the circuit breaker check.</param>
+        /// <param name="shouldMarkEndpointUnavailableForPkRange">A boolean flag indicating if the endpoint should be marked as unavailable for the pk-range. If true,
+        /// the endpoint will be marked unavailable is either 1) for the pk-range of a multi master write request, bypassing the circuit breaker check
+        /// or 2) for the pk-range when a read request received a 403.3 with the hub region header.</param>
         /// <returns>A boolean flag indicating whether the endpoint was marked as unavailable.</returns>
         private bool TryMarkEndpointUnavailableForPkRange(
-            bool isSystemResourceUnavailableForWrite)
+            bool shouldMarkEndpointUnavailableForPkRange)
         {
             if (this.documentServiceRequest != null
-                && (isSystemResourceUnavailableForWrite
+                && (shouldMarkEndpointUnavailableForPkRange
                 || this.IsRequestEligibleForPerPartitionAutomaticFailover()
                 || this.IsRequestEligibleForPartitionLevelCircuitBreaker()))
             {
@@ -608,6 +857,93 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.partitionKeyRangeLocationCache.IsRequestEligibleForPartitionLevelCircuitBreaker(this.documentServiceRequest)
                         && this.partitionKeyRangeLocationCache.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(this.documentServiceRequest);
+        }
+
+        // DTX retry classifier. The coordinator distinguishes envelope failures (no body) from semantic
+        // failures (body with per-op results + isRetriable). Body-bearing responses defer to the outer
+        // DistributedTransactionCommitter loop; otherwise the inner loop owns retry along one of two
+        // shapes: coordinator-retriable (408/449) or infrastructure failure (500/5411-5413).
+        private ShouldRetryResult ShouldRetryDtxRequest(
+            HttpStatusCode? statusCode,
+            SubStatusCodes? subStatusCode,
+            TimeSpan? retryAfter,
+            bool hasResponseBody)
+        {
+            int statusCodeValue = (int?)statusCode ?? 0;
+            int subStatusCodeValue = (int?)subStatusCode ?? 0;
+
+            bool isCoordinatorRetriable =
+                statusCodeValue == (int)HttpStatusCode.RequestTimeout
+                || (statusCodeValue == (int)StatusCodes.RetryWith && subStatusCode == SubStatusCodes.DtcCoordinatorRaceConflict)
+                || (statusCodeValue == (int)StatusCodes.TooManyRequests && subStatusCode == SubStatusCodes.RUBudgetExceeded);
+
+            bool isInfraFailure =
+                statusCodeValue == (int)HttpStatusCode.InternalServerError
+                && (subStatusCode == SubStatusCodes.DtcLedgerFailure
+                    || subStatusCode == SubStatusCodes.DtcAccountConfigFailure
+                    || subStatusCode == SubStatusCodes.DtcDispatchFailure);
+
+            // Body-bearing response carries per-op isRetriable in JSON. The outer DistributedTransactionCommitter
+            // loop owns retry; defer to avoid inner×outer amplification.
+            if (hasResponseBody && isCoordinatorRetriable)
+            {
+                DefaultTrace.TraceInformation("ClientRetryPolicy: DTX response body present (Status={0}, SubStatus={1}). Deferring to outer loop.", statusCodeValue, subStatusCodeValue);
+                return ShouldRetryResult.NoRetry();
+            }
+
+            if (isCoordinatorRetriable)
+            {
+                // 429/3200 without body — ResourceThrottleRetryPolicy handles it via Retry-After.
+                if (statusCodeValue == (int)StatusCodes.TooManyRequests)
+                {
+                    return null;
+                }
+
+                int attempt = this.distributedTransactionRetryCount++;
+                return this.RetryDtxWithBudget(
+                    attempt,
+                    ClientRetryPolicy.MaxDtxRetryCount,
+                    retryAfter ?? TimeSpan.FromMilliseconds(ClientRetryPolicy.RetryIntervalInMS),
+                    statusCodeValue,
+                    subStatusCodeValue);
+            }
+
+            if (isInfraFailure)
+            {
+                int attempt = this.distributedTransactionInfraFailureRetryCount++;
+                return this.RetryDtxWithBudget(
+                    attempt,
+                    ClientRetryPolicy.MaxDtxInfraFailureRetryCount,
+                    DistributedTransactionRetryHelpers.ComputeBackoff(
+                        attempt,
+                        ClientRetryPolicy.DtxInfraFailureBaseBackoff,
+                        ClientRetryPolicy.DtxInfraFailureMaxBackoff,
+                        ClientRetryPolicy.DtxInfraFailureMaxExponent),
+                    statusCodeValue,
+                    subStatusCodeValue);
+            }
+
+            // 452/5421 (Aborted) and unrecognized codes fall through to the outer loop / default policy.
+            return null;
+        }
+
+        private ShouldRetryResult RetryDtxWithBudget(int attempt, int cap, TimeSpan delay, int statusCode, int subStatusCode)
+        {
+            if (attempt >= cap)
+            {
+                DefaultTrace.TraceInformation("ClientRetryPolicy: DTX retry budget exhausted. attempt={0}, cap={1}, Status={2}, SubStatus={3}.",
+                    attempt, cap, statusCode, subStatusCode);
+                return ShouldRetryResult.NoRetry();
+            }
+
+            DefaultTrace.TraceWarning("ClientRetryPolicy: DTX retriable response (Status={0}, SubStatus={1}, attempt={2}, delayMs={3}). Retrying. Failed Location: {4}",
+                statusCode,
+                subStatusCode,
+                attempt,
+                (int)delay.TotalMilliseconds,
+                this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty);
+
+            return ShouldRetryResult.RetryAfter(delay);
         }
 
         private sealed class RetryContext
