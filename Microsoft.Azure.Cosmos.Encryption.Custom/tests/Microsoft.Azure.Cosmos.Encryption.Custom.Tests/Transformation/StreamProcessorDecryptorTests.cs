@@ -120,30 +120,30 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         }
 
         [TestMethod]
-        public async Task Decrypt_Skips_EncryptionInfo_Block()
+        public async Task Encrypt_Throws_When_Document_Already_Contains_TopLevel_EncryptionInfo()
         {
             // Arrange
-            // Encrypt a normal document; the encryptor writes the top-level _ei metadata block.
-            // The decryptor must strip that top-level metadata block from the decrypted output. (A
-            // document that already carries a top-level _ei is now rejected up front by the
-            // encryptor, so the duplicate-_ei scenario the earlier revision exercised here can no
-            // longer occur.)
-            var doc = new { id = "1", SensitiveStr = "abc" };
+            // This document already carries a top-level _ei property (the reserved encryption
+            // metadata name). Encrypting it must fail up front with a clear error rather than
+            // emitting an ambiguous duplicate _ei. This matches the Newtonsoft processor, whose
+            // JObject.Add throws on the duplicate _ei key. (Earlier this input was accepted and
+            // produced a document with two top-level _ei properties.)
+            var doc = new { id = "1", _ei = new { ignore = true }, SensitiveStr = "abc" };
             string[] paths = new[] { "/SensitiveStr" };
             EncryptionOptions options = CreateOptions(paths);
-            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
 
-            // Act
-            MemoryStream output = new();
-            DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
-
-            // Assert
-            output.Position = 0;
-            using JsonDocument jd = JsonDocument.Parse(output);
-            JsonElement root = jd.RootElement;
-            Assert.IsFalse(root.TryGetProperty(Constants.EncryptedInfo, out _));
-            Assert.AreEqual("abc", root.GetProperty("SensitiveStr").GetString());
-            Assert.AreEqual(1, ctx.DecryptionInfoList.Count);
+            // Act + Assert
+            Stream input = TestCommon.ToStream(doc);
+            using MemoryStream output = new();
+            try
+            {
+                await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, JsonProcessor.Stream, new CosmosDiagnosticsContext(), CancellationToken.None);
+                Assert.Fail("Expected InvalidOperationException when encrypting a document that already contains a top-level _ei.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                StringAssert.Contains(ex.Message, Constants.EncryptedInfo);
+            }
         }
 
         [TestMethod]

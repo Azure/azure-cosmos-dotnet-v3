@@ -200,25 +200,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             Assert.AreEqual("5.0", jd.RootElement.GetProperty("d").GetRawText());
         }
 
-        // Defect #5: encrypting a document that already carries a top-level _ei must fail with a
-        // clear error instead of silently emitting a duplicate _ei property.
-        [TestMethod]
-        public async Task Encrypt_DocumentWithTopLevelEi_Throws()
-        {
-            string json = "{\"_ei\":\"already\",\"id\":\"1\",\"enc\":\"x\"}";
-            EncryptionOptions options = CreateOptions(new[] { "/enc" });
-
-            try
-            {
-                await EncryptJsonAsync(json, options);
-                Assert.Fail("Expected an exception when encrypting a document that already has a top-level _ei property.");
-            }
-            catch (InvalidOperationException ex)
-            {
-                StringAssert.Contains(ex.ToString(), Constants.EncryptedInfo);
-            }
-        }
-
         // Defect #5 guard: a nested (non-top-level) property named _ei must NOT trigger the
         // top-level _ei guard. Encryption succeeds and the nested value round-trips (the decrypt
         // side _ei skip is already depth-gated in #5478), while the top-level metadata _ei is
