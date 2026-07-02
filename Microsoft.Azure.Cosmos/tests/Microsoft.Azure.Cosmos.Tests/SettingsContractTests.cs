@@ -1478,9 +1478,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
             Assert.IsFalse(path1.Equals(pathNullCollections));
         }
-#endif
 
-#if PREVIEW
         [TestMethod]
         public void FullTextPolicyStandardPackageSerialization()
         {

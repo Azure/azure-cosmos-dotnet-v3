@@ -5750,6 +5750,11 @@
           "Attributes": [],
           "MethodInfo": "Boolean Equals(Microsoft.Azure.Cosmos.FullTextPath);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:True;"
         },
+        "Boolean Equals(System.Object)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean Equals(System.Object);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Int32 GetHashCode()": {
           "Type": "Method",
           "Attributes": [],

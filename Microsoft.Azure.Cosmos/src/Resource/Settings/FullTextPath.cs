@@ -128,20 +128,26 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public bool Equals(FullTextPath that)
+        public bool Equals(FullTextPath other)
         {
-            if (that == null)
+            if (other == null)
             {
                 return false;
             }
 
-            return string.Equals(this.Path, that.Path)
-                && string.Equals(this.Language, that.Language)
-                && string.Equals(this.Tokenizer, that.Tokenizer)
-                && string.Equals(this.StopWordListKind, that.StopWordListKind)
-                && FullTextPath.CollectionEquals(this.Filters, that.Filters)
-                && FullTextPath.CollectionEquals(this.AddStopWords, that.AddStopWords)
-                && FullTextPath.CollectionEquals(this.RemoveStopWords, that.RemoveStopWords);
+            return string.Equals(this.Path, other.Path)
+                && string.Equals(this.Language, other.Language)
+                && string.Equals(this.Tokenizer, other.Tokenizer)
+                && string.Equals(this.StopWordListKind, other.StopWordListKind)
+                && FullTextPath.CollectionEquals(this.Filters, other.Filters)
+                && FullTextPath.CollectionEquals(this.AddStopWords, other.AddStopWords)
+                && FullTextPath.CollectionEquals(this.RemoveStopWords, other.RemoveStopWords);
+        }
+
+        /// <inheritdoc/>
+        public override bool Equals(object obj)
+        {
+            return this.Equals(obj as FullTextPath);
         }
 
         /// <inheritdoc/>
