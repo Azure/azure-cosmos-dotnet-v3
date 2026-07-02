@@ -1,6 +1,7 @@
 ﻿namespace Microsoft.Azure.Cosmos.Tests.Tracing
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
@@ -184,6 +185,251 @@
 
             // Verify the data dictionary has entries
             Assert.IsTrue(trace.Data.Count > 0);
+        }
+
+        [TestMethod]
+        [DoNotParallelize]
+        public void TestMaxChildCountSuppressesExcessChildrenViaStartChild()
+        {
+            int originalMaxChildCount = Trace.MaxChildCount;
+            try
+            {
+                Trace.MaxChildCount = 3;
+                using (Trace rootTrace = Trace.GetRootTrace(name: "RootTrace"))
+                {
+                    List<ITrace> returnedChildren = new List<ITrace>();
+                    for (int i = 0; i < 10; i++)
+                    {
+                        returnedChildren.Add(rootTrace.StartChild($"Child{i}"));
+                    }
+
+                    // The first MaxChildCount children are real Trace nodes...
+                    for (int i = 0; i < 3; i++)
+                    {
+                        Assert.IsInstanceOfType(returnedChildren[i], typeof(Trace));
+                    }
+
+                    // ...and everything beyond the limit is suppressed (NoOpTrace) but
+                    // still shares the operation's TraceSummary so aggregates are kept.
+                    for (int i = 3; i < 10; i++)
+                    {
+                        Assert.IsInstanceOfType(returnedChildren[i], typeof(NoOpTrace));
+                        Assert.AreSame(rootTrace.Summary, returnedChildren[i].Summary);
+                    }
+
+                    Assert.AreEqual(7, rootTrace.SuppressedChildCount);
+
+                    rootTrace.SetWalkingStateRecursively();
+                    Assert.AreEqual(3, rootTrace.Children.Count);
+                    Assert.IsTrue(
+                        rootTrace.Data.TryGetValue(Trace.TruncatedChildTraceCountKey, out object suppressed),
+                        "Truncation should be surfaced as a datum on the node.");
+                    Assert.AreEqual(7L, suppressed);
+                }
+            }
+            finally
+            {
+                Trace.MaxChildCount = originalMaxChildCount;
+            }
+        }
+
+        [TestMethod]
+        [DoNotParallelize]
+        public void TestMaxChildCountSuppressesExcessChildrenViaAddChild()
+        {
+            int originalMaxChildCount = Trace.MaxChildCount;
+            try
+            {
+                Trace.MaxChildCount = 2;
+                using (Trace rootTrace = Trace.GetRootTrace(name: "RootTrace"))
+                {
+                    for (int i = 0; i < 5; i++)
+                    {
+                        rootTrace.AddChild(Trace.GetRootTrace(name: $"Child{i}"));
+                    }
+
+                    Assert.AreEqual(3, rootTrace.SuppressedChildCount);
+
+                    rootTrace.SetWalkingStateRecursively();
+                    Assert.AreEqual(2, rootTrace.Children.Count);
+                    Assert.IsTrue(
+                        rootTrace.Data.TryGetValue(Trace.TruncatedChildTraceCountKey, out object suppressed),
+                        "Truncation should be surfaced as a datum on the node.");
+                    Assert.AreEqual(3L, suppressed);
+                }
+            }
+            finally
+            {
+                Trace.MaxChildCount = originalMaxChildCount;
+            }
+        }
+
+        [TestMethod]
+        public void TestDefaultMaxChildCountDoesNotTruncateNormalTraces()
+        {
+            // The default limit must be comfortably above realistic per-node breadth so
+            // normal operations (and existing diagnostics baselines) are never truncated.
+            Assert.IsTrue(Trace.MaxChildCount >= 1000);
+
+            using (Trace rootTrace = Trace.GetRootTrace(name: "RootTrace"))
+            {
+                for (int i = 0; i < 50; i++)
+                {
+                    using (rootTrace.StartChild($"Child{i}"))
+                    {
+                    }
+                }
+
+                Assert.AreEqual(0, rootTrace.SuppressedChildCount);
+
+                rootTrace.SetWalkingStateRecursively();
+                Assert.AreEqual(50, rootTrace.Children.Count);
+                Assert.IsFalse(rootTrace.Data.ContainsKey(Trace.TruncatedChildTraceCountKey));
+            }
+        }
+
+        [TestMethod]
+        [DoNotParallelize]
+        public void TestMaxChildCountConcurrentStartChildDoesNotOrphanChildren()
+        {
+            int originalMaxChildCount = Trace.MaxChildCount;
+            try
+            {
+                const int limit = 50;
+                const int attempts = 500;
+                Trace.MaxChildCount = limit;
+                using (Trace rootTrace = Trace.GetRootTrace(name: "RootTrace"))
+                {
+                    ConcurrentBag<ITrace> returned = new ConcurrentBag<ITrace>();
+                    Parallel.For(0, attempts, i =>
+                    {
+                        returned.Add(rootTrace.StartChild($"Child{i}"));
+                    });
+
+                    rootTrace.SetWalkingStateRecursively();
+
+                    // Exactly 'limit' real children are retained under the node.
+                    Assert.AreEqual(limit, rootTrace.Children.Count);
+
+                    // Every returned real Trace must actually be in the tree (no orphans
+                    // from the lock-free pre-check racing with the locked enforcement).
+                    HashSet<ITrace> retained = new HashSet<ITrace>(rootTrace.Children);
+                    int realReturned = 0;
+                    foreach (ITrace trace in returned)
+                    {
+                        if (trace is Trace)
+                        {
+                            realReturned++;
+                            Assert.IsTrue(retained.Contains(trace), "A real Trace was returned but never added to the tree (orphaned).");
+                        }
+                        else
+                        {
+                            Assert.IsInstanceOfType(trace, typeof(NoOpTrace));
+                        }
+                    }
+
+                    Assert.AreEqual(attempts, returned.Count);
+                    Assert.AreEqual(limit, realReturned);
+                    Assert.AreEqual(attempts - limit, rootTrace.SuppressedChildCount);
+                }
+            }
+            finally
+            {
+                Trace.MaxChildCount = originalMaxChildCount;
+            }
+        }
+
+        [TestMethod]
+        [DoNotParallelize]
+        public void TestSuppressedChildSummaryAggregatesToParent()
+        {
+            int originalMaxChildCount = Trace.MaxChildCount;
+            try
+            {
+                Trace.MaxChildCount = 1;
+                using (Trace rootTrace = Trace.GetRootTrace(name: "RootTrace"))
+                {
+                    using (rootTrace.StartChild("Retained"))
+                    {
+                    }
+
+                    // Suppressed, but must still share the operation's TraceSummary so
+                    // imperatively-updated aggregates (e.g. failed count) are not lost.
+                    ITrace suppressed = rootTrace.StartChild("Suppressed");
+                    Assert.IsInstanceOfType(suppressed, typeof(NoOpTrace));
+                    Assert.AreSame(rootTrace.Summary, suppressed.Summary);
+
+                    suppressed.Summary.IncrementFailedCount();
+                    Assert.AreEqual(1, rootTrace.Summary.GetFailedCount());
+                }
+            }
+            finally
+            {
+                Trace.MaxChildCount = originalMaxChildCount;
+            }
+        }
+
+        [TestMethod]
+        [DoNotParallelize]
+        public void TestMaxChildCountRejectsNonPositiveValues()
+        {
+            int originalMaxChildCount = Trace.MaxChildCount;
+            try
+            {
+                Assert.ThrowsException<ArgumentOutOfRangeException>(() => Trace.MaxChildCount = 0);
+                Assert.ThrowsException<ArgumentOutOfRangeException>(() => Trace.MaxChildCount = -1);
+                Assert.AreEqual(originalMaxChildCount, Trace.MaxChildCount);
+            }
+            finally
+            {
+                Trace.MaxChildCount = originalMaxChildCount;
+            }
+        }
+
+        [TestMethod]
+        [DoNotParallelize]
+        public void TestTruncationSurfacesPartialResultsInDiagnosticsJson()
+        {
+            int originalMaxChildCount = Trace.MaxChildCount;
+            try
+            {
+                Trace.MaxChildCount = 3;
+                Trace rootTrace = Trace.GetRootTrace(name: "RootTrace");
+                for (int i = 0; i < 10; i++)
+                {
+                    using (rootTrace.StartChild($"Child{i}"))
+                    {
+                    }
+                }
+
+                CosmosTraceDiagnostics diagnostics = new CosmosTraceDiagnostics(rootTrace);
+                JObject jObject = JObject.Parse(diagnostics.ToString());
+
+                Assert.IsTrue(
+                    (bool)jObject["Summary"]["PartialResults"],
+                    "Truncated diagnostics must be marked with PartialResults in the Summary.");
+            }
+            finally
+            {
+                Trace.MaxChildCount = originalMaxChildCount;
+            }
+        }
+
+        [TestMethod]
+        public void TestNonTruncatedDiagnosticsJsonHasNoPartialResults()
+        {
+            Trace rootTrace = Trace.GetRootTrace(name: "RootTrace");
+            using (rootTrace.StartChild("Child"))
+            {
+            }
+
+            CosmosTraceDiagnostics diagnostics = new CosmosTraceDiagnostics(rootTrace);
+            JObject jObject = JObject.Parse(diagnostics.ToString());
+
+            Assert.IsNotNull(jObject["Summary"], "Root diagnostics should always contain a Summary.");
+            Assert.IsNull(
+                jObject["Summary"]["PartialResults"],
+                "Non-truncated diagnostics must not be marked with PartialResults.");
         }
     }
 }
