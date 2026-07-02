@@ -1,0 +1,60 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License.
+#
+# Builds the CosmosBenchmark sample tool into a prebuilt container image and publishes it to ACR.
+# Mirrors azure-pipelines-ctl-publishing.yml (the CTL Docker/ACR pattern). Pairs with the .NET
+# perf / DR-drill infra (cosmos-sdk-copilot-toolkit dotnet-perf/), which can pull this published
+# image instead of building the benchmark from SDK source at startup.
+#
+# Infra note: the registry below ('cosmosdotnetsdkbenchmark') and the
+# 'dotnet-cosmos-benchmark-container-registry-pwd' secret must be provisioned in the pipeline,
+# mirroring the existing CTL registry ('cosmosdotnetsdkctl'). The image is built for linux/amd64
+# (hard constraint shared with the Pyroscope .NET profiler used by the perf deploy host).
+
+jobs:
+  - job: BuildBenchmarkDockerImage
+    timeoutInMinutes: 20
+    variables:
+      - name: ContainerRegistryName
+        value: 'cosmosdotnetsdkbenchmark'
+      - name: ContainerRegistryUserName
+        value: 'cosmosdotnetsdkbenchmark'
+      - name: ContainerRegistryUrl
+        value: 'cosmosdotnetsdkbenchmark.azurecr.io'
+
+    pool:
+      name: 'OneES'
+      demands: 
+        - ImageOverride -equals dotnet-ubuntu-latest
+
+    steps:
+    - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
+      clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
+    - task: CopyFiles@2
+      displayName: 'Copy docker config files'
+      inputs:
+        Contents: '$(build.sourcesdirectory)/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/Dockerfile'
+        TargetFolder: $(Agent.TempDirectory)/benchmark
+        flattenFolders: true
+    - task: DotNetCoreCLI@2
+      displayName: Build CosmosBenchmark project
+      condition: succeeded()
+      inputs:
+        command: 'publish'
+        publishWebProjects: false
+        zipAfterPublish: false
+        modifyOutputPath: false
+        projects: '$(build.sourcesdirectory)/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/CosmosBenchmark.csproj'
+        arguments: '-c Release -o $(Agent.TempDirectory)/benchmark/artifacts'
+        nugetConfigPath: NuGet.config
+    - pwsh: |
+        cd $(Agent.TempDirectory)/benchmark
+        Write-Host "Executing docker build . -t cosmos-dotnet-benchmark"
+        docker build --platform linux/amd64 -t cosmos-dotnet-benchmark -f Dockerfile .
+        Write-Host "Executing az acr login --name $(ContainerRegistryName) -u $(ContainerRegistryUserName) -p <secret>"
+        az acr login --name $(ContainerRegistryName) -u $(ContainerRegistryUserName) -p $(dotnet-cosmos-benchmark-container-registry-pwd)
+        Write-Host "Executing docker tag cosmos-dotnet-benchmark $(ContainerRegistryUrl)/cosmos-dotnet-benchmark/$(DefaultTag)"
+        docker tag cosmos-dotnet-benchmark $(ContainerRegistryUrl)/cosmos-dotnet-benchmark/$(DefaultTag)
+        Write-Host "Executing docker push $(ContainerRegistryUrl)/cosmos-dotnet-benchmark/$(DefaultTag)"
+        docker push $(ContainerRegistryUrl)/cosmos-dotnet-benchmark/$(DefaultTag)
+      displayName: 'Build and push docker image to registry'

@@ -8,7 +8,9 @@ namespace CosmosBenchmark
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Reflection;
     using System.Runtime;
+    using Azure.Identity;
     using CommandLine;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Documents.Client;
@@ -27,9 +29,15 @@ namespace CosmosBenchmark
         [Option('e', Required = true, HelpText = "Cosmos account end point")]
         public string EndPoint { get; set; }
 
-        [Option('k', Required = true, HelpText = "Cosmos account master key")]
+        [Option('k', Required = false, HelpText = "Cosmos account master key. Optional when --aad is set (AAD / managed-identity auth).")]
         [JsonIgnore]
         public string Key { get; set; }
+
+        [Option("aad", Required = false, HelpText = "Authenticate to the Cosmos workload account with AAD / managed identity (DefaultAzureCredential) instead of a master key. No committed keys (M6/SE-5).")]
+        public bool UseAadAuth { get; set; }
+
+        [Option("workload-managed-identity-client-id", Required = false, HelpText = "Optional user-assigned managed identity client id used with --aad. When omitted, DefaultAzureCredential (system-assigned identity / az login) is used.")]
+        public string WorkloadManagedIdentityClientId { get; set; }
 
         [Option("isthinclientenabled", Required = false, HelpText = "ThinClient enabled")]
         public string IsThinClientEnabledRaw { get; set; }
@@ -158,6 +166,102 @@ namespace CosmosBenchmark
         [Option(Required = false, HelpText = "List of comma separated preferred regions.")]
         public string ApplicationPreferredRegions { get; set; } = null;
 
+        [Option("duration", Required = false, HelpText = "Continuous run duration in ISO-8601 format (e.g. PT8H). When set, the workload loops until the deadline instead of stopping after ItemCount operations.")]
+        public string Duration { get; set; } = null;
+
+        [Option("sdk-version", Required = false, HelpText = "SDK version under test used to tag result rows. Defaults to the loaded Microsoft.Azure.Cosmos assembly version.")]
+        public string SdkVersion { get; set; } = null;
+
+        [Option("sdk-source-ref", Required = false, HelpText = "SDK source ref (branch/tag/commit) under test used to tag result rows. Defaults to the COSMOS_PERF_BUILT_SDK_REF environment variable.")]
+        public string SdkSourceRef { get; set; } = null;
+
+        [Option("run-tag", Required = false, HelpText = "Free-form tag stamped on every result row (column run_tag) so the dashboard can distinguish concurrent or sequential runs, e.g. the account / consistency under test: session, strong, eventual.")]
+        public string RunTag { get; set; } = null;
+
+        [Option("metrics-sink", Required = false, HelpText = "Per-window metrics sink: none (default), console, or adx (Azure Data Explorer).")]
+        public string MetricsSink { get; set; } = "none";
+
+        [Option("adx-metrics-uri", Required = false, HelpText = "Azure Data Explorer ingestion URI for the metrics sink (e.g. https://ingest-<cluster>.<region>.kusto.windows.net).")]
+        public string AdxMetricsUri { get; set; } = null;
+
+        [Option("adx-metrics-database", Required = false, HelpText = "Azure Data Explorer database for the metrics sink.")]
+        public string AdxMetricsDatabase { get; set; } = "DotNetPerf";
+
+        [Option("adx-metrics-table", Required = false, HelpText = "Azure Data Explorer table for the metrics sink.")]
+        public string AdxMetricsTable { get; set; } = "PerfResults";
+
+        [Option("adx-managed-identity-client-id", Required = false, HelpText = "Optional user-assigned managed identity client id used to authenticate the Azure Data Explorer metrics sink. When omitted, DefaultAzureCredential (system-assigned identity / az login) is used.")]
+        public string AdxManagedIdentityClientId { get; set; } = null;
+
+        /// <summary>
+        /// The continuous-run duration parsed from <see cref="Duration"/>, or null for count-based runs.
+        /// </summary>
+        [JsonIgnore]
+        internal TimeSpan? RunDuration => string.IsNullOrWhiteSpace(this.Duration)
+            ? (TimeSpan?)null
+            : System.Xml.XmlConvert.ToTimeSpan(this.Duration);
+
+        /// <summary>
+        /// Indicates whether the benchmark runs in continuous (duration-based) mode.
+        /// </summary>
+        [JsonIgnore]
+        internal bool IsDurationMode => this.RunDuration.HasValue;
+
+        /// <summary>
+        /// The parsed metrics sink type. Defaults to <see cref="MetricsSinkType.None"/>.
+        /// </summary>
+        [JsonIgnore]
+        internal MetricsSinkType MetricsSinkType => Enum.TryParse(this.MetricsSink, ignoreCase: true, out MetricsSinkType parsed)
+            ? parsed
+            : MetricsSinkType.None;
+
+        /// <summary>
+        /// Resolves the SDK version to tag result rows with: the explicit --sdk-version, else the
+        /// loaded Microsoft.Azure.Cosmos assembly version. Never the benchmark-harness commit.
+        /// </summary>
+        internal string ResolveSdkVersion()
+        {
+            if (!string.IsNullOrWhiteSpace(this.SdkVersion))
+            {
+                return this.SdkVersion;
+            }
+
+            try
+            {
+                System.Reflection.Assembly cosmosAssembly = typeof(Microsoft.Azure.Cosmos.CosmosClient).Assembly;
+                string informational = cosmosAssembly
+                    .GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()?
+                    .InformationalVersion;
+
+                if (!string.IsNullOrWhiteSpace(informational))
+                {
+                    // Strip any build metadata suffix (e.g. "3.46.0+abcdef").
+                    int plusIndex = informational.IndexOf('+');
+                    return plusIndex > 0 ? informational.Substring(0, plusIndex) : informational;
+                }
+
+                return cosmosAssembly.GetName().Version?.ToString();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Resolves the SDK source ref to tag result rows with: the explicit --sdk-source-ref, else
+        /// the COSMOS_PERF_BUILT_SDK_REF environment variable (baked in at container build time).
+        /// </summary>
+        internal string ResolveSdkSourceRef()
+        {
+            if (!string.IsNullOrWhiteSpace(this.SdkSourceRef))
+            {
+                return this.SdkSourceRef;
+            }
+
+            return Environment.GetEnvironmentVariable("COSMOS_PERF_BUILT_SDK_REF");
+        }
+
         internal int GetTaskCount(int containerThroughput)
         {
             int taskCount = this.DegreeOfParallelism;
@@ -198,6 +302,11 @@ namespace CosmosBenchmark
             parser.ParseArguments<BenchmarkConfig>(args)
                 .WithParsed<BenchmarkConfig>(e => options = e)
                 .WithNotParsed<BenchmarkConfig>(e => BenchmarkConfig.HandleParseError(e));
+
+            if (!options.UseAadAuth && string.IsNullOrWhiteSpace(options.Key))
+            {
+                throw new ArgumentException("Either -k (Cosmos account master key) or --aad (AAD / managed-identity auth) must be provided.");
+            }
 
             if (options.PublishResults)
             {
@@ -256,14 +365,45 @@ namespace CosmosBenchmark
                 clientOptions.ConsistencyLevel = (Microsoft.Azure.Cosmos.ConsistencyLevel)Enum.Parse(typeof(Microsoft.Azure.Cosmos.ConsistencyLevel), this.ConsistencyLevel, ignoreCase: true);
             }
 
+            if (this.UseAadAuth)
+            {
+                return new Microsoft.Azure.Cosmos.CosmosClient(
+                            this.EndPoint,
+                            this.CreateWorkloadTokenCredential(),
+                            clientOptions);
+            }
+
             return new Microsoft.Azure.Cosmos.CosmosClient(
                         this.EndPoint,
                         this.Key,
                         clientOptions);
         }
 
+        /// <summary>
+        /// Builds the AAD token credential used for the Cosmos workload account when --aad is set:
+        /// a user-assigned managed identity when a client id is supplied, otherwise
+        /// DefaultAzureCredential (system-assigned identity / az login). No committed keys (M6/SE-5).
+        /// </summary>
+        private Azure.Core.TokenCredential CreateWorkloadTokenCredential()
+        {
+            return string.IsNullOrWhiteSpace(this.WorkloadManagedIdentityClientId)
+                ? new DefaultAzureCredential()
+                : new DefaultAzureCredential(new DefaultAzureCredentialOptions
+                {
+                    ManagedIdentityClientId = this.WorkloadManagedIdentityClientId
+                });
+        }
+
         internal DocumentClient CreateDocumentClient(string accountKey)
         {
+            if (this.UseAadAuth)
+            {
+                // The V2 DocumentClient path is master-key only in this tool; AAD / managed-identity
+                // is supported via the V3 CosmosClient. V2 workloads under --aad are rejected in
+                // the benchmark factory with a clear error.
+                return null;
+            }
+
             Microsoft.Azure.Documents.ConsistencyLevel? consistencyLevel = null;
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
             {

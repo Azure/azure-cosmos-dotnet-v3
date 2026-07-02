@@ -149,14 +149,23 @@ namespace CosmosBenchmark.Fx
         /// </summary>
         public void UploadDiagnostcs()
         {
+            this.UploadDiagnostcs(this.BlobContainerClient.Value, this.config.DiagnosticsStorageContainerPrefix);
+        }
+
+        /// <summary>
+        /// Uploads all files with diagnostic data to the provided blob storage container. Exposed
+        /// as an overload so the upload loop can be exercised against a mocked container client.
+        /// </summary>
+        /// <param name="blobContainerClient">The destination blob container client.</param>
+        /// <param name="containerPrefix">Optional blob name prefix.</param>
+        public void UploadDiagnostcs(BlobContainerClient blobContainerClient, string containerPrefix)
+        {
             Utility.TeeTraceInformation("Uploading diagnostics");
             string[] diagnosticFiles = Directory.GetFiles(".", $"{DiagnosticsFileName}*");
-            string containerPrefix = this.config.DiagnosticsStorageContainerPrefix;
 
             this.CloseStreamWriters();
             this.SafeCloseCurrentStreamWriter();
 
-            BlobContainerClient blobContainerClient = this.BlobContainerClient.Value;
             for (int i = 0; i < diagnosticFiles.Length; i++)
             {
                 try
