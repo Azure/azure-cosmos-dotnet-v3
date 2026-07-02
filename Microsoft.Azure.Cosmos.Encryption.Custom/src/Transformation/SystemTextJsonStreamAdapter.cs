@@ -58,6 +58,8 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
         try
         {
             DecryptionContext context = await this.streamProcessor.DecryptStreamAsync(input, bufferWriter, encryptor, properties, diagnosticsContext, cancellationToken);
+
+            await input.DisposeAsync();
             return (new ReadOnlyBufferWriterStream(bufferWriter), context);
         }
         catch

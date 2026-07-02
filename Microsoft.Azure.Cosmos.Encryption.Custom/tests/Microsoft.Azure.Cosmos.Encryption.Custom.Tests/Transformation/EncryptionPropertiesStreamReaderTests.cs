@@ -47,6 +47,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             Assert.AreEqual(0, stream.Position);
         }
 
+        // The _ei deserializer must tolerate a quoted _ef ("3") like the Newtonsoft processor
+        // does, reading it as EncryptionFormatVersion 3 without throwing.
+        [TestMethod]
+        public async Task ReadAsync_WhenEfIsQuotedString_ParsesAsMdeVersion()
+        {
+            string json = "{\"id\":\"a\",\"_ei\":{\"_ef\":\"3\",\"_ea\":\"AEAD_AES_256_CBC_HMAC_SHA256_RANDOMIZED\",\"_en\":\"dekId\",\"_ep\":[\"/p\"]}}";
+            await using MemoryStream stream = new (Encoding.UTF8.GetBytes(json));
+
+            EncryptionProperties result = await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None);
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(EncryptionFormatVersion.Mde, result.EncryptionFormatVersion);
+        }
+
         [TestMethod]
         public async Task ReadAsync_WhenEiAbsent_ReturnsNull()
         {

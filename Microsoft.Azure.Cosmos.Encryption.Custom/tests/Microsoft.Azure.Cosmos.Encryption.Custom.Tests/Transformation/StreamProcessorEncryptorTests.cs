@@ -60,6 +60,34 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             return JsonDocument.Parse(s);
         }
 
+        private static async Task<MemoryStream> EncryptJsonAsync(string json, EncryptionOptions options)
+        {
+            using MemoryStream input = new(Encoding.UTF8.GetBytes(json));
+            MemoryStream output = new();
+            await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, JsonProcessor.Stream, new CosmosDiagnosticsContext(), CancellationToken.None);
+            output.Position = 0;
+            return output;
+        }
+
+        // An integer literal outside Int64 range must be rejected (fail-closed) rather than
+        // silently coerced to a lossy double (e.g. 1E+26).
+        [TestMethod]
+        public async Task Encrypt_OutOfRangeIntegerLiteral_Throws()
+        {
+            string json = "{\"id\":\"1\",\"n\":99999999999999999999999999}";
+            EncryptionOptions options = CreateOptions(new[] { "/n" });
+
+            try
+            {
+                await EncryptJsonAsync(json, options);
+                Assert.Fail("Expected an exception for an out-of-range integer literal.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                StringAssert.Contains(ex.ToString(), "Int64");
+            }
+        }
+
         [TestMethod]
         public async Task Encrypt_AllPrimitiveTypesAndContainers()
         {
