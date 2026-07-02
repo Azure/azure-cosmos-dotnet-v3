@@ -210,7 +210,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             {
                                 if (reader.ValueTextEquals(this.encryptionPropertiesNameBytes))
                                 {
-                                    throw new InvalidOperationException($"The input document already contains a top-level '{Constants.EncryptedInfo}' property. Encrypting an already-encrypted document is not supported.");
+                                    throw new InvalidOperationException($"The input document already contains a top-level '{Constants.EncryptedInfo}' property, which is reserved for encryption metadata. Encrypting a document that already contains this property is not supported (it would produce a duplicate '{Constants.EncryptedInfo}').");
                                 }
 
                                 string matchedPath = null;
