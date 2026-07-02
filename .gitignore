@@ -331,3 +331,13 @@ ASALocalRun/
 
 # Visual Studio Code files
 .vscode/
+
+# Fuzz testing outputs (SharpFuzz + libfuzzer-dotnet)
+.fuzz-runs/
+LocalFuzzing/
+Microsoft.Azure.Cosmos.FuzzTests/corpus/
+crash-*
+oom-*
+timeout-*
+slow-unit-*
+leak-*
