@@ -208,13 +208,16 @@ namespace Microsoft.Azure.Cosmos
 
             // A bodyless DTX gateway envelope (for example a 429/3200 RUBudgetExceeded) can arrive as an
             // exceptionless ResponseMessage whose Content is a non-null but zero-length stream. A zero-length
-            // body carries no semantic per-operation result, so treat a seekable empty stream as "no body";
-            // this lets the DTX classifier own the retry inline rather than routing it to the outer commit
-            // loop. Length is read only when the stream is seekable; a non-seekable stream conservatively
+            // body carries no semantic per-operation result, so for DTX requests treat a seekable empty stream
+            // as "no body": this lets the response fall through the DTX classifier to the shared throttling
+            // retry policy (ResourceThrottleRetryPolicy) instead of being deferred to the outer commit loop,
+            // which cannot act on an empty body. The empty-stream reinterpretation (and the Length read it
+            // requires) is scoped to DTX requests, so the general retry path keeps its original Content != null
+            // semantics. Length is read only when the stream is seekable; a non-seekable stream conservatively
             // counts as having a body.
             System.IO.Stream responseContent = cosmosResponseMessage?.Content;
             bool hasResponseBody = responseContent != null
-                && (!responseContent.CanSeek || responseContent.Length > 0);
+                && (!this.isDtxRequest || !responseContent.CanSeek || responseContent.Length > 0);
 
             ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
                     cosmosResponseMessage?.StatusCode,

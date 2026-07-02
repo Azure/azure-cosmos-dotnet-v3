@@ -1728,7 +1728,12 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
             policy.OnBeforeSendRequest(request);
 
-            ResponseMessage response = new ResponseMessage(HttpStatusCode.TooManyRequests);
+            // Non-null zero-length Content is the exact shape a bodyless gateway 429 produces, so this
+            // exercises the DTX empty-body reinterpretation rather than merely a null Content.
+            ResponseMessage response = new ResponseMessage(HttpStatusCode.TooManyRequests)
+            {
+                Content = new MemoryStream(Array.Empty<byte>())
+            };
             response.Headers.SubStatusCodeLiteral = ((int)SubStatusCodes.RUBudgetExceeded).ToString();
 
             ShouldRetryResult result = await policy.ShouldRetryAsync(response, CancellationToken.None);
@@ -1753,7 +1758,12 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
             policy.OnBeforeSendRequest(request);
 
-            ResponseMessage response = new ResponseMessage(HttpStatusCode.TooManyRequests);
+            // Non-null zero-length Content is the exact shape a bodyless gateway 429 produces, so this
+            // exercises the DTX empty-body reinterpretation rather than merely a null Content.
+            ResponseMessage response = new ResponseMessage(HttpStatusCode.TooManyRequests)
+            {
+                Content = new MemoryStream(Array.Empty<byte>())
+            };
             response.Headers.SubStatusCodeLiteral = ((int)SubStatusCodes.RUBudgetExceeded).ToString();
             response.Headers.RetryAfterLiteral = ((long)serverRetryAfter.TotalMilliseconds).ToString();
 
@@ -1817,7 +1827,12 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
             policy.OnBeforeSendRequest(request);
 
-            ResponseMessage response = new ResponseMessage(HttpStatusCode.TooManyRequests);
+            // Non-null zero-length Content is the exact shape a bodyless gateway 429 produces, so this
+            // exercises the DTX empty-body reinterpretation rather than merely a null Content.
+            ResponseMessage response = new ResponseMessage(HttpStatusCode.TooManyRequests)
+            {
+                Content = new MemoryStream(Array.Empty<byte>())
+            };
             response.Headers.SubStatusCodeLiteral = ((int)SubStatusCodes.RUBudgetExceeded).ToString();
             response.Headers.RetryAfterLiteral = ((long)serverRetryAfter.TotalMilliseconds).ToString();
 
@@ -1848,7 +1863,12 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             policy.OnBeforeSendRequest(request);
 
             // Small Retry-After keeps the cumulative wait well under the 30s cap so the attempt cap governs.
-            ResponseMessage response = new ResponseMessage(HttpStatusCode.TooManyRequests);
+            // Non-null zero-length Content is the exact shape a bodyless gateway 429 produces, so this
+            // exercises the DTX empty-body reinterpretation rather than merely a null Content.
+            ResponseMessage response = new ResponseMessage(HttpStatusCode.TooManyRequests)
+            {
+                Content = new MemoryStream(Array.Empty<byte>())
+            };
             response.Headers.SubStatusCodeLiteral = ((int)SubStatusCodes.RUBudgetExceeded).ToString();
             response.Headers.RetryAfterLiteral = ((long)TimeSpan.FromMilliseconds(50).TotalMilliseconds).ToString();
 
@@ -1881,7 +1901,12 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
             policy.OnBeforeSendRequest(request);
 
-            ResponseMessage response = new ResponseMessage(HttpStatusCode.TooManyRequests);
+            // Non-null zero-length Content is the exact shape a bodyless gateway 429 produces, so this
+            // exercises the DTX empty-body reinterpretation rather than merely a null Content.
+            ResponseMessage response = new ResponseMessage(HttpStatusCode.TooManyRequests)
+            {
+                Content = new MemoryStream(Array.Empty<byte>())
+            };
             response.Headers.SubStatusCodeLiteral = ((int)SubStatusCodes.RUBudgetExceeded).ToString();
             response.Headers.RetryAfterLiteral = ((long)serverRetryAfter.TotalMilliseconds).ToString();
 
@@ -2004,7 +2029,12 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             DocumentServiceRequest request = ClientRetryPolicyTests.CreateReadDtxRequest();
             policy.OnBeforeSendRequest(request);
 
-            ResponseMessage response = new ResponseMessage(HttpStatusCode.TooManyRequests);
+            // Non-null zero-length Content is the exact shape a bodyless gateway 429 produces, so this
+            // exercises the DTX empty-body reinterpretation rather than merely a null Content.
+            ResponseMessage response = new ResponseMessage(HttpStatusCode.TooManyRequests)
+            {
+                Content = new MemoryStream(Array.Empty<byte>())
+            };
             response.Headers.SubStatusCodeLiteral = ((int)SubStatusCodes.RUBudgetExceeded).ToString();
 
             ShouldRetryResult result = await policy.ShouldRetryAsync(response, CancellationToken.None);
