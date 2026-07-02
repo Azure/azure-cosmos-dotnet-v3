@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
     /// the retry behavior inconsistent between Gateway V1 (HTTP gateway) and Gateway V2 (thin-client).
     /// This policy makes the SDK the single client-side authority for 449 retries so the behavior is
     /// consistent across both modes (the server-side retry is suppressed via
-    /// <c>x-ms-noretry-449</c>, set in <see cref="GatewayStoreModel.ApplyGatewayRetryWithHeaders"/>).
+    /// <c>x-ms-noretry-449</c>, set on the Gateway V1 transport in <see cref="GatewayStoreModel.DispatchAsync"/>).
     /// </summary>
     /// <remarks>
     /// <para>

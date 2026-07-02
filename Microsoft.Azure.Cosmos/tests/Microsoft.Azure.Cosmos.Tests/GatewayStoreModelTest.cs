@@ -711,6 +711,38 @@ namespace Microsoft.Azure.Cosmos
                 "The 449 (RetryWith) response must be retried once client-side before the request succeeds.");
         }
 
+        /// <summary>
+        /// Distributed-transaction requests own their 449 (RetryWith) retry orchestration
+        /// (<see cref="ClientRetryPolicy"/> + the DistributedTransactionCommitter outer loop), so the
+        /// generic gateway 449 mechanism — which gates both the <c>x-ms-noretry-449</c> opt-out header and
+        /// the gateway store-model 449 retry loop on this decision — must exclude them. Every other
+        /// request type participates so its 449 is retried client-side.
+        /// </summary>
+        [TestMethod]
+        [Owner("aavasthy")]
+        public void GatewayStoreModel_IsGatewayRetryWith449Applicable_ExcludesDistributedTransactionRequests()
+        {
+            using (DocumentServiceRequest distributedTransactionRequest = DocumentServiceRequest.Create(
+                Documents.OperationType.Batch,
+                Documents.ResourceType.DistributedTransactionBatch,
+                AuthorizationTokenType.PrimaryMasterKey))
+            {
+                Assert.IsFalse(
+                    GatewayStoreModel.IsGatewayRetryWith449Applicable(distributedTransactionRequest),
+                    "Distributed-transaction requests must be excluded from the generic gateway 449 mechanism; their 449 retry is owned by the distributed-transaction pipeline.");
+            }
+
+            using (DocumentServiceRequest documentRequest = DocumentServiceRequest.Create(
+                Documents.OperationType.Read,
+                Documents.ResourceType.Document,
+                AuthorizationTokenType.PrimaryMasterKey))
+            {
+                Assert.IsTrue(
+                    GatewayStoreModel.IsGatewayRetryWith449Applicable(documentRequest),
+                    "Non-distributed-transaction requests must participate in the generic client-side gateway 449 retry mechanism.");
+            }
+        }
+
         [TestMethod]
         // Verify that for known exceptions, session token is updated
         public async Task GatewayStoreModel_Exception_UpdateSessionTokenOnKnownException()

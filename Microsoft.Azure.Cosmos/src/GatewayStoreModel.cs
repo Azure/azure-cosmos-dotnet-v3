@@ -120,15 +120,22 @@ namespace Microsoft.Azure.Cosmos
                         ? this.GetFeedUri(request)
                         : this.GetEntityUri(request);
 
-                // Opt out of the gateway's server-side 449 (RetryWith) retry loop so the SDK is the
-                // single client-side authority for 449 retries.
-                // ThinClientStoreModel overrides this to a no-op.
-                this.ApplyGatewayRetryWithHeaders(request);
-
-                response = await BackoffRetryUtility<DocumentServiceResponse>.ExecuteAsync(
-                    () => this.DispatchAsync(request, physicalAddress, cancellationToken),
-                    new GatewayRetryWithRetryPolicy(this.GetRetryWithWaitTimeInSeconds()),
-                    cancellationToken);
+                // Distributed-transaction requests own their 449 (RetryWith) retry orchestration
+                // (ClientRetryPolicy + DistributedTransactionCommitter), so they bypass the generic
+                // client-side gateway 449 retry loop to keep that budget authoritative. The
+                // x-ms-noretry-449 server-side opt-out header is applied at the Gateway V1 transport in
+                // DispatchAsync (so thin-client fall-backs to Gateway V1 opt out too), not here.
+                if (GatewayStoreModel.IsGatewayRetryWith449Applicable(request))
+                {
+                    response = await BackoffRetryUtility<DocumentServiceResponse>.ExecuteAsync(
+                        () => this.DispatchAsync(request, physicalAddress, cancellationToken),
+                        new GatewayRetryWithRetryPolicy(this.GetRetryWithWaitTimeInSeconds()),
+                        cancellationToken);
+                }
+                else
+                {
+                    response = await this.DispatchAsync(request, physicalAddress, cancellationToken);
+                }
             }
             catch (DocumentClientException exception)
             {
@@ -158,16 +165,17 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Applies the headers that opt the request out of the gateway's server-side 449
-        /// (<see cref="StatusCodes.RetryWith"/>) retry loop, so the SDK is the single client-side
-        /// authority for 449 retries (see <see cref="GatewayRetryWithRetryPolicy"/>). The base gateway
-        /// (Gateway V1) implementation sets <c>x-ms-noretry-449</c>. Subclasses
-        /// (e.g. <see cref="ThinClientStoreModel"/>) override this to a no-op when their transport does
-        /// not run a server-side 449 retry loop.
+        /// Determines whether the generic client-side gateway 449 (<see cref="StatusCodes.RetryWith"/>)
+        /// mechanism — the retry loop (<see cref="GatewayRetryWithRetryPolicy"/>) and the
+        /// <c>x-ms-noretry-449</c> server-side opt-out header — applies to the request.
+        /// Distributed-transaction requests are excluded because they own their 449 retry orchestration
+        /// (<see cref="ClientRetryPolicy"/> + the DistributedTransactionCommitter outer loop); wrapping
+        /// them here would let this inner loop retry a coordinator 449 before the authoritative
+        /// distributed-transaction budget is consulted.
         /// </summary>
-        protected virtual void ApplyGatewayRetryWithHeaders(DocumentServiceRequest request)
+        internal static bool IsGatewayRetryWith449Applicable(DocumentServiceRequest request)
         {
-            request.Headers.Set(HttpConstants.HttpHeaders.NoRetryOn449StatusCode, bool.TrueString);
+            return request.ResourceType != ResourceType.DistributedTransactionBatch;
         }
 
         /// <summary>
@@ -194,6 +202,18 @@ namespace Microsoft.Azure.Cosmos
             Uri physicalAddress,
             CancellationToken cancellationToken)
         {
+            // Opt this Gateway V1 HTTP request out of the gateway's server-side 449 (RetryWith) retry
+            // loop so the SDK is the single client-side authority for 449 retries (see
+            // GatewayRetryWithRetryPolicy). The header is applied here — at the actual Gateway V1
+            // transport — rather than in ProcessMessageAsync so that a thin-client request that
+            // transparently falls back to this path (ThinClientStoreModel.DispatchAsync) also opts out,
+            // while requests dispatched to the thin-client proxy (which has no server-side 449 loop) do
+            // not carry the header.
+            if (GatewayStoreModel.IsGatewayRetryWith449Applicable(request))
+            {
+                request.Headers.Set(HttpConstants.HttpHeaders.NoRetryOn449StatusCode, bool.TrueString);
+            }
+
             return this.gatewayStoreClient.InvokeAsync(
                 request,
                 request.ResourceType,
