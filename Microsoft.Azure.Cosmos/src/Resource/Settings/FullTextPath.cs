@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Linq;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -129,7 +130,43 @@ namespace Microsoft.Azure.Cosmos
         /// <inheritdoc/>
         public bool Equals(FullTextPath that)
         {
-            return this.Path.Equals(that.Path) && this.Language.Equals(that.Language);
+            if (that == null)
+            {
+                return false;
+            }
+
+            return string.Equals(this.Path, that.Path)
+                && string.Equals(this.Language, that.Language)
+                && string.Equals(this.Tokenizer, that.Tokenizer)
+                && string.Equals(this.StopWordListKind, that.StopWordListKind)
+                && FullTextPath.CollectionEquals(this.Filters, that.Filters)
+                && FullTextPath.CollectionEquals(this.AddStopWords, that.AddStopWords)
+                && FullTextPath.CollectionEquals(this.RemoveStopWords, that.RemoveStopWords);
+        }
+
+        /// <inheritdoc/>
+        public override int GetHashCode()
+        {
+            int hashCode = this.Path?.GetHashCode() ?? 0;
+            hashCode = (hashCode * 397) ^ (this.Language?.GetHashCode() ?? 0);
+            hashCode = (hashCode * 397) ^ (this.Tokenizer?.GetHashCode() ?? 0);
+            hashCode = (hashCode * 397) ^ (this.StopWordListKind?.GetHashCode() ?? 0);
+            return hashCode;
+        }
+
+        private static bool CollectionEquals(Collection<string> left, Collection<string> right)
+        {
+            if (left == null && right == null)
+            {
+                return true;
+            }
+
+            if (left == null || right == null)
+            {
+                return false;
+            }
+
+            return left.SequenceEqual(right);
         }
     }
 }

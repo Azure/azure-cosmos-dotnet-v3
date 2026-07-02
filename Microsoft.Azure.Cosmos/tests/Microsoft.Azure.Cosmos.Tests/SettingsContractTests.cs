@@ -1346,6 +1346,140 @@ namespace Microsoft.Azure.Cosmos.Tests
                 $"Language mismatch after deserialization for: {language}");
         }
 
+        [TestMethod]
+        public void FullTextPathEqualsAndGetHashCode()
+        {
+            FullTextPath path1 = new FullTextPath
+            {
+                Path = "/text",
+                Language = "en-US",
+            };
+
+            FullTextPath path2 = new FullTextPath
+            {
+                Path = "/text",
+                Language = "en-US",
+            };
+
+            // Equal paths.
+            Assert.IsTrue(path1.Equals(path2));
+            Assert.AreEqual(path1.GetHashCode(), path2.GetHashCode());
+
+            // Different language.
+            FullTextPath path3 = new FullTextPath { Path = "/text", Language = "fr-FR" };
+            Assert.IsFalse(path1.Equals(path3));
+
+            // Different path.
+            FullTextPath path4 = new FullTextPath { Path = "/other", Language = "en-US" };
+            Assert.IsFalse(path1.Equals(path4));
+
+            // Null comparison.
+            Assert.IsFalse(path1.Equals(null));
+        }
+
+#if PREVIEW
+        [TestMethod]
+        public void FullTextPathEqualsWithNewFields()
+        {
+            FullTextPath path1 = new FullTextPath
+            {
+                Path = "/text",
+                Language = "en-US",
+                Tokenizer = "word",
+                Filters = new Collection<string> { "stop", "lowercase" },
+                StopWordListKind = "basic",
+                AddStopWords = new Collection<string> { "azure" },
+                RemoveStopWords = new Collection<string> { "the" },
+            };
+
+            FullTextPath path2 = new FullTextPath
+            {
+                Path = "/text",
+                Language = "en-US",
+                Tokenizer = "word",
+                Filters = new Collection<string> { "stop", "lowercase" },
+                StopWordListKind = "basic",
+                AddStopWords = new Collection<string> { "azure" },
+                RemoveStopWords = new Collection<string> { "the" },
+            };
+
+            // Fully equal.
+            Assert.IsTrue(path1.Equals(path2));
+            Assert.AreEqual(path1.GetHashCode(), path2.GetHashCode());
+
+            // Different tokenizer.
+            FullTextPath pathDiffTokenizer = new FullTextPath
+            {
+                Path = "/text",
+                Language = "en-US",
+                Tokenizer = "ngram",
+            };
+            Assert.IsFalse(path1.Equals(pathDiffTokenizer));
+
+            // Different filters.
+            FullTextPath pathDiffFilters = new FullTextPath
+            {
+                Path = "/text",
+                Language = "en-US",
+                Tokenizer = "word",
+                Filters = new Collection<string> { "stop", "stem" },
+                StopWordListKind = "basic",
+                AddStopWords = new Collection<string> { "azure" },
+                RemoveStopWords = new Collection<string> { "the" },
+            };
+            Assert.IsFalse(path1.Equals(pathDiffFilters));
+
+            // Different stopWordListKind.
+            FullTextPath pathDiffStopWordKind = new FullTextPath
+            {
+                Path = "/text",
+                Language = "en-US",
+                Tokenizer = "word",
+                Filters = new Collection<string> { "stop", "lowercase" },
+                StopWordListKind = "extended",
+                AddStopWords = new Collection<string> { "azure" },
+                RemoveStopWords = new Collection<string> { "the" },
+            };
+            Assert.IsFalse(path1.Equals(pathDiffStopWordKind));
+
+            // Different addStopWords.
+            FullTextPath pathDiffAddStopWords = new FullTextPath
+            {
+                Path = "/text",
+                Language = "en-US",
+                Tokenizer = "word",
+                Filters = new Collection<string> { "stop", "lowercase" },
+                StopWordListKind = "basic",
+                AddStopWords = new Collection<string> { "cosmos" },
+                RemoveStopWords = new Collection<string> { "the" },
+            };
+            Assert.IsFalse(path1.Equals(pathDiffAddStopWords));
+
+            // Different removeStopWords.
+            FullTextPath pathDiffRemoveStopWords = new FullTextPath
+            {
+                Path = "/text",
+                Language = "en-US",
+                Tokenizer = "word",
+                Filters = new Collection<string> { "stop", "lowercase" },
+                StopWordListKind = "basic",
+                AddStopWords = new Collection<string> { "azure" },
+                RemoveStopWords = new Collection<string> { "am" },
+            };
+            Assert.IsFalse(path1.Equals(pathDiffRemoveStopWords));
+
+            // Null collections vs empty - one has null, other has values.
+            FullTextPath pathNullCollections = new FullTextPath
+            {
+                Path = "/text",
+                Language = "en-US",
+                Tokenizer = "word",
+                StopWordListKind = "basic",
+            };
+            Assert.IsFalse(path1.Equals(pathNullCollections));
+        }
+#endif
+
 #if PREVIEW
         [TestMethod]
         public void FullTextPolicyStandardPackageSerialization()
