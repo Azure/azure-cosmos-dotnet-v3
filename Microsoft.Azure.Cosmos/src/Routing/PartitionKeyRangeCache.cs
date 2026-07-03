@@ -368,9 +368,17 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                                 childTrace.AddDatum(
                                     MetadataHedgingStrategy.TraceDatumKey,
-                                    $"HedgeFired={hedgeResult.HedgeFired}; WinningRegion={hedgeResult.WinningRegion}");
+                                    $"HedgeFired={hedgeResult.HedgeFired}; HedgeWon={hedgeResult.HedgeWon}; WinningRegion={hedgeResult.WinningRegion}");
 
-                                onWinningEndpoint?.Invoke(hedgeResult.WinningEndpoint);
+                                // Pin later pages to the winning region ONLY when the hedge actually
+                                // won (moved the region). When the primary won -- whether or not a hedge
+                                // fired -- pages 2..N stay on the normal per-page resolution path so the
+                                // metadata retry policy can still fail over across regions.
+                                if (hedgeResult.HedgeWon)
+                                {
+                                    onWinningEndpoint?.Invoke(hedgeResult.WinningEndpoint);
+                                }
+
                                 return hedgeResult.Response;
                             }
 

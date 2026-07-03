@@ -249,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                                 childTrace.AddDatum(
                                     MetadataHedgingStrategy.TraceDatumKey,
-                                    $"HedgeFired={hedgeResult.HedgeFired}; WinningRegion={hedgeResult.WinningRegion}");
+                                    $"HedgeFired={hedgeResult.HedgeFired}; HedgeWon={hedgeResult.HedgeWon}; WinningRegion={hedgeResult.WinningRegion}");
 
                                 response = hedgeResult.Response;
                             }

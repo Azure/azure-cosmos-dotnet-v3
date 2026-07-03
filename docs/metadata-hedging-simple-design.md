@@ -127,40 +127,26 @@ async Task<Response> ExecuteAsync(
     Task<Response> primaryTask = send(request.Clone(), primary, ct);
     Task timer = Task.Delay(this.threshold, timerCts.Token);
 
-    // 2. Did the primary finish, well, before the threshold? Then we're done.
-    if (await Task.WhenAny(primaryTask, timer) == primaryTask
-        && primaryTask.Status == TaskStatus.RanToCompletion
-        && PrimaryIsGood(primaryTask.Result))
-    {
-        timerCts.Cancel();                       // stop the timer
-        return primaryTask.Result;               // hedge never fired
-    }
+    // 2. Did the primary SETTLE before the threshold? The primary is authoritative, so any
+    //    DEFINITIVE outcome it produced wins with no hedge. In production these metadata reads
+    //    THROW for status >= 400, so a definitive error (404/409/412/...) arrives as a FAULTED
+    //    task — we classify the outcome, not a response, and only a REGIONAL failure is hedged.
+    await Task.WhenAny(primaryTask, timer);
+    timerCts.Cancel();                           // stop the timer
+    if (primaryTask.IsCompleted && Classify(primaryTask) != RegionalFailure)
+        return await primaryTask;                // success or definitive error → authoritative
 
-    // 3. Primary is slow (or already failing) → fire the hedge.
-    timerCts.Cancel();
+    // 3. Primary is slow, or hit a regional failure → fire ONE hedge.
+    //    Short-circuit a caller cancel first so a cancelled request never spawns a phantom hedge.
+    ct.ThrowIfCancellationRequested();
     Task<Response> hedgeTask = send(request.Clone(), hedge, ct);
 
-    // 4. Return the first GOOD answer; primary stays authoritative.
-    Task<Response> first = await Task.WhenAny(primaryTask, hedgeTask);
-    Task<Response> other = (first == primaryTask) ? hedgeTask : primaryTask;
-
-    if (IsGood(first, isHedge: first == hedgeTask))
-        return Winner(first, other);             // first good answer wins
-
-    // first wasn't good — wait for the other, then decide.
-    await SwallowAsync(other);
-    if (IsGood(other, isHedge: other == hedgeTask))
-        return Winner(other, first);
-
-    // Neither was good → return the PRIMARY's outcome (authoritative).
-    return await primaryTask;                     // re-throws primary's exception if it faulted
-}
-
-// Return the winner's result and let the loser drain harmlessly in the background.
-Response Winner(Task<Response> winner, Task<Response> loser)
-{
-    ObserveInBackground(loser);                   // dispose its response, swallow its exception
-    return winner.Result;
+    // 4. Resolve the race, keeping the primary authoritative throughout:
+    //    - a fast, successful hedge may WIN the latency race, but
+    //    - it can never override a primary that has ALREADY produced a definitive outcome, and
+    //    - when neither branch is good, the primary's outcome is returned (its exception rethrown)
+    //      so the caller's retry policy sees exactly what it would have without hedging.
+    return await ResolveWinnerAsync(primaryTask, hedgeTask, primary, hedge);
 }
 ```
 
@@ -193,28 +179,43 @@ tradeoff (see [§9](#9-what-we-deliberately-leave-out-in-v1)).
 
 **Eligible** (all must hold, else send primary only):
 
-1. `enableMetadataHedging != false`
-2. `optIn ?? isPpafEnabled()` is true
-3. resource is `Collection`+`Read` or `PartitionKeyRange`+`ReadFeed` (first page)
-4. there are ≥ 2 read regions available after `ExcludeRegions`
+1. gateway `disableCrossRegionalHedging` is false (operator kill-switch, read live)
+2. `enableMetadataHedging != false`
+3. `optIn ?? isPpafEnabled()` is true
+4. resource is `Collection`+`Read` or `PartitionKeyRange`+`ReadFeed` (first page)
+5. there are ≥ 2 read regions available after `ExcludeRegions` (from the SAME
+   `GetApplicableEndpoints` list used to pick the hedge endpoint, so eligibility and
+   selection can never drift)
 
-**The "good" predicates** — this is the only place the primary/hedge asymmetry
-lives, and it is two tiny rules:
+**Outcome classification** — this is the only place the primary/hedge asymmetry lives.
+The critical detail: in production these metadata reads **throw** `DocumentClientException`
+for every status ≥ 400 (the gateway only returns error responses when `UseStatusCodeForFailures`
+is set, which neither cache sets), so the primary's authoritative answer arrives as a **task
+fault**, not a response. We therefore classify the completed *task* — via its exception when
+faulted, or its status when it is one of the rare exceptionless-retry responses:
 
 ```csharp
-// Primary is authoritative: any non-regional-failure response is its real answer.
-static bool PrimaryIsGood(Response r)
-    => !MetadataRegionalFailureClassifier.IsRegionalFailure(r);
+enum BranchOutcome { Success, RegionalFailure, Definitive }
 
-// Hedge may only WIN with a clean answer, so a misconfigured secondary
-// (e.g. region-scoped RBAC returning 401/403) can never surface a spurious error.
-static bool HedgeIsGood(Response r)
-    => (int)r.StatusCode < 400 || r.StatusCode == HttpStatusCode.NotFound;
-
-static bool IsGood(Task<Response> t, bool isHedge)
-    => t.Status == TaskStatus.RanToCompletion
-       && (isHedge ? HedgeIsGood(t.Result) : PrimaryIsGood(t.Result));
+// Classify a COMPLETED branch. The task is guaranteed complete by the caller.
+static async Task<BranchOutcome> Classify(Task<Response> t)
+{
+    if (t.IsFaulted)   return IsRegionalFailure(t.Exception) ? RegionalFailure : Definitive;
+    if (t.IsCanceled)  return Definitive;                 // authoritative; rethrown on await
+    Response r = await t;
+    if (r == null || ((int)r.StatusCode >= 400 && !IsRegionalFailure(r.StatusCode, r.SubStatus)))
+        return Definitive;
+    return (int)r.StatusCode < 400 ? Success : RegionalFailure;
+}
 ```
+
+The primary/hedge asymmetry is then just two rules in `ResolveWinnerAsync`:
+
+- **Primary** — any outcome that is not a `RegionalFailure` (i.e. `Success` or a definitive
+  error) is its real, authoritative answer and is returned verbatim; a hedge can never override it.
+- **Hedge** — may only *win* with a `Success`. A hedge `RegionalFailure`, definitive error, or
+  cross-region auth reject (401 / plain 403, which are **not** regional) makes it a losing hedge,
+  so a misconfigured secondary can never surface a spurious error as the operation result.
 
 Worked cases:
 
@@ -222,14 +223,17 @@ Worked cases:
 |---|---|---|---|
 | 200 fast | — | primary | won before threshold, no hedge |
 | slow→200 | 200 | first good | latency win |
-| 503 | 200 | hedge | primary failing, hedge clean |
-| 400 | — | primary | 400 is a real answer, not a regional failure → no hedge |
-| 503 | 401 | primary (503) | hedge not "good"; primary authoritative → retry policy handles 503 |
-| 503 | 503 | primary (503) | neither good → primary outcome |
+| 503 (thrown) | 200 | hedge | primary regional failure, hedge clean |
+| 404 fast (thrown) | — | primary (404) | definitive error before threshold → no hedge |
+| slow→409 (thrown, first) | in-flight | primary (409) | primary settled with a definitive answer → hedge cannot override |
+| 503 (thrown) | 401 (thrown) | primary (503) | hedge auth reject not "good"; primary authoritative → retry policy handles 503 |
+| 503 (thrown) | 503 (thrown) | primary (503) | neither good → primary outcome rethrown |
 
-`MetadataRegionalFailureClassifier.IsRegionalFailure` is the existing shared
-classifier (503/500, 410+LeaseNotFound, 403+DatabaseAccountNotFound,
-`HttpRequestException`, non-user `OperationCanceledException`).
+Regional-failure classification (503/500, 410+LeaseNotFound, 403+DatabaseAccountNotFound) is
+the SAME status/sub-status set as `MetadataRequestThrottleRetryPolicy`, so metadata hedging and
+the metadata retry policy agree on what "the region is at fault" means. There is no separate
+`MetadataRegionalFailureClassifier` type — the check is a small private static shared by the
+exception and response paths.
 
 ---
 
@@ -243,28 +247,37 @@ dispose:
 this.metadataHedgingStrategy = MetadataHedgingStrategy.CreateIfEnabled(
     enableMetadataHedging: this.enableMetadataHedging,        // from ConfigurationManager
     globalEndpointManager: this.GlobalEndpointManager,
-    isPpafEnabled: () => this.ConnectionPolicy.EnablePartitionLevelFailover);
+    isPpafEnabled: () => this.ConnectionPolicy.EnablePartitionLevelFailover,
+    isCrossRegionalHedgingDisabled: () => this.disableCrossRegionalHedging); // operator kill-switch
 
 new ClientCollectionCache(..., metadataHedgingStrategy);
 new PartitionKeyRangeCache(..., metadataHedgingStrategy);
 ```
 
-Each cache call site is a simple wrap:
+The strategy holds no disposable state (no per-branch CTS, no semaphore), so it is **not**
+`IDisposable` — there is nothing to dispose on client dispose. The only disposable is each
+losing branch's response body, which is released by `ObserveInBackground`.
+
+Each cache call site is a simple wrap over a region-targeted send delegate:
 
 ```csharp
 if (this.metadataHedgingStrategy != null)
 {
-    Response r = await this.metadataHedgingStrategy.ExecuteAsync(
+    var result = await this.metadataHedgingStrategy.ExecuteAsync(
         request,
-        send: (req, endpoint, ct) => { req.RouteToLocation(endpoint); return storeModel.ProcessMessageAsync(req, ct); },
+        sendToEndpoint: MetadataHedgingStrategy.StoreModelSender(storeModel), // routes clone → endpoint
+        isFirstReadFeedPage: ...,
         ct);
-    return Materialize(r);
+    return Materialize(result.Response);
 }
 return Materialize(await storeModel.ProcessMessageAsync(request));   // strategy off → unchanged
 ```
 
-`PartitionKeyRangeCache` passes the "is this the first page?" signal; pages 2..N
-skip hedging entirely (they call the store model directly).
+`PartitionKeyRangeCache` passes the "is this the first page?" signal; pages 2..N skip hedging
+entirely. Crucially, later pages are pinned to the winning region **only when the hedge actually
+won** (`result.HedgeWon`, i.e. the winning region differs from the primary). When the primary
+won — whether or not a hedge fired — pages 2..N stay on the normal per-page resolution path so
+the metadata retry policy can still fail over across regions.
 
 ---
 
@@ -288,30 +301,44 @@ unavailable, because the loser's outcome is never inspected.
 
 ## 10. Telemetry (minimal)
 
-Three events + one per-request datum are enough for v1:
+v1 emits a single per-request trace datum, keyed `"Metadata Hedge"`, on the metadata read's
+trace:
 
-- `hedge_fired` — threshold elapsed, hedge dispatched.
-- `hedge_won` — the hedge produced the returned answer.
-- `hedge_skipped{reason}` — ineligible / single region / disabled.
-- Per-request trace datum `"Metadata Hedge"`: `{ eligible, primaryRegion,
-  hedgeRegion, thresholdMs, hedgeFired, winner }`.
+```
+HedgeFired={true|false}; HedgeWon={true|false}; WinningRegion={region}
+```
 
-(A `budget_exhausted` counter arrives with the Phase 2 budget.)
+- `HedgeFired` — a hedge request was dispatched (the threshold elapsed or the primary hit a
+  regional failure).
+- `HedgeWon` — the hedge's response is the one returned (the winning region differs from the
+  primary); this is also the signal that pins later PKRange pages.
+- `WinningRegion` — the region that produced the returned answer.
+
+This datum is attached by both cache call sites (`ClientCollectionCache` and
+`PartitionKeyRangeCache`). Standalone `hedge_fired` / `hedge_won` / `hedge_skipped` metric events
+and a `budget_exhausted` counter are deferred to Phase 2 (they arrive with the concurrency budget).
 
 ---
 
 ## 11. Testing
 
-- **Primary fast** → hedge never fires (`hedge_fired` == 0).
-- **Primary slow, hedge good** → hedge wins, result is the hedge's.
-- **Primary 503, hedge 200** → hedge wins.
-- **Primary 503, hedge 401** → returns 503 (primary authoritative; hedge auth
-  suppressed).
-- **Single region** → skipped, primary-only.
-- **Caller cancels mid-flight** → `OperationCanceledException` surfaces; no hang.
-- **Loser drains after winner** → loser response disposed, no unobserved-task
-  exception (assert via `TaskScheduler.UnobservedTaskException`).
-- **Threshold invariant** → unit test asserts `first < threshold < second`.
+- **Primary fast** → hedge never fires; exactly one send.
+- **Primary slow, hedge good** → hedge wins (`HedgeWon` true), result is the hedge's.
+- **Primary 503 (thrown), hedge 200** → hedge wins over the regional failure.
+- **Primary 503 (thrown), hedge 401 (thrown)** → primary's 503 is rethrown (hedge auth
+  reject is not "good"; primary authoritative).
+- **Fast definitive primary error (404, thrown)** → rethrown, NO hedge fires (core invariant).
+- **Slow primary settles first with a definitive error (409, thrown)** → rethrown even though a
+  hedge is in flight (hedge cannot override the primary's produced answer).
+- **Hedge fired but primary won** → `HedgeFired` true, `HedgeWon` false (later PKRange pages
+  are NOT pinned).
+- **Single region / PPAF-off + null opt-in** → skipped, primary-only.
+- **Explicit opt-in true, PPAF off** → hedges anyway.
+- **Operator kill-switch (`disableCrossRegionalHedging`)** → suppresses hedging even with a
+  slow primary + PPAF on.
+- **Caller cancels mid-flight** → `OperationCanceledException` surfaces; no phantom hedge; no hang.
+- **Loser drains after winner** → losing response body disposed.
+- **Threshold invariant** → unit test asserts `first < threshold < second` (both bounds).
 
 ---
 

@@ -30,7 +30,16 @@ namespace Microsoft.Azure.Cosmos
             get
             {
                 using IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> enumerator = this.GetTimeoutEnumerator();
-                return enumerator.MoveNext() ? enumerator.Current.requestTimeout : TimeSpan.Zero;
+                if (!enumerator.MoveNext())
+                {
+                    // A timeout policy must yield at least one attempt. An empty enumerator would
+                    // silently collapse the metadata hedge threshold (first-attempt + step) to just
+                    // the step, breaking the "first < threshold < second" invariant, so fail loudly.
+                    throw new InvalidOperationException(
+                        $"HttpTimeoutPolicy {this.TimeoutPolicyName} produced no timeout entries.");
+                }
+
+                return enumerator.Current.requestTimeout;
             }
         }
 

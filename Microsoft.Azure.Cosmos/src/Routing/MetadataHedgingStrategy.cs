@@ -40,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private readonly IGlobalEndpointManager globalEndpointManager;
         private readonly Func<bool> isPpafEnabled;
+        private readonly Func<bool> isCrossRegionalHedgingDisabled;
         private readonly bool? customerOptIn;
         private readonly TimeSpan threshold;
 
@@ -47,10 +48,16 @@ namespace Microsoft.Azure.Cosmos.Routing
             IGlobalEndpointManager globalEndpointManager,
             Func<bool> isPpafEnabled,
             bool? customerOptIn,
-            TimeSpan threshold)
+            TimeSpan threshold,
+            Func<bool> isCrossRegionalHedgingDisabled = null)
         {
             this.globalEndpointManager = globalEndpointManager ?? throw new ArgumentNullException(nameof(globalEndpointManager));
             this.isPpafEnabled = isPpafEnabled ?? (() => false);
+
+            // Gateway operator kill-switch (disableCrossRegionalHedging). Defaults to "not disabled"
+            // for callers/tests that do not wire it; read live per request so a runtime toggle
+            // takes effect without a client restart.
+            this.isCrossRegionalHedgingDisabled = isCrossRegionalHedgingDisabled ?? (() => false);
             this.customerOptIn = customerOptIn;
 
             if (threshold <= TimeSpan.Zero)
@@ -88,12 +95,14 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <c>null</c> when hedging is explicitly disabled (<c>false</c>). When the
         /// opt-in is <c>true</c> or <c>null</c> the strategy is created and the
         /// per-request eligibility check resolves the effective opt-in against the
-        /// live PPAF state (<c>null</c> follows PPAF; <c>true</c> forces on).
+        /// live PPAF state (<c>null</c> follows PPAF; <c>true</c> forces on) and the
+        /// live gateway <c>disableCrossRegionalHedging</c> operator kill-switch.
         /// </summary>
         internal static MetadataHedgingStrategy CreateIfEnabled(
             bool? enableMetadataHedging,
             IGlobalEndpointManager globalEndpointManager,
-            Func<bool> isPpafEnabled)
+            Func<bool> isPpafEnabled,
+            Func<bool> isCrossRegionalHedgingDisabled = null)
         {
             // Explicit customer kill-switch: hedging is suppressed regardless of PPAF.
             if (enableMetadataHedging == false)
@@ -110,7 +119,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                 globalEndpointManager: globalEndpointManager,
                 isPpafEnabled: isPpafEnabled,
                 customerOptIn: enableMetadataHedging,
-                threshold: threshold);
+                threshold: threshold,
+                isCrossRegionalHedgingDisabled: isCrossRegionalHedgingDisabled);
         }
 
         /// <summary>
@@ -149,73 +159,100 @@ namespace Microsoft.Azure.Cosmos.Routing
             if (!this.TryGetHedgeEndpoint(request, isFirstReadFeedPage, primaryEndpoint, out Uri hedgeEndpoint))
             {
                 DocumentServiceResponse primaryOnly = await sendToEndpoint(request, primaryEndpoint, cancellationToken);
-                return this.BuildResult(primaryOnly, primaryEndpoint, hedgeFired: false);
+                return this.BuildResult(primaryOnly, primaryEndpoint, hedgeFired: false, hedgeWon: false);
             }
 
             // ---- 1. Start primary + a threshold timer. ----
-            // timerCts is intentionally NOT linked to the caller token: a user
-            // cancellation must not complete the timer and be misread as "threshold
-            // elapsed" (which would dispatch a phantom hedge). Caller cancellation
-            // flows through the send delegate's token instead.
+            // timerCts is intentionally NOT linked to the caller token: a user cancellation must
+            // not complete the timer and be misread as "threshold elapsed" (which would dispatch a
+            // phantom hedge). Caller cancellation flows through the send delegate's token instead,
+            // and is short-circuited explicitly before any hedge is dispatched (step 3).
             using CancellationTokenSource timerCts = new CancellationTokenSource();
             Task<DocumentServiceResponse> primaryTask = SendCloneAsync(sendToEndpoint, request, primaryEndpoint, cancellationToken);
             Task timerTask = Task.Delay(this.threshold, timerCts.Token);
 
-            // ---- 2. Primary finished (well) before the threshold → done, no hedge. ----
-            Task firstToComplete = await Task.WhenAny(primaryTask, timerTask);
-            if (firstToComplete == primaryTask && primaryTask.Status == TaskStatus.RanToCompletion)
+            // ---- 2. Primary settled before the threshold? ----
+            // The primary is authoritative. If it produced a DEFINITIVE outcome — a success, or a
+            // non-regional error such as 404 / 409 / 412 (which in production arrives as a FAULTED
+            // task, since these metadata reads throw for status >= 400), or a caller cancellation —
+            // return it verbatim and never fire a hedge. Only a REGIONAL failure (the region, not
+            // the request, is at fault) is worth hedging.
+            await Task.WhenAny(primaryTask, timerTask);
+            timerCts.Cancel();
+            if (primaryTask.IsCompleted && await ClassifyOutcomeAsync(primaryTask) != BranchOutcome.RegionalFailure)
             {
-                DocumentServiceResponse primaryResponse = await primaryTask;
-                if (IsGoodResponse(primaryResponse, isHedge: false))
-                {
-                    timerCts.Cancel();
-                    return this.BuildResult(primaryResponse, primaryEndpoint, hedgeFired: false);
-                }
+                return await this.BuildAuthoritativeResultAsync(primaryTask, primaryEndpoint, hedgeFired: false);
             }
 
-            // ---- 3. Primary is slow (or already failing) → fire one hedge. ----
-            timerCts.Cancel();
+            // ---- 3. Primary is slow, or hit a regional failure → fire one hedge. ----
+            // Short-circuit on caller cancellation first so a cancelled request never spawns a
+            // phantom hedge and the OperationCanceledException surfaces promptly.
+            cancellationToken.ThrowIfCancellationRequested();
             Task<DocumentServiceResponse> hedgeTask = SendCloneAsync(sendToEndpoint, request, hedgeEndpoint, cancellationToken);
 
-            // ---- 4. Return the first GOOD answer; the primary stays authoritative. ----
+            // ---- 4. Resolve the winner, keeping the primary authoritative throughout. ----
+            return await this.ResolveWinnerAsync(primaryTask, hedgeTask, primaryEndpoint, hedgeEndpoint);
+        }
+
+        /// <summary>
+        /// Resolves the primary-vs-hedge race once both are in flight. The primary is authoritative:
+        /// a successful hedge may win the latency race, but the hedge can never override a primary
+        /// that has produced a definitive (non-regional) outcome. When neither branch yields a good
+        /// answer, the primary's outcome is returned (its exception rethrown) so the caller's retry
+        /// policy sees exactly what it would have without hedging.
+        /// </summary>
+        private async Task<MetadataHedgingResult> ResolveWinnerAsync(
+            Task<DocumentServiceResponse> primaryTask,
+            Task<DocumentServiceResponse> hedgeTask,
+            Uri primaryEndpoint,
+            Uri hedgeEndpoint)
+        {
             Task<DocumentServiceResponse> firstSettled = await Task.WhenAny(primaryTask, hedgeTask);
             bool firstIsHedge = firstSettled == hedgeTask;
-            if (firstSettled.Status == TaskStatus.RanToCompletion)
+
+            if (firstIsHedge)
             {
-                DocumentServiceResponse firstResponse = await firstSettled;
-                if (IsGoodResponse(firstResponse, firstIsHedge))
+                // A fast, successful hedge wins — unless the primary has ALREADY produced an
+                // authoritative (non-regional) outcome, in which case the primary wins and the
+                // hedge response is discarded (the hedge must never override the primary's answer).
+                if (await ClassifyOutcomeAsync(hedgeTask) == BranchOutcome.Success)
                 {
-                    ObserveInBackground(firstIsHedge ? primaryTask : hedgeTask);
-                    return this.BuildResult(
-                        firstResponse,
-                        firstIsHedge ? hedgeEndpoint : primaryEndpoint,
-                        hedgeFired: true);
+                    if (primaryTask.IsCompleted && await ClassifyOutcomeAsync(primaryTask) != BranchOutcome.RegionalFailure)
+                    {
+                        ObserveInBackground(hedgeTask);
+                        return await this.BuildAuthoritativeResultAsync(primaryTask, primaryEndpoint, hedgeFired: true);
+                    }
+
+                    ObserveInBackground(primaryTask);
+                    return this.BuildResult(await hedgeTask, hedgeEndpoint, hedgeFired: true, hedgeWon: true);
                 }
+
+                // Hedge failed (regional failure, or a definitive / auth error) → it cannot win.
+                // Wait for the primary and return its authoritative outcome.
+                await SwallowAsync(primaryTask);
+                ObserveInBackground(hedgeTask);
+                return await this.BuildAuthoritativeResultAsync(primaryTask, primaryEndpoint, hedgeFired: true);
             }
 
-            // First was not good — wait for the other branch, then decide.
-            Task<DocumentServiceResponse> other = firstIsHedge ? primaryTask : hedgeTask;
-            await SwallowAsync(other);
-            bool otherIsHedge = !firstIsHedge;
-            if (other.Status == TaskStatus.RanToCompletion)
+            // Primary settled first.
+            if (await ClassifyOutcomeAsync(primaryTask) != BranchOutcome.RegionalFailure)
             {
-                DocumentServiceResponse otherResponse = await other;
-                if (IsGoodResponse(otherResponse, otherIsHedge))
-                {
-                    ObserveInBackground(firstSettled);
-                    return this.BuildResult(
-                        otherResponse,
-                        otherIsHedge ? hedgeEndpoint : primaryEndpoint,
-                        hedgeFired: true);
-                }
+                // Success or definitive error → authoritative; never overridden by the hedge.
+                ObserveInBackground(hedgeTask);
+                return await this.BuildAuthoritativeResultAsync(primaryTask, primaryEndpoint, hedgeFired: true);
             }
 
-            // Neither branch was good → return the PRIMARY's outcome (authoritative).
-            // Awaiting the primary re-throws its exception if it faulted, so the
-            // caller's retry policy classifies the real failure normally.
+            // Primary regional failure → a successful hedge may now win; otherwise the primary's
+            // (authoritative) regional failure is returned.
+            await SwallowAsync(hedgeTask);
+            if (await ClassifyOutcomeAsync(hedgeTask) == BranchOutcome.Success)
+            {
+                ObserveInBackground(primaryTask);
+                return this.BuildResult(await hedgeTask, hedgeEndpoint, hedgeFired: true, hedgeWon: true);
+            }
+
             ObserveInBackground(hedgeTask);
-            DocumentServiceResponse primaryOutcome = await primaryTask;
-            return this.BuildResult(primaryOutcome, primaryEndpoint, hedgeFired: true);
+            return await this.BuildAuthoritativeResultAsync(primaryTask, primaryEndpoint, hedgeFired: true);
         }
 
         /// <summary>
@@ -229,6 +266,16 @@ namespace Microsoft.Azure.Cosmos.Routing
             out Uri hedgeEndpoint)
         {
             hedgeEndpoint = null;
+
+            // Operator kill-switch (gateway disableCrossRegionalHedging): a hard override that
+            // suppresses cross-region metadata hedging during a regional incident, regardless of
+            // the customer opt-in or PPAF state — mirroring how the data-plane AvailabilityStrategy
+            // is disabled by the same flag. Read live so a runtime toggle takes effect without a
+            // client restart.
+            if (this.isCrossRegionalHedgingDisabled())
+            {
+                return false;
+            }
 
             // Effective opt-in: an explicit customer value wins; null follows PPAF.
             if (!(this.customerOptIn ?? this.isPpafEnabled()))
@@ -249,16 +296,17 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return false;
             }
 
-            // Need at least two read regions to hedge across.
-            ReadOnlyCollection<Uri> readEndpoints = this.globalEndpointManager.ReadEndpoints;
-            if (readEndpoints == null || readEndpoints.Count <= 1)
+            // Candidate hedge regions honoring ExcludeRegions, from a SINGLE source used both for
+            // the multi-region eligibility check and the hedge-endpoint pick (so the two can never
+            // drift). GetApplicableEndpoints returns an availability-ordered list, so the first
+            // non-primary entry is the best available cross-region target.
+            ReadOnlyCollection<Uri> applicable = this.globalEndpointManager.GetApplicableEndpoints(request, isReadRequest: true);
+            if (applicable == null || applicable.Count <= 1)
             {
                 return false;
             }
 
-            // Choose a hedge endpoint distinct from the primary, respecting ExcludeRegions.
-            ReadOnlyCollection<Uri> applicable = this.globalEndpointManager.GetApplicableEndpoints(request, isReadRequest: true);
-            hedgeEndpoint = applicable?.FirstOrDefault(u => u != null && !u.Equals(primaryEndpoint));
+            hedgeEndpoint = applicable.FirstOrDefault(u => u != null && !u.Equals(primaryEndpoint));
             return hedgeEndpoint != null;
         }
 
@@ -269,26 +317,86 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         /// <summary>
-        /// A response is a &quot;good&quot; winner only if it is not a regional failure. For the
-        /// hedge branch, cross-region auth failures (401 / plain 403) are additionally rejected
-        /// so a misconfigured secondary (e.g. region-scoped RBAC) can never surface a spurious
-        /// error as the operation result.
+        /// The outcome class of a completed branch, used to keep the primary authoritative:
+        /// only a <see cref="RegionalFailure"/> is worth hedging, and a hedge can never override
+        /// a primary <see cref="Success"/> or <see cref="Definitive"/> outcome.
         /// </summary>
-        private static bool IsGoodResponse(DocumentServiceResponse response, bool isHedge)
+        private enum BranchOutcome
         {
+            /// <summary>A definitive success: a response with status &lt; 400.</summary>
+            Success,
+
+            /// <summary>
+            /// A regional failure (503 / 500 / 410+LeaseNotFound / 403+DatabaseAccountNotFound) —
+            /// the region, not the request, is at fault, so another region is worth trying.
+            /// </summary>
+            RegionalFailure,
+
+            /// <summary>
+            /// A definitive, authoritative non-regional outcome: a non-regional error (404 / 409 /
+            /// 412 / 401 / ...), a caller cancellation, or any other terminal state the primary is
+            /// entitled to own. The hedge must never override this.
+            /// </summary>
+            Definitive,
+        }
+
+        /// <summary>
+        /// Classifies a COMPLETED branch task. In production these metadata reads throw for status
+        /// &gt;= 400, so regional failures arrive as faulted tasks (classified via the exception);
+        /// the response-status path is a defensive fallback for exceptionless-retry statuses.
+        /// The task is guaranteed complete by the caller, so awaiting it cannot block.
+        /// </summary>
+        private static async Task<BranchOutcome> ClassifyOutcomeAsync(Task<DocumentServiceResponse> completedTask)
+        {
+            if (completedTask.IsFaulted)
+            {
+                return IsRegionalFailureException(completedTask.Exception)
+                    ? BranchOutcome.RegionalFailure
+                    : BranchOutcome.Definitive;
+            }
+
+            if (completedTask.IsCanceled)
+            {
+                // Authoritative; never overridden by a hedge. A caller cancellation is re-thrown
+                // when the primary task is awaited to build the authoritative result.
+                return BranchOutcome.Definitive;
+            }
+
+            DocumentServiceResponse response = await completedTask;
             if (response == null)
             {
-                return false;
+                return BranchOutcome.Definitive;
             }
 
-            if (isHedge
-                && (response.StatusCode == HttpStatusCode.Unauthorized
-                    || response.StatusCode == HttpStatusCode.Forbidden))
+            if ((int)response.StatusCode < 400)
             {
-                return false;
+                return BranchOutcome.Success;
             }
 
-            return !IsRegionalFailure(response.StatusCode, response.SubStatusCode);
+            return IsRegionalFailure(response.StatusCode, response.SubStatusCode)
+                ? BranchOutcome.RegionalFailure
+                : BranchOutcome.Definitive;
+        }
+
+        /// <summary>
+        /// Classifies a faulted branch's exception as a regional failure using the same status /
+        /// sub-status set as <c>MetadataRequestThrottleRetryPolicy</c>, so metadata hedging and the
+        /// metadata retry policy agree on what "the region is at fault" means. Auth failures
+        /// (401 / plain 403) are NOT regional, so a misconfigured secondary is treated as a losing
+        /// hedge rather than a spurious operation result.
+        /// </summary>
+        private static bool IsRegionalFailureException(AggregateException aggregate)
+        {
+            Exception inner = aggregate?.Flatten().InnerException;
+            switch (inner)
+            {
+                case DocumentClientException dce when dce.StatusCode.HasValue:
+                    return IsRegionalFailure(dce.StatusCode.Value, dce.GetSubStatus());
+                case CosmosException ce:
+                    return IsRegionalFailure(ce.StatusCode, (SubStatusCodes)ce.SubStatusCode);
+                default:
+                    return false;
+            }
         }
 
         /// <summary>
@@ -364,9 +472,25 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        private MetadataHedgingResult BuildResult(DocumentServiceResponse response, Uri winningEndpoint, bool hedgeFired)
+        private MetadataHedgingResult BuildResult(DocumentServiceResponse response, Uri winningEndpoint, bool hedgeFired, bool hedgeWon)
         {
-            return new MetadataHedgingResult(response, winningEndpoint, this.SafeGetLocation(winningEndpoint), hedgeFired);
+            return new MetadataHedgingResult(response, winningEndpoint, this.SafeGetLocation(winningEndpoint), hedgeFired, hedgeWon);
+        }
+
+        /// <summary>
+        /// Materializes the primary's authoritative outcome. Awaiting the primary task rethrows its
+        /// exception verbatim if it faulted (or an <see cref="OperationCanceledException"/> if it was
+        /// cancelled), so the caller's retry policy classifies the real failure exactly as it would
+        /// have without hedging. A successful primary simply yields its response. The primary is
+        /// never the hedge winner, so <c>hedgeWon</c> is always <c>false</c> here.
+        /// </summary>
+        private async Task<MetadataHedgingResult> BuildAuthoritativeResultAsync(
+            Task<DocumentServiceResponse> primaryTask,
+            Uri primaryEndpoint,
+            bool hedgeFired)
+        {
+            DocumentServiceResponse response = await primaryTask;
+            return this.BuildResult(response, primaryEndpoint, hedgeFired, hedgeWon: false);
         }
 
         private string SafeGetLocation(Uri endpoint)
@@ -388,16 +512,18 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         /// <summary>
         /// Result of <see cref="ExecuteAsync"/>: the winning response, the endpoint (and region)
-        /// that produced it, and whether a hedge was dispatched.
+        /// that produced it, whether a hedge was dispatched (<see cref="HedgeFired"/>), and whether
+        /// the hedge's response is the one being returned (<see cref="HedgeWon"/>).
         /// </summary>
         internal readonly struct MetadataHedgingResult
         {
-            public MetadataHedgingResult(DocumentServiceResponse response, Uri winningEndpoint, string winningRegion, bool hedgeFired)
+            public MetadataHedgingResult(DocumentServiceResponse response, Uri winningEndpoint, string winningRegion, bool hedgeFired, bool hedgeWon)
             {
                 this.Response = response;
                 this.WinningEndpoint = winningEndpoint;
                 this.WinningRegion = winningRegion;
                 this.HedgeFired = hedgeFired;
+                this.HedgeWon = hedgeWon;
             }
 
             public DocumentServiceResponse Response { get; }
@@ -406,7 +532,15 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             public string WinningRegion { get; }
 
+            /// <summary>Whether a hedge request was dispatched (a latency / telemetry signal).</summary>
             public bool HedgeFired { get; }
+
+            /// <summary>
+            /// Whether the hedge's response is the one being returned — i.e. the winning region
+            /// differs from the primary. Only when this is <c>true</c> must the caller pin any
+            /// follow-on paged reads to <see cref="WinningEndpoint"/> for continuation consistency.
+            /// </summary>
+            public bool HedgeWon { get; }
         }
     }
 }

@@ -7129,7 +7129,8 @@ namespace Microsoft.Azure.Cosmos
             return Cosmos.Routing.MetadataHedgingStrategy.CreateIfEnabled(
                 enableMetadataHedging: this.enableMetadataHedging,
                 globalEndpointManager: this.GlobalEndpointManager,
-                isPpafEnabled: () => this.ConnectionPolicy.EnablePartitionLevelFailover);
+                isPpafEnabled: () => this.ConnectionPolicy.EnablePartitionLevelFailover,
+                isCrossRegionalHedgingDisabled: () => this.disableCrossRegionalHedging);
         }
 
         internal void UpdatePartitionLevelFailoverConfigWithAccountRefresh(
