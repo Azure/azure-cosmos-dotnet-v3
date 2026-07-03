@@ -398,12 +398,7 @@ namespace Microsoft.Azure.Cosmos
         /// <see cref="ReadConsistencyStrategy.GlobalStrong"/> is only valid for accounts configured with Strong consistency.
         /// </para>
         /// </remarks>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        ReadConsistencyStrategy? ReadConsistencyStrategy { get; set; }
+        public ReadConsistencyStrategy? ReadConsistencyStrategy { get; set; }
 
         /// <summary>
         /// Gets or sets the client-wide default <see cref="ICosmosEmbeddingGenerator"/> used to generate
