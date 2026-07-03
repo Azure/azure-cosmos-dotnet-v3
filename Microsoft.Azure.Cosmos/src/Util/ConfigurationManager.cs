@@ -155,6 +155,24 @@ namespace Microsoft.Azure.Cosmos
         internal static readonly string Http2KeepAlivePingTimeoutInSeconds = "AZURE_COSMOS_HTTP2_KEEPALIVE_PING_TIMEOUT_IN_SECONDS";
 
         /// <summary>
+        /// Environment variable to override the Gateway-mode <c>SocketsHttpHandler.PooledConnectionLifetime</c>
+        /// (in milliseconds) for the SDK's default HTTP handler. When unset (or non-positive) the SDK keeps its
+        /// default randomized lifetime of 5 to 5.5 minutes. Lowering this shrinks the window in which a pooled
+        /// HTTP/1.1 keep-alive connection can be reused after the server has already closed it - the reuse race that
+        /// otherwise makes a non-idempotent write block for the full request timeout against servers that recycle
+        /// connections aggressively (for example the vNext Linux Cosmos emulator).
+        /// </summary>
+        internal static readonly string HttpPooledConnectionLifetimeInMilliseconds = "AZURE_COSMOS_HTTP_POOLED_CONNECTION_LIFETIME_IN_MILLISECONDS";
+
+        /// <summary>
+        /// Environment variable to override the Gateway-mode <c>SocketsHttpHandler.PooledConnectionIdleTimeout</c>
+        /// (in milliseconds) for the SDK's default HTTP handler. When unset (or non-positive) the SDK leaves the
+        /// runtime default (1 minute). Lowering this evicts idle pooled connections sooner so they are less likely to
+        /// be handed out after the server has silently closed them.
+        /// </summary>
+        internal static readonly string HttpPooledConnectionIdleTimeoutInMilliseconds = "AZURE_COSMOS_HTTP_POOLED_CONNECTION_IDLE_TIMEOUT_IN_MILLISECONDS";
+
+        /// <summary>
         /// Environment variable name to enable deterministic lease-id partition key values for Change Feed lease creation.
         /// </summary>
         internal static readonly string ChangeFeedLeaseIdAsPartitionKeyEnabled = "AZURE_COSMOS_CHANGE_FEED_LEASE_ID_AS_PARTITION_KEY_ENABLED";
