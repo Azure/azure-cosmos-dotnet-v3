@@ -247,9 +247,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                                     isFirstReadFeedPage: true,
                                     cancellationToken: cancellationToken);
 
-                                childTrace.AddDatum(
-                                    MetadataHedgingStrategy.TraceDatumKey,
-                                    $"HedgeFired={hedgeResult.HedgeFired}; HedgeWon={hedgeResult.HedgeWon}; WinningRegion={hedgeResult.WinningRegion}");
+                                // Emit the hedge trace datum ONLY when a hedge actually fired, so the
+                                // common no-hedge path leaves the trace tree (and its baselines) unchanged.
+                                if (hedgeResult.HedgeFired)
+                                {
+                                    childTrace.AddDatum(
+                                        MetadataHedgingStrategy.TraceDatumKey,
+                                        $"HedgeFired={hedgeResult.HedgeFired}; HedgeWon={hedgeResult.HedgeWon}; WinningRegion={hedgeResult.WinningRegion}");
+                                }
 
                                 response = hedgeResult.Response;
                             }
