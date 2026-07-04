@@ -471,6 +471,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(TimeSpan.FromSeconds(2), socketsHandler.KeepAlivePingTimeout, "KeepAlivePingTimeout should be 2 seconds");
             Assert.AreEqual(HttpKeepAlivePingPolicy.Always, socketsHandler.KeepAlivePingPolicy, "KeepAlivePingPolicy should be Always to detect broken idle connections");
 
+            // Without an override the idle-connection eviction timeout keeps the runtime default (1 minute).
+            Assert.AreEqual(TimeSpan.FromMinutes(1), socketsHandler.PooledConnectionIdleTimeout, "PooledConnectionIdleTimeout should keep the runtime default when not overridden");
+
             //Create cert for test
             X509Certificate2 x509Certificate2 = new CertificateRequest("cn=www.test", ECDsa.Create(), HashAlgorithmName.SHA256).CreateSelfSigned(DateTime.Now, DateTime.Now.AddYears(1));
             X509Chain x509Chain = new X509Chain();
@@ -536,6 +539,44 @@ namespace Microsoft.Azure.Cosmos.Tests
                     null);
                 Environment.SetEnvironmentVariable(
                     ConfigurationManager.Http2KeepAlivePingTimeoutInSeconds,
+                    null);
+            }
+        }
+
+        [TestMethod]
+        public void CreateSocketsHttpHandlerRespectsPooledConnectionEnvironmentVariableOverrides()
+        {
+            int customLifetimeInMs = 1234;
+            int customIdleTimeoutInMs = 567;
+
+            try
+            {
+                Environment.SetEnvironmentVariable(
+                    ConfigurationManager.HttpPooledConnectionLifetimeInMilliseconds,
+                    customLifetimeInMs.ToString());
+                Environment.SetEnvironmentVariable(
+                    ConfigurationManager.HttpPooledConnectionIdleTimeoutInMilliseconds,
+                    customIdleTimeoutInMs.ToString());
+
+                HttpMessageHandler handler = CosmosHttpClientCore.CreateSocketsHttpHandlerHelper(
+                    gatewayModeMaxConnectionLimit: 10,
+                    webProxy: null,
+                    serverCertificateCustomValidationCallback: null);
+
+                SocketsHttpHandler socketsHandler = (SocketsHttpHandler)handler;
+
+                Assert.AreEqual(TimeSpan.FromMilliseconds(customLifetimeInMs), socketsHandler.PooledConnectionLifetime,
+                    "PooledConnectionLifetime should respect environment variable override");
+                Assert.AreEqual(TimeSpan.FromMilliseconds(customIdleTimeoutInMs), socketsHandler.PooledConnectionIdleTimeout,
+                    "PooledConnectionIdleTimeout should respect environment variable override");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(
+                    ConfigurationManager.HttpPooledConnectionLifetimeInMilliseconds,
+                    null);
+                Environment.SetEnvironmentVariable(
+                    ConfigurationManager.HttpPooledConnectionIdleTimeoutInMilliseconds,
                     null);
             }
         }

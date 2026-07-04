@@ -148,8 +148,29 @@ namespace Microsoft.Azure.Cosmos
 
             //Sets the timeout for unused connections to a random time between 5 minutes and 5 minutes and 30 seconds.
             //This is to avoid the issue where a large number of connections are closed at the same time.
-            TimeSpan connectionTimeSpan = TimeSpan.FromMinutes(5) + TimeSpan.FromSeconds(30 * CustomTypeExtensions.GetRandomNumber().NextDouble());
+            //A non-positive override leaves the randomized default in place; a positive override (in milliseconds)
+            //shrinks the reuse window for servers that recycle keep-alive connections aggressively, so a pooled
+            //connection the server has already closed is less likely to be handed out to a non-idempotent write
+            //(which would otherwise block for the full request timeout). See the vNext Linux Cosmos emulator.
+            int pooledConnectionLifetimeInMs = ConfigurationManager.GetEnvironmentVariable<int>(
+                ConfigurationManager.HttpPooledConnectionLifetimeInMilliseconds,
+                defaultValue: -1);
+            TimeSpan connectionTimeSpan = pooledConnectionLifetimeInMs > 0
+                ? TimeSpan.FromMilliseconds(pooledConnectionLifetimeInMs)
+                : TimeSpan.FromMinutes(5) + TimeSpan.FromSeconds(30 * CustomTypeExtensions.GetRandomNumber().NextDouble());
             pooledConnectionLifetimeInfo.SetValue(socketHttpHandler, connectionTimeSpan);
+
+            //Optionally override the idle-connection eviction timeout. When unset the runtime default (1 minute)
+            //is kept. Lowering it evicts idle pooled connections sooner so they are less likely to be reused after
+            //the server has silently closed them.
+            int pooledConnectionIdleTimeoutInMs = ConfigurationManager.GetEnvironmentVariable<int>(
+                ConfigurationManager.HttpPooledConnectionIdleTimeoutInMilliseconds,
+                defaultValue: -1);
+            if (pooledConnectionIdleTimeoutInMs > 0)
+            {
+                PropertyInfo pooledConnectionIdleTimeoutInfo = socketHandlerType.GetProperty("PooledConnectionIdleTimeout");
+                pooledConnectionIdleTimeoutInfo?.SetValue(socketHttpHandler, TimeSpan.FromMilliseconds(pooledConnectionIdleTimeoutInMs));
+            }
 
             // Proxy is only set by users and can cause not supported exception on some platforms
             if (webProxy != null)
