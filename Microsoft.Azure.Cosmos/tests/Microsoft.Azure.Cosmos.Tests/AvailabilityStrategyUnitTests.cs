@@ -4,11 +4,14 @@
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -281,8 +284,8 @@
         {
             // Arrange
             CrossRegionHedgingAvailabilityStrategy availabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
-                threshold: TimeSpan.FromMilliseconds(10),
-                thresholdStep: TimeSpan.FromMilliseconds(10));
+                threshold: TimeSpan.FromMilliseconds(100),
+                thresholdStep: TimeSpan.FromMilliseconds(100));
 
             using RequestMessage request = CreateReadRequest();
             using CosmosClient mockCosmosClient = CreateMockClientWithRegions(3);
@@ -296,19 +299,16 @@
 
                 if (callNumber == 1)
                 {
-                    // First request: cancel the app token after a brief delay
+                    // First request: cancel the app token immediately
                     // This simulates an e2e timeout scenario
-                    _ = Task.Delay(15).ContinueWith(_ => appCts.Cancel());
+                    appCts.Cancel();
+                }
 
-                    // Then wait - this will be cancelled
-                    try
-                    {
-                        await Task.Delay(TimeSpan.FromSeconds(30), ct);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        throw;
-                    }
+                // All requests block deterministically until cancelled via the token
+                TaskCompletionSource<ResponseMessage> tcs = new TaskCompletionSource<ResponseMessage>();
+                using (ct.Register(() => tcs.TrySetCanceled(ct)))
+                {
+                    await tcs.Task;
                 }
 
                 return new ResponseMessage(HttpStatusCode.OK);
@@ -635,6 +635,429 @@
             Assert.IsTrue(senderCallCount >= 2, "Expected a second hedge request to complete successfully.");
         }
 
-       
+        /// <summary>
+        /// Verifies that when a request completes before the hedge threshold, HedgeContext
+        /// contains exactly 1 region (the primary). This confirms no hedging occurred even 
+        /// though HedgeContext is non-empty. A single-element HedgeContext is the expected
+        /// indicator that the primary request completed without triggering any hedge.
+        /// </summary>
+        [TestMethod]
+        public async Task PrimaryCompletesBeforeThreshold_HedgeContextContainsSingleRegion()
+        {
+            // Arrange: high threshold ensures no hedging fires
+            CrossRegionHedgingAvailabilityStrategy availabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                threshold: TimeSpan.FromMilliseconds(5000),
+                thresholdStep: TimeSpan.FromMilliseconds(5000));
+
+            // Use a real trace so AddOrUpdateDatum actually persists data (NoOpTrace discards it)
+            using ITrace rootTrace = Trace.GetRootTrace("HedgeContextTest");
+            using RequestMessage request = new RequestMessage(
+                HttpMethod.Get,
+                "/dbs/testdb/colls/testcontainer/docs/testId",
+                rootTrace)
+            {
+                ResourceType = ResourceType.Document,
+                OperationType = OperationType.Read
+            };
+            using CosmosClient mockCosmosClient = CreateMockClientWithRegions(3);
+
+            int senderCallCount = 0;
+
+            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender = (req, ct) =>
+            {
+                Interlocked.Increment(ref senderCallCount);
+                ResponseMessage response = new ResponseMessage(HttpStatusCode.OK)
+                {
+                    Trace = req.Trace
+                };
+                return Task.FromResult(response);
+            };
+
+            // Act
+            ResponseMessage response = await availabilityStrategy.ExecuteAvailabilityStrategyAsync(
+                sender, mockCosmosClient, request, CancellationToken.None);
+
+            // Assert
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.AreEqual(1, senderCallCount,
+                "Only the primary request should be sent when it returns before the hedge timer fires.");
+
+            CosmosTraceDiagnostics traceDiagnostic = response.Diagnostics as CosmosTraceDiagnostics;
+            Assert.IsNotNull(traceDiagnostic);
+
+            if (traceDiagnostic.Value is Trace concreteTrace)
+            {
+                concreteTrace.SetWalkingStateRecursively();
+            }
+
+            Assert.IsFalse(traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out _),
+                "HedgeContext should be absent when the primary request completes before the threshold (no hedging occurred).");
+
+            Assert.IsTrue(traceDiagnostic.Value.Data.TryGetValue("Hedge Config", out _),
+                "Hedge Config should always be present when the hedging strategy code path is used.");
+        }
+
+        /// <summary>
+        /// Verifies that when hedging IS triggered (primary is slow, hedge returns first),
+        /// HedgeContext contains 2 regions — confirming the semantics that HedgeContext count > 1 
+        /// means hedging occurred.
+        /// </summary>
+        [TestMethod]
+        public async Task HedgeTriggered_HedgeContextContainsMultipleRegions()
+        {
+            // Arrange: low threshold ensures hedging fires quickly
+            CrossRegionHedgingAvailabilityStrategy availabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                threshold: TimeSpan.FromMilliseconds(10),
+                thresholdStep: TimeSpan.FromMilliseconds(10));
+
+            // Use a real trace so AddOrUpdateDatum actually persists data
+            using ITrace rootTrace = Trace.GetRootTrace("HedgeContextTest");
+            using RequestMessage request = new RequestMessage(
+                HttpMethod.Get,
+                "/dbs/testdb/colls/testcontainer/docs/testId",
+                rootTrace)
+            {
+                ResourceType = ResourceType.Document,
+                OperationType = OperationType.Read
+            };
+            using CosmosClient mockCosmosClient = CreateMockClientWithRegions(3);
+
+            int senderCallCount = 0;
+
+            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender = async (req, ct) =>
+            {
+                int callNumber = Interlocked.Increment(ref senderCallCount);
+
+                if (callNumber == 1)
+                {
+                    // Primary: slow enough to trigger hedging
+                    await Task.Delay(TimeSpan.FromSeconds(5), ct).ContinueWith(_ => { });
+                    return new ResponseMessage(HttpStatusCode.ServiceUnavailable);
+                }
+
+                // Hedge request: returns immediately with success, wired to request trace
+                return new ResponseMessage(HttpStatusCode.OK)
+                {
+                    Trace = req.Trace
+                };
+            };
+
+            // Act
+            ResponseMessage response = await availabilityStrategy.ExecuteAvailabilityStrategyAsync(
+                sender, mockCosmosClient, request, CancellationToken.None);
+
+            // Assert
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.IsTrue(senderCallCount >= 2,
+                "At least 2 sender calls expected (primary + hedge).");
+
+            CosmosTraceDiagnostics traceDiagnostic = response.Diagnostics as CosmosTraceDiagnostics;
+            Assert.IsNotNull(traceDiagnostic);
+
+            if (traceDiagnostic.Value is Trace concreteTrace)
+            {
+                concreteTrace.SetWalkingStateRecursively();
+            }
+
+            Assert.IsTrue(traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext),
+                "HedgeContext should be present when hedging occurred.");
+
+            IEnumerable<string> hedgeRegions = (IEnumerable<string>)hedgeContext;
+            List<string> hedgeRegionsList = new List<string>(hedgeRegions);
+
+            Assert.IsTrue(hedgeRegionsList.Count >= 2,
+                $"HedgeContext should contain 2+ regions when hedging occurred, but got {hedgeRegionsList.Count}. " +
+                "Multiple regions in HedgeContext confirms hedging was triggered.");
+        }
+
+        /// <summary>
+        /// Verifies that CrossRegionAvailabilityContext propagates the hub region header flag
+        /// across hedged request clones via the shared Properties dictionary.
+        /// This tests the core mechanism: shallow-copy of Properties preserves reference identity,
+        /// so volatile writes by one clone are visible to all others.
+        /// </summary>
+        [TestMethod]
+        public void CrossRegionAvailabilityContext_PropagatesHubHeaderFlagToHedgedRequests()
+        {
+            // 1. Create shared context (injected by CrossRegionHedgingAvailabilityStrategy)
+            CrossRegionAvailabilityContext sharedContext = new CrossRegionAvailabilityContext();
+            Assert.IsFalse(sharedContext.ShouldAddHubRegionProcessingOnlyHeader,
+                "Flag must be false initially.");
+
+            // 2. Simulate original request Properties with the shared context
+            Dictionary<string, object> originalProperties = new Dictionary<string, object>
+            {
+                { CrossRegionAvailabilityContext.PropertyKey, sharedContext }
+            };
+
+            // 3. Simulate RequestMessage.Clone() — shallow copy of Properties
+            Dictionary<string, object> clonedProperties = new Dictionary<string, object>(originalProperties);
+
+            // 4. Verify both dictionaries reference the SAME context instance
+            Assert.IsTrue(clonedProperties.TryGetValue(CrossRegionAvailabilityContext.PropertyKey, out object clonedObj));
+            CrossRegionAvailabilityContext clonedContext = clonedObj as CrossRegionAvailabilityContext;
+            Assert.IsNotNull(clonedContext);
+            Assert.AreSame(sharedContext, clonedContext,
+                "Shallow copy must preserve reference identity — clones share the same context instance.");
+
+            // 5. Primary's ClientRetryPolicy sets the flag after 2x 404/1002
+            sharedContext.ShouldAddHubRegionProcessingOnlyHeader = true;
+
+            // 6. Hedge's ClientRetryPolicy reads the flag from its cloned Properties
+            Assert.IsTrue(clonedContext.ShouldAddHubRegionProcessingOnlyHeader,
+                "Hub region flag set by primary must be visible to hedge via shared context reference. " +
+                "This is the core hedging propagation mechanism (mirrors Java SDK's CrossRegionAvailabilityContext).");
+
+            // 7. Verify PropertyKey is the expected well-known key
+            Assert.AreEqual("CrossRegionAvailabilityContext",
+                CrossRegionAvailabilityContext.PropertyKey);
+        }
+
+        /// <summary>
+        /// Regression test for the .NET Framework 4.7.2 stack-overflow scenario in
+        /// CrossRegionHedgingAvailabilityStrategy.
+        ///
+        /// On .NET Framework, every async method consumes ~10KB of stack on the synchronous
+        /// exception propagation path (ExceptionDispatchInfo.Throw -> TaskAwaiter.ThrowForNonSuccess
+        /// -> HandleNonSuccessAndDebuggerNotification). When a deep request pipeline beneath
+        /// hedging throws (e.g. CosmosOperationCanceledException after the hedge CTS is signalled),
+        /// the synchronous exception propagation can blow the managed stack.
+        ///
+        /// Fix: <see cref="CrossRegionHedgingAvailabilityStrategy"/>.CloneAndSendAsync wraps its
+        /// awaited call in a try/catch that does <c>await Task.Yield(); throw;</c> — the yield
+        /// resumes the rethrow on a fresh threadpool stack, breaking the synchronous propagation
+        /// chain. This test asserts:
+        ///  1. Functional correctness: a sender that throws OperationCanceledException with the
+        ///     application token already cancelled still surfaces as CosmosOperationCanceledException,
+        ///     and the inner OCE's stack trace preserves the original throwing frame (also covers
+        ///     the throw-ex -> throw fix in RequestSenderAndResultCheckAsync).
+        ///  2. Yield observable proof: at least one continuation is posted to the active
+        ///     SynchronizationContext during exception propagation, demonstrating the synchronous
+        ///     propagation chain was broken.
+        ///
+        /// NOTE on test target framework: this test project (Microsoft.Azure.Cosmos.Tests) only
+        /// targets net6.0, where the underlying StackOverflowException does NOT reproduce — .NET
+        /// Core / .NET 5+ already optimize the synchronous exception-propagation path. The test
+        /// therefore asserts the proximate cure (the yield occurred + stack trace was preserved)
+        /// rather than the absence of an SO. That is sufficient regression coverage: removing the
+        /// production fix in CloneAndSendAsync's catch block makes the PostCount assertion below
+        /// fail, and removing the throw-ex -> throw fix in RequestSenderAndResultCheckAsync makes
+        /// the stack-trace assertion fail. End-to-end SO reproduction would require multi-targeting
+        /// this test project for net472, which is out of scope for this fix.
+        /// </summary>
+        [TestMethod]
+        public async Task SenderException_PropagatesViaYield_PreservesStackTrace()
+        {
+            // Arrange
+            CrossRegionHedgingAvailabilityStrategy availabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                threshold: TimeSpan.FromMilliseconds(10),
+                thresholdStep: TimeSpan.FromMilliseconds(10));
+
+            using RequestMessage request = CreateReadRequest();
+            using CosmosClient mockCosmosClient = CreateMockClientWithRegions(2);
+
+            // Pre-cancelled CTS exercises the propagation path:
+            //   RequestSenderAndResultCheckAsync's catch (OperationCanceledException oce) when
+            //   (hedgeRequestsCancellationTokenSource.IsCancellationRequested) wraps in CosmosOCE,
+            //   ExecuteAvailabilityStrategyAsync's phase-1 loop awaits the faulted task (because
+            //   applicationProvidedCancellationToken.IsCancellationRequested is true) and the
+            //   exception unwinds through CloneAndSendAsync's catch -> await Task.Yield(); throw;
+            CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            const string sentinelMethodName = nameof(ThrowDeepInPipelineAsync);
+
+            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender = async (req, ct) =>
+            {
+                await ThrowDeepInPipelineAsync();
+                return new ResponseMessage(HttpStatusCode.OK);
+            };
+
+            // Install a SyncContext we can observe. Task.Yield() posts its continuation to the
+            // current SyncContext when one is set, so a non-zero delta in PostCount across the
+            // ExecuteAvailabilityStrategyAsync invocation proves CloneAndSendAsync's catch yielded
+            // before rethrowing.
+            //
+            // IMPORTANT: the helper ThrowDeepInPipelineAsync deliberately does NOT call
+            // Task.Yield() — it awaits Task.CompletedTask (which completes synchronously and does
+            // not post to the SyncContext) before throwing. This guarantees that any Post observed
+            // on customCtx during the invocation is attributable to the production-side fix in
+            // CloneAndSendAsync's catch block, not to the test scaffolding itself.
+            SynchronizationContext previousCtx = SynchronizationContext.Current;
+            CountingSynchronizationContext customCtx = new CountingSynchronizationContext();
+            SynchronizationContext.SetSynchronizationContext(customCtx);
+            int postCountBefore = customCtx.PostCount;
+            try
+            {
+                CosmosOperationCanceledException caught =
+                    await Assert.ThrowsExceptionAsync<CosmosOperationCanceledException>(
+                        () => availabilityStrategy.ExecuteAvailabilityStrategyAsync(
+                            sender, mockCosmosClient, request, cts.Token));
+
+                // CosmosOperationCanceledException overrides StackTrace to return the original
+                // OCE's stack trace (see CosmosOperationCanceledException.StackTrace).
+                // Stack-trace preservation: the original deep frame must still be present.
+                // With the old `throw ex;` in RequestSenderAndResultCheckAsync this would have
+                // been wiped on rethrow.
+                string stack = caught.StackTrace ?? string.Empty;
+                Assert.IsTrue(
+                    stack.Contains(sentinelMethodName),
+                    $"Stack trace should include the original throwing frame '{sentinelMethodName}'. " +
+                    $"Actual stack trace:\n{stack}");
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(previousCtx);
+            }
+
+            // Yield observable proof: CloneAndSendAsync's catch did await Task.Yield() before
+            // rethrowing, which posts a continuation to the active SyncContext — without the fix,
+            // exception propagation would be fully synchronous and the SyncContext would observe
+            // zero posts. Assert on the delta (not the absolute count) to remain robust against
+            // any future scaffolding that may post during setup.
+            int postCountDelta = customCtx.PostCount - postCountBefore;
+            Assert.IsTrue(
+                postCountDelta > 0,
+                "Task.Yield in CloneAndSendAsync's catch block should have posted at least one " +
+                "continuation to the active SynchronizationContext, proving the synchronous " +
+                $"exception propagation chain was broken. Observed delta: {postCountDelta}.");
+        }
+
+        private static async Task ThrowDeepInPipelineAsync()
+        {
+            // await a pre-completed task so the async state machine satisfies the compiler
+            // (no CS1998 warning) without scheduling a continuation. Critically, this does NOT
+            // post to the active SynchronizationContext — that way, the only Post observed by
+            // CountingSynchronizationContext during the test is from the production-side
+            // `await Task.Yield()` in CloneAndSendAsync's catch block, which is what we are
+            // actually trying to verify.
+            await Task.CompletedTask;
+            throw new OperationCanceledException("Simulated deep-pipeline cancellation for hedging stack-overflow regression.");
+        }
+
+        /// <summary>
+        /// Companion regression test that exercises the two stack-trace-preservation changes the
+        /// primary <see cref="SenderException_PropagatesViaYield_PreservesStackTrace"/> test does
+        /// NOT actually cover (per PR review feedback):
+        ///
+        /// 1. <c>throw;</c> (vs. <c>throw ex;</c>) in <c>RequestSenderAndResultCheckAsync</c>'s
+        ///    GENERIC <c>catch (Exception ex)</c> block. The primary test pre-cancels the app CT
+        ///    and throws an <see cref="OperationCanceledException"/>, which routes through the
+        ///    FILTERED catch (<c>catch (OperationCanceledException oce) when (...)</c>) — the
+        ///    generic catch is never entered, so the throw-ex/throw distinction has no effect on
+        ///    that path.
+        /// 2. <c>ExceptionDispatchInfo.Capture(lastException).Throw()</c> (vs.
+        ///    <c>throw lastException;</c>) in <c>ExecuteAvailabilityStrategyAsync</c>'s phase-2
+        ///    "all hedges faulted" branch. The primary test's pre-cancelled app CT routes
+        ///    through phase 1's <c>await (Task&lt;HedgingResponse&gt;)completedTask;</c>
+        ///    re-throw, never reaching phase 2's <c>lastException</c> accumulation loop.
+        ///
+        /// Strategy:
+        /// - App CT is NOT cancelled, so phase 1's faulted-task branch <c>continue</c>s instead
+        ///   of re-awaiting — letting faulted hedge tasks survive into phase 2.
+        /// - Sender awaits a delay LONGER than threshold/thresholdStep, so the hedge timer fires
+        ///   first and the for-loop launches the next region's hedge while the previous one is
+        ///   still in flight. Both hedges remain pending when the for-loop ends, so phase 2's
+        ///   <c>while (requestTasks.Any())</c> runs and accumulates <c>lastException</c>.
+        /// - Sender throws a NON-OCE exception so it routes through the generic catch (covers
+        ///   change #1), which is then captured in the faulted hedge task and surfaced via
+        ///   <c>ExceptionDispatchInfo</c> in phase 2 (covers change #2).
+        ///
+        /// The single stack-trace assertion below would fail if EITHER fix were reverted:
+        /// reverting <c>throw;</c> back to <c>throw ex;</c> resets the stack to
+        /// <c>RequestSenderAndResultCheckAsync</c>'s catch site; reverting
+        /// <c>ExceptionDispatchInfo.Capture</c> back to <c>throw lastException;</c> resets it to
+        /// <c>ExecuteAvailabilityStrategyAsync</c>'s rethrow site. Either way, the sentinel
+        /// frame disappears.
+        /// </summary>
+        [TestMethod]
+        public async Task SenderException_NonOce_AllHedgesFault_PreservesStackTraceThroughGenericCatchAndDispatchInfo()
+        {
+            // Arrange: small thresholds force the hedge timer to fire before the slow sender,
+            // so multiple hedges launch and remain in flight — the prerequisite for phase 2.
+            CrossRegionHedgingAvailabilityStrategy availabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                threshold: TimeSpan.FromMilliseconds(1),
+                thresholdStep: TimeSpan.FromMilliseconds(1));
+
+            using RequestMessage request = CreateReadRequest();
+            using CosmosClient mockCosmosClient = CreateMockClientWithRegions(2);
+
+            const string sentinelMethodName = nameof(ThrowDeepInPipelineWithDelayAsync);
+            const string sentinelMessage = "Simulated deep-pipeline non-OCE failure for hedging stack-overflow regression.";
+
+            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender = async (req, ct) =>
+            {
+                await ThrowDeepInPipelineWithDelayAsync(sentinelMessage);
+                return new ResponseMessage(HttpStatusCode.OK);
+            };
+
+            // Act: app CT explicitly NOT cancelled (the key difference from the primary test).
+            InvalidOperationException caught =
+                await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                    () => availabilityStrategy.ExecuteAvailabilityStrategyAsync(
+                        sender, mockCosmosClient, request, CancellationToken.None));
+
+            // Assert (1): surfaced exception is the sender's, not the strategy's
+            // "Cross-region hedging completed without producing a response." fallback. Equality
+            // on Message proves we actually reached phase 2's lastException branch — if phase 2
+            // were skipped, we'd surface the fallback InvalidOperationException with a different
+            // message.
+            Assert.AreEqual(
+                sentinelMessage,
+                caught.Message,
+                "Surfaced exception's Message must be the sender's original message — proves the " +
+                "InvalidOperationException came from the sender (via phase 2's lastException " +
+                "accumulation), not from the strategy's 'completed without producing a response' " +
+                "fallback.");
+
+            // Assert (2): the original throwing frame survives — covers BOTH undertested fixes.
+            string stack = caught.StackTrace ?? string.Empty;
+            Assert.IsTrue(
+                stack.Contains(sentinelMethodName),
+                $"Stack trace must include the original throwing frame '{sentinelMethodName}'. " +
+                $"This single assertion exercises both:\n" +
+                $"  (a) `throw;` (vs. `throw ex;`) in RequestSenderAndResultCheckAsync's generic " +
+                $"catch — reverting that change resets the stack to the catch site.\n" +
+                $"  (b) `ExceptionDispatchInfo.Capture(lastException).Throw()` (vs. " +
+                $"`throw lastException;`) in ExecuteAvailabilityStrategyAsync's phase-2 " +
+                $"lastException branch — reverting that change resets the stack to the rethrow " +
+                $"site.\n" +
+                $"Actual stack trace:\n{stack}");
+        }
+
+        private static async Task ThrowDeepInPipelineWithDelayAsync(string message)
+        {
+            // Delay must exceed CrossRegionHedgingAvailabilityStrategy threshold/thresholdStep
+            // (set to 1ms by the caller) so the hedge timer fires first and the for-loop
+            // continues to launch the next region's hedge before this one resolves. This forces
+            // both hedges to be in-flight simultaneously when phase 1 ends, which is the only
+            // path that lets phase 2's `while (requestTasks.Any())` accumulate lastException —
+            // and therefore the only path that exercises the
+            // `ExceptionDispatchInfo.Capture(lastException).Throw()` branch.
+            await Task.Delay(50);
+            throw new InvalidOperationException(message);
+        }
+
+        /// <summary>
+        /// Minimal SynchronizationContext that counts Post invocations and dispatches them
+        /// onto the threadpool so test continuations don't deadlock.
+        /// </summary>
+        private sealed class CountingSynchronizationContext : SynchronizationContext
+        {
+            private int postCount;
+
+            public int PostCount => Volatile.Read(ref this.postCount);
+
+            public override void Post(SendOrPostCallback d, object state)
+            {
+                Interlocked.Increment(ref this.postCount);
+                ThreadPool.QueueUserWorkItem(_ => d(state));
+            }
+
+            public override void Send(SendOrPostCallback d, object state)
+            {
+                d(state);
+            }
+        }
     }
 }

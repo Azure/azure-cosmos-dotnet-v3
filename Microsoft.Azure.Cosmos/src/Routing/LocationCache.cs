@@ -29,23 +29,29 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly int connectionLimit;
         private readonly ConcurrentDictionary<Uri, LocationUnavailabilityInfo> locationUnavailablityInfoByEndpoint;
         private readonly RegionNameMapper regionNameMapper;
+        private readonly Func<bool> isPartitionLevelFailoverEnabled;
 
         private DatabaseAccountLocationsInfo locationInfo;
         private DateTime lastCacheUpdateTimestamp;
         private bool enableMultipleWriteLocations;
+
+        private volatile bool hasThinClientReadLocations;
+        private volatile bool hasThinClientWriteLocations;
 
         public LocationCache(
             ReadOnlyCollection<string> preferredLocations,
             Uri defaultEndpoint,
             bool enableEndpointDiscovery,
             int connectionLimit,
-            bool useMultipleWriteLocations)
+            bool useMultipleWriteLocations,
+            Func<bool> isPartitionLevelFailoverEnabled = null)
         {
             this.locationInfo = new DatabaseAccountLocationsInfo(preferredLocations, defaultEndpoint);
             this.defaultEndpoint = defaultEndpoint;
             this.enableEndpointDiscovery = enableEndpointDiscovery;
             this.useMultipleWriteLocations = useMultipleWriteLocations;
             this.connectionLimit = connectionLimit;
+            this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
 
             this.lockObject = new object();
             this.locationUnavailablityInfoByEndpoint = new ConcurrentDictionary<Uri, LocationUnavailabilityInfo>();
@@ -164,24 +170,24 @@ namespace Microsoft.Azure.Cosmos.Routing
         public ReadOnlyCollection<string> EffectivePreferredLocations => this.locationInfo.EffectivePreferredLocations;
 
         /// <summary>
-        /// Returns the location corresponding to the endpoint if location specific endpoint is provided.
-        /// For the defaultEndPoint, we will return the first available write location.
-        /// Returns null, in other cases.
+        /// Returns the region name corresponding to the given endpoint.
+        /// - If the endpoint matches a known write or read regional endpoint, returns that region name.
+        /// - If the endpoint is the account's default (global) endpoint and at least one write
+        ///   location is known, returns the first entry of the available write locations list.
+        ///   This applies to both single-master and multi-master accounts. Note that for multi-master
+        ///   accounts the first write location is simply the first region in the configured list,
+        ///   not necessarily the hub/primary write region.
+        /// - Otherwise, returns null.
         /// </summary>
-        /// <remarks>
-        /// Today we return null for defaultEndPoint if multiple write locations can be used.
-        /// This needs to be modifed to figure out proper location in such case.
-        /// </remarks>
         public string GetLocation(Uri endpoint)
         {
             string location = this.locationInfo.AvailableWriteEndpointByLocation.FirstOrDefault(uri => uri.Value == endpoint).Key ?? this.locationInfo.AvailableReadEndpointByLocation.FirstOrDefault(uri => uri.Value == endpoint).Key;
 
-            if (location == null && endpoint == this.defaultEndpoint && !this.CanUseMultipleWriteLocations())
+            if (location == null
+                && endpoint == this.defaultEndpoint
+                && this.locationInfo.AvailableWriteLocations.Count > 0)
             {
-                if (this.locationInfo.AvailableWriteEndpointByLocation.Any())
-                {
-                    return this.locationInfo.AvailableWriteEndpointByLocation.First().Key;
-                }
+                return this.locationInfo.AvailableWriteLocations[0];
             }
 
             return location;
@@ -189,7 +195,8 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         /// <summary>
         /// Set region name for a location if present in the locationcache otherwise set region name as null.
-        /// If endpoint's hostname is same as default endpoint hostname, set regionName as null.
+        /// For multi-master accounts, if endpoint's hostname is same as default endpoint hostname,
+        /// set regionName to the first available write region.
         /// </summary>
         /// <param name="endpoint"></param>
         /// <param name="regionName"></param>
@@ -203,12 +210,17 @@ namespace Microsoft.Azure.Cosmos.Routing
                     UriFormat.SafeUnescaped, 
                     StringComparison.OrdinalIgnoreCase) == 0)
             {
-                regionName = null;
-                return false;
+                // Use account-level enableMultipleWriteLocations (not CanUseMultipleWriteLocations which also
+                // requires client opt-in) because diagnostics should resolve the region regardless of whether
+                // the client uses multi-write. The default endpoint routes to the first write region server-side.
+                regionName = this.enableMultipleWriteLocations
+                    ? this.GetLocation(this.defaultEndpoint)
+                    : null;
+                return regionName != null;
             }
 
             regionName = this.GetLocation(endpoint);
-            return true;
+            return regionName != null;
         }
 
         /// <summary>
@@ -233,14 +245,27 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <param name="databaseAccount">Read DatabaseAccoaunt </param>
         public void OnDatabaseAccountRead(AccountProperties databaseAccount)
         {
-            this.UpdateLocationCache(
-                databaseAccount.WritableRegions,
-                databaseAccount.ReadableRegions,
-                thinClientWriteLocations: databaseAccount.ThinClientWritableLocationsInternal,
-                thinClientReadLocations: databaseAccount.ThinClientReadableLocationsInternal,
-                preferenceList: null,
-                enableMultipleWriteLocations: databaseAccount.EnableMultipleWriteLocations);
+            lock (this.lockObject)
+            {
+                // Refresh the per-direction thin-client availability signals on every account read
+                // so dispatch falls back to gateway mode on the next request when the service stops
+                // advertising thin-client endpoints.
+                this.hasThinClientReadLocations = databaseAccount.ThinClientReadableLocationsInternal?.Count > 0;
+                this.hasThinClientWriteLocations = databaseAccount.ThinClientWritableLocationsInternal?.Count > 0;
+
+                this.UpdateLocationCache(
+                    databaseAccount.WritableRegions,
+                    databaseAccount.ReadableRegions,
+                    thinClientWriteLocations: databaseAccount.ThinClientWritableLocationsInternal,
+                    thinClientReadLocations: databaseAccount.ThinClientReadableLocationsInternal,
+                    preferenceList: null,
+                    enableMultipleWriteLocations: databaseAccount.EnableMultipleWriteLocations);
+            }
         }
+
+        public bool HasThinClientReadLocations => this.hasThinClientReadLocations;
+
+        public bool HasThinClientWriteLocations => this.hasThinClientWriteLocations;
 
         /// <summary>
         /// Invoked when <see cref="ConnectionPolicy.PreferredLocations"/> changes
@@ -380,10 +405,18 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             ReadOnlyCollection<string> effectivePreferredLocations = databaseAccountLocationsInfoSnapshot.EffectivePreferredLocations;
 
+            // For reads when PPAF is enabled, use WriteEndpoints[0] as fallback (dynamic,
+            // tracks current write region) instead of this.defaultEndpoint (static, region-agnostic,
+            // never updated after init). This aligns with UpdateLocationCache which already uses
+            // WriteEndpoints[0] as the ReadEndpoints fallback, and matches Java/Python SDK behavior.
+            Uri fallbackEndpoint = (isReadRequest && this.isPartitionLevelFailoverEnabled?.Invoke() == true)
+                ? databaseAccountLocationsInfoSnapshot.WriteEndpoints[0]
+                : this.defaultEndpoint;
+
             return GetApplicableEndpoints(
-                isReadRequest ? this.locationInfo.AvailableReadEndpointByLocation : this.locationInfo.AvailableWriteEndpointByLocation,
+                isReadRequest ? databaseAccountLocationsInfoSnapshot.AvailableReadEndpointByLocation : databaseAccountLocationsInfoSnapshot.AvailableWriteEndpointByLocation,
                 effectivePreferredLocations,
-                this.defaultEndpoint,
+                fallbackEndpoint,
                 request.RequestContext.ExcludeRegions);
         }
 
@@ -937,16 +970,99 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return request.RequestContext.LocationEndpointToRoute;
             }
 
-            DatabaseAccountLocationsInfo snapshot = this.locationInfo;
-            ReadOnlyCollection<Uri> endpoints = isReadRequest
-                ? snapshot.ThinClientReadEndpoints
-                : snapshot.ThinClientWriteEndpoints;
-
-            int locationIndex = request.RequestContext.LocationIndexToRoute.GetValueOrDefault(0);
-            Uri chosenEndpoint = endpoints[locationIndex % endpoints.Count];
+            Uri chosenEndpoint = this.GetThinClientEndpointCandidate(request, isReadRequest);
 
             request.RequestContext.RouteToLocation(chosenEndpoint);
             return chosenEndpoint;
+        }
+
+        /// <summary>
+        /// Computes the thin client regional endpoint that would be chosen for <paramref name="request"/>
+        /// <b>without</b> pinning it onto the request context, so the routing layer can evaluate the candidate
+        /// region's probe health before deciding whether to pin the thin client endpoint or fall back to gateway.
+        /// </summary>
+        internal Uri GetThinClientEndpointCandidate(DocumentServiceRequest request, bool isReadRequest)
+        {
+            if (request.RequestContext != null && request.RequestContext.LocationEndpointToRoute != null)
+            {
+                return request.RequestContext.LocationEndpointToRoute;
+            }
+
+            DatabaseAccountLocationsInfo snapshot = this.locationInfo;
+            ReadOnlyCollection<Uri> endpoints = this.GetApplicableThinClientEndpoints(request, isReadRequest, snapshot);
+
+            int locationIndex = request.RequestContext.LocationIndexToRoute.GetValueOrDefault(0);
+            return endpoints[locationIndex % endpoints.Count];
+        }
+
+        /// <summary>
+        /// Resolves the applicable thin client endpoints for a request, honoring per-request
+        /// <see cref="DocumentServiceRequestContext.ExcludeRegions"/>. Uses the same preferred-
+        /// location filter as the gateway path in <see cref="GetApplicableEndpoints(DocumentServiceRequest, bool)"/>,
+        /// differing only in which fallback endpoint is selected.
+        /// </summary>
+        /// <remarks>
+        /// When all preferred regions are excluded, this method always falls back to the first
+        /// thin client write endpoint (<c>snapshot.ThinClientWriteEndpoints[0]</c>) for both reads
+        /// and writes. This deliberately diverges from the gateway path's fallback selection
+        /// (which uses <see cref="defaultEndpoint"/>, or <c>WriteEndpoints[0]</c> under PPAF for
+        /// reads) because <see cref="defaultEndpoint"/> resolves to the gateway port (443) and
+        /// would break thin client port semantics if used here.
+        /// </remarks>
+        private ReadOnlyCollection<Uri> GetApplicableThinClientEndpoints(
+            DocumentServiceRequest request,
+            bool isReadRequest,
+            DatabaseAccountLocationsInfo snapshot)
+        {
+            IReadOnlyList<string> excludeRegions = request.RequestContext?.ExcludeRegions;
+            if (excludeRegions == null || excludeRegions.Count == 0)
+            {
+                return isReadRequest ? snapshot.ThinClientReadEndpoints : snapshot.ThinClientWriteEndpoints;
+            }
+
+            Uri fallbackEndpoint = snapshot.ThinClientWriteEndpoints[0];
+
+            return GetApplicableEndpoints(
+                isReadRequest ? snapshot.ThinClientReadEndpointByLocation : snapshot.ThinClientWriteEndpointByLocation,
+                snapshot.EffectivePreferredLocations,
+                fallbackEndpoint,
+                excludeRegions);
+        }
+
+        /// <summary>
+        /// Returns the set of thin client regional endpoints (read and write) from the most recent
+        /// topology refresh, used by the connectivity probe. 
+        /// </summary>
+        internal HashSet<Uri> GetThinClientRegionalEndpoints()
+        {
+            DatabaseAccountLocationsInfo snapshot = this.locationInfo;
+            HashSet<Uri> endpoints = new HashSet<Uri>();
+
+            LocationCache.CollectThinClientEndpointsBestEffort(
+                snapshot.ThinClientReadLocations, snapshot.ThinClientReadEndpointByLocation, endpoints);
+            LocationCache.CollectThinClientEndpointsBestEffort(
+                snapshot.ThinClientWriteLocations, snapshot.ThinClientWriteEndpointByLocation, endpoints);
+
+            return endpoints;
+        }
+
+        private static void CollectThinClientEndpointsBestEffort(
+            ReadOnlyCollection<string> regions,
+            ReadOnlyDictionary<string, Uri> thinClientEndpointByLocation,
+            HashSet<Uri> sink)
+        {
+            if (regions == null || regions.Count == 0 || thinClientEndpointByLocation == null)
+            {
+                return;
+            }
+
+            foreach (string region in regions)
+            {
+                if (thinClientEndpointByLocation.TryGetValue(region, out Uri endpoint) && endpoint != null)
+                {
+                    sink.Add(endpoint);
+                }
+            }
         }
 
         private void SetServicePointConnectionLimit(Uri endpoint)

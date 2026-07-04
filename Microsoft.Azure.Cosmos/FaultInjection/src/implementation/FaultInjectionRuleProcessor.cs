@@ -328,12 +328,12 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
         private bool CanLimitToPartition(FaultInjectionCondition faultInjectionCondition)
         {
-            // Some operations can be targeted for a certain partition while some can not (for example metadata requests)
-            //TODO: Implement metadata operations
             if (faultInjectionCondition == null)
             {
+                return true;
             }
-            return true;
+
+            return !faultInjectionCondition.IsMetadataOperationType();
         }
 
         private OperationType GetEffectiveOperationType(FaultInjectionOperationType faultInjectionOperationType)

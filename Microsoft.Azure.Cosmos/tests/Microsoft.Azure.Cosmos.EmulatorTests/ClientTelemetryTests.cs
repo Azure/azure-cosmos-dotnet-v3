@@ -18,7 +18,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     /// If you are making changes in this file please make sure you are adding similar test in <see cref="ClientTelemetryReleaseTests"/> also.
     /// </summary>
     [TestClass]
-    [TestCategory("Flaky")]
     [TestCategory("ClientTelemetryEmulator")]
     public class ClientTelemetryTests : ClientTelemetryTestsBase
     {
@@ -77,6 +76,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Timeout(300000)]
         [DataRow(ConnectionMode.Direct, true)]
         [DataRow(ConnectionMode.Gateway, true)]
         [DataRow(ConnectionMode.Direct, false)]
@@ -87,6 +87,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Timeout(300000)]
         [DataRow(ConnectionMode.Direct)]
         [DataRow(ConnectionMode.Gateway)]
         public override async Task PointReadFailureOperationsTest(ConnectionMode mode)
@@ -95,6 +96,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Timeout(300000)]
         [DataRow(ConnectionMode.Direct)]
         [DataRow(ConnectionMode.Gateway)]
         public override async Task StreamReadFailureOperationsTest(ConnectionMode mode)
@@ -103,6 +105,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Timeout(300000)]
         [DataRow(ConnectionMode.Direct)]
         [DataRow(ConnectionMode.Gateway)]
         public override async Task StreamOperationsTest(ConnectionMode mode)
@@ -111,6 +114,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Timeout(300000)]
         [DataRow(ConnectionMode.Direct)]
         [DataRow(ConnectionMode.Gateway)]
         public override async Task BatchOperationsTest(ConnectionMode mode)
@@ -119,6 +123,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Timeout(300000)]
         [DataRow(ConnectionMode.Direct)]
         [DataRow(ConnectionMode.Gateway)]
         public override async Task SingleOperationMultipleTimesTest(ConnectionMode mode)
@@ -127,6 +132,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Timeout(300000)]
         [DataRow(ConnectionMode.Direct)]
         [DataRow(ConnectionMode.Gateway)]
         public override async Task QueryOperationSinglePartitionTest(ConnectionMode mode)
@@ -135,6 +141,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Timeout(300000)]
         [DataRow(ConnectionMode.Direct)]
         [DataRow(ConnectionMode.Gateway)]
         public override async Task QueryMultiPageSinglePartitionOperationTest(ConnectionMode mode)
@@ -143,6 +150,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Timeout(300000)]
         [DataRow(ConnectionMode.Direct)]
         [DataRow(ConnectionMode.Gateway)]
         public override async Task QueryOperationCrossPartitionTest(ConnectionMode mode)
@@ -151,6 +159,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Timeout(300000)]
         [DataRow(ConnectionMode.Direct)]
         [DataRow(ConnectionMode.Gateway)]
         public override async Task QueryOperationMutiplePageCrossPartitionTest(ConnectionMode mode)
@@ -159,6 +168,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Timeout(300000)]
         [DataRow(ConnectionMode.Direct)]
         [DataRow(ConnectionMode.Gateway)]
         public override async Task QueryOperationInvalidContinuationTokenTest(ConnectionMode mode)
@@ -167,6 +177,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Timeout(300000)]
         [DataRow(ConnectionMode.Direct)]
         public override async Task CreateItemWithSubStatusCodeTest(ConnectionMode mode)
         {

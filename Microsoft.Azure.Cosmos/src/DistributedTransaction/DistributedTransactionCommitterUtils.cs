@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             IEnumerable<IGrouping<string, DistributedTransactionOperation>> groupedOperations = operations
-                .GroupBy(op => $"/dbs/{op.Database}/colls/{op.Container}");
+                .GroupBy(op => DistributedTransactionConstants.GetCollectionFullName(op.Database, op.Container));
 
             foreach (IGrouping<string, DistributedTransactionOperation> group in groupedOperations)
             {

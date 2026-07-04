@@ -157,6 +157,11 @@ namespace Microsoft.Azure.Cosmos
 
                     HedgingResponse hedgeResponse = null;
 
+                    // Inject a shared CrossRegionAvailabilityContext into Properties before the clone loop.
+                    // RequestMessage.Clone() shallow-copies Properties, so all hedged clones share the same
+                    // context instance — enabling hub region header propagation across hedged requests.
+                    request.Properties[CrossRegionAvailabilityContext.PropertyKey] = new CrossRegionAvailabilityContext();
+
                     //Send out hedged requests
                     for (int requestNumber = 0; requestNumber < hedgeRegions.Count; requestNumber++)
                     {
@@ -222,14 +227,19 @@ namespace Microsoft.Azure.Cosmos
                                     ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
                                         HedgeConfig,
                                         this.HedgeConfigText);
-                                    //Take is not inclusive, so we need to add 1 to the request number which starts at 0
-                                    ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
-                                        HedgeContext,
-                                        hedgeRegions.Take(requestNumber + 1));
-                                    // Note that the target region can be seperate than the actual region that serviced the request depending on the scenario
-                                    ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
-                                        ResponseRegion,
-                                        hedgeResponse.TargetRegionName);
+
+                                    if (requestNumber > 0)
+                                    {
+                                        //Take is not inclusive, so we need to add 1 to the request number which starts at 0
+                                        ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
+                                            HedgeContext,
+                                            hedgeRegions.Take(requestNumber + 1));
+                                        // Note that the target region can be seperate than the actual region that serviced the request depending on the scenario
+                                        ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
+                                            ResponseRegion,
+                                            hedgeResponse.TargetRegionName);
+                                    }
+
                                     return hedgeResponse.ResponseMessage;
                                 }
                             }
@@ -274,7 +284,11 @@ namespace Microsoft.Azure.Cosmos
 
                     if (lastException != null)
                     {
-                        throw lastException;
+                        // Use ExceptionDispatchInfo to preserve the original throwing-frame stack
+                        // trace. `throw lastException;` would reset the StackTrace property to the
+                        // current frame, which defeats the throw-vs-throw-ex preservation work in
+                        // CloneAndSendAsync / RequestSenderAndResultCheckAsync.
+                        System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(lastException).Throw();
                     }
 
                     if (hedgeResponse == null)
@@ -315,14 +329,41 @@ namespace Microsoft.Azure.Cosmos
                     List<string> excludeRegions = new List<string>(hedgeRegions);
                     excludeRegions.RemoveAt(requestNumber);
                     clonedRequest.RequestOptions.ExcludeRegions = excludeRegions;
+
+                    // Hedging-Detection API: this code path is only reached AFTER the
+                    // previous loop iteration's threshold delay elapsed without primary-wins
+                    // cancellation. Tag the upcoming dispatch as Hedging so the downstream
+                    // dispatch site records it with the correct reason. If this method
+                    // is never invoked for a given requestNumber (e.g., primary wins under
+                    // the threshold), no phantom Hedging entry is produced — see AC2/AC13
+                    // and design doc §12 "no phantom entries".
+                    clonedRequest.Properties[HedgingDetectionState.DispatchReasonPropertyKey] =
+                        RequestedRegionReason.Hedging;
                 }
 
-                return await this.RequestSenderAndResultCheckAsync(
-                    sender,
-                    clonedRequest,
-                    hedgeRegions.ElementAt(requestNumber),
-                    hedgeRequestsCancellationTokenSource, 
-                    trace);
+                try
+                {
+                    return await this.RequestSenderAndResultCheckAsync(
+                        sender,
+                        clonedRequest,
+                        hedgeRegions.ElementAt(requestNumber),
+                        hedgeRequestsCancellationTokenSource,
+                        trace);
+                }
+                catch
+                {
+                    // .NET Framework workaround: when an exception is thrown deep in the request
+                    // pipeline (e.g. CosmosOperationCanceledException raised after the hedge CTS is
+                    // signalled), it propagates synchronously back through every awaiting async
+                    // method. On .NET Framework 4.7.2 each awaiter consumes ~10KB of stack on the
+                    // exception path, which can blow the managed stack when the request pipeline
+                    // is deep. Yielding here forces the rethrow to resume on a fresh stack via the
+                    // threadpool, breaking the synchronous propagation chain. This is a no-op on
+                    // .NET Core / .NET 5+ (which already optimize this) beyond a single threadpool
+                    // dispatch. See https://github.com/dotnet/runtime for the underlying issue.
+                    await Task.Yield();
+                    throw;
+                }
             }
         }
 
@@ -359,7 +400,7 @@ namespace Microsoft.Azure.Cosmos
             catch (Exception ex)
             {
                 DefaultTrace.TraceError("Exception thrown while executing cross region hedging availability strategy: {0}", ex.Message);
-                throw ex;
+                throw;
             }
         }
 
@@ -401,5 +442,25 @@ namespace Microsoft.Azure.Cosmos
                 this.TargetRegionName = targetRegionName;
             }
         }
+    }
+
+    /// <summary>
+    /// Mutable, thread-safe context shared across hedged request clones via the Properties dictionary.
+    /// When the primary request's ClientRetryPolicy sets the hub region flag after 2x 404/1002,
+    /// hedged requests (with their own ClientRetryPolicy instances) pick up the flag immediately.
+    /// </summary>
+    internal sealed class CrossRegionAvailabilityContext
+    {
+        /// <summary>
+        /// Well-known key used to store/retrieve this context from Properties dictionary.
+        /// </summary>
+        internal const string PropertyKey = "CrossRegionAvailabilityContext";
+
+        /// <summary>
+        /// Thread-safe flag indicating that the hub region processing header should be added.
+        /// Written by the primary request's ClientRetryPolicy after 2x 404/1002,
+        /// read by hedged request ClientRetryPolicy instances in OnBeforeSendRequest.
+        /// </summary>
+        internal volatile bool ShouldAddHubRegionProcessingOnlyHeader;
     }
 }

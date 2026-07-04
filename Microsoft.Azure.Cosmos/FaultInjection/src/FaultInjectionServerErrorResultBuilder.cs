@@ -52,13 +52,17 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <returns>The current <see cref="FaultInjectionServerErrorResultBuilder"/>.</returns>
         public FaultInjectionServerErrorResultBuilder WithDelay(TimeSpan delay)
         {
-            if ( this.serverErrorType == FaultInjectionServerErrorType.SendDelay
-                || this.serverErrorType == FaultInjectionServerErrorType.ResponseDelay 
-                || this.serverErrorType == FaultInjectionServerErrorType.ConnectionDelay)
+            if (this.serverErrorType != FaultInjectionServerErrorType.SendDelay
+                && this.serverErrorType != FaultInjectionServerErrorType.ResponseDelay 
+                && this.serverErrorType != FaultInjectionServerErrorType.ConnectionDelay)
             {
-                this.delay = delay;
-                this.isDelaySet = true;
+                throw new InvalidOperationException(
+                    $"Delay is not applicable for server error type '{this.serverErrorType}'. " +
+                    $"Delay can only be set for SendDelay, ResponseDelay, or ConnectionDelay.");
             }
+
+            this.delay = delay;
+            this.isDelaySet = true;
             return this;
         }
 

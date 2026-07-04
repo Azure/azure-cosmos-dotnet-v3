@@ -1,15 +1,15 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<PropertyGroup>
-		<ClientOfficialVersion>3.57.0</ClientOfficialVersion>
-		<ClientPreviewVersion>3.58.0</ClientPreviewVersion>
+		<ClientOfficialVersion>3.61.0</ClientOfficialVersion>
+		<ClientPreviewVersion>3.62.0</ClientPreviewVersion>
 		<ClientPreviewSuffixVersion>preview.0</ClientPreviewSuffixVersion>
-		<DirectVersion>3.42.2</DirectVersion>
+		<DirectVersion>3.43.2</DirectVersion>
 		<FaultInjectionVersion>1.0.0</FaultInjectionVersion>
-		<FaultInjectionSuffixVersion>beta.0</FaultInjectionSuffixVersion>
+		<FaultInjectionSuffixVersion>beta.1</FaultInjectionSuffixVersion>
 		<EncryptionOfficialVersion>2.0.5</EncryptionOfficialVersion>
 		<EncryptionPreviewVersion>2.1.0</EncryptionPreviewVersion>
 		<EncryptionPreviewSuffixVersion>preview5</EncryptionPreviewSuffixVersion>
-		<CustomEncryptionVersion>1.0.0-preview08</CustomEncryptionVersion>
+		<CustomEncryptionVersion>1.0.0-preview09</CustomEncryptionVersion>
 		<HybridRowVersion>1.1.0-preview3</HybridRowVersion>
 		<LangVersion>10.0</LangVersion>
 		<AboveDirBuildProps>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</AboveDirBuildProps>

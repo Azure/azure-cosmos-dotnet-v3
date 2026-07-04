@@ -57,6 +57,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         [TestMethod]
         [TestCategory("Flaky")]
+        [Timeout(120000)]
         public async Task RetryTransientIssuesTestAsync()
         {
             using CancellationTokenSource cancellationTokenSource1 = new CancellationTokenSource();
@@ -68,15 +69,15 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 {HttpTimeoutPolicyControlPlaneRead.Instance,  new List<TimeSpan>()
                 {
-                    TimeSpan.FromSeconds(5.1),
-                    TimeSpan.FromSeconds(10.1),
-                    TimeSpan.FromSeconds(20.1)
+                    TimeSpan.FromSeconds(6),
+                    TimeSpan.FromSeconds(11),
+                    TimeSpan.FromSeconds(21)
                 }},
                 {HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,  new List<TimeSpan>()
                 {
-                    TimeSpan.FromSeconds(.6),
-                    TimeSpan.FromSeconds(5.1),
-                    TimeSpan.FromSeconds(65.1)
+                    TimeSpan.FromSeconds(2),
+                    TimeSpan.FromSeconds(6),
+                    TimeSpan.FromSeconds(66)
                 }},
             };
 
@@ -388,6 +389,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         [TestMethod]
         [TestCategory("Flaky")]
+        [Timeout(120000)]
         public async Task RetryTransientIssuesForQueryPlanTestAsync()
         {
             DocumentServiceRequest documentServiceRequest = DocumentServiceRequest.Create(
@@ -411,7 +413,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 if (count <= 2)
                 {
                     Assert.IsFalse(cancellationToken.IsCancellationRequested);
-                    await Task.Delay(retry.Current.requestTimeout + TimeSpan.FromSeconds(.1));
+                    await Task.Delay(retry.Current.requestTimeout + TimeSpan.FromSeconds(1));
                     cancellationToken.ThrowIfCancellationRequested();
                     Assert.Fail("Cancellation token should be canceled");
                 }
@@ -464,6 +466,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(gatewayLimit, socketsHandler.MaxConnectionsPerServer);
             Assert.IsTrue(socketsHandler.EnableMultipleHttp2Connections, "EnableMultipleHttp2Connections should be true for HTTP/2 thin client support");
 
+            // HTTP/2 PING keep-alive: detects broken connections lingering in the pool
+            Assert.AreEqual(TimeSpan.FromSeconds(1), socketsHandler.KeepAlivePingDelay, "KeepAlivePingDelay should be 1 second for HTTP/2 connection health monitoring");
+            Assert.AreEqual(TimeSpan.FromSeconds(2), socketsHandler.KeepAlivePingTimeout, "KeepAlivePingTimeout should be 2 seconds");
+            Assert.AreEqual(HttpKeepAlivePingPolicy.Always, socketsHandler.KeepAlivePingPolicy, "KeepAlivePingPolicy should be Always to detect broken idle connections");
+
             //Create cert for test
             X509Certificate2 x509Certificate2 = new CertificateRequest("cn=www.test", ECDsa.Create(), HashAlgorithmName.SHA256).CreateSelfSigned(DateTime.Now, DateTime.Now.AddYears(1));
             X509Chain x509Chain = new X509Chain();
@@ -491,6 +498,46 @@ namespace Microsoft.Azure.Cosmos.Tests
             X509Chain x509Chain = new X509Chain();
             SslPolicyErrors sslPolicyErrors = new SslPolicyErrors();
             Assert.IsFalse(clientHandler.ServerCertificateCustomValidationCallback.Invoke(new HttpRequestMessage(), x509Certificate2, x509Chain, sslPolicyErrors));
+        }
+
+        [TestMethod]
+        public void CreateSocketsHttpHandlerRespectsEnvironmentVariableOverrides()
+        {
+            int customPingDelay = 60;
+            int customPingTimeout = 10;
+
+            try
+            {
+                Environment.SetEnvironmentVariable(
+                    ConfigurationManager.Http2KeepAlivePingDelayInSeconds,
+                    customPingDelay.ToString());
+                Environment.SetEnvironmentVariable(
+                    ConfigurationManager.Http2KeepAlivePingTimeoutInSeconds,
+                    customPingTimeout.ToString());
+
+                HttpMessageHandler handler = CosmosHttpClientCore.CreateSocketsHttpHandlerHelper(
+                    gatewayModeMaxConnectionLimit: 10,
+                    webProxy: null,
+                    serverCertificateCustomValidationCallback: null);
+
+                SocketsHttpHandler socketsHandler = (SocketsHttpHandler)handler;
+
+                Assert.AreEqual(TimeSpan.FromSeconds(customPingDelay), socketsHandler.KeepAlivePingDelay,
+                    "KeepAlivePingDelay should respect environment variable override");
+                Assert.AreEqual(TimeSpan.FromSeconds(customPingTimeout), socketsHandler.KeepAlivePingTimeout,
+                    "KeepAlivePingTimeout should respect environment variable override");
+                Assert.AreEqual(HttpKeepAlivePingPolicy.Always, socketsHandler.KeepAlivePingPolicy,
+                    "KeepAlivePingPolicy should always be Always regardless of environment variables");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(
+                    ConfigurationManager.Http2KeepAlivePingDelayInSeconds,
+                    null);
+                Environment.SetEnvironmentVariable(
+                    ConfigurationManager.Http2KeepAlivePingTimeoutInSeconds,
+                    null);
+            }
         }
 
         [TestMethod]
@@ -687,6 +734,70 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
                 count++;
             }
+        }
+
+        [TestMethod]
+        public void HttpTimeoutPolicyForReadDistributedTransaction_ReturnsDefault()
+        {
+            // Regression guard: read DTX has OperationType.Read on the wire (IsReadOnlyRequest==true)
+            // but must not be classified as a metadata read on the control-plane hot path
+            // (1s/5s/65s) because /operations/dtc can legitimately take many seconds. The
+            // DTX short-circuit in HttpTimeoutPolicy.GetTimeoutPolicy must keep this on the
+            // default policy regardless of partition-level failover or thin-client flags.
+            HttpTimeoutPolicy defaultPolicy = HttpTimeoutPolicy.GetTimeoutPolicy(
+                documentServiceRequest: CosmosHttpClientCoreTests.CreateDocumentServiceRequestByOperation(
+                    ResourceType.DistributedTransactionBatch,
+                    OperationType.Read),
+                isPartitionLevelFailoverEnabled: false,
+                isThinClientEnabled: false);
+            Assert.AreSame(HttpTimeoutPolicyDefault.Instance, defaultPolicy);
+
+            HttpTimeoutPolicy partitionFailoverPolicy = HttpTimeoutPolicy.GetTimeoutPolicy(
+                documentServiceRequest: CosmosHttpClientCoreTests.CreateDocumentServiceRequestByOperation(
+                    ResourceType.DistributedTransactionBatch,
+                    OperationType.Read),
+                isPartitionLevelFailoverEnabled: true,
+                isThinClientEnabled: false);
+            Assert.AreSame(HttpTimeoutPolicyDefault.Instance, partitionFailoverPolicy);
+
+            HttpTimeoutPolicy thinClientPolicy = HttpTimeoutPolicy.GetTimeoutPolicy(
+                documentServiceRequest: CosmosHttpClientCoreTests.CreateDocumentServiceRequestByOperation(
+                    ResourceType.DistributedTransactionBatch,
+                    OperationType.Read),
+                isPartitionLevelFailoverEnabled: false,
+                isThinClientEnabled: true);
+            Assert.AreSame(HttpTimeoutPolicyDefault.Instance, thinClientPolicy);
+        }
+
+        [TestMethod]
+        public void HttpTimeoutPolicyForWriteDistributedTransaction_ReturnsDefault()
+        {
+            // Symmetric guard: write DTX (CommitDistributedTransaction) must continue to use the
+            // default policy in every mode. This was the previous behavior (fallthrough on the
+            // non-read, non-data-plane path) and the DTX short-circuit must preserve it.
+            HttpTimeoutPolicy defaultPolicy = HttpTimeoutPolicy.GetTimeoutPolicy(
+                documentServiceRequest: CosmosHttpClientCoreTests.CreateDocumentServiceRequestByOperation(
+                    ResourceType.DistributedTransactionBatch,
+                    OperationType.CommitDistributedTransaction),
+                isPartitionLevelFailoverEnabled: false,
+                isThinClientEnabled: false);
+            Assert.AreSame(HttpTimeoutPolicyDefault.Instance, defaultPolicy);
+
+            HttpTimeoutPolicy partitionFailoverPolicy = HttpTimeoutPolicy.GetTimeoutPolicy(
+                documentServiceRequest: CosmosHttpClientCoreTests.CreateDocumentServiceRequestByOperation(
+                    ResourceType.DistributedTransactionBatch,
+                    OperationType.CommitDistributedTransaction),
+                isPartitionLevelFailoverEnabled: true,
+                isThinClientEnabled: false);
+            Assert.AreSame(HttpTimeoutPolicyDefault.Instance, partitionFailoverPolicy);
+
+            HttpTimeoutPolicy thinClientPolicy = HttpTimeoutPolicy.GetTimeoutPolicy(
+                documentServiceRequest: CosmosHttpClientCoreTests.CreateDocumentServiceRequestByOperation(
+                    ResourceType.DistributedTransactionBatch,
+                    OperationType.CommitDistributedTransaction),
+                isPartitionLevelFailoverEnabled: false,
+                isThinClientEnabled: true);
+            Assert.AreSame(HttpTimeoutPolicyDefault.Instance, thinClientPolicy);
         }
 
         private static DocumentServiceRequest CreateDocumentServiceRequestByOperation(

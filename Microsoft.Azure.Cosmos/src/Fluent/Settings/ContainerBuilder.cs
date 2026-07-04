@@ -78,12 +78,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <param name="retention"> Indicates for how long operation logs have to be retained. <see cref="ChangeFeedPolicy.FullFidelityRetention"/>.</param>
         /// <returns>An instance of <see cref="ChangeFeedPolicyDefinition"/>.</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        ChangeFeedPolicyDefinition WithChangeFeedPolicy(TimeSpan retention)
+        public ChangeFeedPolicyDefinition WithChangeFeedPolicy(TimeSpan retention)
         {
             return new ChangeFeedPolicyDefinition(
                 this,
@@ -148,6 +143,28 @@ namespace Microsoft.Azure.Cosmos.Fluent
                 fullTextPaths,
                 (fullTextPolicy) => this.AddFullTextSearchPolicy(fullTextPolicy));
         }
+
+#if PREVIEW
+        /// <summary>
+        /// Defines the full text policy for this Azure Cosmos container with package and default spec support.
+        /// </summary>
+        /// <param name="package">The package type: "legacy" or "standard".</param>
+        /// <param name="defaultSpec">The default specification for full-text paths.</param>
+        /// <param name="fullTextPaths">List of full text paths to include in the policy definition.</param>
+        /// <returns>An instance of <see cref="FullTextPolicyDefinition"/>.</returns>
+        public FullTextPolicyDefinition WithFullTextPolicy(
+            string package,
+            FullTextDefaultSpec defaultSpec,
+            Collection<FullTextPath> fullTextPaths)
+        {
+            return new FullTextPolicyDefinition(
+                this,
+                package,
+                defaultSpec,
+                fullTextPaths,
+                (fullTextPolicy) => this.AddFullTextSearchPolicy(fullTextPolicy));
+        }
+#endif
 
         /// <summary>
         /// Creates a container with the current fluent definition.
