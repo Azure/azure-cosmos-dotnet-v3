@@ -23,11 +23,6 @@ namespace Microsoft.Azure.Cosmos
     // Marking it as non-sealed in order to unit test it using Moq framework
     internal class GatewayStoreModel : IStoreModelExtension, IDisposable
     {
-        // Total client-side budget for retrying 449 (RetryWith) responses on the gateway path.
-        // Strong consistency gets a larger budget because RetryWith is more likely under contention.
-        private const int DefaultGatewayRetryWithWaitTimeInSeconds = 30;
-        private const int StrongGatewayRetryWithWaitTimeInSeconds = 60;
-
         private static readonly string sessionConsistencyAsString = ConsistencyLevel.Session.ToString();
 
         private readonly DocumentClientEventSource eventSource;
@@ -186,8 +181,8 @@ namespace Microsoft.Azure.Cosmos
         private int GetRetryWithWaitTimeInSeconds()
         {
             return this.defaultConsistencyLevel == ConsistencyLevel.Strong
-                ? GatewayStoreModel.StrongGatewayRetryWithWaitTimeInSeconds
-                : GatewayStoreModel.DefaultGatewayRetryWithWaitTimeInSeconds;
+                ? GatewayRetryWithRetryPolicy.StrongWaitTimeInSeconds
+                : GatewayRetryWithRetryPolicy.DefaultWaitTimeInSeconds;
         }
 
         /// <summary>

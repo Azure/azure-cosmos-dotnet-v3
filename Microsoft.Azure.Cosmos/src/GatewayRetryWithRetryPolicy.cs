@@ -29,7 +29,13 @@ namespace Microsoft.Azure.Cosmos
     /// </remarks>
     internal sealed class GatewayRetryWithRetryPolicy : IRetryPolicy
     {
-        private const int DefaultWaitTimeInSeconds = 30;
+        // Total client-side budget, in seconds, for retrying 449 (RetryWith) responses on the gateway
+        // path. Strong consistency gets a larger budget because RetryWith is more likely under
+        // contention. The store model selects between these based on the account's default consistency
+        // (see GatewayStoreModel.GetRetryWithWaitTimeInSeconds).
+        internal const int DefaultWaitTimeInSeconds = 30;
+        internal const int StrongWaitTimeInSeconds = 60;
+
         private const int MaximumBackoffTimeInMilliseconds = 1000;
         private const int InitialBackoffTimeInMilliseconds = 10;
         private const int BackoffMultiplier = 2;

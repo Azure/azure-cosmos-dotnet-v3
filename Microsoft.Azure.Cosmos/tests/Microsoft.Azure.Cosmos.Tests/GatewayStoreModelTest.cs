@@ -723,7 +723,7 @@ namespace Microsoft.Azure.Cosmos
         public void GatewayStoreModel_IsGatewayRetryWith449Applicable_ExcludesDistributedTransactionRequests()
         {
             using (DocumentServiceRequest distributedTransactionRequest = DocumentServiceRequest.Create(
-                Documents.OperationType.Batch,
+                Documents.OperationType.CommitDistributedTransaction,
                 Documents.ResourceType.DistributedTransactionBatch,
                 AuthorizationTokenType.PrimaryMasterKey))
             {
