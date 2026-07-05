@@ -269,16 +269,45 @@ body. Ops with real failure codes keep their status **and** body.
 
 ## 8. Retry model
 
-Two layers of retry apply:
+Two layers of retry apply, and **which layer owns a retriable response is decided by
+whether that response carries a JSON body.** The coordinator deliberately distinguishes
+a *semantic* failure (a per-op body with `isRetriable`) from an *envelope* failure (an
+empty body): the same status code — e.g. `449` or `429` — is handled very differently
+depending on which shape arrives.
 
-1. **Inner (transport):** the standard `ClientRetryPolicy` handles envelope/network failures
-   (connection, address resolution, region failover) with an empty body.
-2. **Outer (semantic):** `DistributedTransactionCommitter.ExecuteCommitWithRetryAsync` retries
-   when the JSON body sets `isRetriable: true` (e.g., in-progress `408`, coordinator race `449`,
-   throttle `429`). It **reuses the same idempotency token** on every attempt, which is what makes
-   the retries safe.
+1. **Outer (semantic):** `DistributedTransactionCommitter.ExecuteCommitWithRetryAsync`
+   owns every **body-bearing** retriable response — the JSON sets `isRetriable: true`
+   (in-progress `408`, coordinator race `449`, throttle `429`). It **reuses the same
+   idempotency token** on every attempt, which is what makes the retries safe.
+2. **Inner (`ClientRetryPolicy`):** owns **bodyless** responses. Beyond the usual
+   transport failures (connection, address resolution, region failover) its DTX
+   classifier (`ShouldRetryDtxRequest`) also owns the empty-body coordinator and
+   infrastructure codes, splitting them across three distinct budgets (below). It
+   defers to the outer loop for any body-bearing coordinator code to avoid
+   inner × outer retry amplification.
 
-The outer loop stops and returns the last response when any of these holds:
+### Retry routing by status code and body
+
+| Envelope | Sub-status | Body? | Owner | Budget |
+|---|---|---|---|---|
+| `408` / `449` | `5352` (`449`) | **yes** | Outer committer loop | 10 attempts / 120 s |
+| `429` | `3200` | **yes** | Outer committer loop | 10 attempts / 120 s |
+| `408` / `449` | `5352` (`449`) | **no** | Inner `RetryDtxWithBudget` (coordinator) | 10 attempts, 1 s (or server `Retry-After`) |
+| `429` | `3200` | **no** | Shared `ResourceThrottleRetryPolicy` | 9 attempts / 30 s, honors `x-ms-retry-after-ms` |
+| `500` | `5411`–`5413` | **no** | Inner `RetryDtxWithBudget` (infra) | 9 attempts, exp backoff 100 ms → 5 s |
+| `452` | `5421` (Aborted) | either | *no inner retry* — terminal to the classifier | — |
+
+> **Why `429`/`3200` splits from `449`/`5352`.** Both are *coordinator-retriable*, but a
+> **bodyless** throttle is intentionally routed away from the DTX budget and into the
+> shared `ResourceThrottleRetryPolicy` — the same policy that governs every other
+> throttled Cosmos request — so DTX throttling honors the account's
+> `MaxRetryAttemptsOnRateLimitedRequests` / `MaxRetryWaitTimeOnRateLimitedRequests`
+> knobs and the server's `x-ms-retry-after-ms` hint. A bodyless `449`/`5352` (or `408`),
+> by contrast, stays on the dedicated coordinator budget. The classifier keys this off
+> the presence of a real response body, so the coordinator must **omit** the body on a
+> throttle it wants the shared policy to absorb (a zero-length body counts as "no body").
+
+**Outer (semantic) loop.** It stops and returns the last response when any of these holds:
 
 * the response is a success status, or its body has `isRetriable: false`;
 * the attempt count reaches `MaxIsRetriableRetryCount` (**10**); or
@@ -290,6 +319,14 @@ bounded exponential — `retryBaseDelay · 2^min(attempt, RetryMaxExponent)` wit
 (`DistributedTransactionRetryHelpers.ComputeBackoff`). With the default 1 s base and
 `RetryMaxExponent = 5` (a ~32 s per-attempt ceiling before jitter), the 120 s cumulative budget is
 normally the binding limit — roughly 7–8 retries — rather than the 10-attempt cap.
+
+**Inner (bodyless) budgets.** A bodyless coordinator code (`408`, or `449`/`5352`) retries
+via `RetryDtxWithBudget` up to `MaxDtxRetryCount` (**10**) attempts, each after the server's
+`Retry-After` if present else a flat **1 s** (`RetryIntervalInMS`). A bodyless infrastructure
+failure (`500` with `5411`–`5413` — ledger / account-config / dispatch) uses a separate,
+tighter budget: `MaxDtxInfraFailureRetryCount` (**9**) attempts with an exponential backoff of
+**100 ms → 5 s** (`ComputeBackoff`, max exponent 6). A bodyless `429`/`3200` is not handled
+by either DTX budget — the classifier returns control to the shared `ResourceThrottleRetryPolicy`.
 
 For **read** transactions the retriable envelope codes are `408` (Phase 2 failure / unconfirmed
 snapshot) and `449` (Phase 1 in-flight exhaustion); `200`/`304`/`207`/`404` are terminal and are
