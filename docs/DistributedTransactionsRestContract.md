@@ -5,10 +5,13 @@ Transaction** (DTC) against the Cosmos DB service. A distributed transaction let
 commit a batch of point operations that span **multiple containers** atomically, coordinated
 server-side by the Distributed Transaction Coordinator (DTC).
 
-**Write** transactions (`CommitDistributedTransaction` / `AbortDistributedTransaction`) and
-**read** transactions (`Read`) share the same endpoint and envelope but use **different**
+**Write** transactions (the SDK issues `CommitDistributedTransaction`) and **read**
+transactions (`Read`) share the same endpoint and envelope but use **different**
 response-code contracts — reads take a consistent multi-container snapshot and can return
 `200`/`304`/`207`/`404`/`449`/`408` (see [§6 — read transactions](#aggregate-status-codes--read-transactions)).
+CosmosClient **never** issues `AbortDistributedTransaction`: abort is decided and driven
+server-side by the coordinator, and the client observes an aborted transaction only as the
+`452` terminal response (§5).
 
 The contract is a single logical HTTP/REST call: the SDK `POST`s a JSON batch of operations to
 an account-level endpoint and receives a JSON document describing the per-operation outcome.
@@ -38,7 +41,7 @@ The service rejects any DTC request whose path is not exactly `/operations/dtc` 
 |---|---|
 | **HTTP method** | `POST` (always) |
 | **Resource type** | `DistributedTransactionBatch` |
-| **Operation type** | Carried in a **header**, not the verb — one of `CommitDistributedTransaction`, `AbortDistributedTransaction`, `Read` |
+| **Operation type** | Carried in a **header**, not the verb. CosmosClient sets `CommitDistributedTransaction` (write) or `Read` (read); it **never** sets `AbortDistributedTransaction` — that operation type is coordinator-only (see §1) |
 | **SDK source** | `DistributedTransactionCommitter.ExecuteCommitAsync` → `ProcessResourceOperationStreamAsync(resourceType: ResourceType.DistributedTransactionBatch, operationType: this.operationType, ...)` |
 
 The SDK always issues the request in **gateway mode** (`RequestMessage.UseGatewayMode = true`);
@@ -165,10 +168,11 @@ Notes:
   **not consumed by the SDK** — the outer-loop retry decision is driven solely by the top-level
   `isRetriable`.
 
-### Aggregate status codes — write transactions (commit / abort)
+### Aggregate status codes — write transactions (commit)
 
-These apply when the operation type is `CommitDistributedTransaction` /
-`AbortDistributedTransaction`.
+These apply when the operation type is `CommitDistributedTransaction` — the only write
+operation type CosmosClient issues. A `452` here is how the client **observes** a
+coordinator-driven abort; the client never issues `AbortDistributedTransaction` itself.
 
 | `statusCode` | Meaning | `isRetriable` |
 |---|---|---|
