@@ -74,13 +74,14 @@ same transaction, which is what makes retries safe.
       "databaseName":         "string",   // required
       "collectionName":       "string",   // required
       "id":                   "string",   // document id
-      "collectionResourceId": "string",   // required — container RID
-      "databaseResourceId":   "string",   // required — database RID
-      "partitionKey":         <json>,     // required — raw JSON value
+      "collectionResourceId": "string",   // emitted when present — container RID
+      "databaseResourceId":   "string",   // emitted when present — database RID
+      "partitionKey":         <json>,     // emitted when present — raw JSON value
       "index":                0,          // required — uint32, the operation's ordinal in the batch
       "resourceBody":         { },        // optional — nested JSON document (writes only)
       "sessionToken":         "string",   // optional
-      "ifMatch":              "string",   // optional — ETag for conditional operations
+      "ifMatch":              "string",   // optional — ETag; If-Match for conditional writes
+      "ifNoneMatch":          "string",   // optional — If-None-Match for conditional operations
       "operationType":        "Create",   // Create | Replace | Delete | Upsert | Patch | Read
       "resourceType":         "Document"
     }
@@ -91,9 +92,13 @@ same transaction, which is what makes retries safe.
 
 Notes:
 * The `operations` array must be **non-empty**.
+* `collectionResourceId`, `databaseResourceId`, and `partitionKey` are emitted only when the SDK
+  has resolved them for the operation; they are omitted otherwise (all three are serialized
+  conditionally by `DistributedTransactionSerializer`).
 * `resourceBody` is emitted only for operations that carry a document payload (writes).
-* The request-side conditional-ETag field is named **`ifMatch`** (contrast with the response,
-  which uses `eTag` — see §6).
+* `ifMatch` and `ifNoneMatch` are both optional and emitted only when the operation specifies the
+  corresponding condition. The request-side conditional-ETag field is named **`ifMatch`** (contrast
+  with the response, which uses `eTag` — see §6).
 
 ## 5. Response headers
 
@@ -152,6 +157,13 @@ Notes:
 * Each per-operation `sessionToken` is captured into the client's `SessionContainer` after a
   successful response (`DistributedTransactionCommitter.MergeSessionTokens`) so subsequent
   session-consistency reads on the affected containers see the latest token.
+* Several top-level fields are **redundant with the HTTP response envelope**: `idempotencyToken`,
+  `statusCode`, `subStatusCode`, and `requestCharge` are also carried in the status line and
+  response headers (§5). The SDK reads these four authoritatively from the **envelope/headers**; it
+  consumes only `isRetriable`, `diagnosticString`, and `operationResponses` from the JSON body.
+* The per-operation `isRetriable` and `localLsn` fields are emitted by the coordinator but are
+  **not consumed by the SDK** — the outer-loop retry decision is driven solely by the top-level
+  `isRetriable`.
 
 ### Aggregate status codes — write transactions (commit / abort)
 
@@ -263,9 +275,21 @@ Two layers of retry apply:
    (connection, address resolution, region failover) with an empty body.
 2. **Outer (semantic):** `DistributedTransactionCommitter.ExecuteCommitWithRetryAsync` retries
    when the JSON body sets `isRetriable: true` (e.g., in-progress `408`, coordinator race `449`,
-   throttle `429`). It retries up to `MaxIsRetriableRetryCount` (10) attempts with exponential
-   backoff, honoring the server's `x-ms-retry-after-ms` hint when larger than the computed delay,
-   and **reuses the same idempotency token** on every attempt.
+   throttle `429`). It **reuses the same idempotency token** on every attempt, which is what makes
+   the retries safe.
+
+The outer loop stops and returns the last response when any of these holds:
+
+* the response is a success status, or its body has `isRetriable: false`;
+* the attempt count reaches `MaxIsRetriableRetryCount` (**10**); or
+* the **cumulative planned delay** would exceed `MaxCumulativeRetryDelay` (**120 s**).
+
+Each backoff delay is `max(serverHint, computedBackoff)`, where `serverHint` is the
+`x-ms-retry-after-ms` header (used only when it exceeds the local delay) and `computedBackoff` is a
+bounded exponential — `retryBaseDelay · 2^min(attempt, RetryMaxExponent)` with **±25 % jitter**
+(`DistributedTransactionRetryHelpers.ComputeBackoff`). With the default 1 s base and
+`RetryMaxExponent = 5` (a ~32 s per-attempt ceiling before jitter), the 120 s cumulative budget is
+normally the binding limit — roughly 7–8 retries — rather than the 10-attempt cap.
 
 For **read** transactions the retriable envelope codes are `408` (Phase 2 failure / unconfirmed
 snapshot) and `449` (Phase 1 in-flight exhaustion); `200`/`304`/`207`/`404` are terminal and are
