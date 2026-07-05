@@ -296,8 +296,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
             using IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> enumerator =
                 HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance.GetTimeoutEnumerator();
-            enumerator.MoveNext();
-            enumerator.MoveNext();
+            Assert.IsTrue(
+                enumerator.MoveNext(),
+                "The control-plane timeout policy must yield a first attempt.");
+            Assert.IsTrue(
+                enumerator.MoveNext(),
+                "This invariant requires the control-plane timeout policy to have at least two attempts (first < threshold < second).");
             TimeSpan secondAttempt = enumerator.Current.requestTimeout;
 
             Assert.IsTrue(

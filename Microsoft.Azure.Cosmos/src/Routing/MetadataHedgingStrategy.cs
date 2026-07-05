@@ -423,16 +423,20 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// Sends a per-branch clone of the request to the given endpoint. Cloning is
         /// required because the primary and hedge run concurrently and route to different
         /// regions — sharing one <see cref="DocumentServiceRequest"/> would let one branch
-        /// overwrite the other's target region.
+        /// overwrite the other's target region. The clone is disposed once its send completes
+        /// so per-request resources (headers, body stream, pooled buffers) are not leaked
+        /// across hedged sends. The returned <see cref="DocumentServiceResponse"/> is
+        /// independent of the request and is disposed separately (by the winner's caller, or
+        /// by <see cref="ObserveInBackground"/> for the loser).
         /// </summary>
-        private static Task<DocumentServiceResponse> SendCloneAsync(
+        private static async Task<DocumentServiceResponse> SendCloneAsync(
             Func<DocumentServiceRequest, Uri, CancellationToken, Task<DocumentServiceResponse>> send,
             DocumentServiceRequest request,
             Uri endpoint,
             CancellationToken cancellationToken)
         {
-            DocumentServiceRequest branchRequest = request.Clone();
-            return send(branchRequest, endpoint, cancellationToken);
+            using DocumentServiceRequest branchRequest = request.Clone();
+            return await send(branchRequest, endpoint, cancellationToken);
         }
 
         /// <summary>
