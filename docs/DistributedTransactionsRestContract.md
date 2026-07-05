@@ -79,7 +79,7 @@ same transaction, which is what makes retries safe.
       "id":                   "string",   // document id
       "collectionResourceId": "string",   // emitted when present — container RID
       "databaseResourceId":   "string",   // emitted when present — database RID
-      "partitionKey":         <json>,     // emitted when present — raw JSON value
+      "partitionKey":         <json>,     // required — raw JSON value, one per operation
       "index":                0,          // required — uint32, the operation's ordinal in the batch
       "resourceBody":         { },        // optional — nested JSON document (writes only)
       "sessionToken":         "string",   // optional
@@ -95,9 +95,13 @@ same transaction, which is what makes retries safe.
 
 Notes:
 * The `operations` array must be **non-empty**.
-* `collectionResourceId`, `databaseResourceId`, and `partitionKey` are emitted only when the SDK
-  has resolved them for the operation; they are omitted otherwise (all three are serialized
-  conditionally by `DistributedTransactionSerializer`).
+* `partitionKey` is **required** and always emitted, one per operation. Every public DTX read/write
+  API takes a non-nullable `PartitionKey`, and the SDK unconditionally derives its JSON form before
+  serialization, so it is present on every user operation. (The null-guard in
+  `DistributedTransactionSerializer` is defensive only.)
+* `collectionResourceId` and `databaseResourceId` are emitted only when the SDK has resolved them for
+  the operation; they are omitted otherwise (both are serialized conditionally by
+  `DistributedTransactionSerializer`).
 * `resourceBody` is emitted only for operations that carry a document payload (writes).
 * `ifMatch` and `ifNoneMatch` are both optional and emitted only when the operation specifies the
   corresponding condition. The request-side conditional-ETag field is named **`ifMatch`** (contrast
