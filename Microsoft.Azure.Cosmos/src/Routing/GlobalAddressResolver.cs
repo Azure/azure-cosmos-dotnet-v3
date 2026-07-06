@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -298,11 +299,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
                 catch (Exception ex)
                 {
-                    DefaultTrace.TraceWarning("Failed to open connection to all the replica addresses for the PkRange: {0}, collectionRid: {1} and originalFailedLocation: {2}, with exception: {3}",
-                        pkRange.Id,
-                        collectionRid,
-                        originalFailedLocation,
-                        ex.Message);
+                    if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Warning))
+                    {
+                        DefaultTrace.TraceWarning("Failed to open connection to all the replica addresses for the PkRange: {0}, collectionRid: {1} and originalFailedLocation: {2}, with exception: {3}",
+                            pkRange.Id,
+                            collectionRid,
+                            originalFailedLocation,
+                            ex.Message);
+                    }
                 }
             }
         }
