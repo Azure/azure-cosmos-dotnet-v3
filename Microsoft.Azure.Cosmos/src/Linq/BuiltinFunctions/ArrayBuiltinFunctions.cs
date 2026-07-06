@@ -60,6 +60,14 @@ namespace Microsoft.Azure.Cosmos.Linq
                     searchList = methodCallExpression.Arguments[0];
                     searchExpression = methodCallExpression.Arguments[1];
                 }
+                // In .NET 10+, enum arrays resolve to MemoryExtensions.Contains(ReadOnlySpan<T>, T, IEqualityComparer<T>)
+                // which has 3 arguments. The third argument (comparer) is ignored for SQL translation.
+                else if (methodCallExpression.Arguments.Count == 3
+                    && methodCallExpression.Method.DeclaringType == typeof(MemoryExtensions))
+                {
+                    searchList = methodCallExpression.Arguments[0];
+                    searchExpression = methodCallExpression.Arguments[1];
+                }
 
                 if (searchList == null || searchExpression == null)
                 {

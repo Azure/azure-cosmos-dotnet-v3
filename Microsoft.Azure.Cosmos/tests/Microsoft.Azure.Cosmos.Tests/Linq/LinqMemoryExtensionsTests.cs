@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
@@ -295,6 +296,52 @@ namespace Microsoft.Azure.Cosmos.Linq
             Assert.IsTrue(sql.Contains("11111111-1111-1111-1111-111111111111"),
                 $"Expected guid1 in SQL: {sql}");
         }
+
+        /// <summary>
+        /// End-to-end: MemoryExtensions.Contains with enum[] produces correct SQL IN clause.
+        /// Regression test for issue #5980.
+        /// On .NET 10, enum arrays resolve to the 3-arg overload:
+        ///   MemoryExtensions.Contains&lt;T&gt;(ReadOnlySpan&lt;T&gt;, T, IEqualityComparer&lt;T&gt;)
+        /// </summary>
+        [TestMethod]
+        public void Translate_MemoryExtensionsContains_EnumArray_ProducesInClause()
+        {
+            MethodInfo opImplicit = GetOpImplicitMethod<TestEnum>();
+            if (opImplicit == null)
+            {
+                Assert.Inconclusive("ReadOnlySpan<TestEnum>.op_Implicit not available on this runtime");
+                return;
+            }
+
+            // .NET 10 emits the 3-arg overload for enums: Contains<T>(ReadOnlySpan<T>, T, IEqualityComparer<T>)
+            MethodInfo containsMethod = typeof(MemoryExtensions)
+                .GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .Where(m => m.Name == "Contains" && m.IsGenericMethod && m.GetParameters().Length == 3)
+                .Select(m => m.MakeGenericMethod(typeof(TestEnum)))
+                .FirstOrDefault(m => m.GetParameters()[0].ParameterType == typeof(ReadOnlySpan<TestEnum>)
+                    && m.GetParameters()[2].ParameterType == typeof(System.Collections.Generic.IEqualityComparer<TestEnum>));
+
+            if (containsMethod == null)
+            {
+                Assert.Inconclusive("MemoryExtensions.Contains(ReadOnlySpan<T>, T, IEqualityComparer<T>) not available on this runtime");
+                return;
+            }
+
+            TestEnum[] testArray = new[] { TestEnum.Active, TestEnum.Pending };
+            ConstantExpression arrayConst = Expression.Constant(testArray);
+            MethodCallExpression spanConversion = Expression.Call(opImplicit, arrayConst);
+            ParameterExpression paramX = Expression.Parameter(typeof(TestEnum), "x");
+            ConstantExpression comparer = Expression.Constant(null, typeof(System.Collections.Generic.IEqualityComparer<TestEnum>));
+
+            MethodCallExpression net10Contains = Expression.Call(containsMethod, spanConversion, paramX, comparer);
+
+            string sql = SqlTranslator.TranslateExpression(net10Contains);
+
+            Assert.IsNotNull(sql);
+            Assert.IsTrue(sql.Contains("IN"), $"Expected IN clause but got: {sql}");
+        }
+
+        private enum TestEnum { Active = 40, Pending = 50 }
 
         /// <summary>
         /// Regression: Enumerable.Contains still produces correct SQL IN clause.
