@@ -44,6 +44,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task TestInitAsync()
         {
             this.connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", null);
+            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "False");
 
             JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions()
             {
@@ -88,6 +89,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 //Do not delete the resources (except MM Write test object), georeplication is slow and we want to reuse the resources
                 this.client?.Dispose();
                 Environment.SetEnvironmentVariable(ConfigurationManager.StalePartitionUnavailabilityRefreshIntervalInSeconds, null);
+                Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, null);
             }
         }
 

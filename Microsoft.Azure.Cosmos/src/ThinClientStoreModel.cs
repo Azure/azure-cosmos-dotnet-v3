@@ -90,6 +90,15 @@ namespace Microsoft.Azure.Cosmos
             }
 
             Uri thinClientEndpoint = this.endpointManager.ResolveThinClientEndpoint(request);
+
+            // Per-region probe gate: route to the proxy only when this request's resolved regional endpoint has
+            // been confirmed healthy. An un-probed or failed region resolves to its gateway endpoint, which fails
+            // this check and transparently falls back to Gateway V1.
+            if (!this.endpointManager.IsProxyEndpointHealthy(thinClientEndpoint))
+            {
+                return await base.DispatchAsync(request, physicalAddress, cancellationToken);
+            }
+
             AccountProperties account = await this.GetDatabaseAccountPropertiesAsync();
 
             return await this.thinClientStoreClient.InvokeAsync(
@@ -140,11 +149,10 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Returns true if the request is currently eligible for thin-client dispatch:
-        /// the operation type is supported AND the service is still advertising thin-client
-        /// endpoints for the request's direction. When either condition is false the dispatch
-        /// falls back to the regular gateway path on the very next request without a client
-        /// restart.
+        /// Returns true if the request is eligible for thin-client dispatch: the operation type is supported AND
+        /// the service is advertising thin-client endpoints for the request's direction. This is the capability +
+        /// topology gate only; per-region probe health is applied separately at dispatch time
+        /// (<see cref="DispatchAsync"/>), so an unhealthy region falls back to the gateway path.
         /// </summary>
         internal static bool IsThinClientRoutable(IGlobalEndpointManager endpointManager, DocumentServiceRequest request)
         {
@@ -155,13 +163,16 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Read-direction variant of <see cref="IsThinClientRoutable"/> for failover walks
-        /// (PPCB / PPAF) that traverse thin-client READ endpoints regardless of the original
-        /// request direction.
+        /// Read-direction variant of <see cref="IsThinClientRoutable"/> for failover walks (PPCB / PPAF) that
+        /// traverse thin-client READ endpoints regardless of the original request direction. Because the walk
+        /// selects the whole read-endpoint list rather than a single endpoint, it requires every read region to
+        /// be probe-healthy (<see cref="IGlobalEndpointManager.AreAllThinClientReadEndpointsHealthy"/>);
+        /// otherwise it routes through the gateway read endpoints.
         /// </summary>
         internal static bool IsThinClientReadRoutable(IGlobalEndpointManager endpointManager, DocumentServiceRequest request)
         {
             return IsOperationSupportedByThinClient(request)
+                && endpointManager.AreAllThinClientReadEndpointsHealthy
                 && endpointManager.HasThinClientReadLocations;
         }
 
