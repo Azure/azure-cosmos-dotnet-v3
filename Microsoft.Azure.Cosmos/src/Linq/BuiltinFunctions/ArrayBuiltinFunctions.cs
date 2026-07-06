@@ -61,10 +61,21 @@ namespace Microsoft.Azure.Cosmos.Linq
                     searchExpression = methodCallExpression.Arguments[1];
                 }
                 // In .NET 10+, enum arrays resolve to MemoryExtensions.Contains(ReadOnlySpan<T>, T, IEqualityComparer<T>)
-                // which has 3 arguments. The third argument (comparer) is ignored for SQL translation.
+                // which has 3 arguments. The compiler passes null for the comparer when using default equality
+                // (e.g., enum arrays). A non-null comparer cannot be honored in SQL translation.
                 else if (methodCallExpression.Arguments.Count == 3
                     && methodCallExpression.Method.DeclaringType == typeof(MemoryExtensions))
                 {
+                    Expression comparerArg = methodCallExpression.Arguments[2];
+                    if (comparerArg is ConstantExpression comparerConstant && comparerConstant.Value != null)
+                    {
+                        throw new DocumentQueryException(
+                            string.Format(
+                                CultureInfo.CurrentCulture,
+                                ClientResources.MethodNotSupported,
+                                methodCallExpression.Method.Name + " with a custom IEqualityComparer"));
+                    }
+
                     searchList = methodCallExpression.Arguments[0];
                     searchExpression = methodCallExpression.Arguments[1];
                 }

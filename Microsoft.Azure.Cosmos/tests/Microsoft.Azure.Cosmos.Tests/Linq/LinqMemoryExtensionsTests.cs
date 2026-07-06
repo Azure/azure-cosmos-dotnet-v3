@@ -384,10 +384,10 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         /// <summary>
         /// Verifies that the 3-arg MemoryExtensions.Contains overload with a non-null comparer
-        /// still produces a correct IN clause (comparer is ignored for SQL translation).
+        /// throws DocumentQueryException since custom comparers cannot be honored in SQL.
         /// </summary>
         [TestMethod]
-        public void Translate_MemoryExtensionsContains_ThreeArgWithComparer_IgnoresComparer()
+        public void Translate_MemoryExtensionsContains_ThreeArgWithComparer_Throws()
         {
             MethodInfo opImplicit = GetOpImplicitMethod<string>();
             if (opImplicit == null)
@@ -413,17 +413,14 @@ namespace Microsoft.Azure.Cosmos.Linq
             ConstantExpression arrayConst = Expression.Constant(testArray);
             MethodCallExpression spanConversion = Expression.Call(opImplicit, arrayConst);
             ParameterExpression paramX = Expression.Parameter(typeof(string), "x");
-            // Non-null comparer — should be ignored
+            // Non-null comparer — should throw since we can't honor it server-side
             ConstantExpression comparer = Expression.Constant(StringComparer.OrdinalIgnoreCase, typeof(IEqualityComparer<string>));
 
             MethodCallExpression net10Contains = Expression.Call(containsMethod, spanConversion, paramX, comparer);
 
-            string sql = SqlTranslator.TranslateExpression(net10Contains);
-
-            Assert.IsNotNull(sql);
-            Assert.IsTrue(sql.Contains("IN"), $"Expected IN clause but got: {sql}");
-            Assert.IsTrue(sql.Contains("\"hello\""), $"Expected 'hello' in SQL: {sql}");
-            Assert.IsTrue(sql.Contains("\"world\""), $"Expected 'world' in SQL: {sql}");
+            Assert.ThrowsException<DocumentQueryException>(
+                () => SqlTranslator.TranslateExpression(net10Contains),
+                "MemoryExtensions.Contains with a non-null IEqualityComparer should throw");
         }
 
         private enum TestEnum { Active = 40, Pending = 50 }
