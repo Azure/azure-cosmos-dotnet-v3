@@ -63,3 +63,19 @@ stages:
         BuildConfiguration: Release
         Arguments: ' '
         VmImage: $(VmImage)
+
+# Live-account AAD (Microsoft Entra ID) integration tests (TestCategory=MultiRegionAad).
+# These target a shared, AAD-only live Cosmos DB account and run ONLY on this nightly schedule --
+# they are intentionally NOT wired into the PR pipeline (azure-pipelines.yml).
+# The job stays skipped (green) until 'AadServiceConnection' below is set to the Azure Resource
+# Manager (Workload Identity Federation) service connection whose identity holds the Cosmos DB
+# data-plane role on the AAD account.
+- stage:
+  displayName: Live-account AAD tests
+  dependsOn: []
+  jobs:
+    - template:  templates/build-test-aad.yml
+      parameters:
+        BuildConfiguration: Release
+        AadAccountEndpoint: 'https://dotnet-v3-multiregion.documents.azure.com:443/'
+        AadServiceConnection: ''
