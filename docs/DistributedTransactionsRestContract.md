@@ -300,6 +300,35 @@ body. Ops with real failure codes keep their status **and** body.
 | `[200, 449]` (in-flight exhaustion) | 200 → `424`; remaining `{449}` → envelope **`449`** (retriable) |
 | `[200, 449]` in **Phase 2**, budget exhausted | envelope **`408`**, empty body (the `449` is not surfaced) |
 
+**Client-side status promotion (`207` is unwrapped, never surfaced raw).** The `207`
+above is an *on-the-wire envelope*. CosmosClient does **not** hand a raw `207` back to
+the caller: when it receives a `207 Multi-Status`, it scans the per-op results and
+**promotes the first per-op result that is neither `424 FailedDependency` nor a success**
+(i.e. the first status `>= 400` that is not `424`), inheriting **both** that op's
+`statusCode` **and** its `subStatusCode` as the response's terminal status. The first
+match wins; the raw `207` is discarded. This mirrors the batch path
+(`TransactionalBatchResponse`).
+
+```
+finalStatus, finalSubStatus = 207, 0
+if envelope == 207:
+    for op in results:                       # in wire order
+        if op.statusCode != 424 and op.statusCode >= 400:
+            finalStatus    = op.statusCode   # e.g. 412, 404, 5xx
+            finalSubStatus = op.subStatusCode
+            break                            # FIRST real error wins
+```
+
+So for the `[200, 404, 200, 412]` example the wire envelope is `207`, but the caller
+observes **`404`** (the first non-`424` error op, in wire order) with that op's
+sub-status — not `207`. Because promotion inherits the per-op sub-status, retry
+classification (§8) runs against the **promoted** op's `statusCode`/`subStatusCode`, not
+against `207` (which is itself non-retriable).
+
+> **Port note (Rust):** the aggregate `207` is purely transport framing. A faithful port
+> must replicate this unwrap — *skip `424`, first op with `statusCode >= 400` wins, inherit
+> its sub-status* — or callers will surface a meaningless `207` instead of the real error.
+
 ## 7. Payload type summary
 
 | Aspect | Value |
