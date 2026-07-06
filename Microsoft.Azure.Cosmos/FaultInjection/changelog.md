@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### <a name="unreleased-faultinjection"/> Unreleased
 
 #### Features Added
+- [#5996](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5996) RetryWith: Adds `RetryWith` (HTTP 449) server error injection support for Gateway mode
 
 #### Breaking Changes
 
