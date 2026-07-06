@@ -228,9 +228,7 @@ coordinator-driven abort; the client never issues `AbortDistributedTransaction` 
 
 Read distributed transactions (`CreateDistributedReadTransaction`, operation type
 `Read`) use a **two-phase snapshot-validation** protocol and a **different** response
-contract from writes. Reworked server-side in
-[CosmosDB PR 2154806](https://msdata.visualstudio.com/CosmosDB/_git/CosmosDB/pullrequest/2154806)
-("[DTC] Rework distributed read transaction response codes").
+contract from writes.
 
 * **Phase 1** reads content + log LSN from each participant.
 * **Phase 2** re-validates the LSNs (LSN-only) to confirm a consistent snapshot across
@@ -265,7 +263,7 @@ The aggregate sub-status is always `0`; per-op sub-statuses travel in the per-op
 
 > **`404` is a failure, not a valid read outcome.** A point read of a missing document
 > fails the entire read transaction with no retries. (Previously `404` was treated as a
-> per-op success; PR 2154806 removed it from the success set, which is now `{200, 304}`.)
+> per-op success; the server later removed it from the success set, which is now `{200, 304}`.)
 
 > **Snapshot consistency / read-your-write:** a read distributed transaction observes a
 > **consistent point-in-time snapshot** whose LSN is chosen at transaction start. On a slow or
