@@ -184,8 +184,7 @@ Notes:
 > `sessionToken` — one that is not the canonical `{pkRangeId}:{lsn}` (validated by colon position) —
 > now causes the merge to **throw**, discarding the whole response (matching the point-operation
 > pattern), instead of being silently skipped. Absent/whitespace tokens, unresolved collection ids,
-> and non-success sub-ops are still skipped best-effort. A Rust port should validate the token shape
-> and fail the response on a malformed token under Session consistency.
+> and non-success sub-ops are still skipped best-effort.
 
 * Several top-level fields are **redundant with the HTTP response envelope**: `idempotencyToken`,
   `statusCode`, `subStatusCode`, and `requestCharge` are also carried in the status line and
@@ -202,8 +201,7 @@ Notes:
 > (a new `HasIndex` flag disambiguates a genuine `0` from a defaulted-missing one); if any index is
 > missing, duplicated, or out of range the payload is uninterpretable and the SDK **fails closed
 > with `500`** — the per-op results are discarded and replaced with uniform error placeholders,
-> while the envelope's `isRetriable`/`diagnosticString` are preserved. A Rust port should apply the
-> same reorder-and-validate step rather than trusting wire order.
+> while the envelope's `isRetriable`/`diagnosticString` are preserved.
 
 ### Aggregate status codes — write transactions (commit)
 
@@ -323,10 +321,6 @@ sub-status — not `207`. Because promotion inherits the per-op sub-status, retr
 classification (§8) runs against the **promoted** op's `statusCode`/`subStatusCode`, not
 against `207` (which is itself non-retriable).
 
-> **Port note (Rust):** the aggregate `207` is purely transport framing. A faithful port
-> must replicate this unwrap — *skip `424`, first op with `statusCode >= 400` wins, inherit
-> its sub-status* — or callers will surface a meaningless `207` instead of the real error.
-
 ## 7. Payload type summary
 
 | Aspect | Value |
@@ -348,7 +342,7 @@ depending on which shape arrives.
    (in-progress `408`, coordinator race `449`, throttle `429`). It **reuses the same
    idempotency token** on every attempt, which is what makes the retries safe.
 2. **Inner (`ClientRetryPolicy`):** owns **bodyless** responses. Beyond the usual
-   transport failures (connection, address resolution, region failover) its DTX
+   transport failures (connection, region failover) its DTX
    classifier (`ShouldRetryDtxRequest`) also owns the empty-body coordinator and
    infrastructure codes, splitting them across three distinct budgets (below). It
    defers to the outer loop for any body-bearing coordinator code to avoid
@@ -403,8 +397,7 @@ by either DTX budget — the classifier returns control to the shared `ResourceT
 > Before this fix a bodyless throttle that arrives as an empty (seekable, `Length == 0`) stream is
 > misclassified as body-bearing and handed to the **outer** commit loop instead of the shared
 > `ResourceThrottleRetryPolicy`, so DTX throttles do not honor the account's rate-limit knobs. A
-> non-seekable stream is conservatively counted as having a body. A Rust port should classify a
-> zero-length DTX response body as bodyless so throttles route to the shared throttling policy.
+> non-seekable stream is conservatively counted as having a body.
 
 ### Why a `408` is retriable for DTX (and how the two 408 shapes are told apart)
 
@@ -438,11 +431,6 @@ versus the transport — it only needs to pick the right retry loop, and it keys
   bare `408` envelope after exhausting its own internal retries (see the write-transaction
   table above). Either way it is handled inline by the **inner** `RetryDtxWithBudget`
   (`MaxDtxRetryCount`), because the idempotency token makes the blind replay safe.
-
-> A Rust port should mirror this: treat a DTX `408` as retriable (the idempotency token is the
-> safety guarantee, not the status code), and route it by body presence — body-bearing to the
-> semantic loop, bodyless to the coordinator-budget loop — rather than trying to classify the
-> `408` by its origin.
 
 For **read** transactions the retriable envelope codes are `408` (Phase 2 failure / unconfirmed
 snapshot) and `449` (Phase 1 in-flight exhaustion); `200`/`304`/`207`/`404` are terminal and are
@@ -481,13 +469,6 @@ vocabulary:
 aggregate sub-status is `0` (which fails the inner `5352` gate), it is body-bearing
 with `isRetriable: true`, so the outer loop retries it. The inner `5352` gate only ever
 fires for the bodyless coordinator-race `449`.
-
-> **Rust port note.** Do **not** reduce `449` handling to a single rule — neither
-> "retry every `449`" nor "retry `449` iff sub-status `5352`" reproduces CosmosClient.
-> Replicate the **body-presence split**: retry a body-bearing `449` on its
-> `isRetriable` flag (sub-status-agnostic), and a bodyless `449` only when its
-> sub-status is `5352`. A port that applies the `5352` gate to a body-bearing read
-> `449`/`Unknown` would wrongly abandon a retriable read.
 
 ---
 
