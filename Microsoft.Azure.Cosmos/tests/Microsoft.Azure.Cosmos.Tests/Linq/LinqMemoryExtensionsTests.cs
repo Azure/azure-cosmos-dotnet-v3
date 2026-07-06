@@ -341,7 +341,94 @@ namespace Microsoft.Azure.Cosmos.Linq
             Assert.IsTrue(sql.Contains("IN"), $"Expected IN clause but got: {sql}");
         }
 
+        /// <summary>
+        /// End-to-end: MemoryExtensions.Contains 3-arg overload with a user-defined struct
+        /// that doesn't implement IEquatable&lt;T&gt;. Verifies the fix handles non-enum types too.
+        /// </summary>
+        [TestMethod]
+        public void Translate_MemoryExtensionsContains_ThreeArgOverload_NonEnumStruct_ProducesInClause()
+        {
+            MethodInfo opImplicit = GetOpImplicitMethod<TestStruct>();
+            if (opImplicit == null)
+            {
+                Assert.Inconclusive("ReadOnlySpan<TestStruct>.op_Implicit not available on this runtime");
+                return;
+            }
+
+            MethodInfo containsMethod = typeof(MemoryExtensions)
+                .GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .Where(m => m.Name == "Contains" && m.IsGenericMethod && m.GetParameters().Length == 3)
+                .Select(m => m.MakeGenericMethod(typeof(TestStruct)))
+                .FirstOrDefault(m => m.GetParameters()[0].ParameterType == typeof(ReadOnlySpan<TestStruct>)
+                    && m.GetParameters()[2].ParameterType == typeof(IEqualityComparer<TestStruct>));
+
+            if (containsMethod == null)
+            {
+                Assert.Inconclusive("MemoryExtensions.Contains(ReadOnlySpan<T>, T, IEqualityComparer<T>) not available on this runtime");
+                return;
+            }
+
+            TestStruct[] testArray = new[] { new TestStruct { Value = 1 }, new TestStruct { Value = 2 } };
+            ConstantExpression arrayConst = Expression.Constant(testArray);
+            MethodCallExpression spanConversion = Expression.Call(opImplicit, arrayConst);
+            ParameterExpression paramX = Expression.Parameter(typeof(TestStruct), "x");
+            ConstantExpression comparer = Expression.Constant(null, typeof(IEqualityComparer<TestStruct>));
+
+            MethodCallExpression net10Contains = Expression.Call(containsMethod, spanConversion, paramX, comparer);
+
+            string sql = SqlTranslator.TranslateExpression(net10Contains);
+
+            Assert.IsNotNull(sql);
+            Assert.IsTrue(sql.Contains("IN"), $"Expected IN clause but got: {sql}");
+        }
+
+        /// <summary>
+        /// Verifies that the 3-arg MemoryExtensions.Contains overload with a non-null comparer
+        /// still produces a correct IN clause (comparer is ignored for SQL translation).
+        /// </summary>
+        [TestMethod]
+        public void Translate_MemoryExtensionsContains_ThreeArgWithComparer_IgnoresComparer()
+        {
+            MethodInfo opImplicit = GetOpImplicitMethod<string>();
+            if (opImplicit == null)
+            {
+                Assert.Inconclusive("ReadOnlySpan<string>.op_Implicit not available on this runtime");
+                return;
+            }
+
+            MethodInfo containsMethod = typeof(MemoryExtensions)
+                .GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .Where(m => m.Name == "Contains" && m.IsGenericMethod && m.GetParameters().Length == 3)
+                .Select(m => m.MakeGenericMethod(typeof(string)))
+                .FirstOrDefault(m => m.GetParameters()[0].ParameterType == typeof(ReadOnlySpan<string>)
+                    && m.GetParameters()[2].ParameterType == typeof(IEqualityComparer<string>));
+
+            if (containsMethod == null)
+            {
+                Assert.Inconclusive("MemoryExtensions.Contains(ReadOnlySpan<T>, T, IEqualityComparer<T>) not available on this runtime");
+                return;
+            }
+
+            string[] testArray = new[] { "hello", "world" };
+            ConstantExpression arrayConst = Expression.Constant(testArray);
+            MethodCallExpression spanConversion = Expression.Call(opImplicit, arrayConst);
+            ParameterExpression paramX = Expression.Parameter(typeof(string), "x");
+            // Non-null comparer — should be ignored
+            ConstantExpression comparer = Expression.Constant(StringComparer.OrdinalIgnoreCase, typeof(IEqualityComparer<string>));
+
+            MethodCallExpression net10Contains = Expression.Call(containsMethod, spanConversion, paramX, comparer);
+
+            string sql = SqlTranslator.TranslateExpression(net10Contains);
+
+            Assert.IsNotNull(sql);
+            Assert.IsTrue(sql.Contains("IN"), $"Expected IN clause but got: {sql}");
+            Assert.IsTrue(sql.Contains("\"hello\""), $"Expected 'hello' in SQL: {sql}");
+            Assert.IsTrue(sql.Contains("\"world\""), $"Expected 'world' in SQL: {sql}");
+        }
+
         private enum TestEnum { Active = 40, Pending = 50 }
+
+        private struct TestStruct { public int Value { get; set; } }
 
         /// <summary>
         /// Regression: Enumerable.Contains still produces correct SQL IN clause.
