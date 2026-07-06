@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
     using System.Collections.ObjectModel;
     using System.IO;
     using System.Net;
+    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
@@ -119,6 +120,51 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                     cancellationToken: default));
 
             Assert.AreEqual(HttpStatusCode.ServiceUnavailable, thrown.StatusCode, "The primary's authoritative 503 must be rethrown.");
+        }
+
+        [TestMethod]
+        [Owner("kundadebdatta")]
+        public async Task PrimaryConnectionFailureHedgeWins()
+        {
+            // A bare HttpRequestException (connection refused / DNS / TLS) to the primary region's
+            // gateway means the region is unreachable -- a regional failure, not a bad request -- so a
+            // good hedge to another region must win. (PR #5999: align with ClientRetryPolicy, which
+            // treats HttpRequestException as an endpoint failure.)
+            MetadataHedgingStrategy strategy = BuildStrategy(multiRegion: true, ppafEnabled: true, optIn: null);
+
+            MetadataHedgingStrategy.MetadataHedgingResult result = await strategy.ExecuteAsync(
+                CreateCollectionReadRequest(),
+                sendToEndpoint: (request, endpoint, ct) => endpoint.Equals(Region1)
+                    ? Task.FromException<DocumentServiceResponse>(new HttpRequestException("Connection refused"))
+                    : Task.FromResult(CreateResponse(HttpStatusCode.OK)),
+                isFirstReadFeedPage: true,
+                cancellationToken: default);
+
+            Assert.IsTrue(result.HedgeFired, "A primary connection failure is regional, so a hedge should fire.");
+            Assert.IsTrue(result.HedgeWon, "The hedge should win over a primary connection failure.");
+            Assert.AreEqual(Region2, result.WinningEndpoint);
+            Assert.AreEqual(HttpStatusCode.OK, result.Response.StatusCode);
+        }
+
+        [TestMethod]
+        [Owner("kundadebdatta")]
+        public async Task PrimaryAndHedgeConnectionFailureRethrowsPrimary()
+        {
+            // Both regions are unreachable (connection failures). Neither branch is a good winner, so
+            // the primary's authoritative connection error is rethrown -- the caller's retry policy then
+            // classifies it exactly as it would have without hedging.
+            MetadataHedgingStrategy strategy = BuildStrategy(multiRegion: true, ppafEnabled: true, optIn: null);
+
+            HttpRequestException thrown = await Assert.ThrowsExceptionAsync<HttpRequestException>(
+                () => strategy.ExecuteAsync(
+                    CreateCollectionReadRequest(),
+                    sendToEndpoint: (request, endpoint, ct) => endpoint.Equals(Region1)
+                        ? Task.FromException<DocumentServiceResponse>(new HttpRequestException("primary refused"))
+                        : Task.FromException<DocumentServiceResponse>(new HttpRequestException("hedge refused")),
+                    isFirstReadFeedPage: true,
+                    cancellationToken: default));
+
+            Assert.AreEqual("primary refused", thrown.Message, "The primary's authoritative connection error must be rethrown.");
         }
 
         [TestMethod]

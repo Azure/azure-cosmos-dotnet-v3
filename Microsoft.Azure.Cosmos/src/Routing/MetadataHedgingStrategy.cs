@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
@@ -384,6 +385,17 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// metadata retry policy agree on what "the region is at fault" means. Auth failures
         /// (401 / plain 403) are NOT regional, so a misconfigured secondary is treated as a losing
         /// hedge rather than a spurious operation result.
+        /// <para>
+        /// A bare <see cref="HttpRequestException"/> (connection refused / DNS / TLS reset reaching the
+        /// gateway) is also treated as regional: it means the region is unreachable, not that the request
+        /// is bad. This mirrors how the data-plane <c>ClientRetryPolicy</c> treats an
+        /// <see cref="HttpRequestException"/> as an endpoint failure, so a hard-down primary region becomes
+        /// hedgeable and a good hedge can win over it. (A timed-out HTTP attempt does not reach here as an
+        /// exception: metadata reads run on the control-plane hot path with <c>ShouldThrow503OnTimeout</c>,
+        /// so a timeout already surfaces as a <c>503</c>. A caller cancellation faults the task as
+        /// <see cref="TaskStatus.Canceled"/>, which the caller classifies as <c>Definitive</c> before this
+        /// method runs.)
+        /// </para>
         /// </summary>
         private static bool IsRegionalFailureException(AggregateException aggregate)
         {
@@ -394,6 +406,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                     return IsRegionalFailure(dce.StatusCode.Value, dce.GetSubStatus());
                 case CosmosException ce:
                     return IsRegionalFailure(ce.StatusCode, (SubStatusCodes)ce.SubStatusCode);
+                case HttpRequestException:
+                    // Connection failure to the region's gateway (refused / DNS / TLS) => region unreachable.
+                    return true;
                 default:
                     return false;
             }

@@ -231,9 +231,12 @@ Worked cases:
 
 Regional-failure classification (503/500, 410+LeaseNotFound, 403+DatabaseAccountNotFound) is
 the SAME status/sub-status set as `MetadataRequestThrottleRetryPolicy`, so metadata hedging and
-the metadata retry policy agree on what "the region is at fault" means. There is no separate
-`MetadataRegionalFailureClassifier` type — the check is a small private static shared by the
-exception and response paths.
+the metadata retry policy agree on what "the region is at fault" means. A bare
+`HttpRequestException` (connection refused / DNS / TLS reaching the gateway) is additionally
+treated as regional (the region is unreachable, not the request bad), mirroring the data-plane
+`ClientRetryPolicy`, so a hard-down primary region is hedgeable and a good hedge can win over it.
+There is no separate `MetadataRegionalFailureClassifier` type; the check is a small private
+static shared by the exception and response paths.
 
 ---
 
