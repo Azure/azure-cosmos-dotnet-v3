@@ -1,0 +1,13 @@
+arm,hedgingOn,scenario,regime,n,hedgeFired,hedgeWon,failures,p50Ms,p95Ms,p99Ms,maxMs
+main(OFF),0,coldstart,single,8,0,0,0,12326.24,12534.34,12534.34,12534.34
+main(OFF),0,refresh,low,30,0,0,0,4034.19,4053.48,4095.57,4095.57
+main(OFF),0,refresh,saturating,48,0,0,0,4035.76,4057.44,4081.65,4081.65
+main(OFF),0,mixed,end-to-end,60,0,0,0,71.51,4027.93,4033.21,4033.21
+main(OFF),0,mixed,refresh-subset,15,0,0,0,3925.42,4033.21,4033.21,4033.21
+main(OFF),0,fastfail,brownout,48,0,0,0,93.69,351.16,408.20,408.20
+PR(ON),1,coldstart,single,8,0,0,0,3615.70,3722.45,3722.45,3722.45
+PR(ON),1,refresh,low,30,30,30,0,1592.60,1603.22,1768.92,1768.92
+PR(ON),1,refresh,saturating,48,48,48,0,1595.76,1886.84,1891.38,1891.38
+PR(ON),1,mixed,end-to-end,60,1,1,0,50.80,1833.64,1835.64,1835.64
+PR(ON),1,mixed,refresh-subset,15,1,1,0,1756.98,1835.64,1835.64,1835.64
+PR(ON),1,fastfail,brownout,48,48,48,0,91.84,315.10,319.98,319.98

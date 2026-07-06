@@ -1,0 +1,20 @@
+=============== v2 FI HEDGING SUMMARY (PR #5999, PR vs main) ===============
+--- coldstart/single ---
+  main(OFF)  n=   8 hedgeFired=   0 hedgeWon=   0 fail=  0 p50=   12326 p95=   12534 p99=   12534
+  PR(ON)     n=   8 hedgeFired=   0 hedgeWon=   0 fail=  0 p50=    3616 p95=    3722 p99=    3722
+--- refresh/low ---
+  main(OFF)  n=  30 hedgeFired=   0 hedgeWon=   0 fail=  0 p50=    4034 p95=    4053 p99=    4096
+  PR(ON)     n=  30 hedgeFired=  30 hedgeWon=  30 fail=  0 p50=    1593 p95=    1603 p99=    1769
+--- refresh/saturating ---
+  main(OFF)  n=  48 hedgeFired=   0 hedgeWon=   0 fail=  0 p50=    4036 p95=    4057 p99=    4082
+  PR(ON)     n=  48 hedgeFired=  48 hedgeWon=  48 fail=  0 p50=    1596 p95=    1887 p99=    1891
+--- mixed/end-to-end ---
+  main(OFF)  n=  60 hedgeFired=   0 hedgeWon=   0 fail=  0 p50=      72 p95=    4028 p99=    4033
+  PR(ON)     n=  60 hedgeFired=   1 hedgeWon=   1 fail=  0 p50=      51 p95=    1834 p99=    1836
+--- mixed/refresh-subset ---
+  main(OFF)  n=  15 hedgeFired=   0 hedgeWon=   0 fail=  0 p50=    3925 p95=    4033 p99=    4033
+  PR(ON)     n=  15 hedgeFired=   1 hedgeWon=   1 fail=  0 p50=    1757 p95=    1836 p99=    1836
+--- fastfail/brownout ---
+  main(OFF)  n=  48 hedgeFired=   0 hedgeWon=   0 fail=  0 p50=      94 p95=     351 p99=     408
+  PR(ON)     n=  48 hedgeFired=  48 hedgeWon=  48 fail=  0 p50=      92 p95=     315 p99=     320
+===========================================================================

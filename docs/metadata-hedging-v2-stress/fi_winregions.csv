@@ -1,0 +1,4 @@
+arm,regime,winningRegion,count
+PR(ON),fastfail,East US,48
+PR(ON),low,East US,30
+PR(ON),saturating,East US,48
