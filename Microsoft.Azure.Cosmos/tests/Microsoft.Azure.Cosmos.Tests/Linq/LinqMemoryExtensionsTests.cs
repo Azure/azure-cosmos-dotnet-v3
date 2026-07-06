@@ -385,6 +385,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <summary>
         /// Verifies that the 3-arg MemoryExtensions.Contains overload with a non-null comparer
         /// throws DocumentQueryException since custom comparers cannot be honored in SQL.
+        /// The error comes from the standard unsupported-method path (falls through when comparer is non-null).
         /// </summary>
         [TestMethod]
         public void Translate_MemoryExtensionsContains_ThreeArgWithComparer_Throws()
@@ -413,7 +414,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             ConstantExpression arrayConst = Expression.Constant(testArray);
             MethodCallExpression spanConversion = Expression.Call(opImplicit, arrayConst);
             ParameterExpression paramX = Expression.Parameter(typeof(string), "x");
-            // Non-null comparer — should throw since we can't honor it server-side
+            // Non-null comparer — should fail because the branch won't match and falls through
             ConstantExpression comparer = Expression.Constant(StringComparer.OrdinalIgnoreCase, typeof(IEqualityComparer<string>));
 
             MethodCallExpression net10Contains = Expression.Call(containsMethod, spanConversion, paramX, comparer);
