@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Handler;
 
     /// <summary>
     /// This is a thread safe AsyncCache that allows refreshing values in the background.
@@ -114,7 +115,7 @@ namespace Microsoft.Azure.Cosmos
                     {
                         bool removed = this.TryRemove(key);
 
-                        if (DefaultTrace.TraceSource.Switch.ShouldTrace(System.Diagnostics.TraceEventType.Error))
+                        if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Error))
                         {
                             DefaultTrace.TraceError(
                                 "AsyncCacheNonBlocking Failed GetAsync. key: {0}, tryRemoved: {1}, Exception: {2}",
@@ -166,7 +167,7 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (Exception e)
             {
-                if (DefaultTrace.TraceSource.Switch.ShouldTrace(System.Diagnostics.TraceEventType.Error))
+                if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Error))
                 {
                     DefaultTrace.TraceError(
                         "AsyncCacheNonBlocking Failed GetAsync with key: {0}, Exception: {1}",
@@ -228,7 +229,7 @@ namespace Microsoft.Azure.Cosmos
                     .ContinueWith(
                         task =>
                         {
-                            if (DefaultTrace.TraceSource.Switch.ShouldTrace(System.Diagnostics.TraceEventType.Verbose))
+                            if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Verbose))
                             {
                                 DefaultTrace.TraceVerbose("Failed to refresh addresses in the background with exception: {0}", task.Exception.Message);
                             }
@@ -269,7 +270,7 @@ namespace Microsoft.Azure.Cosmos
                         removed = this.TryRemove(key);
                     }
 
-                    if (DefaultTrace.TraceSource.Switch.ShouldTrace(System.Diagnostics.TraceEventType.Error))
+                    if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Error))
                     {
                         DefaultTrace.TraceError(
                             "AsyncCacheNonBlocking Failed. key: {0}, operation: {1}, tryRemoved: {2}, Exception: {3}",

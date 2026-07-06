@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 #nullable enable
@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -548,7 +549,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         break;
                     }
 
-                    if (DefaultTrace.TraceSource.Switch.ShouldTrace(System.Diagnostics.TraceEventType.Critical))
+                    if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Critical))
                     {
                         DefaultTrace.TraceCritical("GlobalPartitionEndpointManagerCore: InitiateCircuitBreakerFailbackLoop() - Unable to get address and open connections. Exception: {0}", ex.Message);
                     }

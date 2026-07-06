@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json.Linq;
 
@@ -433,7 +434,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
                 catch (Exception e)
                 {
-                    if (DefaultTrace.TraceSource.Switch.ShouldTrace(System.Diagnostics.TraceEventType.Information))
+                    if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Information))
                     {
                         DefaultTrace.TraceInformation("GlobalEndpointManager: Fail to reach gateway endpoint {0}, {1}", endpoint, e.Message);
                     }
@@ -799,7 +800,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     return;
                 }
                 
-                if (DefaultTrace.TraceSource.Switch.ShouldTrace(System.Diagnostics.TraceEventType.Critical))
+                if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Critical))
                 {
                     DefaultTrace.TraceCritical("GlobalEndpointManager: StartLocationBackgroundRefreshWithTimer() - Unable to refresh database account from any serviceEndpoint. Exception: {0}", ex.Message);
                 }
@@ -919,7 +920,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
             catch (Exception ex)
             {
-                if (DefaultTrace.TraceSource.Switch.ShouldTrace(System.Diagnostics.TraceEventType.Warning))
+                if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Warning))
                 {
                     DefaultTrace.TraceWarning("Failed to refresh database account with exception: {0}. Activity Id: '{1}'",
                         ex.Message,

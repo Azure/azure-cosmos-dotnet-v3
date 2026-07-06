@@ -583,7 +583,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         public async Task GetAsync_FailureLogging_DoesNotSerializeCosmosExceptionDiagnosticsWhenTracingDisabled()
         {
             // Call-site regression for #5945: the failure-path DefaultTrace.TraceError is gated behind
-            // DefaultTrace.TraceSource.Switch.ShouldTrace(...), so when tracing is disabled (the default
+            // DiagnosticsHandlerHelper.ShouldTrace(...) (which wraps DefaultTrace.TraceSource.Switch.ShouldTrace),
+            // so when tracing is disabled (the default
             // no-op sink) the heavyweight ex.Message -> Diagnostics serialization is never evaluated. The
             // spy's Diagnostics getter throws, and Message evaluates Diagnostics as an argument before
             // building the string, so an UN-gated call site (passing ex.Message without the ShouldTrace
@@ -625,7 +626,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 Assert.AreSame(toThrow, caught, "The original exception must propagate unchanged.");
                 Assert.IsFalse(
                     toThrow.DiagnosticsAccessed,
-                    "Failure-path logging must not serialize CosmosException diagnostics when tracing is disabled (the DefaultTrace call must be gated by DefaultTrace.TraceSource.Switch.ShouldTrace).");
+                    "Failure-path logging must not serialize CosmosException diagnostics when tracing is disabled (the DefaultTrace call must be gated by DiagnosticsHandlerHelper.ShouldTrace).");
             }
             finally
             {
