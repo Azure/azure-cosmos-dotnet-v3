@@ -977,7 +977,31 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (connectionPolicy.IdleTcpConnectionTimeout.HasValue)
                 {
-                    this.idleConnectionTimeoutInSeconds = (int)connectionPolicy.IdleTcpConnectionTimeout.Value.TotalSeconds;
+                    // Mirror of OpenTcpConnectionTimeout (#5873): round up to whole seconds instead of
+                    // truncating. Sub-second -> 0 (no idle timeout); negatives preserved with a Direct-mode warning.
+                    TimeSpan idleTcpConnectionTimeout = connectionPolicy.IdleTcpConnectionTimeout.Value;
+
+                    if (idleTcpConnectionTimeout < TimeSpan.Zero)
+                    {
+                        if (connectionPolicy.ConnectionMode == ConnectionMode.Direct)
+                        {
+                            DefaultTrace.TraceWarning(
+                                "IdleTcpConnectionTimeout value {0} is negative. Negative values are not recommended; "
+                                + "non-positive idle timeouts are treated as no idle timeout (connections are kept open indefinitely).",
+                                idleTcpConnectionTimeout);
+                        }
+
+                        this.idleConnectionTimeoutInSeconds = (int)idleTcpConnectionTimeout.TotalSeconds;
+                    }
+                    else if (idleTcpConnectionTimeout < TimeSpan.FromSeconds(1))
+                    {
+                        this.idleConnectionTimeoutInSeconds = 0;
+                    }
+                    else
+                    {
+                        double ceilingSeconds = Math.Ceiling(idleTcpConnectionTimeout.TotalSeconds);
+                        this.idleConnectionTimeoutInSeconds = ceilingSeconds > int.MaxValue ? int.MaxValue : (int)ceilingSeconds;
+                    }
                 }
 
                 if (connectionPolicy.OpenTcpConnectionTimeout.HasValue)

@@ -430,6 +430,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Controls the amount of idle time after which unused connections are closed.
         /// By default, idle connections are kept open indefinitely. Value must be greater than or equal to 10 minutes. Recommended values are between 20 minutes and 24 hours.
         /// Mainly useful for sparse infrequent access to a large database account.
+        /// At the transport boundary, sub-second values (under 1s) become 0 (no idle timeout) and values of
+        /// 1s or longer round up to the nearest whole second (e.g. 2.3s becomes 3s); negatives emit a warning.
         /// </param>
         /// <param name="openTcpConnectionTimeout">
         /// Controls the amount of time allowed for trying to establish a connection.

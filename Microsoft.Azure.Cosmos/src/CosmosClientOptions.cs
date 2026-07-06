@@ -584,6 +584,9 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         /// <remarks>
         /// Mainly useful for sparse infrequent access to a large database account.
+        /// At the transport boundary, sub-second values (under 1s) become 0 (no idle timeout) and values of
+        /// 1s or longer round up to the nearest whole second (e.g. 2.3s becomes 3s); negative values are
+        /// preserved but emit a Direct-mode warning trace at client construction.
         /// </remarks>
         public TimeSpan? IdleTcpConnectionTimeout
         {
