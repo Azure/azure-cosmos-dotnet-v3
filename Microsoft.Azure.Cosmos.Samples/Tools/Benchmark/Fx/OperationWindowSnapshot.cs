@@ -19,7 +19,8 @@ namespace CosmosBenchmark
             double meanMs,
             double ruPerSec,
             int errorStatusCode,
-            string errorMessage)
+            string errorMessage,
+            string errorDiagnostics)
         {
             this.Count = count;
             this.Errors = errors;
@@ -30,6 +31,7 @@ namespace CosmosBenchmark
             this.RuPerSec = ruPerSec;
             this.ErrorStatusCode = errorStatusCode;
             this.ErrorMessage = errorMessage;
+            this.ErrorDiagnostics = errorDiagnostics;
         }
 
         /// <summary>Number of successful operations recorded in the window.</summary>
@@ -54,5 +56,8 @@ namespace CosmosBenchmark
 
         /// <summary>The most recent error message observed in the window (null if none).</summary>
         public string ErrorMessage { get; }
+
+        /// <summary>The most recent error diagnostics string observed in the window (null if none).</summary>
+        public string ErrorDiagnostics { get; }
     }
 }

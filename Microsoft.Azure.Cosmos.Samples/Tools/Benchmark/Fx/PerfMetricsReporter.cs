@@ -50,9 +50,9 @@ namespace CosmosBenchmark
             this.aggregator.RecordSuccess(latencyMs, ruCharge);
         }
 
-        public void RecordFailure(double latencyMs, double ruCharge, int statusCode, string errorMessage)
+        public void RecordFailure(double latencyMs, double ruCharge, int statusCode, string errorMessage, string errorDiagnostics)
         {
-            this.aggregator.RecordFailure(latencyMs, ruCharge, statusCode, errorMessage);
+            this.aggregator.RecordFailure(latencyMs, ruCharge, statusCode, errorMessage, errorDiagnostics);
         }
 
         /// <summary>

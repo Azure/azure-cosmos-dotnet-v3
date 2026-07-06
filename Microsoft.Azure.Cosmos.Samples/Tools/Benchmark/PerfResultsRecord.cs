@@ -41,6 +41,9 @@ namespace CosmosBenchmark
         [JsonProperty("error_message")]
         public string ErrorMessage { get; set; }
 
+        [JsonProperty("error_diagnostics")]
+        public string ErrorDiagnostics { get; set; }
+
         [JsonProperty("error_status_code")]
         public int ErrorStatusCode { get; set; }
 
@@ -115,6 +118,7 @@ namespace CosmosBenchmark
                 Count = window.Count,
                 Errors = window.Errors,
                 ErrorMessage = window.ErrorMessage,
+                ErrorDiagnostics = window.ErrorDiagnostics,
                 ErrorStatusCode = window.ErrorStatusCode,
                 Hostname = runContext.Hostname,
                 SdkVersion = runContext.SdkVersion,

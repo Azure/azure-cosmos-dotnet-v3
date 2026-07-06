@@ -61,7 +61,8 @@ namespace CosmosBenchmark
         /// <param name="ruCharge">Request units charged by the operation (often 0 for failures).</param>
         /// <param name="statusCode">The error status code, if known.</param>
         /// <param name="errorMessage">The error message, if known.</param>
-        public void RecordFailure(double latencyMs, double ruCharge, int statusCode, string errorMessage)
+        /// <param name="errorDiagnostics">The CosmosDiagnostics / exception detail string, if known.</param>
+        public void RecordFailure(double latencyMs, double ruCharge, int statusCode, string errorMessage, string errorDiagnostics)
         {
             this.rwLock.EnterReadLock();
             try
@@ -77,6 +78,11 @@ namespace CosmosBenchmark
                 if (errorMessage != null)
                 {
                     state.LastErrorMessage = errorMessage;
+                }
+
+                if (errorDiagnostics != null)
+                {
+                    state.LastErrorDiagnostics = errorDiagnostics;
                 }
             }
             finally
@@ -130,7 +136,8 @@ namespace CosmosBenchmark
                 meanMs: mean,
                 ruPerSec: ruPerSec,
                 errorStatusCode: captured.LastErrorStatusCode,
-                errorMessage: captured.LastErrorMessage);
+                errorMessage: captured.LastErrorMessage,
+                errorDiagnostics: captured.LastErrorDiagnostics);
         }
 
         private static void InterlockedAddDouble(ref double location, double value)
@@ -155,6 +162,7 @@ namespace CosmosBenchmark
             public long ErrorCount;
             public volatile int LastErrorStatusCode;
             public volatile string LastErrorMessage;
+            public volatile string LastErrorDiagnostics;
         }
     }
 }

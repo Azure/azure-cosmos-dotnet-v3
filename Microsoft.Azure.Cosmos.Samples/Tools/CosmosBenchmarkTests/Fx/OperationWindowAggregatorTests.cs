@@ -31,9 +31,9 @@ namespace CosmosBenchmark.Fx.Tests
                 aggregator.RecordSuccess(latencyMs: i * 10, ruCharge: 5);
             }
 
-            // Two failures (one with a known status code / message).
-            aggregator.RecordFailure(latencyMs: 5, ruCharge: 0, statusCode: 429, errorMessage: "Throttled");
-            aggregator.RecordFailure(latencyMs: 5, ruCharge: 0, statusCode: 0, errorMessage: null);
+            // Two failures (one with a known status code / message / diagnostics).
+            aggregator.RecordFailure(latencyMs: 5, ruCharge: 0, statusCode: 429, errorMessage: "Throttled", errorDiagnostics: "{\"diag\":\"429\"}");
+            aggregator.RecordFailure(latencyMs: 5, ruCharge: 0, statusCode: 0, errorMessage: null, errorDiagnostics: null);
 
             OperationWindowSnapshot snapshot = aggregator.SnapshotAndReset(windowSeconds: 10);
 
@@ -47,9 +47,10 @@ namespace CosmosBenchmark.Fx.Tests
             // Total RU = 10 * 5 = 50 over a 10s window => 5 RU/s.
             Assert.AreEqual(5.0, snapshot.RuPerSec, 0.0001);
 
-            // Last observed (non-zero) error status/message should be preserved.
+            // Last observed (non-zero) error status/message/diagnostics should be preserved.
             Assert.AreEqual(429, snapshot.ErrorStatusCode);
             Assert.AreEqual("Throttled", snapshot.ErrorMessage);
+            Assert.AreEqual("{\"diag\":\"429\"}", snapshot.ErrorDiagnostics);
         }
 
         [TestMethod]
@@ -107,7 +108,7 @@ namespace CosmosBenchmark.Fx.Tests
 
                     for (int i = 0; i < failurePerThread; i++)
                     {
-                        aggregator.RecordFailure(latencyMs: 1, ruCharge: 0, statusCode: 500, errorMessage: "boom");
+                        aggregator.RecordFailure(latencyMs: 1, ruCharge: 0, statusCode: 500, errorMessage: "boom", errorDiagnostics: "diag");
                     }
                 });
             }

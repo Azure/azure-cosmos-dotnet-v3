@@ -12,6 +12,13 @@ namespace CosmosBenchmark
 
     internal class SerialOperationExecutor : IExecutor
     {
+        /// <summary>
+        /// Upper bound on the persisted error-diagnostics string. A single CosmosDiagnostics dump
+        /// during a regional failover can be very large; cap it so result rows stay bounded while
+        /// still retaining the failover / retry detail a DR drill needs.
+        /// </summary>
+        private const int MaxDiagnosticsLength = 20000;
+
         private readonly IBenchmarkOperation operation;
         private readonly string executorId;
 
@@ -93,18 +100,29 @@ namespace CosmosBenchmark
                             // Special case of cosmos exception
                             double opCharge = 0;
                             int statusCode = 0;
+                            string errorDiagnostics = null;
                             if (ex is CosmosException cosmosException)
                             {
                                 opCharge = cosmosException.RequestCharge;
                                 statusCode = (int)cosmosException.StatusCode;
                                 this.TotalRuCharges += opCharge;
+
+                                // The CosmosDiagnostics string carries the regional failover /
+                                // retry / address-resolution detail needed to explain how the SDK
+                                // reacted to a fault, which is exactly what a DR drill inspects.
+                                errorDiagnostics = cosmosException.Diagnostics?.ToString();
                             }
+
+                            // Fall back to the full exception dump for non-Cosmos failures.
+                            errorDiagnostics ??= ex.ToString();
+                            errorDiagnostics = TruncateDiagnostics(errorDiagnostics);
 
                             reporter?.RecordFailure(
                                 perfStopwatch.Elapsed.TotalMilliseconds,
                                 opCharge,
                                 statusCode,
-                                ex.Message);
+                                ex.Message,
+                                errorDiagnostics);
 
                             operationResult = new OperationResult()
                             {
@@ -143,6 +161,20 @@ namespace CosmosBenchmark
             }
 
             return currentIterationCount < iterationCount;
+        }
+
+        /// <summary>
+        /// Bounds the persisted diagnostics string to <see cref="MaxDiagnosticsLength"/> characters,
+        /// appending a marker when truncation occurs.
+        /// </summary>
+        private static string TruncateDiagnostics(string diagnostics)
+        {
+            if (string.IsNullOrEmpty(diagnostics) || diagnostics.Length <= MaxDiagnosticsLength)
+            {
+                return diagnostics;
+            }
+
+            return diagnostics.Substring(0, MaxDiagnosticsLength) + "...[truncated]";
         }
     }
 }
