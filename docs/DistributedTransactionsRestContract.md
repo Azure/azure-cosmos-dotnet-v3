@@ -7,11 +7,16 @@ server-side by the Distributed Transaction Coordinator (DTC).
 
 **Write** transactions (the SDK issues `CommitDistributedTransaction`) and **read**
 transactions (`Read`) share the same endpoint and envelope but use **different**
-response-code contracts — reads take a consistent multi-container snapshot and can return
-`200`/`304`/`207`/`404`/`449`/`408` (see [§6 — read transactions](#aggregate-status-codes--read-transactions)).
-CosmosClient **never** issues `AbortDistributedTransaction`: abort is decided and driven
-server-side by the coordinator, and the client observes an aborted transaction only as the
-`452` terminal response (§5).
+response-code contracts. Writes commit a batch atomically and can return
+`200`/`452`/`449`/`408`/`429`/`400`/`403`/`500`
+(see [§6 — write transactions](#aggregate-status-codes--write-transactions-commit)); reads
+take a consistent multi-container snapshot and can return
+`200`/`304`/`207`/`404`/`449`/`408`
+(see [§6 — read transactions](#aggregate-status-codes--read-transactions)). The two sets
+overlap on the shared codes but each has an exclusive one: `452` (abort) is **write-only**
+and `207` (multi-status) is **read-only**. CosmosClient **never** issues
+`AbortDistributedTransaction`: abort is decided and driven server-side by the coordinator,
+and the client observes an aborted transaction only as the `452` terminal response (§5).
 
 The contract is a single logical HTTP/REST call: the SDK `POST`s a JSON batch of operations to
 an account-level endpoint and receives a JSON document describing the per-operation outcome.
@@ -129,11 +134,6 @@ Notes:
 | `x-ms-substatus` | `0` | `DistributedTransactionResponse.SubStatusCode` |
 | `x-ms-request-charge` | `12.34` | `DistributedTransactionResponse.RequestCharge` (total RU across all phases) |
 | `x-ms-retry-after-ms` | `1000` | `Headers.RetryAfter` — used as the retry backoff hint |
-
-> **Activity-id caveat:** when the request is routed through the thin-client proxy, the
-> `x-ms-activity-id` on the response may differ from the activity-id the server logged
-> internally. For correlating a specific transaction across client and server traces, prefer the
-> **idempotency token**, which is stable and reliably echoed.
 
 ## 6. Response body
 
