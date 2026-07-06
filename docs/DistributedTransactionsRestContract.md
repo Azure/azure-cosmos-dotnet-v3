@@ -410,11 +410,20 @@ by either DTX budget — the classifier returns control to the shared `ResourceT
 
 For an ordinary write a `408` is **unsafe** to retry: the request may have committed
 server-side while only the acknowledgement was lost, so a blind retry risks applying the
-mutation twice. DTX sidesteps this entirely — every request carries a stable
+mutation twice. This is true even for — in fact, especially for — a **bodyless `408` that is a
+genuine transport-level timeout**, where the client has no way to know whether the mutation
+landed. DTX sidesteps this entirely — every request carries a stable
 `x-ms-cosmos-idempotency-token` (see [§3](#3-request-headers)) that is **reused verbatim on
 every retry** (`ExecuteCommitWithRetryAsync` logs *"Retrying with idempotency token …"*), and
-the coordinator **deduplicates** by that token. Because a replay can never double-apply, a
-`408` is safe to retry regardless of whether the original attempt reached the coordinator.
+the coordinator **keys the transaction record on that token**: the first request to arrive
+creates the ledger record, and any later request bearing the same token resolves to the
+**existing** record (create-first, then read-on-conflict) instead of starting a second
+transaction — a request with an empty token is rejected outright. A replay therefore can never
+double-apply; it converges on the one transaction and returns its authoritative state
+(committed → `200`, aborted → `452`, still in-flight → `408` again). So a `408` is safe to
+retry **regardless of whether the original attempt reached the coordinator**, which is exactly
+what makes the bodyless transport-timeout case safe here even though it would be unsafe for an
+ordinary write.
 
 Given that safety, the client does **not** need to prove a `408` came from the coordinator
 versus the transport — it only needs to pick the right retry loop, and it keys that off the
