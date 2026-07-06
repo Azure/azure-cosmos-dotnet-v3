@@ -443,6 +443,45 @@ not retried by the outer loop. Because a `404` (or any other hard per-op code) f
 read with no retries, a missing document surfaces immediately — it is **not** a successful per-op
 read outcome (see [§6 — read transactions](#aggregate-status-codes--read-transactions)).
 
+### A `449`'s retry owner depends on body, not sub-status
+
+The two retry layers classify a `449` off **different** signals, and a correct port
+must preserve that split rather than collapse it into a single rule:
+
+* The **outer** committer loop is sub-status-agnostic — it retries any response whose
+  **body** sets `isRetriable: true` (`DistributedTransactionCommitter.cs` line 116,
+  reading the top-level flag parsed in `DistributedTransactionResponse.cs` lines
+  378–382).
+* The **inner** `ClientRetryPolicy` classifier only treats a `449` as
+  coordinator-retriable when its sub-status is exactly `5352`
+  (`DtcCoordinatorRaceConflict`, `ClientRetryPolicy.cs` line 877). A `449` with any
+  other sub-status is not coordinator-retriable there, so it falls through to the
+  catch-all (`return null`) and is terminal to the inner classifier.
+
+This split is safe **only because** it mirrors the coordinator's actual `449`
+vocabulary:
+
+* A **bodyless** `449` is *always* the coordinator race conflict and *always* carries
+  sub-status `5352` (see the
+  [write-transaction table](#aggregate-status-codes--write-transactions)), so the inner
+  `5352` gate matches the coordinator's entire bodyless-`449` surface.
+* A **body-bearing** `449` — e.g. a read transaction's Phase 1 in-flight exhaustion,
+  whose aggregate sub-status is `0`/`Unknown`, **not** `5352` (§6: *"the aggregate
+  sub-status is always `0`"*) — carries `isRetriable: true`, so the **outer** loop
+  retries it regardless of sub-status.
+
+**Consequence for a read `449`/`Unknown`:** it is **not** dropped. Even though its
+aggregate sub-status is `0` (which fails the inner `5352` gate), it is body-bearing
+with `isRetriable: true`, so the outer loop retries it. The inner `5352` gate only ever
+fires for the bodyless coordinator-race `449`.
+
+> **Rust port note.** Do **not** reduce `449` handling to a single rule — neither
+> "retry every `449`" nor "retry `449` iff sub-status `5352`" reproduces CosmosClient.
+> Replicate the **body-presence split**: retry a body-bearing `449` on its
+> `isRetriable` flag (sub-status-agnostic), and a bodyless `449` only when its
+> sub-status is `5352`. A port that applies the `5352` gate to a body-bearing read
+> `449`/`Unknown` would wrongly abandon a retriable read.
+
 ---
 
 ## Sequence overview
