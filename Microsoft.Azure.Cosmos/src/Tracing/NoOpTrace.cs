@@ -9,8 +9,14 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
     internal sealed class NoOpTrace : ITrace
     {
-        public static readonly NoOpTrace Singleton = new NoOpTrace();
+        // NoOpTraceSummary must be initialized before Singleton: the parameterless
+        // constructor chains to NoOpTrace(NoOpTraceSummary), and static field
+        // initializers run in textual order. If Singleton were declared first,
+        // NoOpTraceSummary would still be null when the singleton is built, leaving
+        // Singleton.Summary permanently null and NREing every caller that reads it
+        // (for example TransportHandler.ProcessMessageAsync's Summary.UpdateRegionContacted).
         public static readonly TraceSummary NoOpTraceSummary = new TraceSummary();
+        public static readonly NoOpTrace Singleton = new NoOpTrace();
 
         private static readonly IReadOnlyList<ITrace> NoOpChildren = new List<ITrace>();
 

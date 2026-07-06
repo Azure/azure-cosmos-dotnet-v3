@@ -431,5 +431,26 @@
                 jObject["Summary"]["PartialResults"],
                 "Non-truncated diagnostics must not be marked with PartialResults.");
         }
+
+        [TestMethod]
+        public void TestNoOpTraceSingletonSummaryIsNotNull()
+        {
+            // Regression guard for static-field initialization order in NoOpTrace:
+            // NoOpTraceSummary must be initialized before Singleton so the shared
+            // singleton never exposes a null Summary. A null here NREs every caller
+            // that reads the trace's Summary on the request path (for example
+            // TransportHandler.ProcessMessageAsync -> Summary.UpdateRegionContacted),
+            // which surfaced as request-path NullReferenceExceptions in emulator tests.
+            Assert.IsNotNull(NoOpTrace.Singleton.Summary);
+            Assert.AreSame(NoOpTrace.NoOpTraceSummary, NoOpTrace.Singleton.Summary);
+
+            // StartChild on the singleton returns the singleton itself; its Summary must
+            // still be non-null so the transport happy path does not NRE.
+            ITrace child = NoOpTrace.Singleton.StartChild(
+                name: "Child",
+                component: TraceComponent.Transport,
+                level: TraceLevel.Info);
+            Assert.IsNotNull(child.Summary);
+        }
     }
 }
