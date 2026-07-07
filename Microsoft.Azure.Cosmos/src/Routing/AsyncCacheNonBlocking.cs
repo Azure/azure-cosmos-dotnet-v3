@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Handler;
 
     /// <summary>
     /// This is a thread safe AsyncCache that allows refreshing values in the background.
@@ -114,11 +115,14 @@ namespace Microsoft.Azure.Cosmos
                     {
                         bool removed = this.TryRemove(key);
 
-                        DefaultTrace.TraceError(
-                            "AsyncCacheNonBlocking Failed GetAsync. key: {0}, tryRemoved: {1}, Exception: {2}",
-                            key,
-                            removed,
-                            e.Message);
+                        if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Error))
+                        {
+                            DefaultTrace.TraceError(
+                                "AsyncCacheNonBlocking Failed GetAsync. key: {0}, tryRemoved: {1}, Exception: {2}",
+                                key,
+                                removed,
+                                e.Message);
+                        }
                     }
 
                     if (this.enableAsyncCacheExceptionNoSharing)
@@ -163,10 +167,13 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (Exception e)
             {
-                DefaultTrace.TraceError(
-                            "AsyncCacheNonBlocking Failed GetAsync with key: {0}, Exception: {1}",
-                            key.ToString(),
-                            e.Message);
+                if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Error))
+                {
+                    DefaultTrace.TraceError(
+                        "AsyncCacheNonBlocking Failed GetAsync with key: {0}, Exception: {1}",
+                        key.ToString(),
+                        e.Message);
+                }
 
                 // Remove the failed task from the dictionary so future requests can send other calls..
                 this.values.TryRemove(key, out _);
@@ -220,7 +227,13 @@ namespace Microsoft.Azure.Cosmos
 
                 Task continuationTask = backgroundRefreshTask
                     .ContinueWith(
-                        task => DefaultTrace.TraceVerbose("Failed to refresh addresses in the background with exception: {0}", task.Exception.Message),
+                        task =>
+                        {
+                            if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Verbose))
+                            {
+                                DefaultTrace.TraceVerbose("Failed to refresh addresses in the background with exception: {0}", task.Exception.Message);
+                            }
+                        },
                         TaskContinuationOptions.OnlyOnFaulted);
             }
         }
@@ -260,12 +273,15 @@ namespace Microsoft.Azure.Cosmos
                 {
                     bool removed = this.TryRemove(key);
 
-                    DefaultTrace.TraceError(
-                        "AsyncCacheNonBlocking Failed. key: {0}, operation: {1}, tryRemoved: {2}, Exception: {3}",
-                        key,
-                        operationName,
-                        removed,
-                        ex.Message);
+                    if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Error))
+                    {
+                        DefaultTrace.TraceError(
+                            "AsyncCacheNonBlocking Failed. key: {0}, operation: {1}, tryRemoved: {2}, Exception: {3}",
+                            key,
+                            operationName,
+                            removed,
+                            ex.Message);
+                    }
                 }
 
                 throw;

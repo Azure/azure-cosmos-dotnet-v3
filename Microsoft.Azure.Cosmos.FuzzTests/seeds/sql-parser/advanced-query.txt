@@ -1,0 +1,1 @@
+SELECT c.type, COUNT(1) AS cnt FROM c JOIN t IN c.tags WHERE ARRAY_CONTAINS(c.tags, "x") GROUP BY c.type ORDER BY c.type OFFSET 5 LIMIT 10

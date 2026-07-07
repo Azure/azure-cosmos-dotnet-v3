@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -775,6 +776,83 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             Assert.AreEqual(
                 "value3",
                 await asyncCache.GetAsync("key", (_) => Task.FromResult("value3"), (_) => false));
+        }
+
+        [TestMethod]
+        public async Task GetAsync_FailureLogging_DoesNotSerializeCosmosExceptionDiagnosticsWhenTracingDisabled()
+        {
+            // Call-site regression for #5945: the failure-path DefaultTrace.TraceError is gated behind
+            // DiagnosticsHandlerHelper.ShouldTrace(...) (which wraps DefaultTrace.TraceSource.Switch.ShouldTrace),
+            // so when tracing is disabled (the default
+            // no-op sink) the heavyweight ex.Message -> Diagnostics serialization is never evaluated. The
+            // spy's Diagnostics getter throws, and Message evaluates Diagnostics as an argument before
+            // building the string, so an UN-gated call site (passing ex.Message without the ShouldTrace
+            // guard) would surface here as DiagnosticsAccessed == true. A 503 is used because that is a
+            // status code where Message eagerly serializes diagnostics in prod.
+            SourceLevels originalLevel = DefaultTrace.TraceSource.Switch.Level;
+            try
+            {
+                // Force the no-op sink scenario deterministically, independent of other tests in the suite.
+                DefaultTrace.TraceSource.Switch.Level = SourceLevels.Off;
+
+                // Precondition (separate instance so we don't poison the thrown instance's lazy Message
+                // cache): a 503 CosmosException really does serialize diagnostics via Message, so the
+                // DiagnosticsAccessed assertion below is meaningful.
+                DiagnosticsThrowingCosmosException precondition = new DiagnosticsThrowingCosmosException(
+                    HttpStatusCode.ServiceUnavailable,
+                    "boom",
+                    new Headers { ActivityId = "activity-5945" });
+                Assert.ThrowsException<InvalidOperationException>(() => _ = precondition.Message);
+                Assert.IsTrue(precondition.DiagnosticsAccessed, "Precondition: Message must serialize diagnostics for 503.");
+
+                AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>(enableAsyncCacheExceptionNoSharing: false);
+
+                DiagnosticsThrowingCosmosException toThrow = new DiagnosticsThrowingCosmosException(
+                    HttpStatusCode.ServiceUnavailable,
+                    "boom",
+                    new Headers { ActivityId = "activity-5945" });
+
+                DiagnosticsThrowingCosmosException caught = await Assert.ThrowsExceptionAsync<DiagnosticsThrowingCosmosException>(
+                    () => asyncCache.GetAsync(
+                        "test",
+                        async (_) =>
+                        {
+                            await Task.Yield();
+                            throw toThrow;
+                        },
+                        (_) => false));
+
+                Assert.AreSame(toThrow, caught, "The original exception must propagate unchanged.");
+                Assert.IsFalse(
+                    toThrow.DiagnosticsAccessed,
+                    "Failure-path logging must not serialize CosmosException diagnostics when tracing is disabled (the DefaultTrace call must be gated by DiagnosticsHandlerHelper.ShouldTrace).");
+            }
+            finally
+            {
+                DefaultTrace.TraceSource.Switch.Level = originalLevel;
+            }
+        }
+
+        private sealed class DiagnosticsThrowingCosmosException : CosmosException
+        {
+            public DiagnosticsThrowingCosmosException(
+                HttpStatusCode statusCode,
+                string message,
+                Headers headers)
+                : base(statusCode, message, null, headers, Microsoft.Azure.Cosmos.Tracing.NoOpTrace.Singleton, null, null)
+            {
+            }
+
+            public bool DiagnosticsAccessed { get; private set; }
+
+            public override CosmosDiagnostics Diagnostics
+            {
+                get
+                {
+                    this.DiagnosticsAccessed = true;
+                    throw new InvalidOperationException("Diagnostics must not be accessed by trace-safe logging (#5945).");
+                }
+            }
         }
     }
 }
