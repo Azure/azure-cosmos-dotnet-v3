@@ -679,6 +679,95 @@ namespace Microsoft.Azure.Cosmos
                 throw new InternalServerErrorException(string.Format(CultureInfo.InvariantCulture, "partition key is null '{0}'", partitionKeyString));
             }
 
+            // Delegate to the request-free core, then translate its result into the gateway's historical
+            // contract (return range / return null to refresh / throw on mismatch).
+            PartitionKeyRangeResolutionKind resolutionKind = AddressResolver.TryResolvePartitionKeyToRange(
+                partitionKey,
+                collection,
+                routingMap,
+                collectionCacheUptoDate,
+                out PartitionKeyRange range);
+
+            switch (resolutionKind)
+            {
+                case PartitionKeyRangeResolutionKind.Resolved:
+                    return range;
+
+                case PartitionKeyRangeResolutionKind.KeyMismatch:
+                    BadRequestException badRequestException = new BadRequestException(RMResources.PartitionKeyMismatch) { ResourceAddress = request.ResourceAddress };
+                    badRequestException.Headers[WFConstants.BackendHeaders.SubStatus] =
+                        ((uint)SubStatusCodes.PartitionKeyMismatch).ToString(CultureInfo.InvariantCulture);
+
+                    throw badRequestException;
+
+                case PartitionKeyRangeResolutionKind.NeedsRefresh:
+                default:
+                    return null;
+            }
+        }
+
+        /// <summary>
+        /// Outcome of mapping a partition key to a physical partition key range, independent of any
+        /// <see cref="DocumentServiceRequest"/>. Callers translate the outcome into their own contract
+        /// (e.g. the gateway throws / returns null; distributed transactions apply no session token).
+        /// </summary>
+        internal enum PartitionKeyRangeResolutionKind
+        {
+            /// <summary>
+            /// The key maps to exactly one range, returned via the out parameter.
+            /// </summary>
+            Resolved,
+
+            /// <summary>
+            /// The key could not be mapped with the currently cached routing/partition-key definition
+            /// and the caller should refresh its caches and retry (historically the gateway returned null).
+            /// </summary>
+            NeedsRefresh,
+
+            /// <summary>
+            /// The supplied key has a different number of components than the (up-to-date) partition-key
+            /// definition, so it is a genuine mismatch (historically the gateway threw a 400 PartitionKeyMismatch).
+            /// </summary>
+            KeyMismatch,
+        }
+
+        /// <summary>
+        /// Request-free core that maps a partition key to the owning <see cref="PartitionKeyRange"/> using
+        /// the collection's partition-key definition and routing map. This is the single source of truth for
+        /// the empty-or-full-key (component-count) guard, effective-key computation and
+        /// <see cref="CollectionRoutingMap.GetRangeByEffectivePartitionKey(string)"/> lookup that both the
+        /// gateway point-operation path and the distributed-transaction resolver rely on.
+        /// </summary>
+        /// <param name="partitionKey">The already-parsed partition key value.</param>
+        /// <param name="collection">The container properties supplying the partition-key definition.</param>
+        /// <param name="routingMap">The collection routing map used to locate the owning range.</param>
+        /// <param name="collectionCacheUptoDate">Whether the collection cache backing <paramref name="collection"/> is known to be up to date.</param>
+        /// <param name="range">The resolved range when the result is <see cref="PartitionKeyRangeResolutionKind.Resolved"/>; otherwise null.</param>
+        /// <returns>The classification describing how the key mapped.</returns>
+        internal static PartitionKeyRangeResolutionKind TryResolvePartitionKeyToRange(
+            PartitionKeyInternal partitionKey,
+            ContainerProperties collection,
+            CollectionRoutingMap routingMap,
+            bool collectionCacheUptoDate,
+            out PartitionKeyRange range)
+        {
+            range = null;
+
+            if (partitionKey == null)
+            {
+                throw new ArgumentNullException(nameof(partitionKey));
+            }
+
+            if (collection == null)
+            {
+                throw new ArgumentNullException(nameof(collection));
+            }
+
+            if (routingMap == null)
+            {
+                throw new ArgumentNullException(nameof(routingMap));
+            }
+
             if (partitionKey.Equals(PartitionKeyInternal.Empty) || partitionKey.Components.Count == collection.PartitionKey.Paths.Count)
             {
                 // Although we can compute effective partition key here, in general case this Gateway can have outdated
@@ -689,16 +778,18 @@ namespace Microsoft.Azure.Cosmos
                 string effectivePartitionKey = partitionKey.GetEffectivePartitionKeyString(collection.PartitionKey);
 
                 // There should be exactly one range which contains a partition key. Always.
-                return routingMap.GetRangeByEffectivePartitionKey(effectivePartitionKey);
+                range = routingMap.GetRangeByEffectivePartitionKey(effectivePartitionKey);
+
+                // A null here means the currently cached routing map has no owning range for the key;
+                // signal a refresh (the gateway historically returned null in this case).
+                return range != null
+                    ? PartitionKeyRangeResolutionKind.Resolved
+                    : PartitionKeyRangeResolutionKind.NeedsRefresh;
             }
 
             if (collectionCacheUptoDate)
             {
-                BadRequestException badRequestException = new BadRequestException(RMResources.PartitionKeyMismatch) { ResourceAddress = request.ResourceAddress };
-                badRequestException.Headers[WFConstants.BackendHeaders.SubStatus] =
-                    ((uint)SubStatusCodes.PartitionKeyMismatch).ToString(CultureInfo.InvariantCulture);
-
-                throw badRequestException;
+                return PartitionKeyRangeResolutionKind.KeyMismatch;
             }
 
             // Partition key supplied has different number paths than locally cached partition key definition.
@@ -718,7 +809,7 @@ namespace Microsoft.Azure.Cosmos
                 collection.PartitionKey.Paths.Count,
                 partitionKey.Components.Count);
 
-            return null;
+            return PartitionKeyRangeResolutionKind.NeedsRefresh;
         }
 
         public Task UpdateAsync(ServerKey serverKey, CancellationToken cancellationToken = default)
