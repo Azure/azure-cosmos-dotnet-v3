@@ -816,6 +816,21 @@ namespace Microsoft.Azure.Cosmos
         public bool EnableTcpConnectionEndpointRediscovery { get; set; } = true;
 
         /// <summary>
+        /// Gets or sets a value indicating whether the barrier early yield on 429
+        /// optimization is enabled. When true, ConsistencyWriter and QuorumReader
+        /// in the Direct transport layer return early when all replicas return 429
+        /// during a write or read barrier. Direct retries the 429 internally; when
+        /// retries are exhausted it surfaces a synthetic 408 with substatus 21013
+        /// (Server_WriteBarrierThrottled) to the SDK. The SDK's ClientRetryPolicy
+        /// recognizes this substatus and avoids marking the endpoint unavailable,
+        /// preventing unnecessary cross-region failover.
+        /// </summary>
+        /// <value>
+        /// The default value is true. Internal only — not exposed to external SDK users.
+        /// </value>
+        internal bool EnableBarrierEarlyYieldOn429 { get; set; } = true;
+
+        /// <summary>
         /// Gets or sets a delegate to use to obtain an HttpClient instance to be used for HTTPS communication.
         /// </summary>
         /// <remarks>
@@ -1176,6 +1191,7 @@ namespace Microsoft.Azure.Cosmos
                 ServerCertificateCustomValidationCallback = this.ServerCertificateCustomValidationCallback,
                 CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions(),
                 AvailabilityStrategy = this.AvailabilityStrategy,
+                EnableBarrierEarlyYieldOn429 = this.EnableBarrierEarlyYieldOn429,
             };
 
             if (this.CosmosClientTelemetryOptions != null)
