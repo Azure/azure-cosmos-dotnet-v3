@@ -114,13 +114,45 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsNotNull(mergeWalk, "A split child with multiple known parents must inherit a merged token.");
             StringAssert.StartsWith(mergeWalk, "range_99:");
 
-            // No own token and no resolvable parent → null (caller falls back to the compound token).
+            // No own token and no resolvable parent → null (the DTX caller then applies no token for the op).
             Assert.IsNull(
                 sessionContainer.GetSessionTokenForPartitionKeyRange(collectionFullname, "range_77", new List<string> { "range_x" }),
                 "A range with no token and no known parent must return null.");
             Assert.IsNull(
                 sessionContainer.GetSessionTokenForPartitionKeyRange(collectionFullname, "range_77"),
                 "Without a parent list, a range with no token must return null (no parent walk).");
+        }
+
+        [DataTestMethod]
+        [DataRow("0:1#100", DisplayName = "canonical two-segment")]
+        [DataRow("0:1#100#4=90#5=2", DisplayName = "canonical with multi-region lsn payload")]
+        [DataRow("range_7:1#5", DisplayName = "canonical with non-numeric range id")]
+        // A canonical session token is exactly two non-empty ':'-separated segments ("{pkRangeId}:{lsn}").
+        // The lsn payload's own '#'/'=' separators do not introduce extra ':' segments, so realistic
+        // multi-region tokens remain canonical. Content of the lsn segment is validated separately by Parse.
+        public void IsCanonicalSessionTokenShape_CanonicalTokens_ReturnTrue(string sessionToken)
+        {
+            Assert.IsTrue(SessionContainer.IsCanonicalSessionTokenShape(sessionToken),
+                $"'{sessionToken}' has the canonical two-segment shape and must be accepted.");
+        }
+
+        [DataTestMethod]
+        [DataRow(null, DisplayName = "null")]
+        [DataRow("", DisplayName = "empty")]
+        [DataRow("   ", DisplayName = "whitespace only")]
+        [DataRow("1#9#4=8#5=7", DisplayName = "lsn only, no colon")]
+        [DataRow("0", DisplayName = "single segment")]
+        [DataRow(":1#100", DisplayName = "empty pkRangeId segment (leading colon)")]
+        [DataRow("0:", DisplayName = "empty lsn segment (trailing colon)")]
+        [DataRow("0:1:2", DisplayName = "three segments (multi-colon)")]
+        [DataRow("0:1#100:extra", DisplayName = "multi-colon with content")]
+        // Anything that is not exactly two non-empty ':'-separated segments is non-canonical. Locks in the
+        // Split-based semantics (multi-colon, leading/trailing colon, blank strings) that differ from the
+        // previous single-IndexOf check.
+        public void IsCanonicalSessionTokenShape_NonCanonicalTokens_ReturnFalse(string sessionToken)
+        {
+            Assert.IsFalse(SessionContainer.IsCanonicalSessionTokenShape(sessionToken),
+                $"'{sessionToken ?? "<null>"}' is not a canonical two-segment token and must be rejected.");
         }
 
         [TestMethod]

@@ -299,11 +299,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         // ─── A2 contract verification: compound (multi-partition) token ─────────
 
         // Verifies that the coordinator correctly handles a DTX write spanning multiple
-        // partitions (different PKs). The SDK auto-resolves the compound collection-wide
-        // token ({pk0}:{lsn0},{pk1}:{lsn1}) and sends it for each collection group.
-        // This test proves the coordinator extracts the relevant per-partition token internally.
+        // partitions (different PKs). The SDK resolves a per-partition session token for each
+        // operation (or none when that partition has no token yet) rather than substituting a
+        // compound collection-wide token, and the coordinator returns each op's per-partition token.
         [TestMethod]
-        public async Task DtxWrite_MultiPartition_CompoundTokenHandledByCoordinator()
+        public async Task DtxWrite_MultiPartition_PerPartitionTokensReturnedByCoordinator()
         {
             // Use distinct partition keys to target different physical partitions.
             string pk1 = $"mp-a-{Guid.NewGuid():N}";

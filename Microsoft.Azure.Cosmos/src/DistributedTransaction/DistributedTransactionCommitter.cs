@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -79,13 +80,15 @@ namespace Microsoft.Azure.Cosmos
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                // Resolve effective consistency before the commit and reuse it for the post-commit
-                // token merge. Session-token work only applies under Session consistency. Resolving
-                // here means a transient consistency-lookup failure surfaces before the commit rather
-                // than failing an already-committed transaction.
-                bool isSessionConsistency = await DistributedTransactionCommitterUtils.ResolveCollectionRidsAsync(
+                // Resolve effective consistency once, before the commit: session-token work only applies
+                // under Session, and resolving here surfaces a lookup failure before committing, not after.
+                bool isSessionConsistency = await DistributedTransactionCommitter.IsEffectiveSessionConsistencyAsync(
+                    this.clientContext);
+
+                await DistributedTransactionCommitterUtils.PrepareOperationsAsync(
                     this.operations,
                     this.clientContext,
+                    isSessionConsistency,
                     cancellationToken);
 
                 DistributedTransactionServerRequest serverRequest = await DistributedTransactionServerRequest.CreateAsync(
@@ -217,16 +220,36 @@ namespace Microsoft.Azure.Cosmos
                             attemptTrace,
                             cancellationToken);
 
-                        // Merge per-op session tokens into the SessionContainer (Session consistency
-                        // only). On success the response is returned to the caller and not disposed
-                        // here — it owns no unmanaged resources (the body is a MemoryStream). On a
-                        // malformed token MergeSessionTokens throws and the response is discarded,
-                        // matching the SDK's point-operation pattern.
-                        DistributedTransactionCommitter.MergeSessionTokens(
+                        // Merge per-op session tokens into the SessionContainer (Session consistency only).
+                        // The response is returned undisposed (its body is a MemoryStream); a malformed token
+                        // throws and discards it, matching the point-op pattern.
+                        DocumentClient documentClient = this.clientContext.DocumentClient;
+
+                        // Acquire the routing cache for capture-side split detection. Best-effort: unlike the
+                        // force-refresh (which propagates), a failure here just skips split detection this commit.
+                        Routing.PartitionKeyRangeCache partitionKeyRangeCache = null;
+                        if (isSessionConsistency && documentClient != null)
+                        {
+                            try
+                            {
+                                partitionKeyRangeCache = await documentClient.GetPartitionKeyRangeCacheAsync(attemptTrace);
+                            }
+                            catch (Exception ex) when (!(ex is OperationCanceledException))
+                            {
+                                DefaultTrace.TraceWarning(
+                                    "DistributedTransaction could not obtain PartitionKeyRangeCache for capture-side " +
+                                    "split detection; skipping it for this commit. Exception: {0}",
+                                    ex.Message);
+                            }
+                        }
+
+                        await DistributedTransactionCommitter.MergeSessionTokensAsync(
                             response,
                             serverRequest,
-                            this.clientContext.DocumentClient?.sessionContainer,
-                            isSessionConsistency);
+                            documentClient?.sessionContainer,
+                            isSessionConsistency,
+                            partitionKeyRangeCache,
+                            attemptTrace);
 
                         return response;
                     }
@@ -243,14 +266,18 @@ namespace Microsoft.Azure.Cosmos
             requestMessage.UseGatewayMode = true;
         }
 
-        internal static void MergeSessionTokens(
+        internal static async Task MergeSessionTokensAsync(
             DistributedTransactionResponse response,
             DistributedTransactionServerRequest serverRequest,
             ISessionContainer sessionContainer,
-            bool isSessionConsistency)
+            bool isSessionConsistency,
+            Routing.PartitionKeyRangeCache partitionKeyRangeCache,
+            ITrace trace)
         {
-            // Merge each valid per-op token into the SessionContainer. Under Session consistency on a
-            // committed response, throw on the first malformed token; otherwise trace best-effort.
+            // Mirror GatewayStoreModel.CaptureSessionTokenAndHandleSplitAsync: store each op's session
+            // token so later Session reads on the affected collections avoid ReadSessionNotAvailable.
+            // DTX spans collections, so tokens arrive per-op in the JSON body. On a committed response
+            // under Session consistency, throw on the first malformed token; otherwise trace best-effort.
             if (response == null || response.Count == 0 || serverRequest == null || sessionContainer == null)
             {
                 return;
@@ -259,6 +286,9 @@ namespace Microsoft.Azure.Cosmos
             bool throwOnMalformed = response.IsSuccessStatusCode && isSessionConsistency;
 
             RequestNameValueCollection headers = new RequestNameValueCollection();
+
+            // Dedupe force-refreshes so N ops moving to the same range trigger one cache refresh.
+            HashSet<string> refreshedRanges = new HashSet<string>(StringComparer.Ordinal);
 
             for (int i = 0; i < response.Count; i++)
             {
@@ -282,16 +312,26 @@ namespace Microsoft.Azure.Cosmos
                     continue;
                 }
 
+                // Capture-side split/partition-move detection (mirrors CaptureSessionTokenAndHandleSplitAsync):
+                // if the server served a different range than the client resolved, force-refresh the stale
+                // routing cache once per moved range. Restores point-op recovery parity, since a committed
+                // DTX is HTTP 207 and per-op 1002s never reach SessionTokenMismatchRetryPolicy.
+                await DistributedTransactionCommitter.RefreshRoutingCacheIfPartitionMovedAsync(
+                    operation,
+                    result,
+                    partitionKeyRangeCache,
+                    refreshedRanges,
+                    trace);
+
                 // Skip absent/whitespace tokens or unresolved collection ids.
                 if (string.IsNullOrWhiteSpace(result.SessionToken) || string.IsNullOrEmpty(operation.CollectionResourceId))
                 {
                     continue;
                 }
 
-                // Shape pre-check: reject tokens lacking a '{pkRangeId}:{lsn}' separator. Confirms a
-                // non-empty segment on each side of the colon; full content is validated downstream.
-                int colonIndex = result.SessionToken.IndexOf(':');
-                if (colonIndex <= 0 || colonIndex == result.SessionToken.Length - 1)
+                // Shape pre-check delegated to SessionContainer so DTX shares the core
+                // '{pkRangeId}:{lsn}' definition; content is validated by SetSessionToken below.
+                if (!SessionContainer.IsCanonicalSessionTokenShape(result.SessionToken))
                 {
                     DistributedTransactionCommitter.ThrowOrTraceMalformedSessionToken(
                         throwOnMalformed,
@@ -300,6 +340,8 @@ namespace Microsoft.Azure.Cosmos
                     continue;
                 }
 
+                // Each SetSessionToken takes a SessionContainer write lock; a future batch-update API
+                // could reduce lock churn when many ops share a collection.
                 headers.Clear();
                 headers[HttpConstants.HttpHeaders.SessionToken] = result.SessionToken;
 
@@ -314,7 +356,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     throw;
                 }
-                catch (Exception ex) when (DistributedTransactionCommitterUtils.IsMalformedSessionTokenException(ex))
+                catch (Exception ex) when (SessionContainer.IsMalformedSessionTokenException(ex))
                 {
                     DistributedTransactionCommitter.ThrowOrTraceMalformedSessionToken(
                         throwOnMalformed,
@@ -322,6 +364,73 @@ namespace Microsoft.Azure.Cosmos
                         response);
                 }
             }
+        }
+
+        /// <summary>
+        /// Force-refreshes the partition routing cache when the server served a different partition key range
+        /// than the client resolved for the operation, deduping so each distinct moved range refreshes once.
+        /// Mirrors <see cref="GatewayStoreModel.CaptureSessionTokenAndHandleSplitAsync"/>.
+        /// </summary>
+        /// <remarks>
+        /// Runs post-commit. A refresh failure is intentionally NOT swallowed: it propagates, matching
+        /// point operations (the gateway force-refreshes with a bare await). Acquiring the cache is
+        /// best-effort (the caller's concern); the refresh itself is not.
+        /// </remarks>
+        private static async Task RefreshRoutingCacheIfPartitionMovedAsync(
+            DistributedTransactionOperation operation,
+            DistributedTransactionOperationResult result,
+            Routing.PartitionKeyRangeCache partitionKeyRangeCache,
+            HashSet<string> refreshedRanges,
+            ITrace trace)
+        {
+            if (partitionKeyRangeCache == null
+                || string.IsNullOrEmpty(operation.CollectionResourceId)
+                || string.IsNullOrEmpty(operation.ResolvedPartitionKeyRangeId)
+                || string.IsNullOrEmpty(result.PartitionKeyRangeId)
+                || result.PartitionKeyRangeId.Equals(operation.ResolvedPartitionKeyRangeId, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            if (!refreshedRanges.Add(operation.CollectionResourceId + "|" + result.PartitionKeyRangeId))
+            {
+                return; // Already refreshed this moved range on this commit.
+            }
+
+            await partitionKeyRangeCache.TryGetPartitionKeyRangeByIdAsync(
+                operation.CollectionResourceId,
+                result.PartitionKeyRangeId,
+                trace ?? NoOpTrace.Singleton,
+                forceRefresh: true);
+        }
+
+        /// <summary>
+        /// Determines whether the effective consistency level is Session (client override ?? account default).
+        /// Session-token bookkeeping only applies under Session consistency.
+        /// </summary>
+        /// <remarks>
+        /// A per-request consistency override is not consulted: DistributedTransactionRequestOptions
+        /// exposes none today. If one is added, thread it here and validate via
+        /// ValidationHelpers.IsValidConsistencyLevelOverwrite (matching point operations).
+        /// </remarks>
+        private static async Task<bool> IsEffectiveSessionConsistencyAsync(CosmosClientContext clientContext)
+        {
+            ConsistencyLevel? clientOverride = clientContext.ClientOptions?.ConsistencyLevel;
+            if (clientOverride.HasValue)
+            {
+                return clientOverride.Value == ConsistencyLevel.Session;
+            }
+
+            // Fall back to account consistency; default to Session when the client is unavailable
+            // (e.g., minimal test mocks) so session-token bookkeeping stays active.
+            CosmosClient client = clientContext.Client;
+            if (client == null)
+            {
+                return true;
+            }
+
+            ConsistencyLevel accountLevel = await client.GetAccountConsistencyLevelAsync();
+            return accountLevel == ConsistencyLevel.Session;
         }
 
         /// <summary>
