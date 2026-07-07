@@ -63,9 +63,45 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
             this.CoarseCode == CosmosErrorCode.TransportFailure;
 
         /// <summary>
+        /// Build the exception from values already copied out of the by-value
+        /// <c>cosmos_completion_t</c> (merged PR #4515 unified the response /
+        /// error payloads into the completion struct, so the pump reads the
+        /// error fields inline rather than via a separate <c>cosmos_error_t</c>).
+        /// </summary>
+        public CosmosNativeException(
+            CosmosErrorCode coarseCode,
+            ushort httpStatusCode,
+            int subStatus,
+            bool isFromWire,
+            string? message,
+            string? activityId,
+            string? sessionToken,
+            string? etag,
+            long retryAfterMs,
+            string? backtrace)
+            : base(FormatMessage(coarseCode, httpStatusCode, subStatus, message))
+        {
+            this.CoarseCode = coarseCode;
+            this.HttpStatusCode = httpStatusCode;
+            this.SubStatus = subStatus;
+            this.IsFromWire = isFromWire;
+            this.ActivityId = activityId;
+            this.SessionToken = sessionToken;
+            this.ETag = etag;
+            this.RetryAfterMs = retryAfterMs;
+            this.Backtrace = backtrace;
+        }
+
+        private static string FormatMessage(
+            CosmosErrorCode coarseCode, ushort http, int sub, string? message) =>
+            $"Cosmos native error [code={coarseCode}, http={http}, sub={sub}]: {message ?? "(no message)"}";
+
+        /// <summary>
         /// Build the exception by copying accessor results out of the
         /// native <c>cosmos_error_t*</c>. Does NOT free the handle — the
-        /// caller owns that decision (the pump frees after constructing).
+        /// caller owns that decision. Still used by the blocking bootstrap
+        /// path (<c>get_or_create</c> / <c>resolve_container</c>), which
+        /// returns a rich <c>cosmos_error_t</c> out-param.
         /// </summary>
         public CosmosNativeException(IntPtr error, CosmosErrorCode coarseCode)
             : base(FormatMessage(error, coarseCode))

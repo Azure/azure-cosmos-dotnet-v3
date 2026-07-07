@@ -334,8 +334,3 @@ ASALocalRun/
 
 # Coding Agent Harness session artifacts (local-only)
 .coding-harness/
-
-# Local secrets — .env files contain Cosmos keys; never commit
-.env
-*.env
-!*.env.example

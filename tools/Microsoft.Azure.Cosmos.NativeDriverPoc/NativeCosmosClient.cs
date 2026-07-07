@@ -104,7 +104,6 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
             Func<IntPtr> buildPk,
             string? userAgentSuffix)
         {
-            IntPtr builder = IntPtr.Zero;
             IntPtr stagedRuntime = IntPtr.Zero;
             IntPtr stagedAccount = IntPtr.Zero;
             IntPtr stagedDatabase = IntPtr.Zero;
@@ -115,28 +114,34 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
 
             try
             {
-                // 1. Runtime
-                builder = cosmos_runtime_builder_new();
-                if (builder == IntPtr.Zero)
+                // 1. Runtime — merged PR #4515 replaced the runtime builder
+                //    with an options-struct + single build call. Start from
+                //    the defaults, then set the user-agent suffix if supplied.
+                CosmosRuntimeOptions runtimeOptions = cosmos_runtime_options_default();
+                IntPtr uaSuffixPtr = IntPtr.Zero;
+                try
                 {
-                    throw new InvalidOperationException("cosmos_runtime_builder_new returned NULL");
-                }
-                if (!string.IsNullOrEmpty(userAgentSuffix))
-                {
-                    ThrowOn(cosmos_runtime_builder_with_user_agent_suffix(builder, userAgentSuffix),
-                        "cosmos_runtime_builder_with_user_agent_suffix");
-                }
+                    if (!string.IsNullOrEmpty(userAgentSuffix))
+                    {
+                        uaSuffixPtr = Marshal.StringToCoTaskMemUTF8(userAgentSuffix);
+                        runtimeOptions.UserAgentSuffix = uaSuffixPtr;
+                    }
 
-                CosmosErrorCode rc = cosmos_runtime_builder_build(builder, out stagedRuntime, out IntPtr buildErr);
-                builder = IntPtr.Zero;  // consumed by build per header §1721
-                ThrowOnRich(rc, buildErr, "cosmos_runtime_builder_build");
+                    CosmosErrorCode rc0 = cosmos_runtime_build(
+                        in runtimeOptions, out stagedRuntime, out IntPtr buildErr);
+                    ThrowOnRich(rc0, buildErr, "cosmos_runtime_build");
+                }
+                finally
+                {
+                    if (uaSuffixPtr != IntPtr.Zero) Marshal.FreeCoTaskMem(uaSuffixPtr);
+                }
                 if (stagedRuntime == IntPtr.Zero)
                 {
-                    throw new InvalidOperationException("cosmos_runtime_builder_build returned NULL runtime");
+                    throw new InvalidOperationException("cosmos_runtime_build returned NULL runtime");
                 }
 
                 // 2. Account
-                rc = cosmos_account_ref_with_master_key(endpoint, masterKey, out stagedAccount, out IntPtr accErr);
+                CosmosErrorCode rc = cosmos_account_ref_with_master_key(endpoint, masterKey, out stagedAccount, out IntPtr accErr);
                 ThrowOnRich(rc, accErr, "cosmos_account_ref_with_master_key");
 
                 // 3. Database (value-type only — never touches the network)
@@ -184,7 +189,6 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
             }
             finally
             {
-                if (builder != IntPtr.Zero) cosmos_runtime_builder_free(builder);
                 stagedCq?.Dispose();
                 if (stagedPk != IntPtr.Zero) cosmos_partition_key_free(stagedPk);
                 if (stagedContainer != IntPtr.Zero) cosmos_container_ref_free(stagedContainer);
@@ -197,11 +201,11 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
 
         /// <summary>
         /// Build a (possibly multi-component) opaque partition-key handle.
-        /// Each component is added via the typed
-        /// <c>cosmos_partition_key_builder_add_*</c> entry point matching
-        /// its CLR type. The builder is consumed by
-        /// <c>cosmos_partition_key_builder_build</c> on the success path
-        /// and freed inline if any add/build step fails.
+        /// Merged PR #4515 collapsed the 8-function builder API into a single
+        /// <c>cosmos_partition_key_create(components[], len, out)</c> call over
+        /// an array of <see cref="CosmosPartitionKeyComponent"/> values. Each
+        /// CLR component maps to a typed component kind; string values are
+        /// marshalled to UTF-8 and freed after the create call copies them.
         /// </summary>
         private static IntPtr BuildPartitionKey(object[] components)
         {
@@ -211,38 +215,81 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
                     "Partition key needs at least one component.", nameof(components));
             }
 
-            IntPtr pkBuilder = cosmos_partition_key_builder_new();
-            if (pkBuilder == IntPtr.Zero)
-            {
-                throw new InvalidOperationException("cosmos_partition_key_builder_new returned NULL");
-            }
+            var native = new CosmosPartitionKeyComponent[components.Length];
+            var stringPtrs = new IntPtr[components.Length];
             try
             {
-                foreach (object? component in components)
+                for (int i = 0; i < components.Length; i++)
                 {
-                    CosmosErrorCode addRc = component switch
+                    object? component = components[i];
+                    switch (component)
                     {
-                        null => cosmos_partition_key_builder_add_null(pkBuilder),
-                        string s => cosmos_partition_key_builder_add_string(pkBuilder, s),
-                        bool b => cosmos_partition_key_builder_add_bool(pkBuilder, b),
-                        double d => cosmos_partition_key_builder_add_number(pkBuilder, d),
-                        float f => cosmos_partition_key_builder_add_number(pkBuilder, f),
-                        int i => cosmos_partition_key_builder_add_number(pkBuilder, i),
-                        long l => cosmos_partition_key_builder_add_number(pkBuilder, l),
-                        _ => throw new ArgumentException(
-                            $"Unsupported partition-key component type {component.GetType()}", nameof(components)),
-                    };
-                    ThrowOn(addRc, $"cosmos_partition_key_builder_add_* for {component?.GetType().Name ?? "null"}");
+                        case null:
+                            native[i] = new CosmosPartitionKeyComponent
+                            {
+                                Kind = PartitionKeyComponentKindNull,
+                            };
+                            break;
+                        case string s:
+                            stringPtrs[i] = Marshal.StringToCoTaskMemUTF8(s);
+                            native[i] = new CosmosPartitionKeyComponent
+                            {
+                                Kind = PartitionKeyComponentKindString,
+                                StringValue = stringPtrs[i],
+                            };
+                            break;
+                        case bool b:
+                            native[i] = new CosmosPartitionKeyComponent
+                            {
+                                Kind = PartitionKeyComponentKindBool,
+                                BoolValue = (byte)(b ? 1 : 0),
+                            };
+                            break;
+                        case double d:
+                            native[i] = new CosmosPartitionKeyComponent
+                            {
+                                Kind = PartitionKeyComponentKindNumber,
+                                NumberValue = d,
+                            };
+                            break;
+                        case float f:
+                            native[i] = new CosmosPartitionKeyComponent
+                            {
+                                Kind = PartitionKeyComponentKindNumber,
+                                NumberValue = f,
+                            };
+                            break;
+                        case int n:
+                            native[i] = new CosmosPartitionKeyComponent
+                            {
+                                Kind = PartitionKeyComponentKindNumber,
+                                NumberValue = n,
+                            };
+                            break;
+                        case long l:
+                            native[i] = new CosmosPartitionKeyComponent
+                            {
+                                Kind = PartitionKeyComponentKindNumber,
+                                NumberValue = l,
+                            };
+                            break;
+                        default:
+                            throw new ArgumentException(
+                                $"Unsupported partition-key component type {component.GetType()}", nameof(components));
+                    }
                 }
 
-                CosmosErrorCode buildRc = cosmos_partition_key_builder_build(pkBuilder, out IntPtr pk);
-                pkBuilder = IntPtr.Zero;  // consumed by build per header §1499
-                ThrowOn(buildRc, "cosmos_partition_key_builder_build");
+                CosmosErrorCode rc = cosmos_partition_key_create(
+                    native, (UIntPtr)native.Length, out IntPtr pk);
+                ThrowOn(rc, "cosmos_partition_key_create");
                 return pk;
             }
             finally
             {
-                if (pkBuilder != IntPtr.Zero) cosmos_partition_key_builder_free(pkBuilder);
+                for (int i = 0; i < stringPtrs.Length; i++)
+                {
+                    if (stringPtrs[i] != IntPtr.Zero) Marshal.FreeCoTaskMem(stringPtrs[i]);
+                }
             }
         }
 

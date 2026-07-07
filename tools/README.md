@@ -12,7 +12,6 @@ remember the cargo invocation.
 | Project | What it is |
 | --- | --- |
 | `Microsoft.Azure.Cosmos.NativeDriverPoc` | The .NET host POC: CRUD/query samples + an F1–F5 smoke harness over the native driver. |
-| `Microsoft.Azure.Cosmos.NativeDriverBenchmark` | BenchmarkDotNet perf harness over the same native surface. |
 
 ## Prerequisites
 
@@ -58,20 +57,12 @@ cd Microsoft.Azure.Cosmos.NativeDriverPoc
 dotnet run                 # F1–F5 smoke harness
 dotnet run -- crud         # crud | query | querypk | ryow | hpkcrud | cancel
 
-# Against a real account — set these and rerun any of the above:
-$env:COSMOS_ENDPOINT  = "https://<your-account>.documents.azure.com:443/"
-$env:COSMOS_KEY       = "<primary-key>"
-$env:COSMOS_DATABASE  = "pocdb"     # optional (default: pocdb)
-$env:COSMOS_CONTAINER = "items"     # optional (default: items, PK path /pk)
+# Optional sample commands:
 dotnet run -- query        # query/querypk/ryow/hpkcrud auto-provision pocdb/items
 ```
 
-To go back to the emulator, clear the vars:
-`Remove-Item Env:COSMOS_ENDPOINT,Env:COSMOS_KEY`.
-
-> **Don't commit real account keys.** Use the env vars above (or the
-> gitignored `.env` in the benchmark project) — never edit them into source or
-> `.env.example`.
+> **Don't commit real account keys.** Use environment variables and never edit
+> credentials into source.
 
 ## Notes
 
@@ -79,6 +70,5 @@ To go back to the emulator, clear the vars:
   account: cross-partition `ORDER BY` returns `400/1004
   CrossPartitionQueryNotServable`. That's a known native-driver capability gap,
   not a POC bug.
-- The per-project READMEs (`Microsoft.Azure.Cosmos.NativeDriverPoc/README.md`,
-  `Microsoft.Azure.Cosmos.NativeDriverBenchmark/README.md`) have the deeper
-  architecture / interop details.
+- The per-project README (`Microsoft.Azure.Cosmos.NativeDriverPoc/README.md`)
+  has deeper architecture / interop details.

@@ -344,6 +344,90 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
             };
         }
 
+        /// <summary>
+        /// Flat runtime options bag introduced by the merged PR #4515.
+        /// Replaces the per-field <c>cosmos_runtime_builder_*</c> chain:
+        /// seed with <see cref="cosmos_runtime_options_default"/>, set the
+        /// fields you care about, then hand to
+        /// <see cref="cosmos_runtime_build"/>. <c>0</c> / NULL = unset.
+        /// </summary>
+        [StructLayout(LayoutKind.Sequential)]
+        public struct CosmosRuntimeOptions
+        {
+            public byte WorkloadId;
+            public IntPtr CorrelationId;
+            public IntPtr UserAgentSuffix;
+            public IntPtr WrappingSdkIdentifier;
+            public ulong CpuRefreshIntervalMs;
+        }
+
+        /// <summary>
+        /// One tagged-union partition-key component. Mirrors the inline
+        /// component array the request struct accepts and the array
+        /// <see cref="cosmos_partition_key_create"/> consumes. Only the
+        /// value field matching <see cref="Kind"/> is read.
+        /// Kinds: 0=String 1=Number 2=Bool 3=Null 4=Undefined.
+        /// </summary>
+        [StructLayout(LayoutKind.Sequential)]
+        public struct CosmosPartitionKeyComponent
+        {
+            public int Kind;
+            public IntPtr StringValue;
+            public double NumberValue;
+            public byte BoolValue;
+        }
+
+        public const int PartitionKeyComponentKindString = 0;
+        public const int PartitionKeyComponentKindNumber = 1;
+        public const int PartitionKeyComponentKindBool = 2;
+        public const int PartitionKeyComponentKindNull = 3;
+        public const int PartitionKeyComponentKindUndefined = 4;
+
+        /// <summary>
+        /// The unified by-value completion record introduced by merged
+        /// PR #4515. Replaces the old opaque <c>cosmos_completion_t*</c>
+        /// plus its accessor family AND the separate
+        /// <c>cosmos_response_t</c> / <c>cosmos_error_t</c> objects — every
+        /// output (status, RU, tokens, body, error message/backtrace,
+        /// bootstrap driver/container handles) is now a field here.
+        /// </summary>
+        /// <remarks>
+        /// The host allocates the slot; <see cref="cosmos_completion_queue_wait"/>
+        /// fills it. All pointer fields are BORROWED and only valid until the
+        /// matching <see cref="cosmos_completion_queue_free_completions"/> call,
+        /// so copy every string / body byte out before freeing. The
+        /// <see cref="Backing"/> field owns those allocations; the host never
+        /// touches it directly.
+        /// </remarks>
+        [StructLayout(LayoutKind.Sequential)]
+        public struct CosmosCompletion
+        {
+            public CosmosCompletionOutcome Outcome;
+            public CosmosErrorCode Status;
+            public IntPtr UserData;
+            public byte WasCancelRequested;
+            public ushort HttpStatusCode;
+            public int SubStatus;
+            public double RequestCharge;
+            public long RetryAfterMs;
+            public byte IsFromWire;
+            public IntPtr Message;
+            public IntPtr ActivityId;
+            public IntPtr SessionToken;
+            public IntPtr Etag;
+            public IntPtr Continuation;
+            public IntPtr NextContinuation;
+            public IntPtr Backtrace;
+            public IntPtr Headers;
+            public UIntPtr HeadersLen;
+            public IntPtr Body;
+            public UIntPtr BodyLen;
+            public IntPtr Diagnostics;
+            public IntPtr Driver;
+            public IntPtr Container;
+            public IntPtr Backing;
+        }
+
         // -----------------------------------------------------------------
         // Misc — Phase 0
         // -----------------------------------------------------------------
@@ -362,42 +446,20 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
         // -----------------------------------------------------------------
 
         // -----------------------------------------------------------------
-        // Runtime builder — Phase 2 (header lines 1649–1747)
-        // NOTE: Only the 5 setters listed below exist. There is no
-        // worker_threads / thread_name_prefix / allow_emulator setter —
-        // emulator cert handling lives at the driver_options layer (or
-        // env-var bundles); Tokio worker count is non-configurable.
+        // Runtime construction — merged PR #4515 (flat options struct).
+        // The per-field cosmos_runtime_builder_* chain was removed in P5;
+        // construction is now cosmos_runtime_options_default() -> struct,
+        // set fields, then cosmos_runtime_build(&opts, &out, &err).
+        // Validation (workload_id 1-50, cpu_refresh 1000-60000ms, string
+        // length/charset) happens at build time.
         // -----------------------------------------------------------------
 
         [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr cosmos_runtime_builder_new();
+        public static extern CosmosRuntimeOptions cosmos_runtime_options_default();
 
         [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void cosmos_runtime_builder_free(IntPtr builder);
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern CosmosErrorCode cosmos_runtime_builder_with_workload_id(
-            IntPtr builder, byte workloadId);
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-        public static extern CosmosErrorCode cosmos_runtime_builder_with_correlation_id(
-            IntPtr builder, [MarshalAs(UnmanagedType.LPUTF8Str)] string correlationId);
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-        public static extern CosmosErrorCode cosmos_runtime_builder_with_user_agent_suffix(
-            IntPtr builder, [MarshalAs(UnmanagedType.LPUTF8Str)] string suffix);
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-        public static extern CosmosErrorCode cosmos_runtime_builder_with_wrapping_sdk_identifier(
-            IntPtr builder, [MarshalAs(UnmanagedType.LPUTF8Str)] string identifier);
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern CosmosErrorCode cosmos_runtime_builder_with_cpu_refresh_interval_ms(
-            IntPtr builder, ulong intervalMs);
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern CosmosErrorCode cosmos_runtime_builder_build(
-            IntPtr builder,
+        public static extern CosmosErrorCode cosmos_runtime_build(
+            in CosmosRuntimeOptions options,
             out IntPtr outRuntime,
             out IntPtr outError);
 
@@ -405,69 +467,56 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
         public static extern void cosmos_runtime_free(IntPtr runtime);
 
         // -----------------------------------------------------------------
-        // Completion queue — Phase 1 (header lines 696–767)
+        // Completion queue — merged PR #4515 (renamed cosmos_cq_* ->
+        // cosmos_completion_queue_*). wait() now fills caller-allocated
+        // by-value CosmosCompletion slots and returns the drained count;
+        // free_completions() reclaims each slot's borrowed backing.
         // -----------------------------------------------------------------
 
         [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr cosmos_cq_create(IntPtr runtime, in CosmosCqOptions options);
+        public static extern IntPtr cosmos_completion_queue_create(IntPtr runtime, in CosmosCqOptions options);
 
         /// <summary>Pointer-overload — pass <see cref="IntPtr.Zero"/> for defaults.</summary>
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl, EntryPoint = "cosmos_cq_create")]
-        public static extern IntPtr cosmos_cq_create_default(IntPtr runtime, IntPtr nullOptions);
+        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl, EntryPoint = "cosmos_completion_queue_create")]
+        public static extern IntPtr cosmos_completion_queue_create_default(IntPtr runtime, IntPtr nullOptions);
 
         [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void cosmos_cq_free(IntPtr cq);
+        public static extern void cosmos_completion_queue_free(IntPtr cq);
 
         [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void cosmos_cq_shutdown(IntPtr cq);
+        public static extern void cosmos_completion_queue_shutdown(IntPtr cq);
 
         [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern CosmosCqState cosmos_cq_state(IntPtr cq);
+        public static extern CosmosCqState cosmos_completion_queue_state(IntPtr cq);
+
+        /// <summary>
+        /// Drains up to <paramref name="max"/> completions into the
+        /// caller-allocated <paramref name="outSlots"/> buffer, blocking up
+        /// to <paramref name="timeoutMs"/>. Returns the number filled (0 on
+        /// timeout / shutdown / drained). Each filled slot MUST later be
+        /// released with <see cref="cosmos_completion_queue_free_completions"/>.
+        /// </summary>
+        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern UIntPtr cosmos_completion_queue_wait(
+            IntPtr cq, ref CosmosCompletion outSlots, UIntPtr max, uint timeoutMs);
 
         [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr cosmos_cq_wait(IntPtr cq, uint timeoutMs);
+        public static extern void cosmos_completion_queue_free_completions(
+            ref CosmosCompletion completions, UIntPtr count);
 
+        /// <summary>
+        /// Moves the owned driver handle out of a <c>get_or_create</c>
+        /// completion (else NULL). Detach before free to keep it.
+        /// </summary>
         [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern uint cosmos_cq_wait_batch(
-            IntPtr cq,
-            [Out] IntPtr[] outCompletions,
-            uint maxCount,
-            uint timeoutMs);
+        public static extern IntPtr cosmos_completion_take_driver(ref CosmosCompletion c);
 
-        // -----------------------------------------------------------------
-        // Completion record — Phase 1 (header lines 770–835)
-        // -----------------------------------------------------------------
-
+        /// <summary>
+        /// Moves the owned container ref out of a <c>resolve_container</c>
+        /// completion (else NULL). Detach before free to keep it.
+        /// </summary>
         [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern CosmosCompletionOutcome cosmos_completion_outcome(IntPtr c);
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr cosmos_completion_user_data(IntPtr c);
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr cosmos_completion_op_handle(IntPtr c);
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern CosmosErrorCode cosmos_completion_status(IntPtr c);
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool cosmos_completion_was_cancel_requested(IntPtr c);
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr cosmos_completion_take_response(IntPtr c);
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr cosmos_completion_response(IntPtr c);
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr cosmos_completion_take_error(IntPtr c);
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr cosmos_completion_error(IntPtr c);
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void cosmos_completion_free(IntPtr c);
+        public static extern IntPtr cosmos_completion_take_container(ref CosmosCompletion c);
 
         // -----------------------------------------------------------------
         // Operation handle — Phase 1 (header lines 837–858)
@@ -543,40 +592,28 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
         public static extern void cosmos_driver_free(IntPtr driver);
 
         // -----------------------------------------------------------------
-        // Partition key — Phase 4 (header lines 1453–1560)
-        // The string-only convenience does NOT exist; must use builder.
+        // Partition key — merged PR #4515 (flat component array).
+        // The per-component cosmos_partition_key_builder_* chain was removed
+        // in P5; construction is now a single cosmos_partition_key_create(
+        // components, len, &out) call using the same tagged-union component
+        // array the operation request accepts inline.
         // -----------------------------------------------------------------
 
         [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr cosmos_partition_key_builder_new();
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void cosmos_partition_key_builder_free(IntPtr builder);
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-        public static extern CosmosErrorCode cosmos_partition_key_builder_add_string(
-            IntPtr builder, [MarshalAs(UnmanagedType.LPUTF8Str)] string value);
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern CosmosErrorCode cosmos_partition_key_builder_add_number(
-            IntPtr builder, double value);
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern CosmosErrorCode cosmos_partition_key_builder_add_bool(
-            IntPtr builder, [MarshalAs(UnmanagedType.U1)] bool value);
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern CosmosErrorCode cosmos_partition_key_builder_add_null(IntPtr builder);
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern CosmosErrorCode cosmos_partition_key_builder_add_undefined(IntPtr builder);
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern CosmosErrorCode cosmos_partition_key_builder_build(
-            IntPtr builder, out IntPtr outPk);
+        public static extern CosmosErrorCode cosmos_partition_key_create(
+            [In] CosmosPartitionKeyComponent[] components,
+            UIntPtr len,
+            out IntPtr outPk);
 
         [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr cosmos_partition_key_empty();
+
+        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern UIntPtr cosmos_partition_key_component_count(IntPtr pk);
+
+        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool cosmos_partition_key_is_empty(IntPtr pk);
 
         [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void cosmos_partition_key_free(IntPtr pk);
@@ -618,8 +655,12 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
         //   - cosmos_operation_options_default     (helper to seed the opts struct)
         //   - cosmos_submit_singleton_operation                 (point ops)
         //   - cosmos_submit_operation                           (feed ops, paginated)
-        //   - cosmos_response_next_continuation                 (feed-page token)
-        //   - cosmos_response_take_driver / _container          (degenerate-response payloads)
+        //
+        // NOTE (merged PR #4515): the separate cosmos_response_t object and
+        // its accessor family were REMOVED. Every output (status, RU, tokens,
+        // body, next-page continuation, error message, and the bootstrap
+        // driver/container handles) now lives inline on the by-value
+        // CosmosCompletion struct filled by cosmos_completion_queue_wait.
         //
         // The two submit fns are shape-identical; the driver routes on
         // CosmosOperationKind. Both accept the request by const reference;
@@ -653,11 +694,12 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
             out CosmosErrorCode outPreError);
 
         /// <summary>
-        /// Header lines 1894-1898. Submits a feed-capable (paginated)
-        /// operation. Resumes from <see cref="CosmosOperationRequest.ContinuationToken"/>
-        /// when non-NULL; surfaces the next page's token via
-        /// <see cref="cosmos_response_next_continuation"/>. End-of-stream
-        /// arrives as a degenerate response: status code 0 + NULL next token.
+        /// Submits a feed-capable (paginated) operation. Resumes from
+        /// <see cref="CosmosOperationRequest.ContinuationToken"/> when
+        /// non-NULL; the next page's planner-derived token arrives on the
+        /// completion's <see cref="CosmosCompletion.NextContinuation"/> field.
+        /// End-of-stream arrives as a degenerate completion: HTTP status 0 +
+        /// NULL next token.
         /// </summary>
         [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr cosmos_submit_operation(
@@ -668,11 +710,10 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
             out CosmosErrorCode outPreError);
 
         /// <summary>
-        /// Header line 1938. Asynchronous variant of
-        /// <c>cosmos_driver_get_or_create_blocking</c>; the completion
-        /// delivers a degenerate response from which
-        /// <see cref="cosmos_response_take_driver"/> moves the new
-        /// driver handle out.
+        /// Asynchronous variant of <c>cosmos_driver_get_or_create_blocking</c>;
+        /// the completion carries the new driver handle on
+        /// <see cref="CosmosCompletion.Driver"/> (detach with
+        /// <see cref="cosmos_completion_take_driver"/> before freeing).
         /// </summary>
         [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr cosmos_driver_get_or_create_submit(
@@ -684,11 +725,10 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
             out CosmosErrorCode outPreError);
 
         /// <summary>
-        /// Header line 1954. Asynchronous variant of
-        /// <c>cosmos_driver_resolve_container_blocking</c>; the completion
-        /// delivers a degenerate response from which
-        /// <see cref="cosmos_response_take_container"/> moves the
-        /// resolved container handle out.
+        /// Asynchronous variant of <c>cosmos_driver_resolve_container_blocking</c>;
+        /// the completion carries the resolved container on
+        /// <see cref="CosmosCompletion.Container"/> (detach with
+        /// <see cref="cosmos_completion_take_container"/> before freeing).
         /// </summary>
         [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr cosmos_driver_resolve_container_submit(
@@ -698,60 +738,6 @@ namespace Microsoft.Azure.Cosmos.NativeDriverPoc
             IntPtr queue,
             IntPtr userData,
             out CosmosErrorCode outPreError);
-
-        // -----------------------------------------------------------------
-        // Response — Phase 6 (header lines 1562–1729)
-        // cosmos_response_body returns int32_t + out-params (NOT a struct).
-        // -----------------------------------------------------------------
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern ushort cosmos_response_status_code(IntPtr response);
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern double cosmos_response_request_charge(IntPtr response);
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr cosmos_response_activity_id(IntPtr response);
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr cosmos_response_session_token(IntPtr response);
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr cosmos_response_etag(IntPtr response);
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr cosmos_response_continuation_token(IntPtr response);
-
-        /// <summary>
-        /// Header line 1698. Convenience accessor that exposes the
-        /// next-page token for feeds. NULL means end-of-stream (the
-        /// driver also stamps status code 0 to be explicit).
-        /// </summary>
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr cosmos_response_next_continuation(IntPtr response);
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern CosmosErrorCode cosmos_response_body(
-            IntPtr response, out IntPtr outData, out UIntPtr outLen);
-
-        /// <summary>
-        /// Header line 1721. Moves the driver handle out of a degenerate
-        /// response produced by <see cref="cosmos_driver_get_or_create_submit"/>.
-        /// Returns NULL on subsequent calls (one-shot).
-        /// </summary>
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr cosmos_response_take_driver(IntPtr response);
-
-        /// <summary>
-        /// Header line 1729. Moves the container handle out of a degenerate
-        /// response produced by <see cref="cosmos_driver_resolve_container_submit"/>.
-        /// Returns NULL on subsequent calls (one-shot).
-        /// </summary>
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr cosmos_response_take_container(IntPtr response);
-
-        [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void cosmos_response_free(IntPtr response);
 
         // -----------------------------------------------------------------
         // Rich error — Phase 1 (header lines 1082–1137)
