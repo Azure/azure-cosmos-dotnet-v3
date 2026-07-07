@@ -67,13 +67,19 @@ namespace Microsoft.Azure.Cosmos
         public int? MaxBufferedItemCount { get; set; }
 
         /// <summary>
-        /// Gets or sets the maximum number of items to be returned in the enumeration operation in the Azure Cosmos DB service.
+        /// Gets or sets the maximum number of items to be returned per page (per response) for the query in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
-        /// The maximum number of items to be returned in the enumeration operation.
+        /// The maximum number of items to be returned per page (per response) for the query.
         /// </value> 
         /// <remarks>
-        /// Used for query pagination.
+        /// Used for query pagination. This is the page size: the maximum number of items returned in a
+        /// single response (a single <c>ReadNextAsync()</c> call). It is a per-page maximum and is not a
+        /// cap on the total number of items returned across all pages. Draining the iterator (looping while
+        /// <c>HasMoreResults</c> is <c>true</c>) returns every matching item regardless of this value.
+        /// To limit the total number of items returned, bound the query itself (for example
+        /// <c>OFFSET ... LIMIT ...</c> or <c>TOP</c>, which compose with pagination), or stop reading pages
+        /// once the desired total has been reached.
         /// '-1' Used for dynamic page size.
         /// This is a maximum. Query can return 0 items in the page.
         /// </remarks>

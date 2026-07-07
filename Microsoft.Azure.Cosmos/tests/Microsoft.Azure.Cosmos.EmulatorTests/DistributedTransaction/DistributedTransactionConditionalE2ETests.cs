@@ -529,6 +529,148 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             response.Dispose();
         }
 
+        // ─── Write DTx: conditional Patch via FilterPredicate ──────────────────
+
+        /// <summary>
+        /// Verifies that a write DTx Patch with a satisfied <see cref="DistributedTransactionPatchItemRequestOptions.FilterPredicate"/>
+        /// applies the patch (the server evaluates the predicate atomically before patching).
+        /// </summary>
+        [TestMethod]
+        public async Task WriteDtx_PatchWithSatisfiedFilterPredicate_Succeeds()
+        {
+            string pk = $"patch-filter-ok-{Guid.NewGuid():N}";
+            string id = Guid.NewGuid().ToString();
+
+            await this.container.CreateItemAsync<object>(
+                new { id, pk, status = "pending", value = 1 }, new PartitionKey(pk));
+
+            DistributedTransactionResponse response = await this.client
+                .CreateDistributedWriteTransaction()
+                .PatchItem(this.container, new PartitionKey(pk), id,
+                    new[] { PatchOperation.Replace("/status", "done") },
+                    new DistributedTransactionPatchItemRequestOptions
+                    {
+                        FilterPredicate = "from c where c.status = 'pending'"
+                    })
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.IsTrue(response.IsSuccessStatusCode,
+                $"Patch with a satisfied FilterPredicate should succeed. Got: {response.StatusCode}");
+            Assert.IsTrue(response.Count > 0);
+            Assert.IsTrue(response[0].IsSuccessStatusCode,
+                $"Op[0] should succeed. Got: {response[0].StatusCode}");
+
+            response.Dispose();
+        }
+
+        /// <summary>
+        /// Verifies that a write DTx Patch with an unsatisfied <see cref="DistributedTransactionPatchItemRequestOptions.FilterPredicate"/>
+        /// fails with 412 PreconditionFailed and does not apply the patch.
+        /// </summary>
+        [TestMethod]
+        public async Task WriteDtx_PatchWithUnsatisfiedFilterPredicate_Returns412()
+        {
+            string pk = $"patch-filter-fail-{Guid.NewGuid():N}";
+            string id = Guid.NewGuid().ToString();
+
+            await this.container.CreateItemAsync<object>(
+                new { id, pk, status = "done", value = 1 }, new PartitionKey(pk));
+
+            DistributedTransactionResponse response = await this.client
+                .CreateDistributedWriteTransaction()
+                .PatchItem(this.container, new PartitionKey(pk), id,
+                    new[] { PatchOperation.Replace("/status", "archived") },
+                    new DistributedTransactionPatchItemRequestOptions
+                    {
+                        FilterPredicate = "from c where c.status = 'pending'"
+                    })
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.PreconditionFailed, response.StatusCode,
+                $"Patch with an unsatisfied FilterPredicate should return 412. Got: {response.StatusCode}");
+            Assert.IsFalse(response.IsSuccessStatusCode);
+
+            // Exactly one operation was queued, so assert its per-op status unconditionally.
+            Assert.AreEqual(1, response.Count, "Exactly one patch operation was queued.");
+            Assert.AreEqual(HttpStatusCode.PreconditionFailed, response[0].StatusCode,
+                "Op[0] should be 412 (PreconditionFailed).");
+
+            // The patch must NOT have been applied — read the item back and confirm it is unchanged.
+            ConditionalDoc readBack = (await this.container.ReadItemAsync<ConditionalDoc>(
+                id, new PartitionKey(pk))).Resource;
+            Assert.AreEqual("done", readBack.status,
+                "An unsatisfied FilterPredicate must leave the item unchanged (patch must not apply).");
+
+            response.Dispose();
+        }
+
+        /// <summary>
+        /// Verifies the core distributed-transaction atomicity guarantee for conditional patch:
+        /// when one operation's <see cref="DistributedTransactionPatchItemRequestOptions.FilterPredicate"/>
+        /// is unsatisfied, the whole distributed transaction is not committed — a sibling write on a
+        /// different item and partition is rolled back (reports 424 FailedDependency and is left unchanged).
+        /// </summary>
+        [TestMethod]
+        public async Task WriteDtx_UnsatisfiedFilterPredicate_RollsBackSiblingWrite_Returns412()
+        {
+            string pkPatch = $"atomic-patch-{Guid.NewGuid():N}";
+            string pkSibling = $"atomic-sibling-{Guid.NewGuid():N}";
+            string idPatch = Guid.NewGuid().ToString();
+            string idSibling = Guid.NewGuid().ToString();
+
+            // Seed the item that will be conditionally patched (its predicate will NOT be satisfied).
+            await this.container.CreateItemAsync<object>(
+                new { id = idPatch, pk = pkPatch, status = "done" }, new PartitionKey(pkPatch));
+
+            // Seed the sibling item that a second (unconditional) write in the same DTx will try to mutate.
+            await this.container.CreateItemAsync<object>(
+                new { id = idSibling, pk = pkSibling, payload = "original" }, new PartitionKey(pkSibling));
+
+            DistributedTransactionResponse response = await this.client
+                .CreateDistributedWriteTransaction()
+                .PatchItem(this.container, new PartitionKey(pkPatch), idPatch,
+                    new[] { PatchOperation.Replace("/status", "archived") },
+                    new DistributedTransactionPatchItemRequestOptions
+                    {
+                        FilterPredicate = "from c where c.status = 'pending'"
+                    })
+                .ReplaceItem(this.container, new PartitionKey(pkSibling), idSibling,
+                    new { id = idSibling, pk = pkSibling, payload = "sibling-mutated" })
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.PreconditionFailed, response.StatusCode,
+                $"An unsatisfied FilterPredicate must fail the whole DTx with 412. Got: {response.StatusCode} " +
+                $"[ops: {string.Join(",", GetOpStatuses(response))}]");
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.AreEqual(2, response.Count, "Both operations should be reported in the response.");
+
+            // The failing conditional patch reports 412; the sibling op is rolled back with 424 FailedDependency.
+            // Op ordering depends on server-side batch grouping, so check for presence rather than by index.
+            bool found412 = false;
+            bool found424 = false;
+            for (int i = 0; i < response.Count; i++)
+            {
+                if (response[i].StatusCode == HttpStatusCode.PreconditionFailed) found412 = true;
+                if ((int)response[i].StatusCode == 424) found424 = true;
+            }
+
+            Assert.IsTrue(found412, "The conditional patch op should be 412 (PreconditionFailed).");
+            Assert.IsTrue(found424, "The sibling op should be 424 (FailedDependency) — proving the DTx rolled back.");
+
+            // Read-back proves nothing was persisted: the patch did not apply and the sibling write was rolled back.
+            ConditionalDoc patchedBack = (await this.container.ReadItemAsync<ConditionalDoc>(
+                idPatch, new PartitionKey(pkPatch))).Resource;
+            Assert.AreEqual("done", patchedBack.status,
+                "The conditional patch must not have been applied.");
+
+            ConditionalDoc siblingBack = (await this.container.ReadItemAsync<ConditionalDoc>(
+                idSibling, new PartitionKey(pkSibling))).Resource;
+            Assert.AreEqual("original", siblingBack.payload,
+                "The sibling write must have been rolled back with the rest of the distributed transaction.");
+
+            response.Dispose();
+        }
+
         // ─── Helpers ────────────────────────────────────────────────────────────
 
         private static string[] GetOpStatuses(DistributedTransactionResponse response)
@@ -539,6 +681,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 statuses[i] = $"{(int)response[i].StatusCode}";
             }
             return statuses;
+        }
+
+        private sealed class ConditionalDoc
+        {
+            public string id { get; set; }
+
+            public string pk { get; set; }
+
+            public string status { get; set; }
+
+            public string payload { get; set; }
         }
     }
 }
