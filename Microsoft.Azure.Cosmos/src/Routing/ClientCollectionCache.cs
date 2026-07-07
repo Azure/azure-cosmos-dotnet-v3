@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly IRetryPolicyFactory retryPolicy;
         private readonly ISessionContainer sessionContainer;
         private readonly TelemetryToServiceHelper telemetryToServiceHelper;
+        private readonly MetadataHedgingStrategy metadataHedgingStrategy;
 
         public ClientCollectionCache(
             ISessionContainer sessionContainer,
@@ -34,7 +35,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             ICosmosAuthorizationTokenProvider tokenProvider,
             IRetryPolicyFactory retryPolicy,
             TelemetryToServiceHelper telemetryToServiceHelper,
-            bool enableAsyncCacheExceptionNoSharing = true)
+            bool enableAsyncCacheExceptionNoSharing = true,
+            MetadataHedgingStrategy metadataHedgingStrategy = null)
             : base(enableAsyncCacheExceptionNoSharing)
         {
             this.storeModel = storeModel ?? throw new ArgumentNullException("storeModel");
@@ -42,6 +44,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.retryPolicy = retryPolicy;
             this.sessionContainer = sessionContainer;
             this.telemetryToServiceHelper = telemetryToServiceHelper;
+            this.metadataHedgingStrategy = metadataHedgingStrategy;
         }
 
         protected override Task<ContainerProperties> GetByRidAsync(string apiVersion,
@@ -232,8 +235,35 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                         try
                         {
-                            using (DocumentServiceResponse response =
-                                await this.storeModel.ProcessMessageAsync(request))
+                            // Route the Collection Read through cross-region metadata hedging when enabled;
+                            // otherwise send to the primary region unchanged. isFirstReadFeedPage is only
+                            // meaningful for PartitionKeyRange ReadFeed and is ignored here.
+                            DocumentServiceResponse response;
+                            if (this.metadataHedgingStrategy != null)
+                            {
+                                MetadataHedgingStrategy.MetadataHedgingResult hedgeResult = await this.metadataHedgingStrategy.ExecuteAsync(
+                                    request,
+                                    sendToEndpoint: MetadataHedgingStrategy.StoreModelSender(this.storeModel),
+                                    isFirstReadFeedPage: true,
+                                    cancellationToken: cancellationToken);
+
+                                // Emit the hedge trace datum ONLY when a hedge actually fired, so the
+                                // common no-hedge path leaves the trace tree (and its baselines) unchanged.
+                                if (hedgeResult.HedgeFired)
+                                {
+                                    childTrace.AddDatum(
+                                        MetadataHedgingStrategy.TraceDatumKey,
+                                        $"HedgeFired={hedgeResult.HedgeFired}; HedgeWon={hedgeResult.HedgeWon}; WinningRegion={hedgeResult.WinningRegion}");
+                                }
+
+                                response = hedgeResult.Response;
+                            }
+                            else
+                            {
+                                response = await this.storeModel.ProcessMessageAsync(request);
+                            }
+
+                            using (response)
                             {
                                 ContainerProperties containerProperties = CosmosResource.FromStream<ContainerProperties>(response);
                                 
