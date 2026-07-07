@@ -4,8 +4,10 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net.Http;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -420,6 +422,71 @@ namespace Microsoft.Azure.Cosmos.Tests
                 perRequestStrategy,
                 resolved,
                 "Per-request strategy must be returned verbatim when Gateway flag is false");
+        }
+
+        /// <summary>
+        /// M1 coverage for the subscriber-side PPAF revert. When the hedging-strategy reconcile throws
+        /// while a PPAF-enablement transition is being applied,
+        /// <see cref="DocumentClient.UpdatePartitionLevelFailoverConfigWithAccountRefresh(bool, bool)"/>
+        /// must revert the applied connection-policy flags (and the
+        /// <see cref="DocumentClient.PartitionKeyRangeLocation"/> PPAF/PPCB state) so the top-of-method
+        /// no-op guard does not swallow the GlobalEndpointManager re-fire. A second call with the same
+        /// <c>latestIsEnabled</c> must therefore re-apply the transition end-to-end rather than returning
+        /// early — the exact "transient failure goes permanently silent" mode this PR exists to prevent.
+        /// </summary>
+        [TestMethod]
+        public void UpdateConfig_PpafEnablement_ReconcileThrows_RevertsStateSoRetryIsNotNoOp()
+        {
+            ConnectionPolicy policy = new ConnectionPolicy { EnablePartitionLevelFailover = false };
+            DocumentClient client = CreateClient(policy);
+            try
+            {
+                // Inject a stub PartitionKeyRangeLocation so the PPAF path (SetIsPPAFEnabled /
+                // SetIsPPCBEnabled) runs without a fully-opened client.
+                Mock<GlobalPartitionEndpointManager> partitionKeyRangeLocation = new Mock<GlobalPartitionEndpointManager>();
+                client.PartitionKeyRangeLocationForTests = partitionKeyRangeLocation.Object;
+
+                // Force the reconcile to throw on the first (PPAF false -> true) transition, after the
+                // applied-state mutations have already committed inside the try.
+                client.ReconcileFailureHookForTests = () => throw new InvalidOperationException("Simulated reconcile failure");
+
+                Assert.ThrowsException<InvalidOperationException>(
+                    () => client.UpdatePartitionLevelFailoverConfigWithAccountRefresh(latestIsEnabled: true, latestDisableCrossRegionalHedging: false),
+                    "The forced reconcile failure must propagate to the caller (GEM), which rolls back its own baseline in tandem.");
+
+                Assert.IsFalse(
+                    client.ConnectionPolicy.EnablePartitionLevelFailover,
+                    "EnablePartitionLevelFailover must be reverted after a throwing reconcile so the transition stays re-detectable.");
+                Assert.IsFalse(
+                    client.ConnectionPolicy.EnablePartitionLevelCircuitBreaker,
+                    "EnablePartitionLevelCircuitBreaker must be reverted in tandem with the PPAF flag.");
+
+                partitionKeyRangeLocation.Verify(
+                    p => p.SetIsPPAFEnabled(false),
+                    Times.AtLeastOnce(),
+                    "Revert must restore the PartitionKeyRangeLocation PPAF state to its pre-change value.");
+                partitionKeyRangeLocation.Verify(
+                    p => p.SetIsPPCBEnabled(false),
+                    Times.AtLeastOnce(),
+                    "Revert must restore the PartitionKeyRangeLocation PPCB state to its pre-change value.");
+
+                // Clear the failure hook and re-fire with the SAME latestIsEnabled. Because the first
+                // attempt reverted the applied state, ppafEnablementChanged is true again — so this call
+                // must NOT be short-circuited by the no-op guard and must re-apply the transition.
+                client.ReconcileFailureHookForTests = null;
+                client.UpdatePartitionLevelFailoverConfigWithAccountRefresh(latestIsEnabled: true, latestDisableCrossRegionalHedging: false);
+
+                Assert.IsTrue(
+                    client.ConnectionPolicy.EnablePartitionLevelFailover,
+                    "A second refresh with the same value must re-apply the missed PPAF transition, proving the first call's revert prevented a permanent no-op.");
+                Assert.IsTrue(
+                    client.ConnectionPolicy.EnablePartitionLevelCircuitBreaker,
+                    "Circuit breaker must be enabled in tandem when the PPAF transition is finally applied.");
+            }
+            finally
+            {
+                client.Dispose();
+            }
         }
 
         private static DocumentClient CreateClient(ConnectionPolicy policy)
