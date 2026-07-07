@@ -20,14 +20,12 @@ pr: none
 variables:
   Arguments: ' --filter "TestCategory=DistributedTransactionLive" --verbosity normal '
   BuildConfiguration: Release
-  VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
 
 jobs:
 - template:  templates/build-distributed-transaction-test.yml
   parameters:
     BuildConfiguration: $(BuildConfiguration)
     Arguments: $(Arguments)
-    VmImage: $(VmImage)
     CategoryListName: ' DistributedTransaction '
     DistributedTransactionEndpoint: $(COSMOS_DTX_ENDPOINT)
     DistributedTransactionKey: $(COSMOS_DTX_KEY)

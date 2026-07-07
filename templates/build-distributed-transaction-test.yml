@@ -18,7 +18,6 @@
 parameters:
   BuildConfiguration: ''
   Arguments: ' --filter "TestCategory=DistributedTransactionLive" --verbosity normal '
-  VmImage: '' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
   OS: 'Windows'
   CategoryListName: ' DistributedTransaction '
   DistributedTransactionEndpoint: ''
@@ -51,7 +50,6 @@ jobs:
 
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.EmulatorTests - ${{ parameters.CategoryListName }}
-    continueOnError: true
     inputs:
       command: test
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj'
