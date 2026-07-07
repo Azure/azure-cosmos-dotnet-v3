@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.IO;
     using System.Net;
     using System.Net.Http;
     using System.Threading;
@@ -215,7 +216,7 @@ namespace Microsoft.Azure.Cosmos
             // requires) is scoped to DTX requests, so the general retry path keeps its original Content != null
             // semantics. Length is read only when the stream is seekable; a non-seekable stream conservatively
             // counts as having a body.
-            System.IO.Stream responseContent = cosmosResponseMessage?.Content;
+            Stream responseContent = cosmosResponseMessage?.Content;
             bool hasResponseBody = responseContent != null
                 && (!this.isDtxRequest || !responseContent.CanSeek || responseContent.Length > 0);
 
