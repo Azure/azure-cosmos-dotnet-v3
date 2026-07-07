@@ -1044,10 +1044,10 @@
               "Attributes": [],
               "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction DeleteItem(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "Microsoft.Azure.Cosmos.DistributedWriteTransaction PatchItem(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.PatchOperation], Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
+            "Microsoft.Azure.Cosmos.DistributedWriteTransaction PatchItem(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.PatchOperation], Microsoft.Azure.Cosmos.DistributedTransactionPatchItemRequestOptions)": {
               "Type": "Method",
               "Attributes": [],
-              "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction PatchItem(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.PatchOperation], Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+              "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction PatchItem(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.PatchOperation], Microsoft.Azure.Cosmos.DistributedTransactionPatchItemRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
             "Microsoft.Azure.Cosmos.DistributedWriteTransaction PatchItemStream(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
               "Type": "Method",
@@ -1214,8 +1214,69 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions;Microsoft.Azure.Cosmos.RequestOptions;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.DistributedTransactionPatchItemRequestOptions;Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
+      "Members": {
+        "System.String FilterPredicate": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.String FilterPredicate;CanRead:True;CanWrite:True;System.String get_FilterPredicate();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_FilterPredicate(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_FilterPredicate()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_FilterPredicate();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor()": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor()"
+        },
+        "Void set_FilterPredicate(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_FilterPredicate(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions;Microsoft.Azure.Cosmos.RequestOptions;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {
+        "Microsoft.Azure.Cosmos.DistributedTransactionPatchItemRequestOptions;Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+          "Subclasses": {},
+          "Members": {
+            "System.String FilterPredicate": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": "System.String FilterPredicate;CanRead:True;CanWrite:True;System.String get_FilterPredicate();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_FilterPredicate(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.String get_FilterPredicate()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.String get_FilterPredicate();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Void .ctor()": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "Void .ctor()"
+            },
+            "Void set_FilterPredicate(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Void set_FilterPredicate(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            }
+          },
+          "NestedTypes": {}
+        }
+      },
       "Members": {
         "System.String get_SessionToken()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -1417,10 +1478,10 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction DeleteItem(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.DistributedWriteTransaction PatchItem(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.PatchOperation], Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
+        "Microsoft.Azure.Cosmos.DistributedWriteTransaction PatchItem(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.PatchOperation], Microsoft.Azure.Cosmos.DistributedTransactionPatchItemRequestOptions)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction PatchItem(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.PatchOperation], Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.DistributedWriteTransaction PatchItem(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.PatchOperation], Microsoft.Azure.Cosmos.DistributedTransactionPatchItemRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.DistributedWriteTransaction PatchItemStream(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String, System.IO.Stream, Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions)": {
           "Type": "Method",
@@ -2285,8 +2346,69 @@
           },
           "NestedTypes": {}
         },
-        "Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions;Microsoft.Azure.Cosmos.RequestOptions;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+        "Microsoft.Azure.Cosmos.DistributedTransactionPatchItemRequestOptions;Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
           "Subclasses": {},
+          "Members": {
+            "System.String FilterPredicate": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": "System.String FilterPredicate;CanRead:True;CanWrite:True;System.String get_FilterPredicate();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_FilterPredicate(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.String get_FilterPredicate()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.String get_FilterPredicate();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Void .ctor()": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "Void .ctor()"
+            },
+            "Void set_FilterPredicate(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Void set_FilterPredicate(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            }
+          },
+          "NestedTypes": {}
+        },
+        "Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions;Microsoft.Azure.Cosmos.RequestOptions;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+          "Subclasses": {
+            "Microsoft.Azure.Cosmos.DistributedTransactionPatchItemRequestOptions;Microsoft.Azure.Cosmos.DistributedTransactionRequestOptions;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+              "Subclasses": {},
+              "Members": {
+                "System.String FilterPredicate": {
+                  "Type": "Property",
+                  "Attributes": [],
+                  "MethodInfo": "System.String FilterPredicate;CanRead:True;CanWrite:True;System.String get_FilterPredicate();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_FilterPredicate(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+                },
+                "System.String get_FilterPredicate()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+                  "Type": "Method",
+                  "Attributes": [
+                    "CompilerGeneratedAttribute"
+                  ],
+                  "MethodInfo": "System.String get_FilterPredicate();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+                },
+                "Void .ctor()": {
+                  "Type": "Constructor",
+                  "Attributes": [],
+                  "MethodInfo": "Void .ctor()"
+                },
+                "Void set_FilterPredicate(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+                  "Type": "Method",
+                  "Attributes": [
+                    "CompilerGeneratedAttribute"
+                  ],
+                  "MethodInfo": "Void set_FilterPredicate(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+                }
+              },
+              "NestedTypes": {}
+            }
+          },
           "Members": {
             "System.String get_SessionToken()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
