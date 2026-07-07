@@ -89,7 +89,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 tokenProviderMock.Object,
                 retryPolicyFactoryMock.Object,
                 telemetry,
-                true)
+                true,
+                null)
             {
                 CallBase = true
             };
@@ -154,7 +155,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 tokenProviderMock.Object,
                 retryPolicyFactoryMock.Object,
                 telemetry,
-                true)
+                true,
+                null)
             {
                 CallBase = true
             };
@@ -249,7 +251,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 tokenProviderMock.Object,
                 retryPolicyFactoryMock.Object,
                 telemetry,
-                true)
+                true,
+                null)
             {
                 CallBase = true
             };
@@ -343,7 +346,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 tokenProviderMock.Object,
                 retryPolicyFactoryMock.Object,
                 telemetry,
-                true)
+                true,
+                null)
             {
                 CallBase = true
             };
