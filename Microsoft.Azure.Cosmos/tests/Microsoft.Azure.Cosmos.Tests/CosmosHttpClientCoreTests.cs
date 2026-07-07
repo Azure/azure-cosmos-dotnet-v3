@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Security.Cryptography.X509Certificates;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -836,18 +837,30 @@ namespace Microsoft.Azure.Cosmos.Tests
             HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
             using CosmosHttpClient cosmosHttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
 
+            string diagnostics;
             using (ITrace trace = Trace.GetRootTrace(nameof(ThinClientRetriableResponsesAreDisposedBeforeRetryAsync)))
             {
+                ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
                 HttpResponseMessage responseMessage = await cosmosHttpClient.SendHttpAsync(() =>
                     new ValueTask<HttpRequestMessage>(
                         result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
                     resourceType: ResourceType.Document,
                     timeoutPolicy: thinClientPolicy,
-                    clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace),
+                    clientSideRequestStatistics: datum,
                     cancellationToken: default,
                     documentServiceRequest: documentServiceRequest);
 
                 Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+
+                // The dropped 408 responses were disposed before each retry, but the diagnostics still
+                // hold a reference to them (RecordHttpResponse stored each one). Serializing the trace
+                // runs the production diagnostics path (TraceJsonWriter reads StatusCode / ReasonPhrase
+                // on every recorded response) over those now-disposed responses. This asserts the
+                // disposal added by this fix stays dispose-safe for diagnostics - the actual risk of
+                // disposing a still-referenced response (issue #5982) - rather than only proving the
+                // response was disposed.
+                trace.AddDatum("stats", datum);
+                diagnostics = new CosmosTraceDiagnostics(trace).ToString();
             }
 
             Assert.AreEqual(2, droppedResponseContents.Count, "Two 408 responses should be produced before success.");
@@ -855,6 +868,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 Assert.IsTrue(content.IsDisposed, "Dropped retriable (408) response should be disposed before the retry (issue #5982).");
             }
+
+            // The disposed 408 responses still serialize their status into diagnostics without throwing
+            // ObjectDisposedException, proving the retriable-response disposal does not corrupt diagnostics.
+            StringAssert.Contains(diagnostics, HttpStatusCode.RequestTimeout.ToString());
         }
 
         private static DocumentServiceRequest CreateDocumentServiceRequestByOperation(
