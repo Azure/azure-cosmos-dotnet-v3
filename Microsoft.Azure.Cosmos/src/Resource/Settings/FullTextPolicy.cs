@@ -18,6 +18,30 @@ namespace Microsoft.Azure.Cosmos
         private Collection<FullTextPath> fullTextPathsInternal;
 
         /// <summary>
+        /// Gets or sets the package type for the full-text policy.
+        /// Valid values: "legacy" (default) or "standard". This is a collection-wide setting.
+        /// </summary>
+        [JsonProperty(PropertyName = "package", NullValueHandling = NullValueHandling.Ignore)]
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        string Package { get; set; }
+
+        /// <summary>
+        /// Gets or sets the default specification for full-text paths.
+        /// Fields set here are inherited by full-text paths that do not explicitly override them.
+        /// </summary>
+        [JsonProperty(PropertyName = "defaultSpec", NullValueHandling = NullValueHandling.Ignore)]
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        FullTextDefaultSpec DefaultSpec { get; set; }
+
+        /// <summary>
         /// Gets or sets a string containing the default language of the container.
         /// </summary>
         [JsonProperty(PropertyName = "defaultLanguage", NullValueHandling = NullValueHandling.Ignore)]
