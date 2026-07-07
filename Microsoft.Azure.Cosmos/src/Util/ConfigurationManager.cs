@@ -113,6 +113,14 @@ namespace Microsoft.Azure.Cosmos
         internal static readonly string BinaryEncodingEnabled = "AZURE_COSMOS_BINARY_ENCODING_ENABLED";
 
         /// <summary>
+        /// A read-only string containing the environment variable name for enabling cross-region metadata
+        /// hedging. Metadata hedging applies to the Collection Read and PartitionKeyRange ReadFeed metadata
+        /// cache reads. It is enabled by default in the preview package; in the GA package it follows the
+        /// account's PPAF state unless this environment variable is explicitly set.
+        /// </summary>
+        internal static readonly string MetadataHedgingEnabled = "AZURE_COSMOS_METADATA_HEDGING_ENABLED";
+
+        /// <summary>
         /// A read-only string containing the environment variable name for enabling binary encoding. This will eventually
         /// be removed once binary encoding is enabled by default for both preview
         /// and GA.
@@ -449,6 +457,36 @@ namespace Microsoft.Azure.Cosmos
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.UseLengthAwareRangeComparator,
                         defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Resolves the tri-state opt-in for cross-region metadata hedging.
+        /// <list type="bullet">
+        /// <item>If the <c>AZURE_COSMOS_METADATA_HEDGING_ENABLED</c> environment variable is set to a valid
+        /// boolean, that value wins (<c>true</c> force-enables, <c>false</c> is a hard kill-switch).</item>
+        /// <item>If the environment variable is unset, the preview package defaults to <c>true</c> (on) and
+        /// the GA package returns <c>null</c> so hedging follows the account's PPAF state.</item>
+        /// </list>
+        /// </summary>
+        /// <returns>
+        /// <c>true</c> / <c>false</c> when explicitly configured; otherwise <c>true</c> for preview builds and
+        /// <c>null</c> (follow PPAF) for GA builds.
+        /// </returns>
+        public static bool? GetMetadataHedgingOptIn()
+        {
+            string value = Environment.GetEnvironmentVariable(ConfigurationManager.MetadataHedgingEnabled);
+            if (!string.IsNullOrEmpty(value) && bool.TryParse(value, out bool parsed))
+            {
+                return parsed;
+            }
+
+#if PREVIEW
+            // Preview package: metadata hedging is on by default.
+            return true;
+#else
+            // GA package: follow the account's PPAF state (resolved per-request by the strategy).
+            return null;
+#endif
         }
 
         /// <summary>
