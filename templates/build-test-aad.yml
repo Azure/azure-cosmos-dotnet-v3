@@ -2,9 +2,9 @@
 #
 # Dedicated template for the live-account AAD (Microsoft Entra ID) integration tests
 # (TestCategory=MultiRegionAad). These target a shared, AAD-only live Cosmos DB account and
-# are intended to run ONLY on the nightly schedule (azure-pipelines-nightly.yml) -- never on
-# PR builds. The account is authenticated via a Workload Identity Federation service connection
-# (client secrets are blocked by tenant policy).
+# run on every pipeline (the nightly schedule, azure-pipelines-nightly.yml, as well as PR
+# builds, azure-pipelines.yml). The account is authenticated via a Workload Identity Federation
+# service connection (client secrets are blocked by tenant policy).
 #
 # The job stays skipped (green) until 'AadServiceConnection' is set to the WIF service
 # connection name, so this template is safe to reference before the connection is configured.
