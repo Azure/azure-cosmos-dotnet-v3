@@ -765,6 +765,149 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(2, callCount);
         }
 
+        // ---------------------------------------------------------------------------------------
+        // Regression tests for the AAD ReadAccountAsync hang introduced by PR #5549 (CAE / token
+        // revocation) between SDK 3.61.0 and main.
+        //
+        // Root cause: TokenCredentialCache attached a NON-EMPTY 'claims' parameter (the cp1 client
+        // capability) on EVERY token acquisition — even when there was no revocation challenge —
+        // because MergeClaimsWithClientCapabilities(null) returns the cp1 JSON rather than null.
+        // Azure.Identity / MSAL treat any non-empty 'claims' as "the cached token does not satisfy
+        // this challenge" and therefore SKIP AcquireTokenSilent's token cache and go live to ESTS on
+        // every acquisition. Under an MSAL-backed credential (certificate / managed identity) that
+        // live call can stall, and because all callers funnel through a single-flight refresh, the
+        // first ReadAccountAsync (and everything after it) hangs. cp1/CAE is ALREADY advertised the
+        // correct, cache-friendly way via isCaeEnabled:true in CosmosScopeProvider, so the claims
+        // injection was redundant. The fix attaches 'claims' only on an actual revocation challenge.
+        // ---------------------------------------------------------------------------------------
+
+        [TestMethod]
+        public async Task TokenCredentialCache_NormalAcquisition_DoesNotAttachClaims_SoMsalCacheIsUsable()
+        {
+            // Arrange
+            ClaimsCapturingTokenCredential credential = new ClaimsCapturingTokenCredential();
+            using TokenCredentialCache cache = this.CreateTokenCredentialCache(credential, TimeSpan.FromMinutes(30));
+
+            // Act — a normal first acquisition with no revocation challenge outstanding.
+            await cache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton);
+
+            // Assert
+            Assert.AreEqual(1, credential.Requests.Count, "Expected exactly one token acquisition.");
+            (string claims, bool isCaeEnabled) = credential.Requests[0];
+
+            Assert.IsTrue(
+                string.IsNullOrEmpty(claims),
+                "REGRESSION (PR #5549): the normal (no-revocation) token acquisition must NOT attach a " +
+                "'claims' parameter. A non-empty claims forces Azure.Identity/MSAL to bypass its token " +
+                "cache (AcquireTokenSilent) and call ESTS live on every acquisition, which stalls " +
+                $"ReadAccountAsync under MSAL-backed credentials. Actual claims sent: '{claims}'.");
+
+            Assert.IsTrue(
+                isCaeEnabled,
+                "CAE / cp1 must still be advertised the cache-friendly way, via isCaeEnabled:true.");
+        }
+
+        [TestMethod]
+        public async Task TokenCredentialCache_RevocationChallenge_StillAttachesMergedClaims()
+        {
+            // Arrange
+            ClaimsCapturingTokenCredential credential = new ClaimsCapturingTokenCredential();
+            using TokenCredentialCache cache = this.CreateTokenCredentialCache(credential, TimeSpan.FromMinutes(30));
+
+            // Act — normal acquire, then simulate a CAE revocation challenge and acquire again.
+            await cache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton);
+
+            string claimsChallenge = Convert.ToBase64String(
+                System.Text.Encoding.UTF8.GetBytes("{\"access_token\":{\"acrs\":{\"essential\":true,\"value\":\"c1\"}}}"));
+            cache.ResetCachedToken(claimsChallenge);
+
+            await cache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton);
+
+            // Assert
+            Assert.AreEqual(2, credential.Requests.Count, "Expected two token acquisitions.");
+            Assert.IsTrue(
+                string.IsNullOrEmpty(credential.Requests[0].Claims),
+                "The first (normal) acquisition must not attach claims.");
+
+            string revocationClaims = credential.Requests[1].Claims;
+                Assert.IsTrue(revocationClaims != null && revocationClaims.Length > 0,
+                "On an actual revocation challenge, the SDK MUST attach the claims so CAE revocation works.");
+            Assert.IsTrue(revocationClaims.Contains("acrs"), "Revocation claims must include the challenge's claims.");
+            Assert.IsTrue(revocationClaims.Contains("cp1"), "Revocation claims must still include the cp1 client capability.");
+        }
+
+        [TestMethod]
+        [Timeout(30000)]
+        public async Task TokenCredentialCache_NormalAcquisition_DoesNotStallOnMsalCacheBypass()
+        {
+            // This is the deterministic reproduction of the customer-reported hang. The credential
+            // faithfully models MSAL's behavior: a non-empty 'claims' cannot be served from the token
+            // cache and triggers a live (here: long-stalling) ESTS call, whereas an empty 'claims' is
+            // served fast. On the normal path the SDK must send NO claims, so the acquisition must NOT
+            // stall. Before the fix, the SDK sent cp1 claims here -> the credential stalls -> the
+            // acquisition (and thus ReadAccountAsync) hangs, and this test times out.
+            TimeSpan stallWhenCacheBypassed = TimeSpan.FromSeconds(20);
+            ClaimsCapturingTokenCredential credential = new ClaimsCapturingTokenCredential(
+                delayWhenClaimsPresent: stallWhenCacheBypassed);
+            using TokenCredentialCache cache = this.CreateTokenCredentialCache(credential, TimeSpan.FromMinutes(30));
+
+            // Act
+            Task<string> acquire = cache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton).AsTask();
+            Task first = await Task.WhenAny(acquire, Task.Delay(TimeSpan.FromSeconds(5)));
+
+            // Assert
+            Assert.AreSame(
+                acquire,
+                first,
+                "REGRESSION (PR #5549): the first token acquisition (no revocation challenge) stalled. " +
+                "The SDK attached a non-empty 'claims' on the normal path, forcing the MSAL cache-bypass " +
+                "live path and hanging ReadAccountAsync. With the fix (no claims on the normal path) the " +
+                "acquisition completes immediately.");
+
+            string header = await acquire;
+            Assert.IsFalse(string.IsNullOrEmpty(header));
+        }
+
+        /// <summary>
+        /// A TokenCredential that records the claims / IsCaeEnabled of every request context the SDK
+        /// passes, and — to model Azure.Identity/MSAL cache-bypass semantics — optionally stalls when a
+        /// non-empty <c>claims</c> is present (a claims challenge cannot be served from the silent cache
+        /// and forces a live ESTS call), while returning immediately when no claims are present.
+        /// </summary>
+        private sealed class ClaimsCapturingTokenCredential : TokenCredential
+        {
+            private readonly TimeSpan delayWhenClaimsPresent;
+
+            public ClaimsCapturingTokenCredential(TimeSpan? delayWhenClaimsPresent = null)
+            {
+                this.delayWhenClaimsPresent = delayWhenClaimsPresent ?? TimeSpan.Zero;
+            }
+
+            public List<(string Claims, bool IsCaeEnabled)> Requests { get; } = new List<(string, bool)>();
+
+            public override AccessToken GetToken(TokenRequestContext requestContext, CancellationToken cancellationToken)
+            {
+                return this.GetTokenAsync(requestContext, cancellationToken).AsTask().GetAwaiter().GetResult();
+            }
+
+            public override async ValueTask<AccessToken> GetTokenAsync(TokenRequestContext requestContext, CancellationToken cancellationToken)
+            {
+                bool hasClaims = !string.IsNullOrEmpty(requestContext.Claims);
+                lock (this.Requests)
+                {
+                    this.Requests.Add((requestContext.Claims, requestContext.IsCaeEnabled));
+                }
+
+                if (hasClaims && this.delayWhenClaimsPresent > TimeSpan.Zero)
+                {
+                    // Models MSAL: a non-empty claims challenge skips the token cache and goes live.
+                    await Task.Delay(this.delayWhenClaimsPresent, cancellationToken);
+                }
+
+                return new AccessToken("AccessToken", DateTimeOffset.MaxValue);
+            }
+        }
+
         [TestMethod]
         public async Task TokenCredentialCache_ThrowsObjectDisposed_AfterDispose()
         {

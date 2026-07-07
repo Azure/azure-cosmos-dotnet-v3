@@ -289,24 +289,33 @@ namespace Microsoft.Azure.Cosmos
                         {
                             tokenRequestContext = this.scopeProvider.GetTokenRequestContext();
 
-                            string mergedClaims = TokenCredentialCache.MergeClaimsWithClientCapabilities(this.cachedClaimsChallenge);
-                            if (string.IsNullOrEmpty(this.cachedClaimsChallenge))
+                            // Attach a CAE 'claims' parameter ONLY when responding to an actual
+                            // revocation / CAE challenge. cp1 (the CAE client capability) is already
+                            // advertised to the identity library via isCaeEnabled:true from the scope
+                            // provider, so attaching claims on the normal path is redundant AND harmful:
+                            // Azure.Identity/MSAL treats any non-empty claims as "the cached token does
+                            // not satisfy this challenge" and bypasses its token cache (AcquireTokenSilent),
+                            // issuing a live ESTS call on every acquisition. That cache-bypass is what
+                            // stalls the first token acquisition (e.g. ReadAccountAsync) under MSAL-backed
+                            // credentials.
+                            if (!string.IsNullOrEmpty(this.cachedClaimsChallenge))
                             {
+                                string mergedClaims = TokenCredentialCache.MergeClaimsWithClientCapabilities(this.cachedClaimsChallenge);
                                 DefaultTrace.TraceInformation(
-                                    $"Requesting AAD token with CAE client capabilities (cp1). Retry={retry}");
+                                    $"Requesting AAD token for revocation with claims challenge and client capabilities (cp1). Retry={retry}");
+
+                                tokenRequestContext = new TokenRequestContext(
+                                    scopes: tokenRequestContext.Scopes,
+                                    parentRequestId: tokenRequestContext.ParentRequestId,
+                                    claims: mergedClaims,
+                                    tenantId: tokenRequestContext.TenantId,
+                                    isCaeEnabled: tokenRequestContext.IsCaeEnabled);
                             }
                             else
                             {
                                 DefaultTrace.TraceInformation(
-                                    $"Requesting AAD token for revocation with claims challenge and client capabilities (cp1). Retry={retry}");
+                                    $"Requesting AAD token with CAE client capabilities (cp1) advertised via isCaeEnabled. Retry={retry}");
                             }
-
-                            tokenRequestContext = new TokenRequestContext(
-                                scopes: tokenRequestContext.Scopes,
-                                parentRequestId: tokenRequestContext.ParentRequestId,
-                                claims: mergedClaims,
-                                tenantId: tokenRequestContext.TenantId,
-                                isCaeEnabled: tokenRequestContext.IsCaeEnabled);
 
                             AccessToken accessToken = await this.tokenCredential.GetTokenAsync(
                                 requestContext: tokenRequestContext,
