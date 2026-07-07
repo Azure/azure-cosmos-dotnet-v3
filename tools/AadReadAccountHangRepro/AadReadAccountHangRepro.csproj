@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>AadReadAccountHangRepro</AssemblyName>
+    <RootNamespace>ReadAccountHangRepro</RootNamespace>
+    <AzureCosmosDisableNewtonsoftJsonCheck>true</AzureCosmosDisableNewtonsoftJsonCheck>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      IMPORTANT: point Microsoft.Azure.Cosmos at the SAME preview build that contains PR #5549
+      (the "[AAD token revocation] ... CAE token revocation" change). That is the build the
+      internal team was given. The public nuget.org preview may predate #5549 and will NOT
+      reproduce the hang. To use the internal/local .nupkg, add a nuget.config next to this
+      file with a <packageSources> entry pointing at the folder that holds the .nupkg and set
+      the exact version below.
+
+      Alternatively, replace this PackageReference with a ProjectReference to the in-repo SDK
+      built with /p:IsPreview=true (this repro branch already contains the buggy #5549 source):
+        <ProjectReference Include="..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj">
+          <AdditionalProperties>IsPreview=true</AdditionalProperties>
+        </ProjectReference>
+      When building against source you must also copy the bundled closed-source assemblies
+      (Microsoft.Azure.Cosmos.Core.dll and Microsoft.Azure.Cosmos.Serialization.HybridRow.dll,
+      both 1.1.0.0 / 2.11.0.0) and the Direct package into the output; see README.md.
+    -->
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.*-preview*" />
+    <!-- Only required for the --faultinject mode (forces a metadata hedge / delay). -->
+    <PackageReference Include="Microsoft.Azure.Cosmos.FaultInjection" Version="*-preview*" />
+    <PackageReference Include="Azure.Identity" Version="1.13.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+</Project>
