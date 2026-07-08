@@ -654,11 +654,26 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [DataRow(null, "{\"access_token\":{\"xms_cc\":{\"values\":[\"cp1\"]}}}", DisplayName = "Null claims")]
-        [DataRow("", "{\"access_token\":{\"xms_cc\":{\"values\":[\"cp1\"]}}}", DisplayName = "Empty claims")]
-        [DataRow("not-valid-base64!!!", "{\"access_token\":{\"xms_cc\":{\"values\":[\"cp1\"]}}}", DisplayName = "Invalid base64")]
-        public void MergeClaimsWithClientCapabilities_InvalidInput_ReturnsOnlyCp1(string claimsChallenge, string expected)
+        [DataRow(null, DisplayName = "Null claims")]
+        [DataRow("", DisplayName = "Empty claims")]
+        public void MergeClaimsWithClientCapabilities_NullOrEmpty_ReturnsNull(string claimsChallenge)
         {
+            // No revocation / CAE challenge outstanding => no claims must be attached, so the
+            // credential's own token cache stays usable (a non-empty 'claims' forces MSAL to
+            // bypass its cache and go live to ESTS on every acquisition).
+            // Act
+            string result = TokenCredentialCache.MergeClaimsWithClientCapabilities(claimsChallenge);
+
+            // Assert
+            Assert.IsNull(result);
+        }
+
+        [TestMethod]
+        [DataRow("not-valid-base64!!!", "{\"access_token\":{\"xms_cc\":{\"values\":[\"cp1\"]}}}", DisplayName = "Invalid base64")]
+        public void MergeClaimsWithClientCapabilities_InvalidChallenge_ReturnsOnlyCp1(string claimsChallenge, string expected)
+        {
+            // A non-empty but malformed challenge still means a challenge occurred, so we fall
+            // back to attaching only the cp1 client capability.
             // Act
             string result = TokenCredentialCache.MergeClaimsWithClientCapabilities(claimsChallenge);
 

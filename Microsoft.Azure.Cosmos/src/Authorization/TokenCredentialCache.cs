@@ -164,13 +164,17 @@ namespace Microsoft.Azure.Cosmos
                 $"TokenCredentialCache: Token cache reset due to AAD revocation signal. HasClaims={claimsChallenge != null}");
         }
 
-        internal static string MergeClaimsWithClientCapabilities(string? claimsChallenge)
+        internal static string? MergeClaimsWithClientCapabilities(string? claimsChallenge)
         {
             const string clientCapabilitiesJson = "{\"access_token\":{\"xms_cc\":{\"values\":[\"cp1\"]}}}";
 
+            // No revocation / CAE challenge outstanding: return null so the caller attaches no
+            // 'claims'. cp1 (the CAE client capability) is already advertised the cache-friendly
+            // way via isCaeEnabled:true, and a non-empty 'claims' would force Azure.Identity/MSAL
+            // to bypass its token cache and issue a live ESTS call on every acquisition.
             if (string.IsNullOrEmpty(claimsChallenge))
             {
-                return clientCapabilitiesJson;
+                return null;
             }
 
             try
@@ -290,17 +294,19 @@ namespace Microsoft.Azure.Cosmos
                             tokenRequestContext = this.scopeProvider.GetTokenRequestContext();
 
                             // Attach a CAE 'claims' parameter ONLY when responding to an actual
-                            // revocation / CAE challenge. cp1 (the CAE client capability) is already
-                            // advertised to the identity library via isCaeEnabled:true from the scope
-                            // provider, so attaching claims on the normal path is redundant AND harmful:
+                            // revocation / CAE challenge. MergeClaimsWithClientCapabilities returns
+                            // null when no challenge is outstanding, so the normal path sends no
+                            // 'claims'. cp1 (the CAE client capability) is already advertised to the
+                            // identity library via isCaeEnabled:true from the scope provider, so
+                            // attaching claims on the normal path is redundant AND harmful:
                             // Azure.Identity/MSAL treats any non-empty claims as "the cached token does
                             // not satisfy this challenge" and bypasses its token cache (AcquireTokenSilent),
                             // issuing a live ESTS call on every acquisition. That cache-bypass is what
                             // stalls the first token acquisition (e.g. ReadAccountAsync) under MSAL-backed
                             // credentials.
-                            if (!string.IsNullOrEmpty(this.cachedClaimsChallenge))
+                            string? mergedClaims = TokenCredentialCache.MergeClaimsWithClientCapabilities(this.cachedClaimsChallenge);
+                            if (!string.IsNullOrEmpty(mergedClaims))
                             {
-                                string mergedClaims = TokenCredentialCache.MergeClaimsWithClientCapabilities(this.cachedClaimsChallenge);
                                 DefaultTrace.TraceInformation(
                                     $"Requesting AAD token for revocation with claims challenge and client capabilities (cp1). Retry={retry}");
 
