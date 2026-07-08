@@ -17,6 +17,22 @@
     [TestClass]
     public class TraceTests
     {
+        private int savedMaxChildCount;
+
+        [TestInitialize]
+        public void SaveTraceState()
+        {
+            this.savedMaxChildCount = Trace.MaxChildCount;
+        }
+
+        // Crash-safe restore of the process-wide static: even if a test throws before its own
+        // finally runs, MaxChildCount is reset so a low limit cannot leak into other tests.
+        [TestCleanup]
+        public void RestoreTraceState()
+        {
+            Trace.MaxChildCount = this.savedMaxChildCount;
+        }
+
         [TestMethod]
         public void TestRootTrace()
         {
@@ -224,7 +240,7 @@
                     Assert.IsTrue(
                         rootTrace.Data.TryGetValue(Trace.TruncatedChildTraceCountKey, out object suppressed),
                         "Truncation should be surfaced as a datum on the node.");
-                    Assert.AreEqual(7L, suppressed);
+                    Assert.AreEqual(7, suppressed);
                 }
             }
             finally
@@ -255,7 +271,7 @@
                     Assert.IsTrue(
                         rootTrace.Data.TryGetValue(Trace.TruncatedChildTraceCountKey, out object suppressed),
                         "Truncation should be surfaced as a datum on the node.");
-                    Assert.AreEqual(3L, suppressed);
+                    Assert.AreEqual(3, suppressed);
                 }
             }
             finally
@@ -451,6 +467,33 @@
                 component: TraceComponent.Transport,
                 level: TraceLevel.Info);
             Assert.IsNotNull(child.Summary);
+        }
+
+        [TestMethod]
+        [DoNotParallelize]
+        public void TestMaxChildCountAddChildGraftingSurfacesTruncation()
+        {
+            // A grafted subtree (for example batch results added via AddChild) carries its own
+            // TraceSummary. When such a child is dropped by the per-node cap, the drop is not
+            // silent: the parent records the truncation and it surfaces as Summary.PartialResults,
+            // so the walk-computed histogram counts are explicitly flagged as lower bounds.
+            Trace.MaxChildCount = 1;
+            Trace rootTrace = Trace.GetRootTrace(name: "RootTrace");
+
+            rootTrace.AddChild(Trace.GetRootTrace(name: "Retained"));
+
+            // Second graft has an independent TraceSummary and is over the limit, so it is dropped.
+            Trace dropped = Trace.GetRootTrace(name: "Dropped");
+            Assert.AreNotSame(rootTrace.Summary, dropped.Summary);
+            rootTrace.AddChild(dropped);
+
+            Assert.AreEqual(1, rootTrace.SuppressedChildCount);
+
+            CosmosTraceDiagnostics diagnostics = new CosmosTraceDiagnostics(rootTrace);
+            JObject jObject = JObject.Parse(diagnostics.ToString());
+            Assert.IsTrue(
+                (bool)jObject["Summary"]["PartialResults"],
+                "Dropping a grafted subtree must surface PartialResults so histogram counts read as lower bounds.");
         }
     }
 }

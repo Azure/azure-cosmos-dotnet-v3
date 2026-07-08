@@ -160,8 +160,10 @@ namespace Microsoft.Azure.Cosmos.Tracing
             // building and retaining new subtrees under it. The returned NoOpTrace
             // shares this node's TraceSummary so imperatively-updated aggregates
             // (failed count, hedging, regions contacted) from the suppressed subtree
-            // are still recorded. This is a lock-free fast check; TryAddChild enforces
-            // the limit authoritatively under the lock.
+            // are still recorded. This Count read is an unsynchronized fast path that
+            // avoids allocating a child when the node is already full; the suppression
+            // itself still takes the lock (RecordSuppressedChild), and TryAddChild
+            // re-checks and enforces the limit authoritatively under the lock.
             if (this.children.Count >= MaxChildCount)
             {
                 this.RecordSuppressedChild();
@@ -199,6 +201,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
             lock (this.lockObject)
             {
                 // Guardrail against unbounded diagnostics tree growth (issue #5325).
+                // Applies to both StartChild and direct AddChild callers (for example
+                // batch grafting a pre-built subtree). A dropped subtree is not a silent
+                // metric loss: the truncation is surfaced on this node (see
+                // RecordSuppressedChildUnderLock) and rolls up to Summary.PartialResults,
+                // so the walk-computed histogram counts are explicitly flagged as lower
+                // bounds when a node is truncated.
                 if (this.children.Count >= MaxChildCount)
                 {
                     this.RecordSuppressedChildUnderLock();
@@ -240,7 +248,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
         private void RecordSuppressedChildUnderLock()
         {
             this.suppressedChildCount++;
-            long count = this.suppressedChildCount;
+            int count = this.suppressedChildCount;
 
             // Surface the truncation on the node so consumers can see the diagnostics
             // tree was bounded. Once materialization has started, copy-on-write so

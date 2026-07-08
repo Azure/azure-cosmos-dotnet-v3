@@ -9,6 +9,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
     internal sealed class NoOpTrace : ITrace
     {
+        /// <summary>
+        /// Shared, throwaway <see cref="TraceSummary"/> used by <see cref="Singleton"/> (the summary
+        /// for traces that are entirely no-op because tracing is disabled). Exposed within the
+        /// assembly only so tests can assert the singleton's summary is wired up; callers must not mutate it.
+        /// </summary>
         // NoOpTraceSummary must be initialized before Singleton: the parameterless
         // constructor chains to NoOpTrace(NoOpTraceSummary), and static field
         // initializers run in textual order. If Singleton were declared first,
