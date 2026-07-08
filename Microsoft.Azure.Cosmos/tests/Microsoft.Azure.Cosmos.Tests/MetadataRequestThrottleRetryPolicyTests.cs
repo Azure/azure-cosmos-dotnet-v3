@@ -5,6 +5,9 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Threading;
@@ -13,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -30,6 +34,50 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Default PreferredLocationCount = 0 → maxRetries = Max(1,0) = 1
             mock.Setup(gem => gem.PreferredLocationCount).Returns(0);
             return mock;
+        }
+
+        /// <summary>
+        /// Creates a real (non-mocked) <see cref="GlobalEndpointManager"/> backed by a real
+        /// <see cref="LocationCache"/>, so that <see cref="IGlobalEndpointManager.MarkEndpointUnavailableForRead"/>
+        /// faithfully reorders the preferred-location list the way it does in production. Used to
+        /// verify the actual endpoint sequence resolved across retries, rather than a mocked
+        /// call-count-based sequence.
+        /// </summary>
+        private static GlobalEndpointManager CreateRealGlobalEndpointManager(
+            IReadOnlyList<Uri> regionEndpoints,
+            IReadOnlyList<string> regionNames)
+        {
+            Collection<AccountRegion> readLocations = new();
+            for (int i = 0; i < regionEndpoints.Count; i++)
+            {
+                readLocations.Add(new AccountRegion() { Name = regionNames[i], Endpoint = regionEndpoints[i].ToString() });
+            }
+
+            AccountProperties databaseAccount = new()
+            {
+                EnableMultipleWriteLocations = false,
+                ReadLocationsInternal = readLocations,
+                WriteLocationsInternal = new Collection<AccountRegion>() { readLocations[0] },
+            };
+
+            Mock<IDocumentClientInternal> mockedClient = new();
+            mockedClient.Setup(owner => owner.ServiceEndpoint).Returns(regionEndpoints[0]);
+            mockedClient.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(databaseAccount);
+
+            ConnectionPolicy connectionPolicy = new()
+            {
+                EnableEndpointDiscovery = true,
+                UseMultipleWriteLocations = false,
+            };
+            foreach (string regionName in regionNames)
+            {
+                connectionPolicy.PreferredLocations.Add(regionName);
+            }
+
+            GlobalEndpointManager endpointManager = new(mockedClient.Object, connectionPolicy);
+            endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(databaseAccount);
+            return endpointManager;
         }
 
         private static DocumentServiceRequest CreatePkRangesRequest(string collectionRid = "test-collection")
@@ -396,6 +444,73 @@ namespace Microsoft.Azure.Cosmos.Tests
             ShouldRetryResult result4 = await policy.ShouldRetryAsync(exception, default);
             Assert.IsFalse(result4.ShouldRetry,
                 "After exhausting all 3 regions, should return NoRetry so exception propagates to operation-level retry.");
+        }
+
+        /// <summary>
+        /// Regression test using a REAL <see cref="LocationCache"/> (via <see cref="GlobalEndpointManager"/>),
+        /// instead of a mock that returns endpoints sequentially by call count. This verifies that after
+        /// marking an endpoint unavailable, the policy resolves the NEXT retry to a genuinely different,
+        /// not-yet-visited region — and does not skip a healthy region while one remains untried.
+        /// See PR #5780 review discussion: incrementing <c>RetryLocationIndex</c> on top of the
+        /// <see cref="LocationCache"/> reordering (which already moves the failed endpoint to the bottom
+        /// of the preference list) compounds the two mechanisms and can skip a healthy region.
+        /// Note: the retry budget (<c>maxUnavailableEndpointRetryCount = PreferredLocationCount</c>) allows
+        /// one more attempt than there are distinct regions, so once every region has failed once, a final
+        /// attempt may legitimately revisit an already-tried region before the budget is exhausted — this
+        /// is a separate, pre-existing, minor inefficiency and not the correctness bug being regression-tested here.
+        /// </summary>
+        [TestMethod]
+        [Owner("dkunda")]
+        public async Task ShouldRetryAsync_With503_MultipleRegions_RealLocationCache_VisitsEveryRegionExactlyOnce()
+        {
+            // Arrange — 3 preferred regions backed by a real LocationCache/GlobalEndpointManager.
+            Uri region1 = new("https://location1.documents.azure.com/");
+            Uri region2 = new("https://location2.documents.azure.com/");
+            Uri region3 = new("https://location3.documents.azure.com/");
+
+            using GlobalEndpointManager endpointManager = CreateRealGlobalEndpointManager(
+                regionEndpoints: new[] { region1, region2, region3 },
+                regionNames: new[] { "location1", "location2", "location3" });
+
+            DocumentServiceRequest request = CreatePkRangesRequest();
+
+            // 3 preferred locations → maxRetries = Max(1, 3) = 3
+            MetadataRequestThrottleRetryPolicy policy = new(endpointManager, 0);
+
+            CosmosException exception = CosmosExceptionFactory.CreateServiceUnavailableException(
+                message: "Service Unavailable",
+                headers: new Headers()
+                {
+                    ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString(),
+                    SubStatusCode = SubStatusCodes.TransportGenerated503
+                },
+                trace: NoOpTrace.Singleton,
+                innerException: null);
+
+            List<Uri> resolvedSequence = new();
+
+            // Act — retry until the policy exhausts its budget, recording the endpoint used on each attempt.
+            ShouldRetryResult retryResult;
+            int attempts = 0;
+            const int maxAttempts = 10; // safety bound; a real bug (infinite loop) would trip this.
+            do
+            {
+                policy.OnBeforeSendRequest(request);
+                resolvedSequence.Add(endpointManager.ResolveServiceEndpoint(request));
+
+                retryResult = await policy.ShouldRetryAsync(exception, default);
+                attempts++;
+            }
+            while (retryResult.ShouldRetry && attempts < maxAttempts);
+
+            Assert.IsFalse(retryResult.ShouldRetry, "Retries should eventually be exhausted.");
+
+            // Assert — the first 3 attempts (one per distinct region) must visit every preferred
+            // region exactly once: no healthy region skipped, no failed region revisited early.
+            CollectionAssert.AreEquivalent(
+                new[] { region1, region2, region3 },
+                resolvedSequence.Take(3).ToArray(),
+                "The first 3 attempts should visit every preferred region exactly once — none skipped, none revisited early.");
         }
     }
 }

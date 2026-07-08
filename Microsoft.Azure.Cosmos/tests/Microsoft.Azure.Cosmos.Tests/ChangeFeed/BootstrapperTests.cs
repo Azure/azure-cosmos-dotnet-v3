@@ -170,6 +170,111 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         [TestMethod]
+        public async Task InitializeAsync_WithCosmosException_ReleasesLockBeforeRetryDelay()
+        {
+            // Arrange — CreateMissingLeasesAsync fails once with a 503, then succeeds.
+            // Verifies the lock is released BEFORE the retry delay begins (not held for
+            // the full sleep duration), so peer CFP instances are not blocked from
+            // acquiring the lock while this instance is merely sleeping before its retry.
+            Mock<PartitionSynchronizer> synchronizer = new Mock<PartitionSynchronizer>();
+
+            CosmosException cosmosException = CosmosExceptionFactory.CreateServiceUnavailableException(
+                message: "Service Unavailable",
+                headers: new Headers
+                {
+                    ActivityId = Guid.NewGuid().ToString(),
+                    SubStatusCode = SubStatusCodes.TransportGenerated503
+                },
+                trace: NoOpTrace.Singleton,
+                innerException: null);
+
+            synchronizer.SetupSequence(s => s.CreateMissingLeasesAsync())
+                .Throws(cosmosException)
+                .Returns(Task.CompletedTask);
+
+            System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            TimeSpan? releaseElapsed = null;
+
+            Mock<DocumentServiceLeaseStore> leaseStore = new Mock<DocumentServiceLeaseStore>();
+            leaseStore.Setup(l => l.IsInitializedAsync()).ReturnsAsync(false);
+            leaseStore.Setup(l => l.AcquireInitializationLockAsync(It.IsAny<TimeSpan>())).ReturnsAsync(true);
+            leaseStore.Setup(l => l.MarkInitializedAsync()).Returns(Task.CompletedTask);
+            leaseStore.Setup(l => l.ReleaseInitializationLockAsync())
+                .Callback(() =>
+                {
+                    // Only capture the first release (the one that precedes the retry delay).
+                    releaseElapsed ??= stopwatch.Elapsed;
+                })
+                .ReturnsAsync(true);
+
+            TimeSpan lockTime = TimeSpan.FromSeconds(1);
+            TimeSpan sleepTime = TimeSpan.FromMilliseconds(300);
+
+            BootstrapperCore bootstrapper = new BootstrapperCore(
+                synchronizer.Object, leaseStore.Object, lockTime, sleepTime);
+
+            // Act.
+            await bootstrapper.InitializeAsync();
+            TimeSpan totalElapsed = stopwatch.Elapsed;
+
+            // Assert — the release happened well before the sleep duration elapsed (i.e.
+            // before/at the start of the delay, not after it), while the overall call still
+            // took at least the full sleep duration.
+            Assert.IsTrue(releaseElapsed.HasValue);
+            Assert.IsTrue(
+                releaseElapsed.Value < sleepTime,
+                $"Expected lock release ({releaseElapsed.Value.TotalMilliseconds}ms) to happen before the retry delay ({sleepTime.TotalMilliseconds}ms) elapsed.");
+            Assert.IsTrue(
+                totalElapsed >= sleepTime,
+                $"Expected the overall call ({totalElapsed.TotalMilliseconds}ms) to take at least the sleep duration ({sleepTime.TotalMilliseconds}ms).");
+        }
+
+        [TestMethod]
+        public async Task InitializeAsync_WithCosmosException_FromIsInitializedAsync_ShouldRetryAndSucceed()
+        {
+            // Arrange — IsInitializedAsync fails once with a regional 503, then succeeds.
+            // Verifies that a regional failure on the "outer" calls (IsInitializedAsync,
+            // AcquireInitializationLockAsync) is retried the same way as CreateMissingLeasesAsync,
+            // rather than escaping the loop entirely.
+            Mock<PartitionSynchronizer> synchronizer = new Mock<PartitionSynchronizer>();
+            synchronizer.Setup(s => s.CreateMissingLeasesAsync()).Returns(Task.CompletedTask);
+
+            CosmosException cosmosException = CosmosExceptionFactory.CreateServiceUnavailableException(
+                message: "Service Unavailable",
+                headers: new Headers
+                {
+                    ActivityId = Guid.NewGuid().ToString(),
+                    SubStatusCode = SubStatusCodes.TransportGenerated503
+                },
+                trace: NoOpTrace.Singleton,
+                innerException: null);
+
+            Mock<DocumentServiceLeaseStore> leaseStore = new Mock<DocumentServiceLeaseStore>();
+            leaseStore.SetupSequence(l => l.IsInitializedAsync())
+                .Throws(cosmosException)
+                .ReturnsAsync(false);
+            leaseStore.Setup(l => l.AcquireInitializationLockAsync(It.IsAny<TimeSpan>())).ReturnsAsync(true);
+            leaseStore.Setup(l => l.MarkInitializedAsync()).Returns(Task.CompletedTask);
+            leaseStore.Setup(l => l.ReleaseInitializationLockAsync()).ReturnsAsync(true);
+
+            TimeSpan lockTime = TimeSpan.FromSeconds(1);
+            TimeSpan sleepTime = TimeSpan.FromMilliseconds(10);
+
+            BootstrapperCore bootstrapper = new BootstrapperCore(
+                synchronizer.Object, leaseStore.Object, lockTime, sleepTime);
+
+            // Act.
+            await bootstrapper.InitializeAsync();
+
+            // Assert.
+            leaseStore.Verify(l => l.IsInitializedAsync(), Times.Exactly(2));
+            leaseStore.Verify(l => l.MarkInitializedAsync(), Times.Once);
+            // No lock should have been acquired/released on the failed first attempt.
+            leaseStore.Verify(l => l.AcquireInitializationLockAsync(It.IsAny<TimeSpan>()), Times.Once);
+            leaseStore.Verify(l => l.ReleaseInitializationLockAsync(), Times.Once);
+        }
+
+        [TestMethod]
         public async Task InitializeAsync_WithHttpRequestException_ShouldRetryAndSucceed()
         {
             // Arrange — CreateMissingLeasesAsync fails once with HttpRequestException,

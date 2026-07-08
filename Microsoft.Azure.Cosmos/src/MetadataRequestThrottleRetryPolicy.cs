@@ -325,9 +325,20 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Increments the location index when an unavailable endpoint exception occurs, for any future read requests.
+        /// Increments the retry counter (used purely as a stop-counter) when an unavailable
+        /// endpoint exception occurs, and resets the retry location index to 0 for the next
+        /// attempt.
         /// </summary>
         /// <returns>A boolean flag indicating if there are still regions left to try.</returns>
+        /// <remarks>
+        /// The retry location index is reset to 0 rather than incremented, because
+        /// <see cref="MarkEndpointUnavailable"/> already moved the failed endpoint to the
+        /// bottom of the preferred-location list via <see cref="LocationCache"/>. Incrementing
+        /// the index on top of that reordering would compound the two mechanisms and cause the
+        /// next attempt to skip over a healthy region (or revisit the just-failed one) — the
+        /// same pitfall <see cref="ClientRetryPolicy.ShouldRetryOnEndpointFailureAsync"/> avoids
+        /// by resetting the index to 0 once the endpoint has been marked unavailable.
+        /// </remarks>
         private bool IncrementRetryIndexOnUnavailableEndpointForMetadataRead()
         {
             if (this.unavailableEndpointRetryCount++ >= this.maxUnavailableEndpointRetryCount)
@@ -336,10 +347,10 @@ namespace Microsoft.Azure.Cosmos
                 return false;
             }
 
-            DefaultTrace.TraceWarning("MetadataRequestThrottleRetryPolicy: Incrementing the metadata retry location index to: {0}.", this.unavailableEndpointRetryCount);
+            DefaultTrace.TraceWarning("MetadataRequestThrottleRetryPolicy: Retrying metadata request at location index 0 (the marked endpoint is now at the bottom of the preferred-location list). Retry count: {0}.", this.unavailableEndpointRetryCount);
             this.retryContext = new MetadataRetryContext()
             {
-                RetryLocationIndex = this.unavailableEndpointRetryCount,
+                RetryLocationIndex = 0,
                 RetryRequestOnPreferredLocations = true,
             };
 

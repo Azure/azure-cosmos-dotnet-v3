@@ -14,13 +14,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
     internal sealed class BootstrapperCore : Bootstrapper
     {
         /// <summary>
-        /// Maximum number of times <see cref="InitializeAsync"/> will retry when
-        /// <see cref="PartitionSynchronizer.CreateMissingLeasesAsync"/> fails with a
+        /// Maximum number of times <see cref="InitializeAsync"/> will retry when any step of
+        /// initialization (<see cref="DocumentServiceLeaseStore.IsInitializedAsync"/>,
+        /// <see cref="DocumentServiceLeaseStore.AcquireInitializationLockAsync"/>,
+        /// <see cref="PartitionSynchronizer.CreateMissingLeasesAsync"/>, or
+        /// <see cref="DocumentServiceLeaseStore.MarkInitializedAsync"/>) fails with a
         /// regional error (e.g., <see cref="CosmosException"/> with 503 or
-        /// <see cref="HttpRequestException"/>). The retry is useful because
-        /// <see cref="MetadataRequestThrottleRetryPolicy"/> marks the failing
-        /// endpoint unavailable before propagating the error, so the next attempt
-        /// will be routed to a different region.
+        /// <see cref="HttpRequestException"/>). The retry is most impactful for
+        /// <see cref="PartitionSynchronizer.CreateMissingLeasesAsync"/>, since its
+        /// partition-key-range metadata refresh uses <see cref="MetadataRequestThrottleRetryPolicy"/>
+        /// (bypassing <see cref="ClientRetryPolicy"/>'s built-in cross-region failover), which marks
+        /// the failing endpoint unavailable before propagating the error so the next attempt is
+        /// routed to a different region. The other lease-store calls flow through the normal SDK
+        /// pipeline and already get up to 120 cross-region failovers via <see cref="ClientRetryPolicy"/>;
+        /// this retry is a backstop for the (rarer) case where that budget is also exhausted.
         /// </summary>
         internal const int MaxInitializationRetries = 3;
 
@@ -66,26 +73,30 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
 
             while (true)
             {
-                bool initialized = await this.leaseStore.IsInitializedAsync().ConfigureAwait(false);
-                if (initialized)
-                {
-                    break;
-                }
-
-                bool isLockAcquired = await this.leaseStore.AcquireInitializationLockAsync(this.lockTime).ConfigureAwait(false);
+                bool isLockAcquired = false;
+                bool shouldRetryAfterDelay = false;
 
                 try
                 {
+                    bool initialized = await this.leaseStore.IsInitializedAsync().ConfigureAwait(false);
+                    if (initialized)
+                    {
+                        break;
+                    }
+
+                    isLockAcquired = await this.leaseStore.AcquireInitializationLockAsync(this.lockTime).ConfigureAwait(false);
+
                     if (!isLockAcquired)
                     {
                         DefaultTrace.TraceInformation("Another instance is initializing the store");
-                        await Task.Delay(this.sleepTime).ConfigureAwait(false);
-                        continue;
+                        shouldRetryAfterDelay = true;
                     }
-
-                    DefaultTrace.TraceInformation("Initializing the store");
-                    await this.synchronizer.CreateMissingLeasesAsync().ConfigureAwait(false);
-                    await this.leaseStore.MarkInitializedAsync().ConfigureAwait(false);
+                    else
+                    {
+                        DefaultTrace.TraceInformation("Initializing the store");
+                        await this.synchronizer.CreateMissingLeasesAsync().ConfigureAwait(false);
+                        await this.leaseStore.MarkInitializedAsync().ConfigureAwait(false);
+                    }
                 }
                 catch (CosmosException ex) when (retryCount < MaxInitializationRetries
                     && (ex.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable
@@ -110,8 +121,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
                         MaxInitializationRetries,
                         this.sleepTime);
 
-                    await Task.Delay(this.sleepTime).ConfigureAwait(false);
-                    continue;
+                    shouldRetryAfterDelay = true;
                 }
                 catch (HttpRequestException ex) when (retryCount < MaxInitializationRetries)
                 {
@@ -124,15 +134,28 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
                         MaxInitializationRetries,
                         this.sleepTime);
 
-                    await Task.Delay(this.sleepTime).ConfigureAwait(false);
-                    continue;
+                    shouldRetryAfterDelay = true;
                 }
                 finally
                 {
+                    // Release the lock before sleeping (see below) so a held-but-sleeping lock
+                    // does not undermine multi-instance coordination or expire out from under us.
                     if (isLockAcquired)
                     {
                         await this.leaseStore.ReleaseInitializationLockAsync().ConfigureAwait(false);
                     }
+                }
+
+                if (shouldRetryAfterDelay)
+                {
+                    // The delay intentionally happens after the lock has been released (see the
+                    // finally block above), rather than while still holding it. Awaiting inside a
+                    // try/catch would keep the lock held for the full sleep duration (up to 45s
+                    // across all retries), during which peer CFP instances would see the lock as
+                    // unavailable, and the lease's lockTime TTL could expire mid-sleep, letting a
+                    // peer take over while this instance still believes it holds the lock.
+                    await Task.Delay(this.sleepTime).ConfigureAwait(false);
+                    continue;
                 }
 
                 break;
