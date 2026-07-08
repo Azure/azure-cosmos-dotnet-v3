@@ -208,6 +208,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         case JsonTokenType.PropertyName:
                             if (reader.CurrentDepth == 1)
                             {
+                                // Reject a pre-existing top-level _ei up front. The Newtonsoft
+                                // default rejects the same case incidentally (JObject.Add throws
+                                // ArgumentException on the duplicate key); we throw a deliberate
+                                // InvalidOperationException. Only the reject behavior is contractual
+                                // across processors, not the exception type.
                                 if (reader.ValueTextEquals(this.encryptionPropertiesNameBytes))
                                 {
                                     throw new InvalidOperationException($"The input document already contains a top-level '{Constants.EncryptedInfo}' property, which is reserved for encryption metadata. Encrypting a document that already contains this property is not supported (it would produce a duplicate '{Constants.EncryptedInfo}').");
@@ -369,7 +374,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             // An integer literal (no '.', 'e' or 'E') that did not fit in Int64 above would be
             // silently coerced to a lossy double below. Reject it (fail-closed) so a value that
             // cannot be round-tripped is never persisted. This matches the Newtonsoft processor,
-            // which throws when coercing an out-of-range integer via ToObject<long>().
+            // which also rejects out-of-range integers (its ToObject<long>() throws OverflowException).
+            // Only the reject behavior is contractual across processors, not the exception type.
             if (utf8bytes.IndexOfAny((byte)'.', (byte)'e', (byte)'E') < 0)
             {
                 throw new InvalidOperationException("Unsupported Number type: integer literal is outside the supported Int64 range.");
