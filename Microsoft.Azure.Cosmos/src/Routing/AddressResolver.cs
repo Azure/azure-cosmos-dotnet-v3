@@ -707,31 +707,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Outcome of mapping a partition key to a physical partition key range, independent of any
-        /// <see cref="DocumentServiceRequest"/>. Callers translate the outcome into their own contract
-        /// (e.g. the gateway throws / returns null; distributed transactions apply no session token).
-        /// </summary>
-        internal enum PartitionKeyRangeResolutionKind
-        {
-            /// <summary>
-            /// The key maps to exactly one range, returned via the out parameter.
-            /// </summary>
-            Resolved,
-
-            /// <summary>
-            /// The key could not be mapped with the currently cached routing/partition-key definition
-            /// and the caller should refresh its caches and retry (historically the gateway returned null).
-            /// </summary>
-            NeedsRefresh,
-
-            /// <summary>
-            /// The supplied key has a different number of components than the (up-to-date) partition-key
-            /// definition, so it is a genuine mismatch (historically the gateway threw a 400 PartitionKeyMismatch).
-            /// </summary>
-            KeyMismatch,
-        }
-
-        /// <summary>
         /// Request-free core that maps a partition key to the owning <see cref="PartitionKeyRange"/> using
         /// the collection's partition-key definition and routing map. This is the single source of truth for
         /// the empty-or-full-key (component-count) guard, effective-key computation and

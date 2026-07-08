@@ -34,14 +34,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             CollectionRoutingMap routingMap = SingleRangeRoutingMap();
             PartitionKeyInternal fullKey = PartitionKeyInternal.FromJsonString("[\"a\"]");
 
-            AddressResolver.PartitionKeyRangeResolutionKind kind = AddressResolver.TryResolvePartitionKeyToRange(
+            PartitionKeyRangeResolutionKind kind = AddressResolver.TryResolvePartitionKeyToRange(
                 fullKey,
                 collection,
                 routingMap,
                 collectionCacheUptoDate: true,
                 out PartitionKeyRange range);
 
-            Assert.AreEqual(AddressResolver.PartitionKeyRangeResolutionKind.Resolved, kind);
+            Assert.AreEqual(PartitionKeyRangeResolutionKind.Resolved, kind);
             Assert.IsNotNull(range);
             Assert.AreEqual("0", range.Id);
         }
@@ -52,14 +52,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             ContainerProperties collection = SinglePathContainer();
             CollectionRoutingMap routingMap = SingleRangeRoutingMap();
 
-            AddressResolver.PartitionKeyRangeResolutionKind kind = AddressResolver.TryResolvePartitionKeyToRange(
+            PartitionKeyRangeResolutionKind kind = AddressResolver.TryResolvePartitionKeyToRange(
                 PartitionKeyInternal.Empty,
                 collection,
                 routingMap,
                 collectionCacheUptoDate: true,
                 out PartitionKeyRange range);
 
-            Assert.AreEqual(AddressResolver.PartitionKeyRangeResolutionKind.Resolved, kind);
+            Assert.AreEqual(PartitionKeyRangeResolutionKind.Resolved, kind);
             Assert.IsNotNull(range);
             Assert.AreEqual("0", range.Id);
         }
@@ -71,14 +71,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             CollectionRoutingMap routingMap = SingleRangeRoutingMap();
             PartitionKeyInternal fullKey = PartitionKeyInternal.FromJsonString("[\"a\",\"b\"]");
 
-            AddressResolver.PartitionKeyRangeResolutionKind kind = AddressResolver.TryResolvePartitionKeyToRange(
+            PartitionKeyRangeResolutionKind kind = AddressResolver.TryResolvePartitionKeyToRange(
                 fullKey,
                 collection,
                 routingMap,
                 collectionCacheUptoDate: true,
                 out PartitionKeyRange range);
 
-            Assert.AreEqual(AddressResolver.PartitionKeyRangeResolutionKind.Resolved, kind);
+            Assert.AreEqual(PartitionKeyRangeResolutionKind.Resolved, kind);
             Assert.IsNotNull(range);
         }
 
@@ -91,14 +91,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             // Only the first of two defined paths supplied -> component count mismatch.
             PartitionKeyInternal partialKey = PartitionKeyInternal.FromJsonString("[\"a\"]");
 
-            AddressResolver.PartitionKeyRangeResolutionKind kind = AddressResolver.TryResolvePartitionKeyToRange(
+            PartitionKeyRangeResolutionKind kind = AddressResolver.TryResolvePartitionKeyToRange(
                 partialKey,
                 collection,
                 routingMap,
                 collectionCacheUptoDate: true,
                 out PartitionKeyRange range);
 
-            Assert.AreEqual(AddressResolver.PartitionKeyRangeResolutionKind.KeyMismatch, kind);
+            Assert.AreEqual(PartitionKeyRangeResolutionKind.KeyMismatch, kind);
             Assert.IsNull(range);
         }
 
@@ -110,14 +110,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
             PartitionKeyInternal partialKey = PartitionKeyInternal.FromJsonString("[\"a\"]");
 
-            AddressResolver.PartitionKeyRangeResolutionKind kind = AddressResolver.TryResolvePartitionKeyToRange(
+            PartitionKeyRangeResolutionKind kind = AddressResolver.TryResolvePartitionKeyToRange(
                 partialKey,
                 collection,
                 routingMap,
                 collectionCacheUptoDate: false,
                 out PartitionKeyRange range);
 
-            Assert.AreEqual(AddressResolver.PartitionKeyRangeResolutionKind.NeedsRefresh, kind);
+            Assert.AreEqual(PartitionKeyRangeResolutionKind.NeedsRefresh, kind);
             Assert.IsNull(range);
         }
 
@@ -132,14 +132,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             ContainerProperties collection = SinglePathContainer();
             CollectionRoutingMap routingMap = SingleRangeRoutingMap();
 
-            AddressResolver.PartitionKeyRangeResolutionKind kind = AddressResolver.TryResolvePartitionKeyToRange(
+            PartitionKeyRangeResolutionKind kind = AddressResolver.TryResolvePartitionKeyToRange(
                 PartitionKeyInternal.FromJsonString("[\"a\"]"),
                 collection,
                 routingMap,
                 collectionCacheUptoDate: true,
                 out PartitionKeyRange range);
 
-            Assert.AreEqual(AddressResolver.PartitionKeyRangeResolutionKind.Resolved, kind);
+            Assert.AreEqual(PartitionKeyRangeResolutionKind.Resolved, kind);
             Assert.IsNotNull(range);
         }
 
