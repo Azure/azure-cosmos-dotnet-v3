@@ -38,10 +38,11 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         /// <summary>
         /// Creates a real (non-mocked) <see cref="GlobalEndpointManager"/> backed by a real
-        /// <see cref="LocationCache"/>, so that <see cref="IGlobalEndpointManager.MarkEndpointUnavailableForRead"/>
-        /// faithfully reorders the preferred-location list the way it does in production. Used to
-        /// verify the actual endpoint sequence resolved across retries, rather than a mocked
-        /// call-count-based sequence.
+        /// <see cref="LocationCache"/>, so that <see cref="IGlobalEndpointManager.ResolveServiceEndpoint"/>
+        /// faithfully resolves endpoints from the actual preferred-location list, the way it does in
+        /// production. Used to verify the actual endpoint sequence resolved across retries — and that
+        /// the shared read-endpoint ordering is left unmodified — rather than a mocked call-count-based
+        /// sequence.
         /// </summary>
         private static GlobalEndpointManager CreateRealGlobalEndpointManager(
             IReadOnlyList<Uri> regionEndpoints,
@@ -98,11 +99,12 @@ namespace Microsoft.Azure.Cosmos.Tests
         [Owner("dkunda")]
         [DataRow(true, DisplayName = "Test with a 503 response message.")]
         [DataRow(false, DisplayName = "Test with a 503 CosmosException.")]
-        public async Task ShouldRetryAsync_With503_FirstAttempt_ShouldMarkUnavailableAndRetry(
+        public async Task ShouldRetryAsync_With503_FirstAttempt_ShouldRetryOnNextRegionWithoutMarkingEndpointUnavailable(
             bool useResponseMessage)
         {
-            // Arrange — first regional failure should mark endpoint unavailable
-            // and retry on the next preferred region.
+            // Arrange — first regional failure should retry on the next preferred region,
+            // without marking the failing endpoint unavailable in the shared LocationCache
+            // (that would deprioritize the region for ALL read traffic, not just metadata).
             ShouldRetryResult retryResult;
             Uri primaryServiceEndpoint = new("https://default-endpoint-region1.net/");
 
@@ -153,9 +155,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "First regional failure should retry on the next preferred region.");
 
             mockedGlobalEndpointManager.Verify(
-                gem => gem.MarkEndpointUnavailableForRead(primaryServiceEndpoint),
-                Times.Once,
-                "The failing endpoint should be marked unavailable for reads.");
+                gem => gem.MarkEndpointUnavailableForRead(It.IsAny<Uri>()),
+                Times.Never,
+                "MetadataRequestThrottleRetryPolicy should not mark the region unavailable — that would affect all read traffic, not just this metadata request.");
         }
 
         [TestMethod]
@@ -198,9 +200,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "After exhausting retries, should return NoRetry so the exception propagates to the operation-level retry policy.");
 
             mockedGlobalEndpointManager.Verify(
-                gem => gem.MarkEndpointUnavailableForRead(primaryServiceEndpoint),
-                Times.Exactly(2),
-                "Endpoint should be marked unavailable on every regional failure.");
+                gem => gem.MarkEndpointUnavailableForRead(It.IsAny<Uri>()),
+                Times.Never,
+                "MetadataRequestThrottleRetryPolicy should not mark any endpoint unavailable, on any regional failure.");
         }
 
         [TestMethod]
@@ -208,7 +210,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [DataRow((int)HttpStatusCode.InternalServerError, (int)SubStatusCodes.Unknown, DisplayName = "500 InternalServerError")]
         [DataRow((int)HttpStatusCode.Gone, (int)SubStatusCodes.LeaseNotFound, DisplayName = "410/LeaseNotFound")]
         [DataRow((int)HttpStatusCode.Forbidden, (int)SubStatusCodes.DatabaseAccountNotFound, DisplayName = "403/DatabaseAccountNotFound")]
-        public async Task ShouldRetryAsync_WithRegionalFailureStatusCodes_ShouldMarkUnavailableAndRetry(
+        public async Task ShouldRetryAsync_WithRegionalFailureStatusCodes_ShouldRetryOnNextRegionWithoutMarkingEndpointUnavailable(
             int statusCode,
             int subStatusCode)
         {
@@ -244,14 +246,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "Regional failure status codes should retry on the next preferred region.");
 
             mockedGlobalEndpointManager.Verify(
-                gem => gem.MarkEndpointUnavailableForRead(primaryServiceEndpoint),
-                Times.Once,
-                "Endpoint should be marked unavailable on regional failure.");
+                gem => gem.MarkEndpointUnavailableForRead(It.IsAny<Uri>()),
+                Times.Never,
+                "MetadataRequestThrottleRetryPolicy should not mark the region unavailable on regional failure.");
         }
 
         [TestMethod]
         [Owner("dkunda")]
-        public async Task ShouldRetryAsync_WithHttpRequestException_ShouldMarkUnavailableAndRetry()
+        public async Task ShouldRetryAsync_WithHttpRequestException_ShouldRetryOnNextRegionWithoutMarkingEndpointUnavailable()
         {
             // Arrange.
             Uri primaryServiceEndpoint = new("https://default-endpoint-region1.net/");
@@ -274,14 +276,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "HttpRequestException should retry on the next preferred region.");
 
             mockedGlobalEndpointManager.Verify(
-                gem => gem.MarkEndpointUnavailableForRead(primaryServiceEndpoint),
-                Times.Once,
-                "Endpoint should be marked unavailable when HttpRequestException indicates the region is unreachable.");
+                gem => gem.MarkEndpointUnavailableForRead(It.IsAny<Uri>()),
+                Times.Never,
+                "MetadataRequestThrottleRetryPolicy should not mark the region unavailable when HttpRequestException indicates the region is unreachable.");
         }
 
         [TestMethod]
         [Owner("dkunda")]
-        public async Task ShouldRetryAsync_WithNonUserOperationCanceledException_ShouldMarkUnavailableAndRetry()
+        public async Task ShouldRetryAsync_WithNonUserOperationCanceledException_ShouldRetryOnNextRegionWithoutMarkingEndpointUnavailable()
         {
             // Arrange.
             Uri primaryServiceEndpoint = new("https://default-endpoint-region1.net/");
@@ -304,9 +306,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "Non-user OperationCanceledException should retry on the next preferred region.");
 
             mockedGlobalEndpointManager.Verify(
-                gem => gem.MarkEndpointUnavailableForRead(primaryServiceEndpoint),
-                Times.Once,
-                "Endpoint should be marked unavailable when a non-user OperationCanceledException occurs.");
+                gem => gem.MarkEndpointUnavailableForRead(It.IsAny<Uri>()),
+                Times.Never,
+                "MetadataRequestThrottleRetryPolicy should not mark the region unavailable when a non-user OperationCanceledException occurs.");
         }
 
         [TestMethod]
@@ -427,41 +429,42 @@ namespace Microsoft.Azure.Cosmos.Tests
             policy.OnBeforeSendRequest(request);
             ShouldRetryResult result1 = await policy.ShouldRetryAsync(exception, default);
             Assert.IsTrue(result1.ShouldRetry, "First failure (region1) should retry.");
-            mockedGlobalEndpointManager.Verify(gem => gem.MarkEndpointUnavailableForRead(region1), Times.Once);
 
             policy.OnBeforeSendRequest(request);
             ShouldRetryResult result2 = await policy.ShouldRetryAsync(exception, default);
             Assert.IsTrue(result2.ShouldRetry, "Second failure (region2) should retry.");
-            mockedGlobalEndpointManager.Verify(gem => gem.MarkEndpointUnavailableForRead(region2), Times.Once);
 
             policy.OnBeforeSendRequest(request);
             ShouldRetryResult result3 = await policy.ShouldRetryAsync(exception, default);
             Assert.IsTrue(result3.ShouldRetry, "Third failure (region3) should retry.");
-            mockedGlobalEndpointManager.Verify(gem => gem.MarkEndpointUnavailableForRead(region3), Times.Once);
 
             // 4th attempt — retries exhausted, should return NoRetry.
             policy.OnBeforeSendRequest(request);
             ShouldRetryResult result4 = await policy.ShouldRetryAsync(exception, default);
             Assert.IsFalse(result4.ShouldRetry,
                 "After exhausting all 3 regions, should return NoRetry so exception propagates to operation-level retry.");
+
+            mockedGlobalEndpointManager.Verify(
+                gem => gem.MarkEndpointUnavailableForRead(It.IsAny<Uri>()),
+                Times.Never,
+                "MetadataRequestThrottleRetryPolicy should never mark any endpoint unavailable — only its local retry-location index advances.");
         }
 
         /// <summary>
         /// Regression test using a REAL <see cref="LocationCache"/> (via <see cref="GlobalEndpointManager"/>),
-        /// instead of a mock that returns endpoints sequentially by call count. This verifies that after
-        /// marking an endpoint unavailable, the policy resolves the NEXT retry to a genuinely different,
-        /// not-yet-visited region — and does not skip a healthy region while one remains untried.
-        /// See PR #5780 review discussion: incrementing <c>RetryLocationIndex</c> on top of the
-        /// <see cref="LocationCache"/> reordering (which already moves the failed endpoint to the bottom
-        /// of the preference list) compounds the two mechanisms and can skip a healthy region.
-        /// Note: the retry budget (<c>maxUnavailableEndpointRetryCount = PreferredLocationCount</c>) allows
-        /// one more attempt than there are distinct regions, so once every region has failed once, a final
-        /// attempt may legitimately revisit an already-tried region before the budget is exhausted — this
-        /// is a separate, pre-existing, minor inefficiency and not the correctness bug being regression-tested here.
+        /// instead of a mock. Verifies two things: (1) the policy still visits every preferred region
+        /// exactly once across its first N retries by advancing its local retry-location index — no
+        /// healthy region skipped, no region revisited early — and (2) it does so WITHOUT calling
+        /// <see cref="IGlobalEndpointManager.MarkEndpointUnavailableForRead"/>, so the shared
+        /// <see cref="LocationCache"/> read-endpoint ordering is left completely unchanged afterward
+        /// (i.e., no side effect on unrelated document/query traffic to the same account).
+        /// See PR #5780 review discussion: an earlier version of this policy called
+        /// <c>MarkEndpointUnavailableForRead</c>, which deprioritizes the region for ALL reads for up
+        /// to 5 minutes — a disproportionate blast radius for a single metadata-request failure.
         /// </summary>
         [TestMethod]
         [Owner("dkunda")]
-        public async Task ShouldRetryAsync_With503_MultipleRegions_RealLocationCache_VisitsEveryRegionExactlyOnce()
+        public async Task ShouldRetryAsync_With503_MultipleRegions_RealLocationCache_VisitsEveryRegionOnceWithoutMarkingUnavailable()
         {
             // Arrange — 3 preferred regions backed by a real LocationCache/GlobalEndpointManager.
             Uri region1 = new("https://location1.documents.azure.com/");
@@ -471,6 +474,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             using GlobalEndpointManager endpointManager = CreateRealGlobalEndpointManager(
                 regionEndpoints: new[] { region1, region2, region3 },
                 regionNames: new[] { "location1", "location2", "location3" });
+
+            ReadOnlyCollection<Uri> readEndpointsBeforeFailures = endpointManager.ReadEndpoints;
 
             DocumentServiceRequest request = CreatePkRangesRequest();
 
@@ -511,6 +516,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new[] { region1, region2, region3 },
                 resolvedSequence.Take(3).ToArray(),
                 "The first 3 attempts should visit every preferred region exactly once — none skipped, none revisited early.");
+
+            // Assert — the shared LocationCache's read-endpoint ordering is completely unaffected by
+            // these metadata-level failures, proving no global markdown side effect leaked out to
+            // affect unrelated (e.g. document/query) traffic.
+            CollectionAssert.AreEqual(
+                readEndpointsBeforeFailures,
+                endpointManager.ReadEndpoints,
+                "MetadataRequestThrottleRetryPolicy must not mutate the shared LocationCache's read-endpoint ordering.");
         }
     }
 }

@@ -15,9 +15,13 @@ namespace Microsoft.Azure.Cosmos
 
     /// <summary>
     /// Metadata Request Throttle Retry Policy is combination of endpoint change retry + throttling retry.
-    /// On regional failures the policy marks the endpoint unavailable and retries on the next
-    /// preferred region. Once all regions have been attempted, the exception propagates to the
-    /// operation-level retry policy (e.g. <see cref="ClientRetryPolicy"/>) for cross-region failover.
+    /// On regional failures the policy retries the request on the next preferred region by advancing
+    /// a local retry-location index. It deliberately does NOT mark the endpoint unavailable in the
+    /// shared <see cref="LocationCache"/> — doing so would deprioritize the region for ALL read
+    /// traffic (documents, queries, etc.) for up to 5 minutes based on a single metadata-request
+    /// failure, which is a disproportionate blast radius for what may be a narrow/transient issue.
+    /// Once all regions have been attempted, the exception propagates to the operation-level retry
+    /// policy (e.g. <see cref="ClientRetryPolicy"/>) for cross-region failover.
     /// </summary>
     internal sealed class MetadataRequestThrottleRetryPolicy : IDocumentClientRetryPolicy
     {
@@ -58,9 +62,9 @@ namespace Microsoft.Azure.Cosmos
         private int unavailableEndpointRetryCount;
 
         /// <summary>
-        /// The resolved location endpoint for the current attempt. Used to mark
-        /// the endpoint as unavailable in the <see cref="IGlobalEndpointManager"/> when
-        /// a regional failure is detected.
+        /// The resolved location endpoint for the current attempt. Tracked for tracing
+        /// purposes only — it is not marked unavailable in the shared <see cref="LocationCache"/>
+        /// (see remarks on the class).
         /// </summary>
         private Uri locationEndpoint;
 
@@ -138,7 +142,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (exception is HttpRequestException)
             {
-                DefaultTrace.TraceWarning("MetadataRequestThrottleRetryPolicy: HttpRequestException received. Marking endpoint {0} unavailable. ResourceType {1}, CollectionName {2}, ResourceID {3}.",
+                DefaultTrace.TraceWarning("MetadataRequestThrottleRetryPolicy: HttpRequestException received at endpoint {0}. ResourceType {1}, CollectionName {2}, ResourceID {3}.",
                     this.locationEndpoint,
                     this.request?.ResourceType,
                     this.request?.CollectionName,
@@ -154,7 +158,7 @@ namespace Microsoft.Azure.Cosmos
             // lightweight and a timeout likely indicates network-level issues with the region.
             if (exception is OperationCanceledException && !cancellationToken.IsCancellationRequested)
             {
-                DefaultTrace.TraceWarning("MetadataRequestThrottleRetryPolicy: Non-user OperationCanceledException received. Marking endpoint {0} unavailable. ResourceType {1}, CollectionName {2}, ResourceID {3}.",
+                DefaultTrace.TraceWarning("MetadataRequestThrottleRetryPolicy: Non-user OperationCanceledException received at endpoint {0}. ResourceType {1}, CollectionName {2}, ResourceID {3}.",
                     this.locationEndpoint,
                     this.request?.ResourceType,
                     this.request?.CollectionName,
@@ -190,8 +194,8 @@ namespace Microsoft.Azure.Cosmos
                 || (statusCode == HttpStatusCode.Forbidden && subStatus == SubStatusCodes.DatabaseAccountNotFound))
             {
                 DefaultTrace.TraceWarning(
-                    "MetadataRequestThrottleRetryPolicy: Regional failure detected (StatusCode: {0}, SubStatusCode: {1}). "
-                    + "Marking endpoint {2} unavailable. ResourceType {3}, CollectionName {4}, ResourceID {5}.",
+                    "MetadataRequestThrottleRetryPolicy: Regional failure detected (StatusCode: {0}, SubStatusCode: {1}) at endpoint {2}. "
+                    + "ResourceType {3}, CollectionName {4}, ResourceID {5}.",
                     statusCode,
                     subStatus,
                     this.locationEndpoint,
@@ -239,8 +243,8 @@ namespace Microsoft.Azure.Cosmos
                 || (statusCode == HttpStatusCode.Forbidden && subStatus == SubStatusCodes.DatabaseAccountNotFound))
             {
                 DefaultTrace.TraceWarning(
-                    "MetadataRequestThrottleRetryPolicy: Regional failure detected in response (StatusCode: {0}, SubStatusCode: {1}). "
-                    + "Marking endpoint {2} unavailable. ResourceType {3}, CollectionName {4}, ResourceID {5}.",
+                    "MetadataRequestThrottleRetryPolicy: Regional failure detected in response (StatusCode: {0}, SubStatusCode: {1}) at endpoint {2}. "
+                    + "ResourceType {3}, CollectionName {4}, ResourceID {5}.",
                     statusCode,
                     subStatus,
                     this.locationEndpoint,
@@ -280,8 +284,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Marks the current endpoint as unavailable and attempts to increment the
-        /// retry location index so the next attempt targets a different region.
+        /// Attempts to advance the retry location index so the next attempt targets a
+        /// different preferred region for this metadata request.
         /// </summary>
         /// <returns>
         /// <see cref="ShouldRetryResult"/> with <c>ShouldRetry = true</c> if there are still
@@ -290,12 +294,12 @@ namespace Microsoft.Azure.Cosmos
         /// </returns>
         private ShouldRetryResult HandleRegionalFailure()
         {
-            // Note: RefreshLocationAsync is intentionally omitted. The metadata retry
-            // loop cycles through known-good regions quickly. If all regions are
-            // exhausted, the exception propagates to ClientRetryPolicy which triggers
-            // a full location refresh via ShouldRetryOnEndpointFailureAsync.
-
-            this.MarkEndpointUnavailable();
+            // Note: the endpoint is intentionally NOT marked unavailable in the shared
+            // LocationCache (see class remarks) — only this request's local retry-location
+            // index is advanced. RefreshLocationAsync is also intentionally omitted; the
+            // metadata retry loop cycles through known-good regions quickly, and if all
+            // regions are exhausted, the exception propagates to ClientRetryPolicy which
+            // can trigger a full location refresh via ShouldRetryOnEndpointFailureAsync.
 
             if (this.IncrementRetryIndexOnUnavailableEndpointForMetadataRead())
             {
@@ -306,39 +310,10 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Marks the current <see cref="locationEndpoint"/> as unavailable for reads
-        /// in the <see cref="IGlobalEndpointManager"/>. This acts as a hint to the
-        /// <see cref="LocationCache"/> so that all subsequent calls to
-        /// <see cref="IGlobalEndpointManager.ResolveServiceEndpoint"/> will prefer
-        /// other regions.
-        /// </summary>
-        private void MarkEndpointUnavailable()
-        {
-            if (this.locationEndpoint != null)
-            {
-                DefaultTrace.TraceWarning(
-                    "MetadataRequestThrottleRetryPolicy: Marking endpoint {0} unavailable for reads.",
-                    this.locationEndpoint);
-
-                this.globalEndpointManager.MarkEndpointUnavailableForRead(this.locationEndpoint);
-            }
-        }
-
-        /// <summary>
-        /// Increments the retry counter (used purely as a stop-counter) when an unavailable
-        /// endpoint exception occurs, and resets the retry location index to 0 for the next
-        /// attempt.
+        /// Increments the retry location index (bounded by <see cref="maxUnavailableEndpointRetryCount"/>)
+        /// so the next attempt targets the next preferred region in order.
         /// </summary>
         /// <returns>A boolean flag indicating if there are still regions left to try.</returns>
-        /// <remarks>
-        /// The retry location index is reset to 0 rather than incremented, because
-        /// <see cref="MarkEndpointUnavailable"/> already moved the failed endpoint to the
-        /// bottom of the preferred-location list via <see cref="LocationCache"/>. Incrementing
-        /// the index on top of that reordering would compound the two mechanisms and cause the
-        /// next attempt to skip over a healthy region (or revisit the just-failed one) — the
-        /// same pitfall <see cref="ClientRetryPolicy.ShouldRetryOnEndpointFailureAsync"/> avoids
-        /// by resetting the index to 0 once the endpoint has been marked unavailable.
-        /// </remarks>
         private bool IncrementRetryIndexOnUnavailableEndpointForMetadataRead()
         {
             if (this.unavailableEndpointRetryCount++ >= this.maxUnavailableEndpointRetryCount)
@@ -347,10 +322,10 @@ namespace Microsoft.Azure.Cosmos
                 return false;
             }
 
-            DefaultTrace.TraceWarning("MetadataRequestThrottleRetryPolicy: Retrying metadata request at location index 0 (the marked endpoint is now at the bottom of the preferred-location list). Retry count: {0}.", this.unavailableEndpointRetryCount);
+            DefaultTrace.TraceWarning("MetadataRequestThrottleRetryPolicy: Retrying metadata request at the next preferred location index. Retry count: {0}.", this.unavailableEndpointRetryCount);
             this.retryContext = new MetadataRetryContext()
             {
-                RetryLocationIndex = 0,
+                RetryLocationIndex = this.unavailableEndpointRetryCount,
                 RetryRequestOnPreferredLocations = true,
             };
 
