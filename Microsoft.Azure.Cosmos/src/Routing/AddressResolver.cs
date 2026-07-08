@@ -700,7 +700,7 @@ namespace Microsoft.Azure.Cosmos
 
                     throw badRequestException;
 
-                case PartitionKeyRangeResolutionKind.NeedsRefresh:
+                case PartitionKeyRangeResolutionKind.StaleMetadata:
                 default:
                     return null;
             }
@@ -756,10 +756,10 @@ namespace Microsoft.Azure.Cosmos
                 range = routingMap.GetRangeByEffectivePartitionKey(effectivePartitionKey);
 
                 // A null here means the currently cached routing map has no owning range for the key;
-                // signal a refresh (the gateway historically returned null in this case).
+                // treat the cached metadata as possibly stale (the gateway historically returned null here).
                 return range != null
                     ? PartitionKeyRangeResolutionKind.Resolved
-                    : PartitionKeyRangeResolutionKind.NeedsRefresh;
+                    : PartitionKeyRangeResolutionKind.StaleMetadata;
             }
 
             if (collectionCacheUptoDate)
@@ -784,7 +784,7 @@ namespace Microsoft.Azure.Cosmos
                 collection.PartitionKey.Paths.Count,
                 partitionKey.Components.Count);
 
-            return PartitionKeyRangeResolutionKind.NeedsRefresh;
+            return PartitionKeyRangeResolutionKind.StaleMetadata;
         }
 
         public Task UpdateAsync(ServerKey serverKey, CancellationToken cancellationToken = default)

@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         }
 
         [TestMethod]
-        public void U31_PartialHierarchicalPrefix_StaleCache_NeedsRefresh()
+        public void U31_PartialHierarchicalPrefix_StaleCache_StaleMetadata()
         {
             ContainerProperties collection = HierarchicalContainer();
             CollectionRoutingMap routingMap = SingleRangeRoutingMap();
@@ -117,15 +117,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 collectionCacheUptoDate: false,
                 out PartitionKeyRange range);
 
-            Assert.AreEqual(PartitionKeyRangeResolutionKind.NeedsRefresh, kind);
+            Assert.AreEqual(PartitionKeyRangeResolutionKind.StaleMetadata, kind);
             Assert.IsNull(range);
         }
 
         [TestMethod]
-        public void U31_NoOwningRange_NeedsRefresh_Unreachable_Documented()
+        public void U31_NoOwningRange_StaleMetadata_Unreachable_Documented()
         {
-            // U3.1 lists "key with no owning range => NeedsRefresh". That branch maps a null
-            // GetRangeByEffectivePartitionKey result to NeedsRefresh, but it is defensive-only: a
+            // U3.1 lists "key with no owning range => StaleMetadata". That branch maps a null
+            // GetRangeByEffectivePartitionKey result to StaleMetadata, but it is defensive-only: a
             // *complete* CollectionRoutingMap always returns a containing range for an in-bounds key, and
             // the class is sealed with a non-virtual lookup, so no real map or mock can yield a null range.
             // This test documents that unreachability; the full key below therefore resolves.

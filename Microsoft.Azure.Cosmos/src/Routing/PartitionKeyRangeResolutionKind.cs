@@ -18,10 +18,12 @@ namespace Microsoft.Azure.Cosmos
         Resolved,
 
         /// <summary>
-        /// The key could not be mapped with the currently cached routing/partition-key definition
-        /// and the caller should refresh its caches and retry (historically the gateway returned null).
+        /// The key could not be mapped because the currently cached routing/partition-key definition
+        /// may be stale — unlike <see cref="KeyMismatch"/>, this is not a definite mismatch. Each caller
+        /// picks its own reaction (the gateway refreshes its caches and retries — historically returning
+        /// null; distributed transactions apply no session token and degrade to eventual consistency).
         /// </summary>
-        NeedsRefresh,
+        StaleMetadata,
 
         /// <summary>
         /// The supplied key has a different number of components than the (up-to-date) partition-key
