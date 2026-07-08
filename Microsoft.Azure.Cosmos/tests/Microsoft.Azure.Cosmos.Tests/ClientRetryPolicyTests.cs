@@ -242,7 +242,8 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         /// <summary>
-        /// Tests that 410/LeaseNotFound triggers cross-region retry via ShouldRetryOnEndpointFailureAsync
+        /// Tests that 410/LeaseNotFound triggers a partition-scoped cross-region retry via
+        /// TryMarkEndpointUnavailableForPkRangeAndRetryOnServiceUnavailable (the same path used by 503)
         /// when multiple regions are configured.
         /// </summary>
         [TestMethod]
@@ -314,8 +315,9 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         /// <summary>
-        /// Tests that 500/InternalServerError for a read request triggers cross-region retry
-        /// via ShouldRetryOnEndpointFailureAsync when multiple regions are configured.
+        /// Tests that 500/InternalServerError for a read request triggers a partition-scoped cross-region
+        /// retry via TryMarkEndpointUnavailableForPkRangeAndRetryOnServiceUnavailable (the same path used
+        /// by 503) when multiple regions are configured.
         /// </summary>
         [TestMethod]
         public async Task Http500InternalServerErrorReadTriggersEndpointFailureRetryWithMultipleRegions()

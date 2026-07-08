@@ -385,51 +385,22 @@ namespace Microsoft.Azure.Cosmos
                     isSystemResourceUnavailableForWrite: false);
             }
 
-            // 500/read and 410/LeaseNotFound use ShouldRetryOnEndpointFailureAsync (marks endpoint
-            // globally unavailable) rather than ShouldRetryOnUnavailableEndpointStatusCodes used by 503.
-            // 503 already has partition-level failover via TryMarkEndpointUnavailableForPkRange; 500/410
-            // lacked any cross-region retry path before this change.
+            // Received 500 status code or lease not found. These are commonly surfaced by an address
+            // resolution (GatewayAddressCache) failure for the target partition, so we scope the
+            // retry the same way as 503: mark only the affected partition's endpoint unavailable
+            // (gated by partition-level circuit breaker / per-partition automatic failover) and
+            // retry with the same single bounded attempt used for 503. We deliberately do NOT use
+            // the broader ShouldRetryOnEndpointFailureAsync/MarkEndpointUnavailableForRead path here,
+            // since that marks the entire region down for all reads — addresses are a partition/region
+            // scoped resource, so a partition-scoped failover is both sufficient and narrower in blast
+            // radius. This also preserves the pre-existing single-master-write guard inside
+            // ShouldRetryOnUnavailableEndpointStatusCodes (a single-master write cannot fail over to a
+            // non-write region without per-partition automatic failover).
             if ((statusCode == HttpStatusCode.InternalServerError && this.isReadRequest)
                 || (statusCode == HttpStatusCode.Gone && subStatusCode == SubStatusCodes.LeaseNotFound))
             {
-                DefaultTrace.TraceWarning(
-                    "ClientRetryPolicy: Received {0}/{1}. Marking endpoint unavailable and retrying. Failed Location: {2}; ResourceAddress: {3}",
-                    statusCode,
-                    subStatusCode,
-                    this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
-                    this.documentServiceRequest?.ResourceAddress ?? string.Empty);
-
-                this.TryMarkEndpointUnavailableForPkRange(isSystemResourceUnavailableForWrite: false);
-
-                // With only one region available, retrying is futile — the same
-                // endpoint would be resolved every time. Return NoRetry so the
-                // error surfaces immediately instead of looping for ~2 minutes.
-                int availablePreferredLocations = this.globalEndpointManager.PreferredLocationCount;
-                if (availablePreferredLocations <= 1)
-                {
-                    DefaultTrace.TraceInformation(
-                        "ClientRetryPolicy: Not retrying. No other regions available for the request. AvailablePreferredLocations = {0}.",
-                        availablePreferredLocations);
-                    return ShouldRetryResult.NoRetry();
-                }
-
-                // On single-master accounts, writes always resolve to the single write
-                // endpoint regardless of region marking. Cross-region retry is only
-                // meaningful for reads or multi-write accounts.
-                if (!this.isReadRequest
-                    && !this.canUseMultipleWriteLocations
-                    && !this.partitionKeyRangeLocationCache.IsPartitionLevelAutomaticFailoverEnabled())
-                {
-                    DefaultTrace.TraceInformation(
-                        "ClientRetryPolicy: Not retrying write on single-master. Write endpoint cannot fail over.");
-                    return ShouldRetryResult.NoRetry();
-                }
-
-                return await this.ShouldRetryOnEndpointFailureAsync(
-                    isReadRequest: this.isReadRequest,
-                    markBothReadAndWriteAsUnavailable: false,
-                    forceRefresh: false,
-                    retryOnPreferredLocations: true);
+                return this.TryMarkEndpointUnavailableForPkRangeAndRetryOnServiceUnavailable(
+                    isSystemResourceUnavailableForWrite: false);
             }
 
             if (this.isDtxRequest)
@@ -608,8 +579,10 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// For a ServiceUnavailable (503.0) we could be having a timeout from Direct/TCP locally or a request to Gateway request with a similar response due to an endpoint not yet available.
         /// We try and retry the request only if there are other regions available. The retry logic is applicable for single master write accounts as well.
-        /// Note: InternalServerError (500.0) for reads and LeaseNotFound (410.1022) are now routed through
-        /// <see cref="ShouldRetryOnEndpointFailureAsync"/> which marks the endpoint globally unavailable and enables cross-region retry.
+        /// Note: InternalServerError (500.0) for reads and LeaseNotFound (410.1022) also route through this method
+        /// (via <see cref="TryMarkEndpointUnavailableForPkRangeAndRetryOnServiceUnavailable"/>), since these are
+        /// commonly surfaced by an address resolution failure for the affected partition and should be scoped the
+        /// same way as 503 — partition-level circuit breaker markdown, not a global region markdown.
         /// </summary>
         private ShouldRetryResult ShouldRetryOnUnavailableEndpointStatusCodes()
         {
