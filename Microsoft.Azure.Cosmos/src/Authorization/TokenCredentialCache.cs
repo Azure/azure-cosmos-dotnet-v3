@@ -168,10 +168,8 @@ namespace Microsoft.Azure.Cosmos
         {
             const string clientCapabilitiesJson = "{\"access_token\":{\"xms_cc\":{\"values\":[\"cp1\"]}}}";
 
-            // No revocation / CAE challenge outstanding: return null so the caller attaches no
-            // 'claims'. cp1 (the CAE client capability) is already advertised the cache-friendly
-            // way via isCaeEnabled:true, and a non-empty 'claims' would force Azure.Identity/MSAL
-            // to bypass its token cache and issue a live ESTS call on every acquisition.
+            // No revocation / CAE challenge outstanding: return null so the caller attaches no 'claims'
+            // and the credential can serve the token from its cache (cp1 is still advertised via isCaeEnabled).
             if (string.IsNullOrEmpty(claimsChallenge))
             {
                 return null;
@@ -293,34 +291,20 @@ namespace Microsoft.Azure.Cosmos
                         {
                             tokenRequestContext = this.scopeProvider.GetTokenRequestContext();
 
-                            // Attach a CAE 'claims' parameter ONLY when responding to an actual
-                            // revocation / CAE challenge. MergeClaimsWithClientCapabilities returns
-                            // null when no challenge is outstanding, so the normal path sends no
-                            // 'claims'. cp1 (the CAE client capability) is already advertised to the
-                            // identity library via isCaeEnabled:true from the scope provider, so
-                            // attaching claims on the normal path is redundant AND harmful:
-                            // Azure.Identity/MSAL treats any non-empty claims as "the cached token does
-                            // not satisfy this challenge" and bypasses its token cache (AcquireTokenSilent),
-                            // issuing a live ESTS call on every acquisition. That cache-bypass is what
-                            // stalls the first token acquisition (e.g. ReadAccountAsync) under MSAL-backed
-                            // credentials.
+                            // Attach a 'claims' parameter only when responding to an actual revocation /
+                            // CAE challenge. MergeClaimsWithClientCapabilities returns null on the normal
+                            // path, so no claims are sent and the credential's token cache stays usable
+                            // (a non-empty claims forces a cache-bypassing live ESTS call). cp1 is still
+                            // advertised via isCaeEnabled:true.
                             string? mergedClaims = TokenCredentialCache.MergeClaimsWithClientCapabilities(this.cachedClaimsChallenge);
                             if (!string.IsNullOrEmpty(mergedClaims))
                             {
-                                DefaultTrace.TraceInformation(
-                                    $"Requesting AAD token for revocation with claims challenge and client capabilities (cp1). Retry={retry}");
-
                                 tokenRequestContext = new TokenRequestContext(
                                     scopes: tokenRequestContext.Scopes,
                                     parentRequestId: tokenRequestContext.ParentRequestId,
                                     claims: mergedClaims,
                                     tenantId: tokenRequestContext.TenantId,
                                     isCaeEnabled: tokenRequestContext.IsCaeEnabled);
-                            }
-                            else
-                            {
-                                DefaultTrace.TraceInformation(
-                                    $"Requesting AAD token with CAE client capabilities (cp1) advertised via isCaeEnabled. Retry={retry}");
                             }
 
                             AccessToken accessToken = await this.tokenCredential.GetTokenAsync(
