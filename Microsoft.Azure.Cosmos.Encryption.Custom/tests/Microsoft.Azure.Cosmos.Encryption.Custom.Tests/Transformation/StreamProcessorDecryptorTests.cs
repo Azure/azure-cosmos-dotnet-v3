@@ -268,6 +268,107 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             Assert.AreEqual("5.0", jd.RootElement.GetProperty("d").GetRawText());
         }
 
+        // WriteDoubleValueNewtonsoftStyle also fail-softs non-finite doubles to Newtonsoft's quoted
+        // string form ("NaN"/"Infinity"/"-Infinity"). NOTE: this branch is NOT reachable via normal
+        // encryption -- both processors reject non-finite doubles at serialize time (the Stream path
+        // via an explicit IsFinite check; the Newtonsoft path because SqlFloatSerializer.Serialize
+        // throws ArgumentOutOfRangeException on NaN/Infinity) -- and real AEAD decrypt would reject a
+        // tampered ciphertext first. It is defensive-only, exercised here (like
+        // Decrypt_ForgedUnknownTypeMarker) via forged Double bits + a non-authenticating stub.
+        [TestMethod]
+        public async Task Decrypt_ForgedNonFiniteDouble_WritesNewtonsoftStyleQuotedString()
+        {
+            (double value, string expected)[] cases =
+            {
+                (double.NaN, "NaN"),
+                (double.PositiveInfinity, "Infinity"),
+                (double.NegativeInfinity, "-Infinity"),
+            };
+
+            var doc = new { id = "1", SensitiveStr = "abc" };
+            EncryptionOptions options = CreateOptions(new[] { "/SensitiveStr" });
+
+            foreach ((double value, string expected) in cases)
+            {
+                (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+                // First base64 byte is the type marker the decryptor dispatches on; the stub
+                // encryptor ignores the remaining ciphertext bytes.
+                string forgedBase64 = Convert.ToBase64String(new byte[] { (byte)TypeMarker.Double, 0x00, 0x00, 0x00 });
+
+                MemoryStream forged = new();
+                using (JsonDocument jd = JsonDocument.Parse(encrypted, new JsonDocumentOptions { AllowTrailingCommas = true }))
+                using (Utf8JsonWriter w = new(forged))
+                {
+                    w.WriteStartObject();
+                    w.WriteString("id", jd.RootElement.GetProperty("id").GetString());
+                    w.WriteString("SensitiveStr", forgedBase64);
+                    w.WritePropertyName(Constants.EncryptedInfo);
+                    jd.RootElement.GetProperty(Constants.EncryptedInfo).WriteTo(w);
+                    w.WriteEndObject();
+                }
+
+                forged.Position = 0;
+
+                // Forge the raw IEEE-754 bits directly; SqlFloatSerializer.Serialize refuses NaN/Infinity.
+                byte[] doubleBytes = BitConverter.GetBytes(value);
+                StreamProcessor sp = new StreamProcessor { Encryptor = new AlwaysPlaintextMdeEncryptor(doubleBytes) };
+                MemoryStream output = new();
+                _ = await sp.DecryptStreamAsync(forged, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+
+                output.Position = 0;
+                using JsonDocument outDoc = JsonDocument.Parse(output);
+                JsonElement d = outDoc.RootElement.GetProperty("SensitiveStr");
+                Assert.AreEqual(JsonValueKind.String, d.ValueKind, $"Non-finite double {value} should decrypt to a quoted string.");
+                Assert.AreEqual(expected, d.GetString());
+            }
+        }
+
+        // Companion to RoundTrip_StringWithEscapesInsideEncryptedObject_PreservesValue: a property
+        // NAME (not value) that carries JSON escapes and is written through the payload-buffering
+        // branch (WritePropertyNameVerbatim into encryptionPayloadWriter) must round-trip verbatim.
+        [TestMethod]
+        public async Task RoundTrip_EscapedPropertyNameInsideEncryptedObject_PreservesName()
+        {
+            // Semantic nested name: we"ird\name
+            string json = "{\"id\":\"1\",\"secret\":{\"we\\\"ird\\\\name\":1}}";
+
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawJsonAsync(json, CreateOptions(new[] { "/secret" }));
+            using JsonDocument jd = await DecryptToJsonAsync(encrypted, props);
+
+            JsonElement secret = jd.RootElement.GetProperty("secret");
+            bool found = false;
+            foreach (JsonProperty p in secret.EnumerateObject())
+            {
+                if (p.Name == "we\"ird\\name")
+                {
+                    found = true;
+                    Assert.AreEqual(1, p.Value.GetInt32());
+                }
+            }
+
+            Assert.IsTrue(found, "Escaped nested property name inside an encrypted object was not preserved.");
+        }
+
+        // Companion to RoundTrip_NullInsideEncryptedObject_RemainsDecryptable: the null-guard also
+        // protects the array-payload shape, which completes through the distinct EndArray branch.
+        [TestMethod]
+        public async Task RoundTrip_NullInsideEncryptedArray_RemainsDecryptable()
+        {
+            string json = "{\"id\":\"1\",\"arr\":[null,1]}";
+
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawJsonAsync(json, CreateOptions(new[] { "/arr" }));
+
+            // The encrypted _ep must contain the real path, never a null entry.
+            CollectionAssert.AreEqual(new[] { "/arr" }, props.EncryptedPaths.ToList());
+
+            using JsonDocument jd = await DecryptToJsonAsync(encrypted, props);
+            JsonElement arr = jd.RootElement.GetProperty("arr");
+            Assert.AreEqual(JsonValueKind.Array, arr.ValueKind);
+            Assert.AreEqual(JsonValueKind.Null, arr[0].ValueKind);
+            Assert.AreEqual(1, arr[1].GetInt32());
+        }
+
         [TestMethod]
         public async Task Decrypt_IgnoresUnknownPropertyTypesAndMaintainsJson()
         {
@@ -1021,6 +1122,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             public AlwaysPlaintextMdeEncryptor(string raw)
             {
                 this.payload = Encoding.UTF8.GetBytes(raw);
+            }
+
+            public AlwaysPlaintextMdeEncryptor(byte[] payload)
+            {
+                this.payload = payload;
             }
 
             internal override (byte[] plainText, int plainTextLength) Decrypt(DataEncryptionKey encryptionKey, byte[] cipherText, int cipherTextLength, ArrayPoolManager arrayPoolManager)
