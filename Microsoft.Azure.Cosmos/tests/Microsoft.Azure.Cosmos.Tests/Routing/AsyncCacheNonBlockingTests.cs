@@ -778,6 +778,166 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 await asyncCache.GetAsync("key", (_) => Task.FromResult("value3"), (_) => false));
         }
 
+        /// <summary>
+        /// Validates the removal latch is governed entirely by the injected
+        /// <c>removeFromCacheOnBackgroundRefreshException</c> predicate rather than being
+        /// hard-coded to 404. Any number of predicate-non-removable failures (including a
+        /// 404 that this custom predicate does NOT consider removable) must retain the stale
+        /// value and must not consume the latch, so an eventual predicate-removable failure
+        /// still evicts the entry.
+        /// </summary>
+        [TestMethod]
+        [Owner("nalutripician")]
+        public async Task BackgroundRefresh_CustomRemovablePredicate_ConsumesLatchOnlyWhenPredicateMatches()
+        {
+            // Custom predicate: only InvalidOperationException is removable (a 404 is not).
+            AsyncCacheNonBlocking<string, string> asyncCache = new (
+                removeFromCacheOnBackgroundRefreshException: (ex) => ex is InvalidOperationException,
+                enableAsyncCacheExceptionNoSharing: false);
+
+            Assert.AreEqual(
+                "value1",
+                await asyncCache.GetAsync("key", (_) => Task.FromResult("value1"), (_) => false));
+
+            // A generic non-removable failure -> retained, latch preserved.
+            await AssertBackgroundRefreshThrowsAsync(
+                asyncCache, "key", new Exception("Transient timeout"));
+            Assert.AreEqual(
+                "value1",
+                await asyncCache.GetAsync(
+                    "key",
+                    (_) => throw new Exception("Should not refresh; stale value must be served."),
+                    (_) => false));
+
+            // A 404 is NOT removable under this custom predicate, so it must also be retained
+            // and must NOT burn the latch (the default predicate would evict here instead).
+            await AssertBackgroundRefreshThrowsAsync(
+                asyncCache, "key", new NotFoundException("Item was deleted"));
+            Assert.AreEqual(
+                "value1",
+                await asyncCache.GetAsync(
+                    "key",
+                    (_) => throw new Exception("Should not refresh; stale value must be served."),
+                    (_) => false));
+
+            // The predicate-removable exception finally evicts, even after the preceding
+            // non-removable failures consumed neither the latch nor the entry.
+            await AssertBackgroundRefreshThrowsAsync(
+                asyncCache, "key", new InvalidOperationException("Removable per custom predicate"));
+
+            bool initInvoked = false;
+            string reseeded = await asyncCache.GetAsync(
+                "key",
+                (_) =>
+                {
+                    initInvoked = true;
+                    return Task.FromResult("value2");
+                },
+                (_) => false);
+
+            Assert.IsTrue(initInvoked, "Entry should have been evicted by the predicate-removable exception.");
+            Assert.AreEqual("value2", reseeded);
+        }
+
+        /// <summary>
+        /// Validates the removal latch under concurrency. Many callers coalesce onto a single
+        /// background refresh that faults with a 404; every caller must observe the failure,
+        /// the shared latch must evict the entry exactly once (no deadlock, no missed eviction),
+        /// and the next call must re-run the init delegate against the now-empty cache.
+        /// </summary>
+        [TestMethod]
+        [Owner("nalutripician")]
+        public async Task BackgroundRefresh_ConcurrentNotFoundFailures_EvictAndReseed()
+        {
+            AsyncCacheNonBlocking<string, string> asyncCache = new (enableAsyncCacheExceptionNoSharing: false);
+
+            Assert.AreEqual(
+                "value1",
+                await asyncCache.GetAsync("key", (_) => Task.FromResult("value1"), (_) => false));
+
+            // Gate so all concurrent background refreshes fault simultaneously, maximizing the
+            // chance multiple callers reach the removal latch at the same time.
+            TaskCompletionSource<bool> gate = new (TaskCreationOptions.RunContinuationsAsynchronously);
+
+            const int concurrency = 16;
+            Task[] refreshes = new Task[concurrency];
+            for (int i = 0; i < concurrency; i++)
+            {
+                refreshes[i] = asyncCache.GetAsync(
+                    "key",
+                    async (_) =>
+                    {
+                        await gate.Task;
+                        throw new NotFoundException("Item was deleted");
+                    },
+                    (_) => true);
+            }
+
+            gate.SetResult(true);
+
+            int notFoundCount = 0;
+            foreach (Task refresh in refreshes)
+            {
+                try
+                {
+                    await refresh;
+                    Assert.Fail("Expected every concurrent background refresh to throw NotFoundException.");
+                }
+                catch (NotFoundException)
+                {
+                    notFoundCount++;
+                }
+            }
+
+            Assert.AreEqual(concurrency, notFoundCount, "Every concurrent caller should observe the NotFound failure.");
+
+            // The concurrent 404s must have evicted the stale entry; the next call therefore
+            // re-runs the init delegate and returns the fresh value.
+            bool initInvoked = false;
+            string reseeded = await asyncCache.GetAsync(
+                "key",
+                (_) =>
+                {
+                    initInvoked = true;
+                    return Task.FromResult("value2");
+                },
+                (_) => false);
+
+            Assert.IsTrue(initInvoked, "Entry should have been evicted, forcing the init delegate to run.");
+            Assert.AreEqual("value2", reseeded);
+        }
+
+        /// <summary>
+        /// Forces a background refresh (force-refresh on an already-seeded key) whose init
+        /// delegate throws <paramref name="toThrow"/>, and asserts the exact exception instance
+        /// propagates out of <see cref="AsyncCacheNonBlocking{TKey, TValue}.GetAsync"/>.
+        /// </summary>
+        private static async Task AssertBackgroundRefreshThrowsAsync(
+            AsyncCacheNonBlocking<string, string> cache,
+            string key,
+            Exception toThrow)
+        {
+            Exception caught = null;
+            try
+            {
+                await cache.GetAsync(
+                    key,
+                    async (_) =>
+                    {
+                        await Task.Delay(TimeSpan.FromMilliseconds(5));
+                        throw toThrow;
+                    },
+                    (_) => true);
+            }
+            catch (Exception ex)
+            {
+                caught = ex;
+            }
+
+            Assert.IsNotNull(caught, $"Expected the background refresh to throw {toThrow.GetType().Name}.");
+            Assert.AreSame(toThrow, caught, "The original background-refresh exception instance should propagate unchanged.");
+        }
+
         [TestMethod]
         public async Task GetAsync_FailureLogging_DoesNotSerializeCosmosExceptionDiagnosticsWhenTracingDisabled()
         {

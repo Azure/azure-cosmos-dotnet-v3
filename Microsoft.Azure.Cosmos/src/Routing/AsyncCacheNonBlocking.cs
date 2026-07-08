@@ -283,6 +283,18 @@ namespace Microsoft.Azure.Cosmos
                             ex.Message);
                     }
                 }
+                else if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Verbose))
+                {
+                    // A non-removable (e.g. transient/non-404) background-refresh failure retains
+                    // the stale value (stale-while-refresh) and intentionally does not consume the
+                    // removal latch. Trace at Verbose so the failure remains observable without
+                    // emitting Error-level noise for what is an expected transient condition.
+                    DefaultTrace.TraceVerbose(
+                        "AsyncCacheNonBlocking background refresh failed without removing the entry. key: {0}, operation: {1}, Exception: {2}",
+                        key,
+                        operationName,
+                        ex.Message);
+                }
 
                 throw;
             }
