@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### <a name="1.1.0-preview01"/> [1.1.0-preview01](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption.Custom/1.1.0-preview01) - Unreleased
 
 #### Added
+- [#4766](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4766) Adds a `net8.0` target alongside the existing `netstandard2.0`. The `net8.0` build is what enables the opt-in System.Text.Json stream processor and its `IAsyncDisposable` surface; `netstandard2.0` consumers are unaffected.
+- [#5423](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5423) Adds `CosmosDataEncryptionKeyProvider.Initialize(Container)`, a synchronous counterpart to `InitializeAsync(Container)` for binding the key container.
 - [#5478](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5478) Adds opt-in stream-mode JSON processing for encryption feed iterators (query, LINQ, change-feed) on `net8.0`. Consumers opt in per-call via `RequestOptions.Properties["encryption-json-processor"]` or per-container via the new extension method `EncryptionContainerExtensions.UseStreamingJsonProcessingByDefault(Container)`. The new path decrypts each feed item lazily into a pooled `ArrayPool<byte>` buffer and is targeted at hot-path workloads that need to reduce per-document allocations. Default remains Newtonsoft; existing callers see no behavioral change.
 - [#5478](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5478) Adds `DecryptableItem.DisposeAsync()` and makes `DecryptableItem` implement `IAsyncDisposable`. Stream-mode `DecryptableItem` instances hold a rented `ArrayPool<byte>` buffer that callers MUST dispose to return to the pool and clear plaintext residue. Existing `DecryptableItemCore` (Newtonsoft path) inherits a no-op default implementation, so existing callers are unaffected.
 - [#5478](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5478) `FeedResponse<DecryptableItem>` returned by stream-mode feed iterators implements `IAsyncDisposable` at runtime and cascades disposal to every item in the page. The cascade is best-effort: a single throwing item no longer strands the rented buffers of its peers (failures are surfaced as the original exception when only one item throws, or aggregated into an `AggregateException` when multiple do). Callers that obtain a `FeedResponse<DecryptableItem>` page MUST cast it to `IAsyncDisposable` and dispose it (typically in a `finally` block) so that items the caller skipped or never enumerated still release their pooled buffers. See the example on `DecryptableItem` for the recommended pattern.
@@ -39,26 +41,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#5428](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5428) Adds `ConfigureAwait(false)` on all asynchronous awaits inside `DekCache` to reduce sync-context-capture deadlock risk for callers that bridge sync-over-async.
 
 #### Breaking changes
-- `DekCacheOptions` restructured: the three flat distributed-cache properties (`DistributedCache`, `DistributedCacheKeyPrefix`, `DistributedCacheEntryLifetime`) are replaced by a single nested `DistributedCacheOptions` instance on `DekCacheOptions.DistributedCache`. The nested type carries `Cache`, `KeyPrefix`, and `EntryLifetime`. A non-null nested instance enables L2; `null` disables it. Migration:
-  ```csharp
-  // before
-  new DekCacheOptions { DistributedCache = cache, DistributedCacheKeyPrefix = "x", DistributedCacheEntryLifetime = TimeSpan.FromHours(2) }
-  // after
-  new DekCacheOptions { DistributedCache = new DistributedCacheOptions { Cache = cache, KeyPrefix = "x", EntryLifetime = TimeSpan.FromHours(2) } }
-  ```
+- [#4740](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4740) The public abstract classes `DataEncryptionKey` and `Encryptor` gained new `abstract` members — buffer/offset-based `EncryptData`/`DecryptData` plus `GetEncryptByteCount`/`GetDecryptByteCount` on `DataEncryptionKey`, and `GetEncryptionKeyAsync` on `Encryptor` — that back the non-allocating encrypt/decrypt path. Consumers who authored a **custom subclass** of either type must implement the new members; consumers using the built-in `CosmosEncryptor` / `CosmosDataEncryptionKeyProvider` are unaffected.
 
 #### Updates
+- [#4753](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4753), [#5418](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5418) Updates `Microsoft.Data.Encryption.Cryptography` to `2.0.0-pre015` — a major bump from the `0.2.0-pre` referenced by `1.0.0-preview07` — and moves the internal MDE crypto calls to their async equivalents; `System.Threading.Tasks.Extensions` moves to `4.6.3`. Consumers that reference MDE directly should align to the 2.0 line to avoid a version conflict.
+- [#4819](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4819) Removes the direct `Azure.Core` package reference; it is still supplied transitively via `Azure.Identity`.
 - [#5478](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5478) Removes the unused `System.Text.RegularExpressions 4.3.1` `PackageReference` from `Microsoft.Azure.Cosmos.Encryption.Custom`. The dependency is no longer consumed by any source file in the package and was carried purely as a stale reference. Consumers that transitively depend on `System.Text.RegularExpressions` **through this package** must add a direct reference; this package's surface is unaffected.
 - Replaces the package's `Microsoft.Extensions.Caching.Memory` reference (previously `3.1.7` on `netstandard2.0` / `1.1.2` on `net46`) with `Microsoft.Extensions.Caching.Abstractions` `3.1.7`, unified across TFMs. The library consumes only `IDistributedCache`; the `MemoryCache` reference was dead. Consumers transitively depending on `Microsoft.Extensions.Caching.Memory` types **through this package** must add a direct reference. Consumers using only `IDistributedCache` are unaffected. The `Abstractions` floor stays at the lowest version the new API surface compiles against, so consumers remain free to unify upward to any LTS.
 
 #### Notes
 - The optional distributed cache stores wrapped (encrypted) DEK **properties** only. Raw (unwrapped) DEK material remains process-local for security and is never written to `IDistributedCache`.
 - When configuring a distributed cache, ensure the cache infrastructure uses encryption in transit (TLS) and encryption at rest.
-
-### <a name="1.0.0-preview08"/> [1.0.0-preview08](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption.Custom/1.0.0-preview08) - 2024-09-11
-
-#### Updates
-- [#4673]: Updates `Microsoft.Data.Encryption.Cryptography` dependency to v1.2.0.
 
 ### <a name="1.0.0-preview07"/> [1.0.0-preview07](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption.Custom/1.0.0-preview07) - 2024-06-12
 
