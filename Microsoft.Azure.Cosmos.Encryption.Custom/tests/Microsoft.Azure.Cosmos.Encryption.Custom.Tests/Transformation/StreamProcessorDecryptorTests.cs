@@ -1020,6 +1020,50 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             }
         }
 
+        [TestMethod]
+        public async Task Decrypt_ViaTrickleStream_OneBytePerRead_Succeeds()
+        {
+            // Regression test for the no-progress buffer-growth guard. Feeding the encrypted payload
+            // one byte at a time drives many reads where the scan makes no progress (a partially read
+            // token) yet the buffer is nowhere near full. Before the guard, the decryptor grew the
+            // buffer on every such no-progress read — doubling per byte until it blew past
+            // MaxBufferSize and threw "maximum buffer size" on otherwise valid input. With the guard
+            // (grow only when the buffer is genuinely full), one-byte trickle input decrypts correctly.
+            // The sibling test above deliberately uses 7-byte chunks to sidestep this exact bug; this
+            // test locks in the fix using the pathological 1-byte case.
+            var doc = new
+            {
+                id = "1",
+                SensitiveStr = "secret-data-long-enough-to-force-many-no-progress-single-byte-reads",
+            };
+            string[] paths = new[] { "/SensitiveStr" };
+            EncryptionOptions options = CreateOptions(paths);
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+            byte[] encryptedBytes = encrypted.ToArray();
+            using TrickleStream trickleInput = new(encryptedBytes, bytesPerRead: 1);
+            MemoryStream output = new();
+
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
+            try
+            {
+                DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(
+                    trickleInput, output, mockEncryptor.Object, props,
+                    new CosmosDiagnosticsContext(), cts.Token);
+
+                output.Position = 0;
+                using JsonDocument jd = JsonDocument.Parse(output);
+                Assert.AreEqual(
+                    "secret-data-long-enough-to-force-many-no-progress-single-byte-reads",
+                    jd.RootElement.GetProperty("SensitiveStr").GetString());
+                Assert.IsTrue(ctx.DecryptionInfoList[0].PathsDecrypted.Contains("/SensitiveStr"));
+            }
+            catch (OperationCanceledException)
+            {
+                Assert.Fail("Timed out — no-progress buffer-growth bug caused runaway buffer doubling");
+            }
+        }
+
         private static async Task<(CosmosEncryptor cosmosEncryptor, MemoryStream feedPayloadStream, IReadOnlyList<FeedDoc> sourceDocuments)> CreateBenchmarkFeedPayloadAsync(int documentCount, int documentSizeInKb)
         {
             byte[] wrappedDek = Enumerable.Range(0, 32).Select(i => (byte)i).ToArray();

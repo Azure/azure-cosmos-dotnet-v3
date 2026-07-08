@@ -65,7 +65,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                     leftOver = dataSize - (int)bytesConsumed;
 
-                    if (leftOver == dataSize)
+                    // Grow only when the buffer is genuinely full AND the scan made no progress.
+                    // A short read (trickle stream) that leaves unused capacity means "need more
+                    // bytes", not "need a bigger buffer"; growing on no-progress alone would double
+                    // the buffer on every partial read until it hits the cap and throws on valid input.
+                    if (leftOver == dataSize && dataSize == buffer.Length && !isFinalBlock)
                     {
                         int newSize = checked(buffer.Length * 2);
                         if (newSize > MaxBufferSize)
