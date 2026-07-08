@@ -525,7 +525,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
 
             int maxLength = reader.HasValueSequence ? checked((int)reader.ValueSequence.Length) : reader.ValueSpan.Length;
-            byte[] buffer = arrayPoolManager.Rent(maxLength);
+            byte[] buffer = arrayPoolManager.RentScratch(maxLength);
             int length = reader.CopyString(buffer);
             writer.WriteStringValue(buffer.AsSpan(0, length));
         }
@@ -543,7 +543,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
 
             int maxLength = reader.HasValueSequence ? checked((int)reader.ValueSequence.Length) : reader.ValueSpan.Length;
-            byte[] buffer = arrayPoolManager.Rent(maxLength);
+            byte[] buffer = arrayPoolManager.RentScratch(maxLength);
             int length = reader.CopyString(buffer);
             writer.WritePropertyName(buffer.AsSpan(0, length));
         }
