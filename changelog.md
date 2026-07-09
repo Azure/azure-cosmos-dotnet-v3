@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [5829](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5829) Routing: Adds Gateway Account Property Flag for Dynamic Hedging Control. Introduces a Gateway-controlled `disableCrossRegionalHedging` account property that lets operators dynamically disable PPAF cross-region hedging (and any customer-configured `AvailabilityStrategy`) without rolling back PPAF entirely. The SDK reconciles `ConnectionPolicy.AvailabilityStrategy` against the Gateway-supplied flag on each account-properties refresh; toggling the flag back to `false` restores the customer-configured strategy or rebuilds the SDK default.
 - [5648](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5648) Hub Region Caching: Caches discovered hub region per partition on successful response during 403/3 discovery chain, enabling subsequent requests to skip the discovery and route directly to the cached hub.
 - [#5549](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5549) Adds AAD token revocation (CAE / Emergency) transparent retry handling
+- [6010](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6010) Query: Adds `QueryDefinition.WithRawJsonParameter` to pass pre-serialized JSON query parameter values without serializing them again, preventing double encoding when callers already have raw JSON parameter payloads.
 
 #### Breaking Changes
 
