@@ -148,6 +148,30 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Add a raw json string parameter to the SQL query.
+        /// </summary>
+        /// <param name="name">The name of the parameter.</param>
+        /// <param name="jsonString">The raw JSON string value for the parameter.</param>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// QueryDefinition query = new QueryDefinition(
+        ///     "select * from t where t.Account = @account")
+        ///     .WithRawJsonParameter("@account", jsonValue);
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>An instance of <see cref="QueryDefinition"/>.</returns>
+        public QueryDefinition WithRawJsonParameter(string name, string jsonString)
+        {
+            // pack it into an internal type for identification.
+            return this.WithParameter(name, new SerializedParameterValue
+            {
+                rawSerializedJsonValue = jsonString
+            });
+        }
+
+        /// <summary>
         /// Returns the names and values of parameters in this <see cref="QueryDefinition"/>.
         /// </summary>
         /// <returns>
