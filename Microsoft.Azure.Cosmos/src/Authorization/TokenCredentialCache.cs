@@ -296,8 +296,12 @@ namespace Microsoft.Azure.Cosmos
                             // path, so no claims are sent and the credential's token cache stays usable
                             // (a non-empty claims forces a cache-bypassing live ESTS call). cp1 is still
                             // advertised via isCaeEnabled:true.
-                            string? mergedClaims = TokenCredentialCache.MergeClaimsWithClientCapabilities(this.cachedClaimsChallenge);
-                            if (string.IsNullOrEmpty(this.cachedClaimsChallenge))
+                            // Snapshot the volatile cachedClaimsChallenge into a local so the merged claims
+                            // and the branch below are computed from the same value, even if ResetCachedToken
+                            // races on the request-processing thread between the two reads.
+                            string? challenge = this.cachedClaimsChallenge;
+                            string? mergedClaims = TokenCredentialCache.MergeClaimsWithClientCapabilities(challenge);
+                            if (string.IsNullOrEmpty(challenge))
                             {
                                 DefaultTrace.TraceInformation(
                                     $"Requesting AAD token with CAE client capabilities (cp1). Retry={retry}");
