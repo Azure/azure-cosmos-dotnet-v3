@@ -89,7 +89,8 @@ namespace Microsoft.Azure.Cosmos
                cosmosClientTelemetryOptions: clientOptions.CosmosClientTelemetryOptions,
                chaosInterceptorFactory: clientOptions.ChaosInterceptorFactory,
                enableAsyncCacheExceptionNoSharing: clientOptions.EnableAsyncCacheExceptionNoSharing,
-               useLengthAwareRangeComparer: clientOptions.UseLengthAwareRangeComparer);
+               useLengthAwareRangeComparer: clientOptions.UseLengthAwareRangeComparer,
+               enableMetadataHedging: ConfigurationManager.GetMetadataHedgingOptIn());
 
             return ClientContextCore.Create(
                 cosmosClient,
