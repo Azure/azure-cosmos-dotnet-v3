@@ -1729,27 +1729,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Container containerSerializer = clientSerializer.GetContainer(this.database.Id, this.Container.Id);
 
             List<QueryDefinition> queryDefinitions = new List<QueryDefinition>()
-            {
-                new QueryDefinition("select * from t where t.pk = @pk" )
-                .WithRawJsonParameter("@pk", ToJsonString(cosmosSerializerHelper.ToStream<dynamic>(testItem1.pk))),
-                new QueryDefinition("select * from t where t.cost = @cost" )
-                .WithRawJsonParameter("@cost", ToJsonString(cosmosSerializerHelper.ToStream<dynamic>(testItem1.cost))),
-                new QueryDefinition("select * from t where t.taskNum = @taskNum" )
-                .WithRawJsonParameter("@taskNum", ToJsonString(cosmosSerializerHelper.ToStream<dynamic>(testItem1.taskNum))),
-                new QueryDefinition("select * from t where t.totalCost = @totalCost" )
-                .WithRawJsonParameter("@totalCost", ToJsonString(cosmosSerializerHelper.ToStream<dynamic>(testItem1.totalCost))),
-                new QueryDefinition("select * from t where t.createdDateTime = @createdDateTime" )
-                .WithRawJsonParameter("@createdDateTime", ToJsonString(cosmosSerializerHelper.ToStream<dynamic>(testItem1.createdDateTime))),
-                new QueryDefinition("select * from t where t.statusCode = @statusCode" )
-                .WithRawJsonParameter("@statusCode", ToJsonString(cosmosSerializerHelper.ToStream<dynamic>(testItem1.statusCode))),
-                new QueryDefinition("select * from t where t.itemIds = @itemIds" )
-                .WithRawJsonParameter("@itemIds", ToJsonString(cosmosSerializerHelper.ToStream<dynamic>(testItem1.itemIds))),
-                new QueryDefinition("select * from t where t.itemcode = @itemcode" )
-                .WithRawJsonParameter("@itemcode", ToJsonString(cosmosSerializerHelper.ToStream<dynamic>(testItem1.itemcode))),
-                new QueryDefinition("select * from t where t.pk = @pk and t.cost = @cost" )
-                    .WithRawJsonParameter("@pk", ToJsonString(cosmosSerializerHelper.ToStream<dynamic>(testItem1.pk)))
-                    .WithRawJsonParameter("@cost", ToJsonString(cosmosSerializerHelper.ToStream<dynamic>(testItem1.cost))),
-            };
+    {
+        new QueryDefinition("select * from t where t.pk = @pk" )
+        .WithRawJsonParameter("@pk", ToJsonString(cosmosSerializerHelper.ToStream<dynamic>(testItem1.pk))),
+        new QueryDefinition("select * from t where t.cost = @cost" )
+        .WithRawJsonParameter("@cost", ToJsonString(cosmosSerializerHelper.ToStream<dynamic>(testItem1.cost))),
+        new QueryDefinition("select * from t where t.taskNum = @taskNum" )
+        .WithRawJsonParameter("@taskNum", ToJsonString(cosmosSerializerHelper.ToStream<dynamic>(testItem1.taskNum))),
+        new QueryDefinition("select * from t where t.totalCost = @totalCost" )
+        .WithRawJsonParameter("@totalCost", ToJsonString(cosmosSerializerHelper.ToStream<dynamic>(testItem1.totalCost))),
+        new QueryDefinition("select * from t where t.createdDateTime = @createdDateTime" )
+        .WithRawJsonParameter("@createdDateTime", ToJsonString(cosmosSerializerHelper.ToStream<dynamic>(testItem1.createdDateTime))),
+        new QueryDefinition("select * from t where t.statusCode = @statusCode" )
+        .WithRawJsonParameter("@statusCode", ToJsonString(cosmosSerializerHelper.ToStream<dynamic>(testItem1.statusCode))),
+        new QueryDefinition("select * from t where t.itemIds = @itemIds" )
+        .WithRawJsonParameter("@itemIds", ToJsonString(cosmosSerializerHelper.ToStream<dynamic>(testItem1.itemIds))),
+        new QueryDefinition("select * from t where t.itemcode = @itemcode" )
+        .WithRawJsonParameter("@itemcode", ToJsonString(cosmosSerializerHelper.ToStream<dynamic>(testItem1.itemcode))),
+        new QueryDefinition("select * from t where t.pk = @pk and t.cost = @cost" )
+            .WithRawJsonParameter("@pk", ToJsonString(cosmosSerializerHelper.ToStream<dynamic>(testItem1.pk)))
+            .WithRawJsonParameter("@cost", ToJsonString(cosmosSerializerHelper.ToStream<dynamic>(testItem1.cost))),
+    };
 
             try
             {
@@ -1835,23 +1835,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosSerializer cosmosSerializer = containerStandardSerializer.Database.Client.ClientOptions.Serializer;
 
             queryDefinitions = new List<QueryDefinition>()
-            {
-                new QueryDefinition("select * from t where t.pk = @pk" )
-                .WithRawJsonParameter("@pk", ToJsonString(cosmosSerializer.ToStream(testItem1.pk))),
-                new QueryDefinition("select * from t where t.cost = @cost" )
-                .WithRawJsonParameter("@cost", ToJsonString(cosmosSerializer.ToStream(testItem1.cost))),
-                new QueryDefinition("select * from t where t.taskNum = @taskNum" )
-                .WithRawJsonParameter("@taskNum", ToJsonString(cosmosSerializer.ToStream(testItem1.taskNum))),
-                new QueryDefinition("select * from t where t.CamelCase = @CamelCase" )
-                .WithRawJsonParameter("@CamelCase", ToJsonString(cosmosSerializer.ToStream(testItem1.CamelCase))),
-                new QueryDefinition("select * from t where t.valid = @valid" )
-                .WithRawJsonParameter("@valid", ToJsonString(cosmosSerializer.ToStream(testItem1.valid))),
-                new QueryDefinition("select * from t where t.description = @description" )
-                .WithRawJsonParameter("@description", ToJsonString(cosmosSerializer.ToStream(testItem1.description))),
-                new QueryDefinition("select * from t where t.pk = @pk and t.cost = @cost" )
-                    .WithRawJsonParameter("@pk", ToJsonString(cosmosSerializer.ToStream(testItem1.pk)))
-                    .WithRawJsonParameter("@cost", ToJsonString(cosmosSerializer.ToStream(testItem1.cost))),
-            };
+    {
+        new QueryDefinition("select * from t where t.pk = @pk" )
+        .WithRawJsonParameter("@pk", ToJsonString(cosmosSerializer.ToStream(testItem1.pk))),
+        new QueryDefinition("select * from t where t.cost = @cost" )
+        .WithRawJsonParameter("@cost", ToJsonString(cosmosSerializer.ToStream(testItem1.cost))),
+        new QueryDefinition("select * from t where t.taskNum = @taskNum" )
+        .WithRawJsonParameter("@taskNum", ToJsonString(cosmosSerializer.ToStream(testItem1.taskNum))),
+        new QueryDefinition("select * from t where t.CamelCase = @CamelCase" )
+        .WithRawJsonParameter("@CamelCase", ToJsonString(cosmosSerializer.ToStream(testItem1.CamelCase))),
+        new QueryDefinition("select * from t where t.valid = @valid" )
+        .WithRawJsonParameter("@valid", ToJsonString(cosmosSerializer.ToStream(testItem1.valid))),
+        new QueryDefinition("select * from t where t.description = @description" )
+        .WithRawJsonParameter("@description", ToJsonString(cosmosSerializer.ToStream(testItem1.description))),
+        new QueryDefinition("select * from t where t.pk = @pk and t.cost = @cost" )
+            .WithRawJsonParameter("@pk", ToJsonString(cosmosSerializer.ToStream(testItem1.pk)))
+            .WithRawJsonParameter("@cost", ToJsonString(cosmosSerializer.ToStream(testItem1.cost))),
+    };
 
             foreach (QueryDefinition queryDefinition in queryDefinitions)
             {
