@@ -883,6 +883,50 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsFalse(string.IsNullOrEmpty(header));
         }
 
+        [TestMethod]
+        [Timeout(30000)]
+        public async Task TokenCredentialCache_StaleNoClaimsRefresh_DoesNotClobberClaimsToken()
+        {
+            // Regression: a normal (no-claims) refresh that is already in flight when a CAE revocation
+            // arrives (ResetCachedToken(claims)) must NOT, on late completion, republish its stale
+            // no-claims token over the newer claims-based token, clear the installed claims challenge,
+            // or clear the newer refresh's currentRefreshOperation. Because
+            // ClientRetryPolicy.MaxCaeRevocationRetryCount == 1, serving the stale token on the retry
+            // path can surface as a user-visible auth failure.
+            GatedClaimsTokenCredential credential = new GatedClaimsTokenCredential();
+            using TokenCredentialCache cache = this.CreateTokenCredentialCache(credential, TimeSpan.FromMinutes(30));
+
+            // 1) Start a normal no-claims refresh and let it reach the credential, where it parks.
+            Task<string> staleRefresh = cache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton).AsTask();
+            await credential.NoClaimsRefreshStarted;
+
+            // 2) A CAE 401 arrives: reset with a claims challenge. This bumps the refresh generation
+            //    and drops the in-flight (now stale) refresh's ownership.
+            string claimsChallenge = Convert.ToBase64String(
+                System.Text.Encoding.UTF8.GetBytes("{\"access_token\":{\"acrs\":{\"essential\":true,\"value\":\"c1\"}}}"));
+            cache.ResetCachedToken(claimsChallenge);
+
+            // 3) The retry starts a claims-based refresh, which completes first and becomes the cached state.
+            string claimsHeader = await cache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton);
+            Assert.AreEqual(
+                AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(GatedClaimsTokenCredential.ClaimsToken),
+                claimsHeader,
+                "The claims-based refresh should have produced the cached authorization header.");
+
+            // 4) Now let the stale no-claims refresh complete LAST.
+            credential.ReleaseNoClaimsRefresh();
+            await staleRefresh;
+
+            // 5) The cached header must still be the claims-based one - the stale refresh must not clobber it.
+            string headerAfterStaleCompletes = await cache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton);
+            Assert.AreEqual(
+                AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(GatedClaimsTokenCredential.ClaimsToken),
+                headerAfterStaleCompletes,
+                "REGRESSION: a stale in-flight no-claims refresh republished its token over the newer " +
+                "claims-based token. This drops the CAE revocation response; with " +
+                "MaxCaeRevocationRetryCount == 1 that surfaces as an auth failure.");
+        }
+
         /// <summary>
         /// A TokenCredential that records the claims / IsCaeEnabled of every request context the SDK
         /// passes, and — to model Azure.Identity/MSAL cache-bypass semantics — optionally stalls when a
@@ -920,6 +964,47 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
 
                 return new AccessToken("AccessToken", DateTimeOffset.MaxValue);
+            }
+        }
+
+        /// <summary>
+        /// A TokenCredential that parks the first no-claims token acquisition until it is explicitly
+        /// released, while serving any claims-bearing acquisition immediately. This lets a test drive
+        /// the exact interleaving where a stale no-claims refresh completes AFTER a claims-based
+        /// refresh that a CAE revocation started. It returns distinct token values so the caller can
+        /// tell which refresh's result ended up cached.
+        /// </summary>
+        private sealed class GatedClaimsTokenCredential : TokenCredential
+        {
+            public const string NoClaimsToken = "NoClaimsToken";
+            public const string ClaimsToken = "ClaimsToken";
+
+            private readonly TaskCompletionSource<bool> noClaimsRefreshStarted
+                = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            private readonly TaskCompletionSource<bool> releaseNoClaimsRefresh
+                = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            public Task NoClaimsRefreshStarted => this.noClaimsRefreshStarted.Task;
+
+            public void ReleaseNoClaimsRefresh() => this.releaseNoClaimsRefresh.TrySetResult(true);
+
+            public override AccessToken GetToken(TokenRequestContext requestContext, CancellationToken cancellationToken)
+            {
+                return this.GetTokenAsync(requestContext, cancellationToken).AsTask().GetAwaiter().GetResult();
+            }
+
+            public override async ValueTask<AccessToken> GetTokenAsync(TokenRequestContext requestContext, CancellationToken cancellationToken)
+            {
+                if (string.IsNullOrEmpty(requestContext.Claims))
+                {
+                    // The stale, no-claims refresh: announce it started, then block until released so
+                    // it deterministically finishes after the claims-based refresh.
+                    this.noClaimsRefreshStarted.TrySetResult(true);
+                    await this.releaseNoClaimsRefresh.Task;
+                    return new AccessToken(NoClaimsToken, DateTimeOffset.MaxValue);
+                }
+
+                return new AccessToken(ClaimsToken, DateTimeOffset.MaxValue);
             }
         }
 
