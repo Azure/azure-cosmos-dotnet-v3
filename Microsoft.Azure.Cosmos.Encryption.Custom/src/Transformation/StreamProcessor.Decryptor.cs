@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         {
             (byte[] objectBytes, int length) = objectBuffer.WrittenBuffer;
 
-            EncryptionProperties encryptionProperties = TryExtractEncryptionProperties(objectBytes, length);
+            EncryptionProperties encryptionProperties = this.TryExtractEncryptionProperties(objectBytes, length);
             if (encryptionProperties == null)
             {
                 WriteBufferedObject(objectBytes, length, objectBuffer, outputStream);
@@ -239,15 +239,65 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
         }
 
-        private static EncryptionProperties TryExtractEncryptionProperties(byte[] buffer, int length)
+        private EncryptionProperties TryExtractEncryptionProperties(byte[] buffer, int length)
         {
             try
             {
-                EncryptionPropertiesWrapper wrapper = JsonSerializer.Deserialize<EncryptionPropertiesWrapper>(
-                    new ReadOnlySpan<byte>(buffer, 0, length),
-                    JsonSerializerOptions);
+                ReadOnlySpan<byte> document = new (buffer, 0, length);
+                Utf8JsonReader reader = new (document, JsonReaderOptions);
+                int metadataStart = -1;
+                int metadataLength = 0;
 
-                return wrapper?.EncryptionProperties;
+                while (reader.Read())
+                {
+                    if (reader.TokenType != JsonTokenType.PropertyName || reader.CurrentDepth != 1)
+                    {
+                        continue;
+                    }
+
+                    if (!reader.ValueTextEquals(this.encryptionPropertiesNameBytes))
+                    {
+                        if (!reader.TrySkip())
+                        {
+                            return null;
+                        }
+
+                        continue;
+                    }
+
+                    if (!reader.Read())
+                    {
+                        return null;
+                    }
+
+                    if (reader.TokenType == JsonTokenType.StartObject)
+                    {
+                        int objectStart = checked((int)reader.TokenStartIndex);
+                        if (!reader.TrySkip())
+                        {
+                            return null;
+                        }
+
+                        metadataStart = objectStart;
+                        metadataLength = checked((int)reader.BytesConsumed - objectStart);
+                    }
+                    else
+                    {
+                        if (!reader.TrySkip())
+                        {
+                            return null;
+                        }
+
+                        metadataStart = -1;
+                        metadataLength = 0;
+                    }
+                }
+
+                return metadataStart < 0
+                    ? null
+                    : JsonSerializer.Deserialize<EncryptionProperties>(
+                        document.Slice(metadataStart, metadataLength),
+                        JsonSerializerOptions);
             }
             catch (JsonException)
             {
@@ -327,27 +377,47 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                 leftOver = dataSize - (int)bytesConsumed;
 
-                if (leftOver == dataSize)
-                {
-                    int newSize = checked(buffer.Length * 2);
-                    if (newSize > MaxBufferSize)
-                    {
-                        throw new InvalidOperationException($"JSON document or token does not fit within the maximum buffer size of {MaxBufferSize} bytes");
-                    }
-
-                    byte[] newBuffer = arrayPoolManager.Rent(newSize);
-                    buffer.AsSpan().CopyTo(newBuffer);
-                    buffer = newBuffer;
-                }
-                else if (leftOver != 0)
-                {
-                    buffer.AsSpan(dataSize - leftOver, leftOver).CopyTo(buffer);
-                }
+                buffer = HandleReadBuffer(
+                    buffer,
+                    dataSize,
+                    leftOver,
+                    isFinalBlock,
+                    arrayPoolManager,
+                    MaxBufferSize);
             }
 
             writer.Flush();
 
             return EncryptionProcessor.CreateDecryptionContext(pathsDecrypted, properties.DataEncryptionKeyId);
+        }
+
+        internal static byte[] HandleReadBuffer(
+            byte[] buffer,
+            int dataSize,
+            int leftOver,
+            bool isFinalBlock,
+            ArrayPoolManager arrayPoolManager,
+            int maxBufferSize)
+        {
+            if (leftOver == buffer.Length && !isFinalBlock)
+            {
+                int newSize = checked(buffer.Length * 2);
+                if (newSize > maxBufferSize)
+                {
+                    throw new InvalidOperationException($"JSON document or token does not fit within the maximum buffer size of {maxBufferSize} bytes");
+                }
+
+                byte[] newBuffer = arrayPoolManager.Rent(newSize);
+                buffer.AsSpan(0, dataSize).CopyTo(newBuffer);
+                return newBuffer;
+            }
+
+            if (leftOver != 0)
+            {
+                buffer.AsSpan(dataSize - leftOver, leftOver).CopyTo(buffer);
+            }
+
+            return buffer;
         }
 
         private long TransformDecryptBuffer(
@@ -368,13 +438,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             {
                 JsonTokenType tokenType = reader.TokenType;
 
-                if (isIgnoredBlock && reader.CurrentDepth == 1 && tokenType == JsonTokenType.EndObject)
+                if (isIgnoredBlock)
                 {
-                    isIgnoredBlock = false;
-                    continue;
-                }
-                else if (isIgnoredBlock)
-                {
+                    if (reader.CurrentDepth == 1 && IsIgnoredValueComplete(tokenType))
+                    {
+                        isIgnoredBlock = false;
+                    }
+
                     continue;
                 }
 
@@ -467,6 +537,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             state = reader.CurrentState;
 
             return reader.BytesConsumed;
+        }
+
+        private static bool IsIgnoredValueComplete(JsonTokenType tokenType)
+        {
+            return tokenType == JsonTokenType.String ||
+                tokenType == JsonTokenType.Number ||
+                tokenType == JsonTokenType.EndObject ||
+                tokenType == JsonTokenType.EndArray ||
+                tokenType == JsonTokenType.True ||
+                tokenType == JsonTokenType.False ||
+                tokenType == JsonTokenType.Null;
         }
 
         private void TransformDecryptProperty(ref Utf8JsonReader reader, DataEncryptionKey encryptionKey, Utf8JsonWriter writer, ArrayPoolManager arrayPoolManager)

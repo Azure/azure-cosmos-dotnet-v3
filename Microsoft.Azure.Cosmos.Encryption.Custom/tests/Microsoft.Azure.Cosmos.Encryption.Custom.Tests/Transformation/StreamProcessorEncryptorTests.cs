@@ -379,6 +379,34 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         }
 
         [TestMethod]
+        public async Task Encrypt_BoundarySizedTokenFromOneByteReads_GrowsOnlyAsNeeded()
+        {
+            string sensitiveValue = new ('s', 64);
+            string json = "{\"id\":\"1\",\"SensitiveStr\":\"" + sensitiveValue + "\",\"Plain\":42}";
+            byte[] bytes = Encoding.UTF8.GetBytes(json);
+            using TrickleStream input = new (bytes, bytesPerRead: 1, maxReadBufferSize: 128);
+            using MemoryStream output = new ();
+            EncryptionOptions options = CreateOptions(new[] { "/SensitiveStr" });
+
+            await EncryptionProcessor.EncryptAsync(
+                input,
+                output,
+                mockEncryptor.Object,
+                options,
+                JsonProcessor.Stream,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+
+            output.Position = 0;
+            using JsonDocument encrypted = JsonDocument.Parse(output);
+            Assert.AreEqual(42, encrypted.RootElement.GetProperty("Plain").GetInt32());
+            Assert.AreEqual(JsonValueKind.String, encrypted.RootElement.GetProperty("SensitiveStr").ValueKind);
+            Assert.IsTrue(
+                input.MaximumReadBufferSize <= 128,
+                $"One-byte reads caused the encryptor to request a {input.MaximumReadBufferSize}-byte buffer.");
+        }
+
+        [TestMethod]
         public async Task Encrypt_TruncatedJson_ViaTrickleStream_FailsCleanly()
         {
             // Regression test for isFinalBlock fix: when the input stream is exhausted
@@ -419,13 +447,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         {
             private readonly byte[] data;
             private readonly int bytesPerRead;
+            private readonly int maxReadBufferSize;
             private int pos;
 
-            public TrickleStream(byte[] data, int bytesPerRead)
+            public TrickleStream(byte[] data, int bytesPerRead, int maxReadBufferSize = int.MaxValue)
             {
                 this.data = data;
                 this.bytesPerRead = bytesPerRead;
+                this.maxReadBufferSize = maxReadBufferSize;
             }
+
+            public int MaximumReadBufferSize { get; private set; }
 
             public override bool CanRead => true;
             public override bool CanSeek => false;
@@ -441,6 +473,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                this.MaximumReadBufferSize = Math.Max(this.MaximumReadBufferSize, buffer.Length);
+                if (buffer.Length > this.maxReadBufferSize)
+                {
+                    throw new InvalidOperationException(
+                        $"Read buffer grew to {buffer.Length} bytes while the stream was returning one byte per read.");
+                }
+
                 int remaining = this.data.Length - this.pos;
                 if (remaining <= 0) return ValueTask.FromResult(0);
                 int toRead = Math.Min(Math.Min(this.bytesPerRead, remaining), buffer.Length);

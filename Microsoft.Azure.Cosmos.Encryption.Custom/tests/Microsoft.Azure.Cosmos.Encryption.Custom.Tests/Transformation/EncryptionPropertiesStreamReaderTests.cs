@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
     using Microsoft.Azure.Cosmos.Encryption.Custom;
     using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class EncryptionPropertiesStreamReaderTests
@@ -118,13 +119,117 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         }
 
         [TestMethod]
-        public async Task ReadAsync_WhenEiIsNotObject_Throws()
+        public async Task ReadAsync_WhenDuplicateTopLevelEi_LastValueWins()
         {
-            string json = /*lang=json,strict*/ @"{""_ei"":""notAnObject""}";
+            string json = /*lang=json,strict*/ @"{""_ei"":null,""id"":""a"",""_ei"":{""_ef"":3,""_ea"":""AEAD_AES_256_CBC_HMAC_SHA256_RANDOMIZED"",""_en"":""laterDek"",""_ep"":[""/secret""]}}";
             await using MemoryStream stream = new (Encoding.UTF8.GetBytes(json));
 
-            await Assert.ThrowsExceptionAsync<InvalidOperationException>(
-                async () => await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None));
+            EncryptionProperties result = await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None);
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(EncryptionFormatVersion.Mde, result.EncryptionFormatVersion);
+            Assert.AreEqual("laterDek", result.DataEncryptionKeyId);
+            CollectionAssert.AreEqual(new[] { "/secret" }, new System.Collections.Generic.List<string>(result.EncryptedPaths));
+            Assert.AreEqual(0, stream.Position);
+        }
+
+        [TestMethod]
+        public async Task ReadAsync_WhenDuplicateLastEiSpansChunks_LastValueWins()
+        {
+            System.Collections.Generic.List<string> paths = new ();
+            for (int i = 0; i < 500; i++)
+            {
+                paths.Add("/path_with_a_long_prefix_" + i);
+            }
+
+            string pathsJson = "[" + string.Join(",", paths.ConvertAll(path => "\"" + path + "\"")) + "]";
+            string json = "{\"_ei\":null,\"id\":\"a\",\"_ei\":{\"_ef\":3,\"_ea\":\"AEAD_AES_256_CBC_HMAC_SHA256_RANDOMIZED\",\"_en\":\"chunkedDek\",\"_ep\":" + pathsJson + "}}";
+            await using TrickleReadStream stream = new (Encoding.UTF8.GetBytes(json), maxBytesPerRead: 257);
+
+            EncryptionProperties result = await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None);
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual("chunkedDek", result.DataEncryptionKeyId);
+            Assert.AreEqual(paths.Count, new System.Collections.Generic.List<string>(result.EncryptedPaths).Count);
+            Assert.AreEqual(0, stream.Position);
+        }
+
+        [TestMethod]
+        public async Task ReadAsync_WhenLastTopLevelEiIsNull_ReturnsNull()
+        {
+            string json = /*lang=json,strict*/ @"{""_ei"":{""_ef"":3,""_ea"":""AEAD_AES_256_CBC_HMAC_SHA256_RANDOMIZED"",""_en"":""earlierDek"",""_ep"":[]},""id"":""a"",""_ei"":null}";
+            await using MemoryStream stream = new (Encoding.UTF8.GetBytes(json));
+
+            EncryptionProperties result = await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None);
+
+            Assert.IsNull(result);
+            Assert.AreEqual(0, stream.Position);
+        }
+
+        [TestMethod]
+        public async Task ReadAsync_WhenEarlierEiIsMalformedAndLaterEiIsValid_MatchesNewtonsoftLastWins()
+        {
+            string json = /*lang=json,strict*/ @"{""_ei"":""malformed"",""id"":""a"",""_ei"":{""_ef"":3,""_ea"":""AEAD_AES_256_CBC_HMAC_SHA256_RANDOMIZED"",""_en"":""laterDek"",""_ep"":[""/secret""]}}";
+            JObject newtonsoftDocument = JObject.Parse(json);
+            EncryptionProperties expected = newtonsoftDocument[Constants.EncryptedInfo].ToObject<EncryptionProperties>();
+            await using MemoryStream stream = new (Encoding.UTF8.GetBytes(json));
+
+            EncryptionProperties result = await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None);
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(expected.EncryptionFormatVersion, result.EncryptionFormatVersion);
+            Assert.AreEqual(expected.DataEncryptionKeyId, result.DataEncryptionKeyId);
+            CollectionAssert.AreEqual(
+                new System.Collections.Generic.List<string>(expected.EncryptedPaths),
+                new System.Collections.Generic.List<string>(result.EncryptedPaths));
+        }
+
+        [TestMethod]
+        public async Task ReadAsync_WhenNestedEiFollowsTopLevelEi_IgnoresNestedValue()
+        {
+            string json = /*lang=json,strict*/ @"{""_ei"":{""_ef"":3,""_ea"":""AEAD_AES_256_CBC_HMAC_SHA256_RANDOMIZED"",""_en"":""rootDek"",""_ep"":[]},""nested"":{""_ei"":""malformed""}}";
+            await using MemoryStream stream = new (Encoding.UTF8.GetBytes(json));
+
+            EncryptionProperties result = await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None);
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual("rootDek", result.DataEncryptionKeyId);
+        }
+
+        [DataTestMethod]
+        [DataRow(@"""notAnObject""")]
+        [DataRow("42")]
+        [DataRow("true")]
+        [DataRow("[1,2,3]")]
+        public async Task ReadAsync_WhenLastTopLevelEiIsNonObject_ReturnsNull(string nonObjectEi)
+        {
+            string json = "{\"id\":\"a\",\"_ei\":" + nonObjectEi + "}";
+            JObject newtonsoftDocument = JObject.Parse(json);
+            Assert.IsFalse(newtonsoftDocument[Constants.EncryptedInfo] is JObject);
+            await using MemoryStream stream = new (Encoding.UTF8.GetBytes(json));
+
+            EncryptionProperties result = await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None);
+
+            Assert.IsNull(result);
+            Assert.AreEqual(0, stream.Position);
+        }
+
+        [DataTestMethod]
+        [DataRow(@"""notAnObject""")]
+        [DataRow("42")]
+        [DataRow("false")]
+        [DataRow("[1,2,3]")]
+        public async Task ReadAsync_WhenValidEiIsFollowedByNonObjectEi_ReturnsNull(string nonObjectEi)
+        {
+            string json = "{\"_ei\":{\"_ef\":3,\"_ea\":\"AEAD_AES_256_CBC_HMAC_SHA256_RANDOMIZED\",\"_en\":\"earlierDek\",\"_ep\":[]},\"id\":\"a\",\"_ei\":" + nonObjectEi + "}";
+            JObject newtonsoftDocument = JObject.Parse(json);
+            Assert.IsFalse(newtonsoftDocument[Constants.EncryptedInfo] is JObject);
+            await using MemoryStream stream = new (Encoding.UTF8.GetBytes(json));
+
+            EncryptionProperties result = await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None);
+
+            Assert.IsNull(result);
+            Assert.AreEqual(0, stream.Position);
         }
 
         [TestMethod]
@@ -279,9 +384,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         private sealed class TrickleReadStream : Stream
         {
             private readonly byte[] data;
+            private readonly int maxBytesPerRead;
             private int position;
 
-            public TrickleReadStream(byte[] data) { this.data = data; }
+            public TrickleReadStream(byte[] data, int maxBytesPerRead = 1)
+            {
+                this.data = data;
+                this.maxBytesPerRead = maxBytesPerRead;
+            }
 
             public override bool CanRead => true;
             public override bool CanSeek => true;
@@ -303,8 +413,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                     return 0;
                 }
 
-                buffer[offset] = this.data[this.position++];
-                return 1;
+                int bytesToRead = Math.Min(Math.Min(count, this.maxBytesPerRead), this.data.Length - this.position);
+                this.data.AsSpan(this.position, bytesToRead).CopyTo(buffer.AsSpan(offset, bytesToRead));
+                this.position += bytesToRead;
+                return bytesToRead;
             }
 
             public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
@@ -319,8 +431,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                     return new ValueTask<int>(0);
                 }
 
-                buffer.Span[0] = this.data[this.position++];
-                return new ValueTask<int>(1);
+                int bytesToRead = Math.Min(Math.Min(buffer.Length, this.maxBytesPerRead), this.data.Length - this.position);
+                this.data.AsMemory(this.position, bytesToRead).CopyTo(buffer);
+                this.position += bytesToRead;
+                return new ValueTask<int>(bytesToRead);
             }
 
             public override long Seek(long offset, SeekOrigin origin)

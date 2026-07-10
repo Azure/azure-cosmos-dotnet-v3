@@ -65,22 +65,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                     leftOver = dataSize - (int)bytesConsumed;
 
-                    if (leftOver == dataSize)
-                    {
-                        int newSize = checked(buffer.Length * 2);
-                        if (newSize > MaxBufferSize)
-                        {
-                            throw new InvalidOperationException($"JSON document or token does not fit within the maximum buffer size of {MaxBufferSize} bytes");
-                        }
-
-                        byte[] newBuffer = arrayPoolManager.Rent(newSize);
-                        buffer.AsSpan().CopyTo(newBuffer);
-                        buffer = newBuffer;
-                    }
-                    else if (leftOver != 0)
-                    {
-                        buffer.AsSpan(dataSize - leftOver, leftOver).CopyTo(buffer);
-                    }
+                    buffer = HandleReadBuffer(
+                        buffer,
+                        dataSize,
+                        leftOver,
+                        isFinalBlock,
+                        arrayPoolManager,
+                        MaxBufferSize);
                 }
 
                 await inputStream.DisposeAsync();
