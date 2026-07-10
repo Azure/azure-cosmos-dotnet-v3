@@ -23,11 +23,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [5995](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5995)  DistributedTransaction (preview): Adds conditional patch support to `DistributedWriteTransaction.PatchItem` via a new `DistributedTransactionPatchItemRequestOptions.FilterPredicate`, a SQL predicate the server evaluates atomically before applying the patch (otherwise the operation fails with `412` and the transaction is not committed). `PatchItem`'s `requestOptions` parameter type changes to this new type; callers passing a `DistributedTransactionRequestOptions`-typed argument must switch to `DistributedTransactionPatchItemRequestOptions`.
 - [5970](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5970) ThinClient: Adds an HTTP/2 connectivity probe (`POST /connectivity-probe`) that validates each discovered thin client (proxy) regional endpoint over HTTP/2 before routing traffic to it. Data-plane traffic uses the proxy only for regions whose endpoint has passed its probe; any other region transparently uses the standard gateway, with no client restart required. Thin client mode is now enabled by default (opt-out via `AZURE_COSMOS_THIN_CLIENT_ENABLED=false`); the probe verifies HTTP/2 reachability per region at runtime, so no client-side HTTP/2 opt-in is required. When enabled, the SDK additionally issues the probe and routes data-plane traffic to the proxy regional endpoints on port `10250` over HTTP/2, which is useful to know when diagnosing unexpected requests or egress rules that only allow `443`.
 - [5829](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5829) Routing: Adds Gateway Account Property Flag for Dynamic Hedging Control. Introduces a Gateway-controlled `disableCrossRegionalHedging` account property that lets operators dynamically disable PPAF cross-region hedging (and any customer-configured `AvailabilityStrategy`) without rolling back PPAF entirely. The SDK reconciles `ConnectionPolicy.AvailabilityStrategy` against the Gateway-supplied flag on each account-properties refresh; toggling the flag back to `false` restores the customer-configured strategy or rebuilds the SDK default.
+- [5648](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5648) Hub Region Caching: Caches discovered hub region per partition on successful response during 403/3 discovery chain, enabling subsequent requests to skip the discovery and route directly to the cached hub.
+- [#5549](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5549) Adds AAD token revocation (CAE / Emergency) transparent retry handling
 
 #### Breaking Changes
 
 #### Bugs Fixed
 
+- [5989](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5989) Distributed Transactions (preview): Fixes a bodyless `429`/`3200` (RUBudgetExceeded) response on a distributed-transaction commit or read being surfaced to the caller without any retry. The empty response body was misdetected as a semantic per-operation result and deferred to the transaction's outer retry loop, which could not act on it, so the request was never re-sent. Such a throttled response is now retried honoring the server's `x-ms-retry-after-ms` header and the customer-configured rate-limit retry options (`CosmosClientOptions.MaxRetryAttemptsOnRateLimitedRequests` and `MaxRetryWaitTimeOnRateLimitedRequests`, defaults 9 attempts / 30 seconds cumulative), so a coordinator returning large retry-after values cannot stall a commit indefinitely.
 - [5851](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5851) Change Feed Estimator: Fixes inflated lag for uncheckpointed leases by reporting a sentinel `EstimatedLag = 1` instead of probing from beginning (resolves the synthetic backlog spike from issue #5847). Preserves the non-zero wake signal that Azure Functions Scale Controller / KEDA Cosmos scaler rely on. Note: processors configured with `WithStartFromBeginning` will report `EstimatedLag = 1` until their first checkpoint rather than the exact pending count, which may affect Scale Controller / KEDA scale-out decisions during the initial catch-up window; once the lease checkpoints, subsequent estimations report the real measured lag.
 - [5977](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5977) Diagnostics: Fixes missing CPU/memory ("System Info") in the diagnostics of failed operations. The system usage was only attached after a successful inner send, so operations that ended in an exception (for example request timeouts, cancellations, or exhausted retries) - exactly when client CPU/memory is most useful - had no CPU/memory data in their diagnostics. The capture now runs on both the success and the failure path while remaining best-effort (it never impacts the request).
 - [5957](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5957) Json: Fixes an unrecoverable `StackOverflowException` that could crash the client process when the binary-JSON reader, navigator, or `CosmosElement` materialized a string value from a malformed reference-string redirect. This is a hardening fix and the reader/navigator counterpart to [#5909](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5909) (which only hardened the writer): the string-materialization paths now validate reference-string (`StrR1`/`StrR2`/`StrR3`/`StrR4`) targets before dereferencing them, rejecting self-references, reference-to-reference chains/cycles, and out-of-bounds (including negative) offsets with a catchable `JsonInvalidTokenException` instead of terminating the host. Well-formed single-hop reference strings continue to resolve normally.
@@ -37,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [5909](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5909) Json: Fixes a denial-of-service vulnerability where a crafted binary-JSON response payload could crash the client process with an unrecoverable `StackOverflowException`. The decoder and re-serializer paths now enforce the existing 256-level nesting cap, surface a catchable `JsonMaxNestingExceededException` / `InsufficientExecutionStackException` / `JsonInvalidTokenException` instead of terminating the host, and reject malformed reference-string redirects up front. Note: the existing 256-deep writer nesting check (`JsonObjectState.Push`) now throws `JsonMaxNestingExceededException` instead of `InvalidOperationException`, so a single `catch` covers both reader and writer paths.
 - [5583](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5583) LINQ: Fixes `.Any()` on `Dictionary`/`IDictionary`/`IReadOnlyDictionary` properties returning no results by wrapping dictionary access with `OBJECTTOARRAY()` so dictionary entries (and predicates on `KeyValuePair.Key`/`Value`) are iterated correctly.
 - [5298](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5298) LINQ: Fixes constant folding for closure-captured variables inside MemberInitExpression (resolves #1664). Previously, the recursion that partially evaluates expressions terminated whenever it encountered a `MemberInitExpression` node, so captured variables inside object initializers were not folded, producing invalid translated SQL.
+- [5927](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5927) ThinClient: Fixes mid-flight fallback to gateway when the service stops advertising thin-client endpoints. Previously the SDK kept routing to stale thin-client URIs and required a client restart to recover.
 
 #### Other Changes
 
@@ -48,13 +52,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [5916](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5916) Direct: Moves the `OpenTcpConnectionTimeout` negative-value warning trace from `CosmosClientOptions` to `DocumentClient`. The warning is now emitted once per client construction (instead of once per property assignment) and is gated on `ConnectionMode == Direct`, so it no longer false-positives when a negative value is later overwritten with a non-negative one or when running in Gateway mode where the timeout is not consumed.
 - [5990](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5990) Adds retry logic for 449 across Gateway modes: Changes 449 (`RetryWith`) retries on the gateway and thin client paths to be consistently orchestrated client-side. The SDK now retries 449 responses itself with a bounded exponential backoff, for up to 30 seconds total (60 seconds when the account default consistency is Strong) before surfacing the error.
+- [#5905](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5905) ReadMany: Adds point-read fast path for single-tuple partitions. When the items requested in a single `ReadManyItems[Stream]Async` call resolve to a physical partition with only one `(id, partitionKey)` tuple, the SDK now issues a point read for that tuple instead of a parameterized query. This reduces RU and latency for sparse multi-partition lookups (closes [#4369](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4369)) and aligns the .NET SDK with the existing Java and Python SDK behavior.
 ### <a name="3.62.0-preview.0"/> [3.62.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.62.0-preview.0) - 2026-6-1
 
 #### Features Added
 
 - [5838](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5838) EmbeddingGenerator: Adds ICosmosEmbeddingGenerator client-wide configuration (preview)
 - [5911](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5911) DistributedTransaction: Adds `DistributedReadTransaction` and `DistributedWriteTransaction` APIs (with `CosmosClient.CreateDistributedReadTransaction` / `CreateDistributedWriteTransaction`) for atomic read and write operations across partitions and containers (preview)
-- [5648](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5648) Hub Region Caching: Caches discovered hub region per partition on successful response during 403/3 discovery chain, enabling subsequent requests to skip the discovery and route directly to the cached hub.
 
 ### <a name="3.61.0"/> [3.61.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.61.0) - 2026-6-1
 
@@ -63,8 +67,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [5868](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5868) Diagnostics: Adds hedging detection API (`CosmosDiagnostics.HedgingStarted`, `GetRequestedRegions`, `GetRespondedRegions`) along with the new `RequestedRegion` struct and `RequestedRegionReason` enum so callers can observe per-operation hedging behavior. `RequestedRegionReason.Unknown` (= 0) is the default sentinel for `default(RequestedRegion).Reason` and is never emitted by the SDK; `RequestedRegionReason.CircuitBreakerProbe` and `RequestedRegionReason.TransportRetry` are reserved for the future and not yet populated by this SDK; see issue [#5867](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5867).
 - [5600](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5600) HPK: Adds id to partition key when "/id" is the last path in partition key definition.
 
-- [#5549](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5549) Adds AAD token revocation (CAE / Emergency) transparent retry handling
-
 #### Breaking Changes
 
 #### Bugs Fixed
@@ -72,12 +74,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [5827](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5827) ChangeFeedEstimator: Change feed estimator threw `ArgumentNullException` when an inmemory lease container was being used. Update validations so in-memory lease containers work with change feed estimator
 - [5910](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5910) Upgraded Direct package to 3.43.2.
 - [5910](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5910) Direct: Fixed RNTBD thread-pool starvation by making `Dispatcher.OnIdleTimer` asynchronous (ports public [PR 5817](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5817))
-- [5927](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5927) ThinClient: Fixes mid-flight fallback to gateway when the service stops advertising thin-client endpoints. Previously the SDK kept routing to stale thin-client URIs and required a client restart to recover.
+- [5873](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5873) Direct: Fixes silent truncation of `OpenTcpConnectionTimeout`. Sub-second values in [0, 1s) are now explicitly normalized to 0 and fractional values ≥ 1 second are rounded up to the nearest whole second (for example, 2.3s becomes 3s). Negative values emit a warning trace but are left unchanged for backward compatibility.
 
 #### Other Changes
 
 - [#5887](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5887) Direct: Documents that `MaxTcpConnectionsPerEndpoint` accepts any positive value to allow customer control of the connection pool size; values of 16 or greater remain recommended.
-- [#5905](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5905) ReadMany: Adds point-read fast path for single-tuple partitions. When the items requested in a single `ReadManyItems[Stream]Async` call resolve to a physical partition with only one `(id, partitionKey)` tuple, the SDK now issues a point read for that tuple instead of a parameterized query. This reduces RU and latency for sparse multi-partition lookups (closes [#4369](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4369)) and aligns the .NET SDK with the existing Java and Python SDK behavior.
 
 ### <a name="3.61.0-preview.0"/> [3.61.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.61.0-preview.0) - 2026-5-18
 
@@ -90,7 +91,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
-- [5873](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5873) Direct: Fixes silent truncation of `OpenTcpConnectionTimeout`. Sub-second values in [0, 1s) are now explicitly normalized to 0 and fractional values ≥ 1 second are rounded up to the nearest whole second (for example, 2.3s becomes 3s). Negative values emit a warning trace but are left unchanged for backward compatibility.
 - [5783](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5783) Container: Fixes SemanticRerankAsync TypeLoadException in derived classes
 
 ### <a name="3.60.0"/> [3.60.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.60.0) - 2026-5-18
@@ -114,12 +114,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Features Added
 
 - [5804](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5804) SemanticReranking: Adds Configurable Request Timeout
-- [5825](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5825) ChangeFeed: Promotes Full Fidelity Change Feed (AllVersionsAndDeletes) APIs to GA
 
 #### Bugs Fixed
 
 - [5783](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5783) Container: Fixes SemanticRerankAsync TypeLoadException in derived classes
-- [5825](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5825) ChangeFeedProcessor: Exempts AllVersionsAndDeletes from implicit StartTime back-off (not applicable to LSN-based continuation)
 
 ### <a name="3.59.0"/> [3.59.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.59.0) - 2026-4-24
 
