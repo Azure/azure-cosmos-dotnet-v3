@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 - Distributed Transactions: Adds fault injection support for distributed transactions
+- [#6004](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6004) RetryWith: Adds `RetryWith` (HTTP 449) server error injection support for Gateway mode
 
 #### Breaking Changes
 

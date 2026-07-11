@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             string id,
             IReadOnlyList<PatchOperation> patchOperations,
-            DistributedTransactionRequestOptions requestOptions = null)
+            DistributedTransactionPatchItemRequestOptions requestOptions = null)
         {
             (string databaseId, string containerId) = DistributedTransactionConstants.ValidateAndUnpackContainer(container, this.clientContext.Client);
             DistributedWriteTransactionCore.ValidateItemId(id);
@@ -176,7 +176,12 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(patchOperations));
             }
 
-            PatchSpec patchSpec = new PatchSpec(patchOperations, new PatchItemRequestOptions());
+            // Forward the customer-supplied conditional predicate (if any) into the PatchSpec so the
+            // serializer emits the server-evaluated 'condition' field. Other request-level options
+            // (SessionToken, IfMatchEtag, IfNoneMatchEtag) flow through the operation's requestOptions.
+            PatchSpec patchSpec = new PatchSpec(
+                patchOperations,
+                new PatchItemRequestOptions { FilterPredicate = requestOptions?.FilterPredicate });
 
             this.operations.Add(
                 new DistributedTransactionOperation<PatchSpec>(
