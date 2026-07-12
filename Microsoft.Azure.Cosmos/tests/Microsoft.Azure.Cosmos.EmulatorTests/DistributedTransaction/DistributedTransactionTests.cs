@@ -39,7 +39,36 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public async Task TestInitialize()
         {
-            await this.TestInit();
+            string endpoint = Environment.GetEnvironmentVariable("COSMOS_DTX_ENDPOINT");
+            string key = Environment.GetEnvironmentVariable("COSMOS_DTX_KEY");
+
+            if (!string.IsNullOrWhiteSpace(endpoint) && !string.IsNullOrWhiteSpace(key))
+            {
+                // Live-account mode. These scenario tests mock only the /dtc commit (see
+                // DistributedTransactionMockHandler); every other request — database/container
+                // creation and RID resolution — flows to the real backend. When
+                // COSMOS_DTX_ENDPOINT / COSMOS_DTX_KEY are set we target that account instead of
+                // the local emulator, so the suite can run where no emulator is available.
+                //
+                // IMPORTANT: we deliberately do NOT call BaseCosmosClientHelper.TestInit() here.
+                // TestInit() invokes Util.DeleteAllDatabasesAsync, which would wipe EVERY database
+                // on the target account — acceptable for a throwaway emulator, catastrophic for a
+                // shared live account. Instead we create a single uniquely-named database and let
+                // TestCleanup delete only that database.
+                this.cancellationTokenSource = new CancellationTokenSource();
+                this.cancellationToken = this.cancellationTokenSource.Token;
+
+                CosmosClient liveClient = this.CreateDtxClient();
+                this.SetClient(liveClient);
+
+                this.database = await liveClient.CreateDatabaseAsync(
+                    Guid.NewGuid().ToString(),
+                    cancellationToken: this.cancellationToken);
+            }
+            else
+            {
+                await this.TestInit();
+            }
 
             ContainerResponse containerResponse = await this.database.CreateContainerAsync(
                 new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKeyPath),
@@ -787,8 +816,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DistributedTransactionMockHandler handler = new DistributedTransactionMockHandler(
                 request => Task.FromResult(this.BuildMockResponse(HttpStatusCode.OK, dtcMockResponse)));
 
-            using CosmosClient dtcClient = TestCommon.CreateCosmosClient(
-                clientOptions: new CosmosClientOptions
+            using CosmosClient dtcClient = this.CreateDtxClient(
+                new CosmosClientOptions
                 {
                     CustomHandlers = { handler },
                     ConnectionMode = ConnectionMode.Gateway,
@@ -851,8 +880,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DistributedTransactionMockHandler handler = new DistributedTransactionMockHandler(
                 request => Task.FromResult(this.BuildMockResponse(HttpStatusCode.OK, dtcMockResponse)));
 
-            using CosmosClient dtcClient = TestCommon.CreateCosmosClient(
-                clientOptions: new CosmosClientOptions
+            using CosmosClient dtcClient = this.CreateDtxClient(
+                new CosmosClientOptions
                 {
                     CustomHandlers = { handler },
                     ConnectionMode = ConnectionMode.Gateway,
@@ -1080,11 +1109,42 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private CosmosClient CreateMockClient(DistributedTransactionMockHandler handler)
         {
-            return TestCommon.CreateCosmosClient(clientOptions: new CosmosClientOptions
+            return this.CreateDtxClient(new CosmosClientOptions
             {
                 CustomHandlers = { handler },
                 ConnectionMode = ConnectionMode.Gateway
             });
+        }
+
+        /// <summary>
+        /// Builds the <see cref="CosmosClient"/> these scenario tests run against. When
+        /// COSMOS_DTX_ENDPOINT / COSMOS_DTX_KEY are set (live-account mode) the client targets that
+        /// account in Gateway / Session consistency; otherwise it falls back to the local emulator
+        /// via <see cref="TestCommon"/>. Only the /dtc commit is mocked (see
+        /// <see cref="DistributedTransactionMockHandler"/>); every other request — including RID
+        /// resolution — flows to whichever backend this client points at, so the setup client and
+        /// the per-test mock client must resolve to the same endpoint.
+        /// </summary>
+        private CosmosClient CreateDtxClient(CosmosClientOptions clientOptions = null)
+        {
+            string endpoint = Environment.GetEnvironmentVariable("COSMOS_DTX_ENDPOINT");
+            string key = Environment.GetEnvironmentVariable("COSMOS_DTX_KEY");
+
+            if (!string.IsNullOrWhiteSpace(endpoint) && !string.IsNullOrWhiteSpace(key))
+            {
+                CosmosClientOptions options = clientOptions ?? new CosmosClientOptions();
+                options.ConnectionMode = ConnectionMode.Gateway;
+                if (options.ConsistencyLevel == null)
+                {
+                    options.ConsistencyLevel = Cosmos.ConsistencyLevel.Session;
+                }
+
+                return new CosmosClient(endpoint, key, options);
+            }
+
+            return clientOptions == null
+                ? TestCommon.CreateCosmosClient()
+                : TestCommon.CreateCosmosClient(clientOptions: clientOptions);
         }
 
         private ResponseMessage BuildMockResponse(HttpStatusCode statusCode, string responseBody)

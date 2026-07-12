@@ -88,6 +88,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new ContainerProperties(NumericPkContainerId, PartitionKeyPath))).Container;
             this.booleanPkContainer = (await this.database.CreateContainerIfNotExistsAsync(
                 new ContainerProperties(BooleanPkContainerId, PartitionKeyPath))).Container;
+
+            // Warm-up: run a throwaway Write DTx against each freshly-created container before any
+            // Read DTx. A brand-new DTX collection can return 408 (RequestTimeout) on its very first
+            // distributed transaction while the coordinator/DTC Prepare path bootstraps; a prior Write
+            // DTx on the same container warms that path so the read-oriented tests below don't pay the
+            // cold-start timeout. Best-effort — failures here do not fail the run.
+            await this.WarmUpContainerAsync(this.stringPkContainer, new PartitionKey("warmup"), new JValue("warmup"));
+            await this.WarmUpContainerAsync(this.numericPkContainer, new PartitionKey(0d), new JValue(0d));
+            await this.WarmUpContainerAsync(this.booleanPkContainer, new PartitionKey(true), new JValue(true));
         }
 
         [TestCleanup]
@@ -330,6 +339,118 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             verifyResponse.Dispose();
         }
 
+        // ─── Extra shapes: deep nesting, arrays-of-objects, wide/flat, jagged, extreme scalars ─────
+
+        /// <summary>
+        /// A single document nested 32 objects deep, carrying boundary longs, high-precision
+        /// decimals-as-strings, and unicode at the leaf. Read DTx -&gt; Write DTx -&gt; Read DTx must
+        /// retain the entire tree structurally, byte-for-byte.
+        /// </summary>
+        [TestMethod]
+        public async Task ReadThenWrite_VeryDeeplyNested_StringPk_PrecisionRetained()
+        {
+            string pk = $"deep-{Guid.NewGuid():N}";
+            JObject doc = BuildVeryDeeplyNestedDocument(Guid.NewGuid().ToString(), new JValue(pk), depth: 32);
+
+            await this.RunReadThenWriteRoundTripAsync(
+                this.stringPkContainer,
+                new[] { ((string)doc["id"], new PartitionKey(pk), doc) },
+                "very-deeply-nested (32 levels)");
+        }
+
+        /// <summary>
+        /// An "order"-shaped document whose payload is an array of heterogeneous nested objects
+        /// (line items with mixed-type tag arrays, nested meta objects, empty containers, nulls, and
+        /// high-precision money-as-strings). Stresses fidelity of arrays-of-objects through the DTx
+        /// read-then-write round trip.
+        /// </summary>
+        [TestMethod]
+        public async Task ReadThenWrite_ArrayOfObjects_StringPk_PrecisionRetained()
+        {
+            string pk = $"order-{Guid.NewGuid():N}";
+            JObject doc = BuildArrayOfObjectsDocument(Guid.NewGuid().ToString(), new JValue(pk));
+
+            await this.RunReadThenWriteRoundTripAsync(
+                this.stringPkContainer,
+                new[] { ((string)doc["id"], new PartitionKey(pk), doc) },
+                "array-of-objects (order)");
+        }
+
+        /// <summary>
+        /// A very "wide" flat document with 250 top-level properties whose value types alternate across
+        /// long / double / unicode-string / bool / null. Stresses breadth (large property surface) rather
+        /// than depth through the DTx round trip.
+        /// </summary>
+        [TestMethod]
+        public async Task ReadThenWrite_WideFlatDocument_StringPk_PrecisionRetained()
+        {
+            string pk = $"wide-{Guid.NewGuid():N}";
+            JObject doc = BuildWideFlatDocument(Guid.NewGuid().ToString(), new JValue(pk), propertyCount: 250);
+
+            await this.RunReadThenWriteRoundTripAsync(
+                this.stringPkContainer,
+                new[] { ((string)doc["id"], new PartitionKey(pk), doc) },
+                "wide-flat (250 properties)");
+        }
+
+        /// <summary>
+        /// Ragged / jagged arrays: rows of differing length and element type, arrays whose elements are
+        /// themselves empty or nested containers, and triple-nested arrays. Stresses structural fidelity
+        /// of irregular array shapes through the DTx round trip.
+        /// </summary>
+        [TestMethod]
+        public async Task ReadThenWrite_JaggedArrays_StringPk_PrecisionRetained()
+        {
+            string pk = $"jagged-{Guid.NewGuid():N}";
+            JObject doc = BuildJaggedArraysDocument(Guid.NewGuid().ToString(), new JValue(pk));
+
+            await this.RunReadThenWriteRoundTripAsync(
+                this.stringPkContainer,
+                new[] { ((string)doc["id"], new PartitionKey(pk), doc) },
+                "jagged-arrays");
+        }
+
+        /// <summary>
+        /// Extreme scalar values on a <b>numeric</b> partition key: proven-safe live double/long extremes
+        /// plus the riskier values (subnormals, negative zero, arbitrary-precision decimals) carried as
+        /// strings, alongside ISO-8601 / GUID / base64 / long-repeated-string encoded scalars. Verifies
+        /// numeric-PK routing and exact scalar retention through the DTx round trip.
+        /// </summary>
+        [TestMethod]
+        public async Task ReadThenWrite_ExtremeScalars_NumericPk_PrecisionRetained()
+        {
+            const double pk = 7;
+            JObject doc = BuildExtremeScalarsDocument(Guid.NewGuid().ToString(), new JValue(pk));
+
+            await this.RunReadThenWriteRoundTripAsync(
+                this.numericPkContainer,
+                new[] { ((string)doc["id"], new PartitionKey(pk), doc) },
+                "extreme-scalars (numeric PK)");
+        }
+
+        /// <summary>
+        /// A single DTx spanning several structurally-different shapes (deep tree, array-of-objects, jagged
+        /// arrays) across both <c>true</c> and <c>false</c> <b>boolean</b> partition keys — combining
+        /// fan-out breadth, mixed document shapes, and boolean-PK routing in one read-then-write round trip.
+        /// </summary>
+        [TestMethod]
+        public async Task ReadThenWrite_HeterogeneousShapes_BooleanPk_PrecisionRetained()
+        {
+            JObject deep = BuildVeryDeeplyNestedDocument(Guid.NewGuid().ToString(), new JValue(true), depth: 16);
+            JObject order = BuildArrayOfObjectsDocument(Guid.NewGuid().ToString(), new JValue(false));
+            JObject jagged = BuildJaggedArraysDocument(Guid.NewGuid().ToString(), new JValue(true));
+
+            await this.RunReadThenWriteRoundTripAsync(
+                this.booleanPkContainer,
+                new[]
+                {
+                    ((string)deep["id"], new PartitionKey(true), deep),
+                    ((string)order["id"], new PartitionKey(false), order),
+                    ((string)jagged["id"], new PartitionKey(true), jagged),
+                },
+                "heterogeneous shapes across boolean PK");
+        }
+
         // ─── Wonky document builders ─────────────────────────────────────────────
 
         /// <summary>
@@ -417,11 +538,318 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
         }
 
+        /// <summary>
+        /// A single document nested <paramref name="depth"/> objects deep. Every level carries a
+        /// <c>marker</c> ordinal so structural drift at any level is detectable, and the leaf carries
+        /// boundary longs, a double, unicode, a high-precision decimal-as-string, and a mixed-type array.
+        /// </summary>
+        private static JObject BuildVeryDeeplyNestedDocument(string id, JValue pk, int depth)
+        {
+            JObject cursor = new JObject
+            {
+                ["deepLong"] = 9007199254740993L,           // 2^53 + 1
+                ["deepDouble"] = Math.PI,
+                ["deepUnicode"] = "🧬 bottom 値",
+                ["deepMoney"] = "99999999999999999999.99999999999999999999",
+                ["deepArray"] = new JArray { 1L, "two", 3.5, true, JValue.CreateNull() }
+            };
+
+            for (int level = depth; level > 0; level--)
+            {
+                cursor = new JObject
+                {
+                    ["marker"] = (long)level,
+                    [$"level{level}"] = cursor
+                };
+            }
+
+            return new JObject
+            {
+                ["id"] = id,
+                ["pk"] = pk,
+                ["depth"] = (long)depth,
+                ["tree"] = cursor
+            };
+        }
+
+        /// <summary>
+        /// An "order"-shaped document whose payload is an array of heterogeneous nested objects: line items
+        /// with mixed-type tag arrays, nested <c>meta</c> objects (incl. empty objects and nulls), boundary
+        /// quantities, and money carried as high-precision strings. Stresses arrays-of-objects fidelity.
+        /// </summary>
+        private static JObject BuildArrayOfObjectsDocument(string id, JValue pk)
+        {
+            return new JObject
+            {
+                ["id"] = id,
+                ["pk"] = pk,
+                ["orderNumber"] = "ORD-🚀-" + id,
+                ["lineItems"] = new JArray
+                {
+                    new JObject
+                    {
+                        ["sku"] = "SKU-🚀-001",
+                        ["qty"] = 9007199254740993L,
+                        ["unitPrice"] = "19.990000000000000001",
+                        ["tags"] = new JArray { "sale", string.Empty, "日本語", JValue.CreateNull() },
+                        ["meta"] = new JObject { ["gift"] = true, ["note"] = JValue.CreateNull() }
+                    },
+                    new JObject
+                    {
+                        ["sku"] = "SKU-002",
+                        ["qty"] = 0L,
+                        ["unitPrice"] = "0.00",
+                        ["tags"] = new JArray(),
+                        ["meta"] = new JObject()
+                    },
+                    new JObject
+                    {
+                        ["sku"] = "SKU-003",
+                        ["qty"] = -1L,
+                        ["unitPrice"] = "-12345678901234567890.0987654321",
+                        ["tags"] = new JArray { "backorder" },
+                        ["meta"] = new JObject
+                        {
+                            ["nested"] = new JObject { ["a"] = new JArray { 1L, 2L, 3L } }
+                        }
+                    }
+                },
+                ["totals"] = new JObject
+                {
+                    ["count"] = 3L,
+                    ["grandTotal"] = "20.000000000000000001",
+                    ["currency"] = "USD"
+                }
+            };
+        }
+
+        /// <summary>
+        /// A very "wide" flat document: <paramref name="propertyCount"/> top-level properties whose value
+        /// types cycle across long / double / unicode-string / bool / null. Stresses breadth (a large
+        /// property surface) rather than nesting depth.
+        /// </summary>
+        private static JObject BuildWideFlatDocument(string id, JValue pk, int propertyCount)
+        {
+            JObject doc = new JObject
+            {
+                ["id"] = id,
+                ["pk"] = pk,
+                ["propertyCount"] = (long)propertyCount
+            };
+
+            for (int i = 0; i < propertyCount; i++)
+            {
+                switch (i % 5)
+                {
+                    case 0: doc[$"p_{i:D4}_long"] = i + 9007199254740993L; break;
+                    case 1: doc[$"p_{i:D4}_double"] = i + 0.5; break;
+                    case 2: doc[$"p_{i:D4}_str"] = $"value-{i}-日本語-🌟"; break;
+                    case 3: doc[$"p_{i:D4}_bool"] = i % 2 == 0; break;
+                    default: doc[$"p_{i:D4}_null"] = JValue.CreateNull(); break;
+                }
+            }
+
+            return doc;
+        }
+
+        /// <summary>
+        /// Ragged / jagged arrays: rows of differing length and element type, arrays whose elements are
+        /// themselves empty or nested containers, and triple-nested arrays. Stresses structural fidelity of
+        /// irregular array shapes.
+        /// </summary>
+        private static JObject BuildJaggedArraysDocument(string id, JValue pk)
+        {
+            return new JObject
+            {
+                ["id"] = id,
+                ["pk"] = pk,
+                ["matrix"] = new JArray
+                {
+                    new JArray { 1L, 2L, 3L },
+                    new JArray { "a", "b" },
+                    new JArray(),
+                    new JArray { new JArray { 9007199254740993L, "deep" }, new JObject { ["k"] = "v" } }
+                },
+                ["arrayOfContainers"] = new JArray
+                {
+                    new JObject(),
+                    new JArray(),
+                    new JObject { ["empty"] = new JArray() },
+                    new JArray { new JObject { ["x"] = JValue.CreateNull() } }
+                },
+                ["scalarsThenArray"] = new JArray
+                {
+                    true, false, JValue.CreateNull(), 0L, string.Empty,
+                    new JArray { new JArray { new JArray { "triple-nested" } } }
+                }
+            };
+        }
+
+        /// <summary>
+        /// Extreme scalar values. Live numeric values are restricted to the envelope already proven to
+        /// round-trip exactly for this account (boundary longs, double extremes, tiny/normal doubles);
+        /// the riskier values (subnormals, negative zero, arbitrary-precision decimals) are carried as
+        /// strings so exactness is guaranteed regardless of the server's numeric storage. Also includes
+        /// common encoded-scalar payloads (ISO-8601, GUID, base64, a multi-KB repeated string).
+        /// </summary>
+        private static JObject BuildExtremeScalarsDocument(string id, JValue pk)
+        {
+            return new JObject
+            {
+                ["id"] = id,
+                ["pk"] = pk,
+                ["int64Max"] = long.MaxValue,
+                ["int64Min"] = long.MinValue,
+                ["beyond2Pow53"] = 9007199254740993L,
+                ["maxDouble"] = double.MaxValue,
+                ["minNormalDouble"] = 2.2250738585072014e-308,
+                ["tinyDouble"] = 1e-300,
+                ["epsilonAsString"] = "4.9406564584124654e-324",
+                ["negativeZeroAsString"] = "-0",
+                ["bigDecimalAsString"] = "123456789012345678901234567890.123456789012345678901234567890",
+                // Carried with a guard prefix on purpose: a raw ISO-8601 string is auto-parsed by
+                // Newtonsoft (DateParseHandling) when the read-back is deserialized into a JObject, which
+                // normalizes the timezone offset to local time (+00:00 -> -04:00) on the client side. That
+                // normalization is orthogonal to DTx precision (the stored value is unchanged), so the
+                // prefix keeps this as an opaque, precise string that still exercises the fractional-second
+                // and offset characters without tripping the client-side date-parse footgun.
+                ["timestampText"] = "ts:2026-07-11T23:59:59.9999999+00:00",
+                ["guid"] = "6f9619ff-8b86-d011-b42d-00cf4fc964ff",
+                ["base64Blob"] = "SGVsbG8sIPCfmoAg5pel5pys6Kqe",
+                ["longRepeatedString"] = new string('x', 4096)
+            };
+        }
+
         // ─── Helpers ─────────────────────────────────────────────────────────────
 
         private async Task SeedAsync(Container targetContainer, JObject document, PartitionKey partitionKey)
         {
             await targetContainer.CreateItemAsync(document, partitionKey);
+        }
+
+        /// <summary>
+        /// Runs the full precision round trip for a set of documents against a single container:
+        /// point-seed each document, Read DTx them all (asserting fidelity), Write DTx (upsert) the exact
+        /// read-back documents, confirm visibility, then Read DTx once more and re-assert fidelity against
+        /// the originals. Supports a variable number of items so tests can exercise single-doc and
+        /// multi-doc (fan-out) transactions with the same logic.
+        /// </summary>
+        private async Task RunReadThenWriteRoundTripAsync(
+            Container targetContainer,
+            (string Id, PartitionKey Pk, JObject Doc)[] items,
+            string context)
+        {
+            foreach ((string Id, PartitionKey Pk, JObject Doc) item in items)
+            {
+                await this.SeedAsync(targetContainer, item.Doc, item.Pk);
+            }
+
+            // Read DTx: fetch every document atomically and assert fidelity.
+            DistributedReadTransaction readTransaction = this.client.CreateDistributedReadTransaction();
+            foreach ((string Id, PartitionKey Pk, JObject Doc) item in items)
+            {
+                readTransaction = readTransaction.ReadItem(targetContainer, item.Pk, item.Id);
+            }
+
+            JObject[] readBacks = new JObject[items.Length];
+            using (DistributedTransactionResponse readResponse = await readTransaction.CommitTransactionAsync(CancellationToken.None))
+            {
+                Assert.IsTrue(
+                    readResponse.IsSuccessStatusCode,
+                    $"[{context}] Read DTx should succeed. Got: {readResponse.StatusCode}");
+                Assert.AreEqual(items.Length, readResponse.Count, $"[{context}] Read DTx operation count mismatch.");
+
+                for (int i = 0; i < items.Length; i++)
+                {
+                    readBacks[i] = readResponse.GetOperationResultAtIndex<JObject>(i).Resource;
+                    AssertUserPropertiesRetained(items[i].Doc, readBacks[i], $"{context} item[{i}] after Read DTx");
+                }
+            }
+
+            // Write DTx: round-trip the exact documents that were just read back.
+            DistributedWriteTransaction writeTransaction = this.client.CreateDistributedWriteTransaction();
+            for (int i = 0; i < items.Length; i++)
+            {
+                writeTransaction = writeTransaction.UpsertItem(
+                    targetContainer, items[i].Pk, items[i].Id, StripSystemProperties(readBacks[i]));
+            }
+
+            using (DistributedTransactionResponse writeResponse = await writeTransaction.CommitTransactionAsync(CancellationToken.None))
+            {
+                Assert.IsTrue(
+                    writeResponse.IsSuccessStatusCode,
+                    $"[{context}] Write DTx should commit. Got: {writeResponse.StatusCode}");
+                Assert.AreEqual(items.Length, writeResponse.Count, $"[{context}] Write DTx operation count mismatch.");
+            }
+
+            // Read DTx verification: persisted state still matches the originals exactly.
+            foreach ((string Id, PartitionKey Pk, JObject Doc) item in items)
+            {
+                await ConfirmVisibleAsync(targetContainer, item.Pk, item.Id);
+            }
+
+            DistributedReadTransaction verifyTransaction = this.client.CreateDistributedReadTransaction();
+            foreach ((string Id, PartitionKey Pk, JObject Doc) item in items)
+            {
+                verifyTransaction = verifyTransaction.ReadItem(targetContainer, item.Pk, item.Id);
+            }
+
+            using (DistributedTransactionResponse verifyResponse = await verifyTransaction.CommitTransactionAsync(CancellationToken.None))
+            {
+                Assert.IsTrue(
+                    verifyResponse.IsSuccessStatusCode,
+                    $"[{context}] Post-write Read DTx should succeed. Got: {verifyResponse.StatusCode}");
+                Assert.AreEqual(items.Length, verifyResponse.Count, $"[{context}] Post-write Read DTx operation count mismatch.");
+
+                for (int i = 0; i < items.Length; i++)
+                {
+                    AssertUserPropertiesRetained(
+                        items[i].Doc,
+                        verifyResponse.GetOperationResultAtIndex<JObject>(i).Resource,
+                        $"{context} item[{i}] after Write DTx round-trip");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Best-effort warm-up: runs a single throwaway Write distributed transaction (an upsert of a
+        /// disposable warm-up document) against <paramref name="targetContainer"/> so the coordinator/DTC
+        /// Prepare path on the freshly-created collection is initialized before any Read DTx runs. A brand
+        /// new DTX collection can surface a 408 (RequestTimeout) on its first distributed transaction while
+        /// that path bootstraps; a prior Write DTx removes that cold-start timeout. Retries a few times on
+        /// transient failure and never asserts — warm-up must not fail the run, the real tests report status.
+        /// </summary>
+        private async Task WarmUpContainerAsync(Container targetContainer, PartitionKey warmUpKey, JValue partitionKeyValue)
+        {
+            string warmUpId = $"dtx-warmup-{Guid.NewGuid():N}";
+            JObject warmUpDoc = new JObject
+            {
+                ["id"] = warmUpId,
+                ["pk"] = partitionKeyValue,
+                ["_dtxWarmUp"] = true
+            };
+
+            for (int attempt = 0; attempt < 5; attempt++)
+            {
+                try
+                {
+                    using DistributedTransactionResponse response = await this.client
+                        .CreateDistributedWriteTransaction()
+                        .UpsertItem(targetContainer, warmUpKey, warmUpId, warmUpDoc)
+                        .CommitTransactionAsync(CancellationToken.None);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        return;
+                    }
+                }
+                catch (CosmosException)
+                {
+                    // Swallow: warm-up is best-effort. Fall through to the retry delay.
+                }
+
+                await Task.Delay(TimeSpan.FromSeconds(2));
+            }
         }
 
         /// <summary>

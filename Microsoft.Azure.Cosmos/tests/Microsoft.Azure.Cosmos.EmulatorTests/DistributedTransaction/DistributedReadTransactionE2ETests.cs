@@ -77,6 +77,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.database = (await this.client.CreateDatabaseIfNotExistsAsync(DatabaseId)).Database;
             this.container = (await this.database.CreateContainerIfNotExistsAsync(
                 new ContainerProperties(ContainerId, PartitionKeyPath))).Container;
+
+            // Warm-up: run a throwaway Write DTx against the freshly-created container before any Read
+            // DTx. A brand-new DTX collection can return 408 (RequestTimeout) on its first distributed
+            // transaction while the coordinator/DTC Prepare path bootstraps; a prior Write DTx warms
+            // that path. Best-effort — failures here do not fail the run.
+            await this.WarmUpContainerAsync(this.container);
         }
 
         [TestCleanup]
@@ -909,6 +915,39 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity doc = ToDoActivity.CreateRandomToDoActivity();
             await targetContainer.CreateItemAsync(doc, new PartitionKey(doc.pk));
             return doc;
+        }
+
+        // Best-effort warm-up: runs a single throwaway Write distributed transaction (an upsert of a
+        // disposable document) against the target container so the coordinator/DTC Prepare path on the
+        // freshly-created collection is initialized before any Read DTx runs. A brand-new DTX collection
+        // can surface a 408 (RequestTimeout) on its first distributed transaction while that path
+        // bootstraps; a prior Write DTx removes that cold-start timeout. Retries a few times on transient
+        // failure and never asserts — warm-up must not fail the run.
+        private async Task WarmUpContainerAsync(Container targetContainer)
+        {
+            ToDoActivity warmUpDoc = ToDoActivity.CreateRandomToDoActivity();
+
+            for (int attempt = 0; attempt < 5; attempt++)
+            {
+                try
+                {
+                    using DistributedTransactionResponse response = await this.client
+                        .CreateDistributedWriteTransaction()
+                        .UpsertItem(targetContainer, new PartitionKey(warmUpDoc.pk), warmUpDoc.id, warmUpDoc)
+                        .CommitTransactionAsync(CancellationToken.None);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        return;
+                    }
+                }
+                catch (CosmosException)
+                {
+                    // Swallow: warm-up is best-effort. Fall through to the retry delay.
+                }
+
+                await Task.Delay(TimeSpan.FromSeconds(2));
+            }
         }
 
         // Confirms a freshly-seeded item is durably point-readable before a distributed read
