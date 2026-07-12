@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Net;
     using System.Threading;
@@ -49,13 +50,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private const string StringPkContainerId = "DtxPrecisionStringPk";
         private const string NumericPkContainerId = "DtxPrecisionNumericPk";
         private const string BooleanPkContainerId = "DtxPrecisionBooleanPk";
+        private const string HierarchicalPkContainerId = "DtxPrecisionHierarchicalPk";
         private const string PartitionKeyPath = "/pk";
+        private const string TenantIdPath = "/tenantId";
+        private const string UserIdPath = "/userId";
 
         private CosmosClient client;
         private Database database;
         private Container stringPkContainer;
         private Container numericPkContainer;
         private Container booleanPkContainer;
+        private Container hierarchicalPkContainer;
 
         [TestInitialize]
         public async Task TestInitialize()
@@ -89,6 +94,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.booleanPkContainer = (await this.database.CreateContainerIfNotExistsAsync(
                 new ContainerProperties(BooleanPkContainerId, PartitionKeyPath))).Container;
 
+            // Hierarchical (sub-partition / multi-hash) partition key: two-level {tenantId, userId}.
+            // Exercises EPK computation over typed multi-component partition keys (PR 2185283).
+            this.hierarchicalPkContainer = (await this.database.CreateContainerIfNotExistsAsync(
+                new ContainerProperties(
+                    HierarchicalPkContainerId,
+                    new List<string> { TenantIdPath, UserIdPath }))).Container;
+
             // Warm-up: run a throwaway Write DTx against each freshly-created container before any
             // Read DTx. A brand-new DTX collection can return 408 (RequestTimeout) on its very first
             // distributed transaction while the coordinator/DTC Prepare path bootstraps; a prior Write
@@ -97,6 +109,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.WarmUpContainerAsync(this.stringPkContainer, new PartitionKey("warmup"), new JValue("warmup"));
             await this.WarmUpContainerAsync(this.numericPkContainer, new PartitionKey(0d), new JValue(0d));
             await this.WarmUpContainerAsync(this.booleanPkContainer, new PartitionKey(true), new JValue(true));
+            await this.WarmUpHierarchicalContainerAsync();
         }
 
         [TestCleanup]
@@ -451,6 +464,138 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "heterogeneous shapes across boolean PK");
         }
 
+        // ─── Typed partition-key EPK precision (hierarchical / numeric / null / type-discrimination) ─────
+
+        /// <summary>
+        /// G1 — Hierarchical (sub-partition / multi-hash) partition key: documents keyed on a two-level
+        /// {tenantId, userId} partition key survive the Read DTx -&gt; Write DTx -&gt; Read DTx round trip with
+        /// full body fidelity. Exercises <see cref="PartitionKeyBuilder"/> composed keys across the DTx flow.
+        /// </summary>
+        [TestMethod]
+        public async Task ReadThenWrite_HierarchicalPartitionKey_PrecisionRetained()
+        {
+            string tenant = $"tenant-{Guid.NewGuid():N}";
+            string userA = $"userA-{Guid.NewGuid():N}";
+            string userB = $"userB-{Guid.NewGuid():N}";
+
+            JObject docA = BuildNumericHeavyDocument(Guid.NewGuid().ToString(), new JValue(tenant));
+            docA["tenantId"] = tenant;
+            docA["userId"] = userA;
+
+            JObject docB = BuildNestedDocument(Guid.NewGuid().ToString(), new JValue(tenant));
+            docB["tenantId"] = tenant;
+            docB["userId"] = userB;
+
+            PartitionKey pkA = new PartitionKeyBuilder().Add(tenant).Add(userA).Build();
+            PartitionKey pkB = new PartitionKeyBuilder().Add(tenant).Add(userB).Build();
+
+            await this.RunReadThenWriteRoundTripAsync(
+                this.hierarchicalPkContainer,
+                new[]
+                {
+                    ((string)docA["id"], pkA, docA),
+                    ((string)docB["id"], pkB, docB),
+                },
+                "hierarchical (sub-partition) partition key");
+        }
+
+        /// <summary>
+        /// G2 — Large-integer numeric partition-key boundary: two exactly-double-representable integer
+        /// partition keys that differ only in their final digit route to distinct partitions and retain
+        /// their full document bodies through the DTx round trip. Guards against numeric EPK collisions at
+        /// the edge of <see cref="double"/> integer precision.
+        /// </summary>
+        [TestMethod]
+        public async Task ReadThenWrite_LargeIntegerNumericPartitionKeyBoundary_PrecisionRetained()
+        {
+            // Both are exactly representable as double and remain distinct (unlike 2^53 vs 2^53+1).
+            const double pkLow = 1234567890123456d;
+            const double pkHigh = 1234567890123457d;
+
+            JObject docLow = BuildExtremeScalarsDocument(Guid.NewGuid().ToString(), new JValue(pkLow));
+            JObject docHigh = BuildNumericHeavyDocument(Guid.NewGuid().ToString(), new JValue(pkHigh));
+
+            await this.RunReadThenWriteRoundTripAsync(
+                this.numericPkContainer,
+                new[]
+                {
+                    ((string)docLow["id"], new PartitionKey(pkLow), docLow),
+                    ((string)docHigh["id"], new PartitionKey(pkHigh), docHigh),
+                },
+                "large-integer numeric partition key boundary");
+        }
+
+        /// <summary>
+        /// G3 — Null-value partition key: a document whose partition-key value is JSON null routes
+        /// deterministically via <see cref="PartitionKey.Null"/> and retains its body through the DTx
+        /// round trip.
+        /// </summary>
+        [TestMethod]
+        public async Task ReadThenWrite_NullPartitionKey_PrecisionRetained()
+        {
+            JObject doc = BuildNestedDocument(Guid.NewGuid().ToString(), JValue.CreateNull());
+
+            await this.RunReadThenWriteRoundTripAsync(
+                this.stringPkContainer,
+                new[]
+                {
+                    ((string)doc["id"], PartitionKey.Null, doc),
+                },
+                "null partition key",
+                seedFirst: true);
+        }
+
+        /// <summary>
+        /// G4 — String-vs-numeric partition-key type discrimination: a string partition key "1" and a
+        /// numeric partition key 1 must compute to <b>different</b> EPKs. Seeds one document under each
+        /// (same container, same textual key), proves a cross-typed point read does <b>not</b> resolve the
+        /// other (404), then Read DTx / Write DTx / Read DTx both on their own typed keys with full fidelity.
+        /// </summary>
+        [TestMethod]
+        public async Task ReadThenWrite_StringVsNumericPartitionKey_TypeDiscrimination()
+        {
+            JObject stringKeyedDoc = BuildTextHeavyDocument(Guid.NewGuid().ToString(), new JValue("1"));
+            JObject numberKeyedDoc = BuildNumericHeavyDocument(Guid.NewGuid().ToString(), new JValue(1d));
+
+            PartitionKey stringPk = new PartitionKey("1");
+            PartitionKey numberPk = new PartitionKey(1d);
+
+            // Seed both up-front so we can prove the cross-typed lookup fails before the DTx round trip.
+            await this.SeedAsync(this.stringPkContainer, stringKeyedDoc, stringPk);
+            await this.SeedAsync(this.stringPkContainer, numberKeyedDoc, numberPk);
+
+            // Negative: the string-"1"-keyed document must NOT be found under the numeric partition key 1.
+            using (ResponseMessage crossTyped = await this.stringPkContainer.ReadItemStreamAsync(
+                (string)stringKeyedDoc["id"], numberPk))
+            {
+                Assert.AreEqual(
+                    HttpStatusCode.NotFound,
+                    crossTyped.StatusCode,
+                    "Numeric partition key 1 must not resolve a document written under the string partition key \"1\" (distinct EPKs).");
+            }
+
+            // Negative (reverse): the numeric-1-keyed document must NOT be found under the string key "1".
+            using (ResponseMessage crossTypedReverse = await this.stringPkContainer.ReadItemStreamAsync(
+                (string)numberKeyedDoc["id"], stringPk))
+            {
+                Assert.AreEqual(
+                    HttpStatusCode.NotFound,
+                    crossTypedReverse.StatusCode,
+                    "String partition key \"1\" must not resolve a document written under the numeric partition key 1 (distinct EPKs).");
+            }
+
+            // Already seeded above; run the DTx round trip without re-seeding (avoids 409 Conflict).
+            await this.RunReadThenWriteRoundTripAsync(
+                this.stringPkContainer,
+                new[]
+                {
+                    ((string)stringKeyedDoc["id"], stringPk, stringKeyedDoc),
+                    ((string)numberKeyedDoc["id"], numberPk, numberKeyedDoc),
+                },
+                "string-vs-numeric partition key discrimination",
+                seedFirst: false);
+        }
+
         // ─── Wonky document builders ─────────────────────────────────────────────
 
         /// <summary>
@@ -737,11 +882,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private async Task RunReadThenWriteRoundTripAsync(
             Container targetContainer,
             (string Id, PartitionKey Pk, JObject Doc)[] items,
-            string context)
+            string context,
+            bool seedFirst = true)
         {
-            foreach ((string Id, PartitionKey Pk, JObject Doc) item in items)
+            if (seedFirst)
             {
-                await this.SeedAsync(targetContainer, item.Doc, item.Pk);
+                foreach ((string Id, PartitionKey Pk, JObject Doc) item in items)
+                {
+                    await this.SeedAsync(targetContainer, item.Doc, item.Pk);
+                }
             }
 
             // Read DTx: fetch every document atomically and assert fidelity.
@@ -836,6 +985,55 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     using DistributedTransactionResponse response = await this.client
                         .CreateDistributedWriteTransaction()
                         .UpsertItem(targetContainer, warmUpKey, warmUpId, warmUpDoc)
+                        .CommitTransactionAsync(CancellationToken.None);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        return;
+                    }
+                }
+                catch (CosmosException)
+                {
+                    // Swallow: warm-up is best-effort. Fall through to the retry delay.
+                }
+
+                await Task.Delay(TimeSpan.FromSeconds(2));
+            }
+        }
+
+        /// <summary>
+        /// Best-effort warm-up for the hierarchical (multi-hash) container: runs a single throwaway Write
+        /// distributed transaction (an upsert of a disposable warm-up document keyed on a full
+        /// {tenantId, userId} partition key) so the coordinator/DTC Prepare path on the freshly-created
+        /// sub-partitioned collection is initialized before any Read DTx runs. Mirrors
+        /// <see cref="WarmUpContainerAsync"/>: retries a few times on transient failure and never asserts.
+        /// </summary>
+        private async Task WarmUpHierarchicalContainerAsync()
+        {
+            string warmUpTenant = $"dtx-warmup-tenant-{Guid.NewGuid():N}";
+            string warmUpUser = $"dtx-warmup-user-{Guid.NewGuid():N}";
+            string warmUpId = $"dtx-warmup-{Guid.NewGuid():N}";
+
+            PartitionKey warmUpKey = new PartitionKeyBuilder()
+                .Add(warmUpTenant)
+                .Add(warmUpUser)
+                .Build();
+
+            JObject warmUpDoc = new JObject
+            {
+                ["id"] = warmUpId,
+                ["tenantId"] = warmUpTenant,
+                ["userId"] = warmUpUser,
+                ["_dtxWarmUp"] = true
+            };
+
+            for (int attempt = 0; attempt < 5; attempt++)
+            {
+                try
+                {
+                    using DistributedTransactionResponse response = await this.client
+                        .CreateDistributedWriteTransaction()
+                        .UpsertItem(this.hierarchicalPkContainer, warmUpKey, warmUpId, warmUpDoc)
                         .CommitTransactionAsync(CancellationToken.None);
 
                     if (response.IsSuccessStatusCode)
