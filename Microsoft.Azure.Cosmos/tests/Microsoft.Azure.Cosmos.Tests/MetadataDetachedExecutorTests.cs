@@ -560,6 +560,17 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        /// <summary>
+        /// Regression test for the ConfigurationManager lower-clamp. The floor
+        /// (<see cref="ConfigurationManager.MinMetadataDetachedHardDeadlineInSeconds"/>) must sit at or above
+        /// the metadata-read HTTP-timeout ladder so a user-supplied deadline can never be shorter than the
+        /// network work it bounds. A single region's collection-metadata read runs the
+        /// HttpTimeoutPolicyControlPlaneRetriableHotPath ladder — (1s,0)→(5s,1s)→(65s,0) ≈ 72 s — so any
+        /// value below one ladder severs the primary region mid-flight and any value below ~two ladders
+        /// cuts the cross-region failover off before it can complete. Both cases must be clamped up to the
+        /// floor. This pins the two representative points: a pathologically tiny value (1 s) and a value
+        /// equal to a single-region ladder (72 s, still below the two-region floor).
+        /// </summary>
         [TestMethod]
         [Owner("ntripician")]
         public void GetMetadataDetachedHardDeadline_ClampsTooSmallEnvVarValue()
@@ -568,13 +579,21 @@ namespace Microsoft.Azure.Cosmos.Tests
             string previous = Environment.GetEnvironmentVariable(variable);
             try
             {
+                // Pathologically tiny value: far below one HTTP-timeout ladder.
                 Environment.SetEnvironmentVariable(variable, "1");
-
-                TimeSpan deadline = ConfigurationManager.GetMetadataDetachedHardDeadline();
 
                 Assert.AreEqual(
                     TimeSpan.FromSeconds(ConfigurationManager.MinMetadataDetachedHardDeadlineInSeconds),
-                    deadline);
+                    ConfigurationManager.GetMetadataDetachedHardDeadline());
+
+                // 72 s == one single-region metadata HTTP-timeout ladder: enough for the primary region's
+                // attempt but below the two-region floor, so it is still clamped up. This is the exact
+                // scenario a user hits when they pick a deadline "around the metadata timeout".
+                Environment.SetEnvironmentVariable(variable, "72");
+
+                Assert.AreEqual(
+                    TimeSpan.FromSeconds(ConfigurationManager.MinMetadataDetachedHardDeadlineInSeconds),
+                    ConfigurationManager.GetMetadataDetachedHardDeadline());
             }
             finally
             {

@@ -187,9 +187,27 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Lower bound (in seconds) clamped onto user-supplied <see cref="MetadataDetachedHardDeadlineInSeconds"/>
-        /// values to prevent pathologically short deadlines from defeating the cross-region failover.
+        /// values. The floor exists so a user-supplied deadline can never sit <b>below the metadata-read
+        /// HTTP-timeout ladder itself</b> and thereby defeat the cross-region failover this hard deadline
+        /// is meant to protect.
+        ///
+        /// Derivation: a single region's collection-metadata read runs the
+        /// <c>HttpTimeoutPolicyControlPlaneRetriableHotPath</c> ladder — (1 s, 0) → (5 s, 1 s) → (65 s, 0),
+        /// i.e. 71 s of request timeouts plus 1 s inter-attempt delay ≈ 72 s/region (same ladder used to
+        /// derive <see cref="DefaultMetadataDetachedHardDeadlineInSeconds"/>). A deadline shorter than one
+        /// full ladder severs the <i>primary</i> region's attempt mid-flight: the detached
+        /// <c>CancellationTokenSource</c> trips first, <c>BackoffRetryUtility</c> surfaces
+        /// <see cref="OperationCanceledException"/>, and no region ever completes — so no
+        /// <c>ClientRetryPolicy</c> failover decision is reached at all. Reaching the first alternate region
+        /// requires a second ladder plus the inter-region <c>ClientRetryPolicy.RetryIntervalInMS = 1000 ms</c>:
+        /// ~2 × 72 + 1 ≈ 145 s. 150 s rounds that up and is the smallest deadline at which at least one
+        /// cross-region failover hop can actually complete. The floor is set at this two-region mark rather
+        /// than the one-region (72 s) mark because a value between one and two ladders would let the primary
+        /// region finish but still cut the failover off — inconsistent with the clamp's stated purpose. Any
+        /// user value below this is treated as a misconfiguration: it is clamped up to 150 s and the clamp is
+        /// traced once (see <see cref="GetMetadataDetachedHardDeadline"/>).
         /// </summary>
-        internal static readonly int MinMetadataDetachedHardDeadlineInSeconds = 30;
+        internal static readonly int MinMetadataDetachedHardDeadlineInSeconds = 150;
 
         /// <summary>
         /// Upper bound (in seconds) clamped onto user-supplied <see cref="MetadataDetachedHardDeadlineInSeconds"/>

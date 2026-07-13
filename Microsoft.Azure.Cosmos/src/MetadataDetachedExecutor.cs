@@ -21,8 +21,9 @@ namespace Microsoft.Azure.Cosmos
     /// calls <c>cancellationToken.ThrowIfCancellationRequested()</c> at the top of every loop
     /// iteration, BEFORE consulting <see cref="IDocumentClientRetryPolicy.ShouldRetryAsync"/>.
     /// When a caller passes a <see cref="CancellationToken"/> with a deadline only slightly
-    /// larger than the SDK's control-plane HTTP-timeout-policy ladder (~36 s for
-    /// <c>HttpTimeoutPolicyControlPlaneRetriableHotPath</c>), the cross-region failover
+    /// larger than the SDK's control-plane HTTP-timeout-policy ladder (~72 s per region for
+    /// <c>HttpTimeoutPolicyControlPlaneRetriableHotPath</c> — (1 s, 0) → (5 s, 1 s) → (65 s, 0),
+    /// i.e. 71 s of request timeouts plus the 1 s inter-attempt delay), the cross-region failover
     /// decision is preempted and the customer surfaces <c>CosmosOperationCanceledException</c>
     /// instead of a successful failover to the next preferred region.
     /// </para>
