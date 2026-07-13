@@ -41,10 +41,20 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         public Lazy<List<HttpResponseStatistics>> HttpResponseStatistics { get; private set; } = new Lazy<List<HttpResponseStatistics>>(() => new List<HttpResponseStatistics>());
         public Lazy<Dictionary<(int statusCode, int subStatusCode), int>> GatewayRequestsSummary { get; private set; }
 
+        // True when at least one node in the trace tree had its children truncated
+        // (see Tracing.Trace.MaxChildCount). When set, the histogram counts below are
+        // lower bounds because suppressed subtrees were not walked.
+        public bool WasTruncated { get; private set; }
+
         private void CollectSummaryFromTraceTree(ITrace currentTrace)
         {
             // Assert that walking state is set
             Debug.Assert(currentTrace.IsBeingWalked, "SetWalkingStateRecursively should be set to true");
+
+            if (!this.WasTruncated && currentTrace.Data.ContainsKey(Tracing.Trace.TruncatedChildTraceCountKey))
+            {
+                this.WasTruncated = true;
+            }
 
             foreach (object datums in currentTrace.Data.Values)
             {
@@ -125,6 +135,14 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         public void WriteSummaryDiagnostics(IJsonWriter jsonWriter)
         {
             jsonWriter.WriteObjectStart();
+
+            if (this.WasTruncated)
+            {
+                // Signals that the diagnostics tree was truncated (see
+                // Tracing.Trace.MaxChildCount); the counts below are lower bounds.
+                jsonWriter.WriteFieldName("PartialResults");
+                jsonWriter.WriteBoolValue(true);
+            }
 
             if (this.DirectRequestsSummary.IsValueCreated)
             {
