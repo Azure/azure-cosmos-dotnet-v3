@@ -362,6 +362,54 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             }
         }
 
+        /// <summary>
+        /// Regression test for https://github.com/Azure/azure-cosmos-dotnet-v3/issues/6014.
+        /// A cross-region hedge arm that is cancelled before it is dispatched never runs
+        /// OnBeforeSendRequest, so ClientRetryPolicy's internal request reference stays null. With
+        /// Per-Partition Automatic Failover (PPAF) / Partition-Level Circuit Breaker (PPCB) enabled,
+        /// the OperationCanceledException branch of ShouldRetryAsync must not forward that null into
+        /// the partition-failover check (which previously threw ArgumentNullException). The cancellation
+        /// must simply not be retried, so it can surface as CosmosOperationCanceledException upstream.
+        /// </summary>
+        [TestMethod]
+        [DataRow(true, DisplayName = "Read request cancelled before dispatch (PPAF/PPCB enabled).")]
+        [DataRow(false, DisplayName = "Write request cancelled before dispatch (PPAF/PPCB enabled).")]
+        public void CosmosOperationCancelledBeforeDispatch_WithPartitionFailover_DoesNotThrowArgumentNullException(
+            bool isReadOnlyRequest)
+        {
+            const bool enableEndpointDiscovery = true;
+
+            // enablePartitionLevelFailover: true builds a real GlobalPartitionEndpointManagerCore with both
+            // PPAF and PPCB enabled (see Initialize), which is exactly the account configuration that opens
+            // the partition-failover gate that used to throw on a null request.
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enablePartitionLevelFailover: true);
+
+            ClientRetryPolicy retryPolicy = new(
+                globalEndpointManager: endpointManager,
+                partitionKeyRangeLocationCache: this.partitionKeyRangeLocationCache,
+                retryOptions: new RetryOptions(),
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isThinClientEnabled: false);
+
+            OperationCanceledException operationCancelledException = new(message: "Operation was cancelled before dispatch.");
+
+            // Intentionally DO NOT call retryPolicy.OnBeforeSendRequest(...) so the internal request reference
+            // stays null, mirroring a hedge arm cancelled before it was ever dispatched. Before the fix this
+            // threw ArgumentNullException("request") from GlobalPartitionEndpointManagerCore.
+            ShouldRetryResult shouldRetryResult = retryPolicy
+                .ShouldRetryAsync(operationCancelledException, new CancellationToken())
+                .GetAwaiter()
+                .GetResult();
+
+            Assert.IsFalse(
+                shouldRetryResult.ShouldRetry,
+                $"A cancellation before dispatch must not be retried (isReadOnlyRequest={isReadOnlyRequest}).");
+        }
+
         [TestMethod]
         public async Task ClientRetryPolicy_Retry_SingleMaster_Read_PreferredLocationsAsync()
         {

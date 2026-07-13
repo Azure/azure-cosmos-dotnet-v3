@@ -181,7 +181,14 @@ namespace Microsoft.Azure.Cosmos
                     this.failoverRetryCount,
                     this.locationEndpoint?.ToString() ?? string.Empty);
 
-                if (this.partitionKeyRangeLocationCache.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
+                // A request that is cancelled before it is dispatched (for example a losing cross-region
+                // hedge arm whose token is cancelled at the top of the retry loop) never runs
+                // OnBeforeSendRequest, so this.documentServiceRequest is null. With no dispatched request
+                // there is no resolved partition or location to attribute a failure to, so skip the
+                // partition-failover bookkeeping and let the cancellation surface as
+                // CosmosOperationCanceledException instead of throwing ArgumentNullException. See issue #6014.
+                if (this.documentServiceRequest != null
+                    && this.partitionKeyRangeLocationCache.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
                         this.documentServiceRequest))
                 {
                     // In the event of a (ppaf + write operation) or (ppcb + read or multi-master write operation) getting timed
