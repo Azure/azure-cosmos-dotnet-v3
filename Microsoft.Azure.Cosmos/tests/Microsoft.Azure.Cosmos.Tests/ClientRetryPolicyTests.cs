@@ -372,10 +372,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         /// must simply not be retried, so it can surface as CosmosOperationCanceledException upstream.
         /// </summary>
         [TestMethod]
-        [DataRow(true, DisplayName = "Read request cancelled before dispatch (PPAF/PPCB enabled).")]
-        [DataRow(false, DisplayName = "Write request cancelled before dispatch (PPAF/PPCB enabled).")]
-        public void CosmosOperationCancelledBeforeDispatch_WithPartitionFailover_DoesNotThrowArgumentNullException(
-            bool isReadOnlyRequest)
+        public void CosmosOperationCancelledBeforeDispatch_WithPartitionFailover_DoesNotThrowArgumentNullException()
         {
             const bool enableEndpointDiscovery = true;
 
@@ -398,16 +395,104 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             OperationCanceledException operationCancelledException = new(message: "Operation was cancelled before dispatch.");
 
             // Intentionally DO NOT call retryPolicy.OnBeforeSendRequest(...) so the internal request reference
-            // stays null, mirroring a hedge arm cancelled before it was ever dispatched. Before the fix this
-            // threw ArgumentNullException("request") from GlobalPartitionEndpointManagerCore.
-            ShouldRetryResult shouldRetryResult = retryPolicy
-                .ShouldRetryAsync(operationCancelledException, new CancellationToken())
-                .GetAwaiter()
-                .GetResult();
+            // stays null, mirroring a hedge arm cancelled before it was ever dispatched. Read-vs-write is
+            // genuinely indistinguishable here because no request was ever recorded, so this is a single,
+            // non-parameterized case. Before the fix this threw ArgumentNullException("request") from
+            // GlobalPartitionEndpointManagerCore, so the null guard is the specific regression under test.
+            ShouldRetryResult shouldRetryResult = null;
+            try
+            {
+                shouldRetryResult = retryPolicy
+                    .ShouldRetryAsync(operationCancelledException, new CancellationToken())
+                    .GetAwaiter()
+                    .GetResult();
+            }
+            catch (ArgumentNullException ex)
+            {
+                // Pre-fix behavior: the null internal request was forwarded into the partition-failover check,
+                // which threw ArgumentNullException("request") instead of letting the cancellation flow through.
+                Assert.Fail($"Regression #6014: a cancellation before dispatch must not throw ArgumentNullException. {ex}");
+            }
 
             Assert.IsFalse(
                 shouldRetryResult.ShouldRetry,
-                $"A cancellation before dispatch must not be retried (isReadOnlyRequest={isReadOnlyRequest}).");
+                "A cancellation before dispatch must not be retried, so it can surface as CosmosOperationCanceledException upstream.");
+
+            // TODO (#6014 follow-up): ClientRetryPolicy only decides here that the cancellation is not retried; the
+            // conversion of the OperationCanceledException into CosmosOperationCanceledException happens in the
+            // cross-region hedging layer, which is not exercised by this unit test. Proving the caller observes a
+            // CosmosOperationCanceledException end-to-end would require standing up the full hedging pipeline.
+        }
+
+        /// <summary>
+        /// Companion to <see cref="CosmosOperationCancelledBeforeDispatch_WithPartitionFailover_DoesNotThrowArgumentNullException"/>
+        /// covering the POST-dispatch branch of the same guard (see issue #6014). Here the request IS dispatched
+        /// (OnBeforeSendRequest runs, so ClientRetryPolicy's internal request reference is non-null) before the
+        /// operation is cancelled. With Per-Partition Automatic Failover (PPAF) / Partition-Level Circuit Breaker
+        /// (PPCB) enabled, the OperationCanceledException branch of ShouldRetryAsync walks the partition-failover
+        /// bookkeeping path with a real request; it must complete gracefully (no throw) and must not ask the caller
+        /// to retry a cancellation. Unlike the pre-dispatch case, read-vs-write is meaningfully distinct here because
+        /// a concrete request is recorded, so the case is parameterized.
+        /// </summary>
+        [TestMethod]
+        [DataRow(true, DisplayName = "Read request cancelled after dispatch (PPAF/PPCB enabled).")]
+        [DataRow(false, DisplayName = "Write request cancelled after dispatch (PPAF/PPCB enabled).")]
+        public void CosmosOperationCancelledAfterDispatch_WithPartitionFailover_HandledGracefully(
+            bool isReadRequest)
+        {
+            const bool enableEndpointDiscovery = true;
+            const string suffix = "-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF";
+
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enablePartitionLevelFailover: true);
+
+            // Build a real, dispatchable request with a resolved partition key range so the partition-failover
+            // eligibility check does not early-return. This resolved state (plus OnBeforeSendRequest below) is the
+            // key difference from the pre-dispatch test, and is what drives execution into the null-guarded branch
+            // with a non-null request.
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest, isMasterResourceType: false);
+            request.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange()
+            {
+                Id = "0",
+                MinInclusive = "3F" + suffix,
+                MaxExclusive = "5F" + suffix,
+            };
+
+            ClientRetryPolicy retryPolicy = new(
+                globalEndpointManager: endpointManager,
+                partitionKeyRangeLocationCache: this.partitionKeyRangeLocationCache,
+                retryOptions: new RetryOptions(),
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isThinClientEnabled: false);
+
+            OperationCanceledException operationCancelledException = new(message: "Operation was cancelled after dispatch.");
+
+            // OnBeforeSendRequest records the request (and resolves the location it routed to), so
+            // this.documentServiceRequest is non-null and the guard's true branch runs the real
+            // IncrementRequestFailureCounterAndCheckIfPartitionCanFailover bookkeeping instead of short-circuiting.
+            retryPolicy.OnBeforeSendRequest(request);
+
+            ShouldRetryResult shouldRetryResult = null;
+            try
+            {
+                shouldRetryResult = retryPolicy
+                    .ShouldRetryAsync(operationCancelledException, new CancellationToken())
+                    .GetAwaiter()
+                    .GetResult();
+            }
+            catch (ArgumentNullException ex)
+            {
+                Assert.Fail($"Regression #6014: a cancellation after dispatch must not throw ArgumentNullException (isReadRequest={isReadRequest}). {ex}");
+            }
+
+            // A single cancellation stays below the failover threshold, so the bookkeeping path completes without
+            // requesting a retry; a cancellation must never be retried regardless.
+            Assert.IsFalse(
+                shouldRetryResult.ShouldRetry,
+                $"A cancellation after dispatch must not be retried (isReadRequest={isReadRequest}).");
         }
 
         [TestMethod]
