@@ -6,7 +6,9 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Globalization;
+    using System.IO;
     using System.Net;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure;
@@ -62,6 +64,7 @@ namespace Microsoft.Azure.Cosmos
         private TimeSpan? systemBackgroundTokenCredentialRefreshInterval;
         private Task<AuthState>? currentRefreshOperation = null;
         private volatile AuthState? authState = null;
+        private volatile string? cachedClaimsChallenge;
         private bool isBackgroundTaskRunning = false;
         private bool isDisposed = false;
 
@@ -142,6 +145,86 @@ namespace Microsoft.Azure.Cosmos
             this.isDisposed = true;
         }
 
+        internal void ResetCachedToken(string? claimsChallenge = null)
+        {
+            if (this.isDisposed)
+            {
+                return;
+            }
+
+            lock (this.backgroundRefreshLock)
+            {
+                this.authState = null;
+                this.currentRefreshOperation = null;
+                this.isBackgroundTaskRunning = false;
+                this.cachedClaimsChallenge = claimsChallenge;
+            }
+
+            DefaultTrace.TraceInformation(
+                $"TokenCredentialCache: Token cache reset due to AAD revocation signal. HasClaims={claimsChallenge != null}");
+        }
+
+        internal static string? MergeClaimsWithClientCapabilities(string? claimsChallenge)
+        {
+            const string clientCapabilitiesJson = "{\"access_token\":{\"xms_cc\":{\"values\":[\"cp1\"]}}}";
+
+            if (string.IsNullOrEmpty(claimsChallenge))
+            {
+                return null;
+            }
+
+            try
+            {
+                byte[] claimsBytes = Convert.FromBase64String(claimsChallenge);
+                string claimsJson = System.Text.Encoding.UTF8.GetString(claimsBytes);
+
+                using JsonDocument document = JsonDocument.Parse(claimsJson);
+                if (document.RootElement.ValueKind != JsonValueKind.Object
+                    || !document.RootElement.TryGetProperty("access_token", out JsonElement accessTokenElement)
+                    || accessTokenElement.ValueKind != JsonValueKind.Object)
+                {
+                    DefaultTrace.TraceWarning("TokenCredentialCache: CAE claims challenge missing or malformed 'access_token' object, using client capabilities only");
+                    return clientCapabilitiesJson;
+                }
+
+                using MemoryStream stream = new MemoryStream();
+                using (Utf8JsonWriter writer = new Utf8JsonWriter(stream))
+                {
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("access_token");
+                    writer.WriteStartObject();
+
+                    foreach (JsonProperty property in accessTokenElement.EnumerateObject())
+                    {
+                        if (string.Equals(property.Name, "xms_cc", StringComparison.Ordinal))
+                        {
+                            continue;
+                        }
+
+                        property.WriteTo(writer);
+                    }
+
+                    writer.WritePropertyName("xms_cc");
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("values");
+                    writer.WriteStartArray();
+                    writer.WriteStringValue("cp1");
+                    writer.WriteEndArray();
+                    writer.WriteEndObject();
+
+                    writer.WriteEndObject();
+                    writer.WriteEndObject();
+                }
+
+                return System.Text.Encoding.UTF8.GetString(stream.ToArray());
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceWarning($"TokenCredentialCache: Failed to merge claims challenge: {ex.Message}. Using client capabilities only.");
+                return clientCapabilitiesJson;
+            }
+        }
+
         private async Task<AuthState> GetNewTokenAsync(
             ITrace trace)
         {
@@ -206,6 +289,29 @@ namespace Microsoft.Azure.Cosmos
                         {
                             tokenRequestContext = this.scopeProvider.GetTokenRequestContext();
 
+                            if (ConfigurationManager.IsAadTokenRevocationEnabled())
+                            {
+                                string? challenge = this.cachedClaimsChallenge;
+                                string? mergedClaims = TokenCredentialCache.MergeClaimsWithClientCapabilities(challenge);
+                                if (string.IsNullOrEmpty(challenge))
+                                {
+                                    DefaultTrace.TraceInformation(
+                                        $"Requesting AAD token with CAE client capabilities (cp1). Retry={retry}");
+                                }
+                                else
+                                {
+                                    DefaultTrace.TraceInformation(
+                                        $"Requesting AAD token for revocation with claims challenge and client capabilities (cp1). Retry={retry}");
+                                }
+
+                                tokenRequestContext = new TokenRequestContext(
+                                    scopes: tokenRequestContext.Scopes,
+                                    parentRequestId: tokenRequestContext.ParentRequestId,
+                                    claims: mergedClaims,
+                                    tenantId: tokenRequestContext.TenantId,
+                                    isCaeEnabled: tokenRequestContext.IsCaeEnabled);
+                            }
+
                             AccessToken accessToken = await this.tokenCredential.GetTokenAsync(
                                 requestContext: tokenRequestContext,
                                 cancellationToken: this.cancellationToken);
@@ -224,6 +330,8 @@ namespace Microsoft.Azure.Cosmos
                                 refreshIntervalInSeconds = Math.Min(refreshIntervalInSeconds, TokenCredentialCache.MaxBackgroundRefreshInterval.TotalSeconds);
                                 this.systemBackgroundTokenCredentialRefreshInterval = TimeSpan.FromSeconds(refreshIntervalInSeconds);
                             }
+
+                            this.cachedClaimsChallenge = null;
 
                             AuthState newState = new AuthState(
                                 accessToken,
@@ -257,7 +365,12 @@ namespace Microsoft.Azure.Cosmos
                                 $"Exception at {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}",
                                 exception.Message);
 
-                            DefaultTrace.TraceError($"TokenCredential.GetToken() failed with RequestFailedException. scope = {string.Join(";", tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException.Message}");
+                            DefaultTrace.TraceError(
+                                $"TokenCredential.GetTokenAuthorizationHeaderAsync() failed. " +
+                                $"scope = {string.Join(";", tokenRequestContext.Scopes)}, " +
+                                $"hasClaimsChallenge = {this.cachedClaimsChallenge != null}, " +
+                                $"retry = {retry}, " +
+                                $"Exception = {lastException.Message}");
 
                             // Don't retry on auth failures
                             if (exception is RequestFailedException requestFailedException &&
@@ -265,6 +378,7 @@ namespace Microsoft.Azure.Cosmos
                                     requestFailedException.Status == (int)HttpStatusCode.Forbidden))
                             {
                                 this.authState = null;
+                                this.cachedClaimsChallenge = null;
                                 throw;
                             }
                             bool didFallback = this.scopeProvider.TryFallback(exception);
@@ -281,6 +395,8 @@ namespace Microsoft.Azure.Cosmos
                 {
                     throw new ArgumentException("Last exception is null.");
                 }
+
+                this.cachedClaimsChallenge = null;
 
                 // The retries have been exhausted. Throw the last exception.
                 throw lastException;

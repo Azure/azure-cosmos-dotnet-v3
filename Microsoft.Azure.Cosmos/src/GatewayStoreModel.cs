@@ -18,29 +18,31 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
-    using Microsoft.Azure.Documents.FaultInjection;
     using Newtonsoft.Json;
 
     // Marking it as non-sealed in order to unit test it using Moq framework
     internal class GatewayStoreModel : IStoreModelExtension, IDisposable
     {
-        private readonly bool isThinClientEnabled;
         private static readonly string sessionConsistencyAsString = ConsistencyLevel.Session.ToString();
-        private readonly GlobalPartitionEndpointManager globalPartitionEndpointManager;
-        private readonly ISessionContainer sessionContainer;
+
         private readonly DocumentClientEventSource eventSource;
-        private readonly IChaosInterceptor chaosInterceptor;
 
         internal readonly GlobalEndpointManager endpointManager;
         internal readonly ConsistencyLevel defaultConsistencyLevel;
 
-        // Store Clients to send requests to the gateway and/ or thin client endpoints.
-        private ThinClientStoreClient thinClientStoreClient;
-        private GatewayStoreClient gatewayStoreClient;
+        // The globalPartitionEndpointManager and sessionContainer are needed by ThinClientStoreModel
+        // for partition-key-range resolution and session-token handling on the thin-client path.
+        protected readonly GlobalPartitionEndpointManager globalPartitionEndpointManager;
+        protected readonly ISessionContainer sessionContainer;
 
         // Caches to resolve the PartitionKeyRange from request. For Session Token Optimization.
-        private PartitionKeyRangeCache partitionKeyRangeCache;
-        private ClientCollectionCache clientCollectionCache;
+        protected PartitionKeyRangeCache partitionKeyRangeCache;
+        protected ClientCollectionCache clientCollectionCache;
+
+        // Store Client to send requests to the gateway endpoint.
+        // Marked protected so ThinClientStoreModel can dispatch through it when a request is
+        // thin-client-enabled but not currently routable.
+        protected GatewayStoreClient gatewayStoreClient;
 
         public GatewayStoreModel(
              GlobalEndpointManager endpointManager,
@@ -49,34 +51,18 @@ namespace Microsoft.Azure.Cosmos
              DocumentClientEventSource eventSource,
              JsonSerializerSettings serializerSettings,
              CosmosHttpClient httpClient,
-             GlobalPartitionEndpointManager globalPartitionEndpointManager,
-             bool isThinClientEnabled,
-             UserAgentContainer userAgentContainer = null,
-             IChaosInterceptor chaosInterceptor = null)
+             GlobalPartitionEndpointManager globalPartitionEndpointManager)
         {
             this.endpointManager = endpointManager;
             this.sessionContainer = sessionContainer;
             this.defaultConsistencyLevel = defaultConsistencyLevel;
             this.eventSource = eventSource;
             this.globalPartitionEndpointManager = globalPartitionEndpointManager;
-            this.chaosInterceptor = chaosInterceptor;
             this.gatewayStoreClient = new GatewayStoreClient(
                 httpClient,
                 this.eventSource,
                 globalPartitionEndpointManager,
                 serializerSettings);
-            this.isThinClientEnabled = isThinClientEnabled;
-
-            if (isThinClientEnabled)
-            {
-                this.thinClientStoreClient = new ThinClientStoreClient(
-                    httpClient,
-                    userAgentContainer,
-                    this.eventSource,
-                    globalPartitionEndpointManager,
-                    serializerSettings,
-                    this.chaosInterceptor);
-            }
 
             this.globalPartitionEndpointManager.SetBackgroundConnectionPeriodicRefreshTask(
                 this.MarkEndpointsToHealthyAsync);
@@ -101,9 +87,12 @@ namespace Microsoft.Azure.Cosmos
                     request.RequestContext.RegionName = regionName;
                 }
 
-                bool isPPAFEnabled = this.IsPartitionLevelFailoverEnabled();
-                // This is applicable for both per partition automatic failover and per partition circuit breaker.
-                if ((isPPAFEnabled || this.isThinClientEnabled)
+                // The PartitionKeyRange is resolved up-front when either per partition automatic
+                // failover / circuit breaker needs it to pin the override location, or a subclass
+                // (e.g. ThinClientStoreModel) always needs it for its own dispatch decision. The
+                // location override is only applied when PPAF / PPCB is actually enabled.
+                bool isPartitionLevelFailoverEnabled = this.IsPartitionLevelFailoverEnabled();
+                if (this.ShouldResolvePartitionKeyRange()
                     && !ReplicatedResourceClient.IsMasterResource(request.ResourceType)
                     && (request.ResourceType.IsPartitioned() || request.ResourceType == ResourceType.StoredProcedure))
                 {
@@ -116,42 +105,31 @@ namespace Microsoft.Azure.Cosmos
 
                     request.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
 
-                    if (isPPAFEnabled)
+                    if (isPartitionLevelFailoverEnabled)
                     {
-                        this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request);
+                        this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request, false);
                     }
                 }
 
-                bool canUseThinClient =
-                    this.thinClientStoreClient != null &&
-                    GatewayStoreModel.IsOperationSupportedByThinClient(request);
-
-                Uri physicalAddress = ThinClientStoreClient.IsFeedRequest(request.OperationType)
+                Uri physicalAddress = GatewayStoreClient.IsFeedRequest(request.OperationType)
                         ? this.GetFeedUri(request)
                         : this.GetEntityUri(request);
 
-                if (canUseThinClient)
+                // Distributed-transaction requests own their 449 (RetryWith) retry orchestration
+                // (ClientRetryPolicy + DistributedTransactionCommitter), so they bypass the generic
+                // client-side gateway 449 retry loop to keep that budget authoritative. The
+                // x-ms-noretry-449 server-side opt-out header is applied at the Gateway V1 transport in
+                // DispatchAsync (so thin-client fall-backs to Gateway V1 opt out too), not here.
+                if (GatewayStoreModel.IsGatewayRetryWith449Applicable(request))
                 {
-                    Uri thinClientEndpoint = this.endpointManager.ResolveThinClientEndpoint(request);
-
-                    AccountProperties account = await this.GetDatabaseAccountPropertiesAsync();
-
-                    response = await this.thinClientStoreClient.InvokeAsync(
-                        request,
-                        request.ResourceType,
-                        physicalAddress,
-                        thinClientEndpoint,
-                        account.Id,
-                        this.clientCollectionCache,
+                    response = await BackoffRetryUtility<DocumentServiceResponse>.ExecuteAsync(
+                        () => this.DispatchAsync(request, physicalAddress, cancellationToken),
+                        new GatewayRetryWithRetryPolicy(this.GetRetryWithWaitTimeInSeconds()),
                         cancellationToken);
                 }
                 else
                 {
-                    response = await this.gatewayStoreClient.InvokeAsync(
-                        request,
-                        request.ResourceType,
-                        physicalAddress,
-                        cancellationToken);
+                    response = await this.DispatchAsync(request, physicalAddress, cancellationToken);
                 }
             }
             catch (DocumentClientException exception)
@@ -168,6 +146,74 @@ namespace Microsoft.Azure.Cosmos
 
             await this.CaptureSessionTokenAndHandleSplitAsync(response.StatusCode, response.SubStatusCode, request, response.Headers);
             return response;
+        }
+
+        /// <summary>
+        /// Determines whether the <see cref="PartitionKeyRange"/> should be resolved up-front for
+        /// the request. The base gateway path only needs it when per partition automatic failover /
+        /// circuit breaker is enabled. Subclasses (e.g. <see cref="ThinClientStoreModel"/>) override
+        /// this to always resolve it when they need the PKR for their own dispatch.
+        /// </summary>
+        protected virtual bool ShouldResolvePartitionKeyRange()
+        {
+            return this.IsPartitionLevelFailoverEnabled();
+        }
+
+        /// <summary>
+        /// Determines whether the generic client-side gateway 449 (<see cref="StatusCodes.RetryWith"/>)
+        /// mechanism — the retry loop (<see cref="GatewayRetryWithRetryPolicy"/>) and the
+        /// <c>x-ms-noretry-449</c> server-side opt-out header — applies to the request.
+        /// Distributed-transaction requests are excluded because they own their 449 retry orchestration
+        /// (<see cref="ClientRetryPolicy"/> + the DistributedTransactionCommitter outer loop); wrapping
+        /// them here would let this inner loop retry a coordinator 449 before the authoritative
+        /// distributed-transaction budget is consulted.
+        /// </summary>
+        internal static bool IsGatewayRetryWith449Applicable(DocumentServiceRequest request)
+        {
+            return request.ResourceType != ResourceType.DistributedTransactionBatch;
+        }
+
+        /// <summary>
+        /// Returns the total client-side budget, in seconds, for retrying 449
+        /// (<see cref="StatusCodes.RetryWith"/>) responses. Strong consistency gets a larger budget
+        /// because RetryWith is more likely under contention.
+        /// </summary>
+        private int GetRetryWithWaitTimeInSeconds()
+        {
+            return this.defaultConsistencyLevel == ConsistencyLevel.Strong
+                ? GatewayRetryWithRetryPolicy.StrongWaitTimeInSeconds
+                : GatewayRetryWithRetryPolicy.DefaultWaitTimeInSeconds;
+        }
+
+        /// <summary>
+        /// Dispatches the request to the underlying transport. The base implementation sends the
+        /// request through the gateway HTTP path. Subclasses (e.g. <see cref="ThinClientStoreModel"/>)
+        /// override this seam to route to a different transport, while reusing the shared
+        /// session-token, partition-key-range and split-handling logic in
+        /// <see cref="ProcessMessageAsync"/>.
+        /// </summary>
+        protected virtual Task<DocumentServiceResponse> DispatchAsync(
+            DocumentServiceRequest request,
+            Uri physicalAddress,
+            CancellationToken cancellationToken)
+        {
+            // Opt this Gateway V1 HTTP request out of the gateway's server-side 449 (RetryWith) retry
+            // loop so the SDK is the single client-side authority for 449 retries (see
+            // GatewayRetryWithRetryPolicy). The header is applied here — at the actual Gateway V1
+            // transport — rather than in ProcessMessageAsync so that a thin-client request that
+            // transparently falls back to this path (ThinClientStoreModel.DispatchAsync) also opts out,
+            // while requests dispatched to the thin-client proxy (which has no server-side 449 loop) do
+            // not carry the header.
+            if (GatewayStoreModel.IsGatewayRetryWith449Applicable(request))
+            {
+                request.Headers.Set(HttpConstants.HttpHeaders.NoRetryOn449StatusCode, bool.TrueString);
+            }
+
+            return this.gatewayStoreClient.InvokeAsync(
+                request,
+                request.ResourceType,
+                physicalAddress,
+                cancellationToken);
         }
 
         public virtual async Task<AccountProperties> GetDatabaseAccountAsync(Func<ValueTask<HttpRequestMessage>> requestMessage,
@@ -420,13 +466,13 @@ namespace Microsoft.Azure.Cosmos
             return new Tuple<bool, string>(false, null);
         }
 
-        private bool IsPartitionLevelFailoverEnabled()
+        protected bool IsPartitionLevelFailoverEnabled()
         {
             return this.globalPartitionEndpointManager.IsPartitionLevelCircuitBreakerEnabled()
                 || this.globalPartitionEndpointManager.IsPartitionLevelAutomaticFailoverEnabled();
         }
 
-        private static async Task<Tuple<bool, PartitionKeyRange>> TryResolvePartitionKeyRangeAsync(
+        internal static async Task<Tuple<bool, PartitionKeyRange>> TryResolvePartitionKeyRangeAsync(
             DocumentServiceRequest request,
             ISessionContainer sessionContainer,
             PartitionKeyRangeCache partitionKeyRangeCache,
@@ -552,84 +598,10 @@ namespace Microsoft.Azure.Cosmos
                    operationType != Documents.OperationType.ExecuteJavaScript;
         }
 
-        internal static bool IsOperationSupportedByThinClient(DocumentServiceRequest request)
-        {
-            // Document operations
-            if (request.ResourceType == ResourceType.Document
-                && (request.OperationType == OperationType.Batch
-                || request.OperationType == OperationType.Patch
-                || request.OperationType == OperationType.Create
-                || request.OperationType == OperationType.Read
-                || request.OperationType == OperationType.Upsert
-                || request.OperationType == OperationType.Replace
-                || request.OperationType == OperationType.Delete
-                || request.OperationType == OperationType.Query
-                || request.OperationType == OperationType.QueryPlan))
-            {
-                return true;
-            }
-
-            // LatestVersion (Incremental) ChangeFeed on documents.
-            // AllVersionsAndDeletes (FullFidelity) is excluded because it requires
-            // split-handling logic in Compute Gateway (UseGatewayMode is set by ChangeFeedModeFullFidelity).
-            if (request.ResourceType == ResourceType.Document
-                && request.OperationType == OperationType.ReadFeed
-                && GatewayStoreModel.IsLatestVersionChangeFeedRequest(request))
-            {
-                return true;
-            }
-
-            // Stored Procedure execution
-            if (request.ResourceType == ResourceType.StoredProcedure
-                && request.OperationType == OperationType.ExecuteJavaScript)
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Determines if the request is a LatestVersion (Incremental) change feed request that can
-        /// be routed to the thin client. Returns true only when the A-IM header is exactly
-        /// <c>HttpConstants.A_IMHeaderValues.IncrementalFeed</c>. Any other value — including
-        /// Full-Fidelity Feed (AllVersionsAndDeletes) or an unknown future mode — falls back to
-        /// Compute Gateway so that new modes are not accidentally routed to the thin client.
-        /// </summary>
-        internal static bool IsLatestVersionChangeFeedRequest(DocumentServiceRequest request)
-        {
-            string aImHeaderValue = request.Headers[HttpConstants.HttpHeaders.A_IM];
-            return string.Equals(aImHeaderValue, HttpConstants.A_IMHeaderValues.IncrementalFeed, StringComparison.OrdinalIgnoreCase);
-        }
-        private async Task<AccountProperties> GetDatabaseAccountPropertiesAsync()
-        {
-            AccountProperties accountProperties = await this.endpointManager.GetDatabaseAccountAsync();
-            if (accountProperties != null)
-            {
-                return accountProperties;
-            }
-
-            throw new InvalidOperationException("Failed to retrieve AccountProperties. The response was null.");
-        }
-
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
             {
-                if (this.thinClientStoreClient != null)
-                {
-                    try
-                    {
-                        this.thinClientStoreClient.Dispose();
-                    }
-                    catch (Exception exception)
-                    {
-                        DefaultTrace.TraceWarning("Exception {0} thrown during dispose of HttpClient, this could happen if there are inflight request during the dispose of client",
-                            exception.Message);
-                    }
-
-                    this.thinClientStoreClient = null;
-                }
                 if (this.gatewayStoreClient != null)
                 {
                     try

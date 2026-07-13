@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 {
     using System;
     using System.Collections.Generic;
+    using System.Runtime.CompilerServices;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
@@ -25,6 +26,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
         public void Visit(CosmosArray cosmosArray)
         {
+            // Recursive walk: guard against a hostile deeply-nested element graph
+            // exhausting the CLR stack and crashing the host with an unrecoverable
+            // StackOverflowException. Throws InsufficientExecutionStackException if
+            // remaining stack budget would not safely accommodate another frame.
+            RuntimeHelpers.EnsureSufficientExecutionStack();
+
             this.stringBuilder.Append("[");
 
             for (int i = 0; i < cosmosArray.Count; i++)
@@ -75,6 +82,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
         public void Visit(CosmosObject cosmosObject)
         {
+            // Recursive walk: guard against a hostile deeply-nested element graph
+            // exhausting the CLR stack and crashing the host with an unrecoverable
+            // StackOverflowException.
+            RuntimeHelpers.EnsureSufficientExecutionStack();
+
             this.stringBuilder.Append("{");
 
             string separator = string.Empty;

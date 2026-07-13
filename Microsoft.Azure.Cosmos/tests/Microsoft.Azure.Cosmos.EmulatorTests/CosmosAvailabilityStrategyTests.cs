@@ -109,6 +109,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 //Do not delete the resources (except MM Write test object), georeplication is slow and we want to reuse the resources
                 this.client?.Dispose();
+                Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, null);
             }
         }
 
@@ -587,10 +588,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Direct,
-                ApplicationPreferredRegions = isPreferredLocationsEmpty ? new List<string>() :new List<string>() { region1, region2 },
+                ApplicationPreferredRegions = isPreferredLocationsEmpty ? new List<string>() : new List<string>() { region1, region2 },
                 AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
-                        threshold: TimeSpan.FromMilliseconds(200),
-                        thresholdStep: TimeSpan.FromMilliseconds(50)),
+                       // Threshold is intentionally aggressive: for single-master read 404/1002,
+                       // ClientRetryPolicy.ShouldRetryOnSessionNotAvailable retries wire 2 to the
+                       // WRITE region (RetryLocationIndex = 0, RetryRequestOnPreferredLocations = false).
+                       // When the write region differs from region1 and has no fault, wire 2 succeeds
+                       // in ~50-100ms — beating any threshold >= 50ms.
+                       threshold: TimeSpan.FromMilliseconds(50),
+                       thresholdStep: TimeSpan.FromMilliseconds(20)),
                 Serializer = this.cosmosSystemTextJsonSerializer
             };
 
@@ -1605,6 +1611,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task AvailabilityStrategy_HedgePicksUpHubHeaderAfter_404_1002_And_403_3()
         {
             // ── Tracking counters (thread-safe for concurrent primary + hedge) ──
+            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "False");
             int noHubHeaderRequestCount = 0;
             int hubHeaderRequestCount = 0;
             int return403Count = 0;

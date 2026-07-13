@@ -327,7 +327,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         // IfNoneMatchEtag for ReadItem
 
         [TestMethod]
-        [Description("ReadItem with IfNoneMatchEtag set must serialize an 'etag' field in the operation JSON.")]
+        [Description("ReadItem with IfNoneMatchEtag set must serialize an 'ifNoneMatch' field in the operation JSON.")]
         public async Task ReadItem_WithIfNoneMatchEtag_SerializesEtagField()
         {
             const string etag = "\"test-etag\"";
@@ -340,13 +340,15 @@ namespace Microsoft.Azure.Cosmos.Tests
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
 
-            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.ETag, out JsonElement etagElement),
-                "Read operation with IfNoneMatchEtag must include an 'etag' field.");
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.IfNoneMatch, out JsonElement etagElement),
+                "Read operation with IfNoneMatchEtag must include an 'ifNoneMatch' field.");
             Assert.AreEqual(etag, etagElement.GetString());
+            Assert.IsFalse(op.TryGetProperty(DistributedTransactionSerializer.IfMatch, out _),
+                "Read operation with only IfNoneMatchEtag must not include an 'ifMatch' field.");
         }
 
         [TestMethod]
-        [Description("ReadItem without any etag option must not include an 'etag' field in the serialized JSON.")]
+        [Description("ReadItem without any etag options must not include either conditional field in the serialized JSON.")]
         public async Task ReadItem_WithoutEtag_DoesNotIncludeEtagField()
         {
             string capturedJson = await this.CaptureReadCommitBodyAsync(tx =>
@@ -355,13 +357,15 @@ namespace Microsoft.Azure.Cosmos.Tests
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
 
-            Assert.IsFalse(op.TryGetProperty(DistributedTransactionSerializer.ETag, out _),
-                "Read operation without etag options must NOT include an 'etag' field.");
+            Assert.IsFalse(op.TryGetProperty(DistributedTransactionSerializer.IfMatch, out _),
+                "Read operation without etag options must NOT include an 'ifMatch' field.");
+            Assert.IsFalse(op.TryGetProperty(DistributedTransactionSerializer.IfNoneMatch, out _),
+                "Read operation without etag options must NOT include an 'ifNoneMatch' field.");
         }
 
         [TestMethod]
-        [Description("ReadItem with IfMatchEtag (write-side etag) must NOT serialize an 'etag' field; reads use IfNoneMatchEtag only.")]
-        public async Task ReadItem_WithIfMatchEtag_DoesNotSerializeEtagField()
+        [Description("ReadItem with IfMatchEtag set must serialize an 'ifMatch' field in the operation JSON.")]
+        public async Task ReadItem_WithIfMatchEtag_SerializesIfMatchField()
         {
             const string etag = "\"write-etag\"";
             const string itemId = "read-ifmatch-id";
@@ -373,14 +377,17 @@ namespace Microsoft.Azure.Cosmos.Tests
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
 
-            Assert.IsFalse(op.TryGetProperty(DistributedTransactionSerializer.ETag, out _),
-                "Read operation must not use IfMatchEtag; only IfNoneMatchEtag is serialized for reads.");
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.IfMatch, out JsonElement etagElement),
+                "Read operation with IfMatchEtag must include an 'ifMatch' field.");
+            Assert.AreEqual(etag, etagElement.GetString());
+            Assert.IsFalse(op.TryGetProperty(DistributedTransactionSerializer.IfNoneMatch, out _),
+                "Read operation with only IfMatchEtag must not include an 'ifNoneMatch' field.");
         }
 
         // IfMatchEtag
 
         [TestMethod]
-        [Description("ReplaceItem with IfMatchEtag set must serialize an 'etag' field in the operation JSON.")]
+        [Description("ReplaceItem with IfMatchEtag set must serialize an 'ifMatch' field in the operation JSON.")]
         public async Task ReplaceItem_WithIfMatchEtag_SerializesEtagField()
         {
             const string etag = "\"test-etag\"";
@@ -393,13 +400,15 @@ namespace Microsoft.Azure.Cosmos.Tests
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
 
-            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.ETag, out JsonElement etagElement),
-                "Replace operation with IfMatchEtag must include an 'etag' field.");
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.IfMatch, out JsonElement etagElement),
+                "Replace operation with IfMatchEtag must include an 'ifMatch' field.");
             Assert.AreEqual(etag, etagElement.GetString());
+            Assert.IsFalse(op.TryGetProperty(DistributedTransactionSerializer.IfNoneMatch, out _),
+                "Replace operation with only IfMatchEtag must not include an 'ifNoneMatch' field.");
         }
 
         [TestMethod]
-        [Description("DeleteItem with IfMatchEtag set must serialize an 'etag' field in the operation JSON.")]
+        [Description("DeleteItem with IfMatchEtag set must serialize an 'ifMatch' field in the operation JSON.")]
         public async Task DeleteItem_WithIfMatchEtag_SerializesEtagField()
         {
             const string etag = "\"test-etag\"";
@@ -412,13 +421,15 @@ namespace Microsoft.Azure.Cosmos.Tests
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
 
-            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.ETag, out JsonElement etagElement),
-                "Delete operation with IfMatchEtag must include an 'etag' field.");
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.IfMatch, out JsonElement etagElement),
+                "Delete operation with IfMatchEtag must include an 'ifMatch' field.");
             Assert.AreEqual(etag, etagElement.GetString());
+            Assert.IsFalse(op.TryGetProperty(DistributedTransactionSerializer.IfNoneMatch, out _),
+                "Delete operation with only IfMatchEtag must not include an 'ifNoneMatch' field.");
         }
 
         [TestMethod]
-        [Description("PatchItem with IfMatchEtag set must serialize an 'etag' field in the operation JSON.")]
+        [Description("PatchItem with IfMatchEtag set must serialize an 'ifMatch' field in the operation JSON.")]
         public async Task PatchItem_WithIfMatchEtag_SerializesEtagField()
         {
             const string etag = "\"test-etag\"";
@@ -427,19 +438,96 @@ namespace Microsoft.Azure.Cosmos.Tests
             string capturedJson = await this.CaptureCommitBodyAsync(tx =>
                 tx.PatchItem(BuildMockContainer(), new PartitionKey("pk"), itemId,
                     new[] { PatchOperation.Add("/value", "v") },
-                    new DistributedTransactionRequestOptions { IfMatchEtag = etag }));
+                    new DistributedTransactionPatchItemRequestOptions { IfMatchEtag = etag }));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
 
-            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.ETag, out JsonElement etagElement),
-                "Patch operation with IfMatchEtag must include an 'etag' field.");
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.IfMatch, out JsonElement etagElement),
+                "Patch operation with IfMatchEtag must include an 'ifMatch' field.");
             Assert.AreEqual(etag, etagElement.GetString());
+            Assert.IsFalse(op.TryGetProperty(DistributedTransactionSerializer.IfNoneMatch, out _),
+                "Patch operation with only IfMatchEtag must not include an 'ifNoneMatch' field.");
         }
 
         [TestMethod]
-        [Description("Operations without IfMatchEtag must not include an 'etag' field in the serialized JSON for any operation.")]
-        public async Task Operations_WithoutIfMatchEtag_DoNotIncludeEtagField()
+        [Description("PatchItem with FilterPredicate set must serialize a 'condition' field inside the patch resourceBody.")]
+        public async Task PatchItem_WithFilterPredicate_SerializesConditionInResourceBody()
+        {
+            const string itemId = "filter-patch-id";
+            const string predicate = "from c where c.taskNum = 3";
+
+            string capturedJson = await this.CaptureCommitBodyAsync(tx =>
+                tx.PatchItem(BuildMockContainer(), new PartitionKey("pk"), itemId,
+                    new[] { PatchOperation.Add("/value", "v") },
+                    new DistributedTransactionPatchItemRequestOptions { FilterPredicate = predicate }));
+
+            using JsonDocument doc = JsonDocument.Parse(capturedJson);
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
+
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.ResourceBody, out JsonElement resourceBody),
+                "Patch operation must include a 'resourceBody' field.");
+            Assert.IsTrue(resourceBody.TryGetProperty(PatchConstants.PatchSpecAttributes.Condition, out JsonElement conditionElement),
+                "Patch resourceBody must include a 'condition' field when FilterPredicate is set.");
+            Assert.AreEqual(predicate, conditionElement.GetString(),
+                "The 'condition' field must match the FilterPredicate passed to PatchItem.");
+        }
+
+        [TestMethod]
+        [Description("PatchItem without a FilterPredicate must not serialize a 'condition' field inside the patch resourceBody.")]
+        public async Task PatchItem_WithoutFilterPredicate_DoesNotSerializeConditionInResourceBody()
+        {
+            const string itemId = "no-filter-patch-id";
+
+            string capturedJson = await this.CaptureCommitBodyAsync(tx =>
+                tx.PatchItem(BuildMockContainer(), new PartitionKey("pk"), itemId,
+                    new[] { PatchOperation.Add("/value", "v") }));
+
+            using JsonDocument doc = JsonDocument.Parse(capturedJson);
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
+
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.ResourceBody, out JsonElement resourceBody),
+                "Patch operation must include a 'resourceBody' field.");
+            Assert.IsFalse(resourceBody.TryGetProperty(PatchConstants.PatchSpecAttributes.Condition, out _),
+                "Patch resourceBody must NOT include a 'condition' field when no FilterPredicate is set.");
+        }
+
+        [TestMethod]
+        [Description("PatchItem with both FilterPredicate and IfMatchEtag set must serialize the operation-level 'ifMatch' field AND the 'condition' field inside the patch resourceBody.")]
+        public async Task PatchItem_WithFilterPredicateAndIfMatchEtag_SerializesBoth()
+        {
+            const string itemId = "filter-and-etag-patch-id";
+            const string predicate = "from c where c.status = 'pending'";
+            const string etag = "\"test-etag\"";
+
+            string capturedJson = await this.CaptureCommitBodyAsync(tx =>
+                tx.PatchItem(BuildMockContainer(), new PartitionKey("pk"), itemId,
+                    new[] { PatchOperation.Replace("/status", "done") },
+                    new DistributedTransactionPatchItemRequestOptions
+                    {
+                        FilterPredicate = predicate,
+                        IfMatchEtag = etag
+                    }));
+
+            using JsonDocument doc = JsonDocument.Parse(capturedJson);
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
+
+            // Operation-level ifMatch (inherited from the base RequestOptions.IfMatchEtag).
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.IfMatch, out JsonElement etagElement),
+                "Patch operation with IfMatchEtag must include an 'ifMatch' field.");
+            Assert.AreEqual(etag, etagElement.GetString());
+
+            // Body-level condition (from the patch-specific FilterPredicate) coexists on the same operation.
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.ResourceBody, out JsonElement resourceBody),
+                "Patch operation must include a 'resourceBody' field.");
+            Assert.IsTrue(resourceBody.TryGetProperty(PatchConstants.PatchSpecAttributes.Condition, out JsonElement conditionElement),
+                "Patch resourceBody must include a 'condition' field when FilterPredicate is set.");
+            Assert.AreEqual(predicate, conditionElement.GetString());
+        }
+
+        [TestMethod]
+        [Description("Operations without conditional ETags must not include 'ifMatch' or 'ifNoneMatch' fields in serialized JSON.")]
+        public async Task Operations_WithoutConditionalEtags_DoNotIncludeConditionalFields()
         {
             string capturedJson = await this.CaptureCommitBodyAsync(tx =>
                 tx.CreateItem(BuildMockContainer(), new PartitionKey("pk"), "create-no-etag", new TestItem("create-no-etag"))
@@ -451,9 +539,59 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             for (int i = 0; i < ops.GetArrayLength(); i++)
             {
-                Assert.IsFalse(ops[i].TryGetProperty(DistributedTransactionSerializer.ETag, out _),
-                    $"Operation[{i}] without IfMatchEtag must NOT include an 'etag' field.");
+                Assert.IsFalse(ops[i].TryGetProperty(DistributedTransactionSerializer.IfMatch, out _),
+                    $"Operation[{i}] without conditional etags must NOT include an 'ifMatch' field.");
+                Assert.IsFalse(ops[i].TryGetProperty(DistributedTransactionSerializer.IfNoneMatch, out _),
+                    $"Operation[{i}] without conditional etags must NOT include an 'ifNoneMatch' field.");
             }
+        }
+
+        [TestMethod]
+        [Description("An operation with both IfMatchEtag and IfNoneMatchEtag must serialize both wire fields.")]
+        public async Task ReadItem_WithBothConditionalEtags_SerializesBothFields()
+        {
+            const string ifMatch = "\"if-match-etag\"";
+            const string ifNoneMatch = "\"if-none-match-etag\"";
+
+            string capturedJson = await this.CaptureReadCommitBodyAsync(tx =>
+                tx.ReadItem(BuildMockContainer(), new PartitionKey("pk"), "read-both-etags",
+                    new DistributedTransactionRequestOptions
+                    {
+                        IfMatchEtag = ifMatch,
+                        IfNoneMatchEtag = ifNoneMatch
+                    }));
+
+            using JsonDocument doc = JsonDocument.Parse(capturedJson);
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
+
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.IfMatch, out JsonElement ifMatchElement),
+                "Read operation with IfMatchEtag must include an 'ifMatch' field.");
+            Assert.AreEqual(ifMatch, ifMatchElement.GetString());
+
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.IfNoneMatch, out JsonElement ifNoneMatchElement),
+                "Read operation with IfNoneMatchEtag must include an 'ifNoneMatch' field.");
+            Assert.AreEqual(ifNoneMatch, ifNoneMatchElement.GetString());
+        }
+
+        [TestMethod]
+        [Description("A write operation (ReplaceItem) with IfNoneMatchEtag set must serialize an 'ifNoneMatch' field in the operation JSON.")]
+        public async Task ReplaceItem_WithIfNoneMatchEtag_SerializesIfNoneMatchField()
+        {
+            const string etag = "\"test-etag\"";
+            const string itemId = "etag-replace-ifnonematch-id";
+
+            string capturedJson = await this.CaptureCommitBodyAsync(tx =>
+                tx.ReplaceItem(BuildMockContainer(), new PartitionKey("pk"), itemId, new TestItem(itemId),
+                    new DistributedTransactionRequestOptions { IfNoneMatchEtag = etag }));
+
+            using JsonDocument doc = JsonDocument.Parse(capturedJson);
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
+
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.IfNoneMatch, out JsonElement etagElement),
+                "Replace operation with IfNoneMatchEtag must include an 'ifNoneMatch' field.");
+            Assert.AreEqual(etag, etagElement.GetString());
+            Assert.IsFalse(op.TryGetProperty(DistributedTransactionSerializer.IfMatch, out _),
+                "Replace operation with only IfNoneMatchEtag must not include an 'ifMatch' field.");
         }
 
         [TestMethod]

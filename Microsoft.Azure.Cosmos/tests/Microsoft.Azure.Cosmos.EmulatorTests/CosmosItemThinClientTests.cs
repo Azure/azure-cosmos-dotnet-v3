@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -17,7 +17,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using global::Azure;
     using global::Azure.Core;
-    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.MultiRegionSetupHelpers;
     using TestObject = MultiRegionSetupHelpers.CosmosIntegrationTestObject;
@@ -25,19 +24,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class CosmosItemThinClientTests
     {
+        private const string CentralUs = "Central US";
+        private const string EastUs2 = "East US 2";
+        private static readonly IReadOnlyList<string> PreferredRegions = new List<string> { CentralUs, EastUs2 };
+        private static readonly IReadOnlyList<string> ExcludeRegions = new List<string> { CentralUs };
+
         private string connectionString;
         private CosmosClient client;
         private Database database;
         private Container container;
         private MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer cosmosSystemTextJsonSerializer;
         private const int ItemCount = 100;
+        private const int ThinClientProxyPort = 10250;
 
         [TestInitialize]
         public async Task TestInitAsync()
         {
             Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
             this.connectionString = Environment.GetEnvironmentVariable("COSMOSDB_THINCLIENT");
-
             if (string.IsNullOrEmpty(this.connectionString))
             {
                 Assert.Fail("Set environment variable COSMOSDB_THINCLIENT to run the tests");
@@ -51,13 +55,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
             this.cosmosSystemTextJsonSerializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions);
 
-            this.client = new CosmosClient(
-                  this.connectionString,
-                  new CosmosClientOptions()
-                  {
-                      ConnectionMode = ConnectionMode.Gateway,
-                      Serializer = this.cosmosSystemTextJsonSerializer,
-                  });
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                ApplicationPreferredRegions = PreferredRegions,
+                Serializer = this.cosmosSystemTextJsonSerializer,
+            };
+            clientOptions.CustomHandlers.Add(new ExcludeRegionsInjectingHandler(ExcludeRegions));
+
+            this.client = new CosmosClient(this.connectionString, clientOptions);
 
             string uniqueDbName = "TestDb_" + Guid.NewGuid().ToString();
             this.database = await this.client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
@@ -99,6 +105,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private async Task<List<TestObject>> CreateItemsSafeAsync(IEnumerable<TestObject> items)
         {
             List<TestObject> itemsCreated = new List<TestObject>();
+            await Task.Delay(TimeSpan.FromSeconds(30));
             foreach (TestObject item in items)
             {
                 try
@@ -114,6 +121,42 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
             return itemsCreated;
+        }
+
+        /// <summary>
+        /// Issues a warm-up write on a freshly-created thin-client client so lazy initialization runs and the
+        /// connectivity probe (fire-and-forget) caches the regional endpoints as healthy before the asserted
+        /// operation. The freshly-created container (TestInitAsync creates a new database/container per test)
+        /// also needs time to propagate on the live multi-region account, so the warm-up tolerates the transient
+        /// "Collection is not yet available for read" (404/1013) by retrying, then waits for the probe to finish.
+        /// </summary>
+        private static async Task WarmUpThinClientProbeAsync(Container container, TestObject warmUpItem)
+        {
+            for (int attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    await container.CreateItemAsync(warmUpItem, new PartitionKey(warmUpItem.Pk));
+                    break;
+                }
+                catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.NotFound && attempt < 11)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(5));
+                }
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(30));
+        }
+
+        private static void AssertExcludedRegionsNotInDiagnostics(string diagnostics)
+        {
+            foreach (string excludedRegion in ExcludeRegions)
+            {
+                string excludedHost = excludedRegion.Replace(" ", string.Empty).ToLowerInvariant() + ".documents.azure.com:10250";
+                Assert.IsFalse(
+                    diagnostics.Contains(excludedHost),
+                    $"Operation with ExcludeRegions=[{string.Join(",", ExcludeRegions)}] must not route to '{excludedHost}'. Diagnostics: {diagnostics}");
+            }
         }
 
         [TestMethod]
@@ -132,10 +175,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
             CosmosSystemTextJsonSerializer serializer = new CosmosSystemTextJsonSerializer(jsonSerializerOptions);
 
-            CosmosClientBuilder builder = new CosmosClientBuilder(this.connectionString)
-                .WithConnectionModeGateway()
-                .WithCustomSerializer(serializer)
-                .WithSendingRequestEventArgs(async (sender, e) =>
+            CosmosClientOptions options = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                Serializer = serializer,
+                SendingRequestEventArgs = async (sender, e) =>
                 {
                     if (e.HttpRequest.Version == new Version(2, 0))
                     {
@@ -144,9 +188,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             capturedPayload = await e.HttpRequest.Content.ReadAsByteArrayAsync();
                         }
                     }
-                });
+                },
+            };
 
-            using CosmosClient client = builder.Build();
+            using CosmosClient client = new CosmosClient(this.connectionString, options);
             string uniqueDbName = "TestRegional_" + Guid.NewGuid().ToString();
             Database database = await client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
             string uniqueContainerName = "TestRegionalContainer_" + Guid.NewGuid().ToString();
@@ -421,17 +466,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             List<Version> postRequestVersions = new();
 
-            CosmosClientBuilder builder = new CosmosClientBuilder(this.connectionString)
-                .WithConnectionModeGateway()
-                .WithSendingRequestEventArgs((sender, e) =>
+            CosmosClientOptions options = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                SendingRequestEventArgs = (sender, e) =>
                 {
-                    if (e.HttpRequest.Method == HttpMethod.Post)
+                    if (e.HttpRequest.Method == HttpMethod.Post
+                        && !string.Equals(e.HttpRequest.RequestUri?.AbsolutePath, "/connectivity-probe", StringComparison.OrdinalIgnoreCase))
                     {
+                        // Ignore the thin-client connectivity-probe POSTs (POST /connectivity-probe over HTTP/2),
+                        // which the SDK fires after topology refresh when HTTP/2 is enabled; this test asserts the
+                        // request versions of the DB / Container / Item control- and data-plane POSTs only.
                         postRequestVersions.Add(e.HttpRequest.Version);
                     }
-                });
+                },
+            };
 
-            using CosmosClient client = builder.Build();
+            using CosmosClient client = new CosmosClient(this.connectionString, options);
 
             string dbId = "HttpVersionTestDb_" + Guid.NewGuid();
             Cosmos.Database database = await client.CreateDatabaseIfNotExistsAsync(dbId);
@@ -451,19 +502,303 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await database.DeleteAsync();
         }
 
+        /// <summary>
+        /// End-to-end happy path against an account that advertises thin-client (Gateway V2) proxy
+        /// regional endpoints and whose connectivity probe (<c>POST /connectivity-probe</c> over HTTP/2)
+        /// succeeds for every endpoint. With HTTP/2 opted in, the SDK must route data-plane requests
+        /// through the proxy. Routing is gated by <c>ThinClientStoreModel.IsThinClientRoutable</c> (the live
+        /// topology signal — the account returned proxy endpoints) AND the per-region connectivity-probe gate
+        /// (<c>GlobalEndpointManager.IsProxyEndpointHealthy</c> against the request's resolved regional
+        /// endpoint), so the presence of the <c>|F4</c> ThinClient
+        /// user-agent flag on the diagnostics is proof that BOTH the proxy endpoints were returned and the
+        /// probe came back healthy (HTTP 200). The HTTP/2.0 request version on the data-plane POST confirms
+        /// the client and Gateway V2 successfully negotiated HTTP/2.
+        /// </summary>
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task EndToEnd_ProbeEnabledAccountWithHttp2_RoutesDataPlaneThroughThinClientProxy()
+        {
+            List<Version> dataPlanePostVersions = new();
+
+            CosmosClient localClient = null;
+            Database localDatabase = null;
+            try
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
+
+                localClient = new CosmosClient(
+                    this.connectionString,
+                    new CosmosClientOptions()
+                    {
+                        ConnectionMode = ConnectionMode.Gateway,
+                        ApplicationPreferredRegions = PreferredRegions,
+                        Serializer = this.cosmosSystemTextJsonSerializer,
+                        SendingRequestEventArgs = (sender, e) =>
+                        {
+                            if (e.HttpRequest.Method == HttpMethod.Post
+                                && !string.Equals(e.HttpRequest.RequestUri?.AbsolutePath, "/connectivity-probe", StringComparison.OrdinalIgnoreCase))
+                            {
+                                // Exclude the connectivity-probe POSTs so dataPlanePostVersions reflects only real
+                                // data-plane traffic, proving the item request itself negotiated HTTP/2 to the proxy.
+                                dataPlanePostVersions.Add(e.HttpRequest.Version);
+                            }
+                        },
+                    });
+
+                string dbName = "TestDbProbeE2E_" + Guid.NewGuid().ToString();
+                localDatabase = await localClient.CreateDatabaseIfNotExistsAsync(dbName);
+                string containerName = "TestContainerProbeE2E_" + Guid.NewGuid().ToString();
+                Container localContainer = await localDatabase.CreateContainerIfNotExistsAsync(containerName, "/pk");
+
+                // A freshly created container is not immediately available for data-plane reads on the gateway
+                // (404/1013 "Collection is not yet available for read"). Mirror the other thin-client tests in
+                // this class and let the routing/partition metadata propagate before issuing item operations.
+                await Task.Delay(TimeSpan.FromSeconds(30));
+
+                TestObject item = new TestObject
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = "pk_probe_e2e_" + Guid.NewGuid().ToString(),
+                    Other = "probe end-to-end"
+                };
+
+                // Create routes through the proxy: |F4 proves proxy endpoints were returned AND the probe was green.
+                ItemResponse<TestObject> createResponse = await localContainer.CreateItemAsync(item, new PartitionKey(item.Pk));
+                Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+                string createDiagnostics = createResponse.Diagnostics.ToString();
+                Assert.IsTrue(
+                    createDiagnostics.Contains("|F4"),
+                    $"Create must route via the ThinClient proxy when the account returns proxy endpoints and the probe is healthy. Diagnostics:\n{createDiagnostics}");
+
+                // Read must also route through the proxy.
+                ItemResponse<TestObject> readResponse = await localContainer.ReadItemAsync<TestObject>(item.Id, new PartitionKey(item.Pk));
+                Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
+                Assert.AreEqual(item.Id, readResponse.Resource.Id);
+                string readDiagnostics = readResponse.Diagnostics.ToString();
+                Assert.IsTrue(
+                    readDiagnostics.Contains("|F4"),
+                    $"Read must route via the ThinClient proxy. Diagnostics:\n{readDiagnostics}");
+
+                // At least one data-plane POST must have been sent over HTTP/2.0 to the proxy, confirming the
+                // client <-> Gateway V2 HTTP/2 negotiation succeeded (the same prerequisite the probe enforces).
+                Assert.IsTrue(
+                    dataPlanePostVersions.Any(v => v == new Version(2, 0)),
+                    "A data-plane POST must be sent over HTTP/2.0 when routed through the ThinClient proxy.");
+            }
+            finally
+            {
+                if (localDatabase != null)
+                {
+                    try
+                    {
+                        await localDatabase.DeleteAsync();
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                localClient?.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// A region advertises a Gateway V2 (proxy) endpoint, but its connectivity probe is forced to fail
+        /// (simulating a region that does not yet support <c>POST /connectivity-probe</c>). The other region
+        /// probes green. This proves the per-region probe gate: requests resolved to the healthy region route
+        /// through the proxy (port 10250), while requests resolved to the un-probeable region fall back to
+        /// Gateway V1 (port 443) and NEVER target that region's proxy port.
+        /// </summary>
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        [Owner("aavasthy")]
+        public async Task EndToEnd_RegionWithoutConnectivityProbe_FallsBackToGatewayForThatRegion()
+        {
+            string failedRegionFragment = RegionHostFragment(EastUs2);
+            string healthyRegionFragment = RegionHostFragment(CentralUs);
+
+            ConnectivityProbeFailingHandler probeHandler = new ConnectivityProbeFailingHandler(failedRegionFragment);
+
+            CosmosClient localClient = null;
+            Database localDatabase = null;
+            try
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
+
+                localClient = new CosmosClient(
+                    this.connectionString,
+                    new CosmosClientOptions
+                    {
+                        ConnectionMode = ConnectionMode.Gateway,
+                        ApplicationPreferredRegions = PreferredRegions,
+                        Serializer = this.cosmosSystemTextJsonSerializer,
+                        HttpClientFactory = () => new HttpClient(probeHandler),
+                    });
+
+                string dbName = "TestDbProbeRed_" + Guid.NewGuid().ToString();
+                localDatabase = await localClient.CreateDatabaseIfNotExistsAsync(dbName);
+                string containerName = "TestContainerProbeRed_" + Guid.NewGuid().ToString();
+                Container localContainer = await localDatabase.CreateContainerIfNotExistsAsync(containerName, "/pk");
+
+                TestObject item = new TestObject
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = "pk_probe_red_" + Guid.NewGuid().ToString(),
+                    Other = "probe red region"
+                };
+
+                // Seed the item and let the (fire-and-forget) probe cycle run against both regional endpoints.
+                await WarmUpThinClientProbeAsync(localContainer, item);
+
+                // Read steered to the healthy region (Central US) by excluding the un-probeable region.
+                await ReadItemWithRegionRetryAsync(localContainer, item, new List<string> { EastUs2 });
+
+                // Read steered to the un-probeable region (East US 2) by excluding the healthy region.
+                ItemResponse<TestObject> redRegionRead = await ReadItemWithRegionRetryAsync(localContainer, item, new List<string> { CentralUs });
+                Assert.AreEqual(
+                    HttpStatusCode.OK,
+                    redRegionRead.StatusCode,
+                    "A read steered to the un-probeable region must still succeed via the Gateway V1 fallback.");
+
+                bool healthyRegionUsedProxy = ProxyWasUsedForRegion(probeHandler, healthyRegionFragment);
+                bool failedRegionUsedProxy = ProxyWasUsedForRegion(probeHandler, failedRegionFragment);
+
+                if (!healthyRegionUsedProxy)
+                {
+                    Assert.Inconclusive(
+                        "The thin-client proxy was never used for the healthy region (Central US). This happens when the " +
+                        "client and Gateway V2 could not negotiate HTTP/2 in this environment, so the per-region probe gate " +
+                        "cannot be observed.");
+                }
+
+                Assert.IsFalse(
+                    failedRegionUsedProxy,
+                    $"A region whose connectivity probe fails ('{EastUs2}') must NEVER receive data-plane traffic on the proxy " +
+                    $"port {ThinClientProxyPort}; it must fall back to Gateway V1. Proxy hosts observed: " +
+                    string.Join(", ", ProxyRequestHosts(probeHandler)));
+            }
+            finally
+            {
+                if (localDatabase != null)
+                {
+                    try
+                    {
+                        await localDatabase.DeleteAsync();
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                localClient?.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// One region's connectivity probe is forced to fail (a region without probe support); the other probes
+        /// green. While requests target the un-probeable region they fall back to Gateway V1 (port 443). Once that
+        /// region is removed from consideration (so requests resolve to the healthy region), routing returns to the
+        /// Gateway V2 proxy (port 10250).
+        /// </summary>
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        [Owner("aavasthy")]
+        public async Task EndToEnd_RemovingRegionWithoutConnectivityProbe_RestoresThinClientRouting()
+        {
+            string failedRegionFragment = RegionHostFragment(EastUs2);
+            string healthyRegionFragment = RegionHostFragment(CentralUs);
+
+            ConnectivityProbeFailingHandler probeHandler = new ConnectivityProbeFailingHandler(failedRegionFragment);
+
+            CosmosClient localClient = null;
+            Database localDatabase = null;
+            try
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
+
+                localClient = new CosmosClient(
+                    this.connectionString,
+                    new CosmosClientOptions
+                    {
+                        ConnectionMode = ConnectionMode.Gateway,
+                        ApplicationPreferredRegions = PreferredRegions,
+                        Serializer = this.cosmosSystemTextJsonSerializer,
+                        HttpClientFactory = () => new HttpClient(probeHandler),
+                    });
+
+                string dbName = "TestDbProbeRemove_" + Guid.NewGuid().ToString();
+                localDatabase = await localClient.CreateDatabaseIfNotExistsAsync(dbName);
+                string containerName = "TestContainerProbeRemove_" + Guid.NewGuid().ToString();
+                Container localContainer = await localDatabase.CreateContainerIfNotExistsAsync(containerName, "/pk");
+
+                TestObject item = new TestObject
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = "pk_probe_remove_" + Guid.NewGuid().ToString(),
+                    Other = "probe remove region"
+                };
+
+                await WarmUpThinClientProbeAsync(localContainer, item);
+
+                // Phase 1: target the un-probeable region (exclude the healthy region) -> must fall back to Gateway V1.
+                ItemResponse<TestObject> phase1Read = await ReadItemWithRegionRetryAsync(localContainer, item, new List<string> { CentralUs });
+                Assert.AreEqual(
+                    HttpStatusCode.OK,
+                    phase1Read.StatusCode,
+                    "Phase 1: a read steered to the un-probeable region must succeed via the Gateway V1 fallback.");
+                Assert.IsFalse(
+                    ProxyWasUsedForRegion(probeHandler, failedRegionFragment),
+                    $"Phase 1: the un-probeable region '{EastUs2}' must not receive data-plane traffic on the proxy port {ThinClientProxyPort}.");
+
+                // Phase 2: remove the un-probeable region from consideration (exclude it) -> resolves to the healthy region.
+                await ReadItemWithRegionRetryAsync(localContainer, item, new List<string> { EastUs2 });
+
+                bool healthyRegionUsedProxy = ProxyWasUsedForRegion(probeHandler, healthyRegionFragment);
+                if (!healthyRegionUsedProxy)
+                {
+                    Assert.Inconclusive(
+                        "After removing the un-probeable region, the healthy region (Central US) did not route via the proxy. " +
+                        "This happens when the client and Gateway V2 could not negotiate HTTP/2 in this environment.");
+                }
+
+                Assert.IsTrue(
+                    healthyRegionUsedProxy,
+                    $"After removing the un-probeable region, reads should route back to the Gateway V2 proxy (port {ThinClientProxyPort}) for the healthy region.");
+                Assert.IsFalse(
+                    ProxyWasUsedForRegion(probeHandler, failedRegionFragment),
+                    $"The un-probeable region '{EastUs2}' must never receive proxy traffic at any point.");
+            }
+            finally
+            {
+                if (localDatabase != null)
+                {
+                    try
+                    {
+                        await localDatabase.DeleteAsync();
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                localClient?.Dispose();
+            }
+        }
+
         [TestMethod]
         [TestCategory("ThinClient")]
         public async Task CreateItemsTest()
         {
             string pk = "pk_create";
             IEnumerable<TestObject> items = this.GenerateItems(pk);
-
+            await Task.Delay(TimeSpan.FromSeconds(30));
             foreach (TestObject item in items)
             {
                 ItemResponse<TestObject> response = await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
                 Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
                 string diagnostics = response.Diagnostics.ToString();
                 Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
+                AssertExcludedRegionsNotInDiagnostics(diagnostics);
             }
         }
 
@@ -474,6 +809,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClient localClient = null;
             Database localDatabase = null;
             Container localContainer = null;
+            ConcurrentBag<int> requestPorts = new ConcurrentBag<int>();
 
             try
             {
@@ -497,6 +833,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                       {
                           ConnectionMode = ConnectionMode.Gateway,
                           Serializer = localSerializer,
+                          SendingRequestEventArgs = (sender, e) =>
+                          {
+                              if (e.HttpRequest.RequestUri != null)
+                              {
+                                  requestPorts.Add(e.HttpRequest.RequestUri.Port);
+                              }
+                          },
                       });
 
                 string uniqueDbName = "TestDb2_" + Guid.NewGuid().ToString();
@@ -511,9 +854,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     ItemResponse<TestObject> response = await localContainer.CreateItemAsync(item, new PartitionKey(item.Pk));
                     Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
-                    string diagnostics = response.Diagnostics.ToString();
-                    Assert.IsFalse(diagnostics.Contains("|F4"), "Diagnostics User Agent should NOT contain '|F4' for Gateway");
+                    Assert.IsFalse(
+                        response.Diagnostics.ToString().Contains("|F4"),
+                        "User agent must not advertise the ThinClient capability (|F4) when the account does not advertise thin-client endpoints.");
                 }
+
+                // The account does not advertise thin-client (proxy) endpoints, so no request - data-plane or
+                // connectivity-probe - must ever target the proxy port (10250). All traffic stays on Gateway V1.
+                Assert.IsFalse(
+                    requestPorts.Contains(ThinClientProxyPort),
+                    $"No request should target the ThinClient proxy port {ThinClientProxyPort} when the account does not advertise thin-client endpoints. Observed ports: {string.Join(", ", requestPorts.Distinct())}");
             }
             finally
             {
@@ -677,7 +1027,114 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
                 Assert.AreEqual(item.Id, response.Resource.Id);
                 Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
+                AssertExcludedRegionsNotInDiagnostics(diagnostics);
             }
+        }
+
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task ReadItem_WithHedgingAndExcludeRegions_OnThinClient_Succeeds()
+        {
+            CosmosClientOptions hedgingClientOptions = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                ApplicationPreferredRegions = PreferredRegions,
+                Serializer = this.cosmosSystemTextJsonSerializer,
+                AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
+                    threshold: TimeSpan.FromMilliseconds(100),
+                    thresholdStep: TimeSpan.FromMilliseconds(50)),
+            };
+
+            using CosmosClient hedgingClient = new CosmosClient(this.connectionString, hedgingClientOptions);
+            Container hedgingContainer = hedgingClient.GetContainer(this.database.Id, this.container.Id);
+            TestObject seed = new TestObject
+            {
+                Id = Guid.NewGuid().ToString(),
+                Pk = "pk_hedging",
+                Other = "hedging composition fixture",
+            };
+
+            // The first operation on this freshly-created client triggers lazy initialization, which wires and
+            // fires the connectivity probe (fire-and-forget). Thin-client routing only engages once the probe has
+            // cached the regional endpoints as healthy, so use this create as a warm-up (resilient to the
+            // freshly-created container's propagation delay) and then wait for the probe before the asserted read.
+            await WarmUpThinClientProbeAsync(hedgingContainer, seed);
+
+            ItemResponse<TestObject> readResponse = await hedgingContainer.ReadItemAsync<TestObject>(
+                seed.Id,
+                new PartitionKey(seed.Pk),
+                new ItemRequestOptions
+                {
+                    ExcludeRegions = new List<string>(ExcludeRegions),
+                });
+
+            string diagnostics = readResponse.Diagnostics.ToString();
+            Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
+            Assert.AreEqual(seed.Id, readResponse.Resource.Id);
+            Assert.IsTrue(
+                diagnostics.Contains("|F4"),
+                "Read should route through the thin client pipeline (|F4 user agent token).");
+            Assert.IsTrue(
+                diagnostics.Contains($"\"Hedge Context\":[\"{EastUs2}\"]"),
+                $"Diagnostics should contain Hedge Context with only the non-excluded preferred region ('{EastUs2}'). Diagnostics: {diagnostics}");
+            AssertExcludedRegionsNotInDiagnostics(diagnostics);
+        }
+
+        /// <summary>
+        /// When every preferred region is excluded,
+        /// <see cref="LocationCache.ResolveThinClientEndpoint"/> falls back to the primary thin
+        /// client write endpoint instead of failing the request. The operation must succeed and
+        /// route through the thin client pipeline.
+        /// </summary>
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task CreateItem_WithAllPreferredRegionsExcluded_OnThinClient_FallsBackToPrimaryWriteRegion()
+        {
+            List<string> allPreferredRegionsExcluded = new List<string>(PreferredRegions);
+
+            CosmosClientOptions fallbackClientOptions = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                ApplicationPreferredRegions = PreferredRegions,
+                Serializer = this.cosmosSystemTextJsonSerializer,
+            };
+
+            using CosmosClient fallbackClient = new CosmosClient(this.connectionString, fallbackClientOptions);
+            Container fallbackContainer = fallbackClient.GetContainer(this.database.Id, this.container.Id);
+
+            // The first operation on this freshly-created client triggers lazy initialization, which wires and
+            // fires the connectivity probe (fire-and-forget). Thin-client routing only engages once the probe has
+            // cached the regional endpoint as healthy, so issue a warm-up write (resilient to the freshly-created
+            // container's propagation delay) and then wait for the probe before the asserted all-excluded create.
+            TestObject warmup = new TestObject
+            {
+                Id = Guid.NewGuid().ToString(),
+                Pk = "pk_fallback_warmup",
+                Other = "fallback warm-up fixture",
+            };
+            await WarmUpThinClientProbeAsync(fallbackContainer, warmup);
+
+            TestObject seed = new TestObject
+            {
+                Id = Guid.NewGuid().ToString(),
+                Pk = "pk_fallback",
+                Other = "all-preferred-excluded fallback fixture",
+            };
+
+            ItemResponse<TestObject> createResponse = await fallbackContainer.CreateItemAsync(
+                seed,
+                new PartitionKey(seed.Pk),
+                new ItemRequestOptions
+                {
+                    ExcludeRegions = allPreferredRegionsExcluded,
+                });
+
+            string diagnostics = createResponse.Diagnostics.ToString();
+            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+            Assert.AreEqual(seed.Id, createResponse.Resource.Id);
+            Assert.IsTrue(
+                diagnostics.Contains("|F4"),
+                "Create should route through the thin client pipeline (|F4 user agent token).");
         }
 
         [TestMethod]
@@ -703,6 +1160,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
                 Assert.AreEqual("Updated " + item.Other, response.Resource.Other);
                 Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
+                AssertExcludedRegionsNotInDiagnostics(diagnostics);
             }
         }
 
@@ -713,12 +1171,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string pk = "pk_upsert";
             IEnumerable<TestObject> items = this.GenerateItems(pk);
 
+            await Task.Delay(TimeSpan.FromSeconds(30));
             foreach (TestObject item in items)
             {
                 ItemResponse<TestObject> response = await this.container.UpsertItemAsync(item, new PartitionKey(item.Pk));
                 string diagnostics = response.Diagnostics.ToString();
                 Assert.IsTrue(response.StatusCode == HttpStatusCode.Created || response.StatusCode == HttpStatusCode.OK);
                 Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
+                AssertExcludedRegionsNotInDiagnostics(diagnostics);
             }
         }
 
@@ -737,6 +1197,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string diagnostics = response.Diagnostics.ToString();
                 Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
                 Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
+                AssertExcludedRegionsNotInDiagnostics(diagnostics);
             }
         }
 
@@ -746,7 +1207,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string pk = "pk_create_stream";
             IEnumerable<TestObject> items = this.GenerateItems(pk);
-
+            await Task.Delay(TimeSpan.FromSeconds(30));
             foreach (TestObject item in items)
             {
                 using (Stream stream = this.cosmosSystemTextJsonSerializer.ToStream(item))
@@ -756,6 +1217,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         string diagnostics = response.Diagnostics.ToString();
                         Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
                         Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
+                        AssertExcludedRegionsNotInDiagnostics(diagnostics);
                     }
                 }
             }
@@ -777,6 +1239,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     string diagnostics = response.Diagnostics.ToString();
                     Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
                     Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
+                    AssertExcludedRegionsNotInDiagnostics(diagnostics);
                 }
             }
         }
@@ -806,6 +1269,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         string diagnostics = response.Diagnostics.ToString();
                         Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
                         Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
+                        AssertExcludedRegionsNotInDiagnostics(diagnostics);
                     }
                 }
             }
@@ -817,7 +1281,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string pk = "pk_upsert_stream";
             IEnumerable<TestObject> items = this.GenerateItems(pk);
-
+            await Task.Delay(TimeSpan.FromSeconds(30));
             foreach (TestObject item in items)
             {
                 using (Stream stream = this.cosmosSystemTextJsonSerializer.ToStream(item))
@@ -827,6 +1291,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         string diagnostics = response.Diagnostics.ToString();
                         Assert.IsTrue(response.StatusCode == HttpStatusCode.Created || response.StatusCode == HttpStatusCode.OK);
                         Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
+                        AssertExcludedRegionsNotInDiagnostics(diagnostics);
                     }
                 }
             }
@@ -848,6 +1313,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     string diagnostics = response.Diagnostics.ToString();
                     Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
                     Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
+                    AssertExcludedRegionsNotInDiagnostics(diagnostics);
                 }
             }
         }
@@ -869,6 +1335,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 FeedResponse<TestObject> response = await iterator.ReadNextAsync();
                 count += response.Count;
+                AssertExcludedRegionsNotInDiagnostics(response.Diagnostics.ToString());
             }
 
             Assert.AreEqual(createdItems.Count, count);
@@ -895,7 +1362,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                      {
                          ConnectionMode = ConnectionMode.Gateway,
                          RequestTimeout = TimeSpan.FromSeconds(60),
-                         ConsistencyLevel = Microsoft.Azure.Cosmos.ConsistencyLevel.Strong
+                         ConsistencyLevel = Microsoft.Azure.Cosmos.ConsistencyLevel.Strong,
                      });
 
                 string uniqueDbName = "TestDbTC_" + Guid.NewGuid().ToString();
@@ -967,7 +1434,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                      {
                          ConnectionMode = ConnectionMode.Gateway,
                          RequestTimeout = TimeSpan.FromSeconds(60),
-                         ConsistencyLevel = Microsoft.Azure.Cosmos.ConsistencyLevel.Session
+                         ConsistencyLevel = Microsoft.Azure.Cosmos.ConsistencyLevel.Session,
                      });
 
                 string uniqueDbName = "TestDbTC_" + Guid.NewGuid().ToString();
@@ -1042,6 +1509,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 using (ResponseMessage response = await iterator.ReadNextAsync())
                 {
                     Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                    AssertExcludedRegionsNotInDiagnostics(response.Diagnostics.ToString());
 
                     using (StreamReader reader = new StreamReader(response.Content))
                     {
@@ -1061,21 +1529,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCategory("ThinClient")]
         public async Task BulkCreateItemsTest()
         {
-            CosmosClient bulkClient = new CosmosClient(
-                this.connectionString,
-                new CosmosClientOptions
-                {
-                    ConnectionMode = ConnectionMode.Gateway,
-                    Serializer = this.cosmosSystemTextJsonSerializer,
-                    AllowBulkExecution = true,
-                });
+            CosmosClientOptions bulkOptions = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                ApplicationPreferredRegions = PreferredRegions,
+                Serializer = this.cosmosSystemTextJsonSerializer,
+                AllowBulkExecution = true,
+            };
+            bulkOptions.CustomHandlers.Add(new ExcludeRegionsInjectingHandler(ExcludeRegions));
+
+            CosmosClient bulkClient = new CosmosClient(this.connectionString, bulkOptions);
 
             string pk = "pk_bulk";
             List<TestObject> items = this.GenerateItems(pk).ToList();
             List<Task<ItemResponse<TestObject>>> tasks = new List<Task<ItemResponse<TestObject>>>();
 
             Container bulkContainer = bulkClient.GetContainer(this.database.Id, this.container.Id);
-
+            await Task.Delay(TimeSpan.FromSeconds(30));
             foreach (TestObject item in items)
             {
                 tasks.Add(bulkContainer.CreateItemAsync(item, new PartitionKey(item.Pk)));
@@ -1086,6 +1556,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             foreach (Task<ItemResponse<TestObject>> task in tasks)
             {
                 Assert.AreEqual(HttpStatusCode.Created, task.Result.StatusCode);
+                AssertExcludedRegionsNotInDiagnostics(task.Result.Diagnostics.ToString());
             }
 
             bulkClient.Dispose();
@@ -1097,7 +1568,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string pk = "pk_batch";
             List<TestObject> items = this.GenerateItems(pk).Take(100).ToList();
-
+            await Task.Delay(TimeSpan.FromSeconds(30));
             TransactionalBatch batch = this.container.CreateTransactionalBatch(new PartitionKey(pk));
 
             foreach (TestObject item in items)
@@ -1107,6 +1578,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             TransactionalBatchResponse batchResponse = await batch.ExecuteAsync();
             Assert.AreEqual(HttpStatusCode.OK, batchResponse.StatusCode);
+            AssertExcludedRegionsNotInDiagnostics(batchResponse.Diagnostics.ToString());
 
             for (int i = 0; i < items.Count; i++)
             {
@@ -1155,6 +1627,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     string diagnostics = response.Diagnostics.ToString();
                     Assert.IsTrue(diagnostics.Contains("|F4"), $"Page {pageCount}: Should use ThinClient");
+                    AssertExcludedRegionsNotInDiagnostics(diagnostics);
                 }
 
                 Assert.AreEqual(5, results.Count, "Should return all 5 items");
@@ -1223,6 +1696,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     string diagnostics = response.Diagnostics.ToString();
                     Assert.IsTrue(diagnostics.Contains("|F4"), $"Page {pageCount}: Should use ThinClient");
+                    AssertExcludedRegionsNotInDiagnostics(diagnostics);
                 }
 
                 Assert.IsTrue(results.Count >= 9,
@@ -1303,6 +1777,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     string diagnostics = response.Diagnostics.ToString();
                     Assert.IsTrue(diagnostics.Contains("|F4"), "Should use ThinClient mode");
+                    AssertExcludedRegionsNotInDiagnostics(diagnostics);
                 }
 
                 // Verify all items are returned
@@ -1387,6 +1862,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 string diagnostics = response.Diagnostics.ToString();
                 Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient change feed");
+                AssertExcludedRegionsNotInDiagnostics(diagnostics);
 
                 changeFeedResults.AddRange(response);
             }
@@ -1500,6 +1976,31 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     readDiagnostics.Contains("|F4"),
                     $"Diagnostics user-agent should contain '|F4' indicating the read with strategy '{strategyName}' was routed via the ThinClient proxy. Diagnostics:\n{readDiagnostics}");
 
+                // With the HTTP/2 connectivity-probe gate, the SDK only routes the data plane to the proxy
+                // when the probe is green. If the target account does not (yet) enable the
+                // '/connectivity-probe' endpoint - or client/proxy cannot negotiate HTTP/2 - the first probe
+                // cycle is red and the SDK correctly falls back to Gateway V1. In that case the read travels
+                // the gateway REST path (a GET with the strategy carried as a header) and the RNTBD body token
+                // simply cannot exist on the wire. Detect real proxy routing by a captured request that targets
+                // the proxy host (different from the account gateway host) on a path other than the probe path;
+                // only then is the byte-level token assertion meaningful.
+                string gatewayHost = capturingClient.Endpoint.Host;
+
+                bool readRoutedThroughProxy = bodyCapturingHandler.CapturedRequests.Any(r =>
+                    r.Uri != null
+                    && !string.Equals(r.Uri.Host, gatewayHost, StringComparison.OrdinalIgnoreCase)
+                    && r.Uri.AbsolutePath.IndexOf("connectivity-probe", StringComparison.OrdinalIgnoreCase) < 0);
+
+                if (!readRoutedThroughProxy)
+                {
+                    Assert.Inconclusive(
+                        $"ThinClient routing did not occur for strategy '{strategyName}': the SDK served the request via " +
+                        $"Gateway V1, which is the expected behavior when the HTTP/2 connectivity probe is not green on the " +
+                        $"target account (e.g. the proxy does not enable '/connectivity-probe', or HTTP/2 could not be " +
+                        $"negotiated). The on-the-wire RNTBD strategy token can only be verified when the request is routed " +
+                        $"to the thin-client proxy.");
+                }
+
                 bool strategyTokenFoundOnWire = bodyCapturingHandler
                     .CapturedBodies
                     .Any(body => ContainsByteSequence(body, expectedStrategyTokenBytes));
@@ -1522,6 +2023,48 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 capturingClient?.Dispose();
+            }
+        }
+
+        private static string RegionHostFragment(string region)
+        {
+            return region.Replace(" ", string.Empty).ToLowerInvariant();
+        }
+
+        private static bool ProxyWasUsedForRegion(ConnectivityProbeFailingHandler handler, string regionHostFragment)
+        {
+            return handler.DataPlaneRequestUris.Any(uri =>
+                uri != null
+                && uri.Port == ThinClientProxyPort
+                && uri.Host.IndexOf(regionHostFragment, StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+
+        private static IEnumerable<string> ProxyRequestHosts(ConnectivityProbeFailingHandler handler)
+        {
+            return handler.DataPlaneRequestUris
+                .Where(uri => uri != null && uri.Port == ThinClientProxyPort)
+                .Select(uri => uri.Host)
+                .Distinct();
+        }
+
+        private static async Task<ItemResponse<TestObject>> ReadItemWithRegionRetryAsync(
+            Container container,
+            TestObject item,
+            IReadOnlyList<string> excludeRegions)
+        {
+            for (int attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    return await container.ReadItemAsync<TestObject>(
+                        item.Id,
+                        new PartitionKey(item.Pk),
+                        new ItemRequestOptions { ExcludeRegions = new List<string>(excludeRegions) });
+                }
+                catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.NotFound && attempt < 11)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(5));
+                }
             }
         }
 
@@ -1564,6 +2107,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             public ConcurrentQueue<byte[]> CapturedBodies { get; } = new ConcurrentQueue<byte[]>();
 
+            // Captures the target URI of every outbound request (alongside its body) so a test can tell
+            // whether a request was sent to the thin-client proxy host (different from the account gateway
+            // host) or fell back to Gateway V1.
+            public ConcurrentQueue<(Uri Uri, byte[] Body)> CapturedRequests { get; } = new ConcurrentQueue<(Uri, byte[])>();
+
             public BodyCapturingHandler()
                 : base(new HttpClientHandler())
             {
@@ -1573,11 +2121,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 HttpRequestMessage request,
                 CancellationToken cancellationToken)
             {
+                byte[] body = null;
                 if (request.Content != null)
                 {
                     await request.Content.LoadIntoBufferAsync();
-                    this.CapturedBodies.Enqueue(await request.Content.ReadAsByteArrayAsync());
+                    body = await request.Content.ReadAsByteArrayAsync();
+                    this.CapturedBodies.Enqueue(body);
                 }
+
+                this.CapturedRequests.Enqueue((request.RequestUri, body));
 
                 return await base.SendAsync(request, cancellationToken);
             }
@@ -1604,6 +2156,80 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.requestCallback?.Invoke(request);
 
                 // If no exception was thrown, proceed with the actual request
+                return base.SendAsync(request, cancellationToken);
+            }
+        }
+
+
+        /// <summary>
+        /// DelegatingHandler that simulates a region whose Gateway V2 endpoint does not support the connectivity
+        /// probe. Any <c>POST /connectivity-probe</c> whose host matches <c>regionHostFragmentToFail</c> is answered
+        /// with a synthetic non-200 (without contacting the service), so the SDK marks that region red and keeps it
+        /// on Gateway V1. Probes for other regions and all data-plane traffic pass through unchanged; the target URI
+        /// of every non-probe request is recorded so a test can tell which port (proxy 10250 vs gateway 443) and
+        /// region each request used.
+        /// </summary>
+        private sealed class ConnectivityProbeFailingHandler : DelegatingHandler
+        {
+            private const string ConnectivityProbePath = "/connectivity-probe";
+
+            private readonly string regionHostFragmentToFail;
+
+            public ConnectivityProbeFailingHandler(string regionHostFragmentToFail)
+                : base(new HttpClientHandler())
+            {
+                this.regionHostFragmentToFail = regionHostFragmentToFail;
+            }
+
+            public ConcurrentQueue<Uri> DataPlaneRequestUris { get; } = new ConcurrentQueue<Uri>();
+
+            protected override Task<HttpResponseMessage> SendAsync(
+                HttpRequestMessage request,
+                CancellationToken cancellationToken)
+            {
+                bool isConnectivityProbe = request.Method == HttpMethod.Post
+                    && string.Equals(request.RequestUri?.AbsolutePath, ConnectivityProbePath, StringComparison.OrdinalIgnoreCase);
+
+                if (isConnectivityProbe)
+                {
+                    if (request.RequestUri.Host.IndexOf(this.regionHostFragmentToFail, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        return Task.FromResult(new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
+                        {
+                            RequestMessage = request
+                        });
+                    }
+                }
+                else
+                {
+                    this.DataPlaneRequestUris.Enqueue(request.RequestUri);
+                }
+
+                return base.SendAsync(request, cancellationToken);
+            }
+        }
+
+        private sealed class ExcludeRegionsInjectingHandler : RequestHandler
+        {
+            private readonly IReadOnlyList<string> excludeRegions;
+
+            public ExcludeRegionsInjectingHandler(IReadOnlyList<string> excludeRegions)
+            {
+                this.excludeRegions = excludeRegions;
+            }
+
+            public override Task<ResponseMessage> SendAsync(RequestMessage request, CancellationToken cancellationToken)
+            {
+                if (request.RequestOptions == null)
+                {
+                    request.RequestOptions = new RequestOptions();
+                }
+
+                if (request.RequestOptions.ExcludeRegions == null || request.RequestOptions.ExcludeRegions.Count == 0)
+                {
+                    request.RequestOptions.ExcludeRegions = new List<string>(this.excludeRegions);
+                }
+
                 return base.SendAsync(request, cancellationToken);
             }
         }

@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             string id,
             IReadOnlyList<PatchOperation> patchOperations,
-            DistributedTransactionRequestOptions requestOptions = null)
+            DistributedTransactionPatchItemRequestOptions requestOptions = null)
         {
             (string databaseId, string containerId) = DistributedTransactionConstants.ValidateAndUnpackContainer(container, this.clientContext.Client);
             DistributedWriteTransactionCore.ValidateItemId(id);
@@ -176,7 +176,12 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(patchOperations));
             }
 
-            PatchSpec patchSpec = new PatchSpec(patchOperations, new PatchItemRequestOptions());
+            // Forward the customer-supplied conditional predicate (if any) into the PatchSpec so the
+            // serializer emits the server-evaluated 'condition' field. Other request-level options
+            // (SessionToken, IfMatchEtag, IfNoneMatchEtag) flow through the operation's requestOptions.
+            PatchSpec patchSpec = new PatchSpec(
+                patchOperations,
+                new PatchItemRequestOptions { FilterPredicate = requestOptions?.FilterPredicate });
 
             this.operations.Add(
                 new DistributedTransactionOperation<PatchSpec>(
@@ -286,6 +291,11 @@ namespace Microsoft.Azure.Cosmos
         /// <exception cref="OperationCanceledException">Thrown if <paramref name="cancellationToken"/> is cancelled before or during the commit.</exception>
         public override Task<DistributedTransactionResponse> CommitTransactionAsync(CancellationToken cancellationToken = default)
         {
+            if (this.operations.Count == 0)
+            {
+                throw new InvalidOperationException("Cannot commit a distributed write transaction with zero operations. Add at least one write operation before committing.");
+            }
+
             if (Interlocked.CompareExchange(ref this.isCommitInvoked, DistributedTransactionConstants.CommitStarted, DistributedTransactionConstants.CommitNotStarted) != DistributedTransactionConstants.CommitNotStarted)
             {
                 throw new InvalidOperationException(CommitAlreadyCalledMessage);
@@ -301,7 +311,8 @@ namespace Microsoft.Azure.Cosmos
                 {
                     DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                         operations: this.operations,
-                        clientContext: this.clientContext);
+                        clientContext: this.clientContext,
+                        operationType: OperationType.CommitDistributedTransaction);
 
                     return committer.CommitTransactionAsync(trace, cancellationToken);
                 },

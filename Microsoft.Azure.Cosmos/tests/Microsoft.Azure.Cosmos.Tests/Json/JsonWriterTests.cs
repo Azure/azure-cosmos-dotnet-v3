@@ -10218,6 +10218,40 @@
             }
         }
 
+        #region MaxNestingDepth
+
+        [TestMethod]
+        [Owner("tvaron")]
+        public void TextWriterPushThrowsJsonMaxNestingExceededExceptionAtCap()
+        {
+            // Pin the changelog's "single catch type" contract on the text writer Push() path.
+            IJsonWriter writer = JsonWriter.Create(JsonSerializationFormat.Text);
+            for (int i = 0; i < JsonObjectState.JsonMaxNestingDepth; i++)
+            {
+                writer.WriteArrayStart();
+            }
+
+            Assert.ThrowsException<JsonMaxNestingExceededException>(
+                () => writer.WriteArrayStart());
+        }
+
+        [TestMethod]
+        [Owner("tvaron")]
+        public void BinaryWriterPushThrowsJsonMaxNestingExceededExceptionAtCap()
+        {
+            // Mirror of the text-writer test for the binary writer Push() path.
+            IJsonWriter writer = JsonWriter.Create(JsonSerializationFormat.Binary);
+            for (int i = 0; i < JsonObjectState.JsonMaxNestingDepth; i++)
+            {
+                writer.WriteArrayStart();
+            }
+
+            Assert.ThrowsException<JsonMaxNestingExceededException>(
+                () => writer.WriteArrayStart());
+        }
+
+        #endregion
+
         static private sbyte[] Int8Array(params sbyte[] values) => values;
         static private byte[] UInt8Array(params byte[] values) => values;
         static private short[] Int16Array(params short[] values) => values;
