@@ -241,6 +241,12 @@ namespace Microsoft.Azure.Cosmos
                                             hedgeResponse.TargetRegionName);
                                     }
 
+                                    // The winning hedge is returning now; any still in-flight losers
+                                    // are abandoned. Observe their faults so a raced-cancellation
+                                    // exception cannot escape as an unobserved task exception and
+                                    // crash the host.
+                                    CrossRegionHedgingAvailabilityStrategy.ObserveAbandonedHedgeTasks(requestTasks);
+
                                     return hedgeResponse.ResponseMessage;
                                 }
                             }
@@ -279,12 +285,28 @@ namespace Microsoft.Azure.Cosmos
                             ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
                                 ResponseRegion,
                                 hedgeResponse.TargetRegionName);
+
+                            // Observe any abandoned in-flight losers before returning the winner so
+                            // their raced-cancellation faults are never left unobserved.
+                            CrossRegionHedgingAvailabilityStrategy.ObserveAbandonedHedgeTasks(requestTasks);
                             return hedgeResponse.ResponseMessage;
                         }
                     }
 
                     if (lastException != null)
                     {
+                        // If the operation itself was cancelled (for example an e2e timeout via the
+                        // app-provided token), surface a CosmosOperationCanceledException instead of a
+                        // residual exception captured from a losing hedge that raced cancellation.
+                        if (applicationProvidedCancellationToken.IsCancellationRequested
+                            && lastException is not CosmosOperationCanceledException)
+                        {
+                            throw new CosmosOperationCanceledException(
+                                lastException as OperationCanceledException
+                                    ?? new OperationCanceledException(lastException.Message, lastException),
+                                trace);
+                        }
+
                         // Use ExceptionDispatchInfo to preserve the original throwing-frame stack
                         // trace. `throw lastException;` would reset the StackTrace property to the
                         // current frame, which defeats the throw-vs-throw-ex preservation work in
@@ -398,6 +420,27 @@ namespace Microsoft.Azure.Cosmos
                 // cancellation on e2e timeout via app provided CT
                 throw new CosmosOperationCanceledException(oce, trace);
             }
+            catch (Exception ex) when (hedgeRequestsCancellationTokenSource.IsCancellationRequested)
+            {
+                // A losing hedge request that is cancelled after another region already produced the
+                // winning response can race the disposal of its cloned RequestMessage and surface a
+                // non-cancellation exception (for example ArgumentNullException
+                // "Value cannot be null. (Parameter 'request')", ObjectDisposedException, or
+                // NullReferenceException) from deep in the request pipeline instead of a clean
+                // OperationCanceledException. Because the hedge cancellation token source is already
+                // cancelled, the winning hedge has returned and this is cancellation noise. Normalize
+                // it to CosmosOperationCanceledException so it is never surfaced to the caller nor
+                // raised as an unobserved task exception (see issue #5623).
+                DefaultTrace.TraceWarning(
+                    "Cross region hedging absorbed a post-cancellation {0} from a losing hedge request to region {1}: {2}",
+                    ex.GetType().Name,
+                    targetRegionName,
+                    ex.Message);
+
+                throw new CosmosOperationCanceledException(
+                    new OperationCanceledException(ex.Message, ex),
+                    trace);
+            }
             catch (Exception ex)
             {
                 if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Error))
@@ -406,6 +449,39 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Observes the exceptions of hedge requests that are abandoned when a winning response is
+        /// returned early. Losing hedges are cancelled via the hedge cancellation token source and
+        /// can complete faulted (for example with a CosmosOperationCanceledException). Without
+        /// observing them, those faults can later surface as a
+        /// <see cref="TaskScheduler.UnobservedTaskException"/> and crash the host process, which is
+        /// the failure mode originally reported for this strategy.
+        /// </summary>
+        /// <param name="abandonedTasks">The hedge request tasks that will not be awaited.</param>
+        private static void ObserveAbandonedHedgeTasks(IEnumerable<Task> abandonedTasks)
+        {
+            foreach (Task task in abandonedTasks)
+            {
+                if (task == null)
+                {
+                    continue;
+                }
+
+                if (task.IsCompleted)
+                {
+                    // Touching Exception marks an already-faulted task as observed.
+                    _ = task.Exception;
+                    continue;
+                }
+
+                _ = task.ContinueWith(
+                    t => { _ = t.Exception; },
+                    CancellationToken.None,
+                    TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+                    TaskScheduler.Default);
             }
         }
 

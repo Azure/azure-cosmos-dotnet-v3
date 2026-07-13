@@ -602,6 +602,186 @@
                 $"All {concurrentRequests} requests should complete successfully.");
         }
 
+        /// <summary>
+        /// Regression test for the residual post-cancellation null-reference class. After the hedge
+        /// cancellation token source is cancelled, a losing hedge that races the disposal of its
+        /// cloned request can throw a raw <see cref="ArgumentNullException"/>
+        /// ("Value cannot be null. (Parameter 'request')") instead of a clean
+        /// <see cref="OperationCanceledException"/>. That exception must be normalized to
+        /// <see cref="CosmosOperationCanceledException"/> rather than surfaced to the caller.
+        /// </summary>
+        [TestMethod]
+        public async Task PostCancellationArgumentNullException_NormalizedToCosmosOperationCanceled()
+        {
+            // Arrange
+            CrossRegionHedgingAvailabilityStrategy availabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                threshold: TimeSpan.FromMilliseconds(100),
+                thresholdStep: TimeSpan.FromMilliseconds(50));
+
+            using RequestMessage request = CreateReadRequest();
+            using CosmosClient mockCosmosClient = CreateMockClientWithRegions(2);
+
+            CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            // Simulates a losing hedge that races a disposed clone and throws a non-cancellation
+            // ArgumentNullException from deep in the request pipeline instead of a clean OCE.
+            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender =
+                (req, token) => throw new ArgumentNullException("request");
+
+            // Act + Assert - the raced ArgumentNullException is normalized to a cancellation.
+            await Assert.ThrowsExceptionAsync<CosmosOperationCanceledException>(() =>
+                availabilityStrategy.ExecuteAvailabilityStrategyAsync(sender, mockCosmosClient, request, cts.Token));
+        }
+
+        /// <summary>
+        /// Same residual race as
+        /// <see cref="PostCancellationArgumentNullException_NormalizedToCosmosOperationCanceled"/>
+        /// but for an <see cref="ObjectDisposedException"/> thrown when a cancelled loser touches its
+        /// already-disposed cloned request. It must also be normalized to a cancellation.
+        /// </summary>
+        [TestMethod]
+        public async Task PostCancellationObjectDisposedException_NormalizedToCosmosOperationCanceled()
+        {
+            // Arrange
+            CrossRegionHedgingAvailabilityStrategy availabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                threshold: TimeSpan.FromMilliseconds(100),
+                thresholdStep: TimeSpan.FromMilliseconds(50));
+
+            using RequestMessage request = CreateReadRequest();
+            using CosmosClient mockCosmosClient = CreateMockClientWithRegions(2);
+
+            CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender =
+                (req, token) => throw new ObjectDisposedException(nameof(RequestMessage));
+
+            // Act + Assert
+            await Assert.ThrowsExceptionAsync<CosmosOperationCanceledException>(() =>
+                availabilityStrategy.ExecuteAvailabilityStrategyAsync(sender, mockCosmosClient, request, cts.Token));
+        }
+
+        /// <summary>
+        /// Verifies that when a losing hedge throws an <see cref="ArgumentNullException"/> after the
+        /// winning region has already returned a final result, the winner's response is still
+        /// returned unaffected (the loser's raced exception is absorbed, not surfaced).
+        /// </summary>
+        [TestMethod]
+        public async Task HedgeLoserThrowsArgumentNullExceptionAfterWinner_ReturnsWinnerWithoutCrash()
+        {
+            // Arrange
+            CrossRegionHedgingAvailabilityStrategy availabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                threshold: TimeSpan.FromMilliseconds(10),
+                thresholdStep: TimeSpan.FromMilliseconds(10));
+
+            using RequestMessage request = CreateReadRequest();
+            using CosmosClient mockCosmosClient = CreateMockClientWithRegions(3);
+
+            int senderCallCount = 0;
+
+            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender = async (req, ct) =>
+            {
+                int callNumber = Interlocked.Increment(ref senderCallCount);
+
+                if (callNumber == 1)
+                {
+                    // First (losing) request: wait until it is cancelled by the winning hedge, then
+                    // throw a raced null-reference-class exception like a disposed-clone access.
+                    TaskCompletionSource<bool> cancelledTcs = new TaskCompletionSource<bool>();
+                    using (ct.Register(() => cancelledTcs.TrySetResult(true)))
+                    {
+                        await cancelledTcs.Task;
+                    }
+
+                    throw new ArgumentNullException("request");
+                }
+
+                // Second request: return the winning final result immediately.
+                return new ResponseMessage(HttpStatusCode.OK);
+            };
+
+            // Act
+            ResponseMessage response = await availabilityStrategy.ExecuteAvailabilityStrategyAsync(
+                sender, mockCosmosClient, request, CancellationToken.None);
+
+            // Assert - winner is returned; the loser's ArgumentNullException never surfaces.
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        /// <summary>
+        /// Concurrency soak: every losing hedge throws an <see cref="ArgumentNullException"/> when it
+        /// observes cancellation. No hedged operation may surface a raw null-reference-class
+        /// exception to its caller; every operation returns the winning response.
+        /// </summary>
+        [TestMethod]
+        public async Task ConcurrentHedging_LosersThrowArgumentNull_NoNullRefEscapes()
+        {
+            // Arrange
+            CrossRegionHedgingAvailabilityStrategy availabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                threshold: TimeSpan.FromMilliseconds(5),
+                thresholdStep: TimeSpan.FromMilliseconds(5));
+
+            using CosmosClient mockCosmosClient = CreateMockClientWithRegions(3);
+
+            int escapedNullRefCount = 0;
+            int completedCount = 0;
+            const int concurrentRequests = 50;
+
+            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender = async (req, ct) =>
+            {
+                // Random delay to create race conditions; swallow the delay's own cancellation.
+                await Task.Delay(Random.Shared.Next(1, 20), ct).ContinueWith(_ => { });
+
+                if (ct.IsCancellationRequested)
+                {
+                    // The losing hedge races a disposed clone and throws instead of returning.
+                    throw new ArgumentNullException("request");
+                }
+
+                return new ResponseMessage(HttpStatusCode.OK);
+            };
+
+            // Act
+            Task[] tasks = new Task[concurrentRequests];
+            for (int i = 0; i < concurrentRequests; i++)
+            {
+                tasks[i] = Task.Run(async () =>
+                {
+                    try
+                    {
+                        using RequestMessage req = CreateReadRequest();
+                        ResponseMessage response = await availabilityStrategy.ExecuteAvailabilityStrategyAsync(
+                            sender, mockCosmosClient, req, CancellationToken.None);
+
+                        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                        Interlocked.Increment(ref completedCount);
+                    }
+                    catch (ArgumentNullException)
+                    {
+                        Interlocked.Increment(ref escapedNullRefCount);
+                    }
+                    catch (NullReferenceException)
+                    {
+                        Interlocked.Increment(ref escapedNullRefCount);
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        Interlocked.Increment(ref escapedNullRefCount);
+                    }
+                });
+            }
+
+            await Task.WhenAll(tasks);
+
+            // Assert
+            Assert.AreEqual(0, escapedNullRefCount,
+                $"{escapedNullRefCount} of {concurrentRequests} concurrent hedged operations surfaced a raw " +
+                "null-reference-class exception; post-cancellation loser exceptions must be absorbed.");
+            Assert.AreEqual(concurrentRequests, completedCount,
+                $"All {concurrentRequests} hedged operations should return the winning response.");
+        }
+
         [TestMethod]
         public async Task FaultedHedgeTask_DoesNotAbortWhenOtherRegionSucceeds()
         {
