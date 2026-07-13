@@ -260,6 +260,44 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        [TestMethod]
+        [Description("Synthesized placeholder results leave per-operation SessionToken, PartitionKeyRangeId and " +
+                     "ActivityId null because they cannot be reliably attributed to a specific operation in an " +
+                     "unmappable response; the envelope ActivityId remains available on the response itself.")]
+        public async Task FromResponseMessage_PaddedResults_LeavePerOpFieldsNull()
+        {
+            const string expectedActivityId = "11111111-2222-3333-4444-555555555555";
+
+            // 3 operations submitted but server returns only 1 result on an error status — padded path.
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 3);
+
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":409}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.Conflict, json);
+            responseMessage.Headers.Add(HttpConstants.HttpHeaders.ActivityId, expectedActivityId);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(3, response.Count);
+
+            // The envelope ActivityId is still available at the response level for diagnostics.
+            Assert.AreEqual(expectedActivityId, response.ActivityId);
+
+            for (int i = 0; i < response.Count; i++)
+            {
+                Assert.IsNull(response[i].ActivityId,
+                    $"Padded result[{i}] must not stamp a per-operation ActivityId; read response.ActivityId instead.");
+                Assert.IsNull(response[i].SessionToken,
+                    $"Padded result[{i}] must not fake a per-operation SessionToken from envelope context.");
+                Assert.IsNull(response[i].PartitionKeyRangeId,
+                    $"Padded result[{i}] must not fake a per-operation PartitionKeyRangeId from envelope context.");
+            }
+        }
+
         // MultiStatus promotion
 
         [TestMethod]
@@ -502,6 +540,715 @@ namespace Microsoft.Azure.Cosmos.Tests
                 CancellationToken.None);
 
             Assert.AreEqual(4, response.Count);
+        }
+
+        // Out-of-order reordering
+
+        [TestMethod]
+        [Description("When operationResponses arrive out-of-order, the SDK reorders them by index. " +
+                     "Each operation has a distinct StatusCode and ETag to verify correct mapping.")]
+        public async Task FromResponseMessage_OutOfOrderResults_SortedByIndex()
+        {
+            // 5 operations submitted with indices [0..4].
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 5);
+
+            // Wire order [3, 0, 4, 2, 1], each with a unique statusCode/etag, so we can verify
+            // correct mapping after reordering (response[i].Index == i with that index's fields).
+            string json = @"{""operationResponses"":["
+                + @"{""index"":3,""statusCode"":200,""etag"":""e3""},"
+                + @"{""index"":0,""statusCode"":201,""etag"":""e0""},"
+                + @"{""index"":4,""statusCode"":204,""etag"":""e4""},"
+                + @"{""index"":2,""statusCode"":200,""etag"":""e2""},"
+                + @"{""index"":1,""statusCode"":201,""etag"":""e1""}"
+                + @"]}";
+
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.IsTrue(response.IsSuccessStatusCode);
+            Assert.AreEqual(5, response.Count);
+
+            // After reordering, response[i].Index must equal i and the per-operation
+            // fields must match what was originally sent for that index.
+            Assert.AreEqual(0, response[0].Index);
+            Assert.AreEqual(HttpStatusCode.Created, response[0].StatusCode);
+            Assert.AreEqual("e0", response[0].ETag);
+
+            Assert.AreEqual(1, response[1].Index);
+            Assert.AreEqual(HttpStatusCode.Created, response[1].StatusCode);
+            Assert.AreEqual("e1", response[1].ETag);
+
+            Assert.AreEqual(2, response[2].Index);
+            Assert.AreEqual(HttpStatusCode.OK, response[2].StatusCode);
+            Assert.AreEqual("e2", response[2].ETag);
+
+            Assert.AreEqual(3, response[3].Index);
+            Assert.AreEqual(HttpStatusCode.OK, response[3].StatusCode);
+            Assert.AreEqual("e3", response[3].ETag);
+
+            Assert.AreEqual(4, response[4].Index);
+            Assert.AreEqual(HttpStatusCode.NoContent, response[4].StatusCode);
+            Assert.AreEqual("e4", response[4].ETag);
+        }
+
+        [TestMethod]
+        [Description("The coordinator does not guarantee response order, so an out-of-range index makes the " +
+                     "payload unmappable. On a success status the SDK must fail closed with 500 + deserialization " +
+                     "failure rather than surface positionally-misaligned data.")]
+        public async Task FromResponseMessage_OutOfRangeIndex_SuccessStatus_ReturnsInternalServerError()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 3);
+
+            // 3 operations submitted, but one result claims index 7 (out of range for an array of size 3).
+            string json = @"{""operationResponses"":["
+                + @"{""index"":0,""statusCode"":201},"
+                + @"{""index"":7,""statusCode"":201},"
+                + @"{""index"":2,""statusCode"":201}"
+                + @"]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            // Unmappable response: fail closed instead of returning wire order.
+            Assert.AreEqual(HttpStatusCode.InternalServerError, response.StatusCode);
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.AreEqual(ClientResources.ServerResponseDeserializationFailure, response.ErrorMessage);
+        }
+
+        [TestMethod]
+        [Description("Duplicate operation indices (with a missing index) make the payload unmappable. On a success " +
+                     "status the SDK must fail closed with 500 + deserialization failure.")]
+        public async Task FromResponseMessage_DuplicateIndex_SuccessStatus_ReturnsInternalServerError()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 3);
+
+            // 3 operations submitted, but index 1 appears twice and index 2 is missing.
+            string json = @"{""operationResponses"":["
+                + @"{""index"":0,""statusCode"":201},"
+                + @"{""index"":1,""statusCode"":201},"
+                + @"{""index"":1,""statusCode"":201}"
+                + @"]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.InternalServerError, response.StatusCode);
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.AreEqual(ClientResources.ServerResponseDeserializationFailure, response.ErrorMessage);
+        }
+
+        [TestMethod]
+        [Description("When the server omits 'index' on every result, the defaulted indices all collide at 0 and the " +
+                     "payload is unmappable. The SDK must not trust the defaulted indices; on a success status it must " +
+                     "fail closed with 500 + deserialization failure.")]
+        public async Task FromResponseMessage_MissingIndexOnAllResults_SuccessStatus_ReturnsInternalServerError()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 3);
+
+            // No 'index' on any result → each defaults to 0 → not a permutation of 0..2.
+            string json = @"{""operationResponses"":["
+                + @"{""statusCode"":200,""etag"":""a""},"
+                + @"{""statusCode"":201,""etag"":""b""},"
+                + @"{""statusCode"":204,""etag"":""c""}"
+                + @"]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.InternalServerError, response.StatusCode);
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.AreEqual(ClientResources.ServerResponseDeserializationFailure, response.ErrorMessage);
+        }
+
+        [TestMethod]
+        [Description("When indices are not a clean permutation but the HTTP status is an error, results are discarded " +
+                     "and padded with uniform error placeholders rather than surfacing misaligned data.")]
+        public async Task FromResponseMessage_NonPermutationIndices_ErrorStatus_PopulatesResultsWithErrorStatus()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 3);
+
+            // index 1 appears twice, index 2 missing — unmappable — on an error status.
+            // Use 500 as the representative error: an unmappable response is a server-side failure,
+            // so a 5xx is the honest fit. Unlike 409 (per-op document conflict), 503 (marks the
+            // endpoint unavailable / triggers failover), or 400 (implies a client-side error), 500
+            // carries no special handling and keeps the focus on the unmappable-response path.
+            string json = @"{""operationResponses"":["
+                + @"{""index"":0,""statusCode"":500},"
+                + @"{""index"":1,""statusCode"":500},"
+                + @"{""index"":1,""statusCode"":500}"
+                + @"]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.InternalServerError, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.InternalServerError, response.StatusCode);
+            Assert.AreEqual(3, response.Count);
+
+            // The envelope is a (non-success) 500, so this must take the error discard-and-pad branch,
+            // NOT the success fail-closed branch — which would also yield a 500 but stamp the
+            // deserialization-failure message. Asserting the message distinguishes the two branches,
+            // since the synthesized 500 status alone collides with this envelope's 500.
+            Assert.AreNotEqual(ClientResources.ServerResponseDeserializationFailure, response.ErrorMessage,
+                "A 500 error envelope must be padded via the error path, not rerouted through the success fail-closed branch.");
+
+            for (int i = 0; i < response.Count; i++)
+            {
+                Assert.AreEqual(HttpStatusCode.InternalServerError, response[i].StatusCode);
+            }
+        }
+
+        [TestMethod]
+        [Description("A 207 MultiStatus response is a success status, so malformed indices make it unmappable. The SDK " +
+                     "must fail closed with 500 + deserialization failure rather than run MultiStatus promotion over " +
+                     "positionally-misaligned per-operation data.")]
+        public async Task FromResponseMessage_NonPermutationIndices_MultiStatus_ReturnsInternalServerError()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 3);
+
+            // index 1 appears twice, index 2 missing — unmappable — on a 207 MultiStatus (a success status).
+            // One operation reports 409, which promotion would normally surface; fail-closed must take precedence.
+            // A diagnosticString is present and must survive onto the synthesized 500 so the failure is debuggable.
+            string json = @"{""diagnosticString"":""coordinator-trace-xyz"",""operationResponses"":["
+                + @"{""index"":0,""statusCode"":201},"
+                + @"{""index"":1,""statusCode"":409},"
+                + @"{""index"":1,""statusCode"":201}"
+                + @"]}";
+            ResponseMessage responseMessage = BuildResponseMessage((HttpStatusCode)StatusCodes.MultiStatus, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.InternalServerError, response.StatusCode);
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.AreEqual(ClientResources.ServerResponseDeserializationFailure, response.ErrorMessage);
+            Assert.AreEqual("coordinator-trace-xyz", response.DiagnosticString,
+                "The coordinator's diagnosticString must be preserved on the fail-closed 500 response.");
+        }
+
+        [TestMethod]
+        [Description("A 207 MultiStatus response with a VALID but out-of-order index permutation must first be " +
+                     "reordered, then have the lowest-index operation failure promoted to the overall status. " +
+                     "Reordering must not suppress promotion.")]
+        public async Task FromResponseMessage_ValidOutOfOrderIndices_MultiStatus_ReordersThenPromotes()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 3);
+
+            // Wire order [2,0,1] is a valid permutation. Operation 1 (request order) is the failure (409);
+            // operation 2 also fails but with a later status (503). After reordering, promotion must scan in
+            // request order and surface operation 1's 409, not operation 2's 503 and not a fail-closed 500.
+            string json = @"{""operationResponses"":["
+                + @"{""index"":2,""statusCode"":503},"
+                + @"{""index"":0,""statusCode"":201},"
+                + @"{""index"":1,""statusCode"":409}"
+                + @"]}";
+            ResponseMessage responseMessage = BuildResponseMessage((HttpStatusCode)StatusCodes.MultiStatus, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.Conflict, response.StatusCode,
+                "Out-of-order 207 must be reordered, then promote the lowest-index failure (operation 1 → 409).");
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.AreEqual(3, response.Count);
+            // Results are in request order after reordering.
+            Assert.AreEqual(0, response[0].Index);
+            Assert.AreEqual(1, response[1].Index);
+            Assert.AreEqual(HttpStatusCode.Conflict, response[1].StatusCode);
+            Assert.AreEqual(2, response[2].Index);
+            Assert.AreEqual(HttpStatusCode.ServiceUnavailable, response[2].StatusCode);
+        }
+
+        [TestMethod]
+        [Description("Even a single-operation transaction requires an explicit 'index' on its result. When the server " +
+                     "omits it, the defaulted index cannot be trusted, so on a success status the SDK fails closed " +
+                     "with 500 + deserialization failure rather than assuming positional alignment.")]
+        public async Task FromResponseMessage_SingleOperation_MissingIndex_SuccessStatus_ReturnsInternalServerError()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            // Single operation, but the result omits 'index' → index defaults to 0 with HasIndex == false.
+            string json = @"{""operationResponses"":[{""statusCode"":201,""etag"":""e0""}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.InternalServerError, response.StatusCode);
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.AreEqual(ClientResources.ServerResponseDeserializationFailure, response.ErrorMessage);
+        }
+
+        [TestMethod]
+        [Description("The coordinator's top-level 'isRetriable' signal is independent of the per-operation indices. " +
+                     "When the payload is unmappable on a success status, the SDK fails closed with 500 but must " +
+                     "preserve isRetriable so the caller can safely retry under the idempotency token.")]
+        public async Task FromResponseMessage_NonPermutationIndices_SuccessStatus_PreservesIsRetriable()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 3);
+
+            // index 1 appears twice, index 2 missing → unmappable. Coordinator marked the response retriable.
+            string json = @"{""isRetriable"":true,""operationResponses"":["
+                + @"{""index"":0,""statusCode"":201},"
+                + @"{""index"":1,""statusCode"":201},"
+                + @"{""index"":1,""statusCode"":201}"
+                + @"]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.InternalServerError, response.StatusCode);
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.AreEqual(ClientResources.ServerResponseDeserializationFailure, response.ErrorMessage);
+            Assert.IsTrue(response.IsRetriable,
+                "The coordinator's isRetriable signal must survive onto the fail-closed 500 response.");
+        }
+
+        [TestMethod]
+        [Description("A per-operation element that fails to parse discards the results, but the coordinator's " +
+                     "top-level isRetriable verdict was parsed from the document root before the per-op loop and is " +
+                     "independent of it. On an error status the padded response must preserve isRetriable so the " +
+                     "committer can still retry under the idempotency token.")]
+        public async Task FromResponseMessage_PerOpParseFailure_ErrorStatus_PreservesIsRetriable()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 3);
+
+            // Top-level isRetriable=true; one operation element has a wrong-type 'index' → per-op parse failure.
+            string json = @"{""isRetriable"":true,""operationResponses"":["
+                + @"{""index"":0,""statusCode"":201},"
+                + @"{""index"":""abc"",""statusCode"":201},"
+                + @"{""index"":2,""statusCode"":201}"
+                + @"]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.ServiceUnavailable, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+            Assert.AreEqual(3, response.Count);
+            Assert.IsTrue(response.IsRetriable,
+                "A per-op parse failure must not suppress the envelope-level isRetriable on an error status.");
+        }
+
+        [TestMethod]
+        [Description("On a success status a per-operation parse failure fails closed with 500, but must still " +
+                     "preserve the envelope-level isRetriable (symmetric with the unmappable-reorder path) so the " +
+                     "synthesized failure remains retriable under the idempotency token.")]
+        public async Task FromResponseMessage_PerOpParseFailure_SuccessStatus_PreservesIsRetriable()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 2);
+
+            // Top-level isRetriable=true; a wrong-type 'index' triggers the per-op parse-failure path on a 200.
+            string json = @"{""isRetriable"":true,""operationResponses"":["
+                + @"{""index"":0,""statusCode"":201},"
+                + @"{""index"":""abc"",""statusCode"":201}"
+                + @"]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.InternalServerError, response.StatusCode);
+            Assert.AreEqual(ClientResources.ServerResponseDeserializationFailure, response.ErrorMessage);
+            Assert.IsTrue(response.IsRetriable,
+                "A per-op parse failure on a success status must preserve the envelope-level isRetriable on the fail-closed 500.");
+        }
+
+        [TestMethod]
+        [Description("On a success status a result-count mismatch (valid indices, wrong count) fails closed with 500. " +
+                     "The envelope-level isRetriable is independent of the unusable payload, so it must survive onto " +
+                     "the synthesized 500 — symmetric with the unmappable-index and per-op-parse-failure paths.")]
+        public async Task FromResponseMessage_CountMismatch_SuccessStatus_PreservesIsRetriable()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 3);
+
+            // Three operations, but only two well-formed results → count mismatch skips reorder and fails closed.
+            string json = @"{""isRetriable"":true,""operationResponses"":["
+                + @"{""index"":0,""statusCode"":201},"
+                + @"{""index"":1,""statusCode"":201}"
+                + @"]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.InternalServerError, response.StatusCode);
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.AreEqual(ClientResources.InvalidServerResponse, response.ErrorMessage);
+            Assert.IsTrue(response.IsRetriable,
+                "The envelope-level isRetriable must survive onto the count-mismatch fail-closed 500.");
+        }
+
+        [TestMethod]
+        [Description("A negative 'index' is out of range for the reorder array, so the payload is unmappable. " +
+                     "On a success status the SDK must fail closed with 500 + deserialization failure.")]
+        public async Task FromResponseMessage_NegativeIndex_SuccessStatus_ReturnsInternalServerError()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 3);
+
+            // One result claims index -1, which can never be part of a 0..n-1 permutation.
+            string json = @"{""operationResponses"":["
+                + @"{""index"":0,""statusCode"":201},"
+                + @"{""index"":-1,""statusCode"":201},"
+                + @"{""index"":2,""statusCode"":201}"
+                + @"]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.InternalServerError, response.StatusCode);
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.AreEqual(ClientResources.ServerResponseDeserializationFailure, response.ErrorMessage);
+        }
+
+        [TestMethod]
+        [Description("A valid but out-of-order index permutation on a plain (non-207) error status must still be " +
+                     "reordered into request order. Reordering is independent of MultiStatus promotion, so the " +
+                     "overall error status is preserved and response[i].Index == i.")]
+        public async Task FromResponseMessage_ValidOutOfOrderIndices_ErrorStatus_ReordersAndPreservesStatus()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 3);
+
+            // Wire order [2,0,1] is a valid permutation; the overall HTTP status is a plain 409 (not 207).
+            string json = @"{""operationResponses"":["
+                + @"{""index"":2,""statusCode"":503},"
+                + @"{""index"":0,""statusCode"":201},"
+                + @"{""index"":1,""statusCode"":409}"
+                + @"]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.Conflict, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            // A plain error status carries no MultiStatus promotion, so the wire status is preserved as-is.
+            Assert.AreEqual(HttpStatusCode.Conflict, response.StatusCode);
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.AreEqual(3, response.Count);
+
+            // Results must be reordered into request order regardless of the overall status.
+            Assert.AreEqual(0, response[0].Index);
+            Assert.AreEqual(HttpStatusCode.Created, response[0].StatusCode);
+            Assert.AreEqual(1, response[1].Index);
+            Assert.AreEqual(HttpStatusCode.Conflict, response[1].StatusCode);
+            Assert.AreEqual(2, response[2].Index);
+            Assert.AreEqual(HttpStatusCode.ServiceUnavailable, response[2].StatusCode);
+        }
+
+        [TestMethod]
+        [Description("When result count is fewer than the operation count, reordering is skipped (it requires a " +
+                     "count match) and the count-mismatch path takes over. On a success status that yields a 500 " +
+                     "InvalidServerResponse, not the unmappable-permutation deserialization failure.")]
+        public async Task FromResponseMessage_ValidIndices_CountMismatch_SuccessStatus_ReturnsInternalServerError()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 5);
+
+            // Only 4 results returned for a 5-operation request; indices 0..3 are individually valid.
+            string json = @"{""operationResponses"":["
+                + @"{""index"":0,""statusCode"":201},"
+                + @"{""index"":1,""statusCode"":201},"
+                + @"{""index"":2,""statusCode"":201},"
+                + @"{""index"":3,""statusCode"":201}"
+                + @"]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.InternalServerError, response.StatusCode);
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.AreEqual(ClientResources.InvalidServerResponse, response.ErrorMessage);
+        }
+
+        // Index validation / count mismatch — error-status and count-greater variants
+
+        [DataTestMethod]
+        [Description("An out-of-range index makes the payload unmappable. On an error status the SDK discards the " +
+                     "misaligned results and pads with uniform placeholders carrying the envelope error status, " +
+                     "regardless of the per-operation status codes on the wire.")]
+        [DataRow(409, DisplayName = "409 Conflict")]
+        [DataRow(429, DisplayName = "429 TooManyRequests")]
+        [DataRow(503, DisplayName = "503 ServiceUnavailable")]
+        public async Task FromResponseMessage_OutOfRangeIndex_ErrorStatus_PadsResults(int errorStatusCode)
+        {
+            HttpStatusCode status = (HttpStatusCode)errorStatusCode;
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 3);
+
+            // index 7 is out of range for an array of size 3 — unmappable.
+            string json = @"{""operationResponses"":["
+                + @"{""index"":0,""statusCode"":201},"
+                + @"{""index"":7,""statusCode"":201},"
+                + @"{""index"":2,""statusCode"":201}"
+                + @"]}";
+            ResponseMessage responseMessage = BuildResponseMessage(status, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(status, response.StatusCode);
+            Assert.AreEqual(3, response.Count, "Count must equal the number of submitted operations.");
+            for (int i = 0; i < response.Count; i++)
+            {
+                Assert.AreEqual(status, response[i].StatusCode,
+                    $"Padded result[{i}] must carry the envelope error status, not the wire per-op status.");
+            }
+        }
+
+        [DataTestMethod]
+        [Description("Missing 'index' on every result defaults all indices to 0 (not a permutation). On an error " +
+                     "status the SDK discards them and pads with uniform placeholders carrying the envelope status.")]
+        [DataRow(409, DisplayName = "409 Conflict")]
+        [DataRow(429, DisplayName = "429 TooManyRequests")]
+        [DataRow(503, DisplayName = "503 ServiceUnavailable")]
+        public async Task FromResponseMessage_MissingIndex_ErrorStatus_PadsResults(int errorStatusCode)
+        {
+            HttpStatusCode status = (HttpStatusCode)errorStatusCode;
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 3);
+
+            // No 'index' on any result → all default to 0 → not a permutation of 0..2.
+            string json = @"{""operationResponses"":["
+                + @"{""statusCode"":201},"
+                + @"{""statusCode"":201},"
+                + @"{""statusCode"":201}"
+                + @"]}";
+            ResponseMessage responseMessage = BuildResponseMessage(status, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(status, response.StatusCode);
+            Assert.AreEqual(3, response.Count);
+            for (int i = 0; i < response.Count; i++)
+            {
+                Assert.AreEqual(status, response[i].StatusCode);
+            }
+        }
+
+        [DataTestMethod]
+        [Description("A malformed 'index' (wrong JSON type or explicit null) fails per-operation parsing. On an error " +
+                     "status the parsed results are discarded and the count-mismatch path pads with uniform " +
+                     "placeholders carrying the envelope status (no fail-closed 500, which is reserved for success).")]
+        [DataRow(@"{""index"":""abc"",""statusCode"":201}", 409, DisplayName = "wrong-type index + 409")]
+        [DataRow(@"{""index"":null,""statusCode"":201}", 503, DisplayName = "null index + 503")]
+        public async Task FromResponseMessage_MalformedIndex_ErrorStatus_PadsResults(string firstElement, int errorStatusCode)
+        {
+            HttpStatusCode status = (HttpStatusCode)errorStatusCode;
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 3);
+
+            string json = @"{""operationResponses"":["
+                + firstElement + @","
+                + @"{""index"":1,""statusCode"":201},"
+                + @"{""index"":2,""statusCode"":201}"
+                + @"]}";
+            ResponseMessage responseMessage = BuildResponseMessage(status, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(status, response.StatusCode);
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.AreEqual(3, response.Count);
+            for (int i = 0; i < response.Count; i++)
+            {
+                Assert.AreEqual(status, response[i].StatusCode);
+            }
+        }
+
+        [TestMethod]
+        [Description("An explicit 'index':null is a malformed (non-number) index that fails parsing. On a success " +
+                     "status the SDK must fail closed with 500 + deserialization failure.")]
+        public async Task FromResponseMessage_NullIndex_SuccessStatus_ReturnsInternalServerError()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = @"{""operationResponses"":[{""index"":null,""statusCode"":201}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.InternalServerError, response.StatusCode);
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.AreEqual(ClientResources.ServerResponseDeserializationFailure, response.ErrorMessage);
+        }
+
+        [TestMethod]
+        [Description("When the server returns MORE results than submitted operations, reordering is skipped (it " +
+                     "requires a count match) and the count-mismatch path takes over. On a success status that yields " +
+                     "a 500 InvalidServerResponse.")]
+        public async Task FromResponseMessage_MoreResultsThanOperations_SuccessStatus_ReturnsInternalServerError()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 2);
+
+            // 3 results returned for a 2-operation request; indices 0..2 are individually valid.
+            string json = @"{""operationResponses"":["
+                + @"{""index"":0,""statusCode"":201},"
+                + @"{""index"":1,""statusCode"":201},"
+                + @"{""index"":2,""statusCode"":201}"
+                + @"]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.InternalServerError, response.StatusCode);
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.AreEqual(ClientResources.InvalidServerResponse, response.ErrorMessage);
+        }
+
+        [DataTestMethod]
+        [Description("When the server returns MORE results than submitted operations on an error status, the extra " +
+                     "results are dropped and the response is padded down to exactly the operation count with " +
+                     "placeholders carrying the envelope status.")]
+        [DataRow(409, DisplayName = "409 Conflict")]
+        [DataRow(412, DisplayName = "412 PreconditionFailed")]
+        public async Task FromResponseMessage_MoreResultsThanOperations_ErrorStatus_PadsToOperationCount(int errorStatusCode)
+        {
+            HttpStatusCode status = (HttpStatusCode)errorStatusCode;
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 2);
+
+            // 3 results returned for a 2-operation request.
+            string json = @"{""operationResponses"":["
+                + @"{""index"":0,""statusCode"":201},"
+                + @"{""index"":1,""statusCode"":201},"
+                + @"{""index"":2,""statusCode"":201}"
+                + @"]}";
+            ResponseMessage responseMessage = BuildResponseMessage(status, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(status, response.StatusCode);
+            Assert.AreEqual(2, response.Count, "Count must be padded down to exactly the operation count.");
+            for (int i = 0; i < response.Count; i++)
+            {
+                Assert.AreEqual(status, response[i].StatusCode);
+            }
+        }
+
+        [TestMethod]
+        [Description("Exercises the error-status count-mismatch padding path while parsed results hold resource " +
+                     "streams (the branch where the leak-fix disposal runs). Verifies it pads to exactly the " +
+                     "operation count and the synthesized placeholders carry no stream. Observable disposal of the " +
+                     "discarded results is covered separately by Dispose_WithResourceBody_DisposesResourceStreams.")]
+        public async Task FromResponseMessage_CountMismatch_ErrorStatus_WithResourceBody_PadsWithoutStreams()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 2);
+
+            // 3 results (each carrying a resourceBody → a ResourceStream) for a 2-operation request, on an
+            // error status. The parsed results are discarded and their streams disposed before padding.
+            string json = @"{""operationResponses"":["
+                + @"{""index"":0,""statusCode"":201,""resourceBody"":{""id"":""a"",""value"":1}},"
+                + @"{""index"":1,""statusCode"":201,""resourceBody"":{""id"":""b"",""value"":2}},"
+                + @"{""index"":2,""statusCode"":201,""resourceBody"":{""id"":""c"",""value"":3}}"
+                + @"]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.Conflict, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.Conflict, response.StatusCode);
+            Assert.AreEqual(2, response.Count, "Count must be padded down to exactly the operation count.");
+            for (int i = 0; i < response.Count; i++)
+            {
+                Assert.AreEqual(HttpStatusCode.Conflict, response[i].StatusCode);
+                Assert.IsNull(response[i].ResourceStream,
+                    "Synthesized placeholders must not carry a resource stream from the discarded results.");
+            }
         }
 
         // Operation result property deserialization
@@ -1001,7 +1748,34 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(0, enumerated, "Enumeration after disposal must yield no items without throwing.");
         }
 
-        // GetOperationResultAtIndex<T>
+        [TestMethod]
+        [Description("Dispose() must release the resource streams it owns. This observes the shared disposal helper " +
+                     "(also used by the count-mismatch leak-fix path) through the public Dispose() API: a parsed " +
+                     "ResourceStream must be unusable (CanRead == false) after Dispose().")]
+        public async Task Dispose_WithResourceBody_DisposesResourceStreams()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201,""resourceBody"":{""id"":""a"",""value"":1}}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Stream resourceStream = response[0].ResourceStream;
+            Assert.IsNotNull(resourceStream, "The parsed result must carry a resource stream to dispose.");
+            Assert.IsTrue(resourceStream.CanRead, "The stream must be readable before disposal.");
+
+            response.Dispose();
+
+            Assert.IsFalse(resourceStream.CanRead, "Dispose() must dispose the owned resource stream.");
+        }
+
+
 
         [TestMethod]
         [Description("GetOperationResultAtIndex<T> deserializes the resource body into the requested type.")]
