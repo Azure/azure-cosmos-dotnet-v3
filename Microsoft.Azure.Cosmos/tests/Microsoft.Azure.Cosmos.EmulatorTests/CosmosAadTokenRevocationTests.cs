@@ -61,6 +61,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public async Task TestInitialize()
         {
+
+            Environment.SetEnvironmentVariable(ConfigurationManager.AadTokenRevocationEnabled, "True");
+
             this.cosmosClient = TestCommon.CreateCosmosClient();
             this.database = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(DatabaseId);
             this.container = await this.database.CreateContainerIfNotExistsAsync(ContainerId, "/id");
@@ -69,6 +72,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCleanup]
         public async Task TestCleanup()
         {
+            Environment.SetEnvironmentVariable(ConfigurationManager.AadTokenRevocationEnabled, "False");
+
             if (this.database != null)
             {
                 await this.database.DeleteStreamAsync();

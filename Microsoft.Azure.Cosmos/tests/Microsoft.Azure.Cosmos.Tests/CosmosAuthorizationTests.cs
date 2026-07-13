@@ -608,23 +608,32 @@ namespace Microsoft.Azure.Cosmos.Tests
         [DataRow("", false, DisplayName = "Empty header")]
         public void TryHandleTokenRevocation_VariousHeaders(string wwwAuthenticateValue, bool expectedResult)
         {
-            // Arrange
-            Mock<TokenCredential> mockTokenCredential = new Mock<TokenCredential>();
-            mockTokenCredential
-                .Setup(x => x.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new AccessToken("test-token", DateTimeOffset.MaxValue));
+            Environment.SetEnvironmentVariable(ConfigurationManager.AadTokenRevocationEnabled, "True");
 
-            using AuthorizationTokenProviderTokenCredential tokenProvider = new AuthorizationTokenProviderTokenCredential(
-                mockTokenCredential.Object,
-                CosmosAuthorizationTests.AccountEndpoint,
-                backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(5),
-                tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
+            try
+            {
+                // Arrange
+                Mock<TokenCredential> mockTokenCredential = new Mock<TokenCredential>();
+                mockTokenCredential
+                    .Setup(x => x.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new AccessToken("test-token", DateTimeOffset.MaxValue));
 
-            // Act
-            bool result = tokenProvider.TryHandleTokenRevocation(HttpStatusCode.Unauthorized, wwwAuthenticateValue);
+                using AuthorizationTokenProviderTokenCredential tokenProvider = new AuthorizationTokenProviderTokenCredential(
+                    mockTokenCredential.Object,
+                    CosmosAuthorizationTests.AccountEndpoint,
+                    backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(5),
+                    tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
 
-            // Assert
-            Assert.AreEqual(expectedResult, result);
+                // Act
+                bool result = tokenProvider.TryHandleTokenRevocation(HttpStatusCode.Unauthorized, wwwAuthenticateValue);
+
+                // Assert
+                Assert.AreEqual(expectedResult, result);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.AadTokenRevocationEnabled, "False");
+            }
         }
 
         [TestMethod]
@@ -633,24 +642,33 @@ namespace Microsoft.Azure.Cosmos.Tests
         [DataRow(HttpStatusCode.NotFound)]
         public void TryHandleTokenRevocation_NonUnauthorizedStatus_ReturnsFalse(HttpStatusCode statusCode)
         {
-            // Arrange
-            Mock<TokenCredential> mockTokenCredential = new Mock<TokenCredential>();
-            mockTokenCredential
-                .Setup(x => x.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new AccessToken("test-token", DateTimeOffset.MaxValue));
+            Environment.SetEnvironmentVariable(ConfigurationManager.AadTokenRevocationEnabled, "True");
 
-            using AuthorizationTokenProviderTokenCredential tokenProvider = new AuthorizationTokenProviderTokenCredential(
-                mockTokenCredential.Object,
-                CosmosAuthorizationTests.AccountEndpoint,
-                backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(5),
-                tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
+            try
+            {
+                // Arrange
+                Mock<TokenCredential> mockTokenCredential = new Mock<TokenCredential>();
+                mockTokenCredential
+                    .Setup(x => x.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new AccessToken("test-token", DateTimeOffset.MaxValue));
 
-            string wwwAuthenticateValue = "Bearer error=\"insufficient_claims\", claims=\"eyJhY2Nlc3NfdG9rZW4iOnt9fQ==\"";
+                using AuthorizationTokenProviderTokenCredential tokenProvider = new AuthorizationTokenProviderTokenCredential(
+                    mockTokenCredential.Object,
+                    CosmosAuthorizationTests.AccountEndpoint,
+                    backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(5),
+                    tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
 
-            // Act
-            bool result = tokenProvider.TryHandleTokenRevocation(statusCode, wwwAuthenticateValue);
-            // Assert
-            Assert.IsFalse(result);
+                string wwwAuthenticateValue = "Bearer error=\"insufficient_claims\", claims=\"eyJhY2Nlc3NfdG9rZW4iOnt9fQ==\"";
+
+                // Act
+                bool result = tokenProvider.TryHandleTokenRevocation(statusCode, wwwAuthenticateValue);
+                // Assert
+                Assert.IsFalse(result);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.AadTokenRevocationEnabled, "False");
+            }
         }
 
         [TestMethod]
@@ -799,6 +817,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task TokenCredentialCache_NormalAcquisition_DoesNotAttachClaims_SoMsalCacheIsUsable()
         {
+            using IDisposable revocationEnabled = EnableAadTokenRevocation();
+
             // Arrange
             ClaimsCapturingTokenCredential credential = new ClaimsCapturingTokenCredential();
             using TokenCredentialCache cache = this.CreateTokenCredentialCache(credential, TimeSpan.FromMinutes(30));
@@ -825,6 +845,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task TokenCredentialCache_RevocationChallenge_StillAttachesMergedClaims()
         {
+            using IDisposable revocationEnabled = EnableAadTokenRevocation();
+
             // Arrange
             ClaimsCapturingTokenCredential credential = new ClaimsCapturingTokenCredential();
             using TokenCredentialCache cache = this.CreateTokenCredentialCache(credential, TimeSpan.FromMinutes(30));
@@ -855,6 +877,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         [Timeout(30000)]
         public async Task TokenCredentialCache_NormalAcquisition_DoesNotStallOnMsalCacheBypass()
         {
+            using IDisposable revocationEnabled = EnableAadTokenRevocation();
+
             // This is the deterministic reproduction of the customer-reported hang. The credential
             // faithfully models MSAL's behavior: a non-empty 'claims' cannot be served from the token
             // cache and triggers a live (here: long-stalling) ESTS call, whereas an empty 'claims' is
@@ -887,6 +911,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         [Timeout(30000)]
         public async Task TokenCredentialCache_StaleNoClaimsRefresh_DoesNotClobberClaimsToken()
         {
+            using IDisposable revocationEnabled = EnableAadTokenRevocation();
+
             // Regression: a normal (no-claims) refresh that is already in flight when a CAE revocation
             // arrives (ResetCachedToken(claims)) must NOT, on late completion, republish its stale
             // no-claims token over the newer claims-based token, clear the installed claims challenge,
@@ -1250,6 +1276,35 @@ namespace Microsoft.Azure.Cosmos.Tests
                 CosmosAuthorizationTests.AccountEndpoint,
                 backgroundTokenCredentialRefreshInterval: refreshInterval,
                 tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
+        }
+
+        /// <summary>
+        /// Enables the AAD token revocation / CAE feature (disabled by default) for the duration of a
+        /// test and restores the previous environment value on dispose, so the CAE-specific code paths
+        /// under test are actually exercised without leaking the flag to other tests.
+        /// </summary>
+        private static IDisposable EnableAadTokenRevocation()
+        {
+            string previousValue = Environment.GetEnvironmentVariable(ConfigurationManager.AadTokenRevocationEnabled);
+            Environment.SetEnvironmentVariable(ConfigurationManager.AadTokenRevocationEnabled, "True");
+            return new EnvironmentVariableScope(ConfigurationManager.AadTokenRevocationEnabled, previousValue);
+        }
+
+        private sealed class EnvironmentVariableScope : IDisposable
+        {
+            private readonly string variable;
+            private readonly string previousValue;
+
+            public EnvironmentVariableScope(string variable, string previousValue)
+            {
+                this.variable = variable;
+                this.previousValue = previousValue;
+            }
+
+            public void Dispose()
+            {
+                Environment.SetEnvironmentVariable(this.variable, this.previousValue);
+            }
         }
 
         private bool IsTokenRefreshInProgress(TokenCredentialCache tokenCredentialCache)

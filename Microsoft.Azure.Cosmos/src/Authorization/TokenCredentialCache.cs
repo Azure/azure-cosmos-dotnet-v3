@@ -319,20 +319,23 @@ namespace Microsoft.Azure.Cosmos
                             // path, so no claims are sent and the credential's token cache stays usable
                             // (a non-empty claims forces a cache-bypassing live ESTS call). cp1 is still
                             // advertised via isCaeEnabled:true.
-                            // Snapshot the volatile cachedClaimsChallenge into a local so the merged claims
-                            // and the branch below are computed from the same value, even if ResetCachedToken
-                            // races on the request-processing thread between the two reads.
-                            string? challenge = this.cachedClaimsChallenge;
-                            string? mergedClaims = TokenCredentialCache.MergeClaimsWithClientCapabilities(challenge);
-                            if (string.IsNullOrEmpty(challenge))
+                            if (ConfigurationManager.IsAadTokenRevocationEnabled())
                             {
-                                DefaultTrace.TraceInformation(
-                                    $"Requesting AAD token with CAE client capabilities (cp1). Retry={retry}");
-                            }
-                            else
-                            {
-                                DefaultTrace.TraceInformation(
-                                    $"Requesting AAD token for revocation with claims challenge and client capabilities (cp1). Retry={retry}");
+                                // Snapshot the volatile cachedClaimsChallenge into a local so the merged claims
+                                // and the branch below are computed from the same value, even if ResetCachedToken
+                                // races on the request-processing thread between the two reads.
+                                string? challenge = this.cachedClaimsChallenge;
+                                string? mergedClaims = TokenCredentialCache.MergeClaimsWithClientCapabilities(challenge);
+                                if (string.IsNullOrEmpty(challenge))
+                                {
+                                    DefaultTrace.TraceInformation(
+                                        $"Requesting AAD token with CAE client capabilities (cp1). Retry={retry}");
+                                }
+                                else
+                                {
+                                    DefaultTrace.TraceInformation(
+                                        $"Requesting AAD token for revocation with claims challenge and client capabilities (cp1). Retry={retry}");
+                                }
 
                                 tokenRequestContext = new TokenRequestContext(
                                     scopes: tokenRequestContext.Scopes,

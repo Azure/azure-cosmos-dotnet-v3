@@ -551,7 +551,8 @@ namespace Microsoft.Azure.Cosmos
                 return this.ShouldRetryOnUnavailableEndpointStatusCodes();
             }
 
-            if (statusCode == HttpStatusCode.Unauthorized
+            if (ConfigurationManager.IsAadTokenRevocationEnabled()
+                && statusCode == HttpStatusCode.Unauthorized
                 && (subStatusCode == SubStatusCodes.AadTokenRevoked
                     || !string.IsNullOrEmpty(wwwAuthenticateHeaderValue)))
             {
