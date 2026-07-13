@@ -69,7 +69,7 @@
     <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.csproj" />
   </ItemGroup>  
 
-  <ItemGroup Condition="$(OS) != 'Linux' AND '$(ProjectRef)' != 'True' ">
+  <ItemGroup Condition="$(OS) == 'Windows_NT' AND '$(ProjectRef)' != 'True' ">
     <None Include="$(NugetPackageRoot)\Microsoft.HybridRow\$(HybridRowVersion)\microsoft.hybridrow.nuspec">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
