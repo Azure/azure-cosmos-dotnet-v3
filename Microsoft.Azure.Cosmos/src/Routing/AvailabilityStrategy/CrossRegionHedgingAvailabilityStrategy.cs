@@ -70,6 +70,11 @@ namespace Microsoft.Azure.Cosmos
         public bool IsSDKDefaultStrategyForPPAF { get; private set; }
 
         private readonly string HedgeConfigText;
+
+        // True when PPAF (Per-Partition Automatic Failover) write hedging is active for this execution:
+        // the account has PPAF enabled AND the AZURE_COSMOS_PPAF_WRITE_HEDGING_ENABLED env var is not set
+        // to false. Gates the single-master write-hedge path (read-region hedge targets + PPAF cache
+        // updates); read hedging is unaffected. Set per-execution in ExecuteAvailabilityStrategyAsync.
         private bool ppafEnabled = false;
 
         /// <summary>
@@ -159,7 +164,8 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage request,
             CancellationToken applicationProvidedCancellationToken)
         {
-            this.ppafEnabled = client.DocumentClient.ConnectionPolicy.EnablePartitionLevelFailover;
+            this.ppafEnabled = client.DocumentClient.ConnectionPolicy.EnablePartitionLevelFailover
+                && ConfigurationManager.IsPpafWriteHedgingEnabled();
             if (!this.ShouldHedge(request, client)
                 || client.DocumentClient.GlobalEndpointManager.ReadEndpoints.Count == 1)
             {

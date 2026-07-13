@@ -847,6 +847,42 @@
         }
 
         [TestMethod]
+        public async Task ExecuteAvailabilityStrategyAsync_PpafWriteHedgingDisabledViaEnvVar_DoesNotEnablePpaf()
+        {
+            try
+            {
+                // Operators can disable PPAF write hedging without turning off PPAF or read hedging.
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_PPAF_WRITE_HEDGING_ENABLED", "false");
+
+                CrossRegionHedgingAvailabilityStrategy strategy = new CrossRegionHedgingAvailabilityStrategy(
+                    threshold: TimeSpan.FromMilliseconds(100),
+                    thresholdStep: TimeSpan.FromMilliseconds(50));
+
+                using CosmosClient mockCosmosClient = CreateMockMultiWriteClient(
+                    regionCount: 2,
+                    enablePartitionLevelFailover: true);
+
+                using RequestMessage request = CreateReadRequest();
+
+                Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender =
+                    (req, ct) => Task.FromResult(new ResponseMessage(HttpStatusCode.OK));
+
+                await strategy.ExecuteAvailabilityStrategyAsync(
+                    sender, mockCosmosClient, request, CancellationToken.None);
+
+                bool ppafEnabled = (bool)typeof(CrossRegionHedgingAvailabilityStrategy)
+                    .GetField("ppafEnabled", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                    .GetValue(strategy);
+
+                Assert.IsFalse(ppafEnabled, "ppafEnabled should be false when AZURE_COSMOS_PPAF_WRITE_HEDGING_ENABLED is set to false, even when PPAF is enabled.");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_PPAF_WRITE_HEDGING_ENABLED", null);
+            }
+        }
+
+        [TestMethod]
         public async Task ConcurrentExecuteAvailabilityStrategy_PpafEnabledField_NoCorruption()
         {
             CrossRegionHedgingAvailabilityStrategy strategy = new CrossRegionHedgingAvailabilityStrategy(
