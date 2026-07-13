@@ -608,23 +608,32 @@ namespace Microsoft.Azure.Cosmos.Tests
         [DataRow("", false, DisplayName = "Empty header")]
         public void TryHandleTokenRevocation_VariousHeaders(string wwwAuthenticateValue, bool expectedResult)
         {
-            // Arrange
-            Mock<TokenCredential> mockTokenCredential = new Mock<TokenCredential>();
-            mockTokenCredential
-                .Setup(x => x.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new AccessToken("test-token", DateTimeOffset.MaxValue));
+            Environment.SetEnvironmentVariable(ConfigurationManager.AadTokenRevocationEnabled, "True");
 
-            using AuthorizationTokenProviderTokenCredential tokenProvider = new AuthorizationTokenProviderTokenCredential(
-                mockTokenCredential.Object,
-                CosmosAuthorizationTests.AccountEndpoint,
-                backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(5),
-                tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
+            try
+            {
+                // Arrange
+                Mock<TokenCredential> mockTokenCredential = new Mock<TokenCredential>();
+                mockTokenCredential
+                    .Setup(x => x.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new AccessToken("test-token", DateTimeOffset.MaxValue));
 
-            // Act
-            bool result = tokenProvider.TryHandleTokenRevocation(HttpStatusCode.Unauthorized, wwwAuthenticateValue);
+                using AuthorizationTokenProviderTokenCredential tokenProvider = new AuthorizationTokenProviderTokenCredential(
+                    mockTokenCredential.Object,
+                    CosmosAuthorizationTests.AccountEndpoint,
+                    backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(5),
+                    tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
 
-            // Assert
-            Assert.AreEqual(expectedResult, result);
+                // Act
+                bool result = tokenProvider.TryHandleTokenRevocation(HttpStatusCode.Unauthorized, wwwAuthenticateValue);
+
+                // Assert
+                Assert.AreEqual(expectedResult, result);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.AadTokenRevocationEnabled, "False");
+            }
         }
 
         [TestMethod]
@@ -633,31 +642,40 @@ namespace Microsoft.Azure.Cosmos.Tests
         [DataRow(HttpStatusCode.NotFound)]
         public void TryHandleTokenRevocation_NonUnauthorizedStatus_ReturnsFalse(HttpStatusCode statusCode)
         {
-            // Arrange
-            Mock<TokenCredential> mockTokenCredential = new Mock<TokenCredential>();
-            mockTokenCredential
-                .Setup(x => x.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new AccessToken("test-token", DateTimeOffset.MaxValue));
+            Environment.SetEnvironmentVariable(ConfigurationManager.AadTokenRevocationEnabled, "True");
 
-            using AuthorizationTokenProviderTokenCredential tokenProvider = new AuthorizationTokenProviderTokenCredential(
-                mockTokenCredential.Object,
-                CosmosAuthorizationTests.AccountEndpoint,
-                backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(5),
-                tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
+            try
+            {
+                // Arrange
+                Mock<TokenCredential> mockTokenCredential = new Mock<TokenCredential>();
+                mockTokenCredential
+                    .Setup(x => x.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new AccessToken("test-token", DateTimeOffset.MaxValue));
 
-            string wwwAuthenticateValue = "Bearer error=\"insufficient_claims\", claims=\"eyJhY2Nlc3NfdG9rZW4iOnt9fQ==\"";
+                using AuthorizationTokenProviderTokenCredential tokenProvider = new AuthorizationTokenProviderTokenCredential(
+                    mockTokenCredential.Object,
+                    CosmosAuthorizationTests.AccountEndpoint,
+                    backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(5),
+                    tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
 
-            // Act
-            bool result = tokenProvider.TryHandleTokenRevocation(statusCode, wwwAuthenticateValue);
-            // Assert
-            Assert.IsFalse(result);
+                string wwwAuthenticateValue = "Bearer error=\"insufficient_claims\", claims=\"eyJhY2Nlc3NfdG9rZW4iOnt9fQ==\"";
+
+                // Act
+                bool result = tokenProvider.TryHandleTokenRevocation(statusCode, wwwAuthenticateValue);
+                // Assert
+                Assert.IsFalse(result);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.AadTokenRevocationEnabled, "False");
+            }
         }
 
         [TestMethod]
-        [DataRow(null, "{\"access_token\":{\"xms_cc\":{\"values\":[\"cp1\"]}}}", DisplayName = "Null claims")]
-        [DataRow("", "{\"access_token\":{\"xms_cc\":{\"values\":[\"cp1\"]}}}", DisplayName = "Empty claims")]
-        [DataRow("not-valid-base64!!!", "{\"access_token\":{\"xms_cc\":{\"values\":[\"cp1\"]}}}", DisplayName = "Invalid base64")]
-        public void MergeClaimsWithClientCapabilities_InvalidInput_ReturnsOnlyCp1(string claimsChallenge, string expected)
+        [DataRow(null, null, DisplayName = "Null claims → no claims field so credential cache is honored")]
+        [DataRow("", null, DisplayName = "Empty claims → no claims field so credential cache is honored")]
+        [DataRow("not-valid-base64!!!", "{\"access_token\":{\"xms_cc\":{\"values\":[\"cp1\"]}}}", DisplayName = "Invalid base64 falls back to cp1")]
+        public void MergeClaimsWithClientCapabilities_InvalidInput_ReturnsExpectedFallback(string claimsChallenge, string expected)
         {
             // Act
             string result = TokenCredentialCache.MergeClaimsWithClientCapabilities(claimsChallenge);

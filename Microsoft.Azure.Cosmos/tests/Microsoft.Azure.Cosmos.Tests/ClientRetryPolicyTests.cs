@@ -1423,53 +1423,62 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         [TestMethod]
         public async Task ClientRetryPolicy_TokenRevocationWithClaims_ShouldRetryOnceWithTokenCredential()
         {
-            const bool enableEndpointDiscovery = true;
-            using GlobalEndpointManager endpointManager = this.Initialize(
-                useMultipleWriteLocations: false,
-                enableEndpointDiscovery: enableEndpointDiscovery,
-                isPreferredLocationsListEmpty: false);
+            Environment.SetEnvironmentVariable(ConfigurationManager.AadTokenRevocationEnabled, "True");
 
-            Mock<TokenCredential> mockTokenCredential = new Mock<TokenCredential>();
-            mockTokenCredential
-                .Setup(x => x.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new AccessToken("test-token", DateTimeOffset.UtcNow.AddHours(1)));
+            try
+            {
+                const bool enableEndpointDiscovery = true;
+                using GlobalEndpointManager endpointManager = this.Initialize(
+                    useMultipleWriteLocations: false,
+                    enableEndpointDiscovery: enableEndpointDiscovery,
+                    isPreferredLocationsListEmpty: false);
 
-            using AuthorizationTokenProviderTokenCredential tokenProvider = new AuthorizationTokenProviderTokenCredential(
-                mockTokenCredential.Object,
-                new Uri("https://test-account.documents.azure.com"),
-                backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(5),
-                tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
+                Mock<TokenCredential> mockTokenCredential = new Mock<TokenCredential>();
+                mockTokenCredential
+                    .Setup(x => x.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new AccessToken("test-token", DateTimeOffset.UtcNow.AddHours(1)));
 
-            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
-                endpointManager,
-                this.partitionKeyRangeLocationCache,
-                new RetryOptions(),
-                enableEndpointDiscovery,
-                isThinClientEnabled: false,
-                authorizationTokenProvider: tokenProvider);
+                using AuthorizationTokenProviderTokenCredential tokenProvider = new AuthorizationTokenProviderTokenCredential(
+                    mockTokenCredential.Object,
+                    new Uri("https://test-account.documents.azure.com"),
+                    backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(5),
+                    tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
 
-            DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false);
-            retryPolicy.OnBeforeSendRequest(request);
+                ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                    endpointManager,
+                    this.partitionKeyRangeLocationCache,
+                    new RetryOptions(),
+                    enableEndpointDiscovery,
+                    isThinClientEnabled: false,
+                    authorizationTokenProvider: tokenProvider);
 
-            StoreResponseNameValueCollection responseHeaders = new StoreResponseNameValueCollection();
-            responseHeaders.Set(
-                HttpConstants.HttpHeaders.WwwAuthenticate,
-                "Bearer error=\"insufficient_claims\", claims=\"eyJhY2Nlc3NfdG9rZW4iOnt9fQ==\"");
+                DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false);
+                retryPolicy.OnBeforeSendRequest(request);
 
-            DocumentClientException revocationException = new DocumentClientException(
-                message: "AAD token revocation",
-                innerException: null,
-                statusCode: HttpStatusCode.Unauthorized,
-                substatusCode: SubStatusCodes.AadTokenRevoked,
-                requestUri: request.RequestContext.LocationEndpointToRoute,
-                responseHeaders: responseHeaders);
+                StoreResponseNameValueCollection responseHeaders = new StoreResponseNameValueCollection();
+                responseHeaders.Set(
+                    HttpConstants.HttpHeaders.WwwAuthenticate,
+                    "Bearer error=\"insufficient_claims\", claims=\"eyJhY2Nlc3NfdG9rZW4iOnt9fQ==\"");
 
-            ShouldRetryResult firstResult = await retryPolicy.ShouldRetryAsync(revocationException, CancellationToken.None);
-            Assert.IsTrue(firstResult.ShouldRetry, "Token revocation with claims should retry on first attempt.");
-            Assert.AreEqual(TimeSpan.Zero, firstResult.BackoffTime, "Retry should be immediate for token revocation.");
+                DocumentClientException revocationException = new DocumentClientException(
+                    message: "AAD token revocation",
+                    innerException: null,
+                    statusCode: HttpStatusCode.Unauthorized,
+                    substatusCode: SubStatusCodes.AadTokenRevoked,
+                    requestUri: request.RequestContext.LocationEndpointToRoute,
+                    responseHeaders: responseHeaders);
 
-            ShouldRetryResult secondResult = await retryPolicy.ShouldRetryAsync(revocationException, CancellationToken.None);
-            Assert.IsFalse(secondResult.ShouldRetry, "Token revocation should not retry after the revocation retry budget is exhausted.");
+                ShouldRetryResult firstResult = await retryPolicy.ShouldRetryAsync(revocationException, CancellationToken.None);
+                Assert.IsTrue(firstResult.ShouldRetry, "Token revocation with claims should retry on first attempt.");
+                Assert.AreEqual(TimeSpan.Zero, firstResult.BackoffTime, "Retry should be immediate for token revocation.");
+
+                ShouldRetryResult secondResult = await retryPolicy.ShouldRetryAsync(revocationException, CancellationToken.None);
+                Assert.IsFalse(secondResult.ShouldRetry, "Token revocation should not retry after the revocation retry budget is exhausted.");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.AadTokenRevocationEnabled, "False");
+            }
         }
 
         [DataTestMethod]
