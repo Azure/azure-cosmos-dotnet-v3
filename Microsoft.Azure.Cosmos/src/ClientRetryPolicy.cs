@@ -181,7 +181,8 @@ namespace Microsoft.Azure.Cosmos
                     this.failoverRetryCount,
                     this.locationEndpoint?.ToString() ?? string.Empty);
 
-                if (this.partitionKeyRangeLocationCache.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
+                if (!this.ShouldSuppressPPAFCacheUpdate()
+                    && this.partitionKeyRangeLocationCache.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
                         this.documentServiceRequest))
                 {
                     // In the event of a (ppaf + write operation) or (ppcb + read or multi-master write operation) getting timed
@@ -467,8 +468,11 @@ namespace Microsoft.Azure.Cosmos
                 // for the partition. In either of the case, we mark the endpoint unavailable for the partition key range.
                 // If we exhaust all the region level mark down for the partition key range, then we will mark the endpoint
                 // unavailable for writes in that region.
-                if (this.TryMarkEndpointUnavailableForPkRange(
-                    shouldMarkEndpointUnavailableForPkRange: true))
+                // Hedged (non-primary) PPAF write requests suppress the mark-down so transient
+                // errors do not poison the PPAF cache and cascade additional hedges.
+                if (!this.ShouldSuppressPPAFCacheUpdate()
+                    && this.TryMarkEndpointUnavailableForPkRange(
+                        shouldMarkEndpointUnavailableForPkRange: true))
                 {
                     return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
                 }
@@ -815,6 +819,7 @@ namespace Microsoft.Azure.Cosmos
             bool shouldMarkEndpointUnavailableForPkRange)
         {
             if (this.documentServiceRequest != null
+                && !this.ShouldSuppressPPAFCacheUpdate()
                 && (shouldMarkEndpointUnavailableForPkRange
                 || this.IsRequestEligibleForPerPartitionAutomaticFailover()
                 || this.IsRequestEligibleForPartitionLevelCircuitBreaker()))
@@ -870,6 +875,22 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.partitionKeyRangeLocationCache.IsRequestEligibleForPartitionLevelCircuitBreaker(this.documentServiceRequest)
                         && this.partitionKeyRangeLocationCache.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(this.documentServiceRequest);
+        }
+
+        /// <summary>
+        /// Checks whether the current request is a PPAF write hedge request that should
+        /// suppress partition-level failover cache updates. Hedged (non-primary) write
+        /// requests set <see cref="CrossRegionHedgingAvailabilityStrategy.SuppressPPAFCacheUpdateKey"/>
+        /// on the request properties to prevent transient errors from poisoning the PPAF
+        /// cache and causing cascading hedge requests that amplify RU consumption.
+        /// </summary>
+        /// <returns>True if PPAF cache updates should be suppressed for this request.</returns>
+        private bool ShouldSuppressPPAFCacheUpdate()
+        {
+            return this.documentServiceRequest?.Properties != null
+                && this.documentServiceRequest.Properties.TryGetValue(
+                    CrossRegionHedgingAvailabilityStrategy.SuppressPPAFCacheUpdateKey, out object value)
+                && value is true;
         }
 
         // DTX retry classifier. The coordinator distinguishes envelope failures (no body) from semantic

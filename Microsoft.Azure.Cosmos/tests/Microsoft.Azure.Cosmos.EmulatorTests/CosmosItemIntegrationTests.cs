@@ -1,4 +1,4 @@
-namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
+﻿namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
@@ -1720,7 +1720,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(traceDiagnostic);
 
                 traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
+                traceDiagnostic.Value.Data.TryGetValue("Hedge Config", out object hedgeConfig);
 
+                Assert.IsNotNull(hedgeConfig);
                 // When PPAF is enabled, the primary request handles failover internally
                 // (retrying to another region at the transport layer). No cross-region
                 // hedging occurs, so HedgeContext should be absent.
@@ -2469,6 +2471,292 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestMethod]
+        [Owner("ntripician")]
+        [TestCategory("MultiRegion")]
+        [Timeout(70000)]
+        [DataRow(true, DisplayName = "Test scenario when PPAF is enabled at client level for write hedging.")]
+        [DataRow(false, DisplayName = "Test scenario when PPAF is disabled at client level for write hedging.")]
+        public async Task CreateItemAsync_WithPPAFEnabledAndSingleMasterAccountWithResponseDelay_ShouldHedgeWriteToMultipleRegions(
+            bool enablePartitionLevelFailover)
+        {
+            // Arrange.
+            // Enabling fault injection rule to simulate a response delay on CreateItem in region1.
+            string responseDelayRuleId = "create-delay-rule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule responseDelayRule = new FaultInjectionRuleBuilder(
+                id: responseDelayRuleId,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithOperationType(FaultInjectionOperationType.CreateItem)
+                        .WithRegion(region1)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                        .WithDelay(TimeSpan.FromMilliseconds(3000))
+                        .Build())
+                .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule> { responseDelayRule };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper()
+            {
+                ResponseIntercepter = async (response, request) =>
+                {
+                    string json = await response?.Content?.ReadAsStringAsync();
+                    if (json.Length > 0 && json.Contains("enablePerPartitionFailoverBehavior"))
+                    {
+                        JObject parsedDatabaseAccountResponse = JObject.Parse(json);
+                        parsedDatabaseAccountResponse.Property("enablePerPartitionFailoverBehavior").Value = enablePartitionLevelFailover.ToString();
+
+                        HttpResponseMessage interceptedResponse = new()
+                        {
+                            StatusCode = response.StatusCode,
+                            Content = new StringContent(parsedDatabaseAccountResponse.ToString()),
+                            Version = response.Version,
+                            ReasonPhrase = response.ReasonPhrase,
+                            RequestMessage = response.RequestMessage,
+                        };
+
+                        return interceptedResponse;
+                    }
+
+                    return response;
+                },
+            };
+
+            List<string> preferredRegions = new List<string> { region1, region2, region3 };
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                Serializer = this.cosmosSystemTextJsonSerializer,
+                ConsistencyLevel = ConsistencyLevel.Session,
+                FaultInjector = faultInjector,
+                RequestTimeout = TimeSpan.FromSeconds(5),
+                ApplicationPreferredRegions = preferredRegions,
+                HttpClientFactory = () => new HttpClient(httpClientHandlerHelper),
+            };
+
+            string uniqueId = "writeHedgeTest-" + Guid.NewGuid().ToString();
+            List<CosmosIntegrationTestObject> itemsList = new()
+            {
+                new() { Id = uniqueId, Pk = "writeHedgePk1" },
+            };
+
+            try
+            {
+                using CosmosClient cosmosClient = new(connectionString: this.connectionString, clientOptions: cosmosClientOptions);
+                Database database = cosmosClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                // Act.
+                ItemResponse<CosmosIntegrationTestObject> createResponse = await container.CreateItemAsync(
+                    item: itemsList[0],
+                    partitionKey: new PartitionKey(itemsList[0].Pk));
+
+                // Assert.
+                Assert.AreEqual(
+                    expected: HttpStatusCode.Created,
+                    actual: createResponse.StatusCode);
+
+                CosmosTraceDiagnostics traceDiagnostic = createResponse.Diagnostics as CosmosTraceDiagnostics;
+                Assert.IsNotNull(traceDiagnostic);
+
+                traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
+
+                if (enablePartitionLevelFailover)
+                {
+                    Assert.IsNotNull(hedgeContext, "Hedge Context should be present when PPAF is enabled and region1 has response delay.");
+                    List<string> hedgedRegions = ((IEnumerable<string>)hedgeContext).ToList();
+
+                    Assert.IsTrue(hedgedRegions.Count > 1, "Since the first region has a delay, the write request should hedge to additional regions.");
+                }
+                else
+                {
+                    Assert.IsNull(hedgeContext, "Hedge Context should not be present when PPAF is disabled for write requests.");
+                }
+            }
+            finally
+            {
+                await this.TryDeleteItems(itemsList);
+            }
+        }
+
+        [TestMethod]
+        [Owner("ntripician")]
+        [TestCategory("MultiRegion")]
+        [Timeout(70000)]
+        public async Task CreateItemAsync_WithPPAFEnabledAndNoDelay_ShouldNotHedgeWrite()
+        {
+            // Arrange - No fault injection (primary region is healthy)
+            HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper()
+            {
+                ResponseIntercepter = async (response, request) =>
+                {
+                    string json = await response?.Content?.ReadAsStringAsync();
+                    if (json.Length > 0 && json.Contains("enablePerPartitionFailoverBehavior"))
+                    {
+                        JObject parsedDatabaseAccountResponse = JObject.Parse(json);
+                        parsedDatabaseAccountResponse.Property("enablePerPartitionFailoverBehavior").Value = "True";
+
+                        HttpResponseMessage interceptedResponse = new()
+                        {
+                            StatusCode = response.StatusCode,
+                            Content = new StringContent(parsedDatabaseAccountResponse.ToString()),
+                            Version = response.Version,
+                            ReasonPhrase = response.ReasonPhrase,
+                            RequestMessage = response.RequestMessage,
+                        };
+
+                        return interceptedResponse;
+                    }
+
+                    return response;
+                },
+            };
+
+            List<string> preferredRegions = new List<string> { region1, region2, region3 };
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                Serializer = this.cosmosSystemTextJsonSerializer,
+                ConsistencyLevel = ConsistencyLevel.Session,
+                RequestTimeout = TimeSpan.FromSeconds(5),
+                ApplicationPreferredRegions = preferredRegions,
+                HttpClientFactory = () => new HttpClient(httpClientHandlerHelper),
+            };
+
+            string uniqueId = "writeNoHedgeTest-" + Guid.NewGuid().ToString();
+            List<CosmosIntegrationTestObject> itemsList = new()
+            {
+                new() { Id = uniqueId, Pk = "writeNoHedgePk1" },
+            };
+
+            try
+            {
+                using CosmosClient cosmosClient = new(connectionString: this.connectionString, clientOptions: cosmosClientOptions);
+                Database database = cosmosClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                // Act.
+                ItemResponse<CosmosIntegrationTestObject> createResponse = await container.CreateItemAsync(
+                    item: itemsList[0],
+                    partitionKey: new PartitionKey(itemsList[0].Pk));
+
+                // Assert.
+                Assert.AreEqual(
+                    expected: HttpStatusCode.Created,
+                    actual: createResponse.StatusCode);
+
+                CosmosTraceDiagnostics traceDiagnostic = createResponse.Diagnostics as CosmosTraceDiagnostics;
+                Assert.IsNotNull(traceDiagnostic);
+
+                traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
+                Assert.IsNull(hedgeContext, "No hedging should occur when the primary region responds before the threshold.");
+            }
+            finally
+            {
+                await this.TryDeleteItems(itemsList);
+            }
+        }
+
+        [TestMethod]
+        [Owner("ntripician")]
+        [TestCategory("MultiRegion")]
+        [Timeout(70000)]
+        public async Task CreateItemAsync_WithPPAFEnabledAndPrimaryUnavailable_ShouldHedgeAndSucceedInSecondary()
+        {
+            // Arrange - Inject response delay on CreateItem in region1 to simulate primary unavailability.
+            string responseDelayRuleId = "create-delay-rule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule responseDelayRule = new FaultInjectionRuleBuilder(
+                id: responseDelayRuleId,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithOperationType(FaultInjectionOperationType.CreateItem)
+                        .WithRegion(region1)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                        .WithDelay(TimeSpan.FromMilliseconds(3000))
+                        .Build())
+                .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule> { responseDelayRule };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper()
+            {
+                ResponseIntercepter = async (response, request) =>
+                {
+                    string json = await response?.Content?.ReadAsStringAsync();
+                    if (json.Length > 0 && json.Contains("enablePerPartitionFailoverBehavior"))
+                    {
+                        JObject parsedDatabaseAccountResponse = JObject.Parse(json);
+                        parsedDatabaseAccountResponse.Property("enablePerPartitionFailoverBehavior").Value = "True";
+
+                        HttpResponseMessage interceptedResponse = new()
+                        {
+                            StatusCode = response.StatusCode,
+                            Content = new StringContent(parsedDatabaseAccountResponse.ToString()),
+                            Version = response.Version,
+                            ReasonPhrase = response.ReasonPhrase,
+                            RequestMessage = response.RequestMessage,
+                        };
+
+                        return interceptedResponse;
+                    }
+
+                    return response;
+                },
+            };
+
+            List<string> preferredRegions = new List<string> { region1, region2, region3 };
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                Serializer = this.cosmosSystemTextJsonSerializer,
+                ConsistencyLevel = ConsistencyLevel.Session,
+                FaultInjector = faultInjector,
+                RequestTimeout = TimeSpan.FromSeconds(5),
+                ApplicationPreferredRegions = preferredRegions,
+                HttpClientFactory = () => new HttpClient(httpClientHandlerHelper),
+            };
+
+            string uniqueId = "writeHedge503Test-" + Guid.NewGuid().ToString();
+            List<CosmosIntegrationTestObject> itemsList = new()
+            {
+                new() { Id = uniqueId, Pk = "writeHedge503Pk1" },
+            };
+
+            try
+            {
+                using CosmosClient cosmosClient = new(connectionString: this.connectionString, clientOptions: cosmosClientOptions);
+                Database database = cosmosClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                // Act.
+                ItemResponse<CosmosIntegrationTestObject> createResponse = await container.CreateItemAsync(
+                    item: itemsList[0],
+                    partitionKey: new PartitionKey(itemsList[0].Pk));
+
+                // Assert.
+                Assert.AreEqual(
+                    expected: HttpStatusCode.Created,
+                    actual: createResponse.StatusCode,
+                    message: "Write should succeed via hedging to a secondary region when primary is unavailable.");
+
+                CosmosTraceDiagnostics traceDiagnostic = createResponse.Diagnostics as CosmosTraceDiagnostics;
+                Assert.IsNotNull(traceDiagnostic);
+
+                traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
+                Assert.IsNotNull(hedgeContext, "Hedge Context should be present since primary region is unavailable and PPAF is enabled.");
+
+                List<string> hedgedRegions = ((IEnumerable<string>)hedgeContext).ToList();
+                Assert.IsTrue(hedgedRegions.Count > 1, "The write request should hedge to at least one additional region when primary is unavailable.");
+            }
+            finally
+            {
+                await this.TryDeleteItems(itemsList);
+            }
+        }
+
         /// <summary>
         /// ============================================================================================
         /// Truth Table: ReadItemAsync_WithPPAFEnabledAccountShouldAddHubHeader_On4041002FromHub
@@ -2698,7 +2986,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     // In Direct mode, SessionTokenMismatchRetryPolicy retries at the transport layer
                     // upon receiving 404/1002 responses. Each retry goes through this interceptor,
                     // so we cannot rely on requestCount for state transitions. Instead, we use
-                    // the hub header presence as the state driver: after 2× 404/1002, ClientRetryPolicy
+                    // the hub header presence as the state driver: after 2├ù 404/1002, ClientRetryPolicy
                     // sets the hub header, signaling the interceptor to advance to the 403/3 phase.
                     bool returned403InDirect = false;
 
@@ -2715,7 +3003,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                                 if (hasHubHeader && !returned403InDirect)
                                 {
-                                    // Phase 2: Hub header is present → SDK completed 2× 404/1002 phase.
+                                    // Phase 2: Hub header is present ΓåÆ SDK completed 2├ù 404/1002 phase.
                                     // Return 403/3 (WriteForbidden) once to trigger hub region discovery.
                                     returned403InDirect = true;
 
@@ -2734,9 +3022,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 }
                                 else if (!hasHubHeader)
                                 {
-                                    // Phase 1: No hub header → return 404/1002 (ReadSessionNotAvailable).
+                                    // Phase 1: No hub header ΓåÆ return 404/1002 (ReadSessionNotAvailable).
                                     // This may fire multiple times due to SessionTokenMismatchRetryPolicy
-                                    // retries at the transport layer — that's expected.
+                                    // retries at the transport layer ΓÇö that's expected.
                                     return404Count++;
 
                                     storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.SubStatus, ((int)Documents.SubStatusCodes.ReadSessionNotAvailable).ToString());
@@ -2754,7 +3042,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 }
                                 else
                                 {
-                                    // Phase 3: Hub header present and 403/3 already returned → passthrough.
+                                    // Phase 3: Hub header present and 403/3 already returned ΓåÆ passthrough.
                                     // The real server response (200 OK) goes through to ClientRetryPolicy.
                                     hubHeaderOnFourthRequest = hasHubHeader;
                                 }
@@ -2813,7 +3101,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         [Owner("aavasthy")]
         [TestCategory("MultiRegion")]
-        [Description("Simulates full hub region discovery flow: 2x 404/1002 → hub header → 403/3 from non-hub → retry → success. " +
+        [Description("Simulates full hub region discovery flow: 2x 404/1002 ΓåÆ hub header ΓåÆ 403/3 from non-hub ΓåÆ retry ΓåÆ success. " +
                      "Verifies hub header persists through 403/3 retries and request eventually succeeds.")]
         public async Task ReadItemAsync_HubRegionDiscovery_FullFlow_With403_3_Retry()
         {
@@ -2915,7 +3203,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
             await container.CreateItemAsync(testItem, new Cosmos.PartitionKey(testItem.pk));
 
-            // Act: Read the item — triggers the full hub discovery flow
+            // Act: Read the item ΓÇö triggers the full hub discovery flow
             ItemResponse<ToDoActivity> response = await container.ReadItemAsync<ToDoActivity>(
                 testItem.id,
                 new Cosmos.PartitionKey(testItem.pk));
@@ -2956,10 +3244,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(ConnectionMode.Direct, false, DisplayName = "Direct mode with PPAF disabled: 404/1002 from hub with hub header returns NoRetry.")]
         [DataRow(ConnectionMode.Gateway, false, DisplayName = "Gateway mode with PPAF disabled: 404/1002 from hub with hub header returns NoRetry.")]
         [Description("Simulates hub returning 404/1002 even after hub header is active. " +
-                     "This proves the SDK treats the hub as source of truth — if the hub says " +
+                     "This proves the SDK treats the hub as source of truth ΓÇö if the hub says " +
                      "session not available, the document genuinely doesn't exist in this session " +
                      "and the SDK surfaces the exception to the user (NoRetry). " +
-                     "Flow: 404/1002 x2 (no hub header) → hub header set → 404/1002 (with hub header) → CosmosException to caller.")]
+                     "Flow: 404/1002 x2 (no hub header) ΓåÆ hub header set ΓåÆ 404/1002 (with hub header) ΓåÆ CosmosException to caller.")]
         public async Task ReadItemAsync_HubRegion4041002_WithHubHeader_ReturnsNoRetry(
             ConnectionMode connectionMode,
             bool enablePartitionLevelFailover)
@@ -3012,14 +3300,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         // Request 3+: Hub header should be present. Return 404/1002 again.
                         // Since addHubRegionProcessingOnlyHeader is true and hub returns 404/1002,
-                        // ShouldRetryOnSessionNotAvailable returns NoRetry — exception surfaces to user.
+                        // ShouldRetryOnSessionNotAvailable returns NoRetry ΓÇö exception surfaces to user.
                         hubHeaderSeenOnFinalRequest = hasHubHeader;
                         return404Count++;
 
                         HttpResponseMessage hubNotFoundResponse = new HttpResponseMessage(HttpStatusCode.NotFound)
                         {
                             Content = new StringContent(
-                                JsonConvert.SerializeObject(new { code = "NotFound", message = "Simulated 404/1002 from hub region — document genuinely not found" }),
+                                JsonConvert.SerializeObject(new { code = "NotFound", message = "Simulated 404/1002 from hub region ΓÇö document genuinely not found" }),
                                 Encoding.UTF8,
                                 "application/json")
                         };
@@ -3122,12 +3410,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Database database = cosmosClient.GetDatabase(MultiRegionSetupHelpers.dbName);
             Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
-            // Create a test item first (using the intercepted client — create goes through fine
+            // Create a test item first (using the intercepted client ΓÇö create goes through fine
             // because the interceptor only targets GET /docs/ requests)
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
             await container.CreateItemAsync(testItem, new PartitionKey(testItem.pk));
 
-            // Act: Read the item — this will get 404/1002 twice (hub header off),
+            // Act: Read the item ΓÇö this will get 404/1002 twice (hub header off),
             // then 404/1002 once more (hub header ON), and the SDK should NOT retry.
             // The SDK must throw CosmosException with status 404 and substatus 1002.
             CosmosException ex = await Assert.ThrowsExceptionAsync<CosmosException>(async () => await container.ReadItemAsync<ToDoActivity>(
@@ -3136,7 +3424,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Assert: The SDK surfaced the 404/1002 to the user (NoRetry from hub)
             Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode,
-                "Expected 404 (NotFound) since the hub region returned 404/1002 — document doesn't exist in this session.");
+                "Expected 404 (NotFound) since the hub region returned 404/1002 ΓÇö document doesn't exist in this session.");
             Assert.AreEqual((int)Documents.SubStatusCodes.ReadSessionNotAvailable, ex.SubStatusCode,
                 "Expected substatus 1002 (ReadSessionNotAvailable) from hub region.");
 
@@ -3149,7 +3437,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Verify the hub header was present on the final request (the one from the hub)
             Assert.IsTrue(hubHeaderSeenOnFinalRequest,
                 "Hub region header MUST be present on the 3rd request (sent to hub). " +
-                "This proves the SDK set the hub header after 2x 404/1002 and the hub returned 404/1002 — causing NoRetry.");
+                "This proves the SDK set the hub header after 2x 404/1002 and the hub returned 404/1002 ΓÇö causing NoRetry.");
 
             // Clean up the test item
             await container.DeleteItemAsync<ToDoActivity>(testItem.id, new PartitionKey(testItem.pk));
@@ -3166,7 +3454,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// but routed against whatever account is configured via <c>COSMOSDB_MULTI_REGION</c> (i.e. the same
         /// account used by <see cref="ReadItemAsync_WithPPAFEnabledAccountShouldAddHubHeader_On4041002FromHub"/>).
         /// Because the regions / hub identity of that account are NOT known at compile time, the simulation is
-        /// count-based (mirroring the existing single-read test) and the assertions are region-agnostic — they
+        /// count-based (mirroring the existing single-read test) and the assertions are region-agnostic ΓÇö they
         /// only inspect counts and hub-header presence, never specific region names.
         ///
         /// Simulation rules (same for both Direct and Gateway):
@@ -3452,7 +3740,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // latch fires in Request 1; if Request 2 also went through a region that produced a
                 // header-bearing wire and that wire reached the interceptor without the latch already
                 // flipped, the cache MISSED. Since the latch is global and was flipped in Request 1,
-                // Request 2's 403 sim count must be 0 — but additionally, the SDK should not even
+                // Request 2's 403 sim count must be 0 ΓÇö but additionally, the SDK should not even
                 // attempt the discovery chain because the cache routes straight to the hub.
                 Assert.AreEqual(0, read2Sim403Count,
                     $"Request 2 must NOT trigger the simulated 403/3 (one-shot latch already flipped in Request 1, "

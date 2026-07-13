@@ -305,6 +305,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 out TransportAddressUri primaryRegionprimaryReplicaUri);
 
             Mock<TransportClient> mockTransport = new Mock<TransportClient>(MockBehavior.Strict);
+            mockTransport.Setup(x => x.Dispose());
 
             MockSetupsHelper.SetupRequestTimeoutException(
                 mockTransport,
@@ -350,26 +351,22 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Pk = "TestPk"
             };
 
-            // First create will fail because it is not certain if the payload was sent or not.
-            try
-            {
-                await container.CreateItemAsync(toDoActivity, new Cosmos.PartitionKey(toDoActivity.Pk));
-                Assert.Fail("Should throw an exception");
-            }
-            catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.RequestTimeout)
-            {
-                Assert.IsNotNull(ce);
-            }
-
+            // With PPAF write hedging enabled, the first create may succeed via hedging
+            // to the secondary region even though the primary region times out.
+            // RequestTimeout on the primary triggers a hedged request to the secondary.
             ItemResponse<ToDoActivity> response = await container.CreateItemAsync(toDoActivity, new Cosmos.PartitionKey(toDoActivity.Pk));
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
-            mockTransport.VerifyAll();
-            mockHttpHandler.VerifyAll();
 
             // Clears all the setups. No network calls should be done on the next operation.
             mockHttpHandler.Reset();
             mockTransport.Reset();
             mockTransport.Setup(x => x.Dispose());
+
+            // With PPAF write hedging enabled, the hedging strategy may attempt to send 
+            // requests to both regions. Set up both the primary and secondary transport URIs.
+            MockSetupsHelper.SetupCreateItemResponse(
+                mockTransport,
+                primaryRegionprimaryReplicaUri);
 
             MockSetupsHelper.SetupCreateItemResponse(
                 mockTransport,
