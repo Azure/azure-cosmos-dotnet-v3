@@ -1,5 +1,19 @@
 # Cross Region Request Hedging
 
+The Cosmos SDK has two independent cross-region hedging systems. Both send a redundant copy of a slow request to another region and return the first acceptable answer while keeping the primary region authoritative, but they cover different request types and trigger on different signals:
+
+| | Data-plane hedging (`AvailabilityStrategy`) | Metadata hedging |
+| --- | --- | --- |
+| **Covers** | Document reads (and, opt-in, multi-region writes) | The two metadata cache reads: `Collection` `Read` and `PartitionKeyRange` `ReadFeed` (first page) |
+| **Configured by** | `CosmosClientOptions` / `RequestOptions` / `CosmosClientBuilder`, or the PPAF SDK default | SDK-managed; the `AZURE_COSMOS_METADATA_HEDGING_ENABLED` env var and the account PPAF state |
+| **Hedges to** | Each remaining preferred region, one at a time | Exactly one other region |
+| **Trigger** | The configured latency `threshold` | A fixed `1.5s` latency threshold, or a regional failure returned by the primary |
+| **Status codes** | [Data-plane status codes](#status-codes-what-the-sdk-accepts-vs-hedges) | [Metadata status codes](#status-codes-what-triggers-a-metadata-hedge) |
+
+Both systems require at least two available regions; with a single region endpoint the SDK skips hedging and sends the request normally.
+
+## Data-Plane Request Hedging
+
 The Cross Region Hedging Availability Strategy is a feature in the Cosmos SDK that enables the sending of redundant parallel requests to multiple regions during high latency periods. This feature can lower latency and improve availability in scenarios where a particular region is slow or temporarily unavailable, but it may incur more cost in terms of request units when parallel cross-region requests are required.
 
 When the cross region hedging strategy is enabled, the SDK will send the first request to the primary region. If there is no response from the backend before the threshold time, then the SDK will begin sending hedged requests to the regions in order of the preferred regions list. After the first hedged request is sent out, the hedged requests will continue to be fired off one by one after waiting for the time specified in the threshold step. Once a response is received from one of the requests, the availability strategy will check to see if the result is considered final. If the result is final, then it is returned. If not, the SDK will skip the remaining threshold/threshold step time and send out the next hedged request. If all hedged requests are sent out and no final response is received, the SDK will return the last response it received.
@@ -137,22 +151,65 @@ In the diagnostics data there are three areas of note that will appear when hedg
     }
 ```
 
-### Status Codes SDK Will Consider Final
+### Programmatic Hedging Detection
+
+In addition to the JSON fields above, `CosmosDiagnostics` exposes a typed API so callers can observe data-plane hedging on hot paths (logging, metrics, alerting) without parsing the diagnostics string:
+
+- `bool HedgingStarted()` — returns `true` if at least one hedged (cross-region) dispatch was made for the operation.
+- `IReadOnlyList<RequestedRegion> GetRequestedRegions()` — every region the SDK dispatched to, in dispatch order, each tagged with a `RequestedRegionReason` (`Initial`, `OperationRetry`, `RegionFailover`, `Hedging`, ...).
+- `IReadOnlyList<string> GetRespondedRegions()` — the regions that produced a response, in arrival order.
+
+```csharp
+ItemResponse<MyItem> response = await container.ReadItemAsync<MyItem>(id, partitionKey);
+CosmosDiagnostics diagnostics = response.Diagnostics;
+
+if (diagnostics.HedgingStarted())
+{
+    foreach (RequestedRegion region in diagnostics.GetRequestedRegions())
+    {
+        Console.WriteLine($"Dispatched to {region.RegionName} ({region.Reason})");
+    }
+}
+```
+
+### Status Codes: What the SDK Accepts vs Hedges
+
+Data-plane hedging is triggered by **latency**, not by a status code: the primary request is always sent first, and a hedged request to the next preferred region is only started once the `threshold` (then each `thresholdStep`) elapses without a *final* response.
+
+When a response does come back, the SDK inspects its status code to decide whether it is **final** (accepted and returned to the caller, cancelling any outstanding hedges) or **transient** (the SDK keeps hedging to the next region; if every region is exhausted, the last response received is returned).
+
+**Final status codes — accepted, hedging stops:**
 
 | Status Code | Description |
 | --- | --- |
-| 1xx | 1xx Status Codes are considered Final |
-| 2xx | 2xx Status Codes are considered Final |
-| 3XX | 3xx Status Codes are considered Final |
+| 1xx | Informational responses are final |
+| 2xx | Success responses are final |
+| 3xx | Redirect responses are final |
 | 400 | Bad Request |
 | 401 | Unauthorized |
-| 404/0 | Not Found, 404/0 responses are final results as the document was not yet available after enforcing the consistency model |
-| 409 | Conflict |
+| 404/0 | Not Found with sub-status `0`; final because the document was genuinely not present after enforcing the consistency model |
 | 405 | Method Not Allowed |
+| 409 | Conflict |
 | 412 | Precondition Failed |
 | 413 | Request Entity Too Large |
 
-All other status codes are treated as possible transient errors and will be retried with hedging.
+**Transient status codes — the SDK keeps hedging:**
+
+Every status code **not** in the table above is treated as a possibly-transient, region-scoped failure, so the SDK continues issuing hedged requests to the remaining preferred regions. Representative examples:
+
+| Status Code | Description |
+| --- | --- |
+| 403 | Forbidden (e.g. write-forbidden / region unavailable) |
+| 404 (sub-status ≠ 0) | Not Found with a non-zero sub-status (e.g. read-session-not-available / partition-not-served) |
+| 408 | Request Timeout |
+| 410 | Gone |
+| 429 | Too Many Requests (throttled) |
+| 449 | Retry With |
+| 500 | Internal Server Error |
+| 503 | Service Unavailable |
+| Network failure | Connection refused / DNS / TLS errors reaching a region |
+
+> **Note:** These are the codes that cause the SDK to *keep hedging* to other regions. If the last available region also returns a transient code, that response is still returned to the caller as the final result, where it flows into the normal `ClientRetryPolicy`.
 
 ### Example Flow For Cross Region Hedging With 3 Regions
 
@@ -200,7 +257,89 @@ This SDK-default hedging strategy is only applied when no client-level `Availabi
 
 The SDK resolves which `AvailabilityStrategy` to use in the following priority order:
 
-1. **Request-level** `RequestOptions.AvailabilityStrategy` (per-request override, highest priority)
-2. **Client-level** `CosmosClientOptions.AvailabilityStrategy` (applies to all requests)
-3. **SDK Default** (automatically applied when PPAF is enabled and no explicit strategy is configured)
-4. **None** (hedging disabled)
+1. **Gateway operator kill-switch** — if the account's Gateway-supplied `disableCrossRegionalHedging` flag is `true`, all hedging is turned off regardless of any other configuration (highest priority). See [Operator kill-switch](#operator-kill-switch).
+2. **Request-level** `RequestOptions.AvailabilityStrategy` (per-request override)
+3. **Client-level** `CosmosClientOptions.AvailabilityStrategy` (applies to all requests)
+4. **SDK Default** (automatically applied when PPAF is enabled and no explicit strategy is configured)
+5. **None** (hedging disabled)
+
+### Operator kill-switch
+
+`disableCrossRegionalHedging` is a Gateway account property that lets operators dynamically turn off cross-region hedging — both the PPAF SDK default and any customer-configured `AvailabilityStrategy` — without rolling PPAF back entirely. The SDK re-evaluates the flag on every account-properties refresh, so toggling it takes effect without a client restart: setting it to `true` suppresses hedging, and setting it back to `false` restores the customer-configured strategy (or rebuilds the SDK default). A client that has explicitly set `CosmosClientOptions.DisablePartitionLevelFailover` opts out of this Gateway-driven override entirely. The same flag also suppresses [metadata hedging](#metadata-hedging).
+
+## Metadata Hedging
+
+Metadata hedging is a separate, SDK-managed hedging path for the two **metadata cache reads** that sit on the critical path of nearly every operation. When the primary region is slow (or regionally unhealthy) on one of these reads, a single hedged read is sent to another region so a single slow region cannot stall cache population (cold start) or cache refresh.
+
+Unlike the data-plane `AvailabilityStrategy`, metadata hedging is not configured through `CosmosClientOptions` or `RequestOptions`; it is turned on and off by the SDK based on the environment variable and account state described under [Enablement](#enablement). It is a latency optimization only — it races, it never adds retry attempts, and it never turns a real error into a success. A deep design write-up (algorithm, invariants, testing) lives in [`metadata-hedging-simple-design.md`](./metadata-hedging-simple-design.md).
+
+### Scope
+
+Hedging applies to exactly two metadata reads; everything else takes the normal single-region path unchanged:
+
+| Cache | Operation | Notes |
+| --- | --- | --- |
+| `ClientCollectionCache` | `Collection` `Read` | Cold-start and refresh |
+| `PartitionKeyRangeCache` | `PartitionKeyRange` `ReadFeed` | First page only; later pages are pinned to the winning region only when the hedge actually won |
+
+### Enablement
+
+Metadata hedging is resolved once at client construction and honored per request. The `AZURE_COSMOS_METADATA_HEDGING_ENABLED` environment variable is the master switch:
+
+| Package | env var unset | `AZURE_COSMOS_METADATA_HEDGING_ENABLED=true` | `=false` |
+| --- | --- | --- | --- |
+| **Preview** | On | On | Off |
+| **GA** | Follows the account's PPAF state | On | Off |
+
+Setting the variable to `false` is a hard kill-switch — the strategy is never even constructed. The Gateway `disableCrossRegionalHedging` [operator kill-switch](#operator-kill-switch) also suppresses metadata hedging when set. At least two read regions must be available (after `ExcludeRegions`) for a hedge to be possible.
+
+### Threshold
+
+The threshold is a single fixed value derived at startup as `firstAttemptTimeout + 500ms` (today `~1s + 500ms = 1.5s`) and is **not customer-configurable**. It is intentionally kept strictly between the first (`~1s`) and second (`~5s`) control-plane HTTP attempt timeouts, so the SDK only hedges after the first local attempt has had its chance but before the long second-attempt timeout.
+
+### Primary stays authoritative
+
+The guiding invariant is: **the primary region is authoritative; the hedge can only *win* by being fast and returning a clean success, and it can never change the outcome the primary would have produced.** A hedge is only dispatched when the primary is slow past the threshold *or* the primary returns a regional failure. A definitive answer from the primary (a success, or a non-regional error such as 404 / 409 / 412) is always returned as-is, and a hedge can never override it. If neither branch is good, the primary's outcome (including its exception) is returned so the caller's retry policy sees exactly what it would have without hedging.
+
+### Status Codes: What Triggers a Metadata Hedge
+
+For metadata hedging the status code decides whether an outcome is a **regional failure** (the region — not the request — is at fault, so hedging to another region is worthwhile and a good hedge may win) or **definitive** (an authoritative answer the primary owns; the hedge cannot override it).
+
+**Regional-failure outcomes — hedged, and a clean hedge may win:**
+
+| Status Code | Sub-status | Meaning |
+| --- | --- | --- |
+| 503 | any | Service Unavailable (control-plane timeouts also surface as 503) |
+| 500 | any | Internal Server Error |
+| 410 | `LeaseNotFound` | Gone — partition moved |
+| 403 | `DatabaseAccountNotFound` | Region unavailable for this account |
+| Network failure | — | Bare connection failure reaching the region's gateway (connection refused / DNS / TLS) |
+
+This is the same status / sub-status set used by the metadata retry policy (`MetadataRequestThrottleRetryPolicy`), so hedging and the retry policy agree on what "the region is at fault" means.
+
+**Definitive outcomes — the primary wins, the hedge cannot override:**
+
+| Status Code | Meaning |
+| --- | --- |
+| < 400 | Success |
+| 404 | Not Found |
+| 409 | Conflict |
+| 412 | Precondition Failed |
+| 401 / plain 403 | Auth failure — a misconfigured secondary can never surface a spurious error as the operation result |
+| (caller cancellation) | Surfaces as `OperationCanceledException`; no hedge is spawned |
+
+A hedge that returns one of these definitive outcomes (including an auth reject) is treated as a *losing* hedge and discarded; the primary's authoritative answer is returned instead.
+
+### Diagnostics
+
+When a hedge fires, the metadata read's trace carries a single datum keyed `Metadata Hedge`:
+
+```
+HedgeFired={true|false}; HedgeWon={true|false}; WinningRegion={region}
+```
+
+- `HedgeFired` — a hedge request was dispatched (the threshold elapsed, or the primary hit a regional failure).
+- `HedgeWon` — the hedge's response is the one returned (its region differs from the primary). This is also the signal that pins later `PartitionKeyRange` pages to the winning region.
+- `WinningRegion` — the region that produced the returned answer.
+
+The datum is emitted only when a hedge actually fired, so the common no-hedge path leaves the trace unchanged.
