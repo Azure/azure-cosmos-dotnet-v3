@@ -339,20 +339,12 @@ namespace Microsoft.Azure.Cosmos
             else
             {
                 this.sessionContainer.SetSessionToken(request, responseHeaders);
-                PartitionKeyRange detectedPartitionKeyRange = request.RequestContext.ResolvedPartitionKeyRange;
-                string partitionKeyRangeInResponse = responseHeaders[HttpConstants.HttpHeaders.PartitionKeyRangeId];
-                if (detectedPartitionKeyRange != null
-                    && !string.IsNullOrEmpty(partitionKeyRangeInResponse)
-                    && !string.IsNullOrEmpty(request.RequestContext.ResolvedCollectionRid)
-                    && !partitionKeyRangeInResponse.Equals(detectedPartitionKeyRange.Id, StringComparison.OrdinalIgnoreCase))
-                {
-                    // The request ended up being on a different partition unknown to the client, so we better refresh the caches
-                    await this.partitionKeyRangeCache.TryGetPartitionKeyRangeByIdAsync(
-                        request.RequestContext.ResolvedCollectionRid,
-                        partitionKeyRangeInResponse,
-                        NoOpTrace.Singleton,
-                        forceRefresh: true);
-                }
+                await PartitionKeyRangeCache.RefreshRoutingCacheIfPartitionMovedAsync(
+                    this.partitionKeyRangeCache,
+                    request.RequestContext.ResolvedCollectionRid,
+                    request.RequestContext.ResolvedPartitionKeyRange?.Id,
+                    responseHeaders[HttpConstants.HttpHeaders.PartitionKeyRangeId],
+                    NoOpTrace.Singleton);
             }
         }
 

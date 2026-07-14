@@ -364,5 +364,144 @@ namespace Microsoft.Azure.Cosmos.Tests
                     $"Cold-start routing map should bake {expectedMaxComparerTypeName} when PartitionKeyRangeCache.useLengthAwareRangeComparer={useLengthAwareRangeComparer}.");
             }
         }
+
+        /// <summary>
+        /// Server served a different range than the client resolved => the partition moved, so the routing
+        /// cache is force-refreshed for the served range exactly once.
+        /// </summary>
+        [TestMethod]
+        public async Task RefreshRoutingCacheIfPartitionMoved_ServerServedDifferentRange_ForceRefreshesOnce()
+        {
+            Mock<PartitionKeyRangeCache> cache = CreateRefreshableCacheMock();
+
+            await PartitionKeyRangeCache.RefreshRoutingCacheIfPartitionMovedAsync(
+                cache.Object,
+                collectionResourceId: "dbs/db/colls/coll",
+                clientResolvedPartitionKeyRangeId: "0",
+                serverServedPartitionKeyRangeId: "5",
+                trace: NoOpTrace.Singleton);
+
+            cache.Verify(
+                c => c.TryGetPartitionKeyRangeByIdAsync("dbs/db/colls/coll", "5", It.IsAny<ITrace>(), true),
+                Times.Once);
+        }
+
+        /// <summary>
+        /// Client and server ranges match (including case-insensitively) => the partition did not move, so no
+        /// refresh is issued.
+        /// </summary>
+        [TestMethod]
+        public async Task RefreshRoutingCacheIfPartitionMoved_SameRange_IsNoOp()
+        {
+            Mock<PartitionKeyRangeCache> cache = CreateRefreshableCacheMock();
+
+            await PartitionKeyRangeCache.RefreshRoutingCacheIfPartitionMovedAsync(cache.Object, "coll", "A", "A", NoOpTrace.Singleton);
+            await PartitionKeyRangeCache.RefreshRoutingCacheIfPartitionMovedAsync(cache.Object, "coll", "A", "a", NoOpTrace.Singleton);
+
+            cache.Verify(
+                c => c.TryGetPartitionKeyRangeByIdAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<ITrace>(), It.IsAny<bool>()),
+                Times.Never);
+        }
+
+        /// <summary>
+        /// A null cache, an empty collection id, an empty client range id, or a whitespace-only server range id
+        /// are all treated as absent inputs => no refresh and, importantly, no null-reference exception.
+        /// </summary>
+        [TestMethod]
+        public async Task RefreshRoutingCacheIfPartitionMoved_MissingInputs_IsNoOp()
+        {
+            Mock<PartitionKeyRangeCache> cache = CreateRefreshableCacheMock();
+
+            await PartitionKeyRangeCache.RefreshRoutingCacheIfPartitionMovedAsync(null, "coll", "0", "5", NoOpTrace.Singleton);
+            await PartitionKeyRangeCache.RefreshRoutingCacheIfPartitionMovedAsync(cache.Object, string.Empty, "0", "5", NoOpTrace.Singleton);
+            await PartitionKeyRangeCache.RefreshRoutingCacheIfPartitionMovedAsync(cache.Object, "coll", string.Empty, "5", NoOpTrace.Singleton);
+            await PartitionKeyRangeCache.RefreshRoutingCacheIfPartitionMovedAsync(cache.Object, "coll", "0", "   ", NoOpTrace.Singleton);
+
+            cache.Verify(
+                c => c.TryGetPartitionKeyRangeByIdAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<ITrace>(), It.IsAny<bool>()),
+                Times.Never);
+        }
+
+        /// <summary>
+        /// The optional dedupe set collapses repeated moves to the same (collection, range) into a single refresh
+        /// within one pass, while a distinct served range still refreshes.
+        /// </summary>
+        [TestMethod]
+        public async Task RefreshRoutingCacheIfPartitionMoved_DedupeSet_CollapsesRepeatedMovesToSameRange()
+        {
+            Mock<PartitionKeyRangeCache> cache = CreateRefreshableCacheMock();
+            HashSet<string> refreshedRanges = new HashSet<string>(StringComparer.Ordinal);
+
+            await PartitionKeyRangeCache.RefreshRoutingCacheIfPartitionMovedAsync(cache.Object, "coll", "0", "5", NoOpTrace.Singleton, refreshedRanges);
+            await PartitionKeyRangeCache.RefreshRoutingCacheIfPartitionMovedAsync(cache.Object, "coll", "1", "5", NoOpTrace.Singleton, refreshedRanges);
+            await PartitionKeyRangeCache.RefreshRoutingCacheIfPartitionMovedAsync(cache.Object, "coll", "2", "6", NoOpTrace.Singleton, refreshedRanges);
+
+            cache.Verify(c => c.TryGetPartitionKeyRangeByIdAsync("coll", "5", It.IsAny<ITrace>(), true), Times.Once);
+            cache.Verify(c => c.TryGetPartitionKeyRangeByIdAsync("coll", "6", It.IsAny<ITrace>(), true), Times.Once);
+        }
+
+        /// <summary>
+        /// The dedupe key is scoped per collection: the same served range id in two different collections must
+        /// each refresh, so the set must not suppress the second.
+        /// </summary>
+        [TestMethod]
+        public async Task RefreshRoutingCacheIfPartitionMoved_DedupeSet_DoesNotSuppressDistinctCollectionsSameRangeId()
+        {
+            Mock<PartitionKeyRangeCache> cache = CreateRefreshableCacheMock();
+            HashSet<string> refreshedRanges = new HashSet<string>(StringComparer.Ordinal);
+
+            await PartitionKeyRangeCache.RefreshRoutingCacheIfPartitionMovedAsync(cache.Object, "collA", "0", "5", NoOpTrace.Singleton, refreshedRanges);
+            await PartitionKeyRangeCache.RefreshRoutingCacheIfPartitionMovedAsync(cache.Object, "collB", "0", "5", NoOpTrace.Singleton, refreshedRanges);
+
+            cache.Verify(c => c.TryGetPartitionKeyRangeByIdAsync("collA", "5", It.IsAny<ITrace>(), true), Times.Once);
+            cache.Verify(c => c.TryGetPartitionKeyRangeByIdAsync("collB", "5", It.IsAny<ITrace>(), true), Times.Once);
+        }
+
+        /// <summary>
+        /// A refresh failure faults the returned task rather than being swallowed: the primitive returns the
+        /// un-awaited refresh task, which is the contract the point-op path relies on to retry an idempotent read.
+        /// </summary>
+        [TestMethod]
+        public async Task RefreshRoutingCacheIfPartitionMoved_RefreshFailure_FaultsReturnedTask()
+        {
+            Mock<PartitionKeyRangeCache> cache = new Mock<PartitionKeyRangeCache>(null, null, null, null, false, false, null);
+            cache
+                .Setup(c => c.TryGetPartitionKeyRangeByIdAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<ITrace>(), It.IsAny<bool>()))
+                .ThrowsAsync(new InvalidOperationException("refresh boom"));
+
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => PartitionKeyRangeCache.RefreshRoutingCacheIfPartitionMovedAsync(
+                    cache.Object, "coll", "0", "5", NoOpTrace.Singleton));
+
+            cache.Verify(
+                c => c.TryGetPartitionKeyRangeByIdAsync("coll", "5", It.IsAny<ITrace>(), true),
+                Times.Once);
+        }
+
+        /// <summary>
+        /// With no dedupe set (the production point-op path passes none), two moves to the same range each
+        /// force-refresh — nothing collapses them.
+        /// </summary>
+        [TestMethod]
+        public async Task RefreshRoutingCacheIfPartitionMoved_NullDedupeSet_RepeatedSameRangeMovesRefreshEachTime()
+        {
+            Mock<PartitionKeyRangeCache> cache = CreateRefreshableCacheMock();
+
+            await PartitionKeyRangeCache.RefreshRoutingCacheIfPartitionMovedAsync(cache.Object, "coll", "0", "5", NoOpTrace.Singleton);
+            await PartitionKeyRangeCache.RefreshRoutingCacheIfPartitionMovedAsync(cache.Object, "coll", "1", "5", NoOpTrace.Singleton);
+
+            cache.Verify(
+                c => c.TryGetPartitionKeyRangeByIdAsync("coll", "5", It.IsAny<ITrace>(), true),
+                Times.Exactly(2));
+        }
+
+        private static Mock<PartitionKeyRangeCache> CreateRefreshableCacheMock()
+        {
+            Mock<PartitionKeyRangeCache> cache = new Mock<PartitionKeyRangeCache>(null, null, null, null, false, false, null);
+            cache
+                .Setup(c => c.TryGetPartitionKeyRangeByIdAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<ITrace>(), It.IsAny<bool>()))
+                .ReturnsAsync((PartitionKeyRange)null);
+            return cache;
+        }
     }
 }
