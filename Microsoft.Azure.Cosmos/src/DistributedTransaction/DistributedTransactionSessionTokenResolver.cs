@@ -67,9 +67,8 @@ namespace Microsoft.Azure.Cosmos
                 return null;
             }
 
-            // Best-effort: if the routing cache can't be obtained, disable auto-resolution for this commit.
-            // A resolver with no cache could resolve no partition, so it would apply no token to any operation
-            // anyway — returning null is the equivalent, simpler outcome (Utils then skips token application).
+            // Best-effort: no cache means no partition resolves (no token applied anyway), so disable
+            // auto-resolution for this commit and let Utils skip token application.
             Routing.PartitionKeyRangeCache partitionKeyRangeCache;
             try
             {
@@ -89,9 +88,11 @@ namespace Microsoft.Azure.Cosmos
                 return null;
             }
 
-            // Capture the account's multi-master capability once. Point operations skip the session token on
-            // a single-master write (GatewayStoreModel gate); DTX mirrors that. All DTX sub-ops are Document
-            // ops, so this account-level flag matches the point-op per-request result for every sub-op.
+            // Capture multi-master capability once (point ops skip the token on a single-master write; DTX
+            // mirrors that). A throwaway Document/Create request drives the request-based
+            // CanUseMultipleWriteLocations(request) gate — the exact point-op predicate. The account-level
+            // CanSupportMultipleWriteLocations accessor is avoided: its ">1 write region" clause breaks that
+            // parity and could gate off a token the point-op path would keep (weaker read-your-own-writes).
             bool canUseMultipleWriteLocations = false;
             try
             {
@@ -109,8 +110,8 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (Exception ex) when (!(ex is OperationCanceledException))
             {
-                // Best-effort: on failure assume single-master (the more conservative gate) — a missed token
-                // on a multi-master write only costs an extra server-side session check, never correctness.
+                // Best-effort: on failure assume single-master (the conservative gate) — a missed token on a
+                // multi-master write only costs an extra server-side session check, never correctness.
                 DefaultTrace.TraceWarning(
                     "DistributedTransaction could not determine multi-master capability; assuming single-master " +
                     "for the session-token write-gate. Exception: {0}",
@@ -167,8 +168,10 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Resolves and applies a per-partition session token, unless the caller already provided one
-        /// (never overridden). An operation whose partition can't be resolved gets no token.
+        /// Resolves the operation's partition range and applies a per-partition session token, unless the
+        /// caller already provided one (never overridden). The resolved range is recorded even for
+        /// user-supplied-token ops so the post-commit capture pass can detect a partition move for them,
+        /// matching the point-op path. An operation whose partition can't be resolved gets no token.
         /// </summary>
         private void TryApplyResolvedSessionToken(
             DistributedTransactionOperation operation,
@@ -176,11 +179,8 @@ namespace Microsoft.Azure.Cosmos
             ContainerProperties containerProperties,
             Routing.CollectionRoutingMap routingMap)
         {
-            if (!string.IsNullOrEmpty(operation.SessionToken))
-            {
-                return; // User explicitly provided a token — don't override.
-            }
-
+            // Resolve and record the range up front, regardless of token source, so the commit's capture
+            // pass can detect a partition move even for user-supplied-token ops — matching the point-op path.
             string resolvedToken = this.ResolvePartitionLocalToken(
                 collectionPath,
                 containerProperties,
@@ -188,13 +188,15 @@ namespace Microsoft.Azure.Cosmos
                 operation.PartitionKey,
                 out string resolvedPartitionKeyRangeId);
 
-            // Record the resolved range (even when the partition has no token yet) so the commit's
-            // capture pass can detect a split/partition move against the server-served range.
             operation.ResolvedPartitionKeyRangeId = resolvedPartitionKeyRangeId;
 
-            // Write-gate parity with point operations (GatewayStoreModel): a write on a single-master
-            // account is not assigned a session token. Reads and multi-master writes still get one. The
-            // resolved range above is still recorded so split detection covers gated writes too.
+            if (!string.IsNullOrEmpty(operation.SessionToken))
+            {
+                return; // User explicitly provided a token — don't override (range still recorded above).
+            }
+
+            // Write-gate parity with point ops (GatewayStoreModel): a single-master write gets no token;
+            // reads and multi-master writes still do. The range is already recorded above for split detection.
             if (!OperationTypeExtensions.IsReadOperation(operation.OperationType) && !this.canUseMultipleWriteLocations)
             {
                 return;
@@ -236,42 +238,31 @@ namespace Microsoft.Azure.Cosmos
             {
                 try
                 {
-                    PartitionKeyInternal partitionKeyInternal = partitionKey.InternalKey;
+                    // Delegate key-guard, effective-key and range lookup to the shared core so DTX and the
+                    // point-op path share one definition. collectionCacheUptoDate is moot here: KeyMismatch
+                    // and StaleMetadata both degrade to "no token".
+                    PartitionKeyRangeResolutionKind resolutionKind = AddressResolver.TryResolvePartitionKeyToRange(
+                        partitionKey.InternalKey,
+                        containerProperties,
+                        routingMap,
+                        collectionCacheUptoDate: true,
+                        out PartitionKeyRange range);
 
-                    // Parity with AddressResolver.TryResolveServerPartitionByPartitionKey: only a full key
-                    // (one component per defined path) or the empty key maps to exactly one range. A partial
-                    // key (e.g. a hierarchical-PK prefix) spans multiple ranges, so apply no token rather than
-                    // stamp an arbitrary partition's; real routing surfaces any key mismatch server-side.
-                    if (!partitionKeyInternal.Equals(PartitionKeyInternal.Empty)
-                        && partitionKeyInternal.Components.Count != containerProperties.PartitionKey.Paths.Count)
+                    if (resolutionKind == PartitionKeyRangeResolutionKind.Resolved)
                     {
-                        DefaultTrace.TraceWarning(
-                            "DistributedTransaction operation partition key has '{0}' components but collection '{1}' " +
-                            "defines '{2}' paths; applying no session token (best-effort, served at eventual consistency).",
-                            partitionKeyInternal.Components.Count,
-                            collectionPath,
-                            containerProperties.PartitionKey.Paths.Count);
-                        return null;
-                    }
-
-                    string effectivePartitionKey = partitionKeyInternal.GetEffectivePartitionKeyString(containerProperties.PartitionKey);
-                    PartitionKeyRange range = routingMap.GetRangeByEffectivePartitionKey(effectivePartitionKey);
-
-                    if (range != null)
-                    {
-                        // Record the resolved range so capture can detect a split/move, then return the
-                        // partition's token (may be null → no token). range.Parents lets a freshly-split
-                        // child inherit the parent's progress.
+                        // Record the range for split detection, then return the partition's token (may be
+                        // null). range.Parents lets a freshly-split child inherit the parent's progress.
                         resolvedPartitionKeyRangeId = range.Id;
                         return this.sessionContainer.GetSessionTokenForPartitionKeyRange(collectionPath, range.Id, range.Parents);
                     }
 
-                    // The routing map resolved but had no range for this key (e.g., stale/incomplete map):
-                    // apply no token, and trace so the degrade-to-eventual is observable rather than silent.
+                    // KeyMismatch or StaleMetadata: apply no token and trace (observable degrade-to-eventual).
+                    // Never throw — real routing surfaces any key mismatch server-side for the actual write.
                     DefaultTrace.TraceWarning(
-                        "DistributedTransaction found no partition key range for an operation's partition key in " +
-                        "collection '{0}'; applying no session token (the operation is served at eventual consistency).",
-                        collectionPath);
+                        "DistributedTransaction could not resolve an operation's partition key to a single range in " +
+                        "collection '{0}' (outcome: {1}); applying no session token (served at eventual consistency).",
+                        collectionPath,
+                        resolutionKind);
                 }
                 catch (Exception ex) when (!(ex is OperationCanceledException))
                 {

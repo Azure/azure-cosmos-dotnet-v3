@@ -155,6 +155,30 @@ namespace Microsoft.Azure.Cosmos
                 $"'{sessionToken ?? "<null>"}' is not a canonical two-segment token and must be rejected.");
         }
 
+        [DataTestMethod]
+        [DataRow("0:1#100", DisplayName = "canonical, parseable lsn")]
+        [DataRow("0:1#100#4=90#5=2", DisplayName = "canonical with multi-region lsn payload")]
+        // A valid token is both canonically shaped AND has an lsn segment that SessionTokenHelper.Parse accepts.
+        public void IsValidSessionToken_CanonicalAndParseable_ReturnTrue(string sessionToken)
+        {
+            Assert.IsTrue(SessionContainer.IsValidSessionToken(sessionToken),
+                $"'{sessionToken}' is canonically shaped with a parseable lsn and must be accepted.");
+        }
+
+        [DataTestMethod]
+        [DataRow(null, DisplayName = "null")]
+        [DataRow("", DisplayName = "empty")]
+        [DataRow("1#9#4=8#5=7", DisplayName = "bad shape: lsn only, no colon")]
+        [DataRow("0:not-a-valid-lsn", DisplayName = "shape valid, content unparseable")]
+        [DataRow("0:100", DisplayName = "shape valid, legacy non-Vector lsn rejected by Parse")]
+        // A token that is non-canonical in shape OR whose lsn segment fails Parse is not valid. Content
+        // validation never throws — it returns false so callers can classify deterministically up front.
+        public void IsValidSessionToken_BadShapeOrUnparseableContent_ReturnFalse(string sessionToken)
+        {
+            Assert.IsFalse(SessionContainer.IsValidSessionToken(sessionToken),
+                $"'{sessionToken ?? "<null>"}' is not a valid session token and must be rejected without throwing.");
+        }
+
         [TestMethod]
         public void TestResolveGlobalSessionTokenReturnsEmptyStringOnEmptyCache()
         {

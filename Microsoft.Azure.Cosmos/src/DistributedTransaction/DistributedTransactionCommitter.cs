@@ -312,10 +312,11 @@ namespace Microsoft.Azure.Cosmos
                     continue;
                 }
 
-                // Capture-side split/partition-move detection (mirrors CaptureSessionTokenAndHandleSplitAsync):
-                // if the server served a different range than the client resolved, force-refresh the stale
-                // routing cache once per moved range. Restores point-op recovery parity, since a committed
-                // DTX is HTTP 207 and per-op 1002s never reach SessionTokenMismatchRetryPolicy.
+                // Capture-side split/partition-move detection, delegated to the shared primitive
+                // PartitionKeyRangeCache.RefreshRoutingCacheIfPartitionMovedAsync (one definition, shared with the
+                // point-op capture path). Runs only for success sub-ops (skip above) — every sub-op of a committed
+                // transaction. A committed DTX is HTTP 207, so per-op range moves never reach
+                // SessionTokenMismatchRetryPolicy; this pass restores that recovery.
                 await DistributedTransactionCommitter.RefreshRoutingCacheIfPartitionMovedAsync(
                     operation,
                     result,
@@ -329,13 +330,15 @@ namespace Microsoft.Azure.Cosmos
                     continue;
                 }
 
-                // Shape pre-check delegated to SessionContainer so DTX shares the core
-                // '{pkRangeId}:{lsn}' definition; content is validated by SetSessionToken below.
-                if (!SessionContainer.IsCanonicalSessionTokenShape(result.SessionToken))
+                // Validate shape AND content up front (delegated to SessionContainer so DTX shares the
+                // core '{pkRangeId}:{lsn}' definition). A genuine malformed token is detected here
+                // deterministically; SetSessionToken below can then only fail on transient/unexpected
+                // conditions, which must never hide a committed transaction.
+                if (!SessionContainer.IsValidSessionToken(result.SessionToken))
                 {
                     DistributedTransactionCommitter.ThrowOrTraceMalformedSessionToken(
                         throwOnMalformed,
-                        $"Op {result.Index}: non-canonical session token '{DistributedTransactionCommitter.TruncateForLog(result.SessionToken)}' (expected '{{pkRangeId}}:{{lsn}}')",
+                        $"Op {result.Index}: non-canonical or unparseable session token '{DistributedTransactionCommitter.TruncateForLog(result.SessionToken)}' (expected '{{pkRangeId}}:{{lsn}}')",
                         response);
                     continue;
                 }
@@ -352,16 +355,14 @@ namespace Microsoft.Azure.Cosmos
                         DistributedTransactionConstants.GetCollectionFullName(operation.Database, operation.Container),
                         headers);
                 }
-                catch (OperationCanceledException)
+                catch (Exception ex) when (!(ex is OperationCanceledException))
                 {
-                    throw;
-                }
-                catch (Exception ex) when (SessionContainer.IsMalformedSessionTokenException(ex))
-                {
-                    DistributedTransactionCommitter.ThrowOrTraceMalformedSessionToken(
-                        throwOnMalformed,
-                        $"Op {result.Index}: SetSessionToken rejected '{DistributedTransactionCommitter.TruncateForLog(result.SessionToken)}' ({ex.GetType().Name}: {ex.Message})",
-                        response);
+                    // The token was already validated (shape + content) above, so this is NOT a malformed
+                    // token — it's a transient/unexpected condition (e.g. the benign AddSessionToken
+                    // concurrent-add race). The transaction has committed; never surface it as a failure.
+                    DefaultTrace.TraceError(
+                        $"Distributed transaction post-commit SetSessionToken failed unexpectedly for op {result.Index} " +
+                        $"({ex.GetType().Name}: {ex.Message}); the committed response is still returned.");
                 }
             }
         }
@@ -369,12 +370,12 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Force-refreshes the partition routing cache when the server served a different partition key range
         /// than the client resolved for the operation, deduping so each distinct moved range refreshes once.
-        /// Mirrors <see cref="GatewayStoreModel.CaptureSessionTokenAndHandleSplitAsync"/>.
         /// </summary>
         /// <remarks>
-        /// Runs post-commit. A refresh failure is intentionally NOT swallowed: it propagates, matching
-        /// point operations (the gateway force-refreshes with a bare await). Acquiring the cache is
-        /// best-effort (the caller's concern); the refresh itself is not.
+        /// Runs post-commit. Move detection and per-commit dedupe are delegated to the shared primitive
+        /// <see cref="Routing.PartitionKeyRangeCache.RefreshRoutingCacheIfPartitionMovedAsync"/>; only the
+        /// failure policy is DTX-specific: a refresh failure is traced and swallowed, because the commit has
+        /// already succeeded and there is no safe retry (point ops instead retry an idempotent read).
         /// </remarks>
         private static async Task RefreshRoutingCacheIfPartitionMovedAsync(
             DistributedTransactionOperation operation,
@@ -383,25 +384,25 @@ namespace Microsoft.Azure.Cosmos
             HashSet<string> refreshedRanges,
             ITrace trace)
         {
-            if (partitionKeyRangeCache == null
-                || string.IsNullOrEmpty(operation.CollectionResourceId)
-                || string.IsNullOrEmpty(operation.ResolvedPartitionKeyRangeId)
-                || string.IsNullOrEmpty(result.PartitionKeyRangeId)
-                || result.PartitionKeyRangeId.Equals(operation.ResolvedPartitionKeyRangeId, StringComparison.OrdinalIgnoreCase))
+            try
             {
-                return;
+                await Routing.PartitionKeyRangeCache.RefreshRoutingCacheIfPartitionMovedAsync(
+                    partitionKeyRangeCache,
+                    operation.CollectionResourceId,
+                    operation.ResolvedPartitionKeyRangeId,
+                    result.PartitionKeyRangeId,
+                    trace,
+                    refreshedRanges);
             }
-
-            if (!refreshedRanges.Add(operation.CollectionResourceId + "|" + result.PartitionKeyRangeId))
+            catch (Exception ex) when (!(ex is OperationCanceledException))
             {
-                return; // Already refreshed this moved range on this commit.
+                DefaultTrace.TraceWarning(
+                    "DistributedTransaction post-commit routing-cache refresh failed for collection '{0}' range '{1}'; " +
+                    "the committed response is still returned. Exception: {2}",
+                    operation.CollectionResourceId,
+                    result.PartitionKeyRangeId,
+                    ex.Message);
             }
-
-            await partitionKeyRangeCache.TryGetPartitionKeyRangeByIdAsync(
-                operation.CollectionResourceId,
-                result.PartitionKeyRangeId,
-                trace ?? NoOpTrace.Singleton,
-                forceRefresh: true);
         }
 
         /// <summary>

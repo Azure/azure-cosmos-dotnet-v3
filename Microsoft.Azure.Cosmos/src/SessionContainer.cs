@@ -446,13 +446,17 @@ namespace Microsoft.Azure.Cosmos.Common
         }
 
         /// <summary>
-        /// Returns true when <paramref name="sessionToken"/> has the canonical "{pkRangeId}:{lsn}"
-        /// shape (exactly two non-empty segments) that the SetSessionToken write path splits on.
-        /// The lsn segment's content is validated separately by SessionTokenHelper.Parse when the
-        /// token is stored. Centralized here so callers outside the write path (e.g. distributed
-        /// transactions) share one definition of a structurally malformed token and can classify it
-        /// without mutating state or throwing.
+        /// Returns true when <paramref name="sessionToken"/> has the canonical "{pkRangeId}:{lsn}" shape
+        /// (exactly two non-empty segments); the lsn content is validated separately by
+        /// SessionTokenHelper.Parse. Centralized so callers outside the write path (e.g. distributed
+        /// transactions) share one definition of a structurally malformed token, without mutating state.
         /// </summary>
+        /// <remarks>
+        /// Intentionally stricter than the SetSessionToken write path: SetSessionToken does an unbounded
+        /// Split(':') and reads only parts[0]/parts[1], silently truncating a token like "0:1:2", whereas
+        /// this requires exactly two segments and rejects it. A 3+ segment token is genuinely malformed —
+        /// reject it up front rather than store a truncated token; do not loosen toward the writer.
+        /// </remarks>
         internal static bool IsCanonicalSessionTokenShape(string sessionToken)
         {
             if (string.IsNullOrWhiteSpace(sessionToken))
@@ -465,20 +469,28 @@ namespace Microsoft.Azure.Cosmos.Common
         }
 
         /// <summary>
-        /// Returns true when <paramref name="ex"/> from <see cref="SetSessionToken(string, string, INameValueCollection)"/>
-        /// means the session token could not be applied because it was malformed. Centralized here (next to
-        /// <see cref="IsCanonicalSessionTokenShape"/>) so callers outside the write path (e.g. distributed
-        /// transactions) share one definition and the catch-set can't drift.
+        /// Returns true when <paramref name="sessionToken"/> is both canonically shaped ("{pkRangeId}:{lsn}")
+        /// and its lsn segment parses — i.e. <see cref="SetSessionToken(string, string, INameValueCollection)"/>
+        /// will accept it. Lets callers outside the write path (e.g. distributed transactions) detect a
+        /// malformed token deterministically up front, without mutating state, throwing, or catching parse exceptions.
         /// </summary>
-        /// <remarks>
-        /// SetSessionToken parses via SessionTokenHelper.Parse, whose overloads throw BadRequestException or
-        /// InternalServerErrorException on unparseable content. A benign concurrent-add race also throws
-        /// InternalServerErrorException and is indistinguishable, so both types are treated as malformed.
-        /// Callers must handle OperationCanceledException before delegating here.
-        /// </remarks>
-        internal static bool IsMalformedSessionTokenException(Exception ex)
+        internal static bool IsValidSessionToken(string sessionToken)
         {
-            return ex is BadRequestException || ex is InternalServerErrorException;
+            if (!SessionContainer.IsCanonicalSessionTokenShape(sessionToken))
+            {
+                return false;
+            }
+
+            string[] tokenParts = sessionToken.Split(SessionContainer.sessionTokenSeparator[0]);
+            try
+            {
+                SessionTokenHelper.Parse(tokenParts[1], HttpConstants.Versions.CurrentVersion);
+                return true;
+            }
+            catch (Exception ex) when (!(ex is OperationCanceledException))
+            {
+                return false;
+            }
         }
 
         private static void AddSessionToken(SessionContainerState self, ulong rid, string partitionKeyRangeId, ISessionToken token)

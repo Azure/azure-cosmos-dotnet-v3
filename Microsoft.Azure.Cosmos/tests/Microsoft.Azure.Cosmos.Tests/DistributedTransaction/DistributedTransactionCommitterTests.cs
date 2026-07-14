@@ -428,10 +428,10 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
-        // When SetSessionToken throws on a content-invalid token (SessionTokenHelper.Parse throws
-        // BadRequestException after the shape check), the malformed token is surfaced as a
-        // CosmosException under Session consistency on a committed response.
-        public async Task CommitTransactionAsync_AggregatesSetSessionTokenException()
+        // The token is valid (shape + content), so it passes the up-front validation. An unexpected
+        // SetSessionToken failure on an already-committed transaction is traced, never surfaced: the
+        // caller must still receive their committed response.
+        public async Task CommitTransactionAsync_SetSessionTokenUnexpectedException_IsTracedNotThrown()
         {
             const string canonicalToken = "0:1#9#4=8#5=7";
 
@@ -495,9 +495,13 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 operations, mockContext.Object, OperationType.CommitDistributedTransaction);
 
-            await Assert.ThrowsExceptionAsync<CosmosException>(
-                () => committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None),
-                "SetSessionToken exception must be aggregated and surfaced as CosmosException.");
+            DistributedTransactionResponse response = await committer.CommitTransactionAsync(
+                NoOpTrace.Singleton, CancellationToken.None);
+
+            Assert.IsNotNull(response,
+                "An unexpected SetSessionToken failure on a committed transaction must not hide the response.");
+            Assert.IsTrue(response.IsSuccessStatusCode,
+                "The committed response must still be returned when SetSessionToken fails unexpectedly.");
         }
 
         [TestMethod]
@@ -624,10 +628,10 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
-        // When SetSessionToken throws on op 0 (e.g., SessionTokenHelper.Parse rejects a content-invalid
-        // token that passed the colon-shape check), MergeSessionTokens throws on that FIRST malformed
-        // op; op 1's later token is NOT merged. Cancellation still propagates as-is.
-        public async Task MergeSessionTokens_SetSessionTokenThrows_ThrowsOnFirstWithoutMergingLaterOps()
+        // op 0 carries a content-invalid token ("0:bad-content") that fails up-front validation, so the
+        // merge throws on that FIRST malformed op under Session consistency; op 1's later token is NOT
+        // merged. SetSessionToken is never reached for the bad op (rejected before the write path).
+        public async Task MergeSessionTokens_ContentInvalidToken_ThrowsOnFirstWithoutMergingLaterOps()
         {
             const string token0 = "0:bad-content";
             const string token1 = "1:1#9#4=8#5=7";
@@ -636,11 +640,6 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             string collectionRid2 = ResourceId.NewDocumentCollectionId(42, 200).DocumentCollectionId.ToString();
 
             Mock<ISessionContainer> mockSessionContainer = new Mock<ISessionContainer>();
-            // Only op 0's call throws (content-invalid token → BadRequestException, what
-            // SessionTokenHelper.Parse actually throws); op 1's call would succeed.
-            mockSessionContainer
-                .Setup(s => s.SetSessionToken(collectionRid1, It.IsAny<string>(), It.IsAny<INameValueCollection>()))
-                .Throws(new BadRequestException("simulated parse failure"));
 
             DistributedTransactionOperationResult result0 = new DistributedTransactionOperationResult();
             result0.Index = 0;
@@ -689,14 +688,11 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
-        // SessionContainer.SetSessionToken throws InternalServerErrorException on a content-invalid token
-        // (SessionTokenHelper.Parse with the version-aware overload) and also on a benign concurrent-add
-        // race or a VectorSessionToken region-mismatch merge. The DTX classifier cannot distinguish these
-        // (identical type), so it treats them uniformly: under Session consistency on a committed response
-        // it surfaces a clean, non-retriable CosmosException instead of leaking a raw Direct
-        // InternalServerErrorException out of a committed transaction; under non-Session consistency it
-        // traces-and-skips without throwing.
-        public async Task MergeSessionTokens_InternalServerErrorFromSetSessionToken_SurfacedAsCosmosException()
+        // The token is valid (shape + content), so it passes up-front validation. SetSessionToken then
+        // throws InternalServerErrorException — the benign AddSessionToken concurrent-add race. Because the
+        // token was already validated, this is NOT malformed: it must be traced and swallowed under BOTH
+        // Session and non-Session consistency so a committed transaction is never surfaced as a failure.
+        public async Task MergeSessionTokens_SetSessionTokenUnexpectedException_IsTracedNotThrown()
         {
             const string canonicalToken = "0:1#9#4=8#5=7";
             string collectionRid = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
@@ -724,24 +720,19 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 MockCosmosUtil.Serializer,
                 CancellationToken.None);
 
-            // Session consistency: the InternalServerErrorException is surfaced as a non-retriable
-            // CosmosException, NOT leaked as the raw Direct exception.
-            CosmosException ex = await Assert.ThrowsExceptionAsync<CosmosException>(
-                () => DistributedTransactionCommitter.MergeSessionTokensAsync(
-                    mockResponse.Object, serverRequest, mockSessionContainer.Object, isSessionConsistency: true, partitionKeyRangeCache: null, trace: NoOpTrace.Singleton),
-                "InternalServerErrorException from SetSessionToken must be surfaced as a CosmosException under Session consistency.");
-            Assert.AreEqual(HttpStatusCode.InternalServerError, ex.StatusCode);
+            // Session consistency: the unexpected failure on a valid token is traced-and-swallowed (no throw).
+            await DistributedTransactionCommitter.MergeSessionTokensAsync(
+                mockResponse.Object, serverRequest, mockSessionContainer.Object, isSessionConsistency: true, partitionKeyRangeCache: null, trace: NoOpTrace.Singleton);
 
-            // Non-Session consistency: traced-and-skipped, no exception escapes the merge.
+            // Non-Session consistency: also traced-and-skipped, no exception escapes the merge.
             await DistributedTransactionCommitter.MergeSessionTokensAsync(
                 mockResponse.Object, serverRequest, mockSessionContainer.Object, isSessionConsistency: false, partitionKeyRangeCache: null, trace: NoOpTrace.Singleton);
 
-            // Strengthen: SetSessionToken must have been ATTEMPTED on both calls (the InternalServerErrorException
-            // was genuinely reached and swallowed on the non-Session half — not short-circuited before the write path).
+            // SetSessionToken must have been ATTEMPTED on both calls (the exception was genuinely reached and swallowed).
             mockSessionContainer.Verify(
                 s => s.SetSessionToken(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<INameValueCollection>()),
                 Times.Exactly(2),
-                "SetSessionToken must be attempted once per MergeSessionTokens call (Session throw-half + non-Session skip-half).");
+                "SetSessionToken must be attempted once per MergeSessionTokens call and its failure swallowed.");
         }
 
         [TestMethod]
@@ -835,10 +826,10 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         // ─── v2 edge case coverage ───────────────────────────────────────────────
 
         [TestMethod]
-        // v2 edge case #1: a token like "0:-1" that passes the colon-shape check but causes
-        // SessionTokenHelper.Parse to throw internally must be classified as malformed (caught
-        // by the per-op try/catch). Under Session consistency on a committed response the merge
-        // throws on this FIRST malformed op; op 1's later token is NOT merged.
+        // v2 edge case #1: a token like "0:not-a-valid-lsn" that passes the colon-shape check but whose
+        // lsn segment fails SessionTokenHelper.Parse is rejected by the up-front content validation. Under
+        // Session consistency on a committed response the merge throws on this FIRST malformed op; op 1's
+        // later token is NOT merged. SetSessionToken is never reached for the bad op.
         public async Task MergeSessionTokens_ShapeValidButContentInvalid_ClassifiedAsMalformed()
         {
             // op 0: structurally valid (passes colon check) but content is invalid for the parser
@@ -850,16 +841,6 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             string collectionRid2 = ResourceId.NewDocumentCollectionId(42, 200).DocumentCollectionId.ToString();
 
             Mock<ISessionContainer> mockSessionContainer = new Mock<ISessionContainer>();
-            // op 0's content is rejected by the classifier. This mock throws BadRequestException — one of
-            // the two malformed types IsMalformedSessionTokenException catches. The real version-aware
-            // SessionTokenHelper.Parse used by SetSessionToken actually throws InternalServerErrorException;
-            // that end-to-end path is covered by MergeSessionTokens_RealContainer_ContentInvalidToken_ThrowsCosmosException.
-            mockSessionContainer
-                .Setup(s => s.SetSessionToken(
-                    collectionRid1,
-                    It.IsAny<string>(),
-                    It.Is<INameValueCollection>(h => h[HttpConstants.HttpHeaders.SessionToken] == shapeValidContentInvalid)))
-                .Throws(new BadRequestException("Invalid session token content"));
 
             DistributedTransactionOperationResult result0 = new DistributedTransactionOperationResult
             { Index = 0, StatusCode = HttpStatusCode.Created, SessionToken = shapeValidContentInvalid };
@@ -905,13 +886,49 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
+        // A content-invalid token is detected by the up-front validation, so SetSessionToken is never
+        // invoked for it — proving the malformed classification is deterministic (no reliance on the
+        // write path throwing) and no state-mutating call is attempted for a bad token.
+        public async Task MergeSessionTokens_ContentInvalid_ThrowsBeforeSetSessionToken()
+        {
+            const string shapeValidContentInvalid = "0:not-a-valid-lsn";
+            string collectionRid = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+
+            Mock<ISessionContainer> mockSessionContainer = new Mock<ISessionContainer>();
+
+            DistributedTransactionOperationResult result = new DistributedTransactionOperationResult
+            { Index = 0, StatusCode = HttpStatusCode.Created, SessionToken = shapeValidContentInvalid };
+
+            Mock<DistributedTransactionResponse> mockResponse = new Mock<DistributedTransactionResponse>();
+            mockResponse.Setup(r => r.IsSuccessStatusCode).Returns(true);
+            mockResponse.Setup(r => r.Count).Returns(1);
+            mockResponse.Setup(r => r[0]).Returns(result);
+
+            DistributedTransactionOperation operation = new DistributedTransactionOperation(
+                OperationType.Create, operationIndex: 0, DatabaseName, ContainerName, new PartitionKey("pk1"), id: "doc1");
+            operation.CollectionResourceId = collectionRid;
+
+            DistributedTransactionServerRequest serverRequest = await DistributedTransactionServerRequest.CreateAsync(
+                new List<DistributedTransactionOperation> { operation },
+                MockCosmosUtil.Serializer,
+                CancellationToken.None);
+
+            await Assert.ThrowsExceptionAsync<CosmosException>(
+                () => DistributedTransactionCommitter.MergeSessionTokensAsync(
+                    mockResponse.Object, serverRequest, mockSessionContainer.Object, isSessionConsistency: true, partitionKeyRangeCache: null, trace: NoOpTrace.Singleton),
+                "A content-invalid token on a committed transaction under Session consistency must surface as a CosmosException.");
+
+            mockSessionContainer.Verify(
+                s => s.SetSessionToken(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<INameValueCollection>()),
+                Times.Never,
+                "SetSessionToken must never be invoked for a content-invalid token — the classification is deterministic and up front.");
+        }
+
+        [TestMethod]
         // End-to-end with a REAL SessionContainer: a shape-valid but content-invalid token
-        // ("0:not-a-valid-lsn") passes the colon-shape pre-check and reaches SessionContainer.SetSessionToken,
-        // whose version-aware SessionTokenHelper.Parse throws InternalServerErrorException (NOT
-        // BadRequestException — confirmed by the two Parse overloads). The DTX classifier must catch it and
-        // surface a non-retriable CosmosException under Session consistency instead of letting the raw Direct
-        // exception escape a committed transaction. This exercises the real path the BadRequestException mock
-        // in MergeSessionTokens_ShapeValidButContentInvalid_ClassifiedAsMalformed cannot reach.
+        // ("0:not-a-valid-lsn") is rejected by the up-front content validation (same SessionTokenHelper.Parse
+        // the write path uses), so it never reaches SetSessionToken. Under Session consistency on a committed
+        // response it surfaces as a non-retriable CosmosException.
         public async Task MergeSessionTokens_RealContainer_ContentInvalidToken_ThrowsCosmosException()
         {
             const string shapeValidContentInvalid = "0:not-a-valid-lsn";
@@ -2959,6 +2976,29 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
+        [Description("Parity with the point-op capture path: an operation carrying an explicit user token still gets its partition range resolved and recorded (ResolvedPartitionKeyRangeId), so the post-commit capture pass can detect a split/partition move for user-token ops too — the token itself is still not overridden.")]
+        public async Task ApplyTokens_ExplicitUserToken_StillRecordsResolvedRangeForSplitDetection()
+        {
+            const string seededRangeToken = "0:1#100#4=90#5=2";
+            const string explicitUserToken = "0:9#999#4=99#5=9";
+            SessionContainer sessionContainer = SeedSessionContainer(seededRangeToken);
+            Microsoft.Azure.Cosmos.Routing.CollectionRoutingMap routingMap = BuildCompleteRoutingMap(("0", string.Empty, "FF", null));
+            (DistributedTransactionSessionTokenResolver resolver, ContainerProperties containerProperties, string collectionPath) =
+                await this.CreateResolverAsync(sessionContainer, routingMap);
+
+            DistributedTransactionOperation op = new DistributedTransactionOperation(
+                OperationType.Read, operationIndex: 0, DatabaseName, ContainerName, new PartitionKey("pk1"), id: "doc1",
+                requestOptions: new DistributedTransactionRequestOptions { SessionToken = explicitUserToken });
+
+            await resolver.ApplyTokensAsync(new[] { op }, collectionPath, containerProperties);
+
+            Assert.AreEqual(explicitUserToken, op.SessionToken,
+                "The explicit user-supplied token must still not be overridden.");
+            Assert.AreEqual("0", op.ResolvedPartitionKeyRangeId,
+                "The resolved range must be recorded even for a user-token op, so the capture pass can detect a partition move for it (parity with the point-op path).");
+        }
+
+        [TestMethod]
         [Description("A freshly-split child range (range.Parents populated) with no token of its own inherits the parent's per-partition token through the resolver + routing map path (range.Parents is forwarded to GetSessionTokenForPartitionKeyRange).")]
         public async Task ApplyTokens_SplitChildRange_InheritsParentToken()
         {
@@ -3020,16 +3060,63 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 "A partial hierarchical prefix key spans multiple ranges and must receive no session token (parity with AddressResolver's component-count guard).");
         }
 
+        [TestMethod]
+        [Description("U3.3 shared-core delegation: ResolvePartitionLocalToken now delegates the component-count guard, effective-key computation and range lookup to AddressResolver.TryResolvePartitionKeyToRange. A Resolved key applies the partition-local token AND records ResolvedPartitionKeyRangeId (for split detection); an unroutable key (KeyMismatch) applies no token AND records no range id — neither path throws.")]
+        public async Task ApplyTokens_DelegatesToSharedCore_ResolvedRecordsRangeId_MismatchRecordsNothing()
+        {
+            const string rangeToken = "0:1#100#4=90#5=2";
+            SessionContainer sessionContainer = SeedSessionContainer(rangeToken);
+            Microsoft.Azure.Cosmos.Routing.CollectionRoutingMap routingMap = BuildCompleteRoutingMap(("0", string.Empty, "FF", null));
+            (DistributedTransactionSessionTokenResolver resolver, _, string collectionPath) =
+                await this.CreateResolverAsync(sessionContainer, routingMap);
+
+            // Two-path hierarchical (sub-partitioned) definition so a partial prefix key hits the shared
+            // core's KeyMismatch branch, while a full key hits Resolved.
+            ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId(CollectionResourceId);
+            containerProperties.Id = "TestContainerId";
+            containerProperties.PartitionKey = new PartitionKeyDefinition
+            {
+                Kind = PartitionKind.MultiHash,
+                Paths = new System.Collections.ObjectModel.Collection<string> { "/tenant", "/user" },
+                Version = Microsoft.Azure.Documents.PartitionKeyDefinitionVersion.V2
+            };
+
+            // Resolved: a full two-component key maps to the single range "0".
+            DistributedTransactionOperation resolvedOp = new DistributedTransactionOperation(
+                OperationType.Read, operationIndex: 0, DatabaseName, ContainerName,
+                new PartitionKeyBuilder().Add("tenant1").Add("user1").Build(), id: "resolved");
+
+            // KeyMismatch: a one-component prefix spans multiple ranges → unroutable to a single range.
+            DistributedTransactionOperation mismatchOp = new DistributedTransactionOperation(
+                OperationType.Read, operationIndex: 1, DatabaseName, ContainerName,
+                new PartitionKeyBuilder().Add("tenant1").Build(), id: "mismatch");
+
+            await resolver.ApplyTokensAsync(new[] { resolvedOp, mismatchOp }, collectionPath, containerProperties);
+
+            // Resolved path: partition-local token applied AND range id recorded for split detection.
+            Assert.AreEqual(rangeToken, resolvedOp.SessionToken,
+                "A Resolved key must receive its partition-local token through the shared-core delegation.");
+            Assert.AreEqual("0", resolvedOp.ResolvedPartitionKeyRangeId,
+                "A Resolved key must record its range id so the capture pass can detect a split/move.");
+
+            // KeyMismatch path: no token AND no range id recorded; the call did not throw.
+            Assert.IsNull(mismatchOp.SessionToken,
+                "A KeyMismatch key must receive no token (degrade-to-eventual), never a wrong-partition token.");
+            Assert.IsNull(mismatchOp.ResolvedPartitionKeyRangeId,
+                "A KeyMismatch key resolves no range, so no range id is recorded; the delegation must not throw.");
+        }
+
         // ─── Post-commit merge tests (MergeSessionTokens) ────────────────────────
 
         [TestMethod]
-        // HIGHEST-VALUE cross-SDK gap (peer Java RegionScopedSessionContainerConcurrencyTest): a real region-set
-        // MISMATCH during the post-commit merge. Seed range "0" with a two-region token, then merge a one-region
-        // token for the same range: VectorSessionToken.Merge throws InternalServerErrorException (region-count
-        // mismatch) inside the real SetSessionToken — the AddSessionToken merge path (not a mock, not the
-        // concurrent-add race). Under Session consistency on a committed response the DTX classifier surfaces it
-        // as a non-retriable CosmosException; under non-Session it traces-and-skips. LOCKS IN current behavior.
-        public async Task MergeSessionTokens_RealContainer_RegionSetMismatchMerge_ThrowsUnderSession()
+        // A real region-set MISMATCH during the post-commit merge (peer Java
+        // RegionScopedSessionContainerConcurrencyTest): seed range "0" with a two-region token, then merge a
+        // one-region token for the same range. The merge token is itself VALID (parses standalone), so it
+        // passes up-front validation; VectorSessionToken.Merge then throws InternalServerErrorException inside
+        // the real SetSessionToken. Because the token was already validated, this is treated as an unexpected
+        // post-commit failure: traced-and-swallowed under BOTH consistencies, never surfaced, and the
+        // previously stored token is left intact.
+        public async Task MergeSessionTokens_RealContainer_RegionSetMismatchMerge_TracedNotThrown()
         {
             const string seededTwoRegionToken = "0:1#100#4=90#5=2"; // regions {4,5}
             const string mergeOneRegionToken = "0:1#101#4=91";      // region {4} only -> merge mismatch
@@ -3058,18 +3145,15 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 MockCosmosUtil.Serializer,
                 CancellationToken.None);
 
-            // Session consistency on a committed response: surfaced as a non-retriable CosmosException.
-            CosmosException ex = await Assert.ThrowsExceptionAsync<CosmosException>(
-                () => DistributedTransactionCommitter.MergeSessionTokensAsync(
-                    mockResponse.Object, serverRequest, sessionContainer, isSessionConsistency: true, partitionKeyRangeCache: null, trace: NoOpTrace.Singleton),
-                "A region-set-mismatch merge on a committed transaction under Session consistency must surface as a non-retriable CosmosException.");
-            Assert.AreEqual(HttpStatusCode.InternalServerError, ex.StatusCode);
+            // Session consistency on a committed response: the merge failure is traced-and-swallowed (no throw).
+            await DistributedTransactionCommitter.MergeSessionTokensAsync(
+                mockResponse.Object, serverRequest, sessionContainer, isSessionConsistency: true, partitionKeyRangeCache: null, trace: NoOpTrace.Singleton);
 
             // The failed merge must not corrupt the previously stored progress.
             Assert.AreEqual(seededTwoRegionToken, sessionContainer.GetSessionToken(collectionFullName),
                 "A failed region-mismatch merge must leave the previously stored token intact.");
 
-            // Non-Session consistency: traced-and-skipped, no exception escapes and the stored token is unchanged.
+            // Non-Session consistency: also traced-and-skipped, no exception escapes and the stored token is unchanged.
             await DistributedTransactionCommitter.MergeSessionTokensAsync(
                 mockResponse.Object, serverRequest, sessionContainer, isSessionConsistency: false, partitionKeyRangeCache: null, trace: NoOpTrace.Singleton);
             Assert.AreEqual(seededTwoRegionToken, sessionContainer.GetSessionToken(collectionFullName),
@@ -3077,13 +3161,11 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
-        // Locks the reachable malformed-token exception surface. The SDK always parses stored tokens with the fixed
-        // modern CurrentVersion, so SessionTokenHelper.Parse only ever yields VectorSessionToken and REJECTS a legacy
-        // non-Vector-format lsn (e.g. "100") as invalid BEFORE any merge — surfacing a classified
-        // InternalServerErrorException. This means a Vector-vs-Simple type-mismatch merge is unreachable via
-        // SetSessionToken; the DTX classifier (BadRequestException || InternalServerErrorException) already covers
-        // every exception the merge path can actually throw. Under Session consistency on a committed response the
-        // rejection surfaces as a non-retriable CosmosException; under non-Session it traces-and-skips.
+        // The SDK always parses stored tokens with the fixed modern CurrentVersion, so a legacy non-Vector-format
+        // lsn (e.g. "0:100") fails SessionTokenHelper.Parse and is rejected by the up-front content validation
+        // before any merge. Under Session consistency on a committed response the rejection surfaces as a
+        // non-retriable CosmosException; under non-Session it traces-and-skips. The previously stored token is
+        // left intact either way.
         public async Task MergeSessionTokens_RealContainer_LegacyFormatToken_RejectedByParseUnderSession()
         {
             const string seededVectorToken = "0:1#100#4=90#5=2"; // valid Vector token already stored
@@ -3309,6 +3391,79 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             return sb.ToString();
         }
 
+        // ─── TryCreateAsync factory tests ───────────────────────────────────────
+
+        [TestMethod]
+        [Description("TryCreateAsync returns null under non-Session consistency — auto token resolution only applies to Session.")]
+        public async Task TryCreateAsync_NonSessionConsistency_ReturnsNull()
+        {
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                new SessionContainer("testhost"), responseContent: null, statusCode: HttpStatusCode.OK,
+                routingMap: BuildCompleteRoutingMap(("0", string.Empty, "FF", null)));
+
+            DistributedTransactionSessionTokenResolver resolver =
+                await DistributedTransactionSessionTokenResolver.TryCreateAsync(mockContext.Object, isSessionConsistency: false);
+
+            Assert.IsNull(resolver, "Non-Session consistency must disable auto session-token resolution.");
+        }
+
+        [TestMethod]
+        [Description("TryCreateAsync returns null when the client uses a custom ISessionContainer — auto resolution needs the built-in SessionContainer.")]
+        public async Task TryCreateAsync_CustomSessionContainer_ReturnsNull()
+        {
+            Mock<ISessionContainer> customContainer = new Mock<ISessionContainer>();
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                customContainer.Object, responseContent: null, statusCode: HttpStatusCode.OK,
+                routingMap: BuildCompleteRoutingMap(("0", string.Empty, "FF", null)));
+
+            DistributedTransactionSessionTokenResolver resolver =
+                await DistributedTransactionSessionTokenResolver.TryCreateAsync(mockContext.Object, isSessionConsistency: true);
+
+            Assert.IsNull(resolver, "A custom ISessionContainer (not the built-in SessionContainer) must disable auto resolution.");
+        }
+
+        [TestMethod]
+        [Description("TryCreateAsync returns null when the PartitionKeyRangeCache is unavailable — the commit then applies no auto-resolved token.")]
+        public async Task TryCreateAsync_NullPartitionKeyRangeCache_ReturnsNull()
+        {
+            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+            mockContext.Setup(c => c.DocumentClient).Returns(new NullCacheMockDocumentClient
+            {
+                sessionContainer = new SessionContainer("testhost")
+            });
+
+            DistributedTransactionSessionTokenResolver resolver =
+                await DistributedTransactionSessionTokenResolver.TryCreateAsync(mockContext.Object, isSessionConsistency: true);
+
+            Assert.IsNull(resolver, "A null PartitionKeyRangeCache must disable auto resolution for the commit.");
+        }
+
+        [TestMethod]
+        [Description("TryCreateAsync returns a resolver under Session consistency with the built-in SessionContainer and an available routing cache.")]
+        public async Task TryCreateAsync_SessionWithBuiltInContainer_ReturnsResolver()
+        {
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                new SessionContainer("testhost"), responseContent: null, statusCode: HttpStatusCode.OK,
+                routingMap: BuildCompleteRoutingMap(("0", string.Empty, "FF", null)));
+
+            DistributedTransactionSessionTokenResolver resolver =
+                await DistributedTransactionSessionTokenResolver.TryCreateAsync(mockContext.Object, isSessionConsistency: true);
+
+            Assert.IsNotNull(resolver, "Session consistency with the built-in SessionContainer and an available cache must yield a resolver.");
+        }
+
+        /// <summary>
+        /// A <see cref="MockDocumentClient"/> whose GetPartitionKeyRangeCacheAsync returns null, exercising the
+        /// TryCreateAsync "routing cache unavailable" branch that disables auto session-token resolution.
+        /// </summary>
+        private sealed class NullCacheMockDocumentClient : MockDocumentClient
+        {
+            internal override Task<Microsoft.Azure.Cosmos.Routing.PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync(ITrace trace)
+            {
+                return Task.FromResult<Microsoft.Azure.Cosmos.Routing.PartitionKeyRangeCache>(null);
+            }
+        }
+
         private Mock<CosmosClientContext> CreateMockContext(
             ISessionContainer sessionContainer,
             string responseContent,
@@ -3435,7 +3590,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             public RoutingMapMockDocumentClient(Microsoft.Azure.Cosmos.Routing.CollectionRoutingMap routingMap)
             {
                 Mock<Microsoft.Azure.Cosmos.Routing.PartitionKeyRangeCache> cache =
-                    new Mock<Microsoft.Azure.Cosmos.Routing.PartitionKeyRangeCache>(null, null, null, null, false, false);
+                    new Mock<Microsoft.Azure.Cosmos.Routing.PartitionKeyRangeCache>(null, null, null, null, false, false, null);
                 cache
                     .Setup(m => m.TryLookupAsync(
                         It.IsAny<string>(),
@@ -3615,7 +3770,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         private static Mock<Microsoft.Azure.Cosmos.Routing.PartitionKeyRangeCache> BuildRefreshTrackingCache()
         {
             Mock<Microsoft.Azure.Cosmos.Routing.PartitionKeyRangeCache> cache =
-                new Mock<Microsoft.Azure.Cosmos.Routing.PartitionKeyRangeCache>(null, null, null, null, false, false);
+                new Mock<Microsoft.Azure.Cosmos.Routing.PartitionKeyRangeCache>(null, null, null, null, false, false, null);
             cache
                 .Setup(c => c.TryGetPartitionKeyRangeByIdAsync(
                     It.IsAny<string>(), It.IsAny<string>(), It.IsAny<ITrace>(), It.IsAny<bool>()))
@@ -3801,11 +3956,11 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
-        [Description("A force-refresh failure is NOT swallowed: it propagates to the caller, matching point operations (which call the same force-refresh as a bare await).")]
-        public async Task MergeSessionTokens_RefreshExceptionPropagates()
+        [Description("A post-commit force-refresh failure is swallowed and traced; the caller still gets the committed response.")]
+        public async Task MergeSessionTokens_RefreshException_IsSwallowed_ResponseReturned()
         {
             Mock<Microsoft.Azure.Cosmos.Routing.PartitionKeyRangeCache> cache =
-                new Mock<Microsoft.Azure.Cosmos.Routing.PartitionKeyRangeCache>(null, null, null, null, false, false);
+                new Mock<Microsoft.Azure.Cosmos.Routing.PartitionKeyRangeCache>(null, null, null, null, false, false, null);
             cache
                 .Setup(c => c.TryGetPartitionKeyRangeByIdAsync(
                     It.IsAny<string>(), It.IsAny<string>(), It.IsAny<ITrace>(), true))
@@ -3814,11 +3969,10 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             (Mock<DistributedTransactionResponse> response, DistributedTransactionServerRequest serverRequest) =
                 await BuildRefreshScenarioAsync(("0", "1", HttpStatusCode.Created));
 
-            await Assert.ThrowsExceptionAsync<InvalidOperationException>(
-                () => DistributedTransactionCommitter.MergeSessionTokensAsync(
-                    response.Object, serverRequest, new Mock<ISessionContainer>().Object,
-                    isSessionConsistency: true, partitionKeyRangeCache: cache.Object, trace: NoOpTrace.Singleton),
-                "A capture-side refresh failure must propagate, not be swallowed.");
+            // Must NOT throw — the commit already succeeded; the refresh is best-effort.
+            await DistributedTransactionCommitter.MergeSessionTokensAsync(
+                response.Object, serverRequest, new Mock<ISessionContainer>().Object,
+                isSessionConsistency: true, partitionKeyRangeCache: cache.Object, trace: NoOpTrace.Singleton);
         }
 
         // ─── Single-master write-gate (Phase 4, §7.1) ───────────────────────────
@@ -3829,7 +3983,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             bool canUseMultipleWriteLocations)
         {
             Mock<Microsoft.Azure.Cosmos.Routing.PartitionKeyRangeCache> cache =
-                new Mock<Microsoft.Azure.Cosmos.Routing.PartitionKeyRangeCache>(null, null, null, null, false, false);
+                new Mock<Microsoft.Azure.Cosmos.Routing.PartitionKeyRangeCache>(null, null, null, null, false, false, null);
             cache
                 .Setup(m => m.TryLookupAsync(
                     It.IsAny<string>(),
