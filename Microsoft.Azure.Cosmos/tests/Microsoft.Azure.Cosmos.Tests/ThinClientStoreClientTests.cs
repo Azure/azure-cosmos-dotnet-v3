@@ -1,4 +1,4 @@
-//------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -396,7 +396,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual("userAgentContainer", ex.ParamName);
             StringAssert.Contains(ex.Message, "UserAgentContainer cannot be null");
         }
-
 
         private ContainerProperties GetMockContainerProperties()
         {
