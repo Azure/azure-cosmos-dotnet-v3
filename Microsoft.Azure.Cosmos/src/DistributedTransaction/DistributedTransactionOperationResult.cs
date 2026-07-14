@@ -102,8 +102,9 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public virtual string SessionToken { get; internal set; }
       
-        /// Whether the server explicitly provided an <c>index</c>. A missing <c>index</c> defaults to 0
-        /// (indistinguishable from a real 0), so the reorder logic uses this flag to reject ambiguous responses.
+        /// <summary>
+        /// Indicates that the server response contained an explicit <c>index</c> field,
+        /// allowing the reorder logic to distinguish a real zero from a missing value.
         /// </summary>
         internal bool HasIndex { get; set; }
 
