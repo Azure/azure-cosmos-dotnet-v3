@@ -1689,7 +1689,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(throughputProperties);
             Assert.AreEqual(expectedThroughput, throughputProperties.Throughput);
 
-            // simple API
+            // Simple API
             int? throughput = await container.ReadThroughputAsync();
             Assert.IsNotNull(throughput);
             Assert.AreEqual(expectedThroughput, throughput);
