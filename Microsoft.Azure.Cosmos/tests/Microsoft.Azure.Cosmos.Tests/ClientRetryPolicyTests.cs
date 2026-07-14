@@ -430,9 +430,14 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         /// (OnBeforeSendRequest runs, so ClientRetryPolicy's internal request reference is non-null) before the
         /// operation is cancelled. With Per-Partition Automatic Failover (PPAF) / Partition-Level Circuit Breaker
         /// (PPCB) enabled, the OperationCanceledException branch of ShouldRetryAsync walks the partition-failover
-        /// bookkeeping path with a real request; it must complete gracefully (no throw) and must not ask the caller
-        /// to retry a cancellation. Unlike the pre-dispatch case, read-vs-write is meaningfully distinct here because
-        /// a concrete request is recorded, so the case is parameterized.
+        /// bookkeeping path with a real request; it must complete gracefully (no throw), must not ask the caller
+        /// to retry a cancellation, and - once the failover threshold is met - must actually record the partition
+        /// failover. That last assertion is what pins the guard's TRUE (non-null) branch: to make the failover
+        /// bookkeeping observable the test drives the full requestThreshold (10 read / 5 write) of cancellations
+        /// and reflects on the resulting PartitionKeyRangeFailoverInfo, so an inverted guard
+        /// (documentServiceRequest == null &amp;&amp;) - which would skip the bookkeeping for a non-null request and
+        /// leave the failover info null - fails the test. Unlike the pre-dispatch case, read-vs-write is meaningfully
+        /// distinct here because a concrete request is recorded, so the case is parameterized.
         /// </summary>
         [TestMethod]
         [DataRow(true, DisplayName = "Read request cancelled after dispatch (PPAF/PPCB enabled).")]
@@ -442,12 +447,15 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         {
             const bool enableEndpointDiscovery = true;
             const string suffix = "-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF";
+            int requestThreshold = isReadRequest ? 10 : 5;
 
             using GlobalEndpointManager endpointManager = this.Initialize(
                 useMultipleWriteLocations: false,
                 enableEndpointDiscovery: enableEndpointDiscovery,
                 isPreferredLocationsListEmpty: false,
                 enablePartitionLevelFailover: true);
+
+            ReadOnlyCollection<Uri> readLocations = endpointManager.ReadEndpoints;
 
             // Build a real, dispatchable request with a resolved partition key range so the partition-failover
             // eligibility check does not early-return. This resolved state (plus OnBeforeSendRequest below) is the
@@ -470,14 +478,30 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             OperationCanceledException operationCancelledException = new(message: "Operation was cancelled after dispatch.");
 
-            // OnBeforeSendRequest records the request (and resolves the location it routed to), so
-            // this.documentServiceRequest is non-null and the guard's true branch runs the real
-            // IncrementRequestFailureCounterAndCheckIfPartitionCanFailover bookkeeping instead of short-circuiting.
-            retryPolicy.OnBeforeSendRequest(request);
+            // The failover bookkeeping has not run yet, so there is no failover info recorded for this partition
+            // key range. This is the baseline the post-dispatch branch is expected to change.
+            Assert.IsNull(
+                ClientRetryPolicyTests.GetPartitionKeyRangeFailoverInfoUsingReflection(
+                    this.partitionKeyRangeLocationCache,
+                    request.RequestContext.ResolvedPartitionKeyRange,
+                    isReadOnlyOrMultiMasterWriteRequest: isReadRequest));
 
+            // Drive the full partition-failover threshold with a DISPATCHED request. OnBeforeSendRequest records the
+            // request on every iteration, so this.documentServiceRequest is non-null and the guard's true branch runs
+            // the real IncrementRequestFailureCounterAndCheckIfPartitionCanFailover bookkeeping instead of
+            // short-circuiting. None of these iterations may throw ArgumentNullException (issue #6014).
             ShouldRetryResult shouldRetryResult = null;
             try
             {
+                for (int i = 0; i < requestThreshold; i++)
+                {
+                    retryPolicy.OnBeforeSendRequest(request);
+                    shouldRetryResult = retryPolicy
+                        .ShouldRetryAsync(operationCancelledException, new CancellationToken())
+                        .GetAwaiter()
+                        .GetResult();
+                }
+
                 shouldRetryResult = retryPolicy
                     .ShouldRetryAsync(operationCancelledException, new CancellationToken())
                     .GetAwaiter()
@@ -488,11 +512,26 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 Assert.Fail($"Regression #6014: a cancellation after dispatch must not throw ArgumentNullException (isReadRequest={isReadRequest}). {ex}");
             }
 
-            // A single cancellation stays below the failover threshold, so the bookkeeping path completes without
-            // requesting a retry; a cancellation must never be retried regardless.
+            // A cancellation must never be retried, regardless of how many times it is observed.
             Assert.IsFalse(
                 shouldRetryResult.ShouldRetry,
                 $"A cancellation after dispatch must not be retried (isReadRequest={isReadRequest}).");
+
+            // Pin the guard's non-null (true) branch via its observable side effect: once the failover threshold is
+            // met, the dispatched-request bookkeeping marks the partition as failed over to the next region. If the
+            // null guard were inverted (documentServiceRequest == null &&), the non-null request would skip this
+            // branch and the failover info would stay null - so this assertion, not the ShouldRetry check above, is
+            // what distinguishes the true branch actually running from it being short-circuited.
+            GlobalPartitionEndpointManagerCore.PartitionKeyRangeFailoverInfo partitionKeyRangeFailoverInfo =
+                ClientRetryPolicyTests.GetPartitionKeyRangeFailoverInfoUsingReflection(
+                    this.partitionKeyRangeLocationCache,
+                    request.RequestContext.ResolvedPartitionKeyRange,
+                    isReadOnlyOrMultiMasterWriteRequest: isReadRequest);
+
+            Assert.IsNotNull(
+                partitionKeyRangeFailoverInfo,
+                $"The dispatched-request bookkeeping branch must record a partition failover once the threshold is met (isReadRequest={isReadRequest}).");
+            Assert.AreEqual(partitionKeyRangeFailoverInfo.Current, readLocations[1]);
         }
 
         [TestMethod]

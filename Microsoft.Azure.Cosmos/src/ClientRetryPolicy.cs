@@ -265,6 +265,17 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="request">The request being sent to the service.</param>
         public void OnBeforeSendRequest(DocumentServiceRequest request)
         {
+            // OnBeforeSendRequest is the only place this.documentServiceRequest is assigned. The
+            // OperationCanceledException guard in ShouldRetryAsync (and the other documentServiceRequest
+            // null checks in this class) rely on that reference only ever transitioning from null to
+            // non-null, never regressing back to null. Every production caller dispatches a fully
+            // constructed request, so make that an explicit contract here and fail fast on null instead
+            // of silently storing it and re-introducing the null downstream. See issue #6014 / PR #6016.
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
             this.isDtxRequest = DistributedTransactionConstants.IsDistributedTransactionRequest(
                 request.OperationType,
                 request.ResourceType);
