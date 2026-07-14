@@ -164,13 +164,13 @@ namespace Microsoft.Azure.Cosmos
                 $"TokenCredentialCache: Token cache reset due to AAD revocation signal. HasClaims={claimsChallenge != null}");
         }
 
-        internal static string MergeClaimsWithClientCapabilities(string? claimsChallenge)
+        internal static string? MergeClaimsWithClientCapabilities(string? claimsChallenge)
         {
             const string clientCapabilitiesJson = "{\"access_token\":{\"xms_cc\":{\"values\":[\"cp1\"]}}}";
 
             if (string.IsNullOrEmpty(claimsChallenge))
             {
-                return clientCapabilitiesJson;
+                return null;
             }
 
             try
@@ -289,24 +289,28 @@ namespace Microsoft.Azure.Cosmos
                         {
                             tokenRequestContext = this.scopeProvider.GetTokenRequestContext();
 
-                            string mergedClaims = TokenCredentialCache.MergeClaimsWithClientCapabilities(this.cachedClaimsChallenge);
-                            if (string.IsNullOrEmpty(this.cachedClaimsChallenge))
+                            if (ConfigurationManager.IsAadTokenRevocationEnabled())
                             {
-                                DefaultTrace.TraceInformation(
-                                    $"Requesting AAD token with CAE client capabilities (cp1). Retry={retry}");
-                            }
-                            else
-                            {
-                                DefaultTrace.TraceInformation(
-                                    $"Requesting AAD token for revocation with claims challenge and client capabilities (cp1). Retry={retry}");
-                            }
+                                string? challenge = this.cachedClaimsChallenge;
+                                string? mergedClaims = TokenCredentialCache.MergeClaimsWithClientCapabilities(challenge);
+                                if (string.IsNullOrEmpty(challenge))
+                                {
+                                    DefaultTrace.TraceInformation(
+                                        $"Requesting AAD token with CAE client capabilities (cp1). Retry={retry}");
+                                }
+                                else
+                                {
+                                    DefaultTrace.TraceInformation(
+                                        $"Requesting AAD token for revocation with claims challenge and client capabilities (cp1). Retry={retry}");
+                                }
 
-                            tokenRequestContext = new TokenRequestContext(
-                                scopes: tokenRequestContext.Scopes,
-                                parentRequestId: tokenRequestContext.ParentRequestId,
-                                claims: mergedClaims,
-                                tenantId: tokenRequestContext.TenantId,
-                                isCaeEnabled: tokenRequestContext.IsCaeEnabled);
+                                tokenRequestContext = new TokenRequestContext(
+                                    scopes: tokenRequestContext.Scopes,
+                                    parentRequestId: tokenRequestContext.ParentRequestId,
+                                    claims: mergedClaims,
+                                    tenantId: tokenRequestContext.TenantId,
+                                    isCaeEnabled: tokenRequestContext.IsCaeEnabled);
+                            }
 
                             AccessToken accessToken = await this.tokenCredential.GetTokenAsync(
                                 requestContext: tokenRequestContext,
