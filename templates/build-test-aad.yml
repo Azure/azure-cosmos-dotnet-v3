@@ -1,38 +1,60 @@
 # File: templates/build-test-aad.yml
 #
-# Dedicated template for the live-account AAD (Microsoft Entra ID) integration tests
-# (TestCategory=MultiRegionAad). These target a shared, AAD-only live Cosmos DB account and
-# run on every pipeline (the nightly schedule, azure-pipelines-nightly.yml, as well as PR
-# builds, azure-pipelines.yml). The account is authenticated via a Workload Identity Federation
-# service connection (client secrets are blocked by tenant policy).
+# Live-account AAD (Microsoft Entra ID) integration tests (TestCategory=MultiRegionAad),
+# provisioned with the "bicep test-resources" pattern used by the other Azure SDK languages
+# (e.g. azure-sdk-for-python sdk/cosmos).
 #
-# The job stays skipped (green) until 'AadServiceConnection' is set to the WIF service
-# connection name, so this template is safe to reference before the connection is configured.
+# Flow (inside AzureCLI@2 tasks bound to an ARM service connection):
+#   1. Resolve the service connection identity's object id (testApplicationOid).
+#   2. Deploy templates/aad-test-resources.bicep, which creates a fresh Cosmos DB account +
+#      AadLiveTestDb/AadLiveTestContainer and grants that identity the data-plane
+#      Data Contributor role -- account and identity are co-tenant, so the token is accepted.
+#   3. Run the MultiRegionAad tests, authenticating as the connection identity via
+#      DefaultAzureCredential (AzureCliCredential), against the just-created account.
+#   4. Always tear the account down.
+#
+# Why a connection is still required: deploying the bicep (a control-plane operation) needs an
+# ARM identity with Contributor on a subscription in the SAME tenant as the build agents. The
+# cross-tenant experiment (2026-07-14) proved a corp-tenant account cannot grant a role to the
+# OneES agent MI (tenant 975f013f), so the account must be provisioned in the agents' tenant via
+# this connection. The job stays skipped (green) until 'AadServiceConnection' + 'AadTestResourceGroup'
+# are set to a connection/RG in that tenant.
 
 parameters:
   BuildConfiguration: ''
   OS: 'Windows'
   Arguments: ' --filter "TestCategory=MultiRegionAad" --verbosity normal '
   CategoryListName: ' MultiRegionAad '
-  AadAccountEndpoint: ''
+  # ARM (Workload Identity Federation or service principal) connection used BOTH to deploy the
+  # bicep and as the identity the tests authenticate as. Its identity must be co-tenant with the
+  # build agents. Leave blank to keep this job skipped/green.
   AadServiceConnection: ''
+  # Resource group (must already exist in the connection's subscription/tenant) to deploy the
+  # ephemeral test account into.
+  AadTestResourceGroup: ''
+  # Region for the provisioned account.
+  AadTestRegion: 'West US 3'
+  # Optional: object id to grant the data-plane role to. When empty, resolved at runtime from the
+  # service connection identity.
+  AadTestApplicationOid: ''
 
 jobs:
 - job:
   displayName: EmulatorTests ${{ parameters.BuildConfiguration }} - ${{ parameters.CategoryListName }}
-  timeoutInMinutes: 60
-  # Runs only when an AAD service connection (Workload Identity Federation) is configured. The target
-  # account is AAD-only, so the tests authenticate via the federated service connection identity instead
-  # of a client secret (which is blocked by tenant policy). Stays skipped (green) until the connection is set.
-  condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'), ne('${{ parameters.AadServiceConnection }}', ''))
+  timeoutInMinutes: 90
+  # Runs only when an ARM connection + resource group (in the build-agent tenant) are configured.
+  condition: >-
+    and(succeeded(),
+        eq('${{ parameters.OS }}', 'Windows'),
+        ne('${{ parameters.AadServiceConnection }}', ''),
+        ne('${{ parameters.AadTestResourceGroup }}', ''))
   pool:
     name: 'OneES'
 
   steps:
-  - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
-    clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
+  - checkout: self
+    clean: true
 
-  # Add this Command to Include the .NET 6 SDK
   - task: UseDotNet@2
     displayName: Use .NET 6.0
     inputs:
@@ -46,23 +68,66 @@ jobs:
       version: '8.x'
 
   - task: AzureCLI@2
-    displayName: Microsoft.Azure.Cosmos.EmulatorTests
-    retryCountOnTaskFailure: 2
-    condition: succeeded()
+    displayName: Provision AAD test account (bicep)
+    name: provisionAad
     inputs:
       azureSubscription: ${{ parameters.AadServiceConnection }}
       scriptType: pscore
       scriptLocation: inlineScript
-      # The AzureCLI task logs `az` in as the service connection identity; the SDK's
-      # DefaultAzureCredential (AzureCliCredential) then acquires Cosmos data-plane tokens.
+      addSpnToEnvironment: true
+      inlineScript: |
+        $ErrorActionPreference = 'Stop'
+        $oid = '${{ parameters.AadTestApplicationOid }}'
+        if ([string]::IsNullOrWhiteSpace($oid)) {
+          # $env:servicePrincipalId is the connection identity's app (client) id; resolve its object id.
+          $oid = az ad sp show --id $env:servicePrincipalId --query id -o tsv
+        }
+        Write-Host "testApplicationOid=$oid"
+
+        $account = "dnetaad$([System.Guid]::NewGuid().ToString('N').Substring(0,12))"
+        Write-Host "##vso[task.setvariable variable=AadAccountName;isOutput=true]$account"
+
+        $endpoint = az deployment group create `
+          --resource-group '${{ parameters.AadTestResourceGroup }}' `
+          --template-file templates/aad-test-resources.bicep `
+          --parameters baseName=$account location='${{ parameters.AadTestRegion }}' testApplicationOid=$oid `
+          --query properties.outputs.ACCOUNT_HOST.value -o tsv
+        Write-Host "AAD account endpoint: $endpoint"
+        Write-Host "##vso[task.setvariable variable=AadAccountEndpoint;isOutput=true]$endpoint"
+
+  - task: AzureCLI@2
+    displayName: Microsoft.Azure.Cosmos.EmulatorTests (MultiRegionAad)
+    retryCountOnTaskFailure: 1
+    inputs:
+      azureSubscription: ${{ parameters.AadServiceConnection }}
+      scriptType: pscore
+      scriptLocation: inlineScript
+      # The AzureCLI task logs `az` in as the connection identity; the SDK's DefaultAzureCredential
+      # (AzureCliCredential) then acquires Cosmos data-plane tokens for the provisioned account.
       inlineScript: |
         dotnet test 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj' `
           ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }} `
           --logger 'trx;LogFileName=MultiRegionAad.trx'
     env:
-      COSMOSDB_MULTI_REGION_AAD: ${{ parameters.AadAccountEndpoint }}
+      COSMOSDB_MULTI_REGION_AAD: $(provisionAad.AadAccountEndpoint)
       COSMOSDB_AAD_USE_DEFAULT_CREDENTIAL: true
       AZURE_COSMOS_NON_STREAMING_ORDER_BY_FLAG_DISABLED: true
+
+  - task: AzureCLI@2
+    displayName: Tear down AAD test account
+    condition: always()
+    inputs:
+      azureSubscription: ${{ parameters.AadServiceConnection }}
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        $account = '$(provisionAad.AadAccountName)'
+        if (-not [string]::IsNullOrWhiteSpace($account)) {
+          Write-Host "Deleting AAD test account $account"
+          az cosmosdb delete --name $account --resource-group '${{ parameters.AadTestResourceGroup }}' --yes
+        } else {
+          Write-Host "No account name captured; nothing to delete."
+        }
 
   - task: PublishTestResults@2
     displayName: Publish MultiRegionAad results
