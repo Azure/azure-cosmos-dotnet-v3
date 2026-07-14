@@ -1035,6 +1035,105 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [Timeout(30000)]
+        public async Task TokenCredentialCache_StaleRefreshPlantedDuringInstall_DoesNotWedgeSlot()
+        {
+            using IDisposable revocationEnabled = EnableAadTokenRevocation();
+
+            // Regression for the snapshot-vs-assignment race: a ResetCachedToken (CAE revocation) that
+            // fires WHILE a no-claims refresh is being installed leaves that now-stale refresh planted in
+            // currentRefreshOperation. A generation-guarded clear cannot remove it (its generation is
+            // already superseded), so it stays stuck as a completed, no-claims task and every later
+            // caller reuses it - never starting a fresh claims-based refresh. With
+            // MaxCaeRevocationRetryCount == 1 that surfaces as a user-visible auth failure. An identity
+            // (operation-id) compare-and-clear removes the stale occupant so the next caller can start a
+            // fresh, claims-based refresh.
+            ResetOnFirstNoClaimsRefreshCredential credential = new ResetOnFirstNoClaimsRefreshCredential();
+            using TokenCredentialCache cache = this.CreateTokenCredentialCache(credential, TimeSpan.FromMinutes(30));
+
+            string claimsChallenge = Convert.ToBase64String(
+                System.Text.Encoding.UTF8.GetBytes("{\"access_token\":{\"acrs\":{\"essential\":true,\"value\":\"c1\"}}}"));
+
+            // The credential invokes this the moment the no-claims refresh reaches it - i.e. during the
+            // slot install, before currentRefreshOperation has been published - reproducing the race.
+            credential.SetOnNoClaimsRefreshStarting(() => cache.ResetCachedToken(claimsChallenge));
+
+            // 1) Start the no-claims refresh. It synchronously reaches the credential, which resets the
+            //    cache (bumping the generation) and then parks - so this stale refresh is planted in the
+            //    slot AFTER the reset already advanced the generation.
+            Task<string> plantedStaleRefresh = cache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton).AsTask();
+
+            // 2) A second caller arriving while the stale refresh is in flight joins that same task.
+            Task<string> joinsStaleRefresh = cache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton).AsTask();
+
+            // 3) Let the stale no-claims refresh complete. Its completion must clear the slot by identity.
+            credential.ReleaseNoClaimsRefresh();
+            await plantedStaleRefresh;
+            await joinsStaleRefresh;
+
+            // 4) The next acquisition must NOT be stuck serving the stale no-claims task - it must start a
+            //    fresh refresh that honors the installed claims challenge and returns the claims token.
+            string headerAfterStale = await cache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton);
+            Assert.AreEqual(
+                AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(ResetOnFirstNoClaimsRefreshCredential.ClaimsToken),
+                headerAfterStale,
+                "REGRESSION: a stale no-claims refresh planted during the reset window was left in " +
+                "currentRefreshOperation, so subsequent callers reused it and never performed the " +
+                "claims-based refresh. With MaxCaeRevocationRetryCount == 1 that drops the CAE revocation " +
+                "and surfaces as an auth failure. The slot must be cleared by identity so the next caller " +
+                "starts a fresh, claims-based refresh.");
+        }
+
+        /// <summary>
+        /// A TokenCredential that, on the FIRST no-claims acquisition, invokes a caller-supplied action
+        /// (used to fire ResetCachedToken while the refresh is still being installed) and then parks until
+        /// released - deterministically reproducing the snapshot-vs-assignment race where a stale refresh
+        /// is planted into the slot after a CAE reset has already advanced the generation. Claims-bearing
+        /// acquisitions are served immediately. Distinct token values let the caller tell which refresh's
+        /// result ended up cached.
+        /// </summary>
+        private sealed class ResetOnFirstNoClaimsRefreshCredential : TokenCredential
+        {
+            public const string NoClaimsToken = "NoClaimsToken";
+            public const string ClaimsToken = "ClaimsToken";
+
+            private readonly TaskCompletionSource<bool> releaseNoClaimsRefresh
+                = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            private Action onNoClaimsRefreshStarting;
+            private int noClaimsRefreshCount;
+
+            public void SetOnNoClaimsRefreshStarting(Action action) => this.onNoClaimsRefreshStarting = action;
+
+            public void ReleaseNoClaimsRefresh() => this.releaseNoClaimsRefresh.TrySetResult(true);
+
+            public override AccessToken GetToken(TokenRequestContext requestContext, CancellationToken cancellationToken)
+            {
+                return this.GetTokenAsync(requestContext, cancellationToken).AsTask().GetAwaiter().GetResult();
+            }
+
+            public override async ValueTask<AccessToken> GetTokenAsync(TokenRequestContext requestContext, CancellationToken cancellationToken)
+            {
+                if (string.IsNullOrEmpty(requestContext.Claims))
+                {
+                    // Only the first no-claims refresh drives the race; any later no-claims call returns
+                    // immediately so the test can never hang on an unexpected extra acquisition.
+                    if (Interlocked.Increment(ref this.noClaimsRefreshCount) == 1)
+                    {
+                        // Runs while the refresh is being installed into the slot: fire the reset here so
+                        // the generation advances before this (now stale) refresh is published, then park
+                        // so it deterministically completes last.
+                        this.onNoClaimsRefreshStarting?.Invoke();
+                        await this.releaseNoClaimsRefresh.Task;
+                    }
+
+                    return new AccessToken(NoClaimsToken, DateTimeOffset.MaxValue);
+                }
+
+                return new AccessToken(ClaimsToken, DateTimeOffset.MaxValue);
+            }
+        }
+
+        [TestMethod]
         public async Task TokenCredentialCache_ThrowsObjectDisposed_AfterDispose()
         {
             TestTokenCredential testTokenCredential = new TestTokenCredential(() => new ValueTask<AccessToken>(this.AccessToken));

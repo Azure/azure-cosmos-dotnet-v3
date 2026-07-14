@@ -68,9 +68,20 @@ namespace Microsoft.Azure.Cosmos
         // backgroundRefreshLock every time ResetCachedToken invalidates the cache (e.g. on a CAE /
         // revocation challenge). A refresh snapshots this value when it starts; if the generation
         // has advanced by the time the refresh completes, the refresh is stale (a ResetCachedToken
-        // raced it) and must not publish its result over the newer state. See
-        // RefreshCachedTokenWithRetryHelperAsync.
+        // raced it) and must not publish its result (authState / cachedClaimsChallenge) over the
+        // newer state. See RefreshCachedTokenWithRetryHelperAsync.
         private long refreshGeneration = 0;
+
+        // Monotonically increasing identity stamped on the refresh currently published in
+        // currentRefreshOperation, assigned atomically with that slot under backgroundRefreshLock. A
+        // refresh captures its id when it is installed and, on completion, clears the slot only if the
+        // slot still carries that id (a true identity compare-and-clear). This is deliberately separate
+        // from refreshGeneration: generation answers "did a ResetCachedToken happen" (used to guard
+        // republishing authState / cachedClaimsChallenge), whereas the id answers "am I still the task
+        // occupying the slot" (used to guard clearing the slot). The two are not interchangeable - a
+        // generation check cannot distinguish a superseded-but-still-occupant refresh (which should
+        // clear) from a superseded-and-replaced one (which must not clear).
+        private long currentRefreshOperationId = 0;
         private volatile AuthState? authState = null;
         private volatile string? cachedClaimsChallenge;
         private bool isBackgroundTaskRunning = false;
@@ -258,9 +269,25 @@ namespace Microsoft.Azure.Cosmos
                 // avoid doing the await in the semaphore to unblock the parallel requests
                 if (this.currentRefreshOperation == null)
                 {
-                    // ValueTask can not be awaited multiple times
-                    currentTask = this.RefreshCachedTokenWithRetryHelperAsync(trace).AsTask();
-                    this.currentRefreshOperation = currentTask;
+                    // Snapshot the refresh generation, stamp a unique operation id, create the refresh
+                    // task, and publish it into the slot as a single atomic step under
+                    // backgroundRefreshLock. Capturing the generation/id and assigning the slot together
+                    // (rather than in separate steps) closes the window where a racing ResetCachedToken -
+                    // which also takes backgroundRefreshLock - could slip between the snapshot and the
+                    // slot assignment and orphan a stale, superseded refresh in the slot that would then
+                    // block every future refresh.
+                    lock (this.backgroundRefreshLock)
+                    {
+                        long refreshGenerationSnapshot = this.refreshGeneration;
+                        long refreshOperationId = ++this.currentRefreshOperationId;
+
+                        // ValueTask can not be awaited multiple times
+                        currentTask = this.RefreshCachedTokenWithRetryHelperAsync(
+                            trace,
+                            refreshGenerationSnapshot,
+                            refreshOperationId).AsTask();
+                        this.currentRefreshOperation = currentTask;
+                    }
                 }
                 else
                 {
@@ -276,22 +303,22 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private async ValueTask<AuthState> RefreshCachedTokenWithRetryHelperAsync(
-            ITrace trace)
+            ITrace trace,
+            long refreshGenerationSnapshot,
+            long refreshOperationId)
         {
+            // refreshGenerationSnapshot and refreshOperationId are captured by the caller
+            // (GetNewTokenAsync) atomically with publishing this refresh into currentRefreshOperation.
+            //  - refreshGenerationSnapshot detects a ResetCachedToken (CAE / revocation) racing this
+            //    refresh: if the generation advances before this refresh publishes, the refresh is stale
+            //    and must not overwrite authState or clear the claims challenge - doing so would drop the
+            //    revocation response, and with ClientRetryPolicy.MaxCaeRevocationRetryCount == 1 that
+            //    surfaces as an auth failure.
+            //  - refreshOperationId identifies this refresh as the slot occupant so the finally can clear
+            //    currentRefreshOperation by identity rather than by generation (see the finally below).
             Exception? lastException = null;
             const int totalRetryCount = 2;
             TokenRequestContext tokenRequestContext = default;
-
-            // Snapshot the refresh generation so we can detect a ResetCachedToken (CAE / revocation)
-            // that races with this refresh. If the generation advances before this refresh publishes,
-            // the refresh is stale and must not overwrite authState, clear the claims challenge, or
-            // clear currentRefreshOperation - doing so would drop the revocation response, and with
-            // ClientRetryPolicy.MaxCaeRevocationRetryCount == 1 that surfaces as an auth failure.
-            long refreshGenerationSnapshot;
-            lock (this.backgroundRefreshLock)
-            {
-                refreshGenerationSnapshot = this.refreshGeneration;
-            }
 
             try
             {
@@ -468,12 +495,15 @@ namespace Microsoft.Azure.Cosmos
                 {
                     await this.isTokenRefreshingLock.WaitAsync();
 
-                    // Compare-and-clear: only clear currentRefreshOperation if this refresh is still
-                    // the current one. If a ResetCachedToken raced (advancing the generation) and a
-                    // newer refresh has since taken ownership, this stale refresh must not clear it.
+                    // Identity compare-and-clear: clear currentRefreshOperation only if the slot still
+                    // holds THIS refresh (its stamped id is still current). A generation check is not
+                    // equivalent - it answers "did a ResetCachedToken happen since I started" rather than
+                    // "am I still the task in the slot" - so if a ResetCachedToken raced and a newer
+                    // refresh has since taken ownership, the id will have moved on and this stale refresh
+                    // correctly leaves the newer one in place.
                     lock (this.backgroundRefreshLock)
                     {
-                        if (this.refreshGeneration == refreshGenerationSnapshot)
+                        if (this.currentRefreshOperationId == refreshOperationId)
                         {
                             this.currentRefreshOperation = null;
                         }
