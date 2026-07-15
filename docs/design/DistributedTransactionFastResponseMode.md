@@ -11,6 +11,8 @@ Fast Response mode lets a distributed write transaction acknowledge back to `Cos
 
 The goal of composability is to let one public surface disambiguate between the **two modes of a write distributed transaction** — `Standard` and `FastResponse` — without forking the commit API. The commit call, `ExecuteTransactionAsync`, is the same in both modes; the envelope it returns, `DistributedTransactionResponse`, tells the caller which mode the coordinator applied and how far the transaction has progressed.
 
+> API rename: the commit method is renamed from `CommitTransactionAsync` to `ExecuteTransactionAsync` to reflect that, in `FastResponse` mode, the call executes (rather than necessarily commits) the transaction and may return before the terminal Commit/Abort outcome.
+
 ### 2.1 One envelope disambiguates the two modes
 
 `DistributedTransactionResponse` reports the mode the coordinator recorded for this logical attempt:
@@ -51,6 +53,12 @@ The mode also appears in the response payload as a top-level `responseMode` fiel
     }
   ]
 }
+```
+
+The SDK exposes the mode as a public getter on `DistributedTransactionResponse`:
+
+```csharp
+public DistributedTransactionResponseMode ResponseMode { get; }
 ```
 
 
@@ -114,21 +122,3 @@ Even when the `CancellationToken` has been triggered, `CosmosClient` MUST expose
 - Cancellation observed before the next attempt's dispatch handoff leaves the previously published token as the latest.
 - Because cancellation only fires between attempts, the latest published token always corresponds to a completed dispatch.
 - Cancellation only stops local SDK work; it never sends an abort and never changes server state.
-
-## 5. FastResponse-Mode Response Handling
-
-In FastResponse mode, `CosmosClient` deserializes the response and inspects only two fields to drive its behavior:
-
-- the transaction's **status code**, and
-- the **`isRetriable`** flag.
-
-Together these determine whether the SDK retries the transaction (retriable `Aborted`) or returns the outcome to the caller. No other part of the response body is interpreted for control flow.
-
-`CosmosClient` does **not** extract a session token or an ETag from a FastResponse acknowledgment. As a result:
-
-- **No consistency guarantees** — a FastResponse acknowledgment does not establish session read-your-write state; a subsequent Session-consistency read acquires session state normally from the service.
-- **No optimistic concurrency control (OCC) guarantees** — no per-operation ETag is surfaced, so a FastResponse acknowledgment cannot be used as the basis for a conditional (`If-Match`) follow-up write.
-
-To obtain operation results, ETags, or session tokens, use a `Standard`-mode commit, whose terminal response carries the full per-operation results.
-
-> Note: Because FastResponse provides no consistency or OCC guarantees, it is safe to enable only on accounts configured for Eventual consistency. Accounts relying on stronger consistency (for example Session or Bounded Staleness read-your-write semantics) should use `Standard` mode.
