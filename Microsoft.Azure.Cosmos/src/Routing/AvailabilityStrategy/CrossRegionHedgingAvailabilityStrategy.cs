@@ -216,6 +216,16 @@ namespace Microsoft.Azure.Cosmos
                                     {
                                         await (Task<HedgingResponse>)completedTask;
                                     }
+                                    else
+                                    {
+                                        // The losing hedge faulted/cancelled but the operation itself was
+                                        // not cancelled. completedTask has already been removed from
+                                        // requestTasks, so the later ObserveAbandonedHedgeTasks(...) at the
+                                        // winner-returns can never observe it. Observe it here so a
+                                        // raced-cancellation fault cannot escape as an unobserved task
+                                        // exception and crash the host.
+                                        CrossRegionHedgingAvailabilityStrategy.ObserveAbandonedHedgeTasks(new[] { completedTask });
+                                    }
 
                                     continue;
                                 }
