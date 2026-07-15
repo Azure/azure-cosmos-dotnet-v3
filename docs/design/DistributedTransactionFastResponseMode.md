@@ -54,7 +54,6 @@ The mode also appears in the response payload as a top-level `responseMode` fiel
 }
 ```
 
-`operationResponses` carries one result per operation. In FastResponse mode, `CosmosClient` does not extract these per-operation results for control flow (see section 7).
 
 ### 2.2 Transaction status is its own API with its own return type
 
@@ -256,41 +255,6 @@ Even when the `CancellationToken` has been triggered, `CosmosClient` MUST expose
 
 The end-to-end flow a customer follows with a Fast Response transaction:
 
-1. Build the `DistributedTransaction`, add operations, and call `CommitTransactionAsync`.
-2. Inspect `ResponseMode` on the returned `DistributedTransactionResponse`:
-   - `Standard` — the response is already terminal (`Committed` or `Aborted`); no further action is needed.
-   - `FastResponse` — the commit returned `202/InProgress` after durable Phase 1; the coordinator continues to a terminal outcome independently of the client.
-3. Capture `DistributedTransaction.IdempotencyToken` — this identifies the transaction for later status lookups.
-4. Poll for the terminal outcome by calling `GetTransactionStatusAsync(idempotencyToken)` and reading `TransactionStatus`:
-   - `InProgress` — wait the server-recommended delay and poll again.
-   - `Committed` — the transaction succeeded; stop.
-   - `Aborted` — inspect `IsRetriable` (via the transaction's substatus).
-5. On a retriable `Aborted` (`isRetriable: true`), optionally retry the transaction with a **new idempotency token** (section 5), reusing the same operations, until it commits or the retry budget is exhausted.
-6. On a non-retriable `Aborted`, surface the failure to the caller.
-7. At any point, cancellation stops local polling/retry work gracefully between attempts without changing server state; the latest idempotency token remains available for a later status lookup.
-
-```mermaid
-sequenceDiagram
-    participant App
-    participant CosmosClient
-    participant Coordinator
-
-    App->>CosmosClient: CommitTransactionAsync()
-    CosmosClient->>Coordinator: Commit (idempotencyToken)
-    Coordinator-->>CosmosClient: 202 InProgress (FastResponse, after durable Phase 1)
-    CosmosClient-->>App: DistributedTransactionResponse (ResponseMode=FastResponse)
-
-    loop until terminal
-        App->>CosmosClient: GetTransactionStatusAsync(idempotencyToken)
-        CosmosClient->>Coordinator: GET /operations/dtc/status
-        Coordinator-->>CosmosClient: 200 (TransactionStatus)
-        CosmosClient-->>App: DistributedTransactionStatusResponse
-    end
-
-    alt Aborted + isRetriable
-        App->>CosmosClient: retry with NEW idempotency token
-    end
-```
 
 ### 6.1 Example: read/query in conjunction with the status API
 
@@ -353,3 +317,5 @@ Together these determine whether the SDK retries the transaction (retriable `Abo
 - **No optimistic concurrency control (OCC) guarantees** — no per-operation ETag is surfaced, so a FastResponse acknowledgment cannot be used as the basis for a conditional (`If-Match`) follow-up write.
 
 To obtain operation results, ETags, or session tokens, use a `Standard`-mode commit, whose terminal response carries the full per-operation results.
+
+> Note: Because FastResponse provides no consistency or OCC guarantees, it is safe to enable only on accounts configured for Eventual consistency. Accounts relying on stronger consistency (for example Session or Bounded Staleness read-your-write semantics) should use `Standard` mode.
