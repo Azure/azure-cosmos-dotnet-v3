@@ -122,8 +122,7 @@ namespace Microsoft.Azure.Cosmos
                 || request.OperationType == OperationType.Upsert
                 || request.OperationType == OperationType.Replace
                 || request.OperationType == OperationType.Delete
-                || request.OperationType == OperationType.Query
-                || request.OperationType == OperationType.QueryPlan))
+                || request.OperationType == OperationType.Query))
             {
                 return true;
             }
