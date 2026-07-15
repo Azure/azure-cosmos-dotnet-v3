@@ -282,6 +282,100 @@ namespace Microsoft.Azure.Cosmos
             mockHttpHandler.VerifyAll();
         }
 
+        /// <summary>
+        /// When the gateway advertises a partition whose target replica set size (3) is lower than the account-wide
+        /// <see cref="ReplicationPolicy.MaxReplicaSetSize"/> (4), the address cache must treat the 3
+        /// returned replicas as the complete set for that partition: it must NOT flag the partition as
+        /// suboptimal and must NOT issue a follow-up force-refresh address call to the gateway, even
+        /// after the suboptimal refresh interval has elapsed.
+        ///
+        /// Detection mirrors <see cref="TestGatewayAddressCacheAvoidCacheRefresWhenAlreadyUpdatedAsync"/>:
+        /// the strict http handler is primed to hand out a <em>rotated</em> replica on any second address
+        /// call. If the cache had incorrectly force refreshed, the second resolution would surface the
+        /// rotated replica and the gateway would be contacted twice. The test asserts the rotated replica
+        /// never appears and the address endpoint is contacted exactly once.
+        ///
+        /// Before the fix, 3 (returned) &lt; 4 (account max) flagged the partition as suboptimal, so the
+        /// second resolution after the interval force refreshed and surfaced the rotated replica.
+        /// </summary>
+        [TestMethod]
+        [Owner("aavasthy")]
+        public async Task TryGetAddressesAsync_WhenPartitionTargetReplicaSetSizeIsLowerThanAccountMax_ShouldNotForceRefreshTheReducedReplicaSet()
+        {
+            // Account-wide MaxReplicaSetSize is 4, but this partition only targets 3 replicas.
+            this.ConfigureReplicationPolicy(replicaSetSize: 4);
+
+            const int partitionTargetReplicaSetSize = 3;
+            const string primaryAddress = "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/1p";
+            const string secondaryAddress = "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/2s";
+            const string initialThirdReplica = "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/3s";
+            // Only served if the cache makes an unexpected second (force-refresh) address call.
+            const string rotatedThirdReplica = "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/4s";
+
+            List<string> initialReplicaSet = new() { primaryAddress, secondaryAddress, initialThirdReplica };
+            List<string> rotatedReplicaSet = new() { primaryAddress, secondaryAddress, rotatedThirdReplica };
+
+            Mock<IHttpHandler> mockHttpHandler = new(MockBehavior.Strict);
+            mockHttpHandler.SetupSequence(x => x.SendAsync(
+                    It.IsAny<HttpRequestMessage>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(GatewayAddressCacheTests.CreateHttpResponseOfAddressesWithTargetReplicaSetSize(
+                    physicalUris: initialReplicaSet,
+                    partitionTargetReplicaSetSize: partitionTargetReplicaSetSize))
+                .Returns(GatewayAddressCacheTests.CreateHttpResponseOfAddressesWithTargetReplicaSetSize(
+                    physicalUris: rotatedReplicaSet,
+                    partitionTargetReplicaSetSize: partitionTargetReplicaSetSize));
+
+            HttpClient httpClient = new(new HttpHandlerHelper(mockHttpHandler.Object));
+            GatewayAddressCache cache = new GatewayAddressCache(
+                new Uri(GatewayAddressCacheTests.DatabaseAccountApiEndpoint),
+                Documents.Client.Protocol.Tcp,
+                this.mockTokenProvider.Object,
+                this.mockServiceConfigReader.Object,
+                MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
+                openConnectionsHandler: null,
+                Mock.Of<IConnectionStateListener>(),
+                suboptimalPartitionForceRefreshIntervalInSeconds: 1);
+
+            // First resolution: the SDK should accept the reduced 3-replica set for this partition.
+            PartitionAddressInformation firstResolution = await cache.TryGetAddressesAsync(
+                DocumentServiceRequest.Create(OperationType.Read, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey),
+                this.testPartitionKeyRangeIdentity,
+                this.serviceIdentity,
+                forceRefreshPartitionAddresses: false,
+                CancellationToken.None);
+
+            Assert.AreEqual(3, firstResolution.AllAddresses.Count(), "The SDK should accept the reduced 3-replica set.");
+            Assert.AreEqual(partitionTargetReplicaSetSize, firstResolution.PartitionTargetReplicaSetSize);
+            Assert.AreEqual(1, firstResolution.AllAddresses.Count(x => x.PhysicalUri == initialThirdReplica));
+
+            // Wait beyond the suboptimal refresh interval (1s). If the 3-replica set had been (incorrectly)
+            // treated as suboptimal because 3 < account max 4, the next resolution would force refresh.
+            await Task.Delay(TimeSpan.FromSeconds(2));
+
+            PartitionAddressInformation secondResolution = await cache.TryGetAddressesAsync(
+                DocumentServiceRequest.Create(OperationType.Read, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey),
+                this.testPartitionKeyRangeIdentity,
+                this.serviceIdentity,
+                forceRefreshPartitionAddresses: false,
+                CancellationToken.None);
+
+            // The reduced replica set was treated as complete: served from cache, and the rotated replica
+            // (which the gateway would only return on a second/force-refresh call) never surfaces.
+            Assert.AreEqual(3, secondResolution.AllAddresses.Count());
+            Assert.AreEqual(partitionTargetReplicaSetSize, secondResolution.PartitionTargetReplicaSetSize);
+            Assert.AreEqual(1, secondResolution.AllAddresses.Count(x => x.PhysicalUri == initialThirdReplica));
+            Assert.AreEqual(
+                0,
+                secondResolution.AllAddresses.Count(x => x.PhysicalUri == rotatedThirdReplica),
+                "A rotated replica would only appear if the cache force refreshed the addresses.");
+
+            // The gateway address endpoint must have been contacted exactly once - no force refresh.
+            mockHttpHandler.Verify(
+                x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()),
+                Times.Once());
+        }
+
         [TestMethod]
         [Timeout(2000)]
         public void GlobalAddressResolverUpdateAsyncSynchronizationTest()
@@ -1751,6 +1845,48 @@ namespace Microsoft.Azure.Cosmos
 
             addresses.Add(rotatingAddress);
             return addresses;
+        }
+
+        /// <summary>
+        /// Builds a gateway address feed response (equivalent to
+        /// <see cref="MockCosmosUtil.CreateHttpResponseOfAddresses"/>) whose <see cref="Address"/> entries
+        /// additionally carry the supplied per-partition <paramref name="partitionTargetReplicaSetSize"/>.
+        /// This mirrors a gateway that has scaled a specific partition to a target replica set size that
+        /// differs from the account-wide value.
+        /// </summary>
+        private static Task<HttpResponseMessage> CreateHttpResponseOfAddressesWithTargetReplicaSetSize(
+            List<string> physicalUris,
+            int? partitionTargetReplicaSetSize)
+        {
+            List<Address> addresses = new();
+            for (int i = 0; i < physicalUris.Count; i++)
+            {
+                addresses.Add(new Address()
+                {
+                    IsPrimary = i == 0,
+                    PhysicalUri = physicalUris[i],
+                    Protocol = RuntimeConstants.Protocols.RNTBD,
+                    PartitionKeyRangeId = "YxM9ANCZIwABAAAAAAAAAA==",
+                    PartitionTargetReplicaSetSize = partitionTargetReplicaSetSize,
+                });
+            }
+
+            FeedResource<Address> addressFeedResource = new()
+            {
+                Id = "YxM9ANCZIwABAAAAAAAAAA==",
+                SelfLink = "dbs/YxM9AA==/colls/YxM9ANCZIwA=/docs/YxM9ANCZIwABAAAAAAAAAA==/",
+                Timestamp = DateTime.Now,
+                InnerCollection = new Collection<Address>(addresses),
+            };
+
+            StringBuilder feedResourceString = new();
+            addressFeedResource.SaveTo(feedResourceString);
+
+            return Task.FromResult(new HttpResponseMessage()
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent(feedResourceString.ToString()),
+            });
         }
 
         /// <summary>
