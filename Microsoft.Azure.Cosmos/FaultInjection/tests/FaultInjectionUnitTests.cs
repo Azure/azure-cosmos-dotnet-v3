@@ -73,5 +73,35 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             Assert.IsTrue(((FaultInjectionServerErrorResult)faultInjectionRule.GetResult()).GetSuppressServiceRequests());
 
         }
+
+        [TestMethod]
+        [Owner("abhmohanty")]
+        [Description("Tests Fault Injection Rule Builder accepts distributed transaction operation types")]
+        public void FaultInjectionDistributedTransactionOperationTypeTests()
+        {
+            foreach (FaultInjectionOperationType dtxOperationType in new[]
+            {
+                FaultInjectionOperationType.DistributedReadTransaction,
+                FaultInjectionOperationType.DistributedWriteTransaction,
+            })
+            {
+                FaultInjectionCondition condition = new FaultInjectionConditionBuilder()
+                    .WithOperationType(dtxOperationType)
+                    .WithConnectionType(FaultInjectionConnectionType.Gateway)
+                    .Build();
+
+                FaultInjectionRule rule = new FaultInjectionRuleBuilder(
+                    id: $"dtx_{dtxOperationType}",
+                    condition: condition,
+                    result: FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.RetryWith)
+                        .WithTimes(2)
+                        .Build())
+                    .Build();
+
+                Assert.AreEqual(dtxOperationType, rule.GetCondition().GetOperationType());
+                Assert.AreEqual(FaultInjectionConnectionType.Gateway, rule.GetCondition().GetConnectionType());
+                Assert.IsFalse(rule.GetCondition().IsMetadataOperationType());
+            }
+        }
     }
 }

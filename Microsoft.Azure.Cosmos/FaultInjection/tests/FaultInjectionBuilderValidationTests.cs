@@ -1,4 +1,4 @@
-// ------------------------------------------------------------
+﻿// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
@@ -109,6 +109,187 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             Assert.ThrowsException<ArgumentException>(() =>
                 new FaultInjectionRuleBuilder(id: "test", condition: condition, result: result)
                     .Build());
+        }
+
+        [TestMethod]
+        [Description("DistributedTransactionCoordinatorError is allowed for the distributed-transaction read batch operation type.")]
+        public void FaultInjectionRuleBuilder_DistributedTransactionCoordinatorError_DistributedTransactionReadBatch_Builds()
+        {
+            FaultInjectionCondition condition = new FaultInjectionConditionBuilder()
+                .WithOperationType(FaultInjectionOperationType.DistributedReadTransaction)
+                .Build();
+            FaultInjectionServerErrorResult result = FaultInjectionResultBuilder
+                .GetResultBuilder(FaultInjectionServerErrorType.DistributedTransactionCoordinatorError)
+                .Build();
+
+            FaultInjectionRule rule = new FaultInjectionRuleBuilder(id: "test", condition: condition, result: result)
+                .Build();
+
+            Assert.IsNotNull(rule);
+        }
+
+        [TestMethod]
+        [Description("DistributedTransactionCoordinatorError is allowed for the distributed-transaction write batch operation type.")]
+        public void FaultInjectionRuleBuilder_DistributedTransactionCoordinatorError_DistributedTransactionWriteBatch_Builds()
+        {
+            FaultInjectionCondition condition = new FaultInjectionConditionBuilder()
+                .WithOperationType(FaultInjectionOperationType.DistributedWriteTransaction)
+                .Build();
+            FaultInjectionServerErrorResult result = FaultInjectionResultBuilder
+                .GetResultBuilder(FaultInjectionServerErrorType.DistributedTransactionCoordinatorError)
+                .Build();
+
+            FaultInjectionRule rule = new FaultInjectionRuleBuilder(id: "test", condition: condition, result: result)
+                .Build();
+
+            Assert.IsNotNull(rule);
+        }
+
+        [TestMethod]
+        [Description("DistributedTransactionCoordinatorError is rejected for a non-distributed-transaction operation type.")]
+        public void FaultInjectionRuleBuilder_DistributedTransactionCoordinatorError_NonDtcOperationType_Throws()
+        {
+            FaultInjectionCondition condition = new FaultInjectionConditionBuilder()
+                .WithOperationType(FaultInjectionOperationType.ReadItem)
+                .Build();
+            FaultInjectionServerErrorResult result = FaultInjectionResultBuilder
+                .GetResultBuilder(FaultInjectionServerErrorType.DistributedTransactionCoordinatorError)
+                .Build();
+
+            Assert.ThrowsException<ArgumentException>(() =>
+                new FaultInjectionRuleBuilder(id: "test", condition: condition, result: result)
+                    .Build());
+        }
+
+        [TestMethod]
+        [Description("DistributedTransactionCoordinatorError is rejected for the default (All) operation type.")]
+        public void FaultInjectionRuleBuilder_DistributedTransactionCoordinatorError_AllOperationType_Throws()
+        {
+            // No WithOperationType => defaults to FaultInjectionOperationType.All.
+            FaultInjectionCondition condition = new FaultInjectionConditionBuilder().Build();
+            FaultInjectionServerErrorResult result = FaultInjectionResultBuilder
+                .GetResultBuilder(FaultInjectionServerErrorType.DistributedTransactionCoordinatorError)
+                .Build();
+
+            Assert.ThrowsException<ArgumentException>(() =>
+                new FaultInjectionRuleBuilder(id: "test", condition: condition, result: result)
+                    .Build());
+        }
+
+        [TestMethod]
+        [Description("WithDistributedTransactionResponse round-trips the coordinator response spec onto the result.")]
+        public void ServerErrorResultBuilder_WithDistributedTransactionResponse_RoundTrips()
+        {
+            FaultInjectionDistributedTransactionResponse spec = new FaultInjectionDistributedTransactionResponse(
+                statusCode: 449,
+                subStatusCode: 5352,
+                isRetriable: true,
+                retryAfter: TimeSpan.FromMilliseconds(250),
+                operationResults: new[]
+                {
+                    new FaultInjectionDistributedTransactionOperationResult(index: 0, statusCode: 453, subStatusCode: 5415),
+                });
+
+            FaultInjectionServerErrorResult result = FaultInjectionResultBuilder
+                .GetResultBuilder(FaultInjectionServerErrorType.DistributedTransactionCoordinatorError)
+                .WithDistributedTransactionResponse(spec)
+                .Build();
+
+            Assert.AreSame(spec, result.GetDistributedTransactionResponse());
+            Assert.AreEqual(449, result.GetDistributedTransactionResponse().StatusCode);
+            Assert.IsTrue(result.GetDistributedTransactionResponse().IsRetriable);
+            Assert.AreEqual(1, result.GetDistributedTransactionResponse().OperationResults.Count);
+            Assert.AreEqual(453, result.GetDistributedTransactionResponse().OperationResults[0].StatusCode);
+        }
+
+        [TestMethod]
+        [Description("A server error result with no coordinator response spec returns null from the getter.")]
+        public void ServerErrorResultBuilder_NoDistributedTransactionResponse_ReturnsNull()
+        {
+            FaultInjectionServerErrorResult result = FaultInjectionResultBuilder
+                .GetResultBuilder(FaultInjectionServerErrorType.DistributedTransactionCoordinatorError)
+                .Build();
+
+            Assert.IsNull(result.GetDistributedTransactionResponse());
+        }
+
+        [TestMethod]
+        [Description("WithDistributedTransactionResponse is rejected for a non-DistributedTransactionCoordinatorError error type.")]
+        public void ServerErrorResultBuilder_WithDistributedTransactionResponse_WrongErrorType_Throws()
+        {
+            FaultInjectionDistributedTransactionResponse spec =
+                new FaultInjectionDistributedTransactionResponse(statusCode: 503, isRetriable: true);
+
+            Assert.ThrowsException<InvalidOperationException>(() =>
+                FaultInjectionResultBuilder
+                    .GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
+                    .WithDistributedTransactionResponse(spec));
+        }
+
+        [TestMethod]
+        [Description("WithDistributedTransactionResponse rejects a null spec.")]
+        public void ServerErrorResultBuilder_WithDistributedTransactionResponse_Null_Throws()
+        {
+            Assert.ThrowsException<ArgumentNullException>(() =>
+                FaultInjectionResultBuilder
+                    .GetResultBuilder(FaultInjectionServerErrorType.DistributedTransactionCoordinatorError)
+                    .WithDistributedTransactionResponse(null));
+        }
+
+        [TestMethod]
+        [Description("WithDistributedTransactionResponses round-trips an ordered sequence through the result getter.")]
+        public void ServerErrorResultBuilder_WithDistributedTransactionResponses_RoundTrips()
+        {
+            FaultInjectionDistributedTransactionResponse[] sequence = new[]
+            {
+                new FaultInjectionDistributedTransactionResponse(statusCode: 449, subStatusCode: 5352),
+                new FaultInjectionDistributedTransactionResponse(statusCode: 408),
+            };
+
+            FaultInjectionServerErrorResult result = FaultInjectionResultBuilder
+                .GetResultBuilder(FaultInjectionServerErrorType.DistributedTransactionCoordinatorError)
+                .WithDistributedTransactionResponses(sequence)
+                .Build();
+
+            Assert.IsNotNull(result.GetDistributedTransactionResponses());
+            Assert.AreEqual(2, result.GetDistributedTransactionResponses().Count);
+            Assert.AreEqual(449, result.GetDistributedTransactionResponses()[0].StatusCode);
+            Assert.AreEqual(408, result.GetDistributedTransactionResponses()[1].StatusCode);
+        }
+
+        [TestMethod]
+        [Description("WithDistributedTransactionResponses is rejected for a non-DistributedTransactionCoordinatorError error type.")]
+        public void ServerErrorResultBuilder_WithDistributedTransactionResponses_WrongErrorType_Throws()
+        {
+            FaultInjectionDistributedTransactionResponse[] sequence = new[]
+            {
+                new FaultInjectionDistributedTransactionResponse(statusCode: 503, isRetriable: true),
+            };
+
+            Assert.ThrowsException<InvalidOperationException>(() =>
+                FaultInjectionResultBuilder
+                    .GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
+                    .WithDistributedTransactionResponses(sequence));
+        }
+
+        [TestMethod]
+        [Description("WithDistributedTransactionResponses rejects a null sequence.")]
+        public void ServerErrorResultBuilder_WithDistributedTransactionResponses_Null_Throws()
+        {
+            Assert.ThrowsException<ArgumentNullException>(() =>
+                FaultInjectionResultBuilder
+                    .GetResultBuilder(FaultInjectionServerErrorType.DistributedTransactionCoordinatorError)
+                    .WithDistributedTransactionResponses(null));
+        }
+
+        [TestMethod]
+        [Description("WithDistributedTransactionResponses rejects an empty sequence.")]
+        public void ServerErrorResultBuilder_WithDistributedTransactionResponses_Empty_Throws()
+        {
+            Assert.ThrowsException<ArgumentException>(() =>
+                FaultInjectionResultBuilder
+                    .GetResultBuilder(FaultInjectionServerErrorType.DistributedTransactionCoordinatorError)
+                    .WithDistributedTransactionResponses(Array.Empty<FaultInjectionDistributedTransactionResponse>()));
         }
 
         #endregion

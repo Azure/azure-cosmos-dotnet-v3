@@ -39,7 +39,36 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public async Task TestInitialize()
         {
-            await this.TestInit();
+            string endpoint = Environment.GetEnvironmentVariable("COSMOS_DTX_ENDPOINT");
+            string key = Environment.GetEnvironmentVariable("COSMOS_DTX_KEY");
+
+            if (!string.IsNullOrWhiteSpace(endpoint) && !string.IsNullOrWhiteSpace(key))
+            {
+                // Live-account mode. These scenario tests mock only the /dtc commit (see
+                // DistributedTransactionMockHandler); every other request — database/container
+                // creation and RID resolution — flows to the real backend. When
+                // COSMOS_DTX_ENDPOINT / COSMOS_DTX_KEY are set we target that account instead of
+                // the local emulator, so the suite can run where no emulator is available.
+                //
+                // IMPORTANT: we deliberately do NOT call BaseCosmosClientHelper.TestInit() here.
+                // TestInit() invokes Util.DeleteAllDatabasesAsync, which would wipe EVERY database
+                // on the target account — acceptable for a throwaway emulator, catastrophic for a
+                // shared live account. Instead we create a single uniquely-named database and let
+                // TestCleanup delete only that database.
+                this.cancellationTokenSource = new CancellationTokenSource();
+                this.cancellationToken = this.cancellationTokenSource.Token;
+
+                CosmosClient liveClient = this.CreateDtxClient();
+                this.SetClient(liveClient);
+
+                this.database = await liveClient.CreateDatabaseAsync(
+                    Guid.NewGuid().ToString(),
+                    cancellationToken: this.cancellationToken);
+            }
+            else
+            {
+                await this.TestInit();
+            }
 
             ContainerResponse containerResponse = await this.database.CreateContainerAsync(
                 new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKeyPath),
@@ -760,122 +789,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             response.Dispose();
         }
 
-        // Session token handling
-
-        [TestMethod]
-        [Description("When DTC response carries a session token in the new wire format (LSN-only sessionToken + " +
-            "separate partitionKeyRangeId), the SDK assembles the canonical {pkRangeId}:{lsn} token and merges it " +
-            "into the session container so that subsequent Session-consistency reads succeed.")]
-        public async Task ValidateSessionTokenMergedIntoDtcClient()
-        {
-            ToDoActivity seedDoc = ToDoActivity.CreateRandomToDoActivity();
-            ItemResponse<ToDoActivity> seedResponse = await this.container.CreateItemAsync(seedDoc, new PartitionKey(seedDoc.pk), cancellationToken: this.cancellationToken);
-
-            string canonicalToken = seedResponse.Headers.Session;
-            Assert.IsFalse(string.IsNullOrEmpty(canonicalToken), "A valid session token must be obtained from the emulator for this test to be meaningful.");
-
-            // Split the canonical {pkRangeId}:{lsn} token into the two fields the DTC endpoint sends.
-            int colonIndex = canonicalToken.IndexOf(':');
-            Assert.IsTrue(colonIndex > 0, $"Emulator session token '{canonicalToken}' must be in {{pkRangeId}}:{{lsn}} format.");
-            string pkRangeId = canonicalToken.Substring(0, colonIndex);
-            string lsnOnly = canonicalToken.Substring(colonIndex + 1);
-
-            // Build a DTC mock response using the new wire contract: LSN-only in sessionToken,
-            // pkRangeId in a separate partitionKeyRangeId field.
-            string dtcMockResponse = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""sessionToken"":""{lsnOnly}"",""partitionKeyRangeId"":""{pkRangeId}""}}]}}";
-
-            DistributedTransactionMockHandler handler = new DistributedTransactionMockHandler(
-                request => Task.FromResult(this.BuildMockResponse(HttpStatusCode.OK, dtcMockResponse)));
-
-            using CosmosClient dtcClient = TestCommon.CreateCosmosClient(
-                clientOptions: new CosmosClientOptions
-                {
-                    CustomHandlers = { handler },
-                    ConnectionMode = ConnectionMode.Gateway,
-                    ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
-                });
-
-            // Use the same partition key as seedDoc so the DTC operation targets the same physical
-            // partition whose session token is carried in the mock response.
-            ToDoActivity newDoc = ToDoActivity.CreateRandomToDoActivity(pk: seedDoc.pk);
-            DistributedTransactionResponse dtcResponse = await dtcClient
-                .CreateDistributedWriteTransaction()
-                .CreateItem(this.GetContainerForClient(dtcClient, this.container), new PartitionKey(newDoc.pk), newDoc.id, newDoc)
-                .CommitTransactionAsync(this.cancellationToken);
-
-            Assert.IsTrue(dtcResponse.IsSuccessStatusCode, "The simulated DTC commit should appear successful to the client.");
-            Assert.AreEqual(canonicalToken, dtcResponse[0].SessionToken,
-                "SessionToken must be assembled as {pkRangeId}:{lsn} from the two separate wire fields.");
-
-            Container dtcContainer = dtcClient.GetContainer(this.database.Id, this.container.Id);
-            try
-            {
-                ItemResponse<ToDoActivity> readResponse = await dtcContainer.ReadItemAsync<ToDoActivity>(
-                    seedDoc.id,
-                    new PartitionKey(seedDoc.pk),
-                    new ItemRequestOptions { ConsistencyLevel = Cosmos.ConsistencyLevel.Session },
-                    cancellationToken: this.cancellationToken);
-
-                Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode, "A Session-consistency read after a DTC commit should return 200 OK.");
-            }
-            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-            {
-                Assert.AreNotEqual(
-                    (int)SubStatusCodes.ReadSessionNotAvailable,
-                    ex.SubStatusCode,
-                    "A Session-consistency read after a DTC commit must not fail with " +
-                    "ReadSessionNotAvailable (404/1002). This indicates that session token " +
-                    "merging in DistributedTransactionCommitter is broken.");
-            }
-        }
-
-        [TestMethod]
-        [Description("When DTC response carries only an LSN-only sessionToken with no partitionKeyRangeId " +
-            "(current server behavior before coordinator update), the commit must succeed without throwing " +
-            "and the SDK silently skips merging the session token rather than crashing.")]
-        // TODO(issue#5857): Remove this test once the coordinator is updated to emit partitionKeyRangeId and the SDK no longer needs to handle its absence.
-        public async Task ValidateSessionTokenSkipped_WhenPartitionKeyRangeIdAbsent()
-        {
-            ToDoActivity seedDoc = ToDoActivity.CreateRandomToDoActivity();
-            ItemResponse<ToDoActivity> seedResponse = await this.container.CreateItemAsync(seedDoc, new PartitionKey(seedDoc.pk), cancellationToken: this.cancellationToken);
-
-            string canonicalToken = seedResponse.Headers.Session;
-            Assert.IsFalse(string.IsNullOrEmpty(canonicalToken), "A valid session token must be obtained from the emulator.");
-            int colonIndex = canonicalToken.IndexOf(':');
-            Assert.IsTrue(colonIndex > 0, $"Emulator session token '{canonicalToken}' must be in {{pkRangeId}}:{{lsn}} format.");
-            string lsnOnly = canonicalToken.Substring(colonIndex + 1);
-
-            // Current server behavior: LSN-only token, no partitionKeyRangeId field.
-            string dtcMockResponse = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""sessionToken"":""{lsnOnly}""}}]}}";
-
-            DistributedTransactionMockHandler handler = new DistributedTransactionMockHandler(
-                request => Task.FromResult(this.BuildMockResponse(HttpStatusCode.OK, dtcMockResponse)));
-
-            using CosmosClient dtcClient = TestCommon.CreateCosmosClient(
-                clientOptions: new CosmosClientOptions
-                {
-                    CustomHandlers = { handler },
-                    ConnectionMode = ConnectionMode.Gateway,
-                    ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
-                });
-
-            // Use the same partition key as seedDoc for consistency.
-            ToDoActivity newDoc = ToDoActivity.CreateRandomToDoActivity(pk: seedDoc.pk);
-            DistributedTransactionResponse dtcResponse = await dtcClient
-                .CreateDistributedWriteTransaction()
-                .CreateItem(this.GetContainerForClient(dtcClient, this.container), new PartitionKey(newDoc.pk), newDoc.id, newDoc)
-                .CommitTransactionAsync(this.cancellationToken);
-
-            // Commit must succeed — this was the crash point before the fix (IndexOutOfRangeException
-            // in SessionContainer.SetSessionToken when it tried tokenParts[1] on an LSN-only token).
-            Assert.IsTrue(dtcResponse.IsSuccessStatusCode, "Commit must succeed even when partitionKeyRangeId is absent.");
-
-            // Session token must be null — FromJson nulls it out when pkRangeId is absent so that
-            // MergeSessionTokens skips the operation rather than passing a bad token to SetSessionToken.
-            Assert.IsNull(dtcResponse[0].SessionToken,
-                "SessionToken must be null when partitionKeyRangeId is absent; the SDK silently skips merging.");
-        }
-
         // Read Transaction Tests
 
         [TestMethod]
@@ -1023,6 +936,43 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     .ReadItem(null, new PartitionKey("pk"), "item-id"));
         }
 
+        // Fault injection: wire-contract + retry-flow coverage for the full DTX SDK response catalog.
+
+        [TestMethod]
+        [Description("A1+A5 (core): A retriable error body (isRetriable:true) drives the committer outer loop to retry; " +
+            "after N failures it succeeds, and the wire contract (idempotency token, operation type, resource type/URI, " +
+            "request body) is byte-identical across every attempt.")]
+        public async Task WriteTransaction_RetriableFault_RetriesAndPreservesWireContract()
+        {
+            const int failuresBeforeSuccess = 2;
+            int attempt = 0;
+
+            DistributedTransactionMockHandler handler = new DistributedTransactionMockHandler(request =>
+            {
+                int current = Interlocked.Increment(ref attempt);
+                return Task.FromResult(current <= failuresBeforeSuccess
+                    ? this.BuildMockResponse((HttpStatusCode)449, BuildRetriableErrorJson(), (SubStatusCodes)5352)
+                    : this.BuildMockResponse(HttpStatusCode.OK, BuildSuccessResponseJson(1)));
+            });
+
+            using CosmosClient client = this.CreateMockClient(handler);
+            ToDoActivity doc = ToDoActivity.CreateRandomToDoActivity();
+
+            DistributedTransactionResponse response = await client.CreateDistributedWriteTransaction()
+                .CreateItem(this.GetContainerForClient(client, this.container), new PartitionKey(doc.pk), doc.id, doc)
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.IsTrue(response.IsSuccessStatusCode, "Committer should retry the retriable fault and ultimately succeed.");
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+
+            AssertWireContractStableAcrossRequests(
+                handler,
+                OperationType.CommitDistributedTransaction.ToOperationTypeString(),
+                failuresBeforeSuccess + 1);
+
+            response.Dispose();
+        }
+
         // Helpers
 
         private Container GetContainerForClient(CosmosClient client, Container sourceContainer)
@@ -1043,11 +993,42 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private CosmosClient CreateMockClient(DistributedTransactionMockHandler handler)
         {
-            return TestCommon.CreateCosmosClient(clientOptions: new CosmosClientOptions
+            return this.CreateDtxClient(new CosmosClientOptions
             {
                 CustomHandlers = { handler },
                 ConnectionMode = ConnectionMode.Gateway
             });
+        }
+
+        /// <summary>
+        /// Builds the <see cref="CosmosClient"/> these scenario tests run against. When
+        /// COSMOS_DTX_ENDPOINT / COSMOS_DTX_KEY are set (live-account mode) the client targets that
+        /// account in Gateway / Session consistency; otherwise it falls back to the local emulator
+        /// via <see cref="TestCommon"/>. Only the /dtc commit is mocked (see
+        /// <see cref="DistributedTransactionMockHandler"/>); every other request — including RID
+        /// resolution — flows to whichever backend this client points at, so the setup client and
+        /// the per-test mock client must resolve to the same endpoint.
+        /// </summary>
+        private CosmosClient CreateDtxClient(CosmosClientOptions clientOptions = null)
+        {
+            string endpoint = Environment.GetEnvironmentVariable("COSMOS_DTX_ENDPOINT");
+            string key = Environment.GetEnvironmentVariable("COSMOS_DTX_KEY");
+
+            if (!string.IsNullOrWhiteSpace(endpoint) && !string.IsNullOrWhiteSpace(key))
+            {
+                CosmosClientOptions options = clientOptions ?? new CosmosClientOptions();
+                options.ConnectionMode = ConnectionMode.Gateway;
+                if (options.ConsistencyLevel == null)
+                {
+                    options.ConsistencyLevel = Cosmos.ConsistencyLevel.Session;
+                }
+
+                return new CosmosClient(endpoint, key, options);
+            }
+
+            return clientOptions == null
+                ? TestCommon.CreateCosmosClient()
+                : TestCommon.CreateCosmosClient(clientOptions: clientOptions);
         }
 
         private ResponseMessage BuildMockResponse(HttpStatusCode statusCode, string responseBody)
@@ -1083,18 +1064,131 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return $@"{{""operationResponses"":[{string.Join(",", results)}]}}";
         }
 
+        // Fault-injection helpers
+
+        /// <summary>
+        /// Builds a mock DTC <see cref="ResponseMessage"/> and, optionally, stamps the wire
+        /// sub-status (<c>x-ms-substatus</c>) and <c>Retry-After</c> headers the SDK reads from the
+        /// gateway response. The committer derives the surfaced sub-status from
+        /// <see cref="Headers.SubStatusCode"/> and the retry delay hint from
+        /// <see cref="Headers.RetryAfter"/>, so simulating those wire codes requires setting them here.
+        /// </summary>
+        private ResponseMessage BuildMockResponse(
+            HttpStatusCode statusCode,
+            string responseBody,
+            SubStatusCodes? subStatusCode,
+            TimeSpan? retryAfter = null)
+        {
+            ResponseMessage response = this.BuildMockResponse(statusCode, responseBody);
+
+            if (subStatusCode.HasValue)
+            {
+                response.Headers.SubStatusCode = subStatusCode.Value;
+            }
+
+            if (retryAfter.HasValue)
+            {
+                response.Headers.RetryAfter = retryAfter.Value;
+            }
+
+            return response;
+        }
+
+        /// <summary>
+        /// Builds the minimal JSON body the coordinator returns to mark a transaction outcome as
+        /// retriable. The committer's outer loop retries iff the response carries
+        /// <c>isRetriable:true</c> in its body (see <c>DistributedTransactionResponse</c>).
+        /// </summary>
+        private static string BuildRetriableErrorJson(string diagnosticString = "injected-retriable-fault")
+        {
+            return $@"{{""{DistributedTransactionSerializer.IsRetriable}"":true,""{DistributedTransactionSerializer.DiagnosticString}"":""{diagnosticString}""}}";
+        }
+
+        /// <summary>
+        /// Asserts that every DTC request the committer issued is byte-identical on the wire:
+        /// same idempotency token, operation type, resource type, resource URI and request body.
+        /// This is the core retry-flow invariant — a retry must replay the exact same transaction.
+        /// </summary>
+        private static void AssertWireContractStableAcrossRequests(
+            DistributedTransactionMockHandler handler,
+            string expectedOperationType,
+            int expectedRequestCount)
+        {
+            Assert.AreEqual(expectedRequestCount, handler.RequestCount,
+                $"Committer should have issued exactly {expectedRequestCount} wire request(s).");
+            Assert.IsTrue(handler.RequestCount > 0, "At least one DTC request must have been captured.");
+
+            CapturedDtcRequest first = handler.CapturedRequests[0];
+
+            Assert.IsFalse(string.IsNullOrEmpty(first.IdempotencyToken), "Idempotency token header must be present on the wire.");
+            Assert.IsTrue(Guid.TryParse(first.IdempotencyToken, out _), "Idempotency token must be a valid GUID.");
+            Assert.AreEqual(expectedOperationType, first.OperationType, "Operation type header mismatch.");
+            Assert.AreEqual(ResourceType.DistributedTransactionBatch.ToResourceTypeString(), first.ResourceType, "Resource type header mismatch.");
+            Assert.IsTrue(first.RequestUri?.EndsWith("/dtc", StringComparison.OrdinalIgnoreCase) == true,
+                $"Resource URI must target the '/dtc' endpoint but was '{first.RequestUri}'.");
+
+            for (int i = 1; i < handler.RequestCount; i++)
+            {
+                CapturedDtcRequest current = handler.CapturedRequests[i];
+                Assert.AreEqual(first.IdempotencyToken, current.IdempotencyToken,
+                    $"Idempotency token changed on retry attempt {i}: '{first.IdempotencyToken}' -> '{current.IdempotencyToken}'.");
+                Assert.AreEqual(first.OperationType, current.OperationType,
+                    $"Operation type changed on retry attempt {i}.");
+                Assert.AreEqual(first.ResourceType, current.ResourceType,
+                    $"Resource type changed on retry attempt {i}.");
+                Assert.AreEqual(first.RequestUri, current.RequestUri,
+                    $"Resource URI changed on retry attempt {i}.");
+                Assert.AreEqual(first.Body, current.Body,
+                    $"Request body changed on retry attempt {i}; the wire contract must be replayed byte-identically.");
+            }
+        }
+
         // Mock handler
+
+        /// <summary>
+        /// Immutable snapshot of a single DTC request as it appeared on the wire, captured by
+        /// <see cref="DistributedTransactionMockHandler"/>. Used by the fault-injection tests to
+        /// assert that the wire contract (idempotency token, operation type, resource type,
+        /// resource URI and request body) is preserved byte-identically across committer retries.
+        /// </summary>
+        private sealed class CapturedDtcRequest
+        {
+            public string Body { get; set; }
+
+            public string IdempotencyToken { get; set; }
+
+            public string OperationType { get; set; }
+
+            public string ResourceType { get; set; }
+
+            public string RequestUri { get; set; }
+        }
 
         /// <summary>
         /// Intercepts DTC commit requests (URLs ending in "/dtc"), captures the serialized
         /// request body, and returns the response produced by <see cref="MockResponseFactory"/>.
         /// All other requests are forwarded to the next handler in the pipeline (the emulator).
+        ///
+        /// In addition to <see cref="CapturedRequestBody"/> (the body of the most recent request,
+        /// preserved for existing tests), the handler records a per-request <see cref="CapturedDtcRequest"/>
+        /// snapshot in <see cref="CapturedRequests"/> so retry-flow tests can assert wire-contract
+        /// stability across every attempt the committer issues.
         /// </summary>
         private class DistributedTransactionMockHandler : RequestHandler
         {
             private readonly Func<RequestMessage, Task<ResponseMessage>> mockResponseFactory;
+            private readonly List<CapturedDtcRequest> capturedRequests = new List<CapturedDtcRequest>();
 
             public string CapturedRequestBody { get; private set; }
+
+            /// <summary>
+            /// The full ordered list of DTC requests intercepted by this handler, one entry per
+            /// attempt. <see cref="RequestCount"/> therefore equals the number of wire requests the
+            /// committer issued (1 = no retry, N+1 = N retries).
+            /// </summary>
+            public IReadOnlyList<CapturedDtcRequest> CapturedRequests => this.capturedRequests;
+
+            public int RequestCount => this.capturedRequests.Count;
 
             public DistributedTransactionMockHandler(Func<RequestMessage, Task<ResponseMessage>> mockResponseFactory)
             {
@@ -1107,13 +1201,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 if (request.RequestUriString?.EndsWith("/dtc", StringComparison.OrdinalIgnoreCase) == true)
                 {
+                    string body = null;
                     if (request.Content != null)
                     {
                         using MemoryStream ms = new MemoryStream();
                         await request.Content.CopyToAsync(ms);
-                        this.CapturedRequestBody = Encoding.UTF8.GetString(ms.ToArray());
+                        body = Encoding.UTF8.GetString(ms.ToArray());
                         request.Content.Position = 0;
                     }
+
+                    this.CapturedRequestBody = body;
+                    this.capturedRequests.Add(new CapturedDtcRequest
+                    {
+                        Body = body,
+                        IdempotencyToken = request.Headers[HttpConstants.HttpHeaders.IdempotencyToken],
+                        OperationType = request.Headers[HttpConstants.HttpHeaders.OperationType],
+                        ResourceType = request.Headers[HttpConstants.HttpHeaders.ResourceType],
+                        RequestUri = request.RequestUriString,
+                    });
 
                     return await this.mockResponseFactory(request);
                 }

@@ -58,6 +58,15 @@ namespace Microsoft.Azure.Cosmos
 
         internal string SessionToken { get; set; }
 
+        /// <summary>
+        /// The partition key range id the client resolved for this operation at token-application time
+        /// (set by <see cref="DistributedTransactionSessionTokenResolver"/>). Compared against the range
+        /// the server actually served (see <see cref="DistributedTransactionOperationResult.PartitionKeyRangeId"/>)
+        /// on commit to detect a split/partition move and refresh the routing cache. Null when the partition
+        /// wasn't resolved (user-supplied token, None key, or unresolved range).
+        /// </summary>
+        internal string ResolvedPartitionKeyRangeId { get; set; }
+
         internal string IfMatch => this.RequestOptions?.IfMatchEtag;
 
         internal string IfNoneMatch => this.RequestOptions?.IfNoneMatchEtag;

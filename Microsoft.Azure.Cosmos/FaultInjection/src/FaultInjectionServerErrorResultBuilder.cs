@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.FaultInjection
 {
     using System;
+    using System.Collections.Generic;
 
     /// <summary>
     /// Used to create a <see cref="FaultInjectionServerErrorResult"/>.
@@ -16,6 +17,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private bool suppressServiceRequest;
         private bool isDelaySet = false;
         private double injectionRate = 1;
+        private FaultInjectionDistributedTransactionResponse? distributedTransactionResponse;
+        private IReadOnlyList<FaultInjectionDistributedTransactionResponse>? distributedTransactionResponses;
 
         /// <summary>
         /// Creates a <see cref="FaultInjectionServerErrorResult"/>.
@@ -95,6 +98,71 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         }
 
         /// <summary>
+        /// Sets the distributed-transaction coordinator response to inject. Only applicable to
+        /// <see cref="FaultInjectionServerErrorType.DistributedTransactionCoordinatorError"/>; lets a rule
+        /// reproduce any documented DTC envelope outcome (status, sub-status, <c>isRetriable</c>,
+        /// retry-after, and per-operation results).
+        /// </summary>
+        /// <param name="distributedTransactionResponse">The coordinator response specification.</param>
+        /// <returns>The current <see cref="FaultInjectionServerErrorResultBuilder"/>.</returns>
+        public FaultInjectionServerErrorResultBuilder WithDistributedTransactionResponse(
+            FaultInjectionDistributedTransactionResponse distributedTransactionResponse)
+        {
+            if (this.serverErrorType != FaultInjectionServerErrorType.DistributedTransactionCoordinatorError)
+            {
+                throw new InvalidOperationException(
+                    $"A distributed transaction response can only be set for server error type " +
+                    $"'{FaultInjectionServerErrorType.DistributedTransactionCoordinatorError}', but the current type is '{this.serverErrorType}'.");
+            }
+
+            this.distributedTransactionResponse = distributedTransactionResponse
+                ?? throw new ArgumentNullException(nameof(distributedTransactionResponse));
+            return this;
+        }
+
+        /// <summary>
+        /// Sets an ordered SEQUENCE of distributed-transaction coordinator responses to inject across
+        /// successive injection attempts — attempt 1 gets <paramref name="responses"/>[0], attempt 2 gets
+        /// [1], and so on; the final entry repeats once the sequence is exhausted. This reproduces a real
+        /// distributed system where the coordinator may surface a DIFFERENT envelope code on each retry
+        /// (e.g. 449, then 408, then a terminal 400). Only applicable to
+        /// <see cref="FaultInjectionServerErrorType.DistributedTransactionCoordinatorError"/>.
+        /// </summary>
+        /// <param name="responses">The ordered, non-empty response sequence.</param>
+        /// <returns>The current <see cref="FaultInjectionServerErrorResultBuilder"/>.</returns>
+        public FaultInjectionServerErrorResultBuilder WithDistributedTransactionResponses(
+            IReadOnlyList<FaultInjectionDistributedTransactionResponse> responses)
+        {
+            if (this.serverErrorType != FaultInjectionServerErrorType.DistributedTransactionCoordinatorError)
+            {
+                throw new InvalidOperationException(
+                    $"A distributed transaction response sequence can only be set for server error type " +
+                    $"'{FaultInjectionServerErrorType.DistributedTransactionCoordinatorError}', but the current type is '{this.serverErrorType}'.");
+            }
+
+            if (responses == null)
+            {
+                throw new ArgumentNullException(nameof(responses));
+            }
+
+            if (responses.Count == 0)
+            {
+                throw new ArgumentException("At least one distributed transaction response must be supplied.", nameof(responses));
+            }
+
+            foreach (FaultInjectionDistributedTransactionResponse response in responses)
+            {
+                if (response == null)
+                {
+                    throw new ArgumentException("Distributed transaction response sequence must not contain null entries.", nameof(responses));
+                }
+            }
+
+            this.distributedTransactionResponses = responses;
+            return this;
+        }
+
+        /// <summary>
         /// Creates a new <see cref="FaultInjectionServerErrorResult"/>.
         /// </summary>
         /// <returns>the <see cref="FaultInjectionServerErrorResult"/>.</returns>
@@ -113,7 +181,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 this.times,
                 this.delay,
                 this.suppressServiceRequest,
-                this.injectionRate);
+                this.injectionRate,
+                this.distributedTransactionResponse,
+                this.distributedTransactionResponses);
         }
     }
 }

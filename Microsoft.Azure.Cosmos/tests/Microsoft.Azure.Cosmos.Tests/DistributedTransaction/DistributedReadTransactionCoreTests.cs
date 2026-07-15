@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.IO;
     using System.Net;
     using System.Text;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Telemetry;
@@ -508,6 +509,53 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.AreEqual(ResourceType.DistributedTransactionBatch, capturedResourceType);
             Assert.AreEqual(OperationType.Read, capturedOperationType);
+        }
+
+        [TestMethod]
+        [Description("Read path: verifies the serialized wire request emits a zero-based, ordered 'index' on each operation, " +
+                     "matching the position the ReadItem calls were chained in.")]
+        public async Task CommitAsync_OperationIndexIsZeroBasedAndOrdered()
+        {
+            string capturedJson = null;
+
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
+            contextMock
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<CosmosPK?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns<string, ResourceType, OperationType, RequestOptions, ContainerInternal, CosmosPK?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
+                    (uri, resType, opType, opts, container, pk, itemId, stream, enricher, trace, ct) =>
+                    {
+                        using MemoryStream ms = new MemoryStream();
+                        stream.CopyTo(ms);
+                        capturedJson = Encoding.UTF8.GetString(ms.ToArray());
+                        return Task.FromResult(BuildReadSuccessResponse(3));
+                    });
+
+            await new DistributedReadTransactionCore(contextMock.Object)
+                .ReadItem(BuildMockContainer(), new CosmosPK("pk0"), "id-0")
+                .ReadItem(BuildMockContainer(), new CosmosPK("pk1"), "id-1")
+                .ReadItem(BuildMockContainer(), new CosmosPK("pk2"), "id-2")
+                .CommitTransactionAsync(CancellationToken.None);
+
+            using JsonDocument doc = JsonDocument.Parse(capturedJson);
+            JsonElement ops = doc.RootElement.GetProperty("operations");
+
+            Assert.AreEqual(3, ops.GetArrayLength(), "All three read operations should be serialized.");
+            for (int i = 0; i < ops.GetArrayLength(); i++)
+            {
+                Assert.AreEqual(i, ops[i].GetProperty("index").GetInt32(),
+                    $"Operation at position {i} should have index {i}.");
+            }
         }
 
         [TestMethod]
