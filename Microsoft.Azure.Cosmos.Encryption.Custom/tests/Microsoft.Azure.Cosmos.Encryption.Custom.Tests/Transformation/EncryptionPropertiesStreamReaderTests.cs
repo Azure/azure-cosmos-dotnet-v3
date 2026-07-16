@@ -108,6 +108,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         }
 
         [TestMethod]
+        public async Task ReadAsync_WhenIncompleteTokenFillsConfiguredMaximum_Throws()
+        {
+            const int maxBufferSize = 8192;
+            string json = "{\"large\":\"" + new string('x', maxBufferSize);
+            await using MemoryStream stream = new (Encoding.UTF8.GetBytes(json));
+
+            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                async () => await EncryptionPropertiesStreamReader.ReadAsync(
+                    stream,
+                    Options,
+                    CancellationToken.None,
+                    maxBufferSize));
+
+            StringAssert.Contains(exception.Message, "maximum buffer size");
+        }
+
+        [TestMethod]
         public async Task ReadAsync_WhenEiIsNull_ReturnsNull()
         {
             string json = /*lang=json,strict*/ @"{""_ei"":null,""id"":""a""}";

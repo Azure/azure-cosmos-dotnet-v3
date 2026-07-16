@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     internal static class EncryptionPropertiesStreamReader
     {
         private const int InitialBufferSize = 4096;
+        private const int MaxBufferSize = 64 * 1024 * 1024;
 
         private static readonly byte[] EncryptedInfoNameBytes = Encoding.UTF8.GetBytes(Constants.EncryptedInfo);
 
@@ -36,10 +37,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         /// or <see langword="null"/> if the root object has no <c>_ei</c> property. Requires
         /// a seekable stream and leaves <see cref="Stream.Position"/> at 0 on return.
         /// </summary>
-        public static async ValueTask<EncryptionProperties> ReadAsync(
+        public static ValueTask<EncryptionProperties> ReadAsync(
             Stream input,
             JsonSerializerOptions serializerOptions,
             CancellationToken cancellationToken)
+            => ReadAsync(input, serializerOptions, cancellationToken, MaxBufferSize);
+
+        internal static async ValueTask<EncryptionProperties> ReadAsync(
+            Stream input,
+            JsonSerializerOptions serializerOptions,
+            CancellationToken cancellationToken,
+            int maxBufferSize)
         {
             if (input == null)
             {
@@ -81,22 +89,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                     leftOver = dataSize - (int)outcome.BytesConsumed;
 
-                    // Grow only when the buffer is full AND the scan made no progress.
-                    // A short read (trickle stream) with unused capacity means "need more
-                    // bytes", not "need a bigger buffer"; growing on the latter alone would
-                    // explode the buffer under partial-read transports.
-                    if (leftOver == dataSize && dataSize == buffer.Length && !isFinalBlock)
-                    {
-                        int newSize = buffer.Length * 2;
-                        byte[] bigger = ArrayPool<byte>.Shared.Rent(newSize);
-                        buffer.AsSpan(0, leftOver).CopyTo(bigger);
-                        ArrayPool<byte>.Shared.Return(buffer, clearArray: true);
-                        buffer = bigger;
-                    }
-                    else if (leftOver != 0 && leftOver != dataSize)
-                    {
-                        buffer.AsSpan(dataSize - leftOver, leftOver).CopyTo(buffer);
-                    }
+                    buffer = JsonFeedStreamHelper.HandleLeftOver(
+                        buffer,
+                        dataSize,
+                        leftOver,
+                        checked((int)outcome.BytesConsumed),
+                        maxBufferSize);
                 }
 
                 // Valid JSON whose root is not an object (array/number/string/literal)
