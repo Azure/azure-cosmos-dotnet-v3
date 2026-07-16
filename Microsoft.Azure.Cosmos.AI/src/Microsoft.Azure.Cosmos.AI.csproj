@@ -1,0 +1,83 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>Microsoft.Azure.Cosmos.AI</AssemblyName>
+    <RootNamespace>Microsoft.Azure.Cosmos.AI</RootNamespace>
+    <LangVersion>$(LangVersion)</LangVersion>
+    <CosmosAIVersion Condition=" '$(IsPreview)' != 'true' ">$(CosmosAIOfficialVersion)</CosmosAIVersion>
+    <CosmosAIVersion Condition=" '$(IsPreview)' == 'true' ">$(CosmosAIPreviewVersion)</CosmosAIVersion>
+    <CosmosAIVersionSuffix Condition=" '$(IsPreview)' == 'true' ">$(CosmosAIPreviewSuffixVersion)</CosmosAIVersionSuffix>
+    <Version Condition=" '$(CosmosAIVersionSuffix)' == '' ">$(CosmosAIVersion)</Version>
+    <Version Condition=" '$(CosmosAIVersionSuffix)' != '' ">$(CosmosAIVersion)-$(CosmosAIVersionSuffix)</Version>
+    <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
+    <Company>Microsoft Corporation</Company>
+    <Authors>Microsoft</Authors>
+    <Description>AI extensions library for Azure Cosmos DB for NoSQL. Provides an Azure OpenAI / Foundry-backed embedding provider for automatic vector embedding generation in hybrid and vector search queries. Designed to be extensible for broader AI scenarios including semantic re-ranking, OCR, and model integrations. For more information, refer to https://aka.ms/CosmosDB</Description>
+    <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
+    <Title>Microsoft Azure Cosmos DB AI extension library</Title>
+    <PackageId>Microsoft.Azure.Cosmos.AI</PackageId>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/Azure/azure-cosmos-dotnet-v3</PackageProjectUrl>
+    <PackageReleaseNotes>The change log for this SDK is made available at https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos.AI/changelog.md at the time of release.</PackageReleaseNotes>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <PackageTags>microsoft;azure;cosmos;cosmosdb;documentdb;nosql;azureofficial;dotnetcore;netcore;netstandard;ai;embedding;vector;openai;semanticranking</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="..\..\Microsoft.Azure.Cosmos\src\stylecop.json" Link="stylecop.json" />
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <!-- Core SDK reference: project ref when building from source, otherwise NuGet pin -->
+  <ItemGroup Condition=" '$(SdkProjectRef)' != 'True' AND '$(IsPreview)' != 'True' ">
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="[3.59.0,)" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(SdkProjectRef)' != 'True' AND '$(IsPreview)' == 'True' ">
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.60.0-preview.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(SdkProjectRef)' == 'True' ">
+    <ProjectReference Include="..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\Icon.png" Pack="true" PackagePath=""/>
+  </ItemGroup>
+
+  <!-- Required by Microsoft.Azure.Cosmos SDK; PrivateAssets=All keeps it off the public dependency graph -->
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.2" NoWarn="NU1903" PrivateAssets="All" />
+  </ItemGroup>
+
+  <!-- Azure OpenAI provider dependency -->
+  <ItemGroup>
+    <PackageReference Include="Azure.AI.OpenAI" Version="2.1.0" />
+  </ItemGroup>
+
+  <!-- Analyzers -->
+  <ItemGroup>
+    <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.0.102" PrivateAssets="All" />
+  </ItemGroup>
+
+  <!-- Strong-name signing -->
+  <PropertyGroup>
+    <SigningType>Product</SigningType>
+    <SignAssembly>true</SignAssembly>
+    <DelaySign>true</DelaySign>
+    <AssemblyOriginatorKeyFile>..\..\35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(SdkProjectRef)' == 'True' ">
+    <DefineSdkProjectRefSymbol Condition=" '$(DefineSdkProjectRefSymbol)' == '' ">true</DefineSdkProjectRefSymbol>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(DefineSdkProjectRefSymbol)' == 'true' ">
+    <DefineConstants>$(DefineConstants);SDKPROJECTREF</DefineConstants>
+  </PropertyGroup>
+</Project>

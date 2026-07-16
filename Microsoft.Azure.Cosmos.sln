@@ -39,6 +39,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FaultInjectionTests", "Micr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests", "Microsoft.Azure.Cosmos.Encryption.Custom\tests\Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests\Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests.csproj", "{CE4D6DA8-148D-4A98-943B-D8C2D532E1DC}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AI", "AI", "{701B153E-380B-4452-9120-3975C59DC296}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.AI", "Microsoft.Azure.Cosmos.AI\src\Microsoft.Azure.Cosmos.AI.csproj", "{60C02F10-7DE4-4BF0-BA28-732ABAF0A343}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.AI.Tests", "Microsoft.Azure.Cosmos.AI\tests\Microsoft.Azure.Cosmos.AI.Tests\Microsoft.Azure.Cosmos.AI.Tests.csproj", "{80F63801-FFB4-4D8E-9466-A44C1F0C4946}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Cover|Any CPU = Cover|Any CPU
@@ -193,6 +199,30 @@ Global
 		{CE4D6DA8-148D-4A98-943B-D8C2D532E1DC}.Release|Any CPU.Build.0 = Release|Any CPU
 		{CE4D6DA8-148D-4A98-943B-D8C2D532E1DC}.Release|x64.ActiveCfg = Release|Any CPU
 		{CE4D6DA8-148D-4A98-943B-D8C2D532E1DC}.Release|x64.Build.0 = Release|Any CPU
+		{60C02F10-7DE4-4BF0-BA28-732ABAF0A343}.Cover|Any CPU.ActiveCfg = Debug|Any CPU
+		{60C02F10-7DE4-4BF0-BA28-732ABAF0A343}.Cover|Any CPU.Build.0 = Debug|Any CPU
+		{60C02F10-7DE4-4BF0-BA28-732ABAF0A343}.Cover|x64.ActiveCfg = Debug|Any CPU
+		{60C02F10-7DE4-4BF0-BA28-732ABAF0A343}.Cover|x64.Build.0 = Debug|Any CPU
+		{60C02F10-7DE4-4BF0-BA28-732ABAF0A343}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{60C02F10-7DE4-4BF0-BA28-732ABAF0A343}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{60C02F10-7DE4-4BF0-BA28-732ABAF0A343}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{60C02F10-7DE4-4BF0-BA28-732ABAF0A343}.Debug|x64.Build.0 = Debug|Any CPU
+		{60C02F10-7DE4-4BF0-BA28-732ABAF0A343}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{60C02F10-7DE4-4BF0-BA28-732ABAF0A343}.Release|Any CPU.Build.0 = Release|Any CPU
+		{60C02F10-7DE4-4BF0-BA28-732ABAF0A343}.Release|x64.ActiveCfg = Release|Any CPU
+		{60C02F10-7DE4-4BF0-BA28-732ABAF0A343}.Release|x64.Build.0 = Release|Any CPU
+		{80F63801-FFB4-4D8E-9466-A44C1F0C4946}.Cover|Any CPU.ActiveCfg = Debug|Any CPU
+		{80F63801-FFB4-4D8E-9466-A44C1F0C4946}.Cover|Any CPU.Build.0 = Debug|Any CPU
+		{80F63801-FFB4-4D8E-9466-A44C1F0C4946}.Cover|x64.ActiveCfg = Debug|Any CPU
+		{80F63801-FFB4-4D8E-9466-A44C1F0C4946}.Cover|x64.Build.0 = Debug|Any CPU
+		{80F63801-FFB4-4D8E-9466-A44C1F0C4946}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{80F63801-FFB4-4D8E-9466-A44C1F0C4946}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{80F63801-FFB4-4D8E-9466-A44C1F0C4946}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{80F63801-FFB4-4D8E-9466-A44C1F0C4946}.Debug|x64.Build.0 = Debug|Any CPU
+		{80F63801-FFB4-4D8E-9466-A44C1F0C4946}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{80F63801-FFB4-4D8E-9466-A44C1F0C4946}.Release|Any CPU.Build.0 = Release|Any CPU
+		{80F63801-FFB4-4D8E-9466-A44C1F0C4946}.Release|x64.ActiveCfg = Release|Any CPU
+		{80F63801-FFB4-4D8E-9466-A44C1F0C4946}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -205,6 +235,8 @@ Global
 		{F87719DB-BB52-4B12-9D9C-F6AE30BAB3D7} = {51F858D8-707E-4F21-BCC6-4D6123832E4F}
 		{B5B3631D-AC2F-4257-855D-D6FE12F20B60} = {51F858D8-707E-4F21-BCC6-4D6123832E4F}
 		{CE4D6DA8-148D-4A98-943B-D8C2D532E1DC} = {51F858D8-707E-4F21-BCC6-4D6123832E4F}
+		{60C02F10-7DE4-4BF0-BA28-732ABAF0A343} = {701B153E-380B-4452-9120-3975C59DC296}
+		{80F63801-FFB4-4D8E-9466-A44C1F0C4946} = {701B153E-380B-4452-9120-3975C59DC296}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C6A1D820-CB03-4DE6-87D1-46EF476F0040}
