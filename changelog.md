@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
+- [6024](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/6024) Fixed `RemotingException` in AppDomain-isolated test hosts by replacing `Type.GetType` with `Assembly.GetType` in `CosmosHttpClientCore.CreateHttpClientHandler` and `CreateSocketsHttpHandlerHelper`. `Type.GetType` fires `AppDomain.TypeResolve` when the type is not found on .NET Framework, which crashes if cross-domain `MarshalByRefObject` proxies have expired leases.
+
 #### Other Changes
 
 ### <a name="3.63.0-preview.0"/> [3.63.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.63.0-preview.0) - 2026-7-15
