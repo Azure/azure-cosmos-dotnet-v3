@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos
             Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
         {
             // TODO: Remove type check and use #if NET6_0_OR_GREATER when multitargetting is possible
-            Type socketHandlerType = Type.GetType("System.Net.Http.SocketsHttpHandler, System.Net.Http");
+            Type socketHandlerType = typeof(HttpClient).Assembly.GetType("System.Net.Http.SocketsHttpHandler");
 
             if (socketHandlerType != null)
             {
@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos
             Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
         {
             // TODO: Remove Reflection when multitargetting is possible
-            Type socketHandlerType = Type.GetType("System.Net.Http.SocketsHttpHandler, System.Net.Http");
+            Type socketHandlerType = typeof(HttpClient).Assembly.GetType("System.Net.Http.SocketsHttpHandler");
 
             object socketHttpHandler = Activator.CreateInstance(socketHandlerType);
 
