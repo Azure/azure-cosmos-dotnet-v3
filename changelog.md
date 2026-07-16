@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [5583](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5583) LINQ: Fixes `.Any()` on `Dictionary`/`IDictionary`/`IReadOnlyDictionary` properties returning no results by wrapping dictionary access with `OBJECTTOARRAY()` so dictionary entries (and predicates on `KeyValuePair.Key`/`Value`) are iterated correctly.
 - [5298](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5298) LINQ: Fixes constant folding for closure-captured variables inside MemberInitExpression (resolves #1664). Previously, the recursion that partially evaluates expressions terminated whenever it encountered a `MemberInitExpression` node, so captured variables inside object initializers were not folded, producing invalid translated SQL.
 - [5927](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5927) ThinClient: Fixes mid-flight fallback to gateway when the service stops advertising thin-client endpoints. Previously the SDK kept routing to stale thin-client URIs and required a client restart to recover.
+- [6023](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6023) LINQ: Fixes `Take()` silently mutating the caller's `QueryRequestOptions.MaxItemCount` property (resolves [#5225](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5225)). The query pipeline now shallow-copies the request options before setting the internal page size, so the user's original object is never modified.
 
 #### Other Changes
 
