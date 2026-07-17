@@ -60,6 +60,83 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             return JsonDocument.Parse(s);
         }
 
+        private static async Task<MemoryStream> EncryptJsonAsync(string json, EncryptionOptions options)
+        {
+            using MemoryStream input = new(Encoding.UTF8.GetBytes(json));
+            MemoryStream output = new();
+            await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, JsonProcessor.Stream, new CosmosDiagnosticsContext(), CancellationToken.None);
+            output.Position = 0;
+            return output;
+        }
+
+        // An integer literal outside Int64 range must be rejected (fail-closed) rather than
+        // silently coerced to a lossy double (e.g. 1E+26).
+        [TestMethod]
+        public async Task Encrypt_OutOfRangeIntegerLiteral_Throws()
+        {
+            string json = "{\"id\":\"1\",\"n\":99999999999999999999999999}";
+            EncryptionOptions options = CreateOptions(new[] { "/n" });
+
+            try
+            {
+                await EncryptJsonAsync(json, options);
+                Assert.Fail("Expected an exception for an out-of-range integer literal.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                StringAssert.Contains(ex.ToString(), "Int64");
+            }
+        }
+
+        [TestMethod]
+        public async Task Encrypt_ViaTrickleStream_OneBytePerRead_RoundTrips()
+        {
+            // Regression test for the no-progress buffer-growth guard on the ENCRYPT path
+            // (StreamProcessor.Encryptor). Feeding the plaintext document one byte at a time drives
+            // many reads where the scan makes no progress yet the read buffer has spare capacity.
+            // Before the guard the encryptor grew the buffer on every such read — doubling per byte
+            // until it hit MaxBufferSize and threw on valid input. With the guard (grow only when the
+            // buffer is genuinely full) trickle input encrypts, and the result round-trips.
+            var doc = new
+            {
+                id = Guid.NewGuid().ToString(),
+                SensitiveStr = "secret-data-long-enough-to-force-many-no-progress-single-byte-reads",
+                NonSensitive = 42,
+            };
+            EncryptionOptions options = CreateOptions(new[] { "/SensitiveStr" });
+
+            byte[] plaintext = Encoding.UTF8.GetBytes(System.Text.Json.JsonSerializer.Serialize(doc));
+            using TrickleStream input = new(plaintext, bytesPerRead: 1);
+            MemoryStream encrypted = new();
+
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
+            try
+            {
+                await EncryptionProcessor.EncryptAsync(input, encrypted, mockEncryptor.Object, options, JsonProcessor.Stream, new CosmosDiagnosticsContext(), cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                Assert.Fail("Timed out — no-progress buffer-growth bug caused runaway buffer doubling on encrypt");
+            }
+
+            // Encryption actually happened: _ei present and the sensitive value is now base64 ciphertext.
+            using JsonDocument jd = Parse(encrypted);
+            JsonElement root = jd.RootElement;
+            Assert.IsTrue(root.TryGetProperty(Constants.EncryptedInfo, out JsonElement ei));
+            EncryptionProperties props = System.Text.Json.JsonSerializer.Deserialize<EncryptionProperties>(ei.GetRawText());
+            Assert.IsTrue(props.EncryptedPaths.Contains("/SensitiveStr"));
+            byte[] cipherBytes = Convert.FromBase64String(root.GetProperty("SensitiveStr").GetString());
+            Assert.AreEqual((byte)TypeMarker.String, cipherBytes[0]);
+
+            // Round-trip: the trickle-encrypted document decrypts back to the original value.
+            encrypted.Position = 0;
+            (Stream decrypted, DecryptionContext ctx) = await EncryptionProcessor.DecryptAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), CancellationToken.None);
+            using JsonDocument d2 = Parse(decrypted);
+            Assert.AreEqual(doc.SensitiveStr, d2.RootElement.GetProperty("SensitiveStr").GetString());
+            Assert.AreEqual(42, d2.RootElement.GetProperty("NonSensitive").GetInt32());
+            Assert.IsTrue(ctx.DecryptionInfoList[0].PathsDecrypted.Contains("/SensitiveStr"));
+        }
+
         [TestMethod]
         public async Task Encrypt_AllPrimitiveTypesAndContainers()
         {
