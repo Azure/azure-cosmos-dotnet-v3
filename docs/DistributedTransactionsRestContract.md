@@ -172,9 +172,19 @@ Notes:
   reads response fields **case-insensitively** (`DistributedTransactionOperationResult.TryGetProperty`
   uses `StringComparison.OrdinalIgnoreCase`), so the request/response ETag naming difference
   (request-side `ifMatch` vs response-side `Etag`) is harmless.
-* Each per-operation `sessionToken` is captured into the client's `SessionContainer` after a
-  successful response (`DistributedTransactionCommitter.MergeSessionTokens`) so subsequent
-  session-consistency reads on the affected containers see the latest token.
+* Each per-operation `sessionToken` is captured into the client's `SessionContainer`
+  (`DistributedTransactionCommitter.MergeSessionTokens`) for every **successful** sub-operation of a
+  committed response, so subsequent session-consistency reads on the affected containers see the
+  latest token. Absent/whitespace tokens, unresolved collection ids, and non-success sub-operations
+  are skipped best-effort.
+* Malformed session tokens are handled strictly on the capture path. A token is **canonical** only
+  when it has the shape `{pkRangeId}:{lsn}` — a single `:` separating a non-empty `pkRangeId` from a
+  **parseable** `lsn`. On a committed (`IsSuccessStatusCode`) response **under Session consistency**,
+  a non-canonical per-operation `sessionToken` causes the merge to **throw a non-retriable error and
+  discard the entire response**, mirroring the point-operation capture pattern: the transaction has
+  committed server-side, but the client refuses to surface a response whose session bookkeeping is
+  incomplete. Under any other consistency level — or on a non-success response — a malformed token is
+  instead skipped best-effort (traced, not thrown).
 * Several top-level fields are **redundant with the HTTP response envelope**: `idempotencyToken`,
   `statusCode`, `subStatusCode`, and `requestCharge` are also carried in the status line and
   response headers (§5). The SDK reads these four authoritatively from the **envelope/headers**; it
