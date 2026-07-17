@@ -62,7 +62,7 @@ the common client stack (auth + activity-id) for the last two.
 | Header | Constant | Example value | Set by | Purpose |
 |---|---|---|---|---|
 | `x-ms-cosmos-operation-type` | `HttpConstants.HttpHeaders.OperationType` | `CommitDistributedTransaction` (write) / `Read` (read) | `EnrichRequestMessage` | The transaction action (commit / read). Value is the `OperationType` enum member name via `.ToOperationTypeString()` |
-| `x-ms-cosmos-resource-type` | `HttpConstants.HttpHeaders.ResourceType` | `DistributedTransactionBatch` | `EnrichRequestMessage` | Resource type |
+| `x-ms-cosmos-resource-type` | `HttpConstants.HttpHeaders.ResourceType` | `DistributedTransactionBatch` | `EnrichRequestMessage` | The resource type. Value is the `ResourceType` enum member name via `.ToResourceTypeString()` |
 | `x-ms-cosmos-idempotency-token` | `HttpConstants.HttpHeaders.IdempotencyToken` | `<GUID>` | `EnrichRequestMessage` | Stable across retries; the server uses it to deduplicate |
 | `x-ms-activity-id` | `HttpConstants.HttpHeaders.ActivityId` | `<GUID>` | Common pipeline (`GatewayStoreClient`) | Request correlation; sender-generated, echoed back by the backend |
 | `authorization` | `HttpConstants.HttpHeaders.Authorization` | `<token>` | Common pipeline (`TransportHandler`) | Standard Cosmos auth (master key / RBAC token). Emitted lowercase on the wire |
@@ -84,7 +84,7 @@ same transaction, which is what makes retries safe.
     {
       "databaseName":         "string",   // required
       "collectionName":       "string",   // required
-      "id":                   "string",   // document id
+      "id":                   "string",   // required — document id (always emitted)
       "collectionResourceId": "string",   // emitted when present — container RID
       "databaseResourceId":   "string",   // emitted when present — database RID
       "partitionKey":         <json>,     // required — raw JSON value, one per operation
@@ -113,7 +113,7 @@ Notes:
 * `resourceBody` is emitted only for operations that carry a document payload (writes).
 * `ifMatch` and `ifNoneMatch` are both optional and emitted only when the operation specifies the
   corresponding condition. The request-side conditional-ETag field is named **`ifMatch`** (contrast
-  with the response, which uses `eTag` — see §6).
+  with the response, which uses `Etag` — see §6).
 
 > **Upcoming (PR [#5995](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5995)):** conditional
 > patch. A `Patch` operation whose `DistributedTransactionPatchItemRequestOptions.FilterPredicate` is
@@ -156,11 +156,11 @@ Notes:
       "statusCode":          200,
       "subStatusCode":       0,
       "sessionToken":        "pkRangeId:LSN",    // canonical session token (pkRangeId-prefixed)
-      "eTag":                "string",
+      "Etag":                "string",
       "requestCharge":       2.0,
       "isRetriable":         false,
       "partitionKeyRangeId": "string",           // optional
-      "localLsn":            123,                 // optional
+      "localLsn":            123,                 // optional — emitted by the coordinator, not consumed by the SDK (see §6)
       "resourceBody":        { }                  // optional — nested JSON (reads / created docs)
     }
     // ... one entry per operation, keyed by `index`
@@ -169,10 +169,11 @@ Notes:
 ```
 
 Notes:
-* The response-side ETag field is named **`eTag`**. The SDK reads response fields
-  **case-insensitively** (`DistributedTransactionOperationResult.TryGetProperty` uses
-  `StringComparison.OrdinalIgnoreCase`), so the request/response ETag casing difference
-  (`ifMatch` vs `eTag` vs the SDK constant `Etag`) is harmless.
+* The response-side ETag field is named **`Etag`** (the coordinator emits it with this exact
+  casing, matching the SDK constant `DistributedTransactionSerializer.ResponseETag`). The SDK
+  reads response fields **case-insensitively** (`DistributedTransactionOperationResult.TryGetProperty`
+  uses `StringComparison.OrdinalIgnoreCase`), so the request/response ETag naming difference
+  (request-side `ifMatch` vs response-side `Etag`) is harmless.
 * Each per-operation `sessionToken` is captured into the client's `SessionContainer` after a
   successful response (`DistributedTransactionCommitter.MergeSessionTokens`) so subsequent
   session-consistency reads on the affected containers see the latest token.
@@ -352,8 +353,8 @@ depending on which shape arrives.
 
 | Envelope | Sub-status | Body? | Owner | Budget |
 |---|---|---|---|---|
-| `408` / `449` | `5352` (`449`) | **yes** | Outer committer loop | 10 attempts / 120 s |
-| `429` | `3200` | **yes** | Outer committer loop | 10 attempts / 120 s |
+| `408` / `449` | `5352` (`449`) | **yes** | Outer committer loop | 10 attempts / 30 s |
+| `429` | `3200` | **yes** | Outer committer loop | 10 attempts / 30 s |
 | `408` / `449` | `5352` (`449`) | **no** | Inner `RetryDtxWithBudget` (coordinator) | 10 attempts, 1 s (or server `Retry-After`) |
 | `429` | `3200` | **no** | Shared `ResourceThrottleRetryPolicy` | 9 attempts / 30 s, honors `x-ms-retry-after-ms` |
 | `500` | `5411`–`5413` | **no** | Inner `RetryDtxWithBudget` (infra) | 9 attempts, exp backoff 100 ms → 5 s |
@@ -373,14 +374,14 @@ depending on which shape arrives.
 
 * the response is a success status, or its body has `isRetriable: false`;
 * the attempt count reaches `MaxIsRetriableRetryCount` (**10**); or
-* the **cumulative planned delay** would exceed `MaxCumulativeRetryDelay` (**120 s**).
+* the **cumulative planned delay** would exceed `MaxCumulativeRetryDelay` (**30 s**).
 
 Each backoff delay is `max(serverHint, computedBackoff)`, where `serverHint` is the
 `x-ms-retry-after-ms` header (used only when it exceeds the local delay) and `computedBackoff` is a
 bounded exponential — `retryBaseDelay · 2^min(attempt, RetryMaxExponent)` with **±25 % jitter**
 (`DistributedTransactionRetryHelpers.ComputeBackoff`). With the default 1 s base and
-`RetryMaxExponent = 5` (a ~32 s per-attempt ceiling before jitter), the 120 s cumulative budget is
-normally the binding limit — roughly 7–8 retries — rather than the 10-attempt cap.
+`RetryMaxExponent = 5` (a ~32 s per-attempt ceiling before jitter), the 30 s cumulative budget is
+normally the binding limit — roughly 4–5 retries — rather than the 10-attempt cap.
 
 **Inner (bodyless) budgets.** A bodyless coordinator code (`408`, or `449`/`5352`) retries
 via `RetryDtxWithBudget` up to `MaxDtxRetryCount` (**10**) attempts, each after the server's
