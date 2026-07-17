@@ -114,15 +114,13 @@ Notes:
 * `ifMatch` and `ifNoneMatch` are both optional and emitted only when the operation specifies the
   corresponding condition. The request-side conditional-ETag field is named **`ifMatch`** (contrast
   with the response, which uses `Etag` — see §6).
-
-> **Upcoming (PR [#5995](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5995)):** conditional
-> patch. A `Patch` operation whose `DistributedTransactionPatchItemRequestOptions.FilterPredicate` is
-> set serializes an extra **`condition`** field — a SQL predicate string (e.g.
-> `from c where c.status = 'pending'`) — **inside that operation's `resourceBody`**, *not* as a
-> top-level operation field. The server evaluates the predicate atomically before applying the patch;
-> if it is unsatisfied the operation fails with **`412` PreconditionFailed** and the whole transaction
-> is not committed. The field is absent when no filter predicate is set, and coexists with an
-> operation-level `ifMatch` when both are supplied.
+* A `Patch` operation whose `DistributedTransactionPatchItemRequestOptions.FilterPredicate` is set
+  serializes an extra **`condition`** field — a SQL predicate string (e.g.
+  `from c where c.status = 'pending'`) — **inside that operation's `resourceBody`**, *not* as a
+  top-level operation field. The server evaluates the predicate atomically before applying the patch;
+  if it is unsatisfied the operation fails with **`412` PreconditionFailed** and the whole transaction
+  is not committed. The field is absent when no filter predicate is set, and coexists with an
+  operation-level `ifMatch` when both are supplied.
 
 ## 5. Response headers
 
@@ -177,16 +175,6 @@ Notes:
 * Each per-operation `sessionToken` is captured into the client's `SessionContainer` after a
   successful response (`DistributedTransactionCommitter.MergeSessionTokens`) so subsequent
   session-consistency reads on the affected containers see the latest token.
-
-> **Upcoming (PR [#5958](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5958)):** stricter
-> session-token merge. `MergeSessionTokens` gains an `isSessionConsistency` flag, and token capture
-> applies **only under Session consistency** and only for **successful** sub-operations. On a
-> committed (`IsSuccessStatusCode`) response under Session consistency, a **malformed** per-op
-> `sessionToken` — one that is not the canonical `{pkRangeId}:{lsn}` (validated by colon position) —
-> now causes the merge to **throw**, discarding the whole response (matching the point-operation
-> pattern), instead of being silently skipped. Absent/whitespace tokens, unresolved collection ids,
-> and non-success sub-ops are still skipped best-effort.
-
 * Several top-level fields are **redundant with the HTTP response envelope**: `idempotencyToken`,
   `statusCode`, `subStatusCode`, and `requestCharge` are also carried in the status line and
   response headers (§5). The SDK reads these four authoritatively from the **envelope/headers**; it
@@ -194,15 +182,13 @@ Notes:
 * The per-operation `isRetriable` and `localLsn` fields are emitted by the coordinator but are
   **not consumed by the SDK** — the outer-loop retry decision is driven solely by the top-level
   `isRetriable`.
-
-> **Upcoming (PR [#5974](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5974)):** result
-> reordering + fail-closed. `operationResponses` may arrive in an order **different** from the
-> request; the SDK will reorder entries by each one's `index` so that `response[i]` is always the
-> *i*-th submitted operation. The `index` values must form a **complete permutation of `0..n-1`**
-> (a new `HasIndex` flag disambiguates a genuine `0` from a defaulted-missing one); if any index is
-> missing, duplicated, or out of range the payload is uninterpretable and the SDK **fails closed
-> with `500`** — the per-op results are discarded and replaced with uniform error placeholders,
-> while the envelope's `isRetriable`/`diagnosticString` are preserved.
+* `operationResponses` may arrive in an order **different** from the request; the SDK reorders
+  entries by each one's `index` so that `response[i]` is always the *i*-th submitted operation. The
+  `index` values must form a **complete permutation of `0..n-1`** (a `HasIndex` flag disambiguates a
+  genuine `0` from a defaulted-missing one); if any index is missing, duplicated, or out of range the
+  payload is uninterpretable and the SDK **fails closed with `500`** — the per-op results are
+  discarded and replaced with uniform error placeholders, while the envelope's
+  `isRetriable`/`diagnosticString` are preserved.
 
 ### Aggregate status codes — write transactions (commit)
 
@@ -391,14 +377,13 @@ tighter budget: `MaxDtxInfraFailureRetryCount` (**9**) attempts with an exponent
 **100 ms → 5 s** (`ComputeBackoff`, max exponent 6). A bodyless `429`/`3200` is not handled
 by either DTX budget — the classifier returns control to the shared `ResourceThrottleRetryPolicy`.
 
-> **Upcoming (PR [#5989](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5989)):** the bodyless
-> `429`/`3200` fall-through above depends on `ClientRetryPolicy` treating a **non-null but
-> zero-length** response stream as "no body" for DTX requests
-> (`hasResponseBody = content != null && (!isDtxRequest || !content.CanSeek || content.Length > 0)`).
-> Before this fix a bodyless throttle that arrives as an empty (seekable, `Length == 0`) stream is
-> misclassified as body-bearing and handed to the **outer** commit loop instead of the shared
-> `ResourceThrottleRetryPolicy`, so DTX throttles do not honor the account's rate-limit knobs. A
-> non-seekable stream is conservatively counted as having a body.
+The bodyless `429`/`3200` fall-through above depends on `ClientRetryPolicy` treating a **non-null but
+zero-length** response stream as "no body" for DTX requests
+(`hasResponseBody = content != null && (!isDtxRequest || !content.CanSeek || content.Length > 0)`): a
+bodyless throttle that arrives as an empty (seekable, `Length == 0`) stream is classified as bodyless
+and routed to the shared `ResourceThrottleRetryPolicy` (honoring the account's rate-limit knobs)
+rather than the **outer** commit loop. A non-seekable stream is conservatively counted as having a
+body.
 
 ### Why a `408` is retriable for DTX (and how the two 408 shapes are told apart)
 
