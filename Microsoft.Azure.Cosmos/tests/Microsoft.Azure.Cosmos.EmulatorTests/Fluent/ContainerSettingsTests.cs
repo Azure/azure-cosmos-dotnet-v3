@@ -2046,6 +2046,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [Ignore("Marking as ignore until emulator is updated")]
         [TestMethod]
         [DataRow("en-US")]
         [DataRow("fr-FR")]
