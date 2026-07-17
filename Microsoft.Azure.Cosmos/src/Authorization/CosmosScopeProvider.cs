@@ -25,7 +25,12 @@ namespace Microsoft.Azure.Cosmos.Authorization
 
         public TokenRequestContext GetTokenRequestContext()
         {
-            return new TokenRequestContext(new[] { this.currentScope }, isCaeEnabled: true);
+            // Only advertise the CAE client capability (cp1) when AAD token revocation handling is
+            // enabled. When disabled (default), fall back to the exact pre-feature request context so
+            // the credential serves tokens from its cache exactly as it did before.
+            return ConfigurationManager.IsAadTokenRevocationEnabled()
+                ? new TokenRequestContext(new[] { this.currentScope }, isCaeEnabled: true)
+                : new TokenRequestContext(new[] { this.currentScope });
         }
 
         public bool TryFallback(Exception exception)

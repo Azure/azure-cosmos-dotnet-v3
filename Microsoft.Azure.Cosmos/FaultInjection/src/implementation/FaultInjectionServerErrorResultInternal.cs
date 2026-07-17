@@ -340,6 +340,31 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
                     return httpResponse;
 
+                case FaultInjectionServerErrorType.RetryWith:
+
+                    httpResponse = new HttpResponseMessage
+                    {
+                        Version = isProxyCall
+                            ? new Version(2, 0)
+                            : new Version(1, 1),
+                        StatusCode = (HttpStatusCode)StatusCodes.RetryWith,
+                        Content = new FaultInjectionHttpContent(
+                            new MemoryStream(
+                                isProxyCall
+                                    ? FaultInjectionResponseEncoding.GetBytes(
+                                        GetProxyResponseMessageString((int)StatusCodes.RetryWith, (int)SubStatusCodes.Unknown, "RetryWith", ruleId))
+                                    : FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: RetryWith, rule: {ruleId}"))),
+                    };
+
+                    this.SetHttpHeaders(httpResponse, headers, isProxyCall);
+
+                    httpResponse.Headers.Add(
+                        WFConstants.BackendHeaders.SubStatus,
+                        ((int)SubStatusCodes.Unknown).ToString(CultureInfo.InvariantCulture));
+                    httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
+
+                    return httpResponse;
+
                 case FaultInjectionServerErrorType.TooManyRequests:
 
                     httpResponse = new HttpResponseMessage
