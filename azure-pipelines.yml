@@ -85,14 +85,12 @@ jobs:
     IncludeCoverage: true
 
 # Live-account AAD (Microsoft Entra ID) integration tests (TestCategory=MultiRegionAad).
-# These run on every pipeline (PR + nightly). A fresh Cosmos DB account is provisioned per run
-# via templates/aad-test-resources.bicep using an ARM service connection whose identity is
-# co-tenant with the build agents (the connection identity is granted the data-plane role in the
-# bicep and is what the tests authenticate as), then torn down.
-# The job stays skipped (green) until 'AadServiceConnection' + 'AadTestResourceGroup' below are
-# set to a connection/RG in the build-agent tenant, so it is safe to reference before then.
+# These run on every pipeline (PR + nightly), targeting the AAD-only live Cosmos DB account
+# dotnet-v3-multiregion via an Azure Resource Manager (Workload Identity Federation) service
+# connection whose app-registration identity (co-tenant with the account) holds the Cosmos DB
+# data-plane role. The job stays skipped (green) if 'AadServiceConnection' is cleared.
 - template:  templates/build-test-aad.yml
   parameters:
     BuildConfiguration: Release
-    AadServiceConnection: ''
-    AadTestResourceGroup: ''
+    AadAccountEndpoint: 'https://dotnet-v3-multiregion.documents.azure.com:443/'
+    AadServiceConnection: 'dotnet-v3-aad-ci'
