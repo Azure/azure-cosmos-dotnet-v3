@@ -105,14 +105,20 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     new QueryDefinition(queryText),
                     requestOptions: typedRequestOptions))
                 {
-                    FeedResponse<CosmosElement> response = await typedIterator.ReadNextAsync();
-                    Assert.AreEqual(2, response.Count);
-                }
+                    int resultCount = 0;
+                    while (typedIterator.HasMoreResults)
+                    {
+                        FeedResponse<CosmosElement> response = await typedIterator.ReadNextAsync();
+                        resultCount += response.Count;
 
-                Assert.AreEqual(
-                    userMaxItemCount,
-                    typedRequestOptions.MaxItemCount,
-                    "Typed queries must not mutate the user's QueryRequestOptions.MaxItemCount.");
+                        Assert.AreEqual(
+                            userMaxItemCount,
+                            typedRequestOptions.MaxItemCount,
+                            "Typed queries must not mutate the user's QueryRequestOptions.MaxItemCount.");
+                    }
+
+                    Assert.AreEqual(2, resultCount);
+                }
 
                 QueryRequestOptions streamRequestOptions = new QueryRequestOptions
                 {
