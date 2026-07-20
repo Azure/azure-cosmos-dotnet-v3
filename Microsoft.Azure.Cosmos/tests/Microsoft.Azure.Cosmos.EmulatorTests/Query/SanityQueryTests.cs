@@ -78,6 +78,63 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         }
 
         [TestMethod]
+        public async Task QueryIteratorsDoNotMutateMaxItemCount()
+        {
+            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            uint numberOfDocuments = 5;
+            QueryOracleUtil util = new QueryOracle2(seed);
+            IEnumerable<string> inputDocuments = util.GetDocuments(numberOfDocuments);
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct,
+                CollectionTypes.MultiPartition,
+                inputDocuments,
+                ImplementationAsync);
+
+            static async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> _)
+            {
+                const int userMaxItemCount = 100;
+                const string queryText = "SELECT TOP 2 * FROM c ORDER BY c.id";
+
+                QueryRequestOptions typedRequestOptions = new QueryRequestOptions
+                {
+                    MaxItemCount = userMaxItemCount,
+                };
+
+                using (FeedIterator<CosmosElement> typedIterator = container.GetItemQueryIterator<CosmosElement>(
+                    new QueryDefinition(queryText),
+                    requestOptions: typedRequestOptions))
+                {
+                    FeedResponse<CosmosElement> response = await typedIterator.ReadNextAsync();
+                    Assert.AreEqual(2, response.Count);
+                }
+
+                Assert.AreEqual(
+                    userMaxItemCount,
+                    typedRequestOptions.MaxItemCount,
+                    "Typed queries must not mutate the user's QueryRequestOptions.MaxItemCount.");
+
+                QueryRequestOptions streamRequestOptions = new QueryRequestOptions
+                {
+                    MaxItemCount = userMaxItemCount,
+                };
+
+                using (FeedIterator streamIterator = container.GetItemQueryStreamIterator(
+                    queryText,
+                    requestOptions: streamRequestOptions))
+                using (ResponseMessage response = await streamIterator.ReadNextAsync())
+                {
+                    Assert.IsTrue(response.IsSuccessStatusCode);
+                }
+
+                Assert.AreEqual(
+                    userMaxItemCount,
+                    streamRequestOptions.MaxItemCount,
+                    "Stream queries must not mutate the user's QueryRequestOptions.MaxItemCount.");
+            }
+        }
+
+        [TestMethod]
         public async Task TestBasicCrossPartitionQueryAsync()
         {
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
