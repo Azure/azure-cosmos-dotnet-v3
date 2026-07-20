@@ -216,6 +216,16 @@ namespace Microsoft.Azure.Cosmos
                                     {
                                         await (Task<HedgingResponse>)completedTask;
                                     }
+                                    else
+                                    {
+                                        // The losing hedge faulted/cancelled but the operation itself was
+                                        // not cancelled. completedTask has already been removed from
+                                        // requestTasks, so the later ObserveAbandonedHedgeTasks(...) at the
+                                        // winner-returns can never observe it. Observe it here so a
+                                        // raced-cancellation fault cannot escape as an unobserved task
+                                        // exception.
+                                        CrossRegionHedgingAvailabilityStrategy.ObserveAbandonedHedgeTasks(new[] { completedTask });
+                                    }
 
                                     continue;
                                 }
@@ -240,6 +250,11 @@ namespace Microsoft.Azure.Cosmos
                                             ResponseRegion,
                                             hedgeResponse.TargetRegionName);
                                     }
+
+                                    // The winning hedge is returning now; any still in-flight losers
+                                    // are abandoned. Observe their faults so a raced-cancellation
+                                    // exception cannot escape as an unobserved task exception.
+                                    CrossRegionHedgingAvailabilityStrategy.ObserveAbandonedHedgeTasks(requestTasks);
 
                                     return hedgeResponse.ResponseMessage;
                                 }
@@ -279,6 +294,10 @@ namespace Microsoft.Azure.Cosmos
                             ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
                                 ResponseRegion,
                                 hedgeResponse.TargetRegionName);
+
+                            // Observe any abandoned in-flight losers before returning the winner so
+                            // their raced-cancellation faults are never left unobserved.
+                            CrossRegionHedgingAvailabilityStrategy.ObserveAbandonedHedgeTasks(requestTasks);
                             return hedgeResponse.ResponseMessage;
                         }
                     }
@@ -406,6 +425,39 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Observes the exceptions of hedge requests that are abandoned when a winning response is
+        /// returned early. Losing hedges are cancelled via the hedge cancellation token source and
+        /// can complete faulted (for example with a <see cref="CosmosOperationCanceledException"/>).
+        /// Without observing them, those faults can later surface as a
+        /// <see cref="TaskScheduler.UnobservedTaskException"/>, which is the failure mode originally
+        /// reported for this strategy (issue #5623).
+        /// </summary>
+        /// <param name="abandonedTasks">The hedge request tasks that will not be awaited.</param>
+        private static void ObserveAbandonedHedgeTasks(IEnumerable<Task> abandonedTasks)
+        {
+            foreach (Task task in abandonedTasks)
+            {
+                if (task == null)
+                {
+                    continue;
+                }
+
+                if (task.IsCompleted)
+                {
+                    // Touching Exception marks an already-faulted task as observed.
+                    _ = task.Exception;
+                    continue;
+                }
+
+                _ = task.ContinueWith(
+                    t => { _ = t.Exception; },
+                    CancellationToken.None,
+                    TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+                    TaskScheduler.Default);
             }
         }
 
