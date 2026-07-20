@@ -1,6 +1,6 @@
 # Cross Region Request Hedging
 
-The Cosmos SDK has two independent cross-region hedging systems. Both send a redundant copy of a slow request to another region and return the first acceptable answer while keeping the primary region authoritative, but they cover different request types and trigger on different signals:
+The Cosmos SDK has two independent cross-region hedging systems. Both send a redundant copy of a slow request to another region and return the first acceptable answer, but they cover different request types, trigger on different signals, and differ in how the winning response is chosen — data-plane hedging returns the first *final* response from any arm, while metadata hedging keeps the primary authoritative and lets a hedge win only when the primary is slow or has returned a regional failure:
 
 | | Data-plane hedging (`AvailabilityStrategy`) | Metadata hedging |
 | --- | --- | --- |
@@ -174,7 +174,7 @@ if (diagnostics.HedgingStarted())
 
 ### Status Codes: What the SDK Accepts vs Hedges
 
-Data-plane hedging is triggered by **latency**, not by a status code: the primary request is always sent first, and a hedged request to the next preferred region is only started once the `threshold` (then each `thresholdStep`) elapses without a *final* response.
+Data-plane hedging is driven by a **latency race**, not by a status code deciding *whether* to hedge: the primary request is always sent first, and a hedged request to the next preferred region is started once the `threshold` (then each `thresholdStep`) elapses — or sooner if an in-flight arm finishes with a non-*final* response or faults while the caller's token is still active. A *final* response stops the race.
 
 When a response does come back, the SDK inspects its status code to decide whether it is **final** (accepted and returned to the caller, cancelling any outstanding hedges) or **transient** (the SDK keeps hedging to the next region; if every region is exhausted, the last response received is returned).
 
@@ -209,7 +209,7 @@ Every status code **not** in the table above is treated as a possibly-transient,
 | 503 | Service Unavailable |
 | Network failure | Connection refused / DNS / TLS errors reaching a region |
 
-> **Note:** These are the codes that cause the SDK to *keep hedging* to other regions. If the last available region also returns a transient code, that response is still returned to the caller as the final result, where it flows into the normal `ClientRetryPolicy`.
+> **Note:** These are the codes that cause the SDK to *keep hedging* to other regions. Each arm already runs through its own `ClientRetryPolicy` before the availability strategy evaluates its result, so there is no additional retry-policy pass after the race. If the last available region also returns a transient code, that response is returned to the caller as-is; a faulted or cancelled final arm may instead surface as an exception.
 
 ### Example Flow For Cross Region Hedging With 3 Regions
 
@@ -265,7 +265,7 @@ The SDK resolves which `AvailabilityStrategy` to use in the following priority o
 
 ### Operator kill-switch
 
-`disableCrossRegionalHedging` is a Gateway account property that lets operators dynamically turn off cross-region hedging — both the PPAF SDK default and any customer-configured `AvailabilityStrategy` — without rolling PPAF back entirely. The SDK re-evaluates the flag on every account-properties refresh, so toggling it takes effect without a client restart: setting it to `true` suppresses hedging, and setting it back to `false` restores the customer-configured strategy (or rebuilds the SDK default). A client that has explicitly set `CosmosClientOptions.DisablePartitionLevelFailover` opts out of this Gateway-driven override entirely. The same flag also suppresses [metadata hedging](#metadata-hedging).
+`disableCrossRegionalHedging` is a Gateway account property that lets operators dynamically turn off cross-region hedging — both the PPAF SDK default and any customer-configured `AvailabilityStrategy` — without rolling PPAF back entirely. The SDK re-evaluates the flag on every account-properties refresh, so toggling it takes effect without a client restart: setting it to `true` suppresses hedging, and setting it back to `false` restores the customer-configured strategy (or rebuilds the SDK default). The internal compute-gateway `DisablePartitionLevelFailover` override — not a public `CosmosClientOptions` setting — opts a client out of this Gateway-driven behavior entirely. The same flag also suppresses [metadata hedging](#metadata-hedging).
 
 ## Metadata Hedging
 
@@ -315,7 +315,7 @@ For metadata hedging the status code decides whether an outcome is a **regional 
 | 403 | `DatabaseAccountNotFound` | Region unavailable for this account |
 | Network failure | — | Bare connection failure reaching the region's gateway (connection refused / DNS / TLS) |
 
-This is the same status / sub-status set used by the metadata retry policy (`MetadataRequestThrottleRetryPolicy`), so hedging and the retry policy agree on what "the region is at fault" means.
+The four HTTP status / sub-status rows above match the set used by the metadata retry policy (`MetadataRequestThrottleRetryPolicy`), so hedging and the retry policy agree on what "the region is at fault" means for those cases. The bare network-failure row is an additional hedging-only classification — it mirrors how the data-plane `ClientRetryPolicy` treats a connection failure — and its subsequent retry handling depends on the cache path.
 
 **Definitive outcomes — the primary wins, the hedge cannot override:**
 
@@ -342,4 +342,4 @@ HedgeFired={true|false}; HedgeWon={true|false}; WinningRegion={region}
 - `HedgeWon` — the hedge's response is the one returned (its region differs from the primary). This is also the signal that pins later `PartitionKeyRange` pages to the winning region.
 - `WinningRegion` — the region that produced the returned answer.
 
-The datum is emitted only when a hedge actually fired, so the common no-hedge path leaves the trace unchanged.
+The call site emits this datum only when a hedge actually fired *and* the read returns a result, so the common no-hedge path leaves the trace unchanged. It is likewise absent when the race throws before producing a result (for example, when every branch fails).
