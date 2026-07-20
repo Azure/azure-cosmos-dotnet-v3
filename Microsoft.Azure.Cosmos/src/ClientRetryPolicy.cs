@@ -181,7 +181,14 @@ namespace Microsoft.Azure.Cosmos
                     this.failoverRetryCount,
                     this.locationEndpoint?.ToString() ?? string.Empty);
 
-                if (this.partitionKeyRangeLocationCache.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
+                // A request that is cancelled before it is dispatched (for example a losing cross-region
+                // hedge arm whose token is cancelled at the top of the retry loop) never runs
+                // OnBeforeSendRequest, so this.documentServiceRequest is null. With no dispatched request
+                // there is no resolved partition or location to attribute a failure to, so skip the
+                // partition-failover bookkeeping and let the cancellation surface as
+                // CosmosOperationCanceledException instead of throwing ArgumentNullException. See issue #6014.
+                if (this.documentServiceRequest != null
+                    && this.partitionKeyRangeLocationCache.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
                         this.documentServiceRequest))
                 {
                     // In the event of a (ppaf + write operation) or (ppcb + read or multi-master write operation) getting timed
@@ -258,6 +265,17 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="request">The request being sent to the service.</param>
         public void OnBeforeSendRequest(DocumentServiceRequest request)
         {
+            // OnBeforeSendRequest is the only place this.documentServiceRequest is assigned. The
+            // OperationCanceledException guard in ShouldRetryAsync (and the other documentServiceRequest
+            // null checks in this class) rely on that reference only ever transitioning from null to
+            // non-null, never regressing back to null. Every production caller dispatches a fully
+            // constructed request, so make that an explicit contract here and fail fast on null instead
+            // of silently storing it and re-introducing the null downstream. See issue #6014 / PR #6016.
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
             this.isDtxRequest = DistributedTransactionConstants.IsDistributedTransactionRequest(
                 request.OperationType,
                 request.ResourceType);
