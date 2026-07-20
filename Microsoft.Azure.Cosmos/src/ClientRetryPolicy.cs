@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.IO;
     using System.Net;
     using System.Net.Http;
     using System.Threading;
@@ -180,7 +181,14 @@ namespace Microsoft.Azure.Cosmos
                     this.failoverRetryCount,
                     this.locationEndpoint?.ToString() ?? string.Empty);
 
-                if (this.partitionKeyRangeLocationCache.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
+                // A request that is cancelled before it is dispatched (for example a losing cross-region
+                // hedge arm whose token is cancelled at the top of the retry loop) never runs
+                // OnBeforeSendRequest, so this.documentServiceRequest is null. With no dispatched request
+                // there is no resolved partition or location to attribute a failure to, so skip the
+                // partition-failover bookkeeping and let the cancellation surface as
+                // CosmosOperationCanceledException instead of throwing ArgumentNullException. See issue #6014.
+                if (this.documentServiceRequest != null
+                    && this.partitionKeyRangeLocationCache.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
                         this.documentServiceRequest))
                 {
                     // In the event of a (ppaf + write operation) or (ppcb + read or multi-master write operation) getting timed
@@ -206,7 +214,18 @@ namespace Microsoft.Azure.Cosmos
         {
             this.retryContext = null;
 
-            bool hasResponseBody = cosmosResponseMessage?.Content != null;
+            // A bodyless DTX gateway envelope (for example a 429/3200 RUBudgetExceeded) can arrive as an
+            // exceptionless ResponseMessage whose Content is a non-null but zero-length stream. A zero-length
+            // body carries no semantic per-operation result, so for DTX requests treat a seekable empty stream
+            // as "no body": this lets the response fall through the DTX classifier to the shared throttling
+            // retry policy (ResourceThrottleRetryPolicy) instead of being deferred to the outer commit loop,
+            // which cannot act on an empty body. The empty-stream reinterpretation (and the Length read it
+            // requires) is scoped to DTX requests, so the general retry path keeps its original Content != null
+            // semantics. Length is read only when the stream is seekable; a non-seekable stream conservatively
+            // counts as having a body.
+            Stream responseContent = cosmosResponseMessage?.Content;
+            bool hasResponseBody = responseContent != null
+                && (!this.isDtxRequest || !responseContent.CanSeek || responseContent.Length > 0);
 
             ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
                     cosmosResponseMessage?.StatusCode,
@@ -246,6 +265,17 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="request">The request being sent to the service.</param>
         public void OnBeforeSendRequest(DocumentServiceRequest request)
         {
+            // OnBeforeSendRequest is the only place this.documentServiceRequest is assigned. The
+            // OperationCanceledException guard in ShouldRetryAsync (and the other documentServiceRequest
+            // null checks in this class) rely on that reference only ever transitioning from null to
+            // non-null, never regressing back to null. Every production caller dispatches a fully
+            // constructed request, so make that an explicit contract here and fail fast on null instead
+            // of silently storing it and re-introducing the null downstream. See issue #6014 / PR #6016.
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
             this.isDtxRequest = DistributedTransactionConstants.IsDistributedTransactionRequest(
                 request.OperationType,
                 request.ResourceType);
@@ -539,7 +569,8 @@ namespace Microsoft.Azure.Cosmos
                 return this.ShouldRetryOnUnavailableEndpointStatusCodes();
             }
 
-            if (statusCode == HttpStatusCode.Unauthorized
+            if (ConfigurationManager.IsAadTokenRevocationEnabled()
+                && statusCode == HttpStatusCode.Unauthorized
                 && (subStatusCode == SubStatusCodes.AadTokenRevoked
                     || !string.IsNullOrEmpty(wwwAuthenticateHeaderValue)))
             {

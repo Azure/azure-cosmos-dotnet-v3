@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
@@ -304,7 +305,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     request.RequestContext.LastPartitionAddressInformationHashCode = addresses.GetHashCode();
                 }
 
-                int targetReplicaSetSize = this.serviceConfigReader.UserReplicationPolicy.MaxReplicaSetSize;
+                int targetReplicaSetSize = addresses.PartitionTargetReplicaSetSize
+                    ?? this.serviceConfigReader.UserReplicationPolicy.MaxReplicaSetSize;
                 if (addresses.AllAddresses.Count() < targetReplicaSetSize)
                 {
                     this.suboptimalServerPartitionTimestamps.TryAdd(partitionKeyRangeIdentity, DateTime.UtcNow);
@@ -450,10 +452,13 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceWarning("Failed to warm-up caches and open connections for the server addresses: {0} with exception: {1}. '{2}'",
-                    collectionRid,
-                    ex.Message,
-                    System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Warning))
+                {
+                    DefaultTrace.TraceWarning("Failed to warm-up caches and open connections for the server addresses: {0} with exception: {1}. '{2}'",
+                        collectionRid,
+                        ex.Message,
+                        System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                }
             }
         }
 
@@ -1012,9 +1017,15 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
             }
 
+            // Extract per-partition TargetReplicaSetSize from the first address
+            // (all addresses in a partition share the same TRSS value from the gateway).
+            // This flows through to AddressSelector.ResolveAddressesAsync which stashes it
+            // on RequestContext for CRSS scale-up detection.
+            int? partitionTargetReplicaSetSize = address.PartitionTargetReplicaSetSize;
+
             return Tuple.Create(
-                partitionKeyRangeIdentity,
-                new PartitionAddressInformation(addressInfosSorted, inNetworkRequest));
+               partitionKeyRangeIdentity,
+               new PartitionAddressInformation(addressInfosSorted, inNetworkRequest, partitionTargetReplicaSetSize));
         }
 
         private static IReadOnlyList<AddressInformation> GetSortedAddressInformation(IList<Address> addresses)
@@ -1111,10 +1122,13 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceWarning("Failed to fetch the server addresses for: {0} with exception: {1}. '{2}'",
-                    collectionRid,
-                    ex.Message,
-                    System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Warning))
+                {
+                    DefaultTrace.TraceWarning("Failed to fetch the server addresses for: {0} with exception: {1}. '{2}'",
+                        collectionRid,
+                        ex.Message,
+                        System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                }
 
                 return TryCatch<DocumentServiceResponse>.FromException(ex);
             }

@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json.Linq;
 
@@ -50,15 +51,24 @@ namespace Microsoft.Azure.Cosmos.Routing
         // Tracked separately so the change event fires when only this flag toggles.
         private bool lastKnownDisableCrossRegionalHedging = false;
 
+        // Last observed value of the account-level EnablePartitionLevelFailover flag.
+        // Tracked separately (mirroring lastKnownDisableCrossRegionalHedging) so PPAF-enablement
+        // change detection keys off GEM's own baseline rather than connectionPolicy.EnablePartitionLevelFailover,
+        // which the subscriber (DocumentClient) mutates. This decouples "what the gateway reported"
+        // from "what we last applied" and keeps detection correct against any future external writer
+        // of connectionPolicy.EnablePartitionLevelFailover.
+        private bool lastKnownEnablePartitionLevelFailover = false;
+
         /// <summary>
         /// Event that is raised when PPAF (Per Partition Automatic Failover) enablement status changes
         /// or when the gateway-controlled disableCrossRegionalHedging flag toggles.
         /// </summary>
         /// <remarks>
         /// First argument is the latest <c>EnablePartitionLevelFailover</c> value observed from the
-        /// Gateway (falls back to the existing connection-policy value when the property is absent).
-        /// Second argument is the latest <c>disableCrossRegionalHedging</c> value (false when absent
-        /// from the Gateway response).
+        /// Gateway (falls back to <see cref="lastKnownEnablePartitionLevelFailover"/> when the property
+        /// is absent, so a dropped property preserves the previously-honored value rather than implying
+        /// a transition). Second argument is the latest <c>disableCrossRegionalHedging</c> value (falls
+        /// back to <see cref="lastKnownDisableCrossRegionalHedging"/> when absent from the Gateway response).
         /// </remarks>
         internal event Action<bool, bool>? OnEnablePartitionLevelFailoverConfigChanged;
 
@@ -433,7 +443,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
                 catch (Exception e)
                 {
-                    DefaultTrace.TraceInformation("GlobalEndpointManager: Fail to reach gateway endpoint {0}, {1}", endpoint, e.Message);
+                    if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Information))
+                    {
+                        DefaultTrace.TraceInformation("GlobalEndpointManager: Fail to reach gateway endpoint {0}, {1}", endpoint, e.Message);
+                    }
                     if (GetAccountPropertiesHelper.IsNonRetriableException(e))
                     {
                         DefaultTrace.TraceInformation("GlobalEndpointManager: Exception is not retriable");
@@ -692,6 +705,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             // subsequent transitions, not on the first observation.
             this.lastKnownDisableCrossRegionalHedging = databaseAccount.DisableCrossRegionalHedging ?? false;
 
+            // Capture the initial EnablePartitionLevelFailover baseline from the effective
+            // (post-client-override) value applied just above, so the change-event only fires on
+            // subsequent transitions, not on the first observation.
+            this.lastKnownEnablePartitionLevelFailover = this.connectionPolicy.EnablePartitionLevelFailover;
+
             GlobalEndpointManager.ParseThinClientLocationsFromAdditionalProperties(databaseAccount);
 
             this.locationCache.OnDatabaseAccountRead(databaseAccount);
@@ -796,7 +814,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                     return;
                 }
                 
-                DefaultTrace.TraceCritical("GlobalEndpointManager: StartLocationBackgroundRefreshWithTimer() - Unable to refresh database account from any serviceEndpoint. Exception: {0}", ex.Message);
+                if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Critical))
+                {
+                    DefaultTrace.TraceCritical("GlobalEndpointManager: StartLocationBackgroundRefreshWithTimer() - Unable to refresh database account from any serviceEndpoint. Exception: {0}", ex.Message);
+                }
             }
 
             // Call itself to create a loop to continuously do background refresh every 5 minutes
@@ -855,7 +876,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 bool ppafEnablementChanged = !ignorePpafChanges
                     && accountProperties.EnablePartitionLevelFailover.HasValue
-                    && (this.connectionPolicy.EnablePartitionLevelFailover != accountProperties.EnablePartitionLevelFailover.Value);
+                    && (this.lastKnownEnablePartitionLevelFailover != accountProperties.EnablePartitionLevelFailover.Value);
 
                 // Hedging change-detection mirrors the PPAF .HasValue guard above:
                 // a missing property in the response is "no signal", NOT an implicit false.
@@ -873,7 +894,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 if (ppafEnablementChanged || disableHedgingFlagChanged)
                 {
                     bool latestPpafEnabled = accountProperties.EnablePartitionLevelFailover
-                        ?? this.connectionPolicy.EnablePartitionLevelFailover;
+                        ?? this.lastKnownEnablePartitionLevelFailover;
 
                     // Only advance lastKnown when the gateway emitted an explicit value; otherwise
                     // preserve the cached value so a later property-restored response diffs against
@@ -881,7 +902,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                     bool latestDisableHedging = accountProperties.DisableCrossRegionalHedging
                         ?? this.lastKnownDisableCrossRegionalHedging;
 
+                    bool previousPpafEnabled = this.lastKnownEnablePartitionLevelFailover;
                     bool previousDisableHedging = this.lastKnownDisableCrossRegionalHedging;
+                    this.lastKnownEnablePartitionLevelFailover = latestPpafEnabled;
                     this.lastKnownDisableCrossRegionalHedging = latestDisableHedging;
                     try
                     {
@@ -889,10 +912,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
                     catch
                     {
-                        // Restore the baseline so the next refresh re-detects and retries the missed
+                        // Restore both baselines so the next refresh re-detects and retries the missed
                         // transition rather than diffing against an already-advanced value and going silent.
-                        // The subscriber reverts its own cached flag in tandem (see
+                        // The subscriber reverts its own cached state in tandem (see
                         // DocumentClient.UpdatePartitionLevelFailoverConfigWithAccountRefresh).
+                        this.lastKnownEnablePartitionLevelFailover = previousPpafEnabled;
                         this.lastKnownDisableCrossRegionalHedging = previousDisableHedging;
                         throw;
                     }
@@ -913,9 +937,12 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceWarning("Failed to refresh database account with exception: {0}. Activity Id: '{1}'",
-                    ex.Message,
-                    System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Warning))
+                {
+                    DefaultTrace.TraceWarning("Failed to refresh database account with exception: {0}. Activity Id: '{1}'",
+                        ex.Message,
+                        System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                }
             }
             finally
             {

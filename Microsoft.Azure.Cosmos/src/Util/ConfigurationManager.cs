@@ -51,6 +51,15 @@ namespace Microsoft.Azure.Cosmos
         internal static readonly string AADScopeOverride = "AZURE_COSMOS_AAD_SCOPE_OVERRIDE";
 
         /// <summary>
+        /// A read-only string containing the environment variable name for enabling AAD token
+        /// revocation handling (emergency revocation and Continuous Access Evaluation). When this
+        /// flag is not set (or set to false), the SDK behaves exactly as it did before the token
+        /// revocation feature was introduced: no CAE client capability (cp1) is advertised and no
+        /// revocation detection / retry is performed. The default value for this flag is false.
+        /// </summary>
+        internal static readonly string AadTokenRevocationEnabled = "AZURE_COSMOS_AAD_TOKEN_REVOCATION_ENABLED";
+
+        /// <summary>
         /// A read-only string containing the environment variable name for capturing the consecutive failure count for reads, before triggering per partition
         /// circuit breaker flow. The default value for this interval is 10 consecutive requests within 1 min window.
         /// </summary>
@@ -111,6 +120,14 @@ namespace Microsoft.Azure.Cosmos
         /// and GA.
         /// </summary>
         internal static readonly string BinaryEncodingEnabled = "AZURE_COSMOS_BINARY_ENCODING_ENABLED";
+
+        /// <summary>
+        /// A read-only string containing the environment variable name for enabling cross-region metadata
+        /// hedging. Metadata hedging applies to the Collection Read and PartitionKeyRange ReadFeed metadata
+        /// cache reads. It is enabled by default in the preview package; in the GA package it follows the
+        /// account's PPAF state unless this environment variable is explicitly set.
+        /// </summary>
+        internal static readonly string MetadataHedgingEnabled = "AZURE_COSMOS_METADATA_HEDGING_ENABLED";
 
         /// <summary>
         /// A read-only string containing the environment variable name for enabling binary encoding. This will eventually
@@ -225,6 +242,20 @@ namespace Microsoft.Azure.Cosmos
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.ThinClientModeEnabled,
                         defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating whether AAD token revocation handling (emergency
+        /// revocation and Continuous Access Evaluation) is enabled. Defaults to false, in which case
+        /// the SDK preserves the exact pre-feature AAD behavior (no cp1 capability, no revocation retry).
+        /// </summary>
+        /// <returns>A boolean flag indicating if AAD token revocation handling is enabled.</returns>
+        public static bool IsAadTokenRevocationEnabled()
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.AadTokenRevocationEnabled,
+                        defaultValue: false);
         }
 
         /// <summary>
@@ -449,6 +480,36 @@ namespace Microsoft.Azure.Cosmos
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.UseLengthAwareRangeComparator,
                         defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Resolves the tri-state opt-in for cross-region metadata hedging.
+        /// <list type="bullet">
+        /// <item>If the <c>AZURE_COSMOS_METADATA_HEDGING_ENABLED</c> environment variable is set to a valid
+        /// boolean, that value wins (<c>true</c> force-enables, <c>false</c> is a hard kill-switch).</item>
+        /// <item>If the environment variable is unset, the preview package defaults to <c>true</c> (on) and
+        /// the GA package returns <c>null</c> so hedging follows the account's PPAF state.</item>
+        /// </list>
+        /// </summary>
+        /// <returns>
+        /// <c>true</c> / <c>false</c> when explicitly configured; otherwise <c>true</c> for preview builds and
+        /// <c>null</c> (follow PPAF) for GA builds.
+        /// </returns>
+        public static bool? GetMetadataHedgingOptIn()
+        {
+            string value = Environment.GetEnvironmentVariable(ConfigurationManager.MetadataHedgingEnabled);
+            if (!string.IsNullOrEmpty(value) && bool.TryParse(value, out bool parsed))
+            {
+                return parsed;
+            }
+
+#if PREVIEW
+            // Preview package: metadata hedging is on by default.
+            return true;
+#else
+            // GA package: follow the account's PPAF state (resolved per-request by the strategy).
+            return null;
+#endif
         }
 
         /// <summary>

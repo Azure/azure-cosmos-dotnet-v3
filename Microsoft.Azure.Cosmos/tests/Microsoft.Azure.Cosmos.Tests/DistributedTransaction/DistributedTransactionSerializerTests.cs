@@ -438,7 +438,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string capturedJson = await this.CaptureCommitBodyAsync(tx =>
                 tx.PatchItem(BuildMockContainer(), new PartitionKey("pk"), itemId,
                     new[] { PatchOperation.Add("/value", "v") },
-                    new DistributedTransactionRequestOptions { IfMatchEtag = etag }));
+                    new DistributedTransactionPatchItemRequestOptions { IfMatchEtag = etag }));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
@@ -448,6 +448,81 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(etag, etagElement.GetString());
             Assert.IsFalse(op.TryGetProperty(DistributedTransactionSerializer.IfNoneMatch, out _),
                 "Patch operation with only IfMatchEtag must not include an 'ifNoneMatch' field.");
+        }
+
+        [TestMethod]
+        [Description("PatchItem with FilterPredicate set must serialize a 'condition' field inside the patch resourceBody.")]
+        public async Task PatchItem_WithFilterPredicate_SerializesConditionInResourceBody()
+        {
+            const string itemId = "filter-patch-id";
+            const string predicate = "from c where c.taskNum = 3";
+
+            string capturedJson = await this.CaptureCommitBodyAsync(tx =>
+                tx.PatchItem(BuildMockContainer(), new PartitionKey("pk"), itemId,
+                    new[] { PatchOperation.Add("/value", "v") },
+                    new DistributedTransactionPatchItemRequestOptions { FilterPredicate = predicate }));
+
+            using JsonDocument doc = JsonDocument.Parse(capturedJson);
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
+
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.ResourceBody, out JsonElement resourceBody),
+                "Patch operation must include a 'resourceBody' field.");
+            Assert.IsTrue(resourceBody.TryGetProperty(PatchConstants.PatchSpecAttributes.Condition, out JsonElement conditionElement),
+                "Patch resourceBody must include a 'condition' field when FilterPredicate is set.");
+            Assert.AreEqual(predicate, conditionElement.GetString(),
+                "The 'condition' field must match the FilterPredicate passed to PatchItem.");
+        }
+
+        [TestMethod]
+        [Description("PatchItem without a FilterPredicate must not serialize a 'condition' field inside the patch resourceBody.")]
+        public async Task PatchItem_WithoutFilterPredicate_DoesNotSerializeConditionInResourceBody()
+        {
+            const string itemId = "no-filter-patch-id";
+
+            string capturedJson = await this.CaptureCommitBodyAsync(tx =>
+                tx.PatchItem(BuildMockContainer(), new PartitionKey("pk"), itemId,
+                    new[] { PatchOperation.Add("/value", "v") }));
+
+            using JsonDocument doc = JsonDocument.Parse(capturedJson);
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
+
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.ResourceBody, out JsonElement resourceBody),
+                "Patch operation must include a 'resourceBody' field.");
+            Assert.IsFalse(resourceBody.TryGetProperty(PatchConstants.PatchSpecAttributes.Condition, out _),
+                "Patch resourceBody must NOT include a 'condition' field when no FilterPredicate is set.");
+        }
+
+        [TestMethod]
+        [Description("PatchItem with both FilterPredicate and IfMatchEtag set must serialize the operation-level 'ifMatch' field AND the 'condition' field inside the patch resourceBody.")]
+        public async Task PatchItem_WithFilterPredicateAndIfMatchEtag_SerializesBoth()
+        {
+            const string itemId = "filter-and-etag-patch-id";
+            const string predicate = "from c where c.status = 'pending'";
+            const string etag = "\"test-etag\"";
+
+            string capturedJson = await this.CaptureCommitBodyAsync(tx =>
+                tx.PatchItem(BuildMockContainer(), new PartitionKey("pk"), itemId,
+                    new[] { PatchOperation.Replace("/status", "done") },
+                    new DistributedTransactionPatchItemRequestOptions
+                    {
+                        FilterPredicate = predicate,
+                        IfMatchEtag = etag
+                    }));
+
+            using JsonDocument doc = JsonDocument.Parse(capturedJson);
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
+
+            // Operation-level ifMatch (inherited from the base RequestOptions.IfMatchEtag).
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.IfMatch, out JsonElement etagElement),
+                "Patch operation with IfMatchEtag must include an 'ifMatch' field.");
+            Assert.AreEqual(etag, etagElement.GetString());
+
+            // Body-level condition (from the patch-specific FilterPredicate) coexists on the same operation.
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.ResourceBody, out JsonElement resourceBody),
+                "Patch operation must include a 'resourceBody' field.");
+            Assert.IsTrue(resourceBody.TryGetProperty(PatchConstants.PatchSpecAttributes.Condition, out JsonElement conditionElement),
+                "Patch resourceBody must include a 'condition' field when FilterPredicate is set.");
+            Assert.AreEqual(predicate, conditionElement.GetString());
         }
 
         [TestMethod]
