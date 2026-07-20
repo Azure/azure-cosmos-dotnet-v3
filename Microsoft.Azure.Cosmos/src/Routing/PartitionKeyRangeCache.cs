@@ -89,6 +89,61 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
+        /// <summary>
+        /// Force-refreshes the routing cache for a single collection when the partition key range the server
+        /// actually served differs from the range the client resolved for the request — i.e. the partition
+        /// moved (split/merge) to a range the client did not know about. If the ids match, or any input is
+        /// missing, this is a no-op.
+        /// </summary>
+        /// <remarks>
+        /// This is the shared move-detection primitive for both the point-operation capture path
+        /// (<see cref="GatewayStoreModel.CaptureSessionTokenAndHandleSplitAsync"/>) and the distributed-transaction
+        /// post-commit merge path, so the "did the partition move?" decision has exactly one definition instead of
+        /// two comment-synchronized copies. Callers own their own gating policy (which responses capture) and
+        /// failure policy (point ops let a refresh failure propagate for retry; DTX swallows it because the commit
+        /// already succeeded). <paramref name="refreshedRanges"/> is an optional per-pass dedupe set for callers
+        /// that process many operations at once (e.g. a distributed transaction with N sub-ops) so repeated moves
+        /// to the same range trigger a single refresh; it is only consulted after a move is confirmed.
+        /// </remarks>
+        public static Task RefreshRoutingCacheIfPartitionMovedAsync(
+            PartitionKeyRangeCache partitionKeyRangeCache,
+            string collectionResourceId,
+            string clientResolvedPartitionKeyRangeId,
+            string serverServedPartitionKeyRangeId,
+            ITrace trace,
+            HashSet<string> refreshedRanges = null)
+        {
+            if (partitionKeyRangeCache == null
+                || string.IsNullOrEmpty(collectionResourceId)
+                || string.IsNullOrEmpty(clientResolvedPartitionKeyRangeId)
+                || string.IsNullOrWhiteSpace(serverServedPartitionKeyRangeId)
+                || serverServedPartitionKeyRangeId.Equals(clientResolvedPartitionKeyRangeId, StringComparison.OrdinalIgnoreCase))
+            {
+                return Task.CompletedTask;
+            }
+
+            // Optional dedupe (only after a move is confirmed, so a non-moved op can't poison the key a
+            // later moved op needs): collapse repeated moves to the same range into a single refresh.
+            // The dedupe key uses the caller-supplied set's comparer; move detection above is
+            // OrdinalIgnoreCase, but partition key range ids are case-stable numeric strings so the two do
+            // not disagree in practice. Note the key is marked consumed here, before the refresh is issued:
+            // a future caller that both supplies a set and relies on retry-on-failure must account for a
+            // faulted refresh still having consumed the key (today's callers either pass no set — point ops —
+            // or swallow refresh failures — the distributed-transaction post-commit path).
+            if (refreshedRanges != null
+                && !refreshedRanges.Add(collectionResourceId + "|" + serverServedPartitionKeyRangeId))
+            {
+                return Task.CompletedTask;
+            }
+
+            // The request ended up on a different partition unknown to the client, so refresh the caches.
+            return partitionKeyRangeCache.TryGetPartitionKeyRangeByIdAsync(
+                collectionResourceId,
+                serverServedPartitionKeyRangeId,
+                trace ?? NoOpTrace.Singleton,
+                forceRefresh: true);
+        }
+
         public virtual async Task<PartitionKeyRange> TryGetPartitionKeyRangeByIdAsync(
             string collectionResourceId,
             string partitionKeyRangeId,

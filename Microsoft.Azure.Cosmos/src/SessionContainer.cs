@@ -39,6 +39,24 @@ namespace Microsoft.Azure.Cosmos.Common
             return SessionContainer.GetSessionToken(this.state, collectionLink);
         }
 
+        /// <summary>
+        /// Resolves the session token for a specific partition key range within a collection.
+        /// Returns the token in canonical "{pkRangeId}:{lsn}" format, or null if not found.
+        /// This avoids constructing a full DocumentServiceRequest for lightweight lookups.
+        /// </summary>
+        /// <param name="collectionLink">The collection link (name- or rid-based).</param>
+        /// <param name="partitionKeyRangeId">The target partition key range id.</param>
+        /// <param name="parents">
+        /// Optional parent partition key range ids of <paramref name="partitionKeyRangeId"/>. When the
+        /// target range itself has no token yet (e.g. a freshly-split child), the token is derived by
+        /// merging the parents' tokens — mirroring the gateway path
+        /// (ResolvePartitionLocalSessionTokenForGateway). Pass null/empty to skip the parent walk.
+        /// </param>
+        internal string GetSessionTokenForPartitionKeyRange(string collectionLink, string partitionKeyRangeId, IReadOnlyList<string> parents = null)
+        {
+            return SessionContainer.GetSessionTokenForPartitionKeyRange(this.state, collectionLink, partitionKeyRangeId, parents);
+        }
+
         public string ResolveGlobalSessionToken(DocumentServiceRequest request)
         {
             return SessionContainer.ResolveGlobalSessionToken(this.state, request);
@@ -128,6 +146,92 @@ namespace Microsoft.Azure.Cosmos.Common
             return SessionContainer.GetSessionTokenString(partitionKeyRangeIdToTokenMap);
         }
 
+        private static string GetSessionTokenForPartitionKeyRange(SessionContainerState self, string collectionLink, string partitionKeyRangeId, IReadOnlyList<string> parents)
+        {
+            bool arePathSegmentsParsed = PathsHelper.TryParsePathSegments(
+                collectionLink,
+                out _,
+                out _,
+                out string resourceIdOrFullName,
+                out bool isNameBased);
+
+            if (!arePathSegmentsParsed)
+            {
+                return null;
+            }
+
+            ulong? maybeRID = null;
+
+            if (isNameBased)
+            {
+                string collectionName = PathsHelper.GetCollectionPath(resourceIdOrFullName);
+                if (self.collectionNameByResourceId.TryGetValue(collectionName, out ulong rid))
+                {
+                    maybeRID = rid;
+                }
+            }
+            else
+            {
+                ResourceId resourceId = ResourceId.Parse(resourceIdOrFullName);
+                if (resourceId.DocumentCollection != 0)
+                {
+                    maybeRID = resourceId.UniqueDocumentCollectionId;
+                }
+            }
+
+            if (maybeRID.HasValue
+                && self.sessionTokensRIDBased.TryGetValue(maybeRID.Value, out ConcurrentDictionary<string, ISessionToken> partitionKeyRangeIdToTokenMap))
+            {
+                return SessionContainer.BuildPartitionLocalSessionToken(partitionKeyRangeIdToTokenMap, partitionKeyRangeId, parents);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Builds the partition-local session token ("{pkRangeId}:{lsn}") for
+        /// <paramref name="partitionKeyRangeId"/> from an already-resolved per-partition token map. If the
+        /// range has no token of its own (e.g. a freshly-split child), falls back to merging the parents'
+        /// tokens. Returns null when the map is null or nothing has a token. Shared by the collection-link
+        /// and gateway resolution paths so the two stay in lock-step.
+        /// </summary>
+        private static string BuildPartitionLocalSessionToken(
+            ConcurrentDictionary<string, ISessionToken> partitionKeyRangeIdToTokenMap,
+            string partitionKeyRangeId,
+            IReadOnlyList<string> parents)
+        {
+            if (partitionKeyRangeIdToTokenMap == null)
+            {
+                return null;
+            }
+
+            if (partitionKeyRangeIdToTokenMap.TryGetValue(partitionKeyRangeId, out ISessionToken sessionToken))
+            {
+                return partitionKeyRangeId + SessionContainer.sessionTokenSeparator + sessionToken.ConvertToString();
+            }
+
+            if (parents != null)
+            {
+                ISessionToken parentSessionToken = null;
+                for (int parentIndex = parents.Count - 1; parentIndex >= 0; parentIndex--)
+                {
+                    if (partitionKeyRangeIdToTokenMap.TryGetValue(parents[parentIndex], out ISessionToken parentToken))
+                    {
+                        // A partition can have more than 1 parent (merge). In that case, we apply Merge to generate a token with both parent's max LSNs
+                        parentSessionToken = parentSessionToken != null ? parentSessionToken.Merge(parentToken) : parentToken;
+                    }
+                }
+
+                // When we don't have the session token for a partition, we can leverage the session token of the parent(s)
+                if (parentSessionToken != null)
+                {
+                    return partitionKeyRangeId + SessionContainer.sessionTokenSeparator + parentSessionToken.ConvertToString();
+                }
+            }
+
+            return null;
+        }
+
         private static string ResolveGlobalSessionToken(SessionContainerState self, DocumentServiceRequest request)
         {
             ConcurrentDictionary<string, ISessionToken> partitionKeyRangeIdToTokenMap = SessionContainer.GetPartitionKeyRangeIdToTokenMap(self, request);
@@ -149,34 +253,10 @@ namespace Microsoft.Azure.Cosmos.Common
                                                                           string partitionKeyRangeId)
         {
             ConcurrentDictionary<string, ISessionToken> partitionKeyRangeIdToTokenMap = SessionContainer.GetPartitionKeyRangeIdToTokenMap(self, request);
-            if (partitionKeyRangeIdToTokenMap != null)
-            {
-                if (partitionKeyRangeIdToTokenMap.TryGetValue(partitionKeyRangeId, out ISessionToken sessionToken))
-                {
-                    return partitionKeyRangeId + SessionContainer.sessionTokenSeparator + sessionToken.ConvertToString();
-                }
-                else if (request.RequestContext.ResolvedPartitionKeyRange.Parents != null)
-                {
-                    ISessionToken parentSessionToken = null;
-                    for (int parentIndex = request.RequestContext.ResolvedPartitionKeyRange.Parents.Count - 1; parentIndex >= 0; parentIndex--)
-                    {
-                        if (partitionKeyRangeIdToTokenMap.TryGetValue(request.RequestContext.ResolvedPartitionKeyRange.Parents[parentIndex], 
-                                                                      out sessionToken))
-                        {
-                            // A partition can have more than 1 parent (merge). In that case, we apply Merge to generate a token with both parent's max LSNs
-                            parentSessionToken = parentSessionToken != null ? parentSessionToken.Merge(sessionToken) : sessionToken;
-                        }
-                    }
-
-                    // When we don't have the session token for a partition, we can leverage the session token of the parent(s)
-                    if (parentSessionToken != null)
-                    {
-                        return partitionKeyRangeId + SessionContainer.sessionTokenSeparator + parentSessionToken.ConvertToString();
-                    }
-                }
-            }
-
-            return null;
+            return SessionContainer.BuildPartitionLocalSessionToken(
+                partitionKeyRangeIdToTokenMap,
+                partitionKeyRangeId,
+                request.RequestContext?.ResolvedPartitionKeyRange?.Parents);
         }
 
         private static void ClearTokenByCollectionFullname(SessionContainerState self, string collectionFullname)
@@ -362,6 +442,54 @@ namespace Microsoft.Azure.Cosmos.Common
                 {
                     self.rwlock.ExitWriteLock();
                 }
+            }
+        }
+
+        /// <summary>
+        /// Returns true when <paramref name="sessionToken"/> has the canonical "{pkRangeId}:{lsn}" shape
+        /// (exactly two non-empty segments); the lsn content is validated separately by
+        /// SessionTokenHelper.Parse. Centralized so callers outside the write path (e.g. distributed
+        /// transactions) share one definition of a structurally malformed token, without mutating state.
+        /// </summary>
+        /// <remarks>
+        /// Intentionally stricter than the SetSessionToken write path: SetSessionToken does an unbounded
+        /// Split(':') and reads only parts[0]/parts[1], silently truncating a token like "0:1:2", whereas
+        /// this requires exactly two segments and rejects it. A 3+ segment token is genuinely malformed —
+        /// reject it up front rather than store a truncated token; do not loosen toward the writer.
+        /// </remarks>
+        internal static bool IsCanonicalSessionTokenShape(string sessionToken)
+        {
+            if (string.IsNullOrWhiteSpace(sessionToken))
+            {
+                return false;
+            }
+
+            string[] tokenParts = sessionToken.Split(SessionContainer.sessionTokenSeparator[0]);
+            return tokenParts.Length == 2 && tokenParts[0].Length > 0 && tokenParts[1].Length > 0;
+        }
+
+        /// <summary>
+        /// Returns true when <paramref name="sessionToken"/> is both canonically shaped ("{pkRangeId}:{lsn}")
+        /// and its lsn segment parses — i.e. <see cref="SetSessionToken(string, string, INameValueCollection)"/>
+        /// will accept it. Lets callers outside the write path (e.g. distributed transactions) detect a
+        /// malformed token deterministically up front, without mutating state, throwing, or catching parse exceptions.
+        /// </summary>
+        internal static bool IsValidSessionToken(string sessionToken)
+        {
+            if (!SessionContainer.IsCanonicalSessionTokenShape(sessionToken))
+            {
+                return false;
+            }
+
+            string[] tokenParts = sessionToken.Split(SessionContainer.sessionTokenSeparator[0]);
+            try
+            {
+                SessionTokenHelper.Parse(tokenParts[1], HttpConstants.Versions.CurrentVersion);
+                return true;
+            }
+            catch (Exception ex) when (!(ex is OperationCanceledException))
+            {
+                return false;
             }
         }
 

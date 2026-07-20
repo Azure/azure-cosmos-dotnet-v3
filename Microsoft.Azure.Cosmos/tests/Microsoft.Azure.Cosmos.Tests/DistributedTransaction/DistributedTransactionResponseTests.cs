@@ -1335,65 +1335,19 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNotNull(response[0].ResourceStream, "ResourceStream should be populated because property name lookup is case-insensitive.");
         }
 
-        [TestMethod]
-        [Description("SessionToken is assembled as {pkRangeId}:{lsn} from the separate 'sessionToken' (LSN-only) and 'partitionKeyRangeId' JSON fields.")]
-        public async Task FromResponseMessage_OperationResult_SessionToken_DeserializesCorrectly()
-        {
-            const string lsnOnly = "12345";
-            const string pkRangeId = "0";
-            const string expectedSessionToken = "0:12345";
-            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
-
-            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""sessionToken"":""{lsnOnly}"",""partitionKeyRangeId"":""{pkRangeId}""}}]}}";
-            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
-
-            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
-                responseMessage,
-                serverRequest,
-                MockCosmosUtil.Serializer,
-                NoOpTrace.Singleton,
-                CancellationToken.None);
-
-            Assert.AreEqual(expectedSessionToken, response[0].SessionToken,
-                "SessionToken must be assembled as {pkRangeId}:{lsn} from the two separate JSON fields.");
-        }
-
-        [TestMethod]
-        [Description("When partitionKeyRangeId is absent, FromJson sets SessionToken to null so MergeSessionTokens skips the operation.")]
-        // TODO(issue#5857): Remove once the coordinator starts emitting partitionKeyRangeId for all operations.
-        public async Task FromResponseMessage_OperationResult_SessionToken_NullWhenPartitionKeyRangeIdAbsent()
-        {
-            const string lsnOnly = "12345";
-            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
-
-            // partitionKeyRangeId field is omitted — current server behavior
-            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""sessionToken"":""{lsnOnly}""}}]}}";
-            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
-
-            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
-                responseMessage,
-                serverRequest,
-                MockCosmosUtil.Serializer,
-                NoOpTrace.Singleton,
-                CancellationToken.None);
-
-            Assert.IsNull(response[0].SessionToken,
-                "SessionToken must be null when partitionKeyRangeId is absent so the merge is skipped.");
-        }
-
         [DataTestMethod]
-        [DataRow("", DisplayName = "Empty string partitionKeyRangeId")]
-        [DataRow(" ", DisplayName = "Whitespace-only partitionKeyRangeId")]
-        [DataRow("   ", DisplayName = "Multiple spaces partitionKeyRangeId")]
-        [Description("When partitionKeyRangeId is present but empty or whitespace, FromJson sets SessionToken to null " +
-                     "so MergeSessionTokens skips the operation. The server has no validation on this field and can " +
-                     "send blank values; failing the commit would be worse than skipping the merge.")]
-        public async Task FromResponseMessage_OperationResult_SessionToken_NullWhenPartitionKeyRangeIdIsBlank(string pkRangeId)
+        [DataRow("12345", @",""partitionKeyRangeId"":""0""", DisplayName = "LSN-only token + pkRangeId present")]
+        [DataRow("12345", "", DisplayName = "LSN-only token + pkRangeId absent")]
+        [DataRow(":-1#425344", @",""partitionKeyRangeId"":""3""", DisplayName = "Leading colon (no pkRangeId)")]
+        [DataRow("3:", @",""partitionKeyRangeId"":""5""", DisplayName = "Trailing colon only (no LSN)")]
+        [Description("FromJson does not validate session token format — malformed tokens are preserved " +
+                     "as-is in the result. Validation happens in MergeSessionTokens so that valid ops " +
+                     "in a multi-op response still get merged before throwing.")]
+        public async Task FromResponseMessage_OperationResult_SessionToken_MalformedTokenPreservedAsIs(string token, string pkRangeIdFragment)
         {
-            const string lsnOnly = "12345";
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
 
-            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""sessionToken"":""{lsnOnly}"",""partitionKeyRangeId"":""{pkRangeId}""}}]}}";
+            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""sessionToken"":""{token}""{pkRangeIdFragment}}}]}}";
             ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
 
             DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
@@ -1403,15 +1357,16 @@ namespace Microsoft.Azure.Cosmos.Tests
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
-            Assert.IsNull(response[0].SessionToken,
-                $"SessionToken must be null when partitionKeyRangeId is '{pkRangeId}' (empty/whitespace) so the merge is safely skipped.");
+            Assert.AreEqual(token, response[0].SessionToken,
+                $"FromJson must preserve malformed token '{token}' as-is for MergeSessionTokens to validate.");
         }
 
         [DataTestMethod]
         [DataRow(" ", DisplayName = "Single space sessionToken")]
         [DataRow("   ", DisplayName = "Multiple spaces sessionToken")]
-        [Description("When sessionToken is whitespace-only, FromJson treats it the same as absent — SessionToken remains null.")]
-        public async Task FromResponseMessage_OperationResult_SessionToken_NullWhenSessionTokenIsWhitespace(string whitespaceToken)
+        [Description("Whitespace-only session tokens are preserved in the result (not thrown during parsing). " +
+                     "MergeSessionTokens will detect and report the malformation.")]
+        public async Task FromResponseMessage_OperationResult_SessionToken_WhitespacePreservedAsIs(string whitespaceToken)
         {
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
 
@@ -1425,8 +1380,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
-            Assert.IsNull(response[0].SessionToken,
-                $"SessionToken must be null when the sessionToken value is whitespace ('{whitespaceToken}').");
+            Assert.AreEqual(whitespaceToken, response[0].SessionToken,
+                $"FromJson must preserve whitespace token for MergeSessionTokens to validate.");
         }
 
         [DataTestMethod]
@@ -1452,30 +1407,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 $"A well-formed canonical token '{token}' must be left as-is.");
         }
 
-        [DataTestMethod]
-        [DataRow(":-1#425344", "3", DisplayName = "Leading colon (no pkRangeId) — not canonical, assembles with pkRangeId")]
-        [DataRow("3:", "5", DisplayName = "Trailing colon only (no LSN) — not canonical, assembles with pkRangeId")]
-        [Description("Session tokens with a colon at position 0 or at the last character are not valid canonical tokens — they get assembled with the provided partitionKeyRangeId.")]
-        public async Task FromResponseMessage_OperationResult_SessionToken_AssembledWhenColonIsAtEdge(string token, string pkRangeId)
-        {
-            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
-
-            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""sessionToken"":""{token}"",""partitionKeyRangeId"":""{pkRangeId}""}}]}}";
-            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
-
-            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
-                responseMessage,
-                serverRequest,
-                MockCosmosUtil.Serializer,
-                NoOpTrace.Singleton,
-                CancellationToken.None);
-
-            Assert.AreEqual(pkRangeId + ":" + token, response[0].SessionToken,
-                $"A token with edge colon '{token}' must be assembled with pkRangeId '{pkRangeId}'.");
-        }
-
         [TestMethod]
-        [Description("When sessionToken is absent entirely, SessionToken remains null regardless of partitionKeyRangeId.")]
+        [Description("When sessionToken is absent entirely from JSON, SessionToken remains null (MergeSessionTokens will skip it).")]
         public async Task FromResponseMessage_OperationResult_SessionToken_NullWhenSessionTokenFieldAbsent()
         {
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
