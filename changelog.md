@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
+- [5623](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5623) Cross Region Hedging: Fixes a losing cross-region hedge request that is abandoned when another region produces the winning response being able to surface its fault as an unobserved `TaskScheduler.UnobservedTaskException`. When the winning region returns early, the still in-flight losing hedge tasks are now explicitly observed, so a losing arm that completes faulted (for example after being cancelled by the winning region) is handled internally and never leaks as an unobserved task exception, while the winning region's response is always returned unaffected. This is most relevant for accounts where hedging is implicitly enabled by Per-Partition Automatic Failover (PPAF), where the path is exercised with no explicit customer opt-in.
+
 #### Other Changes
 
 - [5991](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5991) TargetReplicaSetSize : Updated address cache logic to use partition-specific target replica set size when available, falling back to the user replication policy value.
