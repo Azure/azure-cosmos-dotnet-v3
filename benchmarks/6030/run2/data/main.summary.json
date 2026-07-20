@@ -1,0 +1,75 @@
+{
+  "label": "main",
+  "sha": "860af8d44",
+  "mode": "Direct",
+  "regions": [
+    "West US 2",
+    "East US 2",
+    "East US"
+  ],
+  "primaryRegion": "West US 2",
+  "config": {
+    "Concurrency": 32,
+    "ReadRatio": 0.8,
+    "Docs": 1000,
+    "Throughput": 10000,
+    "HedgeThresholdMs": 100,
+    "HedgeStepMs": 50,
+    "FaultDelayMs": 2000,
+    "WarmupSec": 15,
+    "SteadySec": 45,
+    "FaultSec": 45,
+    "RecoverySec": 45
+  },
+  "faultHits": 7878,
+  "unobservedTaskExceptions": 0,
+  "gcCollections": {
+    "gen0": 316,
+    "gen1": 113,
+    "gen2": 14
+  },
+  "perPhase": {
+    "steadyA": {
+      "seconds": 45,
+      "mean_read_ops_s": 2212.4444444444443,
+      "mean_write_ops_s": 558.3555555555556,
+      "mean_read_p99_ms": 38.97727539999999,
+      "p99_of_read_p99_ms": 96.92995920000001,
+      "max_read_p99_ms": 99.21425,
+      "mean_cpu_pct": 11.651538237241992,
+      "max_cpu_pct": 15.228089944988133,
+      "mean_ws_mb": 155.8894097222222,
+      "max_ws_mb": 158.44140625,
+      "errors": 0,
+      "cancels": 0
+    },
+    "fault": {
+      "seconds": 45,
+      "mean_read_ops_s": 224.93333333333334,
+      "mean_write_ops_s": 56.53333333333333,
+      "mean_read_p99_ms": 207.24035404444444,
+      "p99_of_read_p99_ms": 343.6696388800003,
+      "max_read_p99_ms": 416.236187,
+      "mean_cpu_pct": 5.60618764240258,
+      "max_cpu_pct": 11.56650316928898,
+      "mean_ws_mb": 379.39557291666665,
+      "max_ws_mb": 534.4921875,
+      "errors": 0,
+      "cancels": 0
+    },
+    "recovery": {
+      "seconds": 45,
+      "mean_read_ops_s": 2485.222222222222,
+      "mean_write_ops_s": 620.2444444444444,
+      "mean_read_p99_ms": 35.9312957333334,
+      "p99_of_read_p99_ms": 191.67318264000002,
+      "max_read_p99_ms": 198.87015,
+      "mean_cpu_pct": 12.617453035970488,
+      "max_cpu_pct": 17.531847592081533,
+      "mean_ws_mb": 521.3096354166667,
+      "max_ws_mb": 678.1015625,
+      "errors": 0,
+      "cancels": 0
+    }
+  }
+}

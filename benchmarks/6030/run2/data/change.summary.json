@@ -1,0 +1,75 @@
+{
+  "label": "change",
+  "sha": "151bd55ae",
+  "mode": "Direct",
+  "regions": [
+    "West US 2",
+    "East US 2",
+    "East US"
+  ],
+  "primaryRegion": "West US 2",
+  "config": {
+    "Concurrency": 32,
+    "ReadRatio": 0.8,
+    "Docs": 1000,
+    "Throughput": 10000,
+    "HedgeThresholdMs": 100,
+    "HedgeStepMs": 50,
+    "FaultDelayMs": 2000,
+    "WarmupSec": 15,
+    "SteadySec": 45,
+    "FaultSec": 45,
+    "RecoverySec": 45
+  },
+  "faultHits": 7860,
+  "unobservedTaskExceptions": 0,
+  "gcCollections": {
+    "gen0": 305,
+    "gen1": 110,
+    "gen2": 15
+  },
+  "perPhase": {
+    "steadyA": {
+      "seconds": 45,
+      "mean_read_ops_s": 2241.5555555555557,
+      "mean_write_ops_s": 560.4666666666667,
+      "mean_read_p99_ms": 36.12525393333332,
+      "p99_of_read_p99_ms": 74.05578428000001,
+      "max_read_p99_ms": 77.080856,
+      "mean_cpu_pct": 11.494447518234917,
+      "max_cpu_pct": 16.45469535714235,
+      "mean_ws_mb": 155.68177083333333,
+      "max_ws_mb": 158.63671875,
+      "errors": 0,
+      "cancels": 0
+    },
+    "fault": {
+      "seconds": 45,
+      "mean_read_ops_s": 220.48888888888888,
+      "mean_write_ops_s": 54.977777777777774,
+      "mean_read_p99_ms": 208.91304644444446,
+      "p99_of_read_p99_ms": 343.9297548000004,
+      "max_read_p99_ms": 417.639536,
+      "mean_cpu_pct": 5.850786126195679,
+      "max_cpu_pct": 11.71549882173459,
+      "mean_ws_mb": 391.77855902777776,
+      "max_ws_mb": 552.46484375,
+      "errors": 0,
+      "cancels": 0
+    },
+    "recovery": {
+      "seconds": 45,
+      "mean_read_ops_s": 2167.6222222222223,
+      "mean_write_ops_s": 546.3111111111111,
+      "mean_read_p99_ms": 49.469431644444455,
+      "p99_of_read_p99_ms": 249.69053588000008,
+      "max_read_p99_ms": 257.782146,
+      "mean_cpu_pct": 11.840437255417173,
+      "max_cpu_pct": 16.709069642594113,
+      "mean_ws_mb": 505.64817708333334,
+      "max_ws_mb": 655.90234375,
+      "errors": 0,
+      "cancels": 0
+    }
+  }
+}
