@@ -125,9 +125,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             encryptionClient.Dispose();
 
-            // The worker task should complete shortly after disposal.
-            await Task.WhenAny(worker.WorkerTask, Task.Delay(TimeSpan.FromSeconds(5)));
-            Assert.IsTrue(worker.WorkerTask.IsCompleted);
+            // The worker task should complete shortly after disposal and NOT be faulted --
+            // a faulted task still reports IsCompleted=true, so this test previously would
+            // have silently passed on an unobserved ObjectDisposedException from a CTS race.
+            Task completed = await Task.WhenAny(worker.WorkerTask, Task.Delay(TimeSpan.FromSeconds(5)));
+            Assert.AreSame(worker.WorkerTask, completed, "Worker task should complete within timeout after dispose.");
+            Assert.IsFalse(worker.WorkerTask.IsFaulted, "Worker task should not fault on dispose. Exception: " + worker.WorkerTask.Exception);
+            Assert.IsFalse(worker.WorkerTask.IsCanceled, "Worker task should exit via internal break, not surface a cancellation.");
+
+            // Awaiting surfaces any hidden exception; if the task completed cleanly this is a no-op.
+            await worker.WorkerTask;
         }
 
         [TestMethod]

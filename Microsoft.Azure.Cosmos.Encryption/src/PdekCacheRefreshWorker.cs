@@ -35,11 +35,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private static readonly TimeSpan DefaultMaxScanInterval = TimeSpan.FromMinutes(5);
         private static readonly TimeSpan SemaphoreAcquireTimeout = TimeSpan.FromSeconds(30);
 
+        // Worst-case Key Vault latency budget used to derive the safety margin that keeps a
+        // refresh from landing on or after the TTL boundary. 5s is generous for regional AKV.
+        private static readonly TimeSpan MaxKeyVaultLatencyBudget = TimeSpan.FromSeconds(5);
+
+        // Sum of exponential backoff caps for the 5 retry attempts: 1+2+4+8+16 = 31s, rounded up.
+        private static readonly TimeSpan MaxCumulativeBackoff = TimeSpan.FromSeconds(35);
+
         private readonly ConcurrentDictionary<string, RefreshEntry> trackedEntries;
         private readonly EncryptionCosmosClient encryptionCosmosClient;
         private readonly TimeSpan keyCacheTimeToLive;
         private readonly TimeSpan scanInterval;
         private readonly TimeSpan maxScanInterval;
+        private readonly TimeSpan refreshSafetyMargin;
         private readonly double refreshWindowFraction;
         private readonly CancellationTokenSource cts;
         private readonly Task workerTask;
@@ -56,6 +64,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.refreshWindowFraction = ReadDoubleFromEnv(RefreshWindowFractionEnvVar, DefaultRefreshWindowFraction);
             this.scanInterval = TimeSpan.FromSeconds(
                 Math.Min(keyCacheTimeToLive.TotalSeconds * 0.1, this.maxScanInterval.TotalSeconds));
+
+            // Safety margin ensures a refresh started at the threshold has runway to complete
+            // (I/O + full 429 backoff + one extra scan) before the entry actually expires. Never
+            // consume more than half the TTL for margin — small TTLs still get a refresh window.
+            TimeSpan rawMargin = MaxKeyVaultLatencyBudget + MaxCumulativeBackoff + this.scanInterval;
+            this.refreshSafetyMargin = TimeSpan.FromSeconds(
+                Math.Min(rawMargin.TotalSeconds, keyCacheTimeToLive.TotalSeconds * 0.5));
+
             this.trackedEntries = new ConcurrentDictionary<string, RefreshEntry>();
             this.cts = new CancellationTokenSource();
             this.jitterRandom = new Random();
@@ -70,7 +86,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
             if (Interlocked.Exchange(ref this.disposed, 1) == 0)
             {
                 this.cts.Cancel();
-                this.cts.Dispose();
+
+                // Intentionally do NOT dispose the CTS here. The background worker holds the token
+                // and may still be awaiting Task.Delay(...ct) or WaitAsync(...ct) at the moment of
+                // disposal; disposing the CTS synchronously races those awaits and raises
+                // ObjectDisposedException, which faults the worker task. A CTS with no timer or
+                // registrations is safe to leave to GC.
             }
         }
 
@@ -90,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             string key = BuildTrackingKey(databaseRid, clientEncryptionKeyId);
-            TimeSpan effectiveTtl = ProtectedDataEncryptionKey.TimeToLive;
+            DateTime nowUtc = DateTime.UtcNow;
 
             this.trackedEntries.AddOrUpdate(
                 key,
@@ -99,18 +120,23 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     ClientEncryptionKeyId = clientEncryptionKeyId,
                     EncryptionContainer = encryptionContainer,
                     DatabaseRid = databaseRid,
-                    CreatedAtUtc = DateTime.UtcNow,
-                    JitterOffset = this.GenerateJitter(effectiveTtl),
+                    CreatedAtUtc = nowUtc,
+                    LastHotPathTouchUtc = nowUtc,
+                    JitterOffset = this.GenerateJitter(this.keyCacheTimeToLive),
                 },
                 (_, existing) =>
                 {
-                    // Only update CreatedAtUtc if the entry has likely expired and was just recreated
-                    // (cache miss). If this is a cache hit, don't reset the creation time -- that would
-                    // delay the background refresh indefinitely.
-                    if (DateTime.UtcNow >= existing.CreatedAtUtc + effectiveTtl)
+                    // Track hot-path usage separately from refresh time so the prune heuristic
+                    // ("no hot-path touch for 3x TTL") isn't defeated by the worker's own refreshes.
+                    existing.LastHotPathTouchUtc = nowUtc;
+
+                    // Only update CreatedAtUtc if the entry has likely expired and was just
+                    // recreated (cache miss). If this is a cache hit, don't reset the creation
+                    // time -- that would delay the background refresh indefinitely.
+                    if (nowUtc >= existing.CreatedAtUtc + this.keyCacheTimeToLive)
                     {
-                        existing.CreatedAtUtc = DateTime.UtcNow;
-                        existing.JitterOffset = this.GenerateJitter(effectiveTtl);
+                        existing.CreatedAtUtc = nowUtc;
+                        existing.JitterOffset = this.GenerateJitter(this.keyCacheTimeToLive);
                     }
 
                     // Always update the container reference in case the caller's container changed
@@ -179,12 +205,22 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 {
                     break;
                 }
+                catch (ObjectDisposedException)
+                {
+                    // Race with Dispose(): the CTS backing the token may be disposed while we are
+                    // awaiting Task.Delay. Treat as terminal, like cancellation.
+                    break;
+                }
 
                 try
                 {
                     await this.ScanAndRefreshEntriesAsync(ct).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch (ObjectDisposedException)
                 {
                     break;
                 }
@@ -198,7 +234,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private async Task ScanAndRefreshEntriesAsync(CancellationToken ct)
         {
-            TimeSpan effectiveTtl = ProtectedDataEncryptionKey.TimeToLive;
+            // Use the TTL captured at construction rather than the process-global static
+            // ProtectedDataEncryptionKey.TimeToLive, which can be lowered by another
+            // EncryptionCosmosClient with a different TTL and cause scan cadence and refresh
+            // window to disagree.
+            TimeSpan effectiveTtl = this.keyCacheTimeToLive;
 
             foreach (System.Collections.Generic.KeyValuePair<string, RefreshEntry> kvp in this.trackedEntries)
             {
@@ -208,17 +248,28 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
 
                 RefreshEntry entry = kvp.Value;
-                DateTime refreshThreshold = entry.CreatedAtUtc
+
+                // The refresh threshold is the earlier of (a) the fractional window + jitter,
+                // and (b) the entry's expiry minus a safety margin large enough to fit a full
+                // KV roundtrip + 429 backoff + one scan interval. This guarantees a refresh
+                // started at the threshold has runway to *complete* before actual expiry,
+                // eliminating the "refresh lands on/after expiry" cold-miss window.
+                DateTime windowThreshold = entry.CreatedAtUtc
                     + TimeSpan.FromSeconds(effectiveTtl.TotalSeconds * this.refreshWindowFraction)
                     + entry.JitterOffset;
+                DateTime hardDeadline = entry.CreatedAtUtc + effectiveTtl - this.refreshSafetyMargin;
+                DateTime refreshThreshold = windowThreshold < hardDeadline ? windowThreshold : hardDeadline;
 
                 if (DateTime.UtcNow >= refreshThreshold)
                 {
                     await this.RefreshSingleEntryAsync(entry, effectiveTtl, ct).ConfigureAwait(false);
                 }
 
-                // Prune entries not refreshed for > 3x TTL (stale/unused keys)
-                if (DateTime.UtcNow >= entry.CreatedAtUtc + TimeSpan.FromSeconds(effectiveTtl.TotalSeconds * 3))
+                // Prune entries whose *hot path* has not touched them for > 3x TTL. Note this
+                // is intentionally distinct from the refresh time (CreatedAtUtc), which the
+                // worker resets on every successful refresh -- if we used CreatedAtUtc the
+                // prune would never fire for any successfully-refreshing entry.
+                if (DateTime.UtcNow >= entry.LastHotPathTouchUtc + TimeSpan.FromSeconds(effectiveTtl.TotalSeconds * 3))
                 {
                     this.trackedEntries.TryRemove(kvp.Key, out _);
                 }
@@ -311,8 +362,55 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
                 catch (RequestFailedException ex) when (ex.Status == 403)
                 {
-                    // KEK revoked: remove from tracking so the hot-path thread triggers
-                    // the existing force-refresh flow in BuildEncryptionAlgorithmForSettingAsync.
+                    // KEK revoked. The cached PDEK is still non-expired, so the hot path will
+                    // keep returning it (and successfully decrypting) until natural TTL. That's
+                    // a stale-key window that can be as long as the full TTL. Actively evict the
+                    // PDEK from the static cache so the next hot-path access misses and re-runs
+                    // the standard build flow, which will then observe the 403 from Key Vault.
+                    //
+                    // Best-effort: to evict we need the same KEK identity used at cache-insert
+                    // time. Fetch the current CEK properties (fast, from AsyncCache), reconstruct
+                    // the KEK under the semaphore, then remove. If any of that fails we still
+                    // remove from tracking so we don't re-arm the stale entry with SetInCache.
+                    try
+                    {
+                        ClientEncryptionKeyProperties cekPropsForEvict =
+                            await this.encryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
+                                clientEncryptionKeyId: entry.ClientEncryptionKeyId,
+                                encryptionContainer: entry.EncryptionContainer,
+                                databaseRid: entry.DatabaseRid,
+                                ifNoneMatchEtag: null,
+                                shouldForceRefresh: false,
+                                cancellationToken: ct).ConfigureAwait(false);
+
+                        if (await EncryptionCosmosClient.EncryptionKeyCacheSemaphore
+                            .WaitAsync(SemaphoreAcquireTimeout, ct).ConfigureAwait(false))
+                        {
+                            try
+                            {
+                                KeyEncryptionKey kekForEvict = KeyEncryptionKey.GetOrCreate(
+                                    cekPropsForEvict.EncryptionKeyWrapMetadata.Name,
+                                    cekPropsForEvict.EncryptionKeyWrapMetadata.Value,
+                                    this.encryptionCosmosClient.EncryptionKeyStoreProviderImpl);
+
+                                ProtectedDataEncryptionKey.RemoveFromCache(
+                                    entry.ClientEncryptionKeyId,
+                                    kekForEvict,
+                                    cekPropsForEvict.WrappedDataEncryptionKey);
+                            }
+                            finally
+                            {
+                                EncryptionCosmosClient.EncryptionKeyCacheSemaphore.Release(1);
+                            }
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        // Best-effort eviction: on failure the hot path still eventually
+                        // observes the 403 when the PDEK's own TTL expires. We still remove
+                        // from tracking below so the worker will not re-extend the entry.
+                    }
+
                     string trackingKey = BuildTrackingKey(entry.DatabaseRid, entry.ClientEncryptionKeyId);
                     this.trackedEntries.TryRemove(trackingKey, out _);
                     return;
@@ -353,7 +451,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             public string DatabaseRid { get; set; }
 
+            /// <summary>
+            /// Gets or sets the wall-clock time at which the underlying PDEK's TTL clock started
+            /// (i.e., when <see cref="ProtectedDataEncryptionKey.SetInCache"/> was last called for
+            /// this key, or when the hot path first created it). Used to schedule the next refresh.
+            /// </summary>
             public DateTime CreatedAtUtc { get; set; }
+
+            /// <summary>
+            /// Gets or sets the wall-clock time of the last hot-path <see cref="TrackEntry"/> call.
+            /// Used only for prune decisions so that keys the worker keeps refreshing but that no
+            /// hot-path caller is actually using are eventually evicted. Refresh does NOT update this.
+            /// </summary>
+            public DateTime LastHotPathTouchUtc { get; set; }
 
             public TimeSpan JitterOffset { get; set; }
         }

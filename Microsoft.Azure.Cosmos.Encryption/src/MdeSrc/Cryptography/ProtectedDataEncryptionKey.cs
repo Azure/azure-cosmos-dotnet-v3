@@ -127,6 +127,22 @@ namespace Microsoft.Data.Encryption.Cryptography
             encryptionKeyCache.Set(cacheKey, pdek);
         }
 
+        /// <summary>
+        /// Evicts the <see cref="ProtectedDataEncryptionKey"/> identified by the (name, KEK, encrypted key) triple
+        /// from the static cache. Used by the background refresh worker to invalidate a PDEK when the
+        /// underlying KEK has been revoked (403 from Key Vault), forcing the next hot-path access to
+        /// re-resolve the KEK and observe the revocation.
+        /// </summary>
+        internal static void RemoveFromCache(string name, KeyEncryptionKey keyEncryptionKey, byte[] encryptedKey)
+        {
+            name.ValidateNotNullOrWhitespace(nameof(name));
+            keyEncryptionKey.ValidateNotNull(nameof(keyEncryptionKey));
+            encryptedKey.ValidateNotNullOrEmpty(nameof(encryptedKey));
+
+            var cacheKey = Tuple.Create(name, keyEncryptionKey, encryptedKey.ToHexString());
+            encryptionKeyCache.Remove(cacheKey);
+        }
+
         private static byte[] GenerateNewColumnEncryptionKey(KeyEncryptionKey masterKey)
         {
             byte[] plainTextColumnEncryptionKey = new byte[32];

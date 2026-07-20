@@ -117,5 +117,14 @@ namespace Microsoft.Data.Encryption.Cryptography
         {
             return cache.TryGetValue(key, out _);
         }
+
+        /// <summary>
+        /// Removes the entry identified by <paramref name="key"/> if present. A no-op if the key does not exist.
+        /// </summary>
+        /// <param name="key">The cache key to remove.</param>
+        internal void Remove(TKey key)
+        {
+            cache.Remove(key);
+        }
     }
 }
