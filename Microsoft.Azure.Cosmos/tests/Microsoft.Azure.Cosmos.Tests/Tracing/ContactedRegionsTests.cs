@@ -56,11 +56,11 @@
         {
             ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, Trace.GetRootTrace(nameof(ContactedRegionsTests)));
             Uri uri1 = new Uri("http://someUri1.com");
-            datum.RecordRegionContacted(regionName1, uri1);
+            datum.AppendRegionContacted(regionName1, uri1);
             if (regionName2 != null)
             {
                 Uri uri2 = new Uri("http://someUri2.com");
-                datum.RecordRegionContacted(regionName2, uri2);
+                datum.AppendRegionContacted(regionName2, uri2);
             }
 
             return datum;

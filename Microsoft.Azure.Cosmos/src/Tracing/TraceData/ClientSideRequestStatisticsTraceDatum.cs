@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
 
-    internal sealed class ClientSideRequestStatisticsTraceDatum : TraceDatum, IClientSideRequestStatistics
+    internal sealed class ClientSideRequestStatisticsTraceDatum : TraceDatum, IClientSideRequestStatisticsExtension
     {
         private static readonly IReadOnlyDictionary<string, AddressResolutionStatistics> EmptyEndpointToAddressResolutionStatistics = new Dictionary<string, AddressResolutionStatistics>();
         private static readonly IReadOnlyList<StoreResponseStatistics> EmptyStoreResponseStatistics = new List<StoreResponseStatistics>();
@@ -73,11 +73,15 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             }
         }
 
-        public IReadOnlyList<TransportAddressUri> ContactedReplicas => this.contactedReplicas;
+        public List<TransportAddressUri> ContactedReplicas
+        {
+            get => new List<TransportAddressUri>(this.contactedReplicas);
+            set => this.RecordContactedReplicas(value);
+        }
 
-        public IReadOnlyCollection<TransportAddressUri> FailedReplicas => this.failedReplicas;
+        public HashSet<TransportAddressUri> FailedReplicas => new HashSet<TransportAddressUri>(this.failedReplicas);
 
-        public IReadOnlyCollection<(string, Uri)> RegionsContacted => this.regionsContacted;
+        public HashSet<(string, Uri)> RegionsContacted => new HashSet<(string, Uri)>(this.regionsContacted);
 
         public ITrace Trace { get; private set; }
 
@@ -292,15 +296,28 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             }
         }
 
-        // Null/default arguments are intentionally accepted by the single-item Record* methods below to
+        // Null/default arguments are intentionally accepted by the single-item Append* methods below to
         // preserve the prior behavior of the raw collections (which allowed Add(default)); callers are
         // responsible for any null filtering they require.
-        public void RecordContactedReplica(TransportAddressUri contactedReplica)
+        public void AppendContactedReplica(TransportAddressUri contactedReplica)
         {
             ImmutableInterlocked.Update(
                 ref this.contactedReplicas,
                 static (replicas, replica) => replicas.Add(replica),
                 contactedReplica);
+        }
+
+        public void AppendContactedReplicas(IReadOnlyList<TransportAddressUri> contactedReplicas)
+        {
+            if (contactedReplicas == null)
+            {
+                return;
+            }
+
+            ImmutableInterlocked.Update(
+                ref this.contactedReplicas,
+                static (replicas, replicasToAdd) => replicas.AddRange(replicasToAdd),
+                contactedReplicas);
         }
 
         public void RecordContactedReplicas(IReadOnlyList<TransportAddressUri> contactedReplicas)
@@ -311,14 +328,14 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             }
 
             // Invariant: the write path always replaces the full replica list before the request is issued,
-            // and read-path appends (RecordContactedReplica) happen afterwards. Because of this
+            // and read-path appends (AppendContactedReplica) happen afterwards. Because of this
             // replace-before-append ordering it is safe to use Interlocked.Exchange here. If a caller ever
             // needs to append before replacing, this must be changed to a CAS merge to avoid dropping the
             // appended entries.
             Interlocked.Exchange(ref this.contactedReplicas, ImmutableList.CreateRange(contactedReplicas));
         }
 
-        public void RecordFailedReplica(TransportAddressUri failedReplica)
+        public void AppendFailedReplica(TransportAddressUri failedReplica)
         {
             ImmutableInterlocked.Update(
                 ref this.failedReplicas,
@@ -326,7 +343,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 failedReplica);
         }
 
-        public void RecordRegionContacted(string regionName, Uri locationEndpoint)
+        public void AppendRegionContacted(string regionName, Uri locationEndpoint)
         {
             ImmutableInterlocked.Update(
                 ref this.regionsContacted,

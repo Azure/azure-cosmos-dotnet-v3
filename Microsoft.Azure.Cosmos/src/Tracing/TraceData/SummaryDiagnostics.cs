@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             }
         }
 
-        private void AggregateRegionsContacted(IReadOnlyCollection<(string, Uri)> regionsContacted)
+        private void AggregateRegionsContacted(HashSet<(string, Uri)> regionsContacted)
         {
             foreach ((string name, Uri uri) in regionsContacted)
             {

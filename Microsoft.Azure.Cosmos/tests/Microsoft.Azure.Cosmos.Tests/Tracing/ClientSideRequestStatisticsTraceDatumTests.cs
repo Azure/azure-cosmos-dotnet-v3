@@ -49,12 +49,12 @@
         public void DuplicateContactedReplicasTests()
         {
             ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, Trace.GetRootTrace(nameof(DuplicateContactedReplicasTests)));
-            clientSideRequestStatisticsTraceDatum.RecordContactedReplica(new TransportAddressUri(new Uri("http://storephysicaladdress1.com")));
-            clientSideRequestStatisticsTraceDatum.RecordContactedReplica(new TransportAddressUri(new Uri("http://storephysicaladdress2.com")));
-            clientSideRequestStatisticsTraceDatum.RecordContactedReplica(new TransportAddressUri(new Uri("http://storephysicaladdress2.com")));
-            clientSideRequestStatisticsTraceDatum.RecordContactedReplica(new TransportAddressUri(new Uri("http://storephysicaladdress2.com")));
-            clientSideRequestStatisticsTraceDatum.RecordContactedReplica(new TransportAddressUri(new Uri("http://storephysicaladdress2.com")));
-            clientSideRequestStatisticsTraceDatum.RecordContactedReplica(new TransportAddressUri(new Uri("http://storephysicaladdress3.com")));
+            clientSideRequestStatisticsTraceDatum.AppendContactedReplica(new TransportAddressUri(new Uri("http://storephysicaladdress1.com")));
+            clientSideRequestStatisticsTraceDatum.AppendContactedReplica(new TransportAddressUri(new Uri("http://storephysicaladdress2.com")));
+            clientSideRequestStatisticsTraceDatum.AppendContactedReplica(new TransportAddressUri(new Uri("http://storephysicaladdress2.com")));
+            clientSideRequestStatisticsTraceDatum.AppendContactedReplica(new TransportAddressUri(new Uri("http://storephysicaladdress2.com")));
+            clientSideRequestStatisticsTraceDatum.AppendContactedReplica(new TransportAddressUri(new Uri("http://storephysicaladdress2.com")));
+            clientSideRequestStatisticsTraceDatum.AppendContactedReplica(new TransportAddressUri(new Uri("http://storephysicaladdress3.com")));
             ITrace trace = Trace.GetRootTrace("test");
             trace.AddDatum("stats", clientSideRequestStatisticsTraceDatum);
             string json = new CosmosTraceDiagnostics(trace).ToString();
