@@ -7,7 +7,7 @@ The Cosmos SDK has two independent cross-region hedging systems. Both send a red
 | **Covers** | Document reads (and, opt-in, multi-region writes) | The two metadata cache reads: `Collection` `Read` and `PartitionKeyRange` `ReadFeed` (first page) |
 | **Configured by** | `CosmosClientOptions` / `RequestOptions` / `CosmosClientBuilder`, or the PPAF SDK default | SDK-managed; the `AZURE_COSMOS_METADATA_HEDGING_ENABLED` env var and the account PPAF state |
 | **Hedges to** | Each remaining preferred region, one at a time | Exactly one other region |
-| **Trigger** | The configured latency `threshold` | A fixed `1.5s` latency threshold, or a regional failure returned by the primary |
+| **Trigger** | Configured `threshold`/`thresholdStep`, or earlier when an in-flight arm returns a non-final response or faults | A fixed `1.5s` latency threshold, or a regional failure returned by the primary |
 | **Status codes** | [Data-plane status codes](#status-codes-what-the-sdk-accepts-vs-hedges) | [Metadata status codes](#status-codes-what-triggers-a-metadata-hedge) |
 
 Both systems require at least two available regions; with a single region endpoint the SDK skips hedging and sends the request normally.
