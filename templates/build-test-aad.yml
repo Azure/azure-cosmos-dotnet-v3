@@ -60,7 +60,7 @@ jobs:
       # The AzureCLI task logs `az` in as the service connection identity; the SDK's
       # DefaultAzureCredential (AzureCliCredential) then acquires Cosmos data-plane tokens.
       inlineScript: |
-        dotnet test 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj' `
+        dotnet test 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/Microsoft.Azure.Cosmos.EmulatorTests.csproj' `
           ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }} `
           --logger 'trx;LogFileName=MultiRegionAad.trx'
     env:
