@@ -43,8 +43,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public const int Gen3MaxCollectionCount = 16;
         public const int Gen3MaxCollectionSizeInKB = 256 * 1024;
         public const int MaxCollectionSizeInKBWithRuntimeServiceBindingEnabled = 1024 * 1024;
+        public const int MaxReplicaSetSizeNMax4 = 4;
+        public const int MaxReplicaSetSizeNMax3 = 3;
         public const int ReplicationFactor = 3;
         public static readonly int TimeToWaitForOperationCommitInSec = 2;
+        public static readonly IReadOnlyList<int> SupportedMaxReplicaSetSizes = new List<int>() { TestCommon.MaxReplicaSetSizeNMax4, TestCommon.MaxReplicaSetSizeNMax3 };
 
         private static readonly int serverStalenessIntervalInSeconds;
         private static readonly int masterStalenessIntervalInSeconds;
@@ -1290,7 +1293,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             return new ReplicationPolicy
             {
-                MaxReplicaSetSize = 3,
+                MaxReplicaSetSize = TestCommon.MaxReplicaSetSizeNMax3,
                 MinReplicaSetSize = 2,
                 AsyncReplication = true
             };
