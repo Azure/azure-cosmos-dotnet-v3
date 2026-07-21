@@ -36,6 +36,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Breaking Changes
 
+- [5970](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5970) Thin Client: Starting with this release, thin client mode is enabled by default. Accounts and workloads that authenticate with resource tokens are not supported in thin client mode, so customers relying on resource token authentication will experience a breaking change on upgrade. To continue using resource token authentication, opt out of thin client mode by setting the environment variable `AZURE_COSMOS_THIN_CLIENT_ENABLED=false`.
+
 #### Bugs Fixed
 
 - [5989](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5989) Distributed Transactions (preview): Fixes a bodyless `429`/`3200` (RUBudgetExceeded) response on a distributed-transaction commit or read being surfaced to the caller without any retry. The empty response body was misdetected as a semantic per-operation result and deferred to the transaction's outer retry loop, which could not act on it, so the request was never re-sent. Such a throttled response is now retried honoring the server's `x-ms-retry-after-ms` header and the customer-configured rate-limit retry options (`CosmosClientOptions.MaxRetryAttemptsOnRateLimitedRequests` and `MaxRetryWaitTimeOnRateLimitedRequests`, defaults 9 attempts / 30 seconds cumulative), so a coordinator returning large retry-after values cannot stall a commit indefinitely.
@@ -53,6 +55,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#5549](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5549) Adds AAD token revocation (CAE / Emergency) transparent retry handling
 
 #### Breaking Changes
+
+- [5970](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5970) Thin Client: Starting with this release, thin client mode is enabled by default. Accounts and workloads that authenticate with resource tokens are not supported in thin client mode, so customers relying on resource token authentication will experience a breaking change on upgrade. To continue using resource token authentication, opt out of thin client mode by setting the environment variable `AZURE_COSMOS_THIN_CLIENT_ENABLED=false`.
 
 #### Bugs Fixed
 
