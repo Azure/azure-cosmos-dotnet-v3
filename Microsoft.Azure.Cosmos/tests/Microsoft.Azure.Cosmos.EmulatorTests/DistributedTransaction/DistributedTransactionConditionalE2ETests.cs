@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .CreateDistributedReadTransaction()
                 .ReadItem(this.container, new PartitionKey(pk1), id1)
                 .ReadItem(this.container, new PartitionKey(pk2), id2)
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode,
                 $"Envelope should be 200 when all ops succeed. Got: {response.StatusCode}");
@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .ReadItem(this.container, new PartitionKey(pk1), id1)
                 .ReadItem(this.container, new PartitionKey(pk2), id2,
                     new DistributedTransactionRequestOptions { IfNoneMatchEtag = item2ETag })
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
             // Envelope should be 207 MultiStatus when any op is non-2xx (304),
             // aligning with TransactionalBatch behavior.
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .CreateDistributedReadTransaction()
                 .ReadItem(this.container, new PartitionKey(pk), id,
                     new DistributedTransactionRequestOptions { IfNoneMatchEtag = originalETag })
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
             Assert.IsTrue(response.IsSuccessStatusCode,
                 $"Stale IfNoneMatch should return success. Got: {response.StatusCode}");
@@ -231,7 +231,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     new DistributedTransactionRequestOptions { IfNoneMatchEtag = resp1.ETag })
                 .ReadItem(this.container, new PartitionKey(pk2), id2,
                     new DistributedTransactionRequestOptions { IfNoneMatchEtag = resp2.ETag })
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual(2, response.Count);
 
@@ -267,7 +267,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .CreateDistributedReadTransaction()
                 .ReadItem(this.container, new PartitionKey(pk1), id1)
                 .ReadItem(this.container, new PartitionKey(pk2), nonExistentId)
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode,
                 $"Envelope should be 404 when a read op targets a non-existent item. Got: {response.StatusCode}");
@@ -314,7 +314,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .ReplaceItem(this.container, new PartitionKey(pk), id,
                     new { id, pk, value = "dtx-replace" },
                     new DistributedTransactionRequestOptions { IfMatchEtag = originalETag })
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual(HttpStatusCode.PreconditionFailed, response.StatusCode,
                 $"Envelope should be 412 with stale IfMatch. Got: {response.StatusCode}");
@@ -349,7 +349,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .ReplaceItem(this.container, new PartitionKey(pk), id,
                     new { id, pk, value = "dtx-replaced" },
                     new DistributedTransactionRequestOptions { IfMatchEtag = currentETag })
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
             Assert.IsTrue(response.IsSuccessStatusCode,
                 $"Replace with current IfMatch should succeed. Got: {response.StatusCode}");
@@ -380,7 +380,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .CreateDistributedReadTransaction()
                 .ReadItem(this.container, new PartitionKey(pk), id,
                     new DistributedTransactionRequestOptions { IfNoneMatchEtag = matchingETag })
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
             Assert.IsTrue(response.Count > 0,
                 "Response should have at least one operation result.");
@@ -437,7 +437,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         IfMatchEtag = "\"stale-bogus-etag\"",
                         IfNoneMatchEtag = currentETag
                     })
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
             Assert.IsTrue(response.Count > 0);
 
@@ -475,7 +475,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         IfMatchEtag = currentETag,
                         IfNoneMatchEtag = currentETag
                     })
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
             // IfMatch was honoured (current → success). IfNoneMatch was ignored for writes.
             Assert.IsTrue(response.IsSuccessStatusCode,
@@ -518,7 +518,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         IfMatchEtag = originalETag,
                         IfNoneMatchEtag = originalETag
                     })
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
             // IfMatch is stale → precondition failure. IfNoneMatch cannot rescue the write.
             Assert.IsFalse(response.IsSuccessStatusCode,
@@ -550,7 +550,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         FilterPredicate = "from c where c.status = 'pending'"
                     })
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
             Assert.IsTrue(response.IsSuccessStatusCode,
                 $"Patch with a satisfied FilterPredicate should succeed. Got: {response.StatusCode}");
@@ -582,7 +582,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         FilterPredicate = "from c where c.status = 'pending'"
                     })
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual(HttpStatusCode.PreconditionFailed, response.StatusCode,
                 $"Patch with an unsatisfied FilterPredicate should return 412. Got: {response.StatusCode}");
@@ -634,7 +634,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     })
                 .ReplaceItem(this.container, new PartitionKey(pkSibling), idSibling,
                     new { id = idSibling, pk = pkSibling, payload = "sibling-mutated" })
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual(HttpStatusCode.PreconditionFailed, response.StatusCode,
                 $"An unsatisfied FilterPredicate must fail the whole DTx with 412. Got: {response.StatusCode} " +

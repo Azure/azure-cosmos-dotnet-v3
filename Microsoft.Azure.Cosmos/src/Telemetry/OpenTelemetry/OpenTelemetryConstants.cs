@@ -13,8 +13,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry
             public const string ExecuteBulkPrefix = "bulk_";
 
             // Distributed Transaction Operations
-            public const string CommitDistributedReadTransaction = "commit_distributed_read_transaction";
-            public const string CommitDistributedWriteTransaction = "commit_distributed_write_transaction";
+            public const string ExecuteDistributedReadTransaction = "execute_distributed_read_transaction";
+            public const string ExecuteDistributedWriteTransaction = "execute_distributed_write_transaction";
 
             // Change feed operations
             public const string QueryChangeFeed = "query_change_feed";
