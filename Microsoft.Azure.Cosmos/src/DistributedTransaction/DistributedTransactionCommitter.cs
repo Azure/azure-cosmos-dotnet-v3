@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 DefaultTrace.TraceWarning(
-                    $"Distributed transaction commit retriable (StatusCode={response.StatusCode}, IsRetriable={response.IsRetriable}, DiagnosticString={TruncateForLog(response.DiagnosticString)}, attempt={attempt}, delayMs={(int)delay.TotalMilliseconds}, cumulativeDelayMs={(int)cumulativeRetryDelay.TotalMilliseconds}). Retrying with idempotency token {serverRequest.IdempotencyToken}.");
+                    $"Distributed transaction commit retriable (StatusCode={response.StatusCode}, IsRetriable={response.IsRetriable}, DiagnosticString={TruncateForLog(response.DiagnosticString)}, attempt={attempt}, delayMs={(int)delay.TotalMilliseconds}, cumulativeDelayMs={(int)cumulativeRetryDelay.TotalMilliseconds}). Aborted idempotency token {serverRequest.IdempotencyToken} will not be replayed; the next attempt resubmits under a new token.");
 
                 response.Dispose();
                 attempt++;
@@ -197,6 +197,12 @@ namespace Microsoft.Azure.Cosmos
         {
             using (ITrace attemptTrace = parentTrace.StartChild("Execute Distributed Transaction Commit", TraceComponent.Batch, TraceLevel.Info))
             {
+                // Each wire attempt (including the first) is a new logical attempt and must carry a
+                // fresh idempotency token (spec §4.2). The serialized body is reused byte-for-byte;
+                // only the token rotates. The prior token remains terminally Aborted on the
+                // coordinator and is never replayed.
+                serverRequest.RotateIdempotencyToken();
+
                 using (MemoryStream bodyStream = serverRequest.CreateBodyStream())
                 {
                     ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(

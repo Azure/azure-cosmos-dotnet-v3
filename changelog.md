@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Other Changes
 
+- [Distributed Transactions (preview)] Retriable aborted distributed transactions are now resubmitted under a new idempotency token on each retry attempt (the prior token stays terminally aborted and is never replayed), preserving server-side duplicate protection while reusing the identical request payload.
 - [5991](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5991) TargetReplicaSetSize : Updated address cache logic to use partition-specific target replica set size when available, falling back to the user replication policy value.
 
 ### <a name="3.63.0-preview.0"/> [3.63.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.63.0-preview.0) - 2026-7-15

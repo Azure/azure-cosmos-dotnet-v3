@@ -26,7 +26,27 @@ namespace Microsoft.Azure.Cosmos
 
         public IReadOnlyList<DistributedTransactionOperation> Operations { get; }
 
-        public Guid IdempotencyToken { get; }
+        /// <summary>
+        /// The idempotency token for the current attempt. Each retry is a new logical attempt that
+        /// MUST carry a fresh token (see DistributedTransactionFastResponseMode.md §4.2): the prior
+        /// token remains terminally Aborted on the coordinator and must never be replayed. The token
+        /// is decoupled from the immutable serialized body — the body bytes are serialized exactly
+        /// once and reused, while the token rotates per attempt via <see cref="RotateIdempotencyToken"/>.
+        /// </summary>
+        public Guid IdempotencyToken { get; private set; }
+
+        /// <summary>
+        /// Assigns a fresh <see cref="Guid"/> to <see cref="IdempotencyToken"/> and returns it. Called
+        /// before every wire attempt (including the first) so that each retry is submitted under a new
+        /// idempotency token while reusing the identical serialized body. The prior token stays
+        /// terminally Aborted on the coordinator and is never replayed.
+        /// </summary>
+        /// <returns>The newly generated idempotency token.</returns>
+        public Guid RotateIdempotencyToken()
+        {
+            this.IdempotencyToken = Guid.NewGuid();
+            return this.IdempotencyToken;
+        }
 
         public static async Task<DistributedTransactionServerRequest> CreateAsync(
             IReadOnlyList<DistributedTransactionOperation> operations,

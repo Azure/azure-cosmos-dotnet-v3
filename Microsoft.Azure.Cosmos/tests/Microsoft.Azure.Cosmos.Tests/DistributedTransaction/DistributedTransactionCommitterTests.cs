@@ -1102,8 +1102,8 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
-        [Description("Verifies that the SDK sends byte-for-byte identical request bodies AND the same idempotency token on every outer-loop retry. Required so the coordinator can recognise replays via the idempotency token and safely re-prepare from the same payload (per dtx-sdk-response-status-codes.md, Part C §9: 'Aborted (SDK retry): Resets record to Preparing with new transaction ID, same idempotency token').")]
-        public async Task CommitTransaction_SameBodyAndTokenSentOnEveryRetryAttempt()
+        [Description("Verifies that the SDK sends byte-for-byte identical request bodies but a NEW, distinct idempotency token on every outer-loop attempt. Per DistributedTransactionFastResponseMode.md §4.2, each retriable-abort retry is a new logical attempt that MUST use a fresh idempotency token; the prior token remains terminally Aborted and must never be replayed. The serialized body is reused unchanged so the coordinator re-prepares from the identical payload under the new token.")]
+        public async Task CommitTransaction_SendsNewIdempotencyTokenOnEachRetry()
         {
             int callCount = 0;
             List<string> capturedTokens = new List<string>();
@@ -1159,8 +1159,10 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             }
 
             Assert.AreEqual(3, capturedTokens.Count, "Three attempts expected: two retriable failures plus one success.");
-            Assert.AreEqual(1, new HashSet<string>(capturedTokens).Count,
-                "The same idempotency token must be used on every retry attempt.");
+            Assert.AreEqual(3, new HashSet<string>(capturedTokens).Count,
+                "Each attempt must use a NEW, distinct idempotency token; the prior aborted token must never be replayed.");
+            Assert.IsFalse(capturedTokens.Contains(Guid.Empty.ToString()),
+                "Every attempt must carry a real (non-empty) idempotency token.");
 
             Assert.AreEqual(3, capturedBodies.Count);
             Assert.IsTrue(capturedBodies[0].Length > 0, "Captured body must be non-empty.");
@@ -1168,6 +1170,52 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 "Retry attempt #2 must send a byte-for-byte identical request body.");
             CollectionAssert.AreEqual(capturedBodies[0], capturedBodies[2],
                 "Retry attempt #3 must send a byte-for-byte identical request body.");
+        }
+
+        [TestMethod]
+        [Description("Verifies that the first attempt gets a freshly rotated idempotency token and that N retriable-abort responses produce N+1 distinct tokens across attempts (spec §4.2).")]
+        public async Task CommitTransaction_NRetriableAbortsProduceNPlusOneDistinctTokens()
+        {
+            const int retriableAbortCount = 4;
+            int callCount = 0;
+            List<string> capturedTokens = new List<string>();
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            this.SetupProcessResourceOperationWithStreamAndEnricherCapture(
+                mockContext,
+                (stream, enricher) =>
+                {
+                    RequestMessage request = new RequestMessage
+                    {
+                        ResourceType = ResourceType.DistributedTransactionBatch,
+                        OperationType = OperationType.CommitDistributedTransaction,
+                    };
+                    enricher(request);
+                    capturedTokens.Add(request.Headers[HttpConstants.HttpHeaders.IdempotencyToken]);
+                },
+                () =>
+                {
+                    callCount++;
+                    return callCount <= retriableAbortCount
+                        ? Task.FromResult(CreateRetriableErrorResponseMessage())
+                        : Task.FromResult(CreateSuccessResponseMessage(operationCount: 2));
+                });
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                CreateTestOperations(count: 2),
+                mockContext.Object,
+                OperationType.CommitDistributedTransaction,
+                TimeSpan.Zero);
+
+            using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.IsTrue(response.IsSuccessStatusCode);
+            }
+
+            Assert.AreEqual(retriableAbortCount + 1, callCount, "Expected N retriable aborts followed by one success.");
+            Assert.AreEqual(retriableAbortCount + 1, capturedTokens.Count,
+                "Each wire attempt — including the first — must stamp an idempotency token.");
+            Assert.AreEqual(retriableAbortCount + 1, new HashSet<string>(capturedTokens).Count,
+                "N retriable aborts must produce N+1 distinct idempotency tokens (a fresh token per attempt, including the first).");
         }
 
         [DataTestMethod]
