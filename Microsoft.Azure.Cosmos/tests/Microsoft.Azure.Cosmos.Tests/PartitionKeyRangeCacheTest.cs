@@ -423,41 +423,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         /// <summary>
-        /// The optional dedupe set collapses repeated moves to the same (collection, range) into a single refresh
-        /// within one pass, while a distinct served range still refreshes.
-        /// </summary>
-        [TestMethod]
-        public async Task RefreshRoutingCacheIfPartitionMoved_DedupeSet_CollapsesRepeatedMovesToSameRange()
-        {
-            Mock<PartitionKeyRangeCache> cache = CreateRefreshableCacheMock();
-            HashSet<string> refreshedRanges = new HashSet<string>(StringComparer.Ordinal);
-
-            await PartitionKeyRangeCache.RefreshRoutingCacheIfPartitionMovedAsync(cache.Object, "coll", "0", "5", NoOpTrace.Singleton, refreshedRanges);
-            await PartitionKeyRangeCache.RefreshRoutingCacheIfPartitionMovedAsync(cache.Object, "coll", "1", "5", NoOpTrace.Singleton, refreshedRanges);
-            await PartitionKeyRangeCache.RefreshRoutingCacheIfPartitionMovedAsync(cache.Object, "coll", "2", "6", NoOpTrace.Singleton, refreshedRanges);
-
-            cache.Verify(c => c.TryGetPartitionKeyRangeByIdAsync("coll", "5", It.IsAny<ITrace>(), true), Times.Once);
-            cache.Verify(c => c.TryGetPartitionKeyRangeByIdAsync("coll", "6", It.IsAny<ITrace>(), true), Times.Once);
-        }
-
-        /// <summary>
-        /// The dedupe key is scoped per collection: the same served range id in two different collections must
-        /// each refresh, so the set must not suppress the second.
-        /// </summary>
-        [TestMethod]
-        public async Task RefreshRoutingCacheIfPartitionMoved_DedupeSet_DoesNotSuppressDistinctCollectionsSameRangeId()
-        {
-            Mock<PartitionKeyRangeCache> cache = CreateRefreshableCacheMock();
-            HashSet<string> refreshedRanges = new HashSet<string>(StringComparer.Ordinal);
-
-            await PartitionKeyRangeCache.RefreshRoutingCacheIfPartitionMovedAsync(cache.Object, "collA", "0", "5", NoOpTrace.Singleton, refreshedRanges);
-            await PartitionKeyRangeCache.RefreshRoutingCacheIfPartitionMovedAsync(cache.Object, "collB", "0", "5", NoOpTrace.Singleton, refreshedRanges);
-
-            cache.Verify(c => c.TryGetPartitionKeyRangeByIdAsync("collA", "5", It.IsAny<ITrace>(), true), Times.Once);
-            cache.Verify(c => c.TryGetPartitionKeyRangeByIdAsync("collB", "5", It.IsAny<ITrace>(), true), Times.Once);
-        }
-
-        /// <summary>
         /// A refresh failure faults the returned task rather than being swallowed: the primitive returns the
         /// un-awaited refresh task, which is the contract the point-op path relies on to retry an idempotent read.
         /// </summary>
@@ -479,11 +444,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         /// <summary>
-        /// With no dedupe set (the production point-op path passes none), two moves to the same range each
-        /// force-refresh — nothing collapses them.
+        /// The primitive is stateless, so two moves to the same range each force-refresh — nothing collapses them.
         /// </summary>
         [TestMethod]
-        public async Task RefreshRoutingCacheIfPartitionMoved_NullDedupeSet_RepeatedSameRangeMovesRefreshEachTime()
+        public async Task RefreshRoutingCacheIfPartitionMoved_RepeatedSameRangeMovesRefreshEachTime()
         {
             Mock<PartitionKeyRangeCache> cache = CreateRefreshableCacheMock();
 
