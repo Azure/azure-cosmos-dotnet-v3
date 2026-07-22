@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
-- Distributed Transactions (preview): Fixes the resource body returned by distributed-transaction reads so it is surfaced verbatim, exactly as received from the transaction service.
+- [6036](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6036) Distributed Transactions (preview): Fixes the resource body returned by distributed-transaction reads so it is surfaced verbatim, exactly as received from the transaction service.
 
 #### Other Changes
 
