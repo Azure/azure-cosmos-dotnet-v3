@@ -19,8 +19,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
     internal partial class StreamProcessor
     {
-        private const int MaxBufferSize = 64 * 1024 * 1024;
-
         private static readonly SqlBitSerializer SqlBoolSerializer = new ();
         private static readonly SqlFloatSerializer SqlDoubleSerializer = new ();
         private static readonly SqlBigIntSerializer SqlLongSerializer = new ();
@@ -102,7 +100,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         writeSegment);
 
                     leftOver = dataLength - result.BytesConsumed;
-                    buffer = JsonFeedStreamHelper.HandleLeftOver(buffer, dataLength, leftOver, result.BytesConsumed, MaxBufferSize);
+                    buffer = JsonFeedStreamHelper.HandleLeftOver(
+                        buffer,
+                        dataLength,
+                        leftOver,
+                        result.BytesConsumed,
+                        JsonFeedStreamHelper.MaximumBufferSize);
 
                     if (isFinalBlock && leftOver > 0)
                     {
@@ -383,7 +386,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     leftOver,
                     isFinalBlock,
                     arrayPoolManager,
-                    MaxBufferSize);
+                    JsonFeedStreamHelper.MaximumBufferSize);
             }
 
             writer.Flush();
@@ -590,12 +593,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         }
 
         /// <summary>
-        /// Writes a pass-through string value preserving its semantic value byte-exact.
+        /// Writes a pass-through string while preserving its semantic JSON value.
         /// <see cref="Utf8JsonReader.ValueSpan"/> holds the RAW (still-escaped) token text, which
         /// <see cref="Utf8JsonWriter.WriteStringValue(System.ReadOnlySpan{byte})"/> would escape a
         /// second time. When the value is neither escaped nor split across buffer segments it is
         /// copied through directly; otherwise <see cref="Utf8JsonReader.CopyString(System.Span{byte})"/>
-        /// decodes the escapes (and stitches a multi-segment sequence) so the writer re-escapes exactly once.
+        /// decodes the escapes so the writer re-escapes exactly once. The resulting escape spelling
+        /// can differ from the source or Newtonsoft output while decoding to the same value. The
+        /// sequence branch is defensive if this helper is later used with a sequence-backed reader.
         /// </summary>
         private static void WriteStringValueVerbatim(Utf8JsonWriter writer, ref Utf8JsonReader reader, ArrayPoolManager arrayPoolManager)
         {
@@ -612,7 +617,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         }
 
         /// <summary>
-        /// Writes a pass-through property name preserving its semantic value byte-exact.
+        /// Writes a pass-through property name while preserving its semantic JSON value.
         /// See <see cref="WriteStringValueVerbatim"/> for the escaping/multi-segment rationale.
         /// </summary>
         private static void WritePropertyNameVerbatim(Utf8JsonWriter writer, ref Utf8JsonReader reader, ArrayPoolManager arrayPoolManager)

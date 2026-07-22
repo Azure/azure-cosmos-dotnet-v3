@@ -22,7 +22,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     internal static class EncryptionPropertiesStreamReader
     {
         private const int InitialBufferSize = 4096;
-        private const int MaxBufferSize = 64 * 1024 * 1024;
 
         private static readonly byte[] EncryptedInfoNameBytes = Encoding.UTF8.GetBytes(Constants.EncryptedInfo);
 
@@ -41,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             Stream input,
             JsonSerializerOptions serializerOptions,
             CancellationToken cancellationToken)
-            => ReadAsync(input, serializerOptions, cancellationToken, MaxBufferSize);
+            => ReadAsync(input, serializerOptions, cancellationToken, JsonFeedStreamHelper.MaximumBufferSize);
 
         internal static async ValueTask<EncryptionProperties> ReadAsync(
             Stream input,

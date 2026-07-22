@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         leftOver,
                         isFinalBlock,
                         arrayPoolManager,
-                        MaxBufferSize);
+                        JsonFeedStreamHelper.MaximumBufferSize);
                 }
 
                 await inputStream.DisposeAsync();

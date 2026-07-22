@@ -221,6 +221,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             Assert.IsTrue(found, "Pass-through property name with JSON escapes was not preserved verbatim.");
         }
 
+        [TestMethod]
+        public async Task RoundTrip_PassThroughUnicodeAndHtmlSensitiveCharacters_PreservesSemanticValues()
+        {
+            const string propertyName = "caf\u00e9<&+>";
+            const string value = "caf\u00e9 <tag> & +";
+            string json = "{\"id\":\"1\",\"enc\":\"secret\",\"" + propertyName + "\":\"" + value + "\"}";
+
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawJsonAsync(json, CreateOptions(new[] { "/enc" }));
+            using JsonDocument jd = await DecryptToJsonAsync(encrypted, props);
+
+            Assert.AreEqual(value, jd.RootElement.GetProperty(propertyName).GetString());
+        }
+
         // String values written through the pass-through branch INSIDE an encrypted object payload
         // must not be double-escaped either.
         [TestMethod]
@@ -266,6 +279,42 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             using JsonDocument jd = await DecryptToJsonAsync(encrypted, props);
 
             Assert.AreEqual("5.0", jd.RootElement.GetProperty("d").GetRawText());
+        }
+
+        [DataTestMethod]
+        [DataRow("1E+26", "1E+26")]
+        [DataRow("1e-10", "1E-10")]
+        public async Task RoundTrip_ExponentDouble_MatchesNewtonsoftOutput(string inputNumber, string expectedOutput)
+        {
+            string json = "{\"id\":\"1\",\"d\":" + inputNumber + "}";
+            EncryptionOptions options = CreateOptions(new[] { "/d" });
+
+            (MemoryStream streamEncrypted, EncryptionProperties props) = await EncryptRawJsonAsync(json, options);
+            using JsonDocument streamDocument = await DecryptToJsonAsync(streamEncrypted, props);
+            string streamOutput = streamDocument.RootElement.GetProperty("d").GetRawText();
+
+            NewtonsoftAdapter newtonsoftAdapter = new (new MdeJObjectEncryptionProcessor());
+            await using MemoryStream newtonsoftInput = new (Encoding.UTF8.GetBytes(json));
+            Stream newtonsoftEncrypted = await newtonsoftAdapter.EncryptAsync(
+                newtonsoftInput,
+                mockEncryptor.Object,
+                options,
+                CancellationToken.None);
+            (Stream newtonsoftDecrypted, DecryptionContext context) = await newtonsoftAdapter.DecryptAsync(
+                newtonsoftEncrypted,
+                mockEncryptor.Object,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+
+            await using (newtonsoftDecrypted)
+            {
+                using JsonDocument newtonsoftDocument = await JsonDocument.ParseAsync(newtonsoftDecrypted);
+                string newtonsoftOutput = newtonsoftDocument.RootElement.GetProperty("d").GetRawText();
+
+                Assert.IsNotNull(context);
+                Assert.AreEqual(expectedOutput, newtonsoftOutput);
+                Assert.AreEqual(newtonsoftOutput, streamOutput);
+            }
         }
 
         // WriteDoubleValueNewtonsoftStyle also fail-softs non-finite doubles to Newtonsoft's quoted
