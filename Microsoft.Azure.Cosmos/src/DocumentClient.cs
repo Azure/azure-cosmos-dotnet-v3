@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure.Core;
+    using Microsoft.Azure.Cosmos.Authorization;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Query;
@@ -1164,8 +1165,27 @@ namespace Microsoft.Azure.Cosmos
             // traffic; whether a given request actually routes to the proxy is decided per request
             // by IsThinClientRoutable and the connectivity probe gate, so the SDK can switch between
             // the proxy and Gateway V1 mid-session without a restart.
-            this.isThinClientEnabled = this.isThinClientFeatureFlagEnabled && (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway) &&
-                (this.accountServiceConfiguration.AccountProperties?.ThinClientWritableLocationsInternal?.Count ?? 0) > 0;
+            //
+            // ThinClient mode does not support resource-token (permission-scoped) authorization. A client
+            // authenticated with a resource token must therefore always route through the Gateway store model.
+            // This init-time gate short-circuits the common case (a client constructed with a resource token):
+            // the ThinClient store model is not built and no connectivity-probe cycle is started. Credential
+            // rotation (an AzureKeyCredential key updated from a master key to a resource token mid-session) is
+            // additionally guarded live per request in GetStoreProxy. Master-key and AAD/token-credential
+            // clients are unaffected by either check.
+            bool isResourceTokenAuthorization = DocumentClient.IsResourceTokenAuthorization(this.cosmosAuthorization);
+
+            this.isThinClientEnabled = this.isThinClientFeatureFlagEnabled
+                && (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway)
+                && !isResourceTokenAuthorization
+                && (this.accountServiceConfiguration.AccountProperties?.ThinClientWritableLocationsInternal?.Count ?? 0) > 0;
+
+            if (this.isThinClientFeatureFlagEnabled && isResourceTokenAuthorization)
+            {
+                DefaultTrace.TraceInformation(
+                    "DocumentClient: ThinClient mode disabled because the client is using resource-token authorization, which ThinClient does not support. Data-plane requests will route through the Gateway store model.");
+            }
+
             if (this.isThinClientEnabled)
             {
                 // Wire the HTTP/2 http client for the connectivity probe and run an initial probe against the
@@ -6744,6 +6764,18 @@ namespace Microsoft.Azure.Cosmos
                     "Ensure all in-flight requests complete before disposing the client.");
             }
 
+            // ThinClient mode does not support resource-token (permission-scoped) authorization. When ThinClient
+            // is enabled but the client is currently authenticated with a resource token, route through the plain
+            // Gateway store model instead of the ThinClient store model. This is evaluated per request (the auth
+            // provider is refreshed by TransportHandler immediately before this call), so an AzureKeyCredential
+            // rotated to a resource token mid-session falls back to Gateway on the very next request without a
+            // client restart. Master-key and AAD/token-credential clients are unaffected.
+            if (this.isThinClientEnabled
+                && DocumentClient.IsResourceTokenAuthorization(this.cosmosAuthorization))
+            {
+                return this.GatewayStoreModel;
+            }
+
             // If a request is configured to always use Gateway mode(in some cases when targeting .NET Core)
             // we return the Gateway store model
             if (request.UseGatewayMode)
@@ -7038,6 +7070,25 @@ namespace Microsoft.Azure.Cosmos
 
             this.GlobalEndpointManager.OnEnablePartitionLevelFailoverConfigChanged += this.UpdatePartitionLevelFailoverConfigWithAccountRefresh;
             this.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
+        }
+
+        /// <summary>
+        /// Determines whether the supplied authorization provider represents resource-token
+        /// (permission-scoped) authorization. ThinClient mode does not support resource tokens, so a client
+        /// using this authorization type must always route through the Gateway store model. Returns true only
+        /// for resource-token providers; master-key and Microsoft Entra ID (AAD) token-credential providers
+        /// return false. The <see cref="AzureKeyCredentialAuthorizationTokenProvider"/> wrapper is unwrapped
+        /// to its current inner provider because the key it holds can itself be a resource token and can be
+        /// rotated at runtime.
+        /// </summary>
+        internal static bool IsResourceTokenAuthorization(AuthorizationTokenProvider authorizationTokenProvider)
+        {
+            if (authorizationTokenProvider is AzureKeyCredentialAuthorizationTokenProvider azureKeyCredentialAuthorizationTokenProvider)
+            {
+                return azureKeyCredentialAuthorizationTokenProvider.authorizationTokenProvider is AuthorizationTokenProviderResourceToken;
+            }
+
+            return authorizationTokenProvider is AuthorizationTokenProviderResourceToken;
         }
 
         internal string GetUserAgentFeatures()
