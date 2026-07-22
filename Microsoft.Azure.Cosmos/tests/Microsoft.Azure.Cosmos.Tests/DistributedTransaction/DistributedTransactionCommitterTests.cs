@@ -936,8 +936,69 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             }
         }
 
+        [DataTestMethod]
+        [Description("FastResponse retry model: isRetriable is never acted on alone. A body with isRetriable:true but a transactionStatus that is not durably Aborted (or omitted entirely) must NOT be retried — the response is returned after a single call.")]
+        [DataRow("{\"isRetriable\":true,\"transactionStatus\":\"InProgress\"}", DisplayName = "isRetriable:true + InProgress — no retry")]
+        [DataRow("{\"isRetriable\":true,\"transactionStatus\":\"Committed\"}", DisplayName = "isRetriable:true + Committed — no retry")]
+        [DataRow("{\"isRetriable\":true}", DisplayName = "isRetriable:true + missing transactionStatus — no retry (fail closed)")]
+        public async Task CommitTransaction_DoesNotRetryWhenRetriableButNotAborted(string json)
+        {
+            int callCount = 0;
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            this.SetupProcessResourceOperation(
+                mockContext,
+                () =>
+                {
+                    callCount++;
+                    return Task.FromResult(
+                        new ResponseMessage(HttpStatusCode.ServiceUnavailable)
+                        {
+                            Content = new MemoryStream(Encoding.UTF8.GetBytes(json))
+                        });
+                });
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
+
+            using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.AreEqual(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+                Assert.IsTrue(response.IsRetriable, "isRetriable must still be surfaced from the body.");
+                Assert.AreEqual(1, callCount, "The committer must not retry unless the transaction is durably Aborted.");
+            }
+        }
+
         [TestMethod]
-        [Description("Verifies that a pre-cancelled CancellationToken causes CommitTransactionAsync to throw immediately without issuing any network request.")]
+        [Description("FastResponse retry model: a body with isRetriable:true AND transactionStatus:Aborted is retried until success.")]
+        public async Task CommitTransaction_RetriesWhenRetriableAndAborted_ThenSucceeds()
+        {
+            int callCount = 0;
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            this.SetupProcessResourceOperation(
+                mockContext,
+                () =>
+                {
+                    callCount++;
+                    if (callCount == 1)
+                    {
+                        return Task.FromResult(
+                            new ResponseMessage(HttpStatusCode.ServiceUnavailable)
+                            {
+                                Content = new MemoryStream(Encoding.UTF8.GetBytes("{\"isRetriable\":true,\"transactionStatus\":\"Aborted\"}"))
+                            });
+                    }
+
+                    return Task.FromResult(CreateSuccessResponseMessage(operationCount: 1));
+                });
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
+
+            using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                Assert.IsTrue(response.IsSuccessStatusCode);
+                Assert.AreEqual(2, callCount);
+            }
+        }
         public async Task CommitTransaction_RespectsCancellationToken_PreCancelled()
         {
             using (CancellationTokenSource cts = new CancellationTokenSource())
@@ -1755,7 +1816,9 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
         private static ResponseMessage CreateRetriableErrorResponseMessage()
         {
-            string json = "{\"isRetriable\":true}";
+            // FastResponse retry model: the outer loop only retries when the coordinator reports the
+            // transaction as durably Aborted AND retriable, so the fixture must set both.
+            string json = "{\"isRetriable\":true,\"transactionStatus\":\"Aborted\"}";
             return new ResponseMessage(HttpStatusCode.ServiceUnavailable)
             {
                 Content = new MemoryStream(Encoding.UTF8.GetBytes(json))

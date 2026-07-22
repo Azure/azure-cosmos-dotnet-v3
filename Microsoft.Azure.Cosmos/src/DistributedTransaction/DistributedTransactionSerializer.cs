@@ -29,6 +29,13 @@ namespace Microsoft.Azure.Cosmos
         internal const string ResourceBody = "resourceBody";
         internal const string RequestCharge = "requestCharge";
         internal const string IsRetriable = "isRetriable";
+
+        // Top-level JSON field carrying the coordinator's durable transaction outcome. Per the DTX
+        // FastResponse mode spec (PR #6021, Section 4.1) isRetriable MUST be interpreted together with
+        // transactionStatus: Aborted; it is never acted on alone. The exact field name and the "Aborted"
+        // value string are not otherwise documented in-repo, so these are assumed per that spec.
+        internal const string TransactionStatus = "transactionStatus";
+        internal const string TransactionStatusAborted = "Aborted";
         internal const string OperationResponses = "operationResponses";
         internal const string SessionToken = "sessionToken";
         internal const string PartitionKeyRangeId = "partitionKeyRangeId";

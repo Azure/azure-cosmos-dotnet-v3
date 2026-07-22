@@ -1519,7 +1519,31 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(expected, response.IsRetriable);
         }
 
-        // DiagnosticString parsing
+        // TransactionStatus parsing
+
+        [DataTestMethod]
+        [Description("TransactionStatus deserializes from the top-level JSON string property (case-insensitive key); it is null when absent or not a JSON string. IsTransactionAborted is true only when the value equals 'Aborted' (case-insensitive).")]
+        [DataRow(@"{""transactionStatus"":""Aborted"",""operationResponses"":[{""index"":0,""statusCode"":503}]}", "Aborted", true, DisplayName = "Aborted → IsTransactionAborted=true")]
+        [DataRow(@"{""transactionStatus"":""aborted"",""operationResponses"":[{""index"":0,""statusCode"":503}]}", "aborted", true, DisplayName = "lowercase 'aborted' → IsTransactionAborted=true")]
+        [DataRow(@"{""TransactionStatus"":""Aborted"",""operationResponses"":[{""index"":0,""statusCode"":503}]}", "Aborted", true, DisplayName = "PascalCase key is accepted")]
+        [DataRow(@"{""transactionStatus"":""InProgress"",""operationResponses"":[{""index"":0,""statusCode"":503}]}", "InProgress", false, DisplayName = "InProgress → IsTransactionAborted=false")]
+        [DataRow(@"{""operationResponses"":[{""index"":0,""statusCode"":503}]}", null, false, DisplayName = "absent → TransactionStatus=null, IsTransactionAborted=false")]
+        [DataRow(@"{""transactionStatus"":true,""operationResponses"":[{""index"":0,""statusCode"":503}]}", null, false, DisplayName = "non-string value → TransactionStatus=null")]
+        public async Task FromResponseMessage_TransactionStatus_Parsing(string json, string expectedStatus, bool expectedAborted)
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.ServiceUnavailable, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(expectedStatus, response.TransactionStatus);
+            Assert.AreEqual(expectedAborted, response.IsTransactionAborted);
+        }
 
         [DataTestMethod]
         [Description("DiagnosticString deserializes from the top-level JSON property case-insensitively.")]

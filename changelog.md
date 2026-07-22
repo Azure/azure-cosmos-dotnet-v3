@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
+- [Distributed Transactions (preview)] Aborted distributed transactions are now retried only when the coordinator reports the transaction as durably Aborted and retriable; a retriable signal alone (without a durable Aborted status) no longer triggers a retry.
+
 #### Other Changes
 
 - [5991](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5991) TargetReplicaSetSize : Updated address cache logic to use partition-specific target replica set size when available, falling back to the user replication policy value.
