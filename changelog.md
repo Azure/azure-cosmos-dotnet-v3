@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+- [6021](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6021) Distributed Transactions (preview): Adds `CosmosClientOptions.MaxRetryAttemptsOnAbortedTransactions` and `CosmosClientOptions.MaxRetryWaitTimeOnAbortedTransactions` to tune the automatic retry bounds (attempt-count cap and cumulative wait-time budget) applied when a distributed transaction commit is reported as aborted but retriable. Setting the attempt cap to 0 disables automatic abort retries; leaving the options unset applies the SDK defaults.
+
 #### Breaking Changes
 
 #### Bugs Fixed
