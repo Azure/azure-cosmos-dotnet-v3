@@ -1180,7 +1180,8 @@ namespace Microsoft.Azure.Cosmos
                 && !isResourceTokenAuthorization
                 && (this.accountServiceConfiguration.AccountProperties?.ThinClientWritableLocationsInternal?.Count ?? 0) > 0;
 
-            if (this.isThinClientFeatureFlagEnabled && isResourceTokenAuthorization)
+            if (this.isThinClientFeatureFlagEnabled && isResourceTokenAuthorization
+                && (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway))
             {
                 DefaultTrace.TraceInformation(
                     "DocumentClient: ThinClient mode disabled because the client is using resource-token authorization, which ThinClient does not support. Data-plane requests will route through the Gateway store model.");
