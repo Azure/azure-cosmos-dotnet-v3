@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
+- [6032](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6032) ThinClient: Fixes clients using resource-token (permission-scoped) authorization failing or misrouting when thin client mode is enabled by default. Such clients now always route data-plane requests through the Gateway store model, since thin client mode does not support resource-token authorization. Clients using primary/secondary key or Microsoft Entra ID (AAD) authorization are unaffected.
+
 #### Other Changes
 
 - [5991](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5991) TargetReplicaSetSize : Updated address cache logic to use partition-specific target replica set size when available, falling back to the user replication policy value.
@@ -35,6 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [5968](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5968) Full-Text Policy: Adds analyzer configuration support — collection-level package type (`legacy` or `standard`), a `DefaultSpec` for inherited path configuration (language, tokenizer, filters, stop words), and per-path overrides (tokenizer, filters, stop-word list kind, add/remove stop words). The existing GA full-text API surface is unchanged. (preview)
 
 #### Breaking Changes
+
+- [5970](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5970) Thin Client: Starting with this release, thin client mode is enabled by default. Accounts and workloads that authenticate with resource tokens are not supported in thin client mode, so customers relying on resource token authentication will experience a breaking change on upgrade. To continue using resource token authentication, opt out of thin client mode by setting the environment variable `AZURE_COSMOS_THIN_CLIENT_ENABLED=false`.
 
 #### Bugs Fixed
 
@@ -53,6 +57,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#5549](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5549) Adds AAD token revocation (CAE / Emergency) transparent retry handling
 
 #### Breaking Changes
+
+- [5970](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5970) Thin Client: Starting with this release, thin client mode is enabled by default. Accounts and workloads that authenticate with resource tokens are not supported in thin client mode, so customers relying on resource token authentication will experience a breaking change on upgrade. To continue using resource token authentication, opt out of thin client mode by setting the environment variable `AZURE_COSMOS_THIN_CLIENT_ENABLED=false`.
 
 #### Bugs Fixed
 
