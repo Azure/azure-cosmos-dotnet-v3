@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
+- [6003](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6003) LINQ: Fixes `Method 'Contains' is not supported` error when using enum array `.Contains()` in LINQ queries on .NET 10. On .NET 10, the C# compiler resolves `enumArray.Contains(x.Property)` to a 3-argument `MemoryExtensions.Contains` overload (because enum types do not implement `IEquatable<T>`); the SDK now handles this overload correctly.
 - [5989](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5989) Distributed Transactions (preview): Fixes a bodyless `429`/`3200` (RUBudgetExceeded) response on a distributed-transaction commit or read being surfaced to the caller without any retry. The empty response body was misdetected as a semantic per-operation result and deferred to the transaction's outer retry loop, which could not act on it, so the request was never re-sent. Such a throttled response is now retried honoring the server's `x-ms-retry-after-ms` header and the customer-configured rate-limit retry options (`CosmosClientOptions.MaxRetryAttemptsOnRateLimitedRequests` and `MaxRetryWaitTimeOnRateLimitedRequests`, defaults 9 attempts / 30 seconds cumulative), so a coordinator returning large retry-after values cannot stall a commit indefinitely.
 
 #### Other Changes
