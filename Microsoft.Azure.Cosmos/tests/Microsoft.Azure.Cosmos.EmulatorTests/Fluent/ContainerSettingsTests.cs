@@ -963,6 +963,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
 #if PREVIEW
+        [Ignore("Requires an emulator with full-text analyzer configuration support")]
         [TestMethod]
         public async Task TestFullTextSearchPolicyStandardPackageWithQueryExecution()
         {
@@ -1051,6 +1052,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [Ignore("Requires an emulator with full-text analyzer configuration support")]
         [TestMethod]
         public async Task TestFullTextSearchPolicyStandardPackageWithStopWords()
         {
@@ -1124,6 +1126,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [Ignore("Requires an emulator with full-text analyzer configuration support")]
         [TestMethod]
         public async Task TestFullTextSearchPolicyStandardPackageUpdateContainer()
         {
@@ -1184,6 +1187,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [Ignore("Requires an emulator with full-text analyzer configuration support")]
         [TestMethod]
         public async Task TestFullTextSearchPolicyStandardPackagePerPathOverrides()
         {
@@ -1258,6 +1262,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [Ignore("Requires an emulator with full-text analyzer configuration support")]
         [TestMethod]
         public async Task TestFullTextSearchPolicyInvalidPackageReturnsError()
         {
@@ -1304,6 +1309,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [Ignore("Requires an emulator with full-text analyzer configuration support")]
         [TestMethod]
         public async Task TestFullTextSearchPolicyAllValidFilterTypes()
         {
@@ -1351,6 +1357,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [Ignore("Requires an emulator with full-text analyzer configuration support")]
         [TestMethod]
         public async Task TestFullTextSearchPolicyInvalidFilterReturnsError()
         {
@@ -1398,6 +1405,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [Ignore("Requires an emulator with full-text analyzer configuration support")]
         [TestMethod]
         public async Task TestFullTextSearchPolicyInvalidTokenizerReturnsError()
         {
@@ -1443,6 +1451,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [Ignore("Requires an emulator with full-text analyzer configuration support")]
         [TestMethod]
         public async Task TestFullTextSearchPolicyFiltersWithLegacyPackageReturnsError()
         {
@@ -1489,6 +1498,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [Ignore("Requires an emulator with full-text analyzer configuration support")]
         [TestMethod]
         public async Task TestFullTextSearchPolicyAllStopWordListKinds()
         {
@@ -1539,6 +1549,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [Ignore("Requires an emulator with full-text analyzer configuration support")]
         [TestMethod]
         public async Task TestFullTextSearchPolicyBothPackageTypesValid()
         {
@@ -2046,7 +2057,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [Ignore("Marking as ignore until emulator is updated")]
         [TestMethod]
         [DataRow("en-US")]
         [DataRow("fr-FR")]
