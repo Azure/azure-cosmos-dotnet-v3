@@ -143,6 +143,7 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace,
             CancellationToken cancellationToken)
         {
+            requestOptions = (QueryRequestOptions)requestOptions.ShallowCopy();
             requestOptions.MaxItemCount = pageSize;
 
             ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
