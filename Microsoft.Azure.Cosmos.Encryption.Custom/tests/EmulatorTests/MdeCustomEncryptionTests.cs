@@ -812,6 +812,53 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         }
 
         [TestMethod]
+        public async Task ValidateCachingIsolationAcrossCoexistingProviders()
+        {
+            // Multi-provider (multi-tenant) isolation: two CosmosDataEncryptionKeyProvider instances that coexist in
+            // the same process must each honor their own DataEncryptionKeyCacheTimeToLive independently. A provider
+            // configured with TimeSpan.Zero (no key-material retention) must keep unwrapping on every operation even
+            // while another provider with a positive TTL caches in the same process.
+            string dekId = "coexistDek";
+            await CreateDekAsync(dualDekProvider, dekId);
+
+            // Each provider gets its own key store provider so unwrap calls are counted independently. Both providers
+            // are constructed and stay alive before any encryption runs, so each provider's configured cache lifetime
+            // must be honored while the other coexists.
+            TestEncryptionKeyStoreProvider cachingStoreProvider = new()
+            {
+                DataEncryptionKeyCacheTimeToLive = TimeSpan.FromMinutes(30)
+            };
+            TestEncryptionKeyStoreProvider noRetentionStoreProvider = new()
+            {
+                DataEncryptionKeyCacheTimeToLive = TimeSpan.Zero
+            };
+
+            CosmosDataEncryptionKeyProvider cachingProvider = new(cachingStoreProvider);
+            await cachingProvider.InitializeAsync(database, keyContainer.Id);
+            CosmosDataEncryptionKeyProvider noRetentionProvider = new(noRetentionStoreProvider);
+            await noRetentionProvider.InitializeAsync(database, keyContainer.Id);
+
+            Container cachingContainer = itemContainer.WithEncryptor(new TestEncryptor(cachingProvider));
+            Container noRetentionContainer = itemContainer.WithEncryptor(new TestEncryptor(noRetentionProvider));
+
+            // Interleave operations across both providers so neither runs to completion before the other starts.
+            for (int i = 0; i < 2; i++)
+            {
+                await CreateItemAsync(cachingContainer, dekId, TestDoc.PathsToEncrypt);
+                await CreateItemAsync(noRetentionContainer, dekId, TestDoc.PathsToEncrypt);
+            }
+
+            cachingStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out int cachingUnwrapCount);
+            noRetentionStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out int noRetentionUnwrapCount);
+
+            // The caching provider unwraps the key once and reuses it; the no-retention provider unwraps on every
+            // encrypt/decrypt. Both hold simultaneously because each provider's cache lifetime is scoped to its own
+            // instance.
+            Assert.AreEqual(1, cachingUnwrapCount, "Caching provider (30 min TTL) should unwrap the key exactly once.");
+            Assert.AreEqual(4, noRetentionUnwrapCount, "No-retention provider (TimeSpan.Zero) should unwrap on every operation, independently of the caching provider.");
+        }
+
+        [TestMethod]
         public async Task EncryptionReadManyItemAsync()
         {
             TestDoc testDoc = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
