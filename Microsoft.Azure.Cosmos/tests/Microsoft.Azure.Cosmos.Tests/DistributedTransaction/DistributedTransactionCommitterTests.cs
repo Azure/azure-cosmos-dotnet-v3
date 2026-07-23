@@ -769,6 +769,196 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
+        [Description("Verifies that the attempt-count cap is read from CosmosClientOptions.MaxRetryAttemptsOnAbortedTransactions.")]
+        public async Task CommitTransaction_AttemptCapFromClientOptions_IsHonored()
+        {
+            const int configuredCap = 3;
+            int callCount = 0;
+            List<TimeSpan> capturedDelays = new List<TimeSpan>();
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext(
+                new CosmosClientOptions { MaxRetryAttemptsOnAbortedTransactions = configuredCap });
+            this.SetupProcessResourceOperation(
+                mockContext,
+                () =>
+                {
+                    callCount++;
+                    return Task.FromResult(CreateRetriableErrorResponseMessage());
+                });
+
+            Func<TimeSpan, CancellationToken, Task> captureDelay = (delay, _) =>
+            {
+                capturedDelays.Add(delay);
+                return Task.CompletedTask;
+            };
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                CreateTestOperations(),
+                mockContext.Object,
+                OperationType.CommitDistributedTransaction,
+                retryBaseDelay: TimeSpan.Zero,
+                delayProvider: captureDelay);
+
+            using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.AreEqual(configuredCap + 1, callCount,
+                    "Expected exactly configuredCap retries plus one final call that triggers budget exhaustion.");
+                Assert.AreEqual(configuredCap, capturedDelays.Count,
+                    "Delay provider must be called once per retry attempt.");
+                Assert.IsTrue(response.IsRetriable);
+            }
+        }
+
+        [TestMethod]
+        [Description("Verifies that the cumulative wait cap is read from CosmosClientOptions.MaxRetryWaitTimeOnAbortedTransactions.")]
+        public async Task CommitTransaction_CumulativeWaitCapFromClientOptions_IsHonored()
+        {
+            int callCount = 0;
+            List<TimeSpan> capturedDelays = new List<TimeSpan>();
+            // Small cumulative budget (10s) with a 15s base delay: the first planned delay already exceeds it,
+            // so exactly one call happens and no delay is slept.
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext(
+                new CosmosClientOptions { MaxRetryWaitTimeOnAbortedTransactions = TimeSpan.FromSeconds(10) });
+            this.SetupProcessResourceOperation(
+                mockContext,
+                () =>
+                {
+                    callCount++;
+                    return Task.FromResult(CreateRetriableErrorResponseMessage());
+                });
+
+            Func<TimeSpan, CancellationToken, Task> captureDelay = (delay, _) =>
+            {
+                capturedDelays.Add(delay);
+                return Task.CompletedTask;
+            };
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                CreateTestOperations(),
+                mockContext.Object,
+                OperationType.CommitDistributedTransaction,
+                retryBaseDelay: TimeSpan.FromSeconds(15),
+                delayProvider: captureDelay);
+
+            using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.AreEqual(1, callCount,
+                    "Expected exactly 1 call: the first planned delay (~15s) exceeds the 10s cumulative budget.");
+                Assert.AreEqual(0, capturedDelays.Count,
+                    "No delay should be slept once the first planned delay exceeds the cumulative budget.");
+                Assert.IsTrue(response.IsRetriable);
+            }
+        }
+
+        [TestMethod]
+        [Description("Verifies that setting CosmosClientOptions.MaxRetryAttemptsOnAbortedTransactions to 0 disables automatic abort retries.")]
+        public async Task CommitTransaction_ZeroAttemptCapFromClientOptions_DisablesRetries()
+        {
+            int callCount = 0;
+            List<TimeSpan> capturedDelays = new List<TimeSpan>();
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext(
+                new CosmosClientOptions { MaxRetryAttemptsOnAbortedTransactions = 0 });
+            this.SetupProcessResourceOperation(
+                mockContext,
+                () =>
+                {
+                    callCount++;
+                    return Task.FromResult(CreateRetriableErrorResponseMessage());
+                });
+
+            Func<TimeSpan, CancellationToken, Task> captureDelay = (delay, _) =>
+            {
+                capturedDelays.Add(delay);
+                return Task.CompletedTask;
+            };
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                CreateTestOperations(),
+                mockContext.Object,
+                OperationType.CommitDistributedTransaction,
+                retryBaseDelay: TimeSpan.Zero,
+                delayProvider: captureDelay);
+
+            using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.AreEqual(1, callCount,
+                    "With the attempt cap at 0, the first retriable response must be returned without retrying.");
+                Assert.AreEqual(0, capturedDelays.Count,
+                    "No delay should be slept when abort retries are disabled.");
+                Assert.IsTrue(response.IsRetriable);
+            }
+        }
+
+        [TestMethod]
+        [Description("Verifies that when CosmosClientOptions leaves the abort-retry bounds unset, the committer falls back to the SDK defaults.")]
+        public async Task CommitTransaction_UnsetClientOptions_FallsBackToDefaults()
+        {
+            int callCount = 0;
+            List<TimeSpan> capturedDelays = new List<TimeSpan>();
+            // Client options present but bounds unset -> defaults apply (10 attempts).
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext(new CosmosClientOptions());
+            this.SetupProcessResourceOperation(
+                mockContext,
+                () =>
+                {
+                    callCount++;
+                    return Task.FromResult(CreateRetriableErrorResponseMessage());
+                });
+
+            Func<TimeSpan, CancellationToken, Task> captureDelay = (delay, _) =>
+            {
+                capturedDelays.Add(delay);
+                return Task.CompletedTask;
+            };
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                CreateTestOperations(),
+                mockContext.Object,
+                OperationType.CommitDistributedTransaction,
+                retryBaseDelay: TimeSpan.Zero,
+                delayProvider: captureDelay);
+
+            using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.AreEqual(DistributedTransactionCommitter.MaxIsRetriableRetryCount + 1, callCount,
+                    "Unset options must fall back to the default attempt cap.");
+                Assert.AreEqual(DistributedTransactionCommitter.MaxIsRetriableRetryCount, capturedDelays.Count,
+                    "Delay provider must be called once per retry attempt under the default cap.");
+            }
+        }
+
+        [TestMethod]
+        [Description("Verifies that an explicit test override for maxIsRetriableRetryCount takes precedence over CosmosClientOptions.")]
+        public async Task CommitTransaction_ExplicitAttemptCapOverridesClientOptions()
+        {
+            const int optionsCap = 8;
+            const int explicitCap = 2;
+            int callCount = 0;
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext(
+                new CosmosClientOptions { MaxRetryAttemptsOnAbortedTransactions = optionsCap });
+            this.SetupProcessResourceOperation(
+                mockContext,
+                () =>
+                {
+                    callCount++;
+                    return Task.FromResult(CreateRetriableErrorResponseMessage());
+                });
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                CreateTestOperations(),
+                mockContext.Object,
+                OperationType.CommitDistributedTransaction,
+                retryBaseDelay: TimeSpan.Zero,
+                delayProvider: (delay, _) => Task.CompletedTask,
+                maxIsRetriableRetryCount: explicitCap);
+
+            using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.AreEqual(explicitCap + 1, callCount,
+                    "The explicit constructor override must take precedence over the client options value.");
+            }
+        }
+
+        [TestMethod]
         [Description("Verifies that the outer retry loop stops when the cumulative delay budget (MaxCumulativeRetryDelay) is exceeded, even if attempt count has not been reached.")]
         public async Task CommitTransaction_ExhaustsCumulativeDelayBudget_ReturnsLastResponse()
         {
@@ -1651,6 +1841,13 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 It.IsAny<CancellationToken>()))
                 .ReturnsAsync(ContainerProperties.CreateWithResourceId(TestCollectionResourceId));
 
+            return mockContext;
+        }
+
+        private Mock<CosmosClientContext> CreateMockClientContext(CosmosClientOptions clientOptions)
+        {
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            mockContext.Setup(x => x.ClientOptions).Returns(clientOptions);
             return mockContext;
         }
 
