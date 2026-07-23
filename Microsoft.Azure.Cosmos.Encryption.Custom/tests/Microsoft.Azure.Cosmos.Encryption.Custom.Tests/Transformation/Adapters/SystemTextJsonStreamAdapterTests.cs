@@ -99,6 +99,47 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             Assert.AreEqual(0, result.Position);
         }
 
+        [DataTestMethod]
+        [DataRow(@"""notAnObject""")]
+        [DataRow("42")]
+        [DataRow("false")]
+        [DataRow("[1,2,3]")]
+        public async Task DecryptAsync_WhenLastEiIsNonObject_MatchesNewtonsoftPassThrough(string lastEi)
+        {
+            const string validEi = "{\"_ef\":3,\"_ea\":\"AEAD_AES_256_CBC_HMAC_SHA256_RANDOMIZED\",\"_en\":\"dek-id\",\"_ep\":[\"/Sensitive\"]}";
+            string json = "{\"_ei\":" + validEi + ",\"id\":\"1\",\"_ei\":" + lastEi + "}";
+            using MemoryStream streamInput = new (Encoding.UTF8.GetBytes(json));
+            using MemoryStream newtonsoftInput = new (Encoding.UTF8.GetBytes(json));
+            CosmosDiagnosticsContext diagnostics = new ();
+
+            SystemTextJsonStreamAdapter streamAdapter = new (new StreamProcessor());
+            NewtonsoftAdapter newtonsoftAdapter = new (new MdeJObjectEncryptionProcessor());
+
+            (Stream streamResult, DecryptionContext streamContext) = await streamAdapter.DecryptAsync(
+                streamInput,
+                mockEncryptor.Object,
+                diagnostics,
+                CancellationToken.None);
+            (Stream newtonsoftResult, DecryptionContext newtonsoftContext) = await newtonsoftAdapter.DecryptAsync(
+                newtonsoftInput,
+                mockEncryptor.Object,
+                diagnostics,
+                CancellationToken.None);
+
+            Assert.AreSame(streamInput, streamResult);
+            Assert.AreSame(newtonsoftInput, newtonsoftResult);
+            Assert.IsNull(streamContext);
+            Assert.IsNull(newtonsoftContext);
+            Assert.AreEqual(0, streamResult.Position);
+            Assert.AreEqual(0, newtonsoftResult.Position);
+
+            using JsonDocument streamDocument = JsonDocument.Parse(streamResult);
+            using JsonDocument newtonsoftDocument = JsonDocument.Parse(newtonsoftResult);
+            Assert.AreEqual(
+                newtonsoftDocument.RootElement.GetRawText(),
+                streamDocument.RootElement.GetRawText());
+        }
+
         [TestMethod]
         public async Task DecryptAsync_ReturnsDecryptedStream()
         {
@@ -113,6 +154,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
 
             using JsonDocument doc = JsonDocument.Parse(decrypted);
             Assert.AreEqual("secret", doc.RootElement.GetProperty("Sensitive").GetString());
+        }
+
+        // The (Stream, DecryptionContext) decrypt overload must dispose the input stream on a
+        // successful MDE decrypt, matching the adapter's stream-ownership contract.
+        [TestMethod]
+        public async Task DecryptAsync_StreamOverload_DisposesInputOnSuccess()
+        {
+            SystemTextJsonStreamAdapter adapter = new (new StreamProcessor());
+            Stream encrypted = await CreateEncryptedPayloadAsync(adapter);
+            CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
+
+            (Stream output, DecryptionContext context) = await adapter.DecryptAsync(encrypted, mockEncryptor.Object, diagnostics, CancellationToken.None);
+
+            Assert.IsNotNull(context);
+            Assert.IsFalse(encrypted.CanRead, "Input stream should be disposed after a successful decrypt.");
+            await output.DisposeAsync();
         }
 
         [TestMethod]
