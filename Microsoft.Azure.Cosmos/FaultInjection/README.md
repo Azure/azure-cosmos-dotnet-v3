@@ -2,6 +2,22 @@
 
 The Azure Cosmos DB .NET SDK Fault Injection Library allows you to simulate network issues in the Azure Cosmos DB .NET SDK. This library is useful for testing the SDK's behavior when there are network issues. Additionally, this library can help you test your own retry policies. Note that this library is not intended for use in production environments and should only be used for testing purposes. This **library** is currently in preview, and breaking changes may occur.
 
+> **Contributing / maintaining this library?** See [DEVELOPMENT.md](./DEVELOPMENT.md) for how to build the project, run its integration tests inside this repository, cut a release, and troubleshoot common issues.
+
+## Installation
+
+The library ships as the [`Microsoft.Azure.Cosmos.FaultInjection`](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.FaultInjection) NuGet package. Because it is currently in beta, install it with the `--prerelease` flag (or pin an explicit prerelease version):
+
+```bash
+# Latest prerelease
+dotnet add package Microsoft.Azure.Cosmos.FaultInjection --prerelease
+
+# Or pin an explicit version
+dotnet add package Microsoft.Azure.Cosmos.FaultInjection --version 1.0.0-beta.1
+```
+
+The package brings in a compatible `Microsoft.Azure.Cosmos` SDK version as a dependency. It targets `net6.0`.
+
 ## Key Concepts
 
 ### `FaultInjectionRule`
@@ -32,6 +48,12 @@ This result will return a server error to the customer: `FaultInjectionServerErr
 | `ResponseDelay`         | n/a          | Will inject a delay to the request after a response is received from the backend before returning the result. |
 | `ConnectionDelay`       | n/a          | Used to simulate high channel acquisition.                                  |
 | `ServiceUnavailable`    | 503:0        | The service is currently unavailable.                                       |
+| `DatabaseAccountNotFound`| 403:1008    | The database account was not found. Gateway mode only (rejected for Direct connection type). |
+| `LeaseNotFound`         | 410:1022     | The lease required to serve the request was not found.                      |
+| `Unauthorized`          | 401:0        | The request is not authorized.                                              |
+| `AadTokenRevoked`       | 401:5013     | The Microsoft Entra ID (AAD) token has been revoked.                        |
+
+> **Mode applicability:** `Gone` is only injected on **Direct** mode calls and is rejected when the rule targets the `Gateway` connection type. `DatabaseAccountNotFound` is the inverse — it is only valid for **Gateway** mode. See the validation in `FaultInjectionRuleBuilder`.
 
 ##### `FaultInjectionConnectionErrorResult`
 
@@ -44,13 +66,21 @@ This result will return a connection error to the customer: `FaultInjectionConne
 
 ##### Other `FaultInjectionResult` Properties
 
-When creating a `FaultInjectionResult`, you can also specify the following properties:
+When creating a **server error** `FaultInjectionResult` (via `FaultInjectionServerErrorResultBuilder`), you can also specify the following properties:
 
-| Property       | Description |
-| -------------- | ----------- |
-| `Times`        | This allows you to specify how many times to inject the fault for a single operation. By default, there is no limit. |
-| `Delay`        | This allows you to specify how long to delay the fault injection. Only applicable for `SendDelay`, `ResponseDelay`, and `ConnectionDelay` error types. |
-| `InjectionRate`| This allows you to specify how often the rule is applied when applicable to an operation. By default, the rate is 100%. |
+| Property       | Builder method | Description |
+| -------------- | -------------- | ----------- |
+| `Times`        | `WithTimes(int)` | Specifies how many times to inject the fault for a single operation (retries within one logical operation). By default, there is no limit. |
+| `Delay`        | `WithDelay(TimeSpan)` | Specifies how long to delay the fault injection. Only applicable for `SendDelay`, `ResponseDelay`, and `ConnectionDelay` error types (and required for them). |
+| `InjectionRate`| `WithInjectionRate(double)` | Specifies how often the rule is applied when applicable to an operation, in the range `(0, 1]`. By default, the rate is 100% (`1.0`). |
+| `SuppressServiceRequest` | `WithSuppressServiceRequest(bool)` | When `true`, the real request is never sent to the backend and the injected fault is returned immediately. When `false`, the request is still sent (useful for delay-style faults). |
+
+When creating a **connection error** `FaultInjectionResult` (via `FaultInjectionConnectionErrorResultBuilder`), the following properties apply instead:
+
+| Property    | Builder method | Description |
+| ----------- | -------------- | ----------- |
+| `Interval`  | `WithInterval(TimeSpan)` | How often the connection error is injected. Must be greater than zero. |
+| `Threshold` | `WithThreshold(double)` | The percentage of established connections impacted by the fault, in the range `(0, 1]`. Default is `1.0` (100%). |
 
 #### `FaultInjectionCondition`
 
@@ -78,7 +108,14 @@ The `FaultInjectionOperationType` specifies the type of operation that the fault
 | `PatchItem` |
 | `Batch` |
 | `ReadFeed` |
+| `MetadataContainer` |
+| `MetadataDatabaseAccount` |
+| `MetadataPartitionKeyRange` |
+| `MetadataRefreshAddresses` |
+| `MetadataQueryPlan` |
 | `All` |
+
+> The `Metadata*` operation types target the SDK's control-plane / metadata requests (container, database-account, partition-key-range, address refresh, and query-plan calls). In Gateway mode, metadata requests only support a subset of server error types (`TooManyRequests`, `ResponseDelay`, `SendDelay`, `DatabaseAccountNotFound`, `ServiceUnavailable`, `InternalServerError`, `LeaseNotFound`, `Unauthorized`, `AadTokenRevoked`).
 
 ##### `FaultInjectionConnectionType`
 
@@ -97,23 +134,36 @@ The `Gateway` connection type also supports connection to the `ThinProxy`.
 
 When creating a `FaultInjectionRule`, you can also specify the following properties:
 
-| Property       | Description |
-| -------------- | ----------- |
-| `Duration`     | This allows you to specify how long a rule is valid for. |
-| `StartDelay`   | This allows you to specify how long to wait before starting to inject faults. |
-| `HitLimit`     | This allows you to specify how many times to inject faults. |
+| Property       | Builder method | Description |
+| -------------- | -------------- | ----------- |
+| `Duration`     | `WithDuration(TimeSpan)` | How long the rule is valid for. The duration is measured from the time the rule is created. By default, the rule is effective until the application ends. |
+| `StartDelay`   | `WithStartDelay(TimeSpan)` | How long to wait after rule creation before the rule starts injecting faults. |
+| `HitLimit`     | `WithHitLimit(int)` | The maximum number of times the rule can be applied across all operations. Must be greater than 0. |
+| `IsEnabled`    | `IsEnabled(bool)` | Whether the rule is enabled. A disabled rule is never applied. Rules are enabled by default and can be toggled multiple times. |
 
 
 ### `FaultInjector`
 
 The `FaultInjector` is a class that allows you to inject faults into the Azure Cosmos DB .NET SDK. The `FaultInjector` is created with a list of `FaultInjectionRule`s. Once created, the `FaultInjector` can be passed to the `CosmosClient` constructor to enable fault injection.
 
-After conductiong the tests, you can use the `FaultInjector` to get the `FaultInjectionApplicationContext` which allows you to get the following: 
+After conducting the tests, you can use the `FaultInjector` to get the `FaultInjectionApplicationContext`, which allows you to get the following:
 
 - Given a rule id, get the time and activity id of all requests that were affected by the rule.
 - Given an activity id, get the rule id that affected the request.
 
 This can be useful for debugging and understanding which rules are affecting which requests.
+
+```c#
+FaultInjector faultInjector = new FaultInjector(rules);
+
+// ... run your workload against a client configured with faultInjector ...
+
+// Get the rule id that affected a specific request (by activity id)
+string? ruleId = faultInjector.GetFaultInjectionRuleId(activityId);
+
+// Get the full application context to inspect every rule hit
+FaultInjectionApplicationContext? context = faultInjector.GetApplicationContext();
+```
 
 ## Examples
 
@@ -153,7 +203,7 @@ FaultInjectionRule rule = new FaultInjectionRuleBuilder(
 
 ### Server Return Gone
 
-This rule will return a 410 Gone error for all operations. Note that because when the server returns a 410 Gone error, it will apply to all operations, the `FaultInjectionCondition` will be ignored.
+This rule will return a 410 Gone error for read item operations. `Gone` is a Direct-mode error; a rule using the `Gone` result is rejected if it targets the `Gateway` connection type.
 
 ```c#
 FaultInjectionRule rule = new FaultInjectionRuleBuilder(
@@ -168,7 +218,7 @@ FaultInjectionRule rule = new FaultInjectionRuleBuilder(
 
 ### Server Unavailable
 
-This rule will return a 503 Service Unavailable error for 10% of all operations in the East US region.
+This rule will return a 503 Service Unavailable error for 10% of all operations in the East US region. Note that the injection rate is set on the **result** builder (`WithInjectionRate`), not the rule builder.
 
 ```c#
 FaultInjectionRule rule = new FaultInjectionRuleBuilder(
@@ -177,8 +227,8 @@ FaultInjectionRule rule = new FaultInjectionRuleBuilder(
         .WithRegion("East US")
         .Build(),
     result: FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
+        .WithInjectionRate(0.1)
         .Build())
-    .WithInjectionRate(0.1)
     .Build();
 ```
 
@@ -198,7 +248,7 @@ FaultInjectionRule rule = new FaultInjectionRuleBuilder(
         .Build())
     .WithDuration(TimeSpan.FromSeconds(30))
     .Build();
-``
+```
 
 ### Create a `CosmosClient` with Fault Injection Enabled
 
@@ -213,17 +263,17 @@ FaultInjector faultInjector = new FaultInjector(rules);
 
 ```
 
-Once you have created the `FaultInjector`, you can pass it to the `CosmosClient` constructor:
+Once you have created the `FaultInjector`, you can pass it to the `CosmosClient` via the `CosmosClientBuilder`:
 
 ```c#
 
 CosmosClient client = new CosmosClientBuilder("connectionString")
-    .WithFaultInjector(faultInjector)
+    .WithFaultInjection(faultInjector)
     .Build();
 
 ```
 
-or
+or via `CosmosClientOptions`:
 
 ```c#
 
@@ -236,5 +286,9 @@ CosmosClient client = new CosmosClient("connectionString", options);
 
 ```
 
+## Related documentation
 
+- [DEVELOPMENT.md](./DEVELOPMENT.md) — build, test, release, and maintenance guide for contributors.
+- [changelog.md](./changelog.md) — release notes for the `Microsoft.Azure.Cosmos.FaultInjection` package.
+- [Repository CONTRIBUTING guide](../../CONTRIBUTING.md) — changelog rules, PR title format, and general contribution workflow.
 
