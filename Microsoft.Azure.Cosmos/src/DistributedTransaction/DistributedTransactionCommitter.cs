@@ -21,14 +21,16 @@ namespace Microsoft.Azure.Cosmos
         // Outer-loop retry parameters. The inner loop (ClientRetryPolicy) handles envelope failures with empty body;
         // the outer loop handles body-bearing semantic failures whose JSON body sets isRetriable: true.
         //
-        // Hard ceiling on outer-loop wire requests. With non-trivial retryBaseDelay the cumulative
-        // MaxCumulativeRetryDelay budget will typically fire first; this cap only binds when delays
-        // are very small (e.g., zero in tests or hypothetical fast-server scenarios) — it guards
-        // against unbounded wire-request amplification when delays are degenerate.
+        // Default attempt-count cap and hard ceiling on outer-loop wire requests. With non-trivial
+        // retryBaseDelay the cumulative MaxCumulativeRetryDelay budget will typically fire first; this cap
+        // only binds when delays are very small (e.g., zero in tests or hypothetical fast-server scenarios)
+        // — it guards against unbounded wire-request amplification when delays are degenerate. Applied as
+        // the default when CosmosClientOptions.MaxRetryAttemptsOnAbortedTransactions is unset.
         internal const int MaxIsRetriableRetryCount = 10;
         // Default cumulative planned-delay budget. With default 1s base and maxExponent=5 (±25% jitter),
         // the budget is the binding constraint (~4-5 retries) rather than the attempt-count cap (10).
-        // Mirrors ResourceThrottleRetryPolicy's cumulative cap pattern. Overridable via the internal
+        // Mirrors ResourceThrottleRetryPolicy's cumulative cap pattern. Applied as the default when
+        // CosmosClientOptions.MaxRetryWaitTimeOnAbortedTransactions is unset; overridable via the internal
         // constructor for tests that need to exercise the attempt-count cap with realistic delays.
         internal static readonly TimeSpan MaxCumulativeRetryDelay = TimeSpan.FromSeconds(30);
         private const int RetryMaxExponent = 5; // ~32 s max base delay before jitter
@@ -39,6 +41,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosClientContext clientContext;
         private readonly OperationType operationType;
         private readonly TimeSpan retryBaseDelay;
+        private readonly int maxIsRetriableRetryCount;
         private readonly TimeSpan maxCumulativeRetryDelay;
         private readonly Func<TimeSpan, CancellationToken, Task> delayProvider;
 
@@ -56,14 +59,24 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType,
             TimeSpan retryBaseDelay,
             Func<TimeSpan, CancellationToken, Task> delayProvider = null,
-            TimeSpan? maxCumulativeRetryDelay = null)
+            TimeSpan? maxCumulativeRetryDelay = null,
+            int? maxIsRetriableRetryCount = null)
         {
             this.operations = operations ?? throw new ArgumentNullException(nameof(operations));
             this.clientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
             this.operationType = operationType;
             this.retryBaseDelay = retryBaseDelay;
             this.delayProvider = delayProvider ?? Task.Delay;
-            this.maxCumulativeRetryDelay = maxCumulativeRetryDelay ?? DistributedTransactionCommitter.MaxCumulativeRetryDelay;
+
+            CosmosClientOptions clientOptions = clientContext?.ClientOptions;
+
+            // Explicit test overrides win; otherwise derive from the client options; otherwise fall back to defaults.
+            this.maxIsRetriableRetryCount = maxIsRetriableRetryCount
+                ?? clientOptions?.MaxRetryAttemptsOnAbortedTransactions
+                ?? DistributedTransactionCommitter.MaxIsRetriableRetryCount;
+            this.maxCumulativeRetryDelay = maxCumulativeRetryDelay
+                ?? clientOptions?.MaxRetryWaitTimeOnAbortedTransactions
+                ?? DistributedTransactionCommitter.MaxCumulativeRetryDelay;
         }
 
         public async Task<DistributedTransactionResponse> CommitTransactionAsync(
@@ -119,7 +132,7 @@ namespace Microsoft.Azure.Cosmos
                     return response;
                 }
 
-                if (attempt >= DistributedTransactionCommitter.MaxIsRetriableRetryCount)
+                if (attempt >= this.maxIsRetriableRetryCount)
                 {
                     DefaultTrace.TraceWarning(
                         $"Distributed transaction isRetriable retry budget exhausted after {attempt} attempts " +
