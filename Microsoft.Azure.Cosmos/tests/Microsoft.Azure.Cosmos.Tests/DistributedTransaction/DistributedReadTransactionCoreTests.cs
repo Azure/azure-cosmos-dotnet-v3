@@ -254,7 +254,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             DistributedReadTransactionCore txn = this.CreateTransaction();
 
             InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
-                () => txn.CommitTransactionAsync(CancellationToken.None));
+                () => txn.ExecuteTransactionAsync(CancellationToken.None));
 
             Assert.IsTrue(ex.Message.Contains("zero operations"), $"Unexpected message: {ex.Message}");
         }
@@ -283,11 +283,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             DistributedReadTransactionCore tx = new DistributedReadTransactionCore(contextMock.Object);
 
             await Assert.ThrowsExceptionAsync<InvalidOperationException>(
-                () => tx.CommitTransactionAsync(CancellationToken.None));
+                () => tx.ExecuteTransactionAsync(CancellationToken.None));
 
             // Instance is not consumed: adding an operation and committing now succeeds.
             tx.ReadItem(BuildMockContainer(), TestPartitionKey, ItemId);
-            DistributedTransactionResponse response = await tx.CommitTransactionAsync(CancellationToken.None);
+            DistributedTransactionResponse response = await tx.ExecuteTransactionAsync(CancellationToken.None);
             Assert.IsTrue(response.IsSuccessStatusCode);
         }
 
@@ -317,11 +317,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             DistributedReadTransaction tx = new DistributedReadTransactionCore(contextMock.Object)
                 .ReadItem(BuildMockContainer(), TestPartitionKey, ItemId);
 
-            DistributedTransactionResponse response = await tx.CommitTransactionAsync(CancellationToken.None);
+            DistributedTransactionResponse response = await tx.ExecuteTransactionAsync(CancellationToken.None);
             Assert.IsTrue(response.IsSuccessStatusCode);
 
             InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
-                () => tx.CommitTransactionAsync(CancellationToken.None));
+                () => tx.ExecuteTransactionAsync(CancellationToken.None));
             Assert.AreEqual(DistributedReadTransactionCore.CommitAlreadyCalledMessage, ex.Message);
         }
 
@@ -348,11 +348,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .ReadItem(BuildMockContainer(), TestPartitionKey, ItemId);
 
             // First commit returns a server error — instance is still consumed.
-            DistributedTransactionResponse response = await tx.CommitTransactionAsync(CancellationToken.None);
+            DistributedTransactionResponse response = await tx.ExecuteTransactionAsync(CancellationToken.None);
             Assert.IsFalse(response.IsSuccessStatusCode);
 
             InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
-                () => tx.CommitTransactionAsync(CancellationToken.None));
+                () => tx.ExecuteTransactionAsync(CancellationToken.None));
             Assert.AreEqual(DistributedReadTransactionCore.CommitAlreadyCalledMessage, ex.Message);
         }
 
@@ -397,7 +397,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 tasks[i] = Task.Run(async () =>
                 {
                     gate.Wait();
-                    return await tx.CommitTransactionAsync(CancellationToken.None);
+                    return await tx.ExecuteTransactionAsync(CancellationToken.None);
                 });
             }
 
@@ -428,8 +428,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         #region OperationHelperAsync wiring
 
         [TestMethod]
-        [Description("Verifies CommitTransactionAsync routes through OperationHelperAsync with the qualified operationName, the read-specific OTel constant, the Read operation type, and TraceComponent.Batch.")]
-        public async Task CommitTransactionAsync_RoutesThroughOperationHelper_WithExpectedWiring()
+        [Description("Verifies ExecuteTransactionAsync routes through OperationHelperAsync with the qualified operationName, the read-specific OTel constant, the Read operation type, and TraceComponent.Batch.")]
+        public async Task ExecuteTransactionAsync_RoutesThroughOperationHelper_WithExpectedWiring()
         {
             string capturedOperationName = null;
             OperationType capturedOperationType = default;
@@ -465,12 +465,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             DistributedReadTransactionCore txn = new DistributedReadTransactionCore(contextMock.Object);
             txn.ReadItem(BuildMockContainer(), TestPartitionKey, ItemId);
 
-            await txn.CommitTransactionAsync(CancellationToken.None);
+            await txn.ExecuteTransactionAsync(CancellationToken.None);
 
-            Assert.AreEqual($"{nameof(DistributedReadTransaction)}.{nameof(DistributedReadTransaction.CommitTransactionAsync)}", capturedOperationName);
+            Assert.AreEqual($"{nameof(DistributedReadTransaction)}.{nameof(DistributedReadTransaction.ExecuteTransactionAsync)}", capturedOperationName);
             Assert.AreEqual(OperationType.Read, capturedOperationType);
             Assert.AreEqual(TraceComponent.Batch, capturedTraceComponent);
-            Assert.AreEqual(OpenTelemetryConstants.Operations.CommitDistributedReadTransaction, capturedOTelOperationName);
+            Assert.AreEqual(OpenTelemetryConstants.Operations.ExecuteDistributedReadTransaction, capturedOTelOperationName);
         }
 
         [TestMethod]
@@ -504,7 +504,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             await new DistributedReadTransactionCore(contextMock.Object)
                 .ReadItem(BuildMockContainer(), TestPartitionKey, ItemId)
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual(ResourceType.DistributedTransactionBatch, capturedResourceType);
             Assert.AreEqual(OperationType.Read, capturedOperationType);
@@ -550,7 +550,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 tx.ReadItem(BuildMockContainer(), new CosmosPK($"pk{i}"), $"id{i}");
             }
 
-            DistributedTransactionResponse response = await tx.CommitTransactionAsync(CancellationToken.None);
+            DistributedTransactionResponse response = await tx.ExecuteTransactionAsync(CancellationToken.None);
 
             Assert.IsTrue(response.IsSuccessStatusCode);
             Assert.AreEqual(OperationCount, response.Count);
@@ -595,7 +595,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .ReadItem(BuildMockContainer(), new CosmosPK("pk0"), "id0")
                 .ReadItem(BuildMockContainer(), new CosmosPK("pk1"), "id1")
                 .ReadItem(BuildMockContainer(), new CosmosPK("pk2"), "id2")
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual(HttpStatusCode.InternalServerError, response.StatusCode,
                 "A duplicate operation index must fail closed with HTTP 500.");

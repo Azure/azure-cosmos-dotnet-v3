@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos
             this.maxCumulativeRetryDelay = maxCumulativeRetryDelay ?? DistributedTransactionCommitter.MaxCumulativeRetryDelay;
         }
 
-        public async Task<DistributedTransactionResponse> CommitTransactionAsync(
+        public async Task<DistributedTransactionResponse> ExecuteTransactionAsync(
             ITrace trace,
             CancellationToken cancellationToken)
         {

@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     internal class DistributedReadTransactionCore : DistributedReadTransaction
     {
         internal const string CommitAlreadyCalledMessage =
-            "CommitTransactionAsync has already been called on this transaction instance. " +
+            "ExecuteTransactionAsync has already been called on this transaction instance. " +
             "A DistributedReadTransaction is single-use; to retry, construct a new " +
             "DistributedReadTransaction with the same items.";
 
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <inheritdoc/>
         /// <exception cref="OperationCanceledException">Thrown if <paramref name="cancellationToken"/> is cancelled before or during the commit.</exception>
-        public override Task<DistributedTransactionResponse> CommitTransactionAsync(
+        public override Task<DistributedTransactionResponse> ExecuteTransactionAsync(
             CancellationToken cancellationToken = default)
         {
             if (this.operations.Count == 0)
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return this.clientContext.OperationHelperAsync(
-                operationName: $"{nameof(DistributedReadTransaction)}.{nameof(CommitTransactionAsync)}",
+                operationName: $"{nameof(DistributedReadTransaction)}.{nameof(ExecuteTransactionAsync)}",
                 containerName: null,
                 databaseName: null,
                 operationType: OperationType.Read,
@@ -79,9 +79,9 @@ namespace Microsoft.Azure.Cosmos
                         clientContext: this.clientContext,
                         operationType: OperationType.Read);
 
-                    return committer.CommitTransactionAsync(trace, cancellationToken);
+                    return committer.ExecuteTransactionAsync(trace, cancellationToken);
                 },
-                openTelemetry: new (OpenTelemetryConstants.Operations.CommitDistributedReadTransaction,
+                openTelemetry: new (OpenTelemetryConstants.Operations.ExecuteDistributedReadTransaction,
                                     (response) => new OpenTelemetryResponse(response)),
                 traceComponent: TraceComponent.Batch);
         }
