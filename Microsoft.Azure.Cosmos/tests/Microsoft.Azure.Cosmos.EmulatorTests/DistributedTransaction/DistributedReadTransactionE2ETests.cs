@@ -27,12 +27,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     ///     set COSMOS_DTX_KEY=your-master-key
     ///     dotnet test --filter "FullyQualifiedName~DistributedReadTransactionE2ETests"
     ///
-    /// Remove the [Ignore] attribute before running. The class is gated because the public
-    /// emulator does not implement /operations/dtc.
+    /// In CI these run only in the dedicated, non-blocking DistributedTransaction pipeline
+    /// (azure-pipelines-distributed-transaction.yml) which injects the account secret. When the
+    /// secret is not configured (default gate, fork PRs, local runs without env vars) the tests
+    /// report Inconclusive instead of failing. The public emulator does not implement
+    /// /operations/dtc, so these require a live DTX-enabled account.
     /// </summary>
     [TestClass]
     [DoNotParallelize]
-    [Ignore("DTX endpoint not yet available in emulator. Remove to run locally with env vars.")]
+    [TestCategory("DistributedTransactionLive")]
     public class DistributedReadTransactionE2ETests
     {
         private const string DatabaseId = "DtxReadE2ETestDb";
@@ -49,12 +52,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public async Task TestInitialize()
         {
-            this.endpoint = Environment.GetEnvironmentVariable("COSMOS_DTX_ENDPOINT");
-            this.key = Environment.GetEnvironmentVariable("COSMOS_DTX_KEY");
+            (this.endpoint, this.key) = TestCommon.GetDistributedTransactionAccountInfo();
 
             if (string.IsNullOrWhiteSpace(this.endpoint) || string.IsNullOrWhiteSpace(this.key))
             {
-                Assert.Fail("COSMOS_DTX_ENDPOINT and COSMOS_DTX_KEY environment variables must be set.");
+                Assert.Inconclusive("COSMOS_DTX_ENDPOINT and COSMOS_DTX_KEY environment variables must be set to run distributed-transaction account tests.");
             }
 
             // Standard DTX auth model: account endpoint + master key.
