@@ -47,6 +47,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             };
         }
 
+        private static MemoryStream CreateFeedResponse(Stream encryptedItem)
+        {
+            encryptedItem.Position = 0;
+            using StreamReader reader = new(encryptedItem, leaveOpen: true);
+            string itemJson = reader.ReadToEnd();
+            return new MemoryStream(
+                System.Text.Encoding.UTF8.GetBytes(
+                    $"{{\"Documents\":[{itemJson}],\"_count\":1}}"));
+        }
+
         [TestMethod]
         public async Task EncryptDecrypt_StreamProcessor_WithProvidedOutput()
         {
@@ -125,6 +135,187 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
+        public async Task DeserializeAndDecryptResponse_StreamMde_ReportsStreamWithoutFallback()
+        {
+            TestDoc doc = TestDoc.Create();
+            using MemoryStream encryptedItem = new();
+            await EncryptionProcessor.EncryptAsync(
+                doc.ToStream(),
+                encryptedItem,
+                mockEncryptor.Object,
+                CreateMdeOptions(),
+                JsonProcessor.Stream,
+                CosmosDiagnosticsContext.Create(null),
+                CancellationToken.None);
+            using MemoryStream feedResponse = CreateFeedResponse(encryptedItem);
+
+            List<string> scopes = new();
+            using ActivityListener listener = new()
+            {
+                ShouldListenTo = source => source.Name == "Microsoft.Azure.Cosmos.Encryption.Custom",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStopped = activity => { lock (scopes) { scopes.Add(activity.DisplayName); } },
+            };
+            ActivitySource.AddActivityListener(listener);
+
+            using Stream decrypted = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
+                feedResponse,
+                mockEncryptor.Object,
+                JsonProcessor.Stream,
+                CancellationToken.None);
+            JObject payload = EncryptionProcessor.BaseSerializer.FromStream<JObject>(decrypted);
+            TestDoc actual = payload["Documents"]?[0]?.ToObject<TestDoc>();
+
+            Assert.IsNotNull(actual);
+            Assert.AreEqual(doc.SensitiveStr, actual.SensitiveStr);
+            lock (scopes)
+            {
+                Assert.IsTrue(scopes.Contains(
+                    CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream));
+                Assert.IsFalse(scopes.Contains(
+                    CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft));
+            }
+        }
+
+        [TestMethod]
+        public async Task DeserializeAndDecryptResponse_StreamLegacy_ReportsNewtonsoftFallback()
+        {
+            TestDoc doc = TestDoc.Create();
+            EncryptionOptions legacyOptions = new()
+            {
+                DataEncryptionKeyId = DekId,
+#pragma warning disable CS0618
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
+#pragma warning restore CS0618
+                PathsToEncrypt = TestDoc.PathsToEncrypt,
+            };
+            EncryptionItemRequestOptions requestOptions =
+                RequestOptionsOverrideHelper.Create(legacyOptions, JsonProcessor.Newtonsoft);
+            using Stream encryptedItem = await EncryptionProcessor.EncryptAsync(
+                doc.ToStream(),
+                mockEncryptor.Object,
+                requestOptions,
+                CosmosDiagnosticsContext.Create(null),
+                CancellationToken.None);
+            using MemoryStream feedResponse = CreateFeedResponse(encryptedItem);
+
+            List<string> scopes = new();
+            using ActivityListener listener = new()
+            {
+                ShouldListenTo = source => source.Name == "Microsoft.Azure.Cosmos.Encryption.Custom",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStopped = activity => { lock (scopes) { scopes.Add(activity.DisplayName); } },
+            };
+            ActivitySource.AddActivityListener(listener);
+
+            using Stream decrypted = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
+                feedResponse,
+                mockEncryptor.Object,
+                JsonProcessor.Stream,
+                CancellationToken.None);
+            JObject payload = EncryptionProcessor.BaseSerializer.FromStream<JObject>(decrypted);
+            TestDoc actual = payload["Documents"]?[0]?.ToObject<TestDoc>();
+
+            Assert.IsNotNull(actual);
+            Assert.AreEqual(doc.SensitiveStr, actual.SensitiveStr);
+            lock (scopes)
+            {
+                Assert.IsTrue(scopes.Contains(
+                    CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream));
+                Assert.IsTrue(scopes.Contains(
+                    CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft));
+            }
+        }
+
+        [TestMethod]
+        public async Task DeserializeAndDecryptResponse_ReadOnlyMde_ReportsNewtonsoftFallback()
+        {
+            TestDoc doc = TestDoc.Create();
+            using MemoryStream encryptedItem = new();
+            await EncryptionProcessor.EncryptAsync(
+                doc.ToStream(),
+                encryptedItem,
+                mockEncryptor.Object,
+                CreateMdeOptions(),
+                JsonProcessor.Stream,
+                CosmosDiagnosticsContext.Create(null),
+                CancellationToken.None);
+            using MemoryStream writableFeed = CreateFeedResponse(encryptedItem);
+            using MemoryStream readOnlyFeed = new(writableFeed.ToArray(), writable: false);
+
+            List<string> scopes = new();
+            using ActivityListener listener = new()
+            {
+                ShouldListenTo = source => source.Name == "Microsoft.Azure.Cosmos.Encryption.Custom",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStopped = activity => { lock (scopes) { scopes.Add(activity.DisplayName); } },
+            };
+            ActivitySource.AddActivityListener(listener);
+
+            using Stream decrypted = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
+                readOnlyFeed,
+                mockEncryptor.Object,
+                JsonProcessor.Stream,
+                CancellationToken.None);
+            JObject payload = EncryptionProcessor.BaseSerializer.FromStream<JObject>(decrypted);
+            TestDoc actual = payload["Documents"]?[0]?.ToObject<TestDoc>();
+
+            Assert.IsNotNull(actual);
+            Assert.AreEqual(doc.SensitiveStr, actual.SensitiveStr);
+            lock (scopes)
+            {
+                Assert.IsTrue(scopes.Contains(
+                    CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream));
+                Assert.IsTrue(scopes.Contains(
+                    CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft));
+            }
+        }
+
+        [TestMethod]
+        public async Task DeserializeAndDecryptResponse_NonSeekableMde_ReportsNewtonsoftFallback()
+        {
+            TestDoc doc = TestDoc.Create();
+            using MemoryStream encryptedItem = new();
+            await EncryptionProcessor.EncryptAsync(
+                doc.ToStream(),
+                encryptedItem,
+                mockEncryptor.Object,
+                CreateMdeOptions(),
+                JsonProcessor.Stream,
+                CosmosDiagnosticsContext.Create(null),
+                CancellationToken.None);
+            using MemoryStream writableFeed = CreateFeedResponse(encryptedItem);
+            using NonSeekableReadStream nonSeekableFeed = new(writableFeed.ToArray());
+
+            List<string> scopes = new();
+            using ActivityListener listener = new()
+            {
+                ShouldListenTo = source => source.Name == "Microsoft.Azure.Cosmos.Encryption.Custom",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStopped = activity => { lock (scopes) { scopes.Add(activity.DisplayName); } },
+            };
+            ActivitySource.AddActivityListener(listener);
+
+            using Stream decrypted = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
+                nonSeekableFeed,
+                mockEncryptor.Object,
+                JsonProcessor.Stream,
+                CancellationToken.None);
+            JObject payload = EncryptionProcessor.BaseSerializer.FromStream<JObject>(decrypted);
+            TestDoc actual = payload["Documents"]?[0]?.ToObject<TestDoc>();
+
+            Assert.IsNotNull(actual);
+            Assert.AreEqual(doc.SensitiveStr, actual.SensitiveStr);
+            lock (scopes)
+            {
+                Assert.IsTrue(scopes.Contains(
+                    CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream));
+                Assert.IsTrue(scopes.Contains(
+                    CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft));
+            }
+        }
+
+        [TestMethod]
         public async Task Decrypt_StreamSelection_FallbackWhenUnencrypted()
         {
             string json = "{\"id\":\"id1\",\"pk\":\"pk1\",\"NonSensitive\":\"v\"}"; // no _ei
@@ -134,6 +325,64 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             (Stream result, DecryptionContext ctxDec) = await EncryptionProcessor.DecryptAsync(input, mockEncryptor.Object, ctxDiag, opts, CancellationToken.None);
             Assert.IsNull(ctxDec);
             Assert.AreEqual(0, result.Position);
+        }
+
+        private sealed class NonSeekableReadStream : Stream
+        {
+            private readonly MemoryStream inner;
+
+            public NonSeekableReadStream(byte[] content)
+            {
+                this.inner = new MemoryStream(content, writable: false);
+            }
+
+            public override bool CanRead => true;
+
+            public override bool CanSeek => false;
+
+            public override bool CanWrite => false;
+
+            public override long Length => throw new NotSupportedException();
+
+            public override long Position
+            {
+                get => throw new NotSupportedException();
+                set => throw new NotSupportedException();
+            }
+
+            public override void Flush()
+            {
+            }
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                return this.inner.Read(buffer, offset, count);
+            }
+
+            public override long Seek(long offset, SeekOrigin origin)
+            {
+                throw new NotSupportedException();
+            }
+
+            public override void SetLength(long value)
+            {
+                throw new NotSupportedException();
+            }
+
+            public override void Write(byte[] buffer, int offset, int count)
+            {
+                throw new NotSupportedException();
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    this.inner.Dispose();
+                }
+
+                base.Dispose(disposing);
+            }
         }
 #endif
 
@@ -334,4 +583,3 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 #endif
     }
 }
-

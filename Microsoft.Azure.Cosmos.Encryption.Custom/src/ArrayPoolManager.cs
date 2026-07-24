@@ -36,6 +36,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return buffer;
         }
 
+        public void Return(T[] buffer)
+        {
+            if (buffer == null)
+            {
+                throw new ArgumentNullException(nameof(buffer));
+            }
+
+            int index = this.rentedBuffers.LastIndexOf(buffer);
+            if (index < 0)
+            {
+                throw new InvalidOperationException("The buffer was not rented by this manager or was already returned.");
+            }
+
+            this.rentedBuffers.RemoveAt(index);
+            ArrayPool<T>.Shared.Return(buffer, clearArray: true);
+        }
+
         protected virtual void Dispose(bool disposing)
         {
             if (!this.disposedValue)
