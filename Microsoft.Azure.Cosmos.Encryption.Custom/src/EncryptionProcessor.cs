@@ -393,13 +393,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             JsonProcessor jsonProcessor,
             CancellationToken cancellationToken)
         {
-            return jsonProcessor switch
-            {
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(null);
 #if NET8_0_OR_GREATER
-                JsonProcessor.Stream => await DecryptJsonArrayStreamAsync(content, encryptor, cancellationToken),
+            if (jsonProcessor == JsonProcessor.Stream)
+            {
+                return await DecryptJsonArrayStreamAsync(
+                    content,
+                    encryptor,
+                    diagnosticsContext,
+                    cancellationToken);
+            }
 #endif
-                _ => await DecryptJsonArrayNewtonsoftAsync(content, encryptor, cancellationToken),
-            };
+
+            using IDisposable selectionScope = diagnosticsContext.CreateScope(
+                CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft);
+            return await DecryptJsonArrayNewtonsoftAsync(content, encryptor, cancellationToken);
         }
 
 #if NET8_0_OR_GREATER
@@ -482,20 +490,28 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         private static async Task<Stream> DecryptJsonArrayStreamAsync(
             Stream content,
             Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             try
             {
+                using IDisposable selectionScope = diagnosticsContext.CreateScope(
+                    CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream);
                 return await MdeEncryptionProcessor.DecryptJsonArrayStreamInPlaceAsync(
                     content,
                     encryptor,
-                    CosmosDiagnosticsContext.Create(null),
+                    diagnosticsContext,
                     cancellationToken);
             }
             catch (NotSupportedException)
             {
-                content.Position = 0;
+                if (content.CanSeek)
+                {
+                    content.Position = 0;
+                }
 
+                using IDisposable fallbackScope = diagnosticsContext.CreateScope(
+                    CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft);
                 return await DecryptJsonArrayNewtonsoftAsync(content, encryptor, cancellationToken);
             }
         }

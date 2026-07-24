@@ -84,7 +84,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     jObject[key] = SqlBoolSerializer.Deserialize(serializedBytes);
                     break;
                 case TypeMarker.Double:
-                    jObject[key] = SqlDoubleSerializer.Deserialize(serializedBytes);
+                    double doubleValue = SqlDoubleSerializer.Deserialize(serializedBytes);
+                    if (double.IsNaN(doubleValue) || double.IsInfinity(doubleValue))
+                    {
+                        throw new InvalidOperationException("Decrypted non-finite double values are not supported.");
+                    }
+
+                    jObject[key] = doubleValue;
                     break;
                 case TypeMarker.Long:
                     jObject[key] = SqlLongSerializer.Deserialize(serializedBytes);
