@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
-- [Distributed Transactions (preview)] Aborted distributed transactions are now retried only when the coordinator reports the transaction as durably Aborted and retriable; a retriable signal alone (without a durable Aborted status) no longer triggers a retry.
+- [Distributed Transactions (preview)] Aborted distributed transactions are now retried only when the coordinator reports the transaction as durably aborted (HTTP 452 TransactionAborted) and the response is marked retriable; a retriable signal alone no longer triggers a retry.
 
 #### Other Changes
 

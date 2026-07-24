@@ -119,11 +119,12 @@ namespace Microsoft.Azure.Cosmos
                     return response;
                 }
 
-                // FastResponse retry model (spec PR #6021, Section 4.1): isRetriable MUST be interpreted
-                // together with transactionStatus: Aborted; it is never acted on alone. Only retry when the
-                // coordinator reports the transaction terminated in a durable Aborted state AND marks it
-                // retriable. If transactionStatus is missing (older/omitting servers), fail closed and return
-                // the response rather than retry — honoring "never act on isRetriable alone".
+                // FastResponse retry model: isRetriable MUST be interpreted together with the durable
+                // transaction outcome; it is never acted on alone. The coordinator signals a durable abort
+                // via HTTP status code 452 (TransactionAborted), so only retry when the response is a
+                // TransactionAborted AND is marked retriable. Any other status (including responses that
+                // omit a durable-abort signal) fails closed and returns rather than retrying — honoring
+                // "never act on isRetriable alone".
                 if (!response.IsRetriable || !response.IsTransactionAborted)
                 {
                     response.Diagnostics = diagnostics;

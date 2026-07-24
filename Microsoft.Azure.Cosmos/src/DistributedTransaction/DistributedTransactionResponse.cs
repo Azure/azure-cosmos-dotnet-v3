@@ -37,8 +37,7 @@ namespace Microsoft.Azure.Cosmos
             IReadOnlyList<DistributedTransactionOperation> operations,
             CosmosSerializerCore serializer,
             Guid idempotencyToken,
-            bool isRetriable = false,
-            string transactionStatus = null)
+            bool isRetriable = false)
         {
             this.Headers = headers;
             this.StatusCode = statusCode;
@@ -48,7 +47,6 @@ namespace Microsoft.Azure.Cosmos
             this.SerializerCore = serializer;
             this.IdempotencyToken = idempotencyToken;
             this.IsRetriable = isRetriable;
-            this.TransactionStatus = transactionStatus;
         }
 
         /// <summary>
@@ -172,19 +170,12 @@ namespace Microsoft.Azure.Cosmos
         public virtual bool IsRetriable { get; }
 
         /// <summary>
-        /// Gets the coordinator-reported durable transaction status (e.g. "Aborted"), or <c>null</c>
-        /// when the server did not populate it. Internal only: consumed by the commit retry gate,
-        /// which requires a durable Aborted status before honoring <see cref="IsRetriable"/>.
-        /// </summary>
-        internal string TransactionStatus { get; }
-
-        /// <summary>
         /// Gets a value indicating whether the coordinator reported the transaction as durably Aborted.
+        /// The coordinator signals a durable abort via HTTP status code 452 (TransactionAborted) rather
+        /// than a separate body field, so this is derived from <see cref="StatusCode"/>.
         /// </summary>
-        internal bool IsTransactionAborted => string.Equals(
-            this.TransactionStatus,
-            DistributedTransactionSerializer.TransactionStatusAborted,
-            StringComparison.OrdinalIgnoreCase);
+        internal bool IsTransactionAborted =>
+            (int)this.StatusCode == (int)StatusCodes.TransactionAborted;
 
         /// <summary>
         /// Gets the diagnostic string from the coordinator describing the transaction outcome
@@ -302,7 +293,6 @@ namespace Microsoft.Azure.Cosmos
                             // result count is no more trustworthy than bad indices, and the retry signal is
                             // independent of the unusable payload. Matches the two unmappable fail-closed paths.
                             bool wireIsRetriable = response.IsRetriable;
-                            string wireTransactionStatus = response.TransactionStatus;
                             string wireDiagnosticString = response.DiagnosticString;
                             response.Dispose();
 
@@ -314,8 +304,7 @@ namespace Microsoft.Azure.Cosmos
                                 serverRequest.Operations,
                                 serializer,
                                 idempotencyToken,
-                                wireIsRetriable,
-                                wireTransactionStatus)
+                                wireIsRetriable)
                             {
                                 DiagnosticString = wireDiagnosticString,
                             };
@@ -396,7 +385,6 @@ namespace Microsoft.Azure.Cosmos
         {
             List<DistributedTransactionOperationResult> results = new List<DistributedTransactionOperationResult>();
             bool isRetriable = false;
-            string transactionStatus = null;
             string diagnosticString = null;
 
             JsonDocument responseJson;
@@ -426,12 +414,6 @@ namespace Microsoft.Azure.Cosmos
                     isRetriableElement.ValueKind == JsonValueKind.True)
                 {
                     isRetriable = true;
-                }
-
-                if (DistributedTransactionOperationResult.TryGetProperty(root, DistributedTransactionSerializer.TransactionStatus, out JsonElement transactionStatusElement) &&
-                    transactionStatusElement.ValueKind == JsonValueKind.String)
-                {
-                    transactionStatus = transactionStatusElement.GetString();
                 }
 
                 if (DistributedTransactionOperationResult.TryGetProperty(root, DistributedTransactionSerializer.DiagnosticString, out JsonElement diagnosticStringElement) &&
@@ -467,7 +449,7 @@ namespace Microsoft.Azure.Cosmos
                         // root before this loop and is independent of any single operationResponses element.
                         if (responseMessage.IsSuccessStatusCode)
                         {
-                            return CreateDeserializationFailureResponse(responseMessage, serverRequest, serializer, idempotencyToken, diagnosticString, isRetriable, transactionStatus);
+                            return CreateDeserializationFailureResponse(responseMessage, serverRequest, serializer, idempotencyToken, diagnosticString, isRetriable);
                         }
                     }
                 }
@@ -511,7 +493,7 @@ namespace Microsoft.Azure.Cosmos
                     // count-mismatch path pads with uniform error placeholders.
                     if (responseMessage.IsSuccessStatusCode)
                     {
-                        return CreateDeserializationFailureResponse(responseMessage, serverRequest, serializer, idempotencyToken, diagnosticString, isRetriable, transactionStatus);
+                        return CreateDeserializationFailureResponse(responseMessage, serverRequest, serializer, idempotencyToken, diagnosticString, isRetriable);
                     }
                 }
             }
@@ -554,8 +536,7 @@ namespace Microsoft.Azure.Cosmos
                 serverRequest.Operations,
                 serializer,
                 idempotencyToken,
-                isRetriable,
-                transactionStatus)
+                isRetriable)
             {
                 results = results,
                 DiagnosticString = diagnosticString
@@ -597,8 +578,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosSerializerCore serializer,
             Guid idempotencyToken,
             string diagnosticString = null,
-            bool isRetriable = false,
-            string transactionStatus = null)
+            bool isRetriable = false)
         {
             DistributedTransactionResponse failedResponse = new DistributedTransactionResponse(
                 HttpStatusCode.InternalServerError,
@@ -608,8 +588,7 @@ namespace Microsoft.Azure.Cosmos
                 serverRequest.Operations,
                 serializer,
                 idempotencyToken,
-                isRetriable,
-                transactionStatus)
+                isRetriable)
             {
                 DiagnosticString = diagnosticString,
             };
