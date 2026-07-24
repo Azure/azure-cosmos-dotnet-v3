@@ -9,9 +9,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
+    using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -683,6 +685,142 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             // Assert — ShutdownAsync was still invoked
             leaseStoreManager.Verify(l => l.ShutdownAsync(), Times.Once);
+        }
+
+        [TestMethod]
+        public void FeedProcessorFactory_AutoAnchoredStartTime_WithContinuationToken_DoesNotForwardStartTimeToIterator()
+        {
+            // Regression guard: when the user did NOT provide a start time, ChangeFeedProcessorCore.StartAsync
+            // auto-anchors StartTime to "now - 1s" on every restart. If a lease from a previous run carries a
+            // continuation token, forwarding that anchored time to the iterator would emit If-Modified-Since
+            // alongside If-None-Match, causing the service's combined filter to silently drop every document
+            // created while the processor was stopped. The anchored time must NOT reach the iterator here.
+            DateTime anchoredStartTime = DateTime.UtcNow.AddSeconds(-1);
+            ChangeFeedProcessorOptions options = new ChangeFeedProcessorOptions
+            {
+                StartTime = anchoredStartTime,
+                IsStartTimeUserExplicit = false,
+            };
+
+            DocumentServiceLeaseCore lease = new DocumentServiceLeaseCore
+            {
+                LeaseId = "0",
+                LeaseToken = "0",
+                ContinuationToken = "old-lsn-continuation",
+            };
+
+            DateTime? iteratorStartTime = ChangeFeedProcessorCoreTests.GetIteratorStartTime(options, lease);
+
+            Assert.IsNull(
+                iteratorStartTime,
+                "Auto-anchored start time must not be combined with a continuation token.");
+        }
+
+        [TestMethod]
+        public void FeedProcessorFactory_UserExplicitStartTime_WithContinuationToken_ForwardsStartTimeToIterator()
+        {
+            // The merge scenario feature: when the user explicitly set a start time, it MUST be forwarded
+            // alongside the continuation token so If-Modified-Since filters out documents predating the
+            // user's requested start time even when reading by LSN.
+            DateTime explicitStartTime = DateTime.UtcNow.AddMinutes(-30);
+            ChangeFeedProcessorOptions options = new ChangeFeedProcessorOptions
+            {
+                StartTime = explicitStartTime,
+                IsStartTimeUserExplicit = true,
+            };
+
+            DocumentServiceLeaseCore lease = new DocumentServiceLeaseCore
+            {
+                LeaseId = "0",
+                LeaseToken = "0",
+                ContinuationToken = "old-lsn-continuation",
+            };
+
+            DateTime? iteratorStartTime = ChangeFeedProcessorCoreTests.GetIteratorStartTime(options, lease);
+
+            Assert.AreEqual(
+                explicitStartTime,
+                iteratorStartTime,
+                "User-explicit start time must be forwarded to the iterator alongside the continuation token.");
+        }
+
+        [TestMethod]
+        public void FeedProcessorFactory_AutoAnchoredStartTime_WithoutContinuationToken_ForwardsStartTimeToIterator()
+        {
+            // Cold start (no continuation token): the anchored start time is the intended initial read position
+            // (PR #5617). Because there is no continuation token, it is sent as a plain start-time read (not
+            // combined with If-None-Match), so it must still be forwarded to the iterator.
+            DateTime anchoredStartTime = DateTime.UtcNow.AddSeconds(-1);
+            ChangeFeedProcessorOptions options = new ChangeFeedProcessorOptions
+            {
+                StartTime = anchoredStartTime,
+                IsStartTimeUserExplicit = false,
+            };
+
+            DocumentServiceLeaseCore lease = new DocumentServiceLeaseCore
+            {
+                LeaseId = "0",
+                LeaseToken = "0",
+                ContinuationToken = null,
+            };
+
+            DateTime? iteratorStartTime = ChangeFeedProcessorCoreTests.GetIteratorStartTime(options, lease);
+
+            Assert.AreEqual(
+                anchoredStartTime,
+                iteratorStartTime,
+                "On cold start (no continuation token) the anchored start time must drive the initial read.");
+        }
+
+        private static DateTime? GetIteratorStartTime(
+            ChangeFeedProcessorOptions options,
+            DocumentServiceLease lease)
+        {
+            FeedProcessorFactoryCore factory = new FeedProcessorFactoryCore(
+                ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"),
+                options,
+                Mock.Of<DocumentServiceLeaseCheckpointer>());
+
+            FeedProcessor processor = factory.Create(lease, Mock.Of<ChangeFeedObserver>());
+
+            FeedIterator iterator = (FeedIterator)typeof(FeedProcessorCore)
+                .GetField("resultSetIterator", BindingFlags.Instance | BindingFlags.NonPublic)
+                .GetValue(processor);
+
+            return (DateTime?)iterator.GetType()
+                .GetField("startTime", BindingFlags.Instance | BindingFlags.NonPublic)
+                .GetValue(iterator);
+        }
+
+        [TestMethod]
+        public void FeedProcessorFactory_PersistedLeaseStartTime_WithContinuationToken_ForwardsStartTimeToIterator()
+        {
+            // Restart scenario: the user set a start time in a previous run (persisted on the lease), then
+            // restarts WITHOUT calling WithStartTime (IsStartTimeUserExplicit == false). The persisted
+            // lease.StartTime is a real user value, so it must still be forwarded alongside the continuation
+            // token so If-Modified-Since keeps filtering documents predating the user's start time.
+            DateTime persistedStartTime = DateTime.UtcNow.AddMinutes(-5);
+            ChangeFeedProcessorOptions options = new ChangeFeedProcessorOptions
+            {
+                // On this restart StartAsync would auto-anchor since the user did not re-specify a start time.
+                StartTime = DateTime.UtcNow.AddSeconds(-1),
+                IsStartTimeUserExplicit = false,
+            };
+
+            DocumentServiceLeaseCore lease = new DocumentServiceLeaseCore
+            {
+                LeaseId = "0",
+                LeaseToken = "0",
+                ContinuationToken = "old-lsn-continuation",
+                StartTime = persistedStartTime,
+            };
+
+            DateTime? iteratorStartTime = ChangeFeedProcessorCoreTests.GetIteratorStartTime(options, lease);
+
+            Assert.AreEqual(
+                persistedStartTime,
+                iteratorStartTime,
+                "A persisted user start time on the lease must be forwarded to the iterator on restart.");
         }
 
         private static ChangeFeedProcessorCore CreateProcessor(

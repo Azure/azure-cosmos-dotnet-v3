@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     [TestCategory("ChangeFeed")]
@@ -407,6 +408,156 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             Assert.AreEqual("doc5.doc6.doc7.doc8.doc9.", accumulator);
         }
 
+        [TestMethod]
+        public async Task TestWithStartTime_ValidatesEtagInHeaders()
+        {
+            ChangeFeedHeaderValidationHandler headerHandler = new ChangeFeedHeaderValidationHandler();
+
+            foreach (int id in Enumerable.Range(0, 100))
+            {
+                await this.Container.CreateItemAsync<dynamic>(new { id = $"doc{id}", pk = Guid.NewGuid().ToString() });
+            }
+
+            // Inject validating handler
+            CosmosClient client = this.GetClient();
+            RequestHandler currentInnerHandler = client.RequestHandler.InnerHandler;
+            client.RequestHandler.InnerHandler = headerHandler;
+            headerHandler.InnerHandler = currentInnerHandler;
+
+            try
+            {
+                DateTime startTime = DateTime.UtcNow.AddMinutes(-5);
+                string expectedIfModifiedSince = startTime.ToString("r", System.Globalization.CultureInfo.InvariantCulture);
+
+                ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
+
+                int processedDocCount = 0;
+                Container.ChangeFeedHandlerWithManualCheckpoint<dynamic> onChangesDelegate = async (
+                    ChangeFeedProcessorContext context,
+                    IReadOnlyCollection<dynamic> docs,
+                    Func<Task> checkpointAsync,
+                    CancellationToken token) =>
+                    {
+                        processedDocCount += docs.Count;
+
+                        // Persist the continuation token to the lease before signaling the test,
+                        // so the checkpoint is guaranteed to complete before the processor is
+                        // stopped and a new one is constructed against the same lease.
+                        await checkpointAsync();
+
+                        allDocsProcessed.Set();
+                    };
+                ChangeFeedProcessor processor = this.Container
+                    .GetChangeFeedProcessorBuilderWithManualCheckpoint("test", onChangesDelegate)
+                    .WithStartTime(startTime)
+                    .WithInstanceName("random")
+                    .WithLeaseContainer(this.LeaseContainer).Build();
+               
+                await StartProcessorAndValidateHeadersAsync(processor, allDocsProcessed, headerHandler, expectedIfModifiedSince);
+                Dictionary<string, string> continuationTokens = await this.ValidateLeaseDocumentsAsync(startTime);
+
+                allDocsProcessed.Reset();
+
+                processor = this.Container
+                    .GetChangeFeedProcessorBuilderWithManualCheckpoint("test", onChangesDelegate)
+                    .WithInstanceName("random")
+                    .WithLeaseContainer(this.LeaseContainer).Build();
+
+                await StartProcessorAndValidateHeadersAsync(processor, allDocsProcessed, headerHandler, expectedIfModifiedSince, processDocuments: false);
+                continuationTokens = await this.ValidateLeaseDocumentsAsync(startTime, continuationTokens);
+
+                allDocsProcessed.Reset();
+
+                DateTime startTime1 = startTime + TimeSpan.FromMinutes(1);
+                processor = this.Container
+                    .GetChangeFeedProcessorBuilderWithManualCheckpoint("test", onChangesDelegate)
+                    .WithInstanceName("random")
+                    .WithStartTime(startTime1)
+                    .WithLeaseContainer(this.LeaseContainer).Build();
+
+                expectedIfModifiedSince = startTime1.ToString("r", System.Globalization.CultureInfo.InvariantCulture);
+
+                await StartProcessorAndValidateHeadersAsync(processor, allDocsProcessed, headerHandler, expectedIfModifiedSince, processDocuments: false);
+                continuationTokens = await this.ValidateLeaseDocumentsAsync(startTime1, continuationTokens);
+
+                allDocsProcessed.Reset();
+                processor = this.Container
+                    .GetChangeFeedProcessorBuilderWithManualCheckpoint("test", onChangesDelegate)
+                    .WithInstanceName("random")
+                    .WithLeaseContainer(this.LeaseContainer).Build();
+
+                await StartProcessorAndValidateHeadersAsync(processor, allDocsProcessed, headerHandler, expectedIfModifiedSince, processDocuments: false);
+                continuationTokens = await this.ValidateLeaseDocumentsAsync(startTime1, continuationTokens);
+
+                allDocsProcessed.Reset();
+                startTime1 = DateTime.MinValue;
+                processor = this.Container
+                    .GetChangeFeedProcessorBuilderWithManualCheckpoint("test", onChangesDelegate)
+                    .WithInstanceName("random")
+                    .WithStartTime(startTime1)
+                    .WithLeaseContainer(this.LeaseContainer).Build();
+
+                await StartProcessorAndValidateHeadersAsync(processor, allDocsProcessed, headerHandler, expectedIfModifiedSince: null, processDocuments: false);
+                await this.ValidateLeaseDocumentsAsync(expectedStartTime: null, continuationTokens);
+            }
+            finally
+            {
+                // Restore original handler chain
+                client.RequestHandler.InnerHandler = currentInnerHandler;
+            }
+        }
+
+        private static async Task StartProcessorAndValidateHeadersAsync(
+            ChangeFeedProcessor processor,
+            ManualResetEvent allDocsProcessed,
+            ChangeFeedHeaderValidationHandler headerHandler,
+            string expectedIfModifiedSince,
+            bool processDocuments = true)
+        {
+            headerHandler.CapturedRequests.Clear();
+            await processor.StartAsync();
+            bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            await processor.StopAsync();
+            if (processDocuments)
+            {
+                Assert.IsTrue(isStartOk, "Timed out waiting for docs to process");
+            }
+
+            bool foundSubsequentWithEtag = false;
+            ulong changeFeedWithStartTimePostMergeFlag = (ulong)Microsoft.Azure.Documents.SDKSupportedCapabilities.ChangeFeedWithStartTimePostMerge;
+            for (int i = 0; i < headerHandler.CapturedRequests.Count; i++)
+            {
+                RequestMessage subsequentRequest = headerHandler.CapturedRequests[i];
+                string subsequentIfNoneMatch = subsequentRequest.Headers.IfNoneMatch;
+                if (subsequentIfNoneMatch != null)
+                {
+                    foundSubsequentWithEtag = true;
+                    Assert.AreNotEqual("*", subsequentIfNoneMatch, "If-None-Match should be a specific etag, not '*'.");
+                }
+
+                string ifModifiedSince = subsequentRequest.Headers[Microsoft.Azure.Documents.HttpConstants.HttpHeaders.IfModifiedSince];
+
+                if (expectedIfModifiedSince != null)
+                {
+                    Assert.IsNotNull(ifModifiedSince, "If-Modified-Since header should be set on the first change feed request with start time.");
+                    Assert.AreEqual(expectedIfModifiedSince, ifModifiedSince, "If-Modified-Since header value should match the start time.");
+                }
+                else
+                {
+                    Assert.IsNull(ifModifiedSince, "If-Modified-Since header should not be set when start time is cleared.");
+                }
+
+                string sdkCapabilities = subsequentRequest.Headers[Microsoft.Azure.Documents.HttpConstants.HttpHeaders.SDKSupportedCapabilities];
+                Assert.IsNotNull(sdkCapabilities, "SDKSupportedCapabilities header should be present on change feed requests.");
+                ulong capabilitiesValue = ulong.Parse(sdkCapabilities);
+                Assert.IsTrue(
+                    (capabilitiesValue & changeFeedWithStartTimePostMergeFlag) == changeFeedWithStartTimePostMergeFlag,
+                    $"SDKSupportedCapabilities header should include ChangeFeedWithStartTimePostMerge flag. Actual value: {capabilitiesValue}");
+            }
+
+            Assert.IsTrue(foundSubsequentWithEtag, "Expected at least one subsequent request with If-None-Match (etag) header.");
+        }
+
         private async Task ValidateContextAsync(ChangeFeedProcessorContext changeFeedProcessorContext)
         {
             Assert.IsNotNull(changeFeedProcessorContext.LeaseToken);
@@ -429,5 +580,124 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             Assert.IsNotNull(partitionKeyRanges);
         }
 
+        /// <summary>
+        /// <summary>
+        /// Validates that all lease documents in the lease container have the expected StartTime
+        /// and verifies ContinuationToken state. Returns the per-lease continuation tokens observed
+        /// so callers can assert they are preserved / advance across processor restarts.
+        /// </summary>
+        /// <param name="expectedStartTime">The StartTime expected on every lease, or null if it should be cleared.</param>
+        /// <param name="previousContinuationTokens">
+        /// Continuation tokens captured from a prior validation. When provided, every lease that had a
+        /// token before must still have a non-empty token whose LSN does not regress across the restart.
+        /// </param>
+        private async Task<Dictionary<string, string>> ValidateLeaseDocumentsAsync(
+            DateTime? expectedStartTime,
+            IReadOnlyDictionary<string, string> previousContinuationTokens = null)
+        {
+            using FeedIterator<JObject> iterator = this.LeaseContainer.GetItemQueryIterator<JObject>();
+            int leaseCount = 0;
+            bool foundLeaseWithContinuation = false;
+            Dictionary<string, string> continuationTokens = new Dictionary<string, string>();
+            while (iterator.HasMoreResults)
+            {
+                FeedResponse<JObject> page = await iterator.ReadNextAsync();
+                foreach (JObject lease in page)
+                {
+                    string leaseId = lease.Value<string>("id");
+                    if (leaseId.Contains(".info") || leaseId.Contains(".lock"))
+                    {
+                        // Skip store initialization markers
+                        continue;
+                    }
+
+                    leaseCount++;
+
+                    string continuationToken = lease.Value<string>("ContinuationToken");
+                    if (!string.IsNullOrEmpty(continuationToken))
+                    {
+                        foundLeaseWithContinuation = true;
+
+                        // The change feed continuation token is the response ETag, i.e. a (quoted) numeric LSN.
+                        Assert.IsTrue(
+                            TryParseLsn(continuationToken, out long _),
+                            $"Lease '{leaseId}' ContinuationToken '{continuationToken}' should be a numeric LSN etag.");
+
+                        continuationTokens[leaseId] = continuationToken;
+                    }
+
+                    // Once a lease has checkpointed, restarting the processor must never wipe or roll back
+                    // its progress (that would indicate data loss / an unwanted re-anchor).
+                    if (previousContinuationTokens != null
+                        && previousContinuationTokens.TryGetValue(leaseId, out string previousToken))
+                    {
+                        Assert.IsFalse(
+                            string.IsNullOrEmpty(continuationToken),
+                            $"Lease '{leaseId}' lost its ContinuationToken across restart (progress wiped).");
+
+                        if (TryParseLsn(previousToken, out long previousLsn)
+                            && TryParseLsn(continuationToken, out long currentLsn))
+                        {
+                            Assert.IsTrue(
+                                currentLsn >= previousLsn,
+                                $"Lease '{leaseId}' ContinuationToken regressed across restart: {previousToken} -> {continuationToken}.");
+                        }
+                    }
+
+                    JToken startTimeToken = lease["StartTime"];
+                    if (expectedStartTime.HasValue)
+                    {
+                        Assert.IsNotNull(startTimeToken, $"Lease '{leaseId}' should have StartTime persisted.");
+                        DateTime actualStartTime = startTimeToken.Value<DateTime>();
+                        Assert.AreEqual(expectedStartTime.Value, actualStartTime, $"Lease '{leaseId}' StartTime mismatch.");
+                    }
+                    else
+                    {
+                        Assert.IsNull(startTimeToken, $"Lease '{leaseId}' should not have StartTime when cleared.");
+                    }
+                }
+            }
+
+            Assert.IsTrue(leaseCount > 0, "Expected at least one lease document in the lease container.");
+            Assert.IsTrue(foundLeaseWithContinuation, "Expected at least one lease with a ContinuationToken.");
+
+            return continuationTokens;
+        }
+
+        /// <summary>
+        /// Parses a change feed continuation token (the response ETag, optionally surrounded by quotes)
+        /// into its numeric LSN.
+        /// </summary>
+        private static bool TryParseLsn(string continuationToken, out long lsn)
+        {
+            lsn = 0;
+            if (string.IsNullOrEmpty(continuationToken))
+            {
+                return false;
+            }
+
+            string trimmed = continuationToken.Trim().Trim('"');
+            return long.TryParse(
+                trimmed,
+                System.Globalization.NumberStyles.Integer,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out lsn);
+        }
+    }
+
+    internal class ChangeFeedHeaderValidationHandler : RequestHandler
+    {
+        public List<RequestMessage> CapturedRequests { get; } = new List<RequestMessage>();
+
+        public override Task<ResponseMessage> SendAsync(RequestMessage request, CancellationToken cancellationToken)
+        {
+            if (request.ResourceType == Microsoft.Azure.Documents.ResourceType.Document
+                && request.OperationType == Microsoft.Azure.Documents.OperationType.ReadFeed)
+            {
+                this.CapturedRequests.Add(request);
+            }
+
+            return base.SendAsync(request, cancellationToken);
+        }
     }
 }
