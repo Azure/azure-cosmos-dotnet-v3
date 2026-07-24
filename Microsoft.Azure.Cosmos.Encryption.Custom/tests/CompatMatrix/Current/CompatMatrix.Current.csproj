@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- CURRENT subprocess: builds Microsoft.Azure.Cosmos.Encryption.Custom from this branch's source via ProjectReference. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
@@ -8,15 +7,15 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <AssemblyName>CompatMatrix.Current</AssemblyName>
     <RootNamespace>CompatMatrix</RootNamespace>
-    <DefineConstants>$(DefineConstants);CEC_NEW;CEC_CURRENT</DefineConstants>
+    <DefineConstants>$(DefineConstants);COMPAT_CURRENT</DefineConstants>
     <SignAssembly>false</SignAssembly>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <NoWarn>$(NoWarn);CS0618</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\src\Program.cs" Link="Program.cs" />
-    <Compile Include="..\src\KeyProviders.cs" Link="KeyProviders.cs" />
+    <Compile Include="..\Worker\Program.cs" Link="Program.cs" />
+    <Compile Include="..\Worker\KeyProviders.cs" Link="KeyProviders.cs" />
   </ItemGroup>
 
   <ItemGroup>
