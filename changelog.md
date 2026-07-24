@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+- [5255](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5255) PPAF: Adds write hedging for single-master accounts with Per-Partition Automatic Failover (PPAF) enabled. When a write to the primary region is slow or unavailable, the SDK now proactively issues hedged write requests to the account's read regions (the PPAF write-failover targets), reducing write tail latency and retry amplification during single-region slowdowns or outages. Previously the cross-region hedging availability strategy only hedged writes for multi-write (multi-master) accounts; single-master PPAF accounts now correctly hedge writes as well. This behavior is enabled by default and can be disabled by setting the `AZURE_COSMOS_PPAF_WRITE_HEDGING_ENABLED` environment variable to `false` (read hedging and PPAF remain active).
 #### Breaking Changes
 
 #### Bugs Fixed

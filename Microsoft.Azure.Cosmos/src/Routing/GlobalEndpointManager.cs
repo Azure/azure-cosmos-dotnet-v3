@@ -548,6 +548,24 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public virtual Uri ResolveServiceEndpoint(DocumentServiceRequest request)
         {
+            // For PPAF write hedging in single-master: route to read endpoints
+            // when ExcludeRegions is set to allow failover to read regions.
+            // The AZURE_COSMOS_PPAF_WRITE_HEDGING_ENABLED env var (default true) is checked last so it
+            // only evaluates for the single-master PPAF write path this feature targets.
+            if (this.connectionPolicy.EnablePartitionLevelFailover
+                && request.OperationType.IsWriteOperation()
+                && !this.locationCache.CanUseMultipleWriteLocations(request)
+                && request.RequestContext?.ExcludeRegions != null
+                && request.RequestContext.ExcludeRegions.Count > 0
+                && Microsoft.Azure.Cosmos.ConfigurationManager.IsPpafWriteHedgingEnabled())
+            {
+                ReadOnlyCollection<Uri> readEndpoints = this.locationCache.GetApplicableEndpoints(request, isReadRequest: true);
+                int locationIndex = request.RequestContext.LocationIndexToRoute.GetValueOrDefault(0);
+                Uri endpoint = readEndpoints[locationIndex % readEndpoints.Count];
+                request.RequestContext.RouteToLocation(endpoint);
+                return endpoint;
+            }
+
             return this.locationCache.ResolveServiceEndpoint(request);
         }
 
@@ -593,6 +611,11 @@ namespace Microsoft.Azure.Cosmos.Routing
         public ReadOnlyCollection<string> GetApplicableRegions(IEnumerable<string> excludeRegions, bool isReadRequest)
         {
             return this.locationCache.GetApplicableRegions(excludeRegions, isReadRequest);
+        }
+
+        public ReadOnlyCollection<string> GetApplicableAccountLevelReadRegions(IEnumerable<string> excludeRegions)
+        {
+            return this.locationCache.GetApplicableAccountLevelReadRegions(excludeRegions);
         }
 
         public bool TryGetLocationForGatewayDiagnostics(Uri endpoint, out string regionName)

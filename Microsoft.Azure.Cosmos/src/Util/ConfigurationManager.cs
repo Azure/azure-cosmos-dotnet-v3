@@ -46,6 +46,17 @@ namespace Microsoft.Azure.Cosmos
         internal static readonly string ThinClientModeEnabled = "AZURE_COSMOS_THIN_CLIENT_ENABLED";
 
         /// <summary>
+        /// A read-only string containing the environment variable name that gates PPAF
+        /// (Per-Partition Automatic Failover) write hedging for single-master accounts. When PPAF is
+        /// enabled, the SDK hedges a slow or failing write to the account's read regions (the PPAF
+        /// write-failover targets) so the write fails over quickly instead of waiting for the backend
+        /// to elect a new write region. Enabled by default; set this variable to <c>false</c> to disable
+        /// write hedging while keeping PPAF and read hedging active. Mirrors the Java SDK's
+        /// <c>COSMOS.IS_WRITE_AVAILABILITY_STRATEGY_ENABLED_WITH_PPAF</c> switch.
+        /// </summary>
+        internal static readonly string PpafWriteHedgingEnabled = "AZURE_COSMOS_PPAF_WRITE_HEDGING_ENABLED";
+
+        /// <summary>
         /// Environment variable to override AAD scope.
         /// </summary>
         internal static readonly string AADScopeOverride = "AZURE_COSMOS_AAD_SCOPE_OVERRIDE";
@@ -267,6 +278,23 @@ namespace Microsoft.Azure.Cosmos
             return ConfigurationManager
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.ChangeFeedLeaseIdAsPartitionKeyEnabled,
+                        defaultValue: true);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating whether PPAF (Per-Partition Automatic Failover) write hedging is
+        /// enabled. When PPAF is enabled, this feature lets single-master accounts hedge a slow or failing write
+        /// to the account's read regions (the PPAF write-failover targets), so the write fails over quickly rather
+        /// than waiting for the backend to elect a new write region. Enabled by default; set the
+        /// 'AZURE_COSMOS_PPAF_WRITE_HEDGING_ENABLED' environment variable to 'false' to disable write hedging
+        /// without turning off PPAF or read hedging.
+        /// </summary>
+        /// <returns>A boolean flag indicating if PPAF write hedging is enabled.</returns>
+        public static bool IsPpafWriteHedgingEnabled()
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.PpafWriteHedgingEnabled,
                         defaultValue: true);
         }
 
