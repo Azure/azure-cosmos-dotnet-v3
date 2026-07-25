@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
+    using static System.Collections.Specialized.BitVector32;
 
     internal class ClientContextCore : CosmosClientContext
     {
@@ -210,7 +211,7 @@ namespace Microsoft.Azure.Cosmos
             this.DocumentClient.ValidateResource(resourceId);
         }
 
-        internal override Task<TResult> 
+        internal override Task<TResult>
             OperationHelperAsync<TResult>(
             string operationName,
             string containerName,
@@ -228,7 +229,7 @@ namespace Microsoft.Azure.Cosmos
                                                        containerName,
                                                        databaseName,
                                                        operationType,
-                                                       requestOptions, 
+                                                       requestOptions,
                                                        task,
                                                        openTelemetry,
                                                        traceComponent,
@@ -239,7 +240,7 @@ namespace Microsoft.Azure.Cosmos
                                                                   containerName,
                                                                   databaseName,
                                                                   operationType,
-                                                                  requestOptions, 
+                                                                  requestOptions,
                                                                   task,
                                                                   openTelemetry,
                                                                   traceComponent,
@@ -331,11 +332,44 @@ namespace Microsoft.Azure.Cosmos
         {
             this.ThrowIfDisposed();
 
-            if (ContainerPropertiesExtensions.ShouldValidatePartitionKeyHasId(resourceType, operationType))
-            {
-                (partitionKey, streamPayload) = await cosmosContainerCore.EnsureIdGetsAppendedToPartitionKeyIfNeededAsync(partitionKey, itemId, streamPayload, cancellationToken);
-            }
+            bool shouldValidatePartitionKeyHasId = ContainerPropertiesExtensions.ShouldValidatePartitionKeyHasId(resourceType, operationType);
+            bool streamIsReplayable = streamPayload == null || streamPayload.CanSeek;
+            bool canRetryAction = shouldValidatePartitionKeyHasId && streamIsReplayable;
+            bool disposeStreamAfterRetry = this.IsBulkOperationSupported(resourceType, operationType);
+            long originalPosition = canRetryAction && streamPayload != null ? streamPayload.Position : 0;
 
+            try
+            {
+                return await AppendIdToPartitionKeyRetryPolicy.ExecuteWithRetryAsync(
+                    cosmosContainerCore,
+                    async (attempt) =>
+                    {
+                        if (attempt > 0)
+                        {
+                            streamPayload.Position = originalPosition;
+                        }
+
+                        if (shouldValidatePartitionKeyHasId)
+                        {
+                            (partitionKey, streamPayload) = await cosmosContainerCore.EnsureIdGetsAppendedToPartitionKeyIfNeededAsync(partitionKey, itemId, streamPayload, cancellationToken);
+                        }
+
+                        return await this.ProcessResourceOperationInternalAsync(resourceUri, resourceType, operationType, requestOptions, cosmosContainerCore, partitionKey, itemId, streamPayload, requestEnricher, trace, cancellationToken);
+                    },
+                    canRetryAction,
+                    cancellationToken);
+            }
+            finally
+            {
+                if (disposeStreamAfterRetry)
+                {
+                    streamPayload?.Dispose();
+                }
+            }
+        }
+
+        private Task<ResponseMessage> ProcessResourceOperationInternalAsync(string resourceUri, ResourceType resourceType, OperationType operationType, RequestOptions requestOptions, ContainerInternal cosmosContainerCore, PartitionKey? partitionKey, string itemId, Stream streamPayload, Action<RequestMessage> requestEnricher, ITrace trace, CancellationToken cancellationToken)
+        {
             if (this.IsBulkOperationSupported(resourceType, operationType))
             {
                 if (!partitionKey.HasValue)
@@ -348,7 +382,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentException($"Bulk does not support {nameof(requestEnricher)}");
                 }
 
-                return await this.ProcessResourceOperationAsBulkStreamAsync(
+                return this.ProcessResourceOperationAsBulkStreamAsync(
                     operationType: operationType,
                     requestOptions: requestOptions,
                     cosmosContainerCore: cosmosContainerCore,
@@ -359,17 +393,17 @@ namespace Microsoft.Azure.Cosmos
                     cancellationToken: cancellationToken);
             }
 
-            return await this.ProcessResourceOperationStreamAsync(
-                resourceUri: resourceUri,
-                resourceType: resourceType,
-                operationType: operationType,
-                requestOptions: requestOptions,
-                cosmosContainerCore: cosmosContainerCore,
-                feedRange: partitionKey.HasValue ? new FeedRangePartitionKey(partitionKey.Value) : null,
-                streamPayload: streamPayload,
-                requestEnricher: requestEnricher,
-                trace: trace,
-                cancellationToken: cancellationToken);
+            return this.ProcessResourceOperationStreamAsync(
+                    resourceUri: resourceUri,
+                    resourceType: resourceType,
+                    operationType: operationType,
+                    requestOptions: requestOptions,
+                    cosmosContainerCore: cosmosContainerCore,
+                    feedRange: partitionKey.HasValue ? new FeedRangePartitionKey(partitionKey.Value) : null,
+                    streamPayload: streamPayload,
+                    requestEnricher: requestEnricher,
+                    trace: trace,
+                    cancellationToken: cancellationToken);
         }
 
         internal override Task<ResponseMessage> ProcessResourceOperationStreamAsync(
@@ -556,7 +590,7 @@ namespace Microsoft.Azure.Cosmos
                 return openTelemetry?.OperationName;
             };
 
-            using (OpenTelemetryCoreRecorder recorder = isOtelCompatibleOperation ? 
+            using (OpenTelemetryCoreRecorder recorder = isOtelCompatibleOperation ?
                                 OpenTelemetryRecorderFactory.CreateRecorder(
                                     getOperationName: getOperationName,
                                     containerName: containerName,
@@ -594,7 +628,7 @@ namespace Microsoft.Azure.Cosmos
                                 attributes: otelAttributes);
                         }
                     }
-                   
+
                     return result;
                 }
                 catch (Exception ex) when (TryTransformException(ex, trace, this.client, out Exception cosmosException))
@@ -719,7 +753,8 @@ namespace Microsoft.Azure.Cosmos
                 id: itemId,
                 resourceStream: streamPayload,
                 requestOptions: batchItemRequestOptions,
-                cosmosClientContext: this);
+                cosmosClientContext: this,
+                disposeResourceStream: streamPayload == null || !streamPayload.CanSeek);
 
             TransactionalBatchOperationResult batchOperationResult = await cosmosContainerCore.BatchExecutor.AddAsync(
                 itemBatchOperation,

@@ -20,6 +20,14 @@ namespace Microsoft.Azure.Cosmos
     {
         private const int DefaultStreamBufferSize = 4096;
 
+        /// <summary>
+        /// Sub-status code returned by the backend on a <see cref="System.Net.HttpStatusCode.BadRequest"/> when the
+        /// supplied partition key is missing the trailing "id" component required by a container whose last
+        /// partition key path is "/id". When observed, the SDK marks the container as one that requires the item's
+        /// "id" to be appended to the partition key and retries the operation.
+        /// </summary>
+        internal const int AddIdToLastPartitionKeyPathSubStatusCode = 1038;
+
         internal static bool ShouldValidatePartitionKeyHasId(ResourceType resourceType, OperationType operationType)
         {
             if (resourceType != ResourceType.Document)
@@ -32,6 +40,40 @@ namespace Microsoft.Azure.Cosmos
                 return false;
             }
 
+            return true;
+        }
+
+        internal static async Task<bool> TryMarkLastPartitionKeyPathIsIdAsync(
+            this ContainerInternal container,
+            CancellationToken cancellationToken)
+        {
+            if (container == null)
+            {
+                return false;
+            }
+
+            ContainerProperties containerProperties;
+            try
+            {
+                containerProperties = await container.GetCachedContainerPropertiesAsync(
+                    forceRefresh: false,
+                    trace: NoOpTrace.Singleton,
+                    cancellationToken: cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                DefaultTrace.TraceWarning(
+                    "TryMarkLastPartitionKeyPathIsIdAsync: failed to resolve container properties. Exception: {0}",
+                    ex.Message);
+                return false;
+            }
+
+            if (containerProperties == null)
+            {
+                return false;
+            }
+
+            containerProperties.IsLastPartitionKeyPathId = true;
             return true;
         }
 
@@ -110,7 +152,8 @@ namespace Microsoft.Azure.Cosmos
                 allComponentsList.Add(item);
             }
 
-            if (partitionKey.HasValue && existingComponents.Count != containerProperties.PartitionKey.Paths.Count - 1)
+            int prefixComponentCount = GetTargetPartitionKeyComponentCount(containerProperties) - 1;
+            if (partitionKey.HasValue && existingComponents.Count != prefixComponentCount)
             {
                 return partitionKey;
             }
@@ -119,7 +162,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (!partitionKey.HasValue)
             {
-                for (int i = 0; i < containerProperties.PartitionKey.Paths.Count - 1; i++)
+                for (int i = 0; i < prefixComponentCount; i++)
                 {
                     builder.AddNullValue();
                 }
@@ -204,6 +247,10 @@ namespace Microsoft.Azure.Cosmos
             {
                 streamPayload.Position = originalPosition;
             }
+            else
+            {
+                streamPayload?.Dispose();
+            }
 
             return (idValue, resultStream);
         }
@@ -252,9 +299,24 @@ namespace Microsoft.Azure.Cosmos
             }
 
             existingComponents = partitionKey.Value.InternalKey.Components;
-            IReadOnlyList<string> partitionKeyPaths = containerProperties.PartitionKey.Paths;
 
-            return (existingComponents.Count == partitionKeyPaths.Count, existingComponents);
+            return (existingComponents.Count == GetTargetPartitionKeyComponentCount(containerProperties), existingComponents);
+        }
+
+        /// <summary>
+        /// Returns the number of partition key components an item is expected to carry once the item's "id" is
+        /// treated as the last partition key path. When the container already declares "/id" as its last path,
+        /// this is simply the number of declared paths; otherwise (for example when the backend signals via
+        /// sub-status <see cref="AddIdToLastPartitionKeyPathSubStatusCode"/> that "id" must be appended), the
+        /// "id" is an additional trailing component beyond the declared paths.
+        /// </summary>
+        private static int GetTargetPartitionKeyComponentCount(ContainerProperties containerProperties)
+        {
+            IReadOnlyList<string> partitionKeyPaths = containerProperties.PartitionKey.Paths;
+            bool idIsDeclaredPath = partitionKeyPaths.Count > 0
+                && string.Equals(partitionKeyPaths[partitionKeyPaths.Count - 1], "/id", StringComparison.Ordinal);
+
+            return idIsDeclaredPath ? partitionKeyPaths.Count : partitionKeyPaths.Count + 1;
         }
     }
 }
