@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
+- [6032](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6032) ThinClient: Fixes clients using resource-token (permission-scoped) authorization failing or misrouting when thin client mode is enabled by default. Such clients now always route data-plane requests through the Gateway store model, since thin client mode does not support resource-token authorization. Clients using primary/secondary key or Microsoft Entra ID (AAD) authorization are unaffected.
+
 #### Other Changes
 
 - [5991](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5991) TargetReplicaSetSize : Updated address cache logic to use partition-specific target replica set size when available, falling back to the user replication policy value.
@@ -35,6 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [5968](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5968) Full-Text Policy: Adds analyzer configuration support — collection-level package type (`legacy` or `standard`), a `DefaultSpec` for inherited path configuration (language, tokenizer, filters, stop words), and per-path overrides (tokenizer, filters, stop-word list kind, add/remove stop words). The existing GA full-text API surface is unchanged. (preview)
 
 #### Breaking Changes
+
+- [5970](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5970) Thin Client: Starting with this release, thin client mode is enabled by default. Accounts and workloads that authenticate with resource tokens are not supported in thin client mode, so customers relying on resource token authentication will experience a breaking change on upgrade. To continue using resource token authentication, opt out of thin client mode by setting the environment variable `AZURE_COSMOS_THIN_CLIENT_ENABLED=false`.
 
 #### Bugs Fixed
 
@@ -54,6 +58,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Breaking Changes
 
+- [5970](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5970) Thin Client: Starting with this release, thin client mode is enabled by default. Accounts and workloads that authenticate with resource tokens are not supported in thin client mode, so customers relying on resource token authentication will experience a breaking change on upgrade. To continue using resource token authentication, opt out of thin client mode by setting the environment variable `AZURE_COSMOS_THIN_CLIENT_ENABLED=false`.
+
 #### Bugs Fixed
 
 - [6008](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6008) AAD Authentication: Fixes a regression (introduced by the CAE/token-revocation change after `3.61.0`) where the SDK attached a non-empty `claims` parameter (the `cp1` client capability) on *every* AAD token acquisition, even when there was no revocation challenge. Because a non-empty `claims` forces the underlying identity library (Azure.Identity/MSAL) to bypass its token cache and request a fresh token from the authority on each acquisition, this could stall the first token acquisition and surface as a hang on the initial request (for example `ReadAccountAsync`) with certificate/managed-identity credentials. The SDK now attaches `claims` only when responding to an actual CAE/revocation challenge; the `cp1` capability continues to be advertised via `isCaeEnabled`, so continuous access evaluation still works while the token cache is used on the normal path. This change also hardens the token-refresh path against a race where a token refresh already in flight when a revocation challenge arrives could, on late completion, republish its stale (no-claims) result over the newer revocation-aware token and drop the challenge; the refresh now detects that it has been superseded and leaves the newer cached state intact, so the revocation is still honored.
@@ -69,6 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [5298](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5298) LINQ: Fixes constant folding for closure-captured variables inside MemberInitExpression (resolves #1664). Previously, the recursion that partially evaluates expressions terminated whenever it encountered a `MemberInitExpression` node, so captured variables inside object initializers were not folded, producing invalid translated SQL.
 - [5844](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5844) Routing: Fixes premature OperationCanceledException that preempted cross-region failover during metadata-cache and query-plan gateway reads
 - [5927](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5927) ThinClient: Fixes mid-flight fallback to gateway when the service stops advertising thin-client endpoints. Previously the SDK kept routing to stale thin-client URIs and required a client restart to recover.
+- [6023](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6023) LINQ: Fixes `Take()` silently mutating the caller's `QueryRequestOptions.MaxItemCount` property (resolves [#5225](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5225)). The query pipeline now shallow-copies the request options before setting the internal page size, so the user's original object is never modified.
 - [4801](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4801) Spatial: Fixes serialization and deserialization of `Microsoft.Azure.Cosmos.Spatial` geometry types (`Point`, `LineString`, `Polygon`, etc.) when using `CosmosClientOptions.UseSystemTextJsonSerializerWithOptions` (or a custom System.Text.Json-based serializer). Previously these types threw `System.NotSupportedException` on read/create and produced malformed non-GeoJSON output on patch, because only Newtonsoft.Json converters existed; a full set of System.Text.Json converters now produces GeoJSON-compliant output identical to the Newtonsoft serializers (closes #4744).
 - [5866](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5866) Routing: Fixes the `AZURE_COSMOS_USE_LENGTH_AWARE_RANGE_COMPARATOR` environment variable so it is honored across all length-aware range-comparer code paths (including `PartitionKeyRangeCache.TryCombine`) in the GA package, not just preview. Customers can now disable the length-aware range comparer as a mitigation for the hierarchical-partition-key silent empty-result issue (#5859) by setting `AZURE_COSMOS_USE_LENGTH_AWARE_RANGE_COMPARATOR=false`.
 
