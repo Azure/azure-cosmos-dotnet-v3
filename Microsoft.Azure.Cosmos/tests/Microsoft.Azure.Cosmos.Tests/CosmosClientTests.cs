@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -296,6 +296,68 @@ namespace Microsoft.Azure.Cosmos.Tests
                 AzureKeyCredentialAuthorizationTokenProvider tokenProvider = (AzureKeyCredentialAuthorizationTokenProvider)client.AuthorizationTokenProvider;
                 Assert.AreEqual(typeof(AuthorizationTokenProviderResourceToken), tokenProvider.authorizationTokenProvider.GetType());
             }
+        }
+
+        // ThinClient does not support resource-token authorization, so DocumentClient.IsResourceTokenAuthorization
+        // is the gate that keeps such clients on the Gateway store model. A master key must return false; a
+        // resource token must return true.
+        [DataTestMethod]
+        [DataRow(false, DisplayName = "MasterKey")]
+        [DataRow(true, DisplayName = "ResourceToken")]
+        public void IsResourceTokenAuthorization_DirectProvider(bool isResourceToken)
+        {
+            AuthorizationTokenProvider provider = AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(
+                isResourceToken ? CosmosClientTests.NewRamdonResourceToken() : CosmosClientTests.NewRamdonMasterKey());
+
+            Assert.IsInstanceOfType(
+                provider,
+                isResourceToken ? typeof(AuthorizationTokenProviderResourceToken) : typeof(AuthorizationTokenProviderMasterKey));
+            Assert.AreEqual(isResourceToken, DocumentClient.IsResourceTokenAuthorization(provider));
+        }
+
+        [TestMethod]
+        public async Task IsResourceTokenAuthorization_AzureKeyCredentialRotation_TracksCurrentKey()
+        {
+            // Start with a master key: thin-client-eligible.
+            AzureKeyCredential credential = new AzureKeyCredential(CosmosClientTests.NewRamdonMasterKey());
+            AzureKeyCredentialAuthorizationTokenProvider provider = new AzureKeyCredentialAuthorizationTokenProvider(credential);
+            Assert.IsFalse(DocumentClient.IsResourceTokenAuthorization(provider), "A master key must not be treated as a resource token.");
+
+            // Rotate to a resource token at runtime. The request pipeline refreshes the wrapper's inner provider
+            // before dispatch; here a public authorization call (the same trigger the pipeline uses) forces it.
+            credential.Update(CosmosClientTests.NewRamdonResourceToken());
+            await provider.AddAuthorizationHeaderAsync(
+                new StoreResponseNameValueCollection(),
+                new Uri(CosmosClientTests.AccountEndpoint),
+                "GET",
+                Microsoft.Azure.Documents.AuthorizationTokenType.PrimaryMasterKey);
+            Assert.IsTrue(DocumentClient.IsResourceTokenAuthorization(provider), "After rotating to a resource token the wrapper must report resource-token authorization.");
+
+            // Rotate back to a master key: thin-client eligibility is restored.
+            credential.Update(CosmosClientTests.NewRamdonMasterKey());
+            await provider.AddAuthorizationHeaderAsync(
+                new StoreResponseNameValueCollection(),
+                new Uri(CosmosClientTests.AccountEndpoint),
+                "GET",
+                Microsoft.Azure.Documents.AuthorizationTokenType.PrimaryMasterKey);
+            Assert.IsFalse(DocumentClient.IsResourceTokenAuthorization(provider), "After rotating back to a master key the wrapper must no longer report resource-token authorization.");
+        }
+
+        [TestMethod]
+        public void IsResourceTokenAuthorization_TokenCredential_ReturnsFalse()
+        {
+            Mock<TokenCredential> mockTokenCredential = new Mock<TokenCredential>();
+            mockTokenCredential
+                .Setup(x => x.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
+                .Returns(new ValueTask<AccessToken>(new AccessToken("token", DateTimeOffset.UtcNow.AddHours(1))));
+
+            AuthorizationTokenProvider tokenCredentialProvider = new AuthorizationTokenProviderTokenCredential(
+                tokenCredential: mockTokenCredential.Object,
+                accountEndpoint: new Uri(CosmosClientTests.AccountEndpoint),
+                backgroundTokenCredentialRefreshInterval: null,
+                tokenToAuthorizationHeader: (token) => token);
+
+            Assert.IsFalse(DocumentClient.IsResourceTokenAuthorization(tokenCredentialProvider));
         }
 
         [TestMethod]
