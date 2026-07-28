@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+- [6032](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6032) VectorIndex Policy: Adds `QuantizerType` to the official (GA) package.
+
 #### Breaking Changes
 
 #### Bugs Fixed
