@@ -96,7 +96,18 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal bool HasIndex { get; set; }
 
-        internal virtual string SessionToken { get; set; }
+        /// <summary>
+        /// Gets the session token returned by the distributed transaction coordinator for
+        /// this operation. Callers can pass this value back through
+        /// <c>DistributedTransactionRequestOptions.SessionToken</c> on a subsequent DTx
+        /// operation to enforce read-your-writes session consistency for that op.
+        /// </summary>
+        /// <remarks>
+        /// Treat the value as opaque: pass it back unchanged via
+        /// <c>DistributedTransactionRequestOptions.SessionToken</c>. It may be <c>null</c> or
+        /// non-canonical if the coordinator omits or misformats the token.
+        /// </remarks>
+        public virtual string SessionToken { get; internal set; }
 
         internal virtual string PartitionKeyRangeId { get; set; }
 
