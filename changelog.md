@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
+- [6051](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6051) Cross Region Hedging: Fixes an `InvalidOperationException` ("A task may only be disposed if it is in a completion state") that could be thrown from `CrossRegionHedgingAvailabilityStrategy` when a hedged request completed at the same moment the application's `CancellationToken` was cancelled from another thread. The exception could surface instead of the operation's real result or cancellation, and was most visible in query workloads, where the pipeline cancels prefetch operations frequently.
 - [6032](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6032) ThinClient: Fixes clients using resource-token (permission-scoped) authorization failing or misrouting when thin client mode is enabled by default. Such clients now always route data-plane requests through the Gateway store model, since thin client mode does not support resource-token authorization. Clients using primary/secondary key or Microsoft Entra ID (AAD) authorization are unaffected.
 
 #### Other Changes
