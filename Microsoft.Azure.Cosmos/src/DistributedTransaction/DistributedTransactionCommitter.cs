@@ -44,12 +44,14 @@ namespace Microsoft.Azure.Cosmos
         private readonly int maxIsRetriableRetryCount;
         private readonly TimeSpan maxCumulativeRetryDelay;
         private readonly Func<TimeSpan, CancellationToken, Task> delayProvider;
+        private readonly Action<Guid> onDispatch;
 
         public DistributedTransactionCommitter(
             IReadOnlyList<DistributedTransactionOperation> operations,
             CosmosClientContext clientContext,
-            OperationType operationType)
-            : this(operations, clientContext, operationType, DistributedTransactionCommitter.DefaultRetryBaseDelay)
+            OperationType operationType,
+            Action<Guid> onDispatch = null)
+            : this(operations, clientContext, operationType, DistributedTransactionCommitter.DefaultRetryBaseDelay, onDispatch: onDispatch)
         {
         }
 
@@ -60,7 +62,8 @@ namespace Microsoft.Azure.Cosmos
             TimeSpan retryBaseDelay,
             Func<TimeSpan, CancellationToken, Task> delayProvider = null,
             TimeSpan? maxCumulativeRetryDelay = null,
-            int? maxIsRetriableRetryCount = null)
+            int? maxIsRetriableRetryCount = null,
+            Action<Guid> onDispatch = null)
         {
             this.operations = operations ?? throw new ArgumentNullException(nameof(operations));
             this.clientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
@@ -77,6 +80,7 @@ namespace Microsoft.Azure.Cosmos
             this.maxCumulativeRetryDelay = maxCumulativeRetryDelay
                 ?? clientOptions?.MaxRetryWaitTimeOnAbortedTransactions
                 ?? DistributedTransactionCommitter.MaxCumulativeRetryDelay;
+            this.onDispatch = onDispatch;
         }
 
         public async Task<DistributedTransactionResponse> ExecuteTransactionAsync(
@@ -120,11 +124,15 @@ namespace Microsoft.Azure.Cosmos
 
             int attempt = 0;
             TimeSpan cumulativeRetryDelay = TimeSpan.Zero;
+
+            // First attempt dispatches under a freshly rotated token; after a retriable response the
+            // next attempt's token strategy is decided below.
+            bool rotateIdempotencyToken = true;
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                DistributedTransactionResponse response = await this.ExecuteCommitAsync(serverRequest, parentTrace, cancellationToken);
+                DistributedTransactionResponse response = await this.ExecuteCommitAsync(serverRequest, rotateIdempotencyToken, parentTrace, cancellationToken);
 
                 if (response.IsSuccessStatusCode || !response.IsRetriable)
                 {
@@ -168,8 +176,20 @@ namespace Microsoft.Azure.Cosmos
                     return response;
                 }
 
+                // Durable Abort (HTTP 452) → rotate to a new token (the prior token is terminally
+                // aborted); any other retriable status → replay the same token to stay idempotent.
+                rotateIdempotencyToken = response.IsTransactionAborted;
+
                 DefaultTrace.TraceWarning(
-                    $"Distributed transaction commit retriable (StatusCode={response.StatusCode}, IsRetriable={response.IsRetriable}, DiagnosticString={TruncateForLog(response.DiagnosticString)}, attempt={attempt}, delayMs={(int)delay.TotalMilliseconds}, cumulativeDelayMs={(int)cumulativeRetryDelay.TotalMilliseconds}). Retrying with idempotency token {serverRequest.IdempotencyToken}.");
+                    "Distributed transaction commit retriable (StatusCode={0}, IsTransactionAborted={1}, " +
+                        "attempt={2}, delayMs={3}, cumulativeDelayMs={4}, token={5}, DiagnosticString={6}).",
+                    response.StatusCode,
+                    response.IsTransactionAborted,
+                    attempt,
+                    (int)delay.TotalMilliseconds,
+                    (int)cumulativeRetryDelay.TotalMilliseconds,
+                    serverRequest.IdempotencyToken,
+                    TruncateForLog(response.DiagnosticString));
 
                 response.Dispose();
                 attempt++;
@@ -194,11 +214,23 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<DistributedTransactionResponse> ExecuteCommitAsync(
             DistributedTransactionServerRequest serverRequest,
+            bool rotateIdempotencyToken,
             ITrace parentTrace,
             CancellationToken cancellationToken)
         {
             using (ITrace attemptTrace = parentTrace.StartChild("Execute Distributed Transaction Commit", TraceComponent.Batch, TraceLevel.Info))
             {
+                // Rotate only for a new logical attempt (first attempt or post-Abort resubmission); a
+                // non-aborted retriable replays the current token. The serialized body is reused either way.
+                if (rotateIdempotencyToken)
+                {
+                    serverRequest.RotateIdempotencyToken();
+                }
+
+                // Publish the dispatched token (spec §4.4) so the transaction exposes the latest attempt's
+                // token even after cancellation.
+                this.onDispatch?.Invoke(serverRequest.IdempotencyToken);
+
                 using (MemoryStream bodyStream = serverRequest.CreateBodyStream())
                 {
                     ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(

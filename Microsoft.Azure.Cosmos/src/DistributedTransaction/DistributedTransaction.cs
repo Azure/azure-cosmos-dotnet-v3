@@ -19,6 +19,16 @@ namespace Microsoft.Azure.Cosmos
     abstract class DistributedTransaction
     {
         /// <summary>
+        /// Gets the idempotency token of the latest commit attempt that reached the dispatch boundary.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="Guid.Empty"/> until the first attempt is dispatched. Remains observable after
+        /// <see cref="ExecuteTransactionAsync"/> throws <see cref="OperationCanceledException"/>, since
+        /// cancellation only stops work between attempts and never interrupts an in-flight dispatch.
+        /// </remarks>
+        internal abstract Guid IdempotencyToken { get; }
+
+        /// <summary>
         /// Commits the distributed transaction.
         /// </summary>
         /// <remarks>
