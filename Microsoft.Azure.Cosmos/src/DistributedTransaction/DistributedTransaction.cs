@@ -22,9 +22,9 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the idempotency token of the latest commit attempt that reached the dispatch boundary.
         /// </summary>
         /// <remarks>
-        /// <see cref="Guid.Empty"/> until the first attempt is dispatched. Remains observable after
-        /// <see cref="ExecuteTransactionAsync"/> throws <see cref="OperationCanceledException"/>, since
-        /// cancellation only stops work between attempts and never interrupts an in-flight dispatch.
+        /// <see cref="Guid.Empty"/> until the first attempt is dispatched. Because the token is published
+        /// before the dispatch is awaited, it remains observable even when <see cref="ExecuteTransactionAsync"/>
+        /// throws <see cref="OperationCanceledException"/> — including cancellation during an in-flight dispatch.
         /// </remarks>
         internal abstract Guid IdempotencyToken { get; }
 

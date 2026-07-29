@@ -21,7 +21,8 @@ namespace Microsoft.Azure.Cosmos
         // Outer-loop retry parameters. The inner loop (ClientRetryPolicy) handles envelope failures with empty body;
         // the outer loop handles body-bearing semantic failures whose JSON body sets isRetriable: true.
         //
-        // Default attempt-count cap and hard ceiling on outer-loop wire requests. With non-trivial
+        // Default cap on outer-loop retries (retries only — the initial attempt is not counted, so the
+        // loop dispatches at most MaxIsRetriableRetryCount + 1 wire requests). With non-trivial
         // retryBaseDelay the cumulative MaxCumulativeRetryDelay budget will typically fire first; this cap
         // only binds when delays are very small (e.g., zero in tests or hypothetical fast-server scenarios)
         // — it guards against unbounded wire-request amplification when delays are degenerate. Applied as

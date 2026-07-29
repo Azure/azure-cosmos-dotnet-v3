@@ -240,7 +240,9 @@ namespace Microsoft.Azure.Cosmos
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                // Extract idempotency token from response headers, fallback to the request token if absent.
+                // Extract idempotency token from response headers, falling back to the request token if absent.
+                // The committer always rotates the token before dispatch, so the fallback is non-empty on this
+                // path; a caller that builds a response before dispatching would surface Guid.Empty.
                 Guid idempotencyToken = GetIdempotencyTokenFromHeaders(responseMessage.Headers, serverRequest.IdempotencyToken);
 
                 DistributedTransactionResponse response = null;

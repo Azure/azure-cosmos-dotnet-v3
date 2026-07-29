@@ -1021,6 +1021,57 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        [TestMethod]
+        [Description("When cancellation fires during an in-flight dispatch, ExecuteTransactionAsync throws OperationCanceledException but IdempotencyToken still exposes the token published before the awaited dispatch — proving the publish happens before the await (spec §4.4).")]
+        public async Task IdempotencyToken_AfterCancellationDuringInFlightDispatch_ExposesDispatchedToken()
+        {
+            using (CancellationTokenSource cts = new CancellationTokenSource())
+            {
+                string capturedRequestToken = null;
+                Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
+                contextMock
+                    .Setup(c => c.ProcessResourceOperationStreamAsync(
+                        It.IsAny<string>(),
+                        It.IsAny<ResourceType>(),
+                        It.IsAny<OperationType>(),
+                        It.IsAny<RequestOptions>(),
+                        It.IsAny<ContainerInternal>(),
+                        It.IsAny<PartitionKey?>(),
+                        It.IsAny<string>(),
+                        It.IsAny<Stream>(),
+                        It.IsAny<Action<RequestMessage>>(),
+                        It.IsAny<ITrace>(),
+                        It.IsAny<CancellationToken>()))
+                    .Returns<string, ResourceType, OperationType, RequestOptions, ContainerInternal, PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
+                        (uri, resType, opType, opts, container, pk, itemId, stream, enricher, trace, ct) =>
+                        {
+                            RequestMessage request = new RequestMessage
+                            {
+                                ResourceType = ResourceType.DistributedTransactionBatch,
+                                OperationType = OperationType.CommitDistributedTransaction,
+                            };
+                            enricher(request);
+                            capturedRequestToken = request.Headers[HttpConstants.HttpHeaders.IdempotencyToken];
+
+                            // Cancellation observed while the dispatch is in flight: throw before any response.
+                            cts.Cancel();
+                            throw new OperationCanceledException(cts.Token);
+                        });
+
+                DistributedWriteTransactionCore tx = new DistributedWriteTransactionCore(contextMock.Object);
+                tx.CreateItem(BuildMockContainer(), new PartitionKey("pk"), "item-id", new TestItem());
+
+                await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+                    () => tx.ExecuteTransactionAsync(cts.Token));
+
+                Assert.IsNotNull(capturedRequestToken, "The attempt must reach dispatch before cancellation.");
+                Assert.AreNotEqual(Guid.Empty, tx.IdempotencyToken,
+                    "Token published before the await must survive an in-flight cancellation.");
+                Assert.AreEqual(capturedRequestToken, tx.IdempotencyToken.ToString(),
+                    "IdempotencyToken must equal the token published before the awaited dispatch.");
+            }
+        }
+
         // Helpers
 
         /// <summary>
