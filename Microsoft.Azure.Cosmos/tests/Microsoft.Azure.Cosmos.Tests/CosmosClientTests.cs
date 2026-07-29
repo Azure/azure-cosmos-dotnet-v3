@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -298,6 +298,68 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        // ThinClient does not support resource-token authorization, so DocumentClient.IsResourceTokenAuthorization
+        // is the gate that keeps such clients on the Gateway store model. A master key must return false; a
+        // resource token must return true.
+        [DataTestMethod]
+        [DataRow(false, DisplayName = "MasterKey")]
+        [DataRow(true, DisplayName = "ResourceToken")]
+        public void IsResourceTokenAuthorization_DirectProvider(bool isResourceToken)
+        {
+            AuthorizationTokenProvider provider = AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(
+                isResourceToken ? CosmosClientTests.NewRamdonResourceToken() : CosmosClientTests.NewRamdonMasterKey());
+
+            Assert.IsInstanceOfType(
+                provider,
+                isResourceToken ? typeof(AuthorizationTokenProviderResourceToken) : typeof(AuthorizationTokenProviderMasterKey));
+            Assert.AreEqual(isResourceToken, DocumentClient.IsResourceTokenAuthorization(provider));
+        }
+
+        [TestMethod]
+        public async Task IsResourceTokenAuthorization_AzureKeyCredentialRotation_TracksCurrentKey()
+        {
+            // Start with a master key: thin-client-eligible.
+            AzureKeyCredential credential = new AzureKeyCredential(CosmosClientTests.NewRamdonMasterKey());
+            AzureKeyCredentialAuthorizationTokenProvider provider = new AzureKeyCredentialAuthorizationTokenProvider(credential);
+            Assert.IsFalse(DocumentClient.IsResourceTokenAuthorization(provider), "A master key must not be treated as a resource token.");
+
+            // Rotate to a resource token at runtime. The request pipeline refreshes the wrapper's inner provider
+            // before dispatch; here a public authorization call (the same trigger the pipeline uses) forces it.
+            credential.Update(CosmosClientTests.NewRamdonResourceToken());
+            await provider.AddAuthorizationHeaderAsync(
+                new StoreResponseNameValueCollection(),
+                new Uri(CosmosClientTests.AccountEndpoint),
+                "GET",
+                Microsoft.Azure.Documents.AuthorizationTokenType.PrimaryMasterKey);
+            Assert.IsTrue(DocumentClient.IsResourceTokenAuthorization(provider), "After rotating to a resource token the wrapper must report resource-token authorization.");
+
+            // Rotate back to a master key: thin-client eligibility is restored.
+            credential.Update(CosmosClientTests.NewRamdonMasterKey());
+            await provider.AddAuthorizationHeaderAsync(
+                new StoreResponseNameValueCollection(),
+                new Uri(CosmosClientTests.AccountEndpoint),
+                "GET",
+                Microsoft.Azure.Documents.AuthorizationTokenType.PrimaryMasterKey);
+            Assert.IsFalse(DocumentClient.IsResourceTokenAuthorization(provider), "After rotating back to a master key the wrapper must no longer report resource-token authorization.");
+        }
+
+        [TestMethod]
+        public void IsResourceTokenAuthorization_TokenCredential_ReturnsFalse()
+        {
+            Mock<TokenCredential> mockTokenCredential = new Mock<TokenCredential>();
+            mockTokenCredential
+                .Setup(x => x.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
+                .Returns(new ValueTask<AccessToken>(new AccessToken("token", DateTimeOffset.UtcNow.AddHours(1))));
+
+            AuthorizationTokenProvider tokenCredentialProvider = new AuthorizationTokenProviderTokenCredential(
+                tokenCredential: mockTokenCredential.Object,
+                accountEndpoint: new Uri(CosmosClientTests.AccountEndpoint),
+                backgroundTokenCredentialRefreshInterval: null,
+                tokenToAuthorizationHeader: (token) => token);
+
+            Assert.IsFalse(DocumentClient.IsResourceTokenAuthorization(tokenCredentialProvider));
+        }
+
         [TestMethod]
         public async Task ValidateAzureKeyCredentialGatewayModeUpdateAsync()
         {
@@ -425,6 +487,111 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             Assert.AreEqual(0, errors.Count, $"{Environment.NewLine}Errors found in trace:{Environment.NewLine}{assertMsg}");
+        }
+
+        /// <summary>
+        /// End-to-end regression for the <c>ReadAccountAsync</c> initialization hang caused by the AAD
+        /// CAE / claims change.
+        /// <para>
+        /// The account read acquires an AAD token BEFORE it issues its HTTP GET. Before the fix the SDK
+        /// attached a claims payload on EVERY token request (even with no server challenge), which forces
+        /// Azure.Identity/MSAL to bypass its token cache and make a live Entra ID (AAD/ESTS) call on every
+        /// acquisition. On cold start / mass restart those cache-bypassing requests are throttled, so the
+        /// account read stalls and ultimately fails.
+        /// </para>
+        /// <para>
+        /// <see cref="EstsThrottlingTokenCredential"/> models that behavior deterministically: it rejects
+        /// (HTTP 429) any token request that carries a claims payload without a real challenge. As a result
+        /// this test <b>fails before the fix</b> — <c>ReadAccountAsync</c> throws because the happy-path
+        /// token request carries claims and is throttled — and <b>passes after the fix</b>, where the
+        /// happy path carries no claims so a token is issued and the account read completes.
+        /// </para>
+        /// </summary>
+        [TestMethod]
+        public async Task ReadAccountAsync_TokenCredentialHappyPath_DoesNotAttachClaims_SucceedsInsteadOfHanging()
+        {
+            EstsThrottlingTokenCredential estsCredential = new EstsThrottlingTokenCredential();
+
+            // Minimal, valid database-account response so the account read can complete once a token is issued.
+            const string accountJson = "{\"_self\":\"\",\"id\":\"localhost\",\"_rid\":\"127.0.0.1\"," +
+                "\"writableLocations\":[],\"readableLocations\":[],\"enableMultipleWriteLocations\":false," +
+                "\"userConsistencyPolicy\":{\"defaultConsistencyLevel\":\"Session\"}," +
+                "\"userReplicationPolicy\":{\"asyncReplication\":false,\"minReplicaSetSize\":1,\"maxReplicasetSize\":4}," +
+                "\"systemReplicationPolicy\":{\"minReplicaSetSize\":1,\"maxReplicasetSize\":4}," +
+                "\"readPolicy\":{\"primaryReadCoefficient\":1,\"secondaryReadCoefficient\":1}}";
+
+            Mock<IHttpHandler> mockHttpHandler = new Mock<IHttpHandler>();
+            mockHttpHandler
+                .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(accountJson),
+                });
+
+            using CosmosClient client = new CosmosClient(
+                AccountEndpoint,
+                estsCredential,
+                new CosmosClientOptions
+                {
+                    // The token/claims path is identical for Direct and Gateway; Gateway keeps the unit
+                    // test deterministic (no RNTBD transport) while still exercising the HTTP account read.
+                    ConnectionMode = ConnectionMode.Gateway,
+                    HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object)),
+                });
+
+            AccountProperties accountProperties = await client.ReadAccountAsync();
+
+            Assert.IsNotNull(
+                accountProperties,
+                "ReadAccountAsync must complete once the happy-path token request no longer bypasses the cache with claims.");
+            Assert.AreEqual(
+                0,
+                estsCredential.ClaimsChallengeRejections,
+                "No claims may be attached on the happy path; otherwise the cache-bypassing token request is throttled by ESTS and ReadAccountAsync hangs/fails (the pre-fix regression).");
+            Assert.IsTrue(
+                estsCredential.TokensIssued >= 1,
+                "The account read must have acquired at least one AAD token via the credential.");
+        }
+
+        /// <summary>
+        /// A <see cref="TokenCredential"/> that models Entra ID (AAD/ESTS) throttling of cache-bypassing
+        /// token requests: any request carrying a <see cref="TokenRequestContext.Claims"/> payload without
+        /// a corresponding server challenge is rejected with HTTP 429. On the happy path (no claims) it
+        /// issues a valid token. Used to reproduce the <c>ReadAccountAsync</c> init hang before the fix.
+        /// </summary>
+        private sealed class EstsThrottlingTokenCredential : TokenCredential
+        {
+            private int tokensIssued;
+            private int claimsChallengeRejections;
+
+            public int TokensIssued => Volatile.Read(ref this.tokensIssued);
+
+            public int ClaimsChallengeRejections => Volatile.Read(ref this.claimsChallengeRejections);
+
+            public override AccessToken GetToken(TokenRequestContext requestContext, CancellationToken cancellationToken)
+            {
+                return this.IssueOrThrottle(requestContext);
+            }
+
+            public override ValueTask<AccessToken> GetTokenAsync(TokenRequestContext requestContext, CancellationToken cancellationToken)
+            {
+                return new ValueTask<AccessToken>(this.IssueOrThrottle(requestContext));
+            }
+
+            private AccessToken IssueOrThrottle(TokenRequestContext requestContext)
+            {
+                if (!string.IsNullOrEmpty(requestContext.Claims))
+                {
+                    // Cache-bypassing claims request without a real challenge -> throttled by ESTS.
+                    Interlocked.Increment(ref this.claimsChallengeRejections);
+                    throw new RequestFailedException(
+                        (int)HttpStatusCode.TooManyRequests,
+                        "AADSTS throttling: cache-bypassing claims token request was rate-limited.");
+                }
+
+                Interlocked.Increment(ref this.tokensIssued);
+                return new AccessToken("valid-aad-token", DateTimeOffset.UtcNow.AddHours(1));
+            }
         }
 
         private class TestTraceListener : TraceListener

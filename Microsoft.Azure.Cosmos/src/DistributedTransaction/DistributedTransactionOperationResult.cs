@@ -30,6 +30,7 @@ namespace Microsoft.Azure.Cosmos
         internal DistributedTransactionOperationResult(DistributedTransactionOperationResult other)
         {
             this.Index = other.Index;
+            this.HasIndex = other.HasIndex;
             this.StatusCode = other.StatusCode;
             this.SubStatusCode = other.SubStatusCode;
             this.ETag = other.ETag;
@@ -88,6 +89,12 @@ namespace Microsoft.Azure.Cosmos
         public virtual double RequestCharge { get; internal set; }
 
         internal virtual SubStatusCodes SubStatusCode { get; set; }
+
+        /// <summary>
+        /// Whether the server explicitly provided an <c>index</c>. A missing <c>index</c> defaults to 0
+        /// (indistinguishable from a real 0), so the reorder logic uses this flag to reject ambiguous responses.
+        /// </summary>
+        internal bool HasIndex { get; set; }
 
         internal virtual string SessionToken { get; set; }
 
@@ -159,6 +166,7 @@ namespace Microsoft.Azure.Cosmos
             if (TryGetInt32Property(json, DistributedTransactionSerializer.Index, out int index))
             {
                 result.Index = index;
+                result.HasIndex = true;
             }
 
             if (TryGetInt32Property(json, DistributedTransactionSerializer.StatusCode, out int statusCode))

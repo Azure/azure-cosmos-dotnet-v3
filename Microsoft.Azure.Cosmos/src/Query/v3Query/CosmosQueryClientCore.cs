@@ -143,6 +143,7 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace,
             CancellationToken cancellationToken)
         {
+            requestOptions = (QueryRequestOptions)requestOptions.ShallowCopy();
             requestOptions.MaxItemCount = pageSize;
 
             ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
@@ -209,25 +210,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 // Syntax exception are argument exceptions and thrown to the user.
                 message.EnsureSuccessStatusCode();
-
-                bool responseCameViaThinClient = string.Equals(
-                    message.Headers?.Get(ThinClientConstants.RoutedViaProxy),
-                    "1",
-                    StringComparison.Ordinal);
-
-                if (responseCameViaThinClient)
-                {
-                    ContainerProperties containerProperties = await this.clientContext.GetCachedContainerPropertiesAsync(
-                        resourceUri, trace, cancellationToken);
-
-                    partitionedQueryExecutionInfo = ThinClientQueryPlanHelper.DeserializeQueryPlanResponse(
-                        message.Content,
-                        containerProperties.PartitionKey);
-                }
-                else
-                {
-                    partitionedQueryExecutionInfo = this.clientContext.SerializerCore.FromStream<PartitionedQueryExecutionInfo>(message.Content);
-                }
+                partitionedQueryExecutionInfo = this.clientContext.SerializerCore.FromStream<PartitionedQueryExecutionInfo>(message.Content);
             }
 
             return partitionedQueryExecutionInfo;
