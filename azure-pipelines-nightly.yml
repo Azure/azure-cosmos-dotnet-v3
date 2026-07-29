@@ -15,6 +15,10 @@ schedules:
 variables:
   VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops 
   BuildConfiguration: Release
+  # Mirrors ReleaseArguments in azure-pipelines.yml. templates/build-preview.yml
+  # runs Microsoft.Azure.Cosmos.Tests on an agent with no emulator installed, so
+  # the quarantined, account-dependent tests must stay filtered out.
+  PreviewArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Ignore" --verbosity normal '
   Packaging.EnableSBOMSigning: true
   Codeql.Enabled: true
 
@@ -61,5 +65,5 @@ stages:
     - template:  templates/build-preview.yml
       parameters:
         BuildConfiguration: Release
-        Arguments: ' '
+        Arguments: $(PreviewArguments)
         VmImage: $(VmImage)

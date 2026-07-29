@@ -1,4 +1,12 @@
 # File: templates/build-preview.yml
+#
+# NOTE for callers: the `Arguments` parameter is forwarded verbatim to the
+# `dotnet test` invocations below. It MUST carry the standard TestCategory
+# exclusions (at minimum `TestCategory!=Quarantine & TestCategory!=Ignore`).
+# The `Preview Tests` job runs Microsoft.Azure.Cosmos.Tests on an agent that
+# does NOT install the Cosmos emulator (there is no emulator-setup.yml step),
+# so an empty/unfiltered value pulls in the quarantined, account-dependent
+# BinaryEncodingOverTheWireTests and fails the job on every run.
 
 parameters:
   BuildConfiguration: ''
