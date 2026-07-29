@@ -510,6 +510,106 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(OperationType.Read, capturedOperationType);
         }
 
+        [TestMethod]
+        [Description("Smoke test: a commit with 100+ read operations whose server operationResponses arrive " +
+                     "out-of-order is reordered by the SDK so response[i].Index == i for every operation.")]
+        public async Task CommitAsync_ManyOperations_OutOfOrderResponses_SortedByIndex()
+        {
+            const int OperationCount = 128;
+
+            // Server returns the per-operation responses in a deterministically-shuffled (out-of-order) sequence.
+            int[] shuffledIndices = BuildShuffledIndices(OperationCount, seed: 7);
+            Assert.IsTrue(
+                IsOutOfOrder(shuffledIndices),
+                "Wire order must be shuffled for this smoke test to be meaningful.");
+
+            string responseJson = BuildOperationResponsesJson(shuffledIndices, statusCode: (int)HttpStatusCode.OK);
+
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
+            contextMock
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<CosmosPK?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new MemoryStream(Encoding.UTF8.GetBytes(responseJson))
+                });
+
+            DistributedReadTransactionCore tx = new DistributedReadTransactionCore(contextMock.Object);
+            for (int i = 0; i < OperationCount; i++)
+            {
+                tx.ReadItem(BuildMockContainer(), new CosmosPK($"pk{i}"), $"id{i}");
+            }
+
+            DistributedTransactionResponse response = await tx.CommitTransactionAsync(CancellationToken.None);
+
+            Assert.IsTrue(response.IsSuccessStatusCode);
+            Assert.AreEqual(OperationCount, response.Count);
+            for (int i = 0; i < response.Count; i++)
+            {
+                Assert.AreEqual(i, response[i].Index,
+                    $"Response[{i}] must have Index {i} after SDK reordering.");
+                Assert.AreEqual(HttpStatusCode.OK, response[i].StatusCode);
+            }
+        }
+
+        [TestMethod]
+        [Description("Fail-closed: when the server response repeats an operation index (not a complete permutation " +
+                     "of 0..n-1), the SDK cannot map results back to requests and returns HTTP 500 instead of " +
+                     "surfacing misaligned data.")]
+        public async Task CommitAsync_DuplicateOperationIndex_FailsClosed()
+        {
+            // Three operations, but the response repeats index 1 and omits index 2 — an invalid permutation.
+            int[] indices = new[] { 0, 1, 1 };
+            string responseJson = BuildOperationResponsesJson(indices, statusCode: (int)HttpStatusCode.OK);
+
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
+            contextMock
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<CosmosPK?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new MemoryStream(Encoding.UTF8.GetBytes(responseJson))
+                });
+
+            DistributedTransactionResponse response = await new DistributedReadTransactionCore(contextMock.Object)
+                .ReadItem(BuildMockContainer(), new CosmosPK("pk0"), "id0")
+                .ReadItem(BuildMockContainer(), new CosmosPK("pk1"), "id1")
+                .ReadItem(BuildMockContainer(), new CosmosPK("pk2"), "id2")
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.InternalServerError, response.StatusCode,
+                "A duplicate operation index must fail closed with HTTP 500.");
+            Assert.IsFalse(response.IsSuccessStatusCode);
+
+            // The unmappable payload is discarded and replaced with uniform fail-closed placeholders,
+            // one per submitted operation.
+            Assert.AreEqual(3, response.Count);
+            for (int i = 0; i < response.Count; i++)
+            {
+                Assert.AreEqual(HttpStatusCode.InternalServerError, response[i].StatusCode);
+            }
+        }
+
         #endregion
 
         /// <summary>
@@ -588,6 +688,61 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 Content = new MemoryStream(Encoding.UTF8.GetBytes(json))
             };
+        }
+
+        /// <summary>
+        /// Builds an <c>operationResponses</c> JSON envelope from an explicit, ordered list of
+        /// per-operation indices (the wire order), each assigned the supplied HTTP status code.
+        /// </summary>
+        private static string BuildOperationResponsesJson(IReadOnlyList<int> indices, int statusCode)
+        {
+            List<string> results = new List<string>(indices.Count);
+            foreach (int index in indices)
+            {
+                results.Add($@"{{""index"":{index},""statusCode"":{statusCode}}}");
+            }
+
+            return $@"{{""operationResponses"":[{string.Join(",", results)}]}}";
+        }
+
+        /// <summary>
+        /// Returns the indices <c>0..count-1</c> in a deterministically-shuffled order so the
+        /// produced wire order is reproducibly out-of-order across test runs.
+        /// </summary>
+        private static int[] BuildShuffledIndices(int count, int seed)
+        {
+            int[] indices = new int[count];
+            for (int i = 0; i < count; i++)
+            {
+                indices[i] = i;
+            }
+
+            Random rng = new Random(seed);
+            for (int i = count - 1; i > 0; i--)
+            {
+                int j = rng.Next(i + 1);
+                int temp = indices[i];
+                indices[i] = indices[j];
+                indices[j] = temp;
+            }
+
+            return indices;
+        }
+
+        /// <summary>
+        /// Returns <c>true</c> when at least one element is not already in its sorted position.
+        /// </summary>
+        private static bool IsOutOfOrder(IReadOnlyList<int> indices)
+        {
+            for (int i = 0; i < indices.Count; i++)
+            {
+                if (indices[i] != i)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

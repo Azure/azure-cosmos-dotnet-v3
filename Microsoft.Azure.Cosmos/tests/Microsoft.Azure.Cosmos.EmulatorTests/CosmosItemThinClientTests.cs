@@ -40,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public async Task TestInitAsync()
         {
+            Environment.SetEnvironmentVariable(ConfigurationManager.BypassQueryParsing, Boolean.TrueString);
             Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
             this.connectionString = Environment.GetEnvironmentVariable("COSMOSDB_THINCLIENT");
             if (string.IsNullOrEmpty(this.connectionString))
@@ -75,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task TestCleanupAsync()
         {
             Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "False");
-
+            Environment.SetEnvironmentVariable(ConfigurationManager.BypassQueryParsing, null);
             if (this.database != null)
             {
                 await this.database.DeleteAsync();
@@ -228,6 +229,90 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Cleanup
             await database.DeleteAsync();
+        }
+
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task ResourceTokenAuth_ThinClient_CreateAndReadItemAsync()
+        {
+            // Ensure thin-client mode is on for this test (TestInit already sets it, but be explicit).
+            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
+
+            // 1) Using the key-based client from TestInit, create a User and a Permission
+            //    scoped to the test container with PermissionMode.All so we can write + read.
+            string userId = "thinclient-user-" + Guid.NewGuid();
+            UserResponse userResponse = await this.database.CreateUserAsync(userId);
+            Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
+            User user = userResponse.User;
+
+            string permissionId = "thinclient-perm-" + Guid.NewGuid();
+            PermissionProperties permissionProperties = new PermissionProperties(
+                permissionId,
+                PermissionMode.All,
+                this.container);
+
+            PermissionResponse permissionResponse = await user.CreatePermissionAsync(permissionProperties);
+            Assert.AreEqual(HttpStatusCode.Created, permissionResponse.StatusCode);
+            string resourceToken = permissionResponse.Resource.Token;
+            Assert.IsFalse(string.IsNullOrEmpty(resourceToken), "Resource token should be issued by the service.");
+
+            // 2) Parse the AccountEndpoint out of the connection string so we can build a
+            //    resource-token-based client (the token overload does not accept a full
+            //    connection string).
+            string accountEndpoint = this.connectionString
+                .Split(';', StringSplitOptions.RemoveEmptyEntries)
+                .Select(part => part.Trim())
+                .First(part => part.StartsWith("AccountEndpoint=", StringComparison.OrdinalIgnoreCase))
+                ["AccountEndpoint=".Length..];
+
+            CosmosClientOptions tokenClientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                ApplicationPreferredRegions = PreferredRegions,
+                Serializer = this.cosmosSystemTextJsonSerializer,
+            };
+            tokenClientOptions.CustomHandlers.Add(new ExcludeRegionsInjectingHandler(ExcludeRegions));
+
+            // 3) Build a second CosmosClient authenticated only via the resource token,
+            //    with thin-client mode enabled, and exercise item CRUD through it.
+            using (CosmosClient tokenClient = new CosmosClient(accountEndpoint, resourceToken, tokenClientOptions))
+            {
+                Container tokenContainer = tokenClient.GetContainer(this.database.Id, this.container.Id);
+
+                string pk = "rt-pk-" + Guid.NewGuid();
+                TestObject warmUpItem = new TestObject
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = pk,
+                    Other = "ThinClient resource-token warm-up"
+                };
+
+                // Warm up the thin-client connectivity probe on the token-auth client.
+                await WarmUpThinClientProbeAsync(tokenContainer, warmUpItem);
+
+                // Create via resource-token + thin client.
+                TestObject item = new TestObject
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = pk,
+                    Other = "ThinClient resource-token item"
+                };
+
+                ItemResponse<TestObject> createResponse = await tokenContainer.CreateItemAsync(
+                    item,
+                    new PartitionKey(item.Pk));
+                Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+                AssertExcludedRegionsNotInDiagnostics(createResponse.Diagnostics.ToString());
+
+                // Read it back via resource-token + thin client.
+                ItemResponse<TestObject> readResponse = await tokenContainer.ReadItemAsync<TestObject>(
+                    item.Id,
+                    new PartitionKey(item.Pk));
+                Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
+                Assert.AreEqual(item.Id, readResponse.Resource.Id);
+                Assert.AreEqual(item.Pk, readResponse.Resource.Pk);
+                AssertExcludedRegionsNotInDiagnostics(readResponse.Diagnostics.ToString());
+            }
         }
 
         [TestMethod]
@@ -1588,14 +1673,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("ThinClient")]
-        public async Task TestThinClientQueryPlanWithOrderBy()
+        public async Task TestQueryPlanWithOrderBy_GatewayMode()
         {
+            // Removing thinclient support for queryplan
+            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "False");
             List<TestObject> items = new List<TestObject>();
             string commonPk = "pk_orderby_test_" + Guid.NewGuid().ToString();
 
             try
             {
-                Environment.SetEnvironmentVariable(ConfigurationManager.BypassQueryParsing, Boolean.TrueString);
+                // Create a fresh client that honors the disabled ThinClient flag
+                using CosmosClient queryPlanClient = new CosmosClient(
+                    this.connectionString,
+                    new CosmosClientOptions()
+                    {
+                        ConnectionMode = ConnectionMode.Gateway,
+                        ApplicationPreferredRegions = PreferredRegions,
+                        Serializer = this.cosmosSystemTextJsonSerializer,
+                    });
+
+                Container queryPlanContainer = queryPlanClient.GetContainer(this.database.Id, this.container.Id);
 
                 for (int i = 0; i < 5; i++)
                 {
@@ -1614,7 +1711,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string query = "SELECT * FROM c WHERE c.pk = @pk ORDER BY c.other DESC";
                 QueryDefinition queryDef = new QueryDefinition(query).WithParameter("@pk", commonPk);
 
-                FeedIterator<TestObject> iterator = this.container.GetItemQueryIterator<TestObject>(queryDef);
+                FeedIterator<TestObject> iterator = queryPlanContainer.GetItemQueryIterator<TestObject>(queryDef);
 
                 List<TestObject> results = new List<TestObject>();
                 int pageCount = 0;
@@ -1626,8 +1723,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     pageCount++;
 
                     string diagnostics = response.Diagnostics.ToString();
-                    Assert.IsTrue(diagnostics.Contains("|F4"), $"Page {pageCount}: Should use ThinClient");
-                    AssertExcludedRegionsNotInDiagnostics(diagnostics);
+                    Assert.IsFalse(diagnostics.Contains("ThinClientStoreModel"), $"Page {pageCount}: Should NOT use ThinClient");
                 }
 
                 Assert.AreEqual(5, results.Count, "Should return all 5 items");
@@ -1635,7 +1731,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                Environment.SetEnvironmentVariable(ConfigurationManager.BypassQueryParsing, null);
 
                 foreach (TestObject item in items)
                 {
@@ -1650,14 +1745,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("ThinClient")]
-        public async Task TestThinClientQueryPlanCrossPartitionWithFilter()
+        public async Task TestQueryPlanCrossPartitionWithFilter_GatewayMode()
         {
+            // Removing thinclient support for queryplan
+            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "False");
             List<TestObject> items = new List<TestObject>();
             string baseGuid = Guid.NewGuid().ToString();
 
             try
             {
-                Environment.SetEnvironmentVariable(ConfigurationManager.BypassQueryParsing, "True");
+                // Create a fresh client that honors the disabled ThinClient flag
+                using CosmosClient queryPlanClient = new CosmosClient(
+                    this.connectionString,
+                    new CosmosClientOptions()
+                    {
+                        ConnectionMode = ConnectionMode.Gateway,
+                        ApplicationPreferredRegions = PreferredRegions,
+                        Serializer = this.cosmosSystemTextJsonSerializer,
+                    });
+
+                Container queryPlanContainer = queryPlanClient.GetContainer(this.database.Id, this.container.Id);
 
                 string[] partitionKeys = {
                     $"pk_filter_1_{baseGuid}",
@@ -1683,7 +1790,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 string query = "SELECT * FROM c ORDER BY c._ts";
 
-                FeedIterator<TestObject> iterator = this.container.GetItemQueryIterator<TestObject>(query);
+                FeedIterator<TestObject> iterator = queryPlanContainer.GetItemQueryIterator<TestObject>(query);
 
                 List<TestObject> results = new List<TestObject>();
                 int pageCount = 0;
@@ -1695,8 +1802,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     pageCount++;
 
                     string diagnostics = response.Diagnostics.ToString();
-                    Assert.IsTrue(diagnostics.Contains("|F4"), $"Page {pageCount}: Should use ThinClient");
-                    AssertExcludedRegionsNotInDiagnostics(diagnostics);
+                    Assert.IsFalse(diagnostics.Contains("ThinClientStoreModel"), $"Page {pageCount}: Should NOT use ThinClient");
                 }
 
                 Assert.IsTrue(results.Count >= 9,
@@ -1717,7 +1823,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                Environment.SetEnvironmentVariable(ConfigurationManager.BypassQueryParsing, null);
 
                 foreach (TestObject item in items)
                 {
@@ -1732,14 +1837,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("ThinClient")]
-        public async Task TestThinClientQueryPlanMultiPartitionFanout()
+        public async Task TestQueryPlanMultiPartitionFanout_GatewayMode()
         {
+            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "False");
             List<TestObject> items = new List<TestObject>();
             string baseGuid = Guid.NewGuid().ToString();
 
             try
             {
-                Environment.SetEnvironmentVariable(ConfigurationManager.BypassQueryParsing, Boolean.TrueString);
+                // Create a fresh client that honors the disabled ThinClient flag
+                using CosmosClient queryPlanClient = new CosmosClient(
+                    this.connectionString,
+                    new CosmosClientOptions()
+                    {
+                        ConnectionMode = ConnectionMode.Gateway,
+                        ApplicationPreferredRegions = PreferredRegions,
+                        Serializer = this.cosmosSystemTextJsonSerializer,
+                    });
+
+                Container queryPlanContainer = queryPlanClient.GetContainer(this.database.Id, this.container.Id);
 
                 // Create items across many distinct partition keys to ensure multi-partition fanout
                 int partitionCount = 10;
@@ -1766,23 +1882,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // Execute a cross-partition ORDER BY query (requires QueryPlan + fanout)
                 string query = "SELECT * FROM c WHERE STARTSWITH(c.other, 'Partition_') ORDER BY c.other ASC";
 
-                // Run query via ThinClient mode
-                FeedIterator<TestObject> thinClientIterator = this.container.GetItemQueryIterator<TestObject>(query);
+                // Run query via non-ThinClient mode
+                FeedIterator<TestObject> queryPlanIterator = queryPlanContainer.GetItemQueryIterator<TestObject>(query);
 
-                List<TestObject> thinClientResults = new List<TestObject>();
-                while (thinClientIterator.HasMoreResults)
+                List<TestObject> queryPlanResults = new List<TestObject>();
+                while (queryPlanIterator.HasMoreResults)
                 {
-                    FeedResponse<TestObject> response = await thinClientIterator.ReadNextAsync();
-                    thinClientResults.AddRange(response);
+                    FeedResponse<TestObject> response = await queryPlanIterator.ReadNextAsync();
+                    queryPlanResults.AddRange(response);
 
                     string diagnostics = response.Diagnostics.ToString();
-                    Assert.IsTrue(diagnostics.Contains("|F4"), "Should use ThinClient mode");
-                    AssertExcludedRegionsNotInDiagnostics(diagnostics);
+                    Assert.IsFalse(diagnostics.Contains("ThinClientStoreModel"), "Should NOT use ThinClient mode");
                 }
 
                 // Verify all items are returned
                 int foundCount = createdItems.Count(created =>
-                    thinClientResults.Any(r => r.Id == created.Id));
+                    queryPlanResults.Any(r => r.Id == created.Id));
                 Assert.AreEqual(totalExpected, foundCount,
                     $"Should find all {totalExpected} test items in fanout results, found {foundCount}");
 
@@ -1805,19 +1920,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     gatewayResults.AddRange(response);
                 }
 
-                // ThinClient and Gateway should return the same item count
-                Assert.AreEqual(gatewayResults.Count, thinClientResults.Count,
-                    $"ThinClient ({thinClientResults.Count}) and Gateway ({gatewayResults.Count}) should return the same number of items.");
+                // QueryPlan client and Gateway should return the same item count
+                Assert.AreEqual(gatewayResults.Count, queryPlanResults.Count,
+                    $"QueryPlan client ({queryPlanResults.Count}) and Gateway ({gatewayResults.Count}) should return the same number of items.");
 
                 // Verify both results contain the same item IDs
-                HashSet<string> thinClientIds = new HashSet<string>(thinClientResults.Select(r => r.Id));
+                HashSet<string> queryPlanIds = new HashSet<string>(queryPlanResults.Select(r => r.Id));
                 HashSet<string> gatewayIds = new HashSet<string>(gatewayResults.Select(r => r.Id));
-                Assert.IsTrue(thinClientIds.SetEquals(gatewayIds),
-                    "ThinClient and Gateway should return the same set of items.");
+                Assert.IsTrue(queryPlanIds.SetEquals(gatewayIds),
+                    "QueryPlan client and Gateway should return the same set of items.");
             }
             finally
             {
-                Environment.SetEnvironmentVariable(ConfigurationManager.BypassQueryParsing, null);
 
                 foreach (TestObject item in items)
                 {
