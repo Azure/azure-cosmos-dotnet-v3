@@ -3349,6 +3349,98 @@ RAND()
   </Result>
   <Result>
     <Input>
+      <Description>RegexReplace</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "RegexReplace"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": "Hell1 World"
+      }
+    },
+    {
+      "Literal": {
+        "Value": "\\d"
+      }
+    },
+    {
+      "Literal": {
+        "Value": "o"
+      }
+    },
+    {
+      "Literal": {
+        "Value": "imsx"
+      }
+    }
+  ],
+  "IsUdf": false
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[RegexReplace("Hell1 World", "\\d", "o", "imsx")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+RegexReplace(
+    "Hell1 World", 
+    "\\d", 
+    "o", 
+    "imsx"
+)
+]]></PrettyPrint>
+      <HashCode>653884473</HashCode>
+      <ObfusctedQuery><![CDATA[RegexReplace("str1__11", "str2", "o", "str3")]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>RegexReplaceAll</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "RegexReplaceAll"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": "Adam12Bella14David16Eric18"
+      }
+    },
+    {
+      "Literal": {
+        "Value": "[a-z]+"
+      }
+    },
+    {
+      "Literal": {
+        "Value": "Id: "
+      }
+    },
+    {
+      "Literal": {
+        "Value": "imsx"
+      }
+    }
+  ],
+  "IsUdf": false
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[RegexReplaceAll("Adam12Bella14David16Eric18", "[a-z]+", "Id: ", "imsx")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+RegexReplaceAll(
+    "Adam12Bella14David16Eric18", 
+    "[a-z]+", 
+    "Id: ", 
+    "imsx"
+)
+]]></PrettyPrint>
+      <HashCode>-687090482</HashCode>
+      <ObfusctedQuery><![CDATA[RegexReplaceAll("str1__26", "str2", "str3", "str4")]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description>REPLACE</Description>
       <SqlObject><![CDATA[{
   "Name": {

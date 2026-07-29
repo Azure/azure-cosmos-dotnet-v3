@@ -886,6 +886,22 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Rand)),
                 new SqlObjectVisitorInput(
+                SqlFunctionCallScalarExpression.Names.RegexReplace,
+                SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Identifiers.RegexReplace,
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("Hell1 World")),
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("\\d")),
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("o")),
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("imsx")))),
+                new SqlObjectVisitorInput(
+                SqlFunctionCallScalarExpression.Names.RegexReplaceAll,
+                SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Identifiers.RegexReplaceAll,
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("Adam12Bella14David16Eric18")),
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("[a-z]+")),
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("Id: ")),
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("imsx")))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Replace,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Replace,
