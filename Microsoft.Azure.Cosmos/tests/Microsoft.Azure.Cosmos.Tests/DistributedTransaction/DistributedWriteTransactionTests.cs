@@ -221,7 +221,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             await new DistributedWriteTransactionCore(contextMock.Object)
                 .CreateItem(BuildMockContainer(), new PartitionKey("pk"), "item-id", new TestItem())
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual(ResourceType.DistributedTransactionBatch, capturedResourceType);
             Assert.AreEqual(OperationType.CommitDistributedTransaction, capturedOperationType);
@@ -257,7 +257,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             await new DistributedWriteTransactionCore(contextMock.Object)
                 .CreateItem(BuildMockContainer(), new PartitionKey("pk"), "item-id", new TestItem())
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
             Assert.IsNotNull(capturedToken, "Idempotency token header must be set.");
             Assert.IsTrue(Guid.TryParse(capturedToken, out _), "Idempotency token must be a valid GUID.");
@@ -297,7 +297,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             DistributedTransactionResponse response = await new DistributedWriteTransactionCore(contextMock.Object)
                 .CreateItem(BuildMockContainer(), new PartitionKey("pk"), "item-id", new TestItem())
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
             Assert.AreNotEqual(Guid.Empty, response.IdempotencyToken, "Response must carry the idempotency token.");
         }
@@ -334,7 +334,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .CreateItem(BuildMockContainer(), new PartitionKey("pk1"), "id1", new TestItem("id1"))
                 .ReplaceItem(BuildMockContainer(), new PartitionKey("pk2"), "id2", new TestItem("id2"))
                 .DeleteItem(BuildMockContainer(), new PartitionKey("pk3"), "id3")
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement ops = doc.RootElement.GetProperty("operations");
@@ -343,6 +343,169 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 Assert.AreEqual(i, ops[i].GetProperty("index").GetInt32(),
                     $"Operation at position {i} should have index {i}.");
+            }
+        }
+
+        [TestMethod]
+        [Description("When server operationResponses arrive out-of-order, the SDK reorders them by index so response[i].Index == i.")]
+        public async Task CommitAsync_OutOfOrderOperationResponses_SortedByIndex()
+        {
+            string capturedRequestJson = null;
+
+            // Wire response has indices in order [3,4,1,2,0] — deliberately shuffled.
+            const string mockResponseJson =
+                @"{""operationResponses"":[{""index"":3,""statusCode"":201},{""index"":4,""statusCode"":201},{""index"":1,""statusCode"":201},{""index"":2,""statusCode"":201},{""index"":0,""statusCode"":201}]}";
+
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
+            contextMock
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<PartitionKey?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns<string, ResourceType, OperationType, RequestOptions, ContainerInternal, PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
+                    (uri, resType, opType, opts, container, pk, itemId, stream, enricher, trace, ct) =>
+                    {
+                        using MemoryStream ms = new MemoryStream();
+                        stream.CopyTo(ms);
+                        capturedRequestJson = Encoding.UTF8.GetString(ms.ToArray());
+                        return Task.FromResult(new ResponseMessage(HttpStatusCode.OK)
+                        {
+                            Content = new MemoryStream(Encoding.UTF8.GetBytes(mockResponseJson))
+                        });
+                    });
+
+            DistributedTransactionResponse response = await new DistributedWriteTransactionCore(contextMock.Object)
+                .CreateItem(BuildMockContainer(), new PartitionKey("pk0"), "id0", new TestItem("id0"))
+                .ReplaceItem(BuildMockContainer(), new PartitionKey("pk1"), "id1", new TestItem("id1"))
+                .DeleteItem(BuildMockContainer(), new PartitionKey("pk2"), "id2")
+                .PatchItem(BuildMockContainer(), new PartitionKey("pk3"), "id3", new[] { PatchOperation.Add("/value", "v3") })
+                .UpsertItem(BuildMockContainer(), new PartitionKey("pk4"), "id4", new TestItem("id4"))
+                .ExecuteTransactionAsync(CancellationToken.None);
+
+            // Verify request indices are 0-based and ordered.
+            using JsonDocument requestDoc = JsonDocument.Parse(capturedRequestJson);
+            JsonElement requestOps = requestDoc.RootElement.GetProperty("operations");
+            Assert.AreEqual(5, requestOps.GetArrayLength());
+            for (int i = 0; i < 5; i++)
+            {
+                Assert.AreEqual(i, requestOps[i].GetProperty("index").GetInt32());
+            }
+
+            // After SDK reordering, response[i].Index must equal i.
+            Assert.AreEqual(5, response.Count);
+            for (int i = 0; i < response.Count; i++)
+            {
+                Assert.AreEqual(i, response[i].Index,
+                    $"Response[{i}] must have Index {i} after SDK reordering.");
+                Assert.AreEqual(HttpStatusCode.Created, response[i].StatusCode);
+            }
+        }
+
+        [TestMethod]
+        [Description("Smoke test: a commit with 100+ write operations whose server operationResponses arrive " +
+                     "out-of-order is reordered by the SDK so response[i].Index == i for every operation.")]
+        public async Task CommitAsync_ManyOperations_OutOfOrderResponses_SortedByIndex()
+        {
+            const int OperationCount = 128;
+
+            // Server returns the per-operation responses in a deterministically-shuffled (out-of-order) sequence.
+            int[] shuffledIndices = BuildShuffledIndices(OperationCount, seed: 7);
+            Assert.IsTrue(
+                IsOutOfOrder(shuffledIndices),
+                "Wire order must be shuffled for this smoke test to be meaningful.");
+
+            string responseJson = BuildOperationResponsesJson(shuffledIndices, statusCode: (int)HttpStatusCode.Created);
+
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
+            contextMock
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<PartitionKey?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new MemoryStream(Encoding.UTF8.GetBytes(responseJson))
+                });
+
+            DistributedWriteTransactionCore tx = new DistributedWriteTransactionCore(contextMock.Object);
+            for (int i = 0; i < OperationCount; i++)
+            {
+                tx.CreateItem(BuildMockContainer(), new PartitionKey($"pk{i}"), $"id{i}", new TestItem($"id{i}"));
+            }
+
+            DistributedTransactionResponse response = await tx.ExecuteTransactionAsync(CancellationToken.None);
+
+            Assert.IsTrue(response.IsSuccessStatusCode);
+            Assert.AreEqual(OperationCount, response.Count);
+            for (int i = 0; i < response.Count; i++)
+            {
+                Assert.AreEqual(i, response[i].Index,
+                    $"Response[{i}] must have Index {i} after SDK reordering.");
+                Assert.AreEqual(HttpStatusCode.Created, response[i].StatusCode);
+            }
+        }
+
+        [TestMethod]
+        [Description("Fail-closed: when the server response repeats an operation index (not a complete permutation " +
+                     "of 0..n-1), the SDK cannot map results back to requests and returns HTTP 500 instead of " +
+                     "surfacing misaligned data.")]
+        public async Task CommitAsync_DuplicateOperationIndex_FailsClosed()
+        {
+            // Three operations, but the response repeats index 1 and omits index 2 — an invalid permutation.
+            int[] indices = new[] { 0, 1, 1 };
+            string responseJson = BuildOperationResponsesJson(indices, statusCode: (int)HttpStatusCode.Created);
+
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
+            contextMock
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<PartitionKey?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new MemoryStream(Encoding.UTF8.GetBytes(responseJson))
+                });
+
+            DistributedTransactionResponse response = await new DistributedWriteTransactionCore(contextMock.Object)
+                .CreateItem(BuildMockContainer(), new PartitionKey("pk0"), "id0", new TestItem("id0"))
+                .CreateItem(BuildMockContainer(), new PartitionKey("pk1"), "id1", new TestItem("id1"))
+                .CreateItem(BuildMockContainer(), new PartitionKey("pk2"), "id2", new TestItem("id2"))
+                .ExecuteTransactionAsync(CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.InternalServerError, response.StatusCode,
+                "A duplicate operation index must fail closed with HTTP 500.");
+            Assert.IsFalse(response.IsSuccessStatusCode);
+
+            // The unmappable payload is discarded and replaced with uniform fail-closed placeholders,
+            // one per submitted operation.
+            Assert.AreEqual(3, response.Count);
+            for (int i = 0; i < response.Count; i++)
+            {
+                Assert.AreEqual(HttpStatusCode.InternalServerError, response[i].StatusCode);
             }
         }
 
@@ -380,7 +543,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .DeleteItem(BuildMockContainer(), new PartitionKey("pk"), "delete")
                 .PatchItem(BuildMockContainer(), new PartitionKey("pk"), "patch", new[] { PatchOperation.Add("/value", "v") })
                 .UpsertItem(BuildMockContainer(), new PartitionKey("pk"), "upsert", new TestItem("upsert"))
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement ops = doc.RootElement.GetProperty("operations");
@@ -422,7 +585,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             DistributedTransactionResponse response = await new DistributedWriteTransactionCore(contextMock.Object)
                 .CreateItem(BuildMockContainer(), new PartitionKey("pk1"), "id1", new TestItem("id1"))
                 .CreateItem(BuildMockContainer(), new PartitionKey("pk2"), "id2", new TestItem("id2"))
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
             Assert.IsTrue(response.IsSuccessStatusCode);
@@ -450,7 +613,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             DistributedTransactionResponse response = await new DistributedWriteTransactionCore(contextMock.Object)
                 .CreateItem(BuildMockContainer(), new PartitionKey("pk"), "item-id", new TestItem())
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual(HttpStatusCode.Conflict, response.StatusCode);
             Assert.IsFalse(response.IsSuccessStatusCode);
@@ -464,7 +627,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             DistributedWriteTransaction tx = this.NewTransaction();
 
             InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
-                () => tx.CommitTransactionAsync(CancellationToken.None));
+                () => tx.ExecuteTransactionAsync(CancellationToken.None));
 
             Assert.IsTrue(ex.Message.Contains("zero operations"), $"Unexpected message: {ex.Message}");
         }
@@ -494,12 +657,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .CreateItem(BuildMockContainer(), new PartitionKey("pk"), "item-id", new TestItem());
 
             // First commit should succeed
-            DistributedTransactionResponse response = await tx.CommitTransactionAsync(CancellationToken.None);
+            DistributedTransactionResponse response = await tx.ExecuteTransactionAsync(CancellationToken.None);
             Assert.IsTrue(response.IsSuccessStatusCode);
 
             // Second commit must throw
             InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
-                () => tx.CommitTransactionAsync(CancellationToken.None));
+                () => tx.ExecuteTransactionAsync(CancellationToken.None));
             Assert.AreEqual(DistributedWriteTransactionCore.CommitAlreadyCalledMessage, ex.Message);
         }
 
@@ -526,12 +689,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .CreateItem(BuildMockContainer(), new PartitionKey("pk"), "item-id", new TestItem());
 
             // First commit returns an error (but the call was made — idempotency token was consumed)
-            DistributedTransactionResponse response = await tx.CommitTransactionAsync(CancellationToken.None);
+            DistributedTransactionResponse response = await tx.ExecuteTransactionAsync(CancellationToken.None);
             Assert.IsFalse(response.IsSuccessStatusCode);
 
             // Second commit must still throw — the token was already issued
             InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
-                () => tx.CommitTransactionAsync(CancellationToken.None));
+                () => tx.ExecuteTransactionAsync(CancellationToken.None));
             Assert.AreEqual(DistributedWriteTransactionCore.CommitAlreadyCalledMessage, ex.Message);
         }
 
@@ -569,13 +732,13 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             // First commit attempt: a transient network exception escapes to the caller.
             await Assert.ThrowsExceptionAsync<HttpRequestException>(
-                () => tx.CommitTransactionAsync(CancellationToken.None));
+                () => tx.ExecuteTransactionAsync(CancellationToken.None));
 
             // Second commit attempt: must throw InvalidOperationException, NOT re-attempt the network call.
             // The SDK has no way to know whether the first attempt's request reached the server,
             // so a retry with a new idempotency token would risk a double-commit.
             InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
-                () => tx.CommitTransactionAsync(CancellationToken.None));
+                () => tx.ExecuteTransactionAsync(CancellationToken.None));
             Assert.AreEqual(DistributedWriteTransactionCore.CommitAlreadyCalledMessage, ex.Message);
             Assert.AreEqual(1, invocationCount, "Second call must not re-attempt the network operation.");
         }
@@ -614,18 +777,18 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .CreateItem(BuildMockContainer(), new PartitionKey("pk"), "item-id", new TestItem());
 
             await Assert.ThrowsExceptionAsync<OperationCanceledException>(
-                () => tx.CommitTransactionAsync(cts.Token));
+                () => tx.ExecuteTransactionAsync(cts.Token));
 
             // Retry with a fresh CancellationToken should still be rejected.
             InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
-                () => tx.CommitTransactionAsync(CancellationToken.None));
+                () => tx.ExecuteTransactionAsync(CancellationToken.None));
             Assert.AreEqual(DistributedWriteTransactionCore.CommitAlreadyCalledMessage, ex.Message);
             Assert.AreEqual(1, invocationCount, "Second call must not re-attempt the network operation.");
         }
 
         [TestMethod]
         [Description("Verifies that only one of N concurrent callers wins the Interlocked.CompareExchange gate. " +
-                     "Uses Task.Run + ManualResetEventSlim so that all racers hit CommitTransactionAsync from " +
+                     "Uses Task.Run + ManualResetEventSlim so that all racers hit ExecuteTransactionAsync from " +
                      "separate thread-pool threads simultaneously, providing genuine concurrency coverage.")]
         public async Task CommitAsync_ConcurrentCalls_OnlyOneSucceeds()
         {
@@ -666,7 +829,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 tasks[i] = Task.Run(async () =>
                 {
                     gate.Wait();
-                    return await tx.CommitTransactionAsync(CancellationToken.None);
+                    return await tx.ExecuteTransactionAsync(CancellationToken.None);
                 });
             }
 
@@ -696,8 +859,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Description("CommitTransactionAsync must route through OperationHelperAsync with the correct operation name, OperationType, TraceComponent, and OTel operation name for the write path — ensuring the write path is distinct from the read path.")]
-        public async Task CommitTransactionAsync_RoutesThroughOperationHelper_WithExpectedWiring()
+        [Description("ExecuteTransactionAsync must route through OperationHelperAsync with the correct operation name, OperationType, TraceComponent, and OTel operation name for the write path — ensuring the write path is distinct from the read path.")]
+        public async Task ExecuteTransactionAsync_RoutesThroughOperationHelper_WithExpectedWiring()
         {
             string capturedOperationName = null;
             OperationType capturedOperationType = default;
@@ -732,19 +895,19 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             await new DistributedWriteTransactionCore(contextMock.Object)
                 .CreateItem(BuildMockContainer(), new PartitionKey("pk"), "id", new TestItem())
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
-            Assert.AreEqual($"{nameof(DistributedWriteTransaction)}.{nameof(DistributedWriteTransaction.CommitTransactionAsync)}", capturedOperationName);
+            Assert.AreEqual($"{nameof(DistributedWriteTransaction)}.{nameof(DistributedWriteTransaction.ExecuteTransactionAsync)}", capturedOperationName);
             Assert.AreEqual(OperationType.CommitDistributedTransaction, capturedOperationType);
             Assert.AreEqual(TraceComponent.Batch, capturedTraceComponent);
-            Assert.AreEqual(OpenTelemetryConstants.Operations.CommitDistributedWriteTransaction, capturedOTelOperationName);
+            Assert.AreEqual(OpenTelemetryConstants.Operations.ExecuteDistributedWriteTransaction, capturedOTelOperationName);
         }
 
         // Helpers
 
         /// <summary>
         /// Creates a transaction backed by a minimal context mock — suitable for
-        /// validation-only tests that do not invoke <see cref="DistributedWriteTransaction.CommitTransactionAsync"/>.
+        /// validation-only tests that do not invoke <see cref="DistributedWriteTransaction.ExecuteTransactionAsync"/>.
         /// </summary>
         private DistributedWriteTransaction NewTransaction()
         {
@@ -849,6 +1012,61 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 Content = new MemoryStream(Encoding.UTF8.GetBytes(json))
             };
+        }
+
+        /// <summary>
+        /// Builds an <c>operationResponses</c> JSON envelope from an explicit, ordered list of
+        /// per-operation indices (the wire order), each assigned the supplied HTTP status code.
+        /// </summary>
+        private static string BuildOperationResponsesJson(IReadOnlyList<int> indices, int statusCode)
+        {
+            List<string> results = new List<string>(indices.Count);
+            foreach (int index in indices)
+            {
+                results.Add($@"{{""index"":{index},""statusCode"":{statusCode}}}");
+            }
+
+            return $@"{{""operationResponses"":[{string.Join(",", results)}]}}";
+        }
+
+        /// <summary>
+        /// Returns the indices <c>0..count-1</c> in a deterministically-shuffled order so the
+        /// produced wire order is reproducibly out-of-order across test runs.
+        /// </summary>
+        private static int[] BuildShuffledIndices(int count, int seed)
+        {
+            int[] indices = new int[count];
+            for (int i = 0; i < count; i++)
+            {
+                indices[i] = i;
+            }
+
+            Random rng = new Random(seed);
+            for (int i = count - 1; i > 0; i--)
+            {
+                int j = rng.Next(i + 1);
+                int temp = indices[i];
+                indices[i] = indices[j];
+                indices[j] = temp;
+            }
+
+            return indices;
+        }
+
+        /// <summary>
+        /// Returns <c>true</c> when at least one element is not already in its sorted position.
+        /// </summary>
+        private static bool IsOutOfOrder(IReadOnlyList<int> indices)
+        {
+            for (int i = 0; i < indices.Count; i++)
+            {
+                if (indices[i] != i)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private sealed class TestItem

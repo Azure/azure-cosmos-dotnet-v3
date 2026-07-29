@@ -205,6 +205,56 @@ namespace Microsoft.Azure.Cosmos
         }
 
 
+        /// <summary>
+        /// When a thin-client request transparently falls back to the Gateway V1 HTTP path (because the
+        /// request is not thin-client-routable), it must send the <c>x-ms-noretry-449</c> opt-out header.
+        /// The thin-client path itself never sends the header (the proxy has no server-side 449 loop), but
+        /// the fall-back hits the real Gateway V1 which does; without the header the gateway would retry
+        /// the 449 server-side while the client-side loop also retries it — the double-retry this feature
+        /// removes.
+        /// </summary>
+        [TestMethod]
+        [Owner("aavasthy")]
+        public async Task ProcessMessageAsync_FallsBackToGatewayV1_SetsNoRetry449Header()
+        {
+            // Thin-client store client that must never be reached: without advertised thin-client
+            // locations the request is not thin-client-routable, so dispatch falls back to Gateway V1.
+            MockThinClientStoreClient thinClientStoreClient = new(
+                (request, resourceType, uri, endpoint, accountName, cache, ct) =>
+                    Task.FromResult(new DocumentServiceResponse(Stream.Null, new StoreResponseNameValueCollection(), HttpStatusCode.OK)));
+
+            DocumentServiceRequest capturedGatewayRequest = null;
+            Mock<CosmosHttpClient> mockHttpClient = new();
+            mockHttpClient
+                .Setup(c => c.SendHttpAsync(
+                    It.IsAny<Func<ValueTask<HttpRequestMessage>>>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<HttpTimeoutPolicy>(),
+                    It.IsAny<IClientSideRequestStatistics>(),
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<DocumentServiceRequest>()))
+                .Callback<Func<ValueTask<HttpRequestMessage>>, ResourceType, HttpTimeoutPolicy, IClientSideRequestStatistics, CancellationToken, DocumentServiceRequest>(
+                    (factory, resourceType, timeoutPolicy, stats, ct, dsr) => capturedGatewayRequest = dsr)
+                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("Response") });
+
+            ThinClientStoreModel storeModel = this.BuildStoreModel(
+                out _,
+                advertiseThinClientLocations: false,
+                httpClient: mockHttpClient.Object);
+            ReplaceThinClientStoreClientField(storeModel, thinClientStoreClient);
+
+            await storeModel.ProcessMessageAsync(CreateDocumentRequest(OperationType.Create));
+
+            Assert.IsNotNull(
+                capturedGatewayRequest,
+                "The request must fall back to the Gateway V1 HTTP path when thin-client locations are not advertised.");
+            Assert.AreEqual(
+                bool.TrueString,
+                capturedGatewayRequest.Headers[HttpConstants.HttpHeaders.NoRetryOn449StatusCode],
+                "A thin-client request that falls back to Gateway V1 must send x-ms-noretry-449 so the gateway does not also retry the 449 server-side.");
+        }
+
+
         [TestMethod]
         [Owner("aavasthy")]
         public async Task ProcessMessageAsync_PPAFEnabled_CallsLocationOverride()
@@ -241,7 +291,7 @@ namespace Microsoft.Azure.Cosmos
             // A fully-mocked routing setup is required because the thin-client path always
             // pre-resolves PKR for partitioned, non-master requests.
             Mock<ClientCollectionCache> mockCollectionCache = new(
-                Mock.Of<ISessionContainer>(), storeModel, null, null, null, false);
+                Mock.Of<ISessionContainer>(), storeModel, null, null, null, false, null);
             ContainerProperties containerProperties = new("test", "/pk");
             typeof(ContainerProperties)
                 .GetProperty("ResourceId", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)
@@ -251,7 +301,7 @@ namespace Microsoft.Azure.Cosmos
                 .ReturnsAsync(containerProperties);
 
             Mock<PartitionKeyRangeCache> mockPartitionKeyRangeCache = new(
-                null, storeModel, mockCollectionCache.Object, endpointManager, false, false);
+                null, storeModel, mockCollectionCache.Object, endpointManager, false, false, null);
             PartitionKeyRange pkRange = new() { Id = "0", MinInclusive = "", MaxExclusive = "FF" };
             CollectionRoutingMap routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(
                 new List<PartitionKeyRange> { pkRange }.Select(r => Tuple.Create(r, (ServiceIdentity)null)),
@@ -311,7 +361,7 @@ namespace Microsoft.Azure.Cosmos
             // The thin-client path always pre-resolves PKR for partitioned, non-master requests,
             // independent of PPAF, so a full routing mock setup is required.
             Mock<ClientCollectionCache> mockCollectionCache = new(
-                Mock.Of<ISessionContainer>(), storeModel, null, null, null, false);
+                Mock.Of<ISessionContainer>(), storeModel, null, null, null, false, null);
             ContainerProperties containerProperties = new("test", "/pk");
             typeof(ContainerProperties)
                 .GetProperty("ResourceId", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)
@@ -321,7 +371,7 @@ namespace Microsoft.Azure.Cosmos
                 .ReturnsAsync(containerProperties);
 
             Mock<PartitionKeyRangeCache> mockPartitionKeyRangeCache = new(
-                null, storeModel, mockCollectionCache.Object, endpointManager, false, false);
+                null, storeModel, mockCollectionCache.Object, endpointManager, false, false, null);
             PartitionKeyRange pkRange = new() { Id = "0", MinInclusive = "", MaxExclusive = "FF" };
             CollectionRoutingMap routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(
                 new List<PartitionKeyRange> { pkRange }.Select(r => Tuple.Create(r, (ServiceIdentity)null)),
@@ -431,9 +481,9 @@ namespace Microsoft.Azure.Cosmos
                 userAgentContainer);
 
             ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(
-                sessionContainer, storeModel, null, null, null, false).Object;
+                sessionContainer, storeModel, null, null, null, false, null).Object;
             PartitionKeyRangeCache partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(
-                null, storeModel, clientCollectionCache, endpointManager, false, false).Object;
+                null, storeModel, clientCollectionCache, endpointManager, false, false, null).Object;
             storeModel.SetCaches(partitionKeyRangeCache, clientCollectionCache);
 
             return storeModel;
