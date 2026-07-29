@@ -240,14 +240,48 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("MultiRegionAad")]
-        public void AadBackgroundTokenRefreshInterval()
+        public async Task AadBackgroundTokenRefreshIntervalAsync()
         {
-            TokenCredentialCache tokenCredentialCache =
-                ((AuthorizationTokenProviderTokenCredential)this.aadClient.AuthorizationTokenProvider).tokenCredentialCache;
+            // Public-surface half: an explicitly configured refresh interval is the one the client runs
+            // with, and the client still authenticates against the live account with it in place.
+            // CosmosClient.ClientOptions is the supported way to observe this, so this half cannot break
+            // on an internal refactor.
+            TimeSpan refreshInterval = TimeSpan.FromMinutes(5);
+            using CosmosClient client = TestCommon.CreateAadCosmosClient(new CosmosClientOptions()
+            {
+                TokenCredentialBackgroundRefreshInterval = refreshInterval,
+            });
+
+            Assert.IsNotNull(client, "Live AAD account/credentials are not configured.");
+            Assert.AreEqual(
+                refreshInterval,
+                client.ClientOptions.TokenCredentialBackgroundRefreshInterval,
+                "The configured background refresh interval should be the one the client runs with.");
+
+            ContainerResponse containerResponse = await client.GetContainer(DatabaseId, ContainerId).ReadContainerAsync();
+            Assert.AreEqual(
+                HttpStatusCode.OK,
+                containerResponse.StatusCode,
+                "An Entra-authenticated client with a background refresh interval configured should still serve requests.");
+
+            // Internal-surface half: when no interval is configured (this.aadClient), the SDK derives one
+            // from the real Entra token's lifetime. That derived value is what makes this worth running
+            // against a live account -- a real token, not a fabricated one -- and CosmosClientOptions
+            // cannot express it, so there is no public accessor to read it from.
+            //
+            // Reach into the auth plumbing behind an explicit type check rather than a direct cast: if the
+            // provider type ever changes, this fails with an actionable message instead of an
+            // InvalidCastException that reads like a test bug.
+            AuthorizationTokenProviderTokenCredential tokenCredentialProvider =
+                this.aadClient.AuthorizationTokenProvider as AuthorizationTokenProviderTokenCredential;
+
+            Assert.IsNotNull(
+                tokenCredentialProvider,
+                $"A TokenCredential-based CosmosClient is expected to authenticate through {nameof(AuthorizationTokenProviderTokenCredential)}, but it used '{this.aadClient.AuthorizationTokenProvider?.GetType().Name}'. If the AAD auth plumbing was refactored intentionally, update this assertion instead of reading the failure as a live-account regression.");
 
             Assert.IsTrue(
-                tokenCredentialCache.BackgroundTokenCredentialRefreshInterval.HasValue,
-                "A background refresh interval should be configured for the token credential cache.");
+                tokenCredentialProvider.tokenCredentialCache.BackgroundTokenCredentialRefreshInterval.HasValue,
+                "The SDK should derive a background refresh interval from the live Entra token acquired during test setup.");
         }
 
         private CosmosClient CreateAadClient(ConnectionMode connectionMode)
