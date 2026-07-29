@@ -5,7 +5,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Net;
+    using System.Reflection;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -22,7 +24,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     ///
     /// When the endpoint / AAD credentials are not configured, or the test database/container has not been
     /// pre-created, the tests skip cleanly via <see cref="Assert.Inconclusive(string)"/> so the suite stays
-    /// green until the account is provisioned.
+    /// green until the account is provisioned. That skip behavior is for local, opt-in runs only: CI sets
+    /// <c>COSMOSDB_AAD_STRICT=true</c>, which turns every one of those unsatisfied prerequisites into a hard
+    /// failure so the dedicated AAD lane can never go green without actually exercising Entra auth.
     ///
     /// Because the account is AAD-only and the service principal only holds the data-plane role
     /// (Cosmos DB Built-in Data Contributor), the database/container cannot be created at runtime (that is a
@@ -35,6 +39,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private const string DatabaseId = "AadLiveTestDb";
         private const string ContainerId = "AadLiveTestContainer";
 
+        /// <summary>
+        /// The number of <c>MultiRegionAad</c> test cases in this class, counting each
+        /// <see cref="DataRowAttribute"/> separately. The CI lane gates on exactly this many passing with
+        /// zero skipped/inconclusive results, so keep the <c>ExpectedTestCount</c> parameter in
+        /// <c>templates/build-test-aad.yml</c> in sync when adding or removing cases.
+        /// </summary>
+        internal const int ExpectedTestCaseCount = 8;
+
         private CosmosClient aadClient;
         private Container container;
 
@@ -43,12 +55,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             if (string.IsNullOrEmpty(TestCommon.GetAadAccountEndpoint()))
             {
-                Assert.Inconclusive("Set COSMOSDB_MULTI_REGION_AAD (or COSMOSDB_MULTI_REGION) to the AAD account endpoint to run the live AAD tests.");
+                CosmosAadLiveTests.SkipOrFail("Set COSMOSDB_MULTI_REGION_AAD (or COSMOSDB_MULTI_REGION) to the AAD account endpoint to run the live AAD tests.");
             }
 
             if (TestCommon.GetAadTokenCredential() == null)
             {
-                Assert.Inconclusive("Set AZURE_TENANT_ID / AZURE_CLIENT_ID / AZURE_CLIENT_SECRET (or COSMOSDB_AAD_USE_DEFAULT_CREDENTIAL=true) to run the live AAD tests.");
+                CosmosAadLiveTests.SkipOrFail("Set AZURE_TENANT_ID / AZURE_CLIENT_ID / AZURE_CLIENT_SECRET (or COSMOSDB_AAD_USE_DEFAULT_CREDENTIAL=true) to run the live AAD tests.");
             }
 
             this.aadClient = TestCommon.CreateAadCosmosClient();
@@ -57,18 +69,40 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // The account is AAD-only and the service principal is data-plane only, so the
             // database/container must already exist. Verify with a data-plane metadata read and skip
-            // (rather than fail) when the resources or the role assignment are not yet in place.
+            // (locally) or fail (in strict/CI mode) when the resources or the role assignment are not in place.
             try
             {
                 await this.container.ReadContainerAsync();
             }
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
-                Assert.Inconclusive($"Pre-create database '{DatabaseId}' and container '{ContainerId}' (/pk) on the AAD account before running these tests.");
+                CosmosAadLiveTests.SkipOrFail($"Pre-create database '{DatabaseId}' and container '{ContainerId}' (/pk) on the AAD account before running these tests. Response: {ex.Message}");
             }
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.Forbidden || ex.StatusCode == HttpStatusCode.Unauthorized)
             {
-                Assert.Inconclusive("The AAD principal is missing the Cosmos DB data-plane role assignment (Cosmos DB Built-in Data Contributor).");
+                CosmosAadLiveTests.SkipOrFail($"The AAD principal is missing the Cosmos DB data-plane role assignment (Cosmos DB Built-in Data Contributor). Response: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Reports an unsatisfied prerequisite for the live AAD tests.
+        ///
+        /// By default the case is skipped via <see cref="Assert.Inconclusive(string)"/>, which keeps local,
+        /// opt-in runs green for developers who have not provisioned the AAD account. When
+        /// <c>COSMOSDB_AAD_STRICT</c> is set (the dedicated CI lane does so), the same condition becomes a
+        /// hard failure instead: an inconclusive run still lets MSTest exit successfully, so without this a
+        /// missing role assignment, a stale endpoint, or a missing fixture could leave the lane green
+        /// without validating a single Entra-authenticated operation.
+        /// </summary>
+        private static void SkipOrFail(string message)
+        {
+            if (TestCommon.IsAadStrictMode())
+            {
+                Assert.Fail($"COSMOSDB_AAD_STRICT is enabled, so an unsatisfied live AAD prerequisite is a failure rather than a skip: {message}");
+            }
+            else
+            {
+                Assert.Inconclusive(message);
             }
         }
 
@@ -226,6 +260,50 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClient client = TestCommon.CreateAadCosmosClient(options);
             Assert.IsNotNull(client, "Live AAD account/credentials are not configured.");
             return client;
+        }
+    }
+
+    /// <summary>
+    /// Guards the constant the CI result gate is built on.
+    ///
+    /// The live AAD lane requires exactly <see cref="CosmosAadLiveTests.ExpectedTestCaseCount"/> passing
+    /// cases with zero skipped/inconclusive results (see the <c>ExpectedTestCount</c> parameter in
+    /// <c>templates/build-test-aad.yml</c>). This test runs in the ordinary emulator lane -- it needs no
+    /// live account -- and fails with an actionable message the moment a case is added or removed, so the
+    /// expected count cannot silently drift away from what the pipeline enforces.
+    /// </summary>
+    [TestClass]
+    public class CosmosAadLiveTestsGateTests
+    {
+        private const string MultiRegionAadCategory = "MultiRegionAad";
+
+        [TestMethod]
+        public void ExpectedTestCaseCountMatchesDiscoveredTestCases()
+        {
+            int discovered = 0;
+            foreach (MethodInfo method in typeof(CosmosAadLiveTests).GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+            {
+                if (method.GetCustomAttribute<TestMethodAttribute>() == null)
+                {
+                    continue;
+                }
+
+                IEnumerable<string> categories = method
+                    .GetCustomAttributes<TestCategoryAttribute>()
+                    .SelectMany(attribute => attribute.TestCategories);
+
+                Assert.IsTrue(
+                    categories.Contains(MultiRegionAadCategory),
+                    $"{method.Name} must be tagged [TestCategory(\"{MultiRegionAadCategory}\")] so it runs in the live AAD lane that the CI result gate validates.");
+
+                int dataRowCount = method.GetCustomAttributes<DataRowAttribute>().Count();
+                discovered += dataRowCount == 0 ? 1 : dataRowCount;
+            }
+
+            Assert.AreEqual(
+                CosmosAadLiveTests.ExpectedTestCaseCount,
+                discovered,
+                $"The number of {MultiRegionAadCategory} test cases changed. Update CosmosAadLiveTests.ExpectedTestCaseCount and the ExpectedTestCount parameter in templates/build-test-aad.yml together, otherwise the live AAD lane's result gate will reject an otherwise healthy run.");
         }
     }
 }

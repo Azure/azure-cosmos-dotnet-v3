@@ -205,6 +205,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return !string.IsNullOrWhiteSpace(value) && !value.StartsWith("$(", StringComparison.Ordinal);
         }
 
+        /// <summary>
+        /// True when the live AAD tests must fail closed instead of skipping when a prerequisite (endpoint,
+        /// credential, data-plane role assignment, pre-created database/container) is not satisfied.
+        ///
+        /// Off by default so a developer without a provisioned AAD account still gets a green local run.
+        /// The dedicated CI lane sets COSMOSDB_AAD_STRICT=true so a missing role assignment, a stale
+        /// endpoint, or a missing fixture can never leave the lane green without validating a single
+        /// Entra-authenticated operation.
+        /// </summary>
+        internal static bool IsAadStrictMode()
+        {
+            return Cosmos.ConfigurationManager.GetEnvironmentVariable<bool>("COSMOSDB_AAD_STRICT", false);
+        }
+
 
         /// <summary>
         /// Creates a <see cref="CosmosClient"/> for the live-account AAD tests using the endpoint parsed from
