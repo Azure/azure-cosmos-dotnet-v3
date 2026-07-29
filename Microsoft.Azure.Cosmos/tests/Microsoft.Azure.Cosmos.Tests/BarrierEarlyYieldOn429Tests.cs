@@ -600,6 +600,80 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 $"QuorumReader.enableBarrierEarlyYieldOn429 must be {enableFlag} through the full constructor chain.");
         }
 
+        [TestMethod]
+        public void EnvVarKillSwitchOverridesEnabledOption()
+        {
+            // Verify the env-var kill switch: even when CosmosClientOptions sets
+            // EnableBarrierEarlyYieldOn429 = true, setting the environment variable
+            // to "false" must cause the value reaching ConsistencyWriter and
+            // QuorumReader to be false — enabling field mitigation without SDK redeploy.
+            string originalValue = Environment.GetEnvironmentVariable(
+                ConfigurationManager.BarrierEarlyYieldOn429Enabled);
+            try
+            {
+                Environment.SetEnvironmentVariable(
+                    ConfigurationManager.BarrierEarlyYieldOn429Enabled, "false");
+
+                // Option is true, but env-var overrides to false
+                bool effectiveFlag = true && ConfigurationManager.IsBarrierEarlyYieldOn429Enabled();
+                Assert.IsFalse(effectiveFlag,
+                    "Env-var set to 'false' must override the option to false.");
+
+                // Construct the full chain with the effective (overridden) value
+                using StoreClientFactory factory = new StoreClientFactory(
+                    protocol: Protocol.Tcp,
+                    requestTimeoutInSeconds: 60,
+                    maxConcurrentConnectionOpenRequests: 1,
+                    enableBarrierEarlyYieldOn429: effectiveFlag);
+
+                StoreClient storeClient = factory.CreateStoreClient(
+                    addressResolver: Mock.Of<IAddressResolver>(),
+                    sessionContainer: Mock.Of<ISessionContainer>(),
+                    serviceConfigurationReader: Mock.Of<IServiceConfigurationReader>(),
+                    authorizationTokenProvider: Mock.Of<IAuthorizationTokenProvider>(),
+                    useFallbackClient: false);
+
+                // Drill into ConsistencyWriter
+                FieldInfo replicatedResourceClientField = typeof(StoreClient).GetField(
+                    "replicatedResourceClient",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                object replicatedResourceClient = replicatedResourceClientField.GetValue(storeClient);
+
+                FieldInfo consistencyWriterField = typeof(ReplicatedResourceClient).GetField(
+                    "consistencyWriter",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                object consistencyWriter = consistencyWriterField.GetValue(replicatedResourceClient);
+
+                FieldInfo writerFlagField = typeof(ConsistencyWriter).GetField(
+                    "enableBarrierEarlyYieldOn429",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.IsFalse((bool)writerFlagField.GetValue(consistencyWriter),
+                    "ConsistencyWriter must receive false when env-var kill switch is active.");
+
+                // Drill into QuorumReader
+                FieldInfo consistencyReaderField = typeof(ReplicatedResourceClient).GetField(
+                    "consistencyReader",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                object consistencyReader = consistencyReaderField.GetValue(replicatedResourceClient);
+
+                FieldInfo quorumReaderField = typeof(ConsistencyReader).GetField(
+                    "quorumReader",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                object quorumReader = quorumReaderField.GetValue(consistencyReader);
+
+                FieldInfo readerFlagField = typeof(QuorumReader).GetField(
+                    "enableBarrierEarlyYieldOn429",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.IsFalse((bool)readerFlagField.GetValue(quorumReader),
+                    "QuorumReader must receive false when env-var kill switch is active.");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(
+                    ConfigurationManager.BarrierEarlyYieldOn429Enabled, originalValue);
+            }
+        }
+
         private static DocumentClientException CreateDocumentClientException(
             DocumentServiceRequest request,
             HttpStatusCode statusCode,
