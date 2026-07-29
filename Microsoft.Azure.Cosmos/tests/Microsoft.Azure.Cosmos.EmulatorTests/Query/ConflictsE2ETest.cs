@@ -233,7 +233,11 @@
             List<(CosmosClient Client, Container Container)> clients = new();
             foreach (Endpoint endpoint in endpoints)
             {
-                CosmosClient client = new CosmosClient(endpoint.Url, key, new CosmosClientOptions { ConnectionMode = endpoint.ConnectionMode });
+                CosmosClient client = new CosmosClient(endpoint.Url, key, new CosmosClientOptions 
+                { 
+                    ConnectionMode = endpoint.ConnectionMode,
+                    HttpClientFactory = () => SDK.EmulatorTests.TestCommon.CreateHttpClientWithCertificateBypass()
+                });
 
                 if (endpointIndex == 0)
                 {

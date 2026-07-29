@@ -84,6 +84,47 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return Cosmos.ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", string.Empty);
         }
 
+        /// <summary>
+        /// Gets the connection mode from environment variable.
+        /// Allows tests to be easily switched between Gateway and Direct mode.
+        /// </summary>
+        /// <returns>ConnectionMode.Gateway if AZURE_COSMOS_EMULATOR_CONNECTION_MODE=Gateway, otherwise null (use default/caller-specified mode)</returns>
+        private static ConnectionMode? GetConnectionModeFromEnvironment()
+        {
+            string connectionModeEnv = Cosmos.ConfigurationManager.GetEnvironmentVariable<string>("AZURE_COSMOS_EMULATOR_CONNECTION_MODE", string.Empty);
+            if (string.Equals(connectionModeEnv, "Gateway", StringComparison.OrdinalIgnoreCase))
+            {
+                return ConnectionMode.Gateway;
+            }
+            else if (string.Equals(connectionModeEnv, "Direct", StringComparison.OrdinalIgnoreCase))
+            {
+                return ConnectionMode.Direct;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Creates an HttpClient that bypasses SSL certificate validation for local emulator testing.
+        /// This is needed when testing against emulators (like vNext) that use self-signed certificates.
+        /// </summary>
+        internal static HttpClient CreateHttpClientWithCertificateBypass()
+        {
+            var handler = new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = (message, cert, chain, errors) =>
+                {
+                    // Only bypass validation for localhost/127.0.0.1 (emulator endpoints)
+                    if (message.RequestUri.Host == "localhost" || message.RequestUri.Host == "127.0.0.1")
+                    {
+                        return true;
+                    }
+                    // For non-local endpoints, use default validation
+                    return errors == System.Net.Security.SslPolicyErrors.None;
+                }
+            };
+            return new HttpClient(handler);
+        }
+
         internal static CosmosClientBuilder GetDefaultConfiguration(
             bool useCustomSeralizer = true,
             bool validatePartitionKeyRangeCalls = false,
@@ -100,7 +141,34 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (validatePartitionKeyRangeCalls)
             {
-                clientBuilder.WithHttpClientFactory(() => new HttpClient(new HttpHandlerMetaDataValidator()));
+                // Use SSL bypass handler that also validates metadata calls
+                var metadataValidator = new HttpHandlerMetaDataValidator();
+                metadataValidator.InnerHandler = new HttpClientHandler
+                {
+                    ServerCertificateCustomValidationCallback = (message, cert, chain, errors) =>
+                    {
+                        // Only bypass validation for localhost/127.0.0.1 (emulator endpoints)
+                        if (message.RequestUri.Host == "localhost" || message.RequestUri.Host == "127.0.0.1")
+                        {
+                            return true;
+                        }
+                        // For non-local endpoints, use default validation
+                        return errors == System.Net.Security.SslPolicyErrors.None;
+                    }
+                };
+                clientBuilder.WithHttpClientFactory(() => new HttpClient(metadataValidator));
+            }
+            else
+            {
+                // Use HttpClient that bypasses SSL certificate validation for local emulators
+                clientBuilder.WithHttpClientFactory(CreateHttpClientWithCertificateBypass);
+            }
+
+            // Apply connection mode from environment variable if set
+            ConnectionMode? envConnectionMode = GetConnectionModeFromEnvironment();
+            if (envConnectionMode == ConnectionMode.Gateway)
+            {
+                clientBuilder.WithConnectionModeGateway();
             }
 
             return clientBuilder;
@@ -115,6 +183,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration(useCustomSeralizer, validatePartitionKeyRangeCalls, accountEndpointOverride);
             customizeClientBuilder?.Invoke(cosmosClientBuilder);
 
+            // Environment variable takes precedence over any customization
+            ConnectionMode? envConnectionMode = GetConnectionModeFromEnvironment();
+            if (envConnectionMode == ConnectionMode.Gateway)
+            {
+                cosmosClientBuilder.WithConnectionModeGateway();
+            }
+            else if (envConnectionMode == ConnectionMode.Direct)
+            {
+                cosmosClientBuilder.WithConnectionModeDirect();
+            }
+
             CosmosClient client = cosmosClientBuilder.Build();
             Assert.IsNotNull(client.ClientOptions.Serializer);
             return client;
@@ -128,12 +207,40 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string authKey = resourceToken ?? ConfigurationManager.AppSettings["MasterKey"];
             string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
 
-            if (validatePartitionKeyRangeCalls &&
-                clientOptions != null &&
-                clientOptions.HttpClientFactory == null &&
-                clientOptions.SendingRequestEventArgs == null)
+            // Apply connection mode from environment variable if set
+            ConnectionMode? envConnectionMode = GetConnectionModeFromEnvironment();
+            if (envConnectionMode == ConnectionMode.Gateway && clientOptions != null)
             {
-                clientOptions.HttpClientFactory = () => new HttpClient(new HttpHandlerMetaDataValidator());
+                clientOptions.ConnectionMode = ConnectionMode.Gateway;
+            }
+
+            // Add SSL certificate bypass for local emulators (like vNext)
+            if (clientOptions != null && clientOptions.HttpClientFactory == null)
+            {
+                if (validatePartitionKeyRangeCalls)
+                {
+                    // Use SSL bypass handler that also validates metadata calls
+                    var metadataValidator = new HttpHandlerMetaDataValidator();
+                    metadataValidator.InnerHandler = new HttpClientHandler
+                    {
+                        ServerCertificateCustomValidationCallback = (message, cert, chain, errors) =>
+                        {
+                            // Only bypass validation for localhost/127.0.0.1 (emulator endpoints)
+                            if (message.RequestUri.Host == "localhost" || message.RequestUri.Host == "127.0.0.1")
+                            {
+                                return true;
+                            }
+                            // For non-local endpoints, use default validation
+                            return errors == System.Net.Security.SslPolicyErrors.None;
+                        }
+                    };
+                    clientOptions.HttpClientFactory = () => new HttpClient(metadataValidator);
+                }
+                else
+                {
+                    // Use HttpClient that bypasses SSL certificate validation for local emulators
+                    clientOptions.HttpClientFactory = CreateHttpClientWithCertificateBypass;
+                }
             }
 
             return new CosmosClient(endpoint, authKey, clientOptions);
@@ -147,7 +254,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             customizeClientBuilder?.Invoke(cosmosClientBuilder);
 
-            if (useGateway)
+            // Environment variable takes precedence, otherwise use the useGateway parameter
+            ConnectionMode? envConnectionMode = GetConnectionModeFromEnvironment();
+            if (envConnectionMode == ConnectionMode.Gateway || (envConnectionMode == null && useGateway))
             {
                 cosmosClientBuilder.WithConnectionModeGateway();
             }
@@ -195,13 +304,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //        throw new ArgumentException("tokenType");
             //}
 
+            // Environment variable takes precedence over useGateway parameter
+            // This allows vNext emulator (which only supports Gateway mode) to override Direct mode requests
+            ConnectionMode? envConnectionMode = GetConnectionModeFromEnvironment();
+            bool shouldUseGateway = (envConnectionMode == ConnectionMode.Gateway) || 
+                                   (envConnectionMode == null && useGateway);
+
             // DIRECT MODE has ReadFeed issues in the Public emulator
             ConnectionPolicy connectionPolicy = null;
-            if (useGateway)
+            if (shouldUseGateway)
             {
                 connectionPolicy = new ConnectionPolicy
                 {
                     ConnectionMode = ConnectionMode.Gateway,
+                    ConnectionProtocol = Protocol.Https,
                     RequestTimeout = TimeSpan.FromSeconds(timeoutInSeconds),
                     EnableEndpointDiscovery = enableEndpointDiscovery,
                     EnableReadRequestsFallback = enableReadRequestFallback,
@@ -236,10 +352,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Uri uri = new Uri(ConfigurationManager.AppSettings["GatewayEndpoint"]);
 
+            // Create HttpMessageHandler with SSL certificate bypass for local emulators (like vNext)
+            HttpClientHandler httpHandler = new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = (message, cert, chain, errors) =>
+                {
+                    // Only bypass validation for localhost/127.0.0.1 (emulator endpoints)
+                    if (message.RequestUri.Host == "localhost" || message.RequestUri.Host == "127.0.0.1")
+                    {
+                        return true;
+                    }
+                    // For non-local endpoints, use default validation
+                    return errors == System.Net.Security.SslPolicyErrors.None;
+                }
+            };
+
             DocumentClient client = new DocumentClient(
                 uri,
                 authKey,
-                null,
+                sendingRequestEventArgs: null,
                 connectionPolicy,
                 defaultConsistencyLevel,
                 new JsonSerializerSettings()
@@ -247,7 +378,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor
                 },
                 apiType,
-                recievedResponseEventHandler);
+                recievedResponseEventHandler,
+                httpHandler);
 
             client.EnsureValidClientAsync(NoOpTrace.Singleton).Wait();
             return client;
@@ -1513,6 +1645,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DocumentCollection col,
             RequestOptions requestOptions = null)
         {
+            // vNext emulator only supports single-partition collections
+            // Cap throughput to 10000 RU/s when Gateway mode environment variable is set
+            if (requestOptions?.OfferThroughput > 10000 && 
+                GetConnectionModeFromEnvironment() == ConnectionMode.Gateway)
+            {
+                requestOptions = new RequestOptions { OfferThroughput = 10000 };
+            }
+
             return await client.CreateDocumentCollectionAsync(
                 dbUri,
                 col,
@@ -1525,6 +1665,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DocumentCollection col,
             RequestOptions requestOptions = null)
         {
+            // vNext emulator only supports single-partition collections
+            // Cap throughput to 10000 RU/s when Gateway mode environment variable is set
+            if (requestOptions?.OfferThroughput > 10000 && 
+                GetConnectionModeFromEnvironment() == ConnectionMode.Gateway)
+            {
+                requestOptions = new RequestOptions { OfferThroughput = 10000 };
+            }
+
             return await client.CreateDocumentCollectionAsync(
                 databaseSelfLink,
                 col,
@@ -1537,6 +1685,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DocumentCollection col,
             RequestOptions requestOptions = null)
         {
+            // vNext emulator only supports single-partition collections
+            // Cap throughput to 10000 RU/s when Gateway mode environment variable is set
+            if (requestOptions?.OfferThroughput > 10000 && 
+                GetConnectionModeFromEnvironment() == ConnectionMode.Gateway)
+            {
+                requestOptions = new RequestOptions { OfferThroughput = 10000 };
+            }
+
             return await client.CreateDocumentCollectionAsync(
                 db.SelfLink,
                 col,
