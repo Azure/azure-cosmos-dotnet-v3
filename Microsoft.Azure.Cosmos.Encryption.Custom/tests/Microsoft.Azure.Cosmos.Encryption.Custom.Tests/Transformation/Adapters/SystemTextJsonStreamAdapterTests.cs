@@ -115,6 +115,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             Assert.AreEqual("secret", doc.RootElement.GetProperty("Sensitive").GetString());
         }
 
+        // The (Stream, DecryptionContext) decrypt overload must dispose the input stream on a
+        // successful MDE decrypt, matching the adapter's stream-ownership contract.
+        [TestMethod]
+        public async Task DecryptAsync_StreamOverload_DisposesInputOnSuccess()
+        {
+            SystemTextJsonStreamAdapter adapter = new (new StreamProcessor());
+            Stream encrypted = await CreateEncryptedPayloadAsync(adapter);
+            CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
+
+            (Stream output, DecryptionContext context) = await adapter.DecryptAsync(encrypted, mockEncryptor.Object, diagnostics, CancellationToken.None);
+
+            Assert.IsNotNull(context);
+            Assert.IsFalse(encrypted.CanRead, "Input stream should be disposed after a successful decrypt.");
+            await output.DisposeAsync();
+        }
+
         [TestMethod]
         public async Task DecryptAsync_OutputStream_WritesDecryptedPayload()
         {
