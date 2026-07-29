@@ -125,7 +125,7 @@
         /// <summary>
         /// Insert documents until exactly one conflict is generated.
         /// This is a non-deterministic operation (in terms of both duration and outcome) due to backend's behavior.
-        /// It will terminate the test based on simple heuristic if desired outcome cannot be achieved.
+        /// It will terminate the test based on Simple heuristic if desired outcome cannot be achieved.
         /// </summary>
         private async Task InsertWithConflict(IReadOnlyList<(CosmosClient Client, Container Container)> cosmosContainers)
             => await this.InsertFromMultipleClients(
