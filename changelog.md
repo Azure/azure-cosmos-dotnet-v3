@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Bugs Fixed
 
 - [6032](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6032) ThinClient: Fixes clients using resource-token (permission-scoped) authorization failing or misrouting when thin client mode is enabled by default. Such clients now always route data-plane requests through the Gateway store model, since thin client mode does not support resource-token authorization. Clients using primary/secondary key or Microsoft Entra ID (AAD) authorization are unaffected.
+- [6025](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6025) Fixed `RemotingException` in AppDomain-isolated test hosts by replacing `Type.GetType` with `Assembly.GetType` in `CosmosHttpClientCore.CreateHttpClientHandler` and `CreateSocketsHttpHandlerHelper`. `Type.GetType` fires `AppDomain.TypeResolve` when the type is not found on .NET Framework, which crashes if cross-domain `MarshalByRefObject` proxies have expired leases.
 
 #### Other Changes
 
