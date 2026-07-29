@@ -2044,6 +2044,156 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(typed.Resource);
         }
 
+        // ResponseMode parsing
+
+        [TestMethod]
+        [Description("The DistributedTransactionResponseMode enum values must be Standard=0 and FastResponse=1.")]
+        public void DistributedTransactionResponseMode_HasExpectedValues()
+        {
+            Assert.AreEqual(0, (int)DistributedTransactionResponseMode.Standard);
+            Assert.AreEqual(1, (int)DistributedTransactionResponseMode.FastResponse);
+        }
+
+        [TestMethod]
+        [Description("A top-level \"responseMode\":\"FastResponse\" must be parsed into ResponseMode == FastResponse.")]
+        public async Task FromResponseMessage_ResponseModeFastResponse_ParsesFastResponse()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = $@"{{""responseMode"":""FastResponse"",""operationResponses"":[{{""index"":0,""statusCode"":{(int)HttpStatusCode.OK}}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(DistributedTransactionResponseMode.FastResponse, response.ResponseMode);
+        }
+
+        [TestMethod]
+        [Description("A top-level \"responseMode\":\"Standard\" must be parsed into ResponseMode == Standard.")]
+        public async Task FromResponseMessage_ResponseModeStandard_ParsesStandard()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = $@"{{""responseMode"":""Standard"",""operationResponses"":[{{""index"":0,""statusCode"":{(int)HttpStatusCode.OK}}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(DistributedTransactionResponseMode.Standard, response.ResponseMode);
+        }
+
+        [TestMethod]
+        [Description("When the response payload omits responseMode, ResponseMode must default to Standard.")]
+        public async Task FromResponseMessage_ResponseModeAbsent_DefaultsToStandard()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":{(int)HttpStatusCode.OK}}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(DistributedTransactionResponseMode.Standard, response.ResponseMode);
+        }
+
+        [TestMethod]
+        [Description("An unrecognized responseMode name from a newer coordinator must fall back to Standard.")]
+        public async Task FromResponseMessage_ResponseModeUnknownName_DefaultsToStandard()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = $@"{{""responseMode"":""TurboResponse"",""operationResponses"":[{{""index"":0,""statusCode"":{(int)HttpStatusCode.OK}}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(DistributedTransactionResponseMode.Standard, response.ResponseMode);
+        }
+
+        [TestMethod]
+        [Description("An unrecognized numeric responseMode string (not a defined enum value) must fall back to Standard.")]
+        [DataRow("7")]
+        [DataRow("-1")]
+        [DataRow("99")]
+        public async Task FromResponseMessage_ResponseModeUndefinedNumericString_DefaultsToStandard(string numericResponseMode)
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = $@"{{""responseMode"":""{numericResponseMode}"",""operationResponses"":[{{""index"":0,""statusCode"":{(int)HttpStatusCode.OK}}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(DistributedTransactionResponseMode.Standard, response.ResponseMode);
+        }
+
+        [TestMethod]
+        [Description("Enum.TryParse also accepts the underlying numeric value, so a numeric string matching a defined member is parsed to that member (\"1\" -> FastResponse, \"0\" -> Standard). A conformant coordinator only sends names, so this is acceptable; this test documents the behavior.")]
+        [DataRow("1", DistributedTransactionResponseMode.FastResponse)]
+        [DataRow("0", DistributedTransactionResponseMode.Standard)]
+        public async Task FromResponseMessage_ResponseModeDefinedNumericString_MapsToUnderlyingMember(string numericResponseMode, DistributedTransactionResponseMode expected)
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = $@"{{""responseMode"":""{numericResponseMode}"",""operationResponses"":[{{""index"":0,""statusCode"":{(int)HttpStatusCode.OK}}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(expected, response.ResponseMode);
+        }
+
+        [TestMethod]
+        [Description("responseMode is a top-level envelope field, so a FastResponse response whose operation indices are unmappable must still report ResponseMode == FastResponse on the fail-closed 500.")]
+        public async Task FromResponseMessage_FastResponseWithUnmappableIndices_PreservesResponseMode()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 2);
+
+            // Two results, but both carry index 0 -> not a complete permutation -> fail closed on success status.
+            string json = $@"{{""responseMode"":""FastResponse"",""operationResponses"":[{{""index"":0,""statusCode"":{(int)HttpStatusCode.OK}}},{{""index"":0,""statusCode"":{(int)HttpStatusCode.OK}}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.InternalServerError, response.StatusCode);
+            Assert.AreEqual(DistributedTransactionResponseMode.FastResponse, response.ResponseMode);
+        }
+
         // Helpers
 
         private sealed class TestDocument

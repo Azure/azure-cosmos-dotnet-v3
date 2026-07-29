@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+- [6059](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6059) DistributedTransaction (preview): Adds `DistributedTransactionResponse.ResponseMode`, which reports whether the coordinator applied `Standard` or `FastResponse` mode when processing the transaction. The value is parsed from the coordinator response and defaults to `Standard` when not reported.
+
 #### Breaking Changes
 
 #### Bugs Fixed
