@@ -1079,10 +1079,10 @@
         }
       },
       "Members": {
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.DistributedTransactionResponse] CommitTransactionAsync(System.Threading.CancellationToken)": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.DistributedTransactionResponse] ExecuteTransactionAsync(System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.DistributedTransactionResponse] CommitTransactionAsync(System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.DistributedTransactionResponse] ExecuteTransactionAsync(System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}

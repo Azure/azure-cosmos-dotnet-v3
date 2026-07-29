@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
         [TestMethod]
         [Description("Verifies that when the DTC response carries a session token, the token is merged into the SessionContainer")]
-        public async Task CommitTransactionAsync_MergesSessionTokensIntoSessionContainer()
+        public async Task ExecuteTransactionAsync_MergesSessionTokensIntoSessionContainer()
         {
             const string lsnOnly = "1#9#4=8#5=7";
             const string pkRangeId = "0";
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 operations, mockContext.Object, OperationType.CommitDistributedTransaction);
 
-            await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+            await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
 
             string storedToken = sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName));
             Assert.AreEqual(expectedToken, storedToken,
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
         [TestMethod]
         [Description("When a per-operation session token is absent, SetSessionToken is NOT called for that operation and the SessionContainer is not updated")]
-        public async Task CommitTransactionAsync_SkipsMerge_WhenSessionTokenIsNull()
+        public async Task ExecuteTransactionAsync_SkipsMerge_WhenSessionTokenIsNull()
         {
             // sessionToken: null omits the field from the JSON body entirely
             string responseJson = BuildDtcResponseJson(new[] { (statusCode: 201, sessionToken: (string)null) });
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 operations, mockContext.Object, OperationType.CommitDistributedTransaction);
 
-            await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+            await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
 
             string storedToken = sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName));
             Assert.IsTrue(string.IsNullOrEmpty(storedToken),
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
         [TestMethod]
         [Description("Verifies that the correct collectionRid and collectionFullname are passed to SetSessionToken for each operation")]
-        public async Task CommitTransactionAsync_PassesCorrectCollectionToSetSessionToken()
+        public async Task ExecuteTransactionAsync_PassesCorrectCollectionToSetSessionToken()
         {
             const string lsnOnly = "1#5#4=3";
             const string pkRangeId = "0";
@@ -191,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 operations, mockContext.Object, OperationType.CommitDistributedTransaction);
 
-            await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+            await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
 
             // Verify SetSessionToken was called once per operation with the correct collection identity.
             mockSessionContainer.Verify(
@@ -213,7 +213,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
         [TestMethod]
         [Description("Verifies that session tokens are still merged into the SessionContainer even when the DTC response indicates a failure")]
-        public async Task CommitTransactionAsync_MergesSessionTokens_OnFailureResponse()
+        public async Task ExecuteTransactionAsync_MergesSessionTokens_OnFailureResponse()
         {
             // Deliberately distinct from the success-path token so a copy-paste regression would be caught.
             const string lsnOnly = "1#3#4=2#5=1";
@@ -241,7 +241,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 operations, mockContext.Object, OperationType.CommitDistributedTransaction);
 
-            DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+            DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
 
             string storedToken = sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName));
             Assert.AreEqual(expectedToken, storedToken,
@@ -250,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
         [TestMethod]
         [Description("When session token is LSN-only and partitionKeyRangeId is present, the token is assembled as {pkRangeId}:{lsn}")]
-        public async Task CommitTransactionAsync_AssemblesSessionToken_WhenPartitionKeyRangeIdIsPresent()
+        public async Task ExecuteTransactionAsync_AssemblesSessionToken_WhenPartitionKeyRangeIdIsPresent()
         {
             const string lsnOnly = "1#9#4=8#5=7";
             const string pkRangeId = "0";
@@ -280,7 +280,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 operations, mockContext.Object, OperationType.CommitDistributedTransaction);
 
-            await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+            await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
 
             string storedToken = sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName));
             Assert.AreEqual(expectedToken, storedToken,
@@ -289,7 +289,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
         [TestMethod]
         [Description("When partitionKeyRangeId is absent, merge is silently skipped")]
-        public async Task CommitTransactionAsync_SkipsMerge_WhenLsnOnlyAndPartitionKeyRangeIdIsAbsent()
+        public async Task ExecuteTransactionAsync_SkipsMerge_WhenLsnOnlyAndPartitionKeyRangeIdIsAbsent()
         {
             const string lsnOnly = "1#9#4=8#5=7";
 
@@ -318,7 +318,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 operations, mockContext.Object, OperationType.CommitDistributedTransaction);
 
-            await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+            await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
 
             string storedToken = sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName));
             Assert.IsTrue(string.IsNullOrEmpty(storedToken),
@@ -332,7 +332,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         [DataRow("   ", DisplayName = "Multiple whitespace partitionKeyRangeId")]
         [Description("When partitionKeyRangeId is present but empty or whitespace, merge is silently skipped. " +
                      "The server has no validation on this field; throwing would risk failing a committed transaction.")]
-        public async Task CommitTransactionAsync_SkipsMerge_WhenPartitionKeyRangeIdIsEmptyOrWhitespace(string pkRangeId)
+        public async Task ExecuteTransactionAsync_SkipsMerge_WhenPartitionKeyRangeIdIsEmptyOrWhitespace(string pkRangeId)
         {
             const string lsnOnly = "1#9#4=8#5=7";
 
@@ -360,7 +360,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 operations, mockContext.Object, OperationType.CommitDistributedTransaction);
 
-            await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+            await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
 
             string storedToken = sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName));
             Assert.IsTrue(string.IsNullOrEmpty(storedToken),
@@ -372,7 +372,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         [TestMethod]
         [Description("m8: In a multi-operation response, an op whose pkRangeId is absent is skipped while " +
                      "subsequent ops with pkRangeId still have their session tokens merged correctly.")]
-        public async Task CommitTransactionAsync_MultiOp_SkipsOpWithMissingPkRangeId_MergesRemainingOps()
+        public async Task ExecuteTransactionAsync_MultiOp_SkipsOpWithMissingPkRangeId_MergesRemainingOps()
         {
             const string lsnOnly = "1#9#4=8#5=7";
             const string pkRangeId = "0";
@@ -446,7 +446,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 operations, mockContext.Object, OperationType.CommitDistributedTransaction);
 
-            await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+            await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
 
             // op 0 (missing pkRangeId) must NOT have been merged.
             mockSessionContainer.Verify(
@@ -470,7 +470,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         [TestMethod]
         [Description("m9: When an operation result has no partitionKeyRangeId, FromJson emits a TraceWarning " +
                      "so the skip is observable in diagnostic traces.")]
-        public async Task CommitTransactionAsync_EmitsTraceWarning_WhenPartitionKeyRangeIdIsAbsent()
+        public async Task ExecuteTransactionAsync_EmitsTraceWarning_WhenPartitionKeyRangeIdIsAbsent()
         {
             const string lsnOnly = "1#9#4=8#5=7";
 
@@ -509,7 +509,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DefaultTrace.TraceSource.Listeners.Add(listener);
             try
             {
-                await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+                await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
             }
             finally
             {
@@ -524,8 +524,8 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
 
         [TestMethod]
-        [Description("When SetSessionToken throws, the exception is swallowed and CommitTransactionAsync still returns the response rather than rethrowing")]
-        public async Task CommitTransactionAsync_SwallowsSetSessionTokenException()
+        [Description("When SetSessionToken throws, the exception is swallowed and ExecuteTransactionAsync still returns the response rather than rethrowing")]
+        public async Task ExecuteTransactionAsync_SwallowsSetSessionTokenException()
         {
             const string lsnOnly = "1#9#4=8#5=7";
             const string pkRangeId = "0";
@@ -591,14 +591,14 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 operations, mockContext.Object, OperationType.CommitDistributedTransaction);
 
             // Must not throw even though SetSessionToken throws internally.
-            DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
-            Assert.IsNotNull(response, "CommitTransactionAsync should return a response even when SetSessionToken throws.");
+            DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+            Assert.IsNotNull(response, "ExecuteTransactionAsync should return a response even when SetSessionToken throws.");
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
         }
 
         [TestMethod]
         [Description("When SetSessionToken throws OperationCanceledException, the exception must propagate — it must not be swallowed by the MergeSessionTokens catch block.")]
-        public async Task CommitTransactionAsync_PropagatesOperationCanceledException_FromSetSessionToken()
+        public async Task ExecuteTransactionAsync_PropagatesOperationCanceledException_FromSetSessionToken()
         {
             const string lsnOnly = "1#9#4=8#5=7";
             const string pkRangeId = "0";
@@ -632,7 +632,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 operations, mockContext.Object, OperationType.CommitDistributedTransaction);
 
             await Assert.ThrowsExceptionAsync<OperationCanceledException>(
-                () => committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None),
+                () => committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None),
                 "OperationCanceledException from SetSessionToken must propagate, not be swallowed.");
         }
 
@@ -653,7 +653,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
 
-            using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
             {
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
                 Assert.IsTrue(response.IsSuccessStatusCode);
@@ -683,7 +683,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
 
-            using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
             {
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
                 Assert.IsTrue(response.IsSuccessStatusCode);
@@ -717,7 +717,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.FromMilliseconds(1));
 
                 await Assert.ThrowsExceptionAsync<OperationCanceledException>(
-                    () => committer.CommitTransactionAsync(NoOpTrace.Singleton, cts.Token));
+                    () => committer.ExecuteTransactionAsync(NoOpTrace.Singleton, cts.Token));
 
                 // Retries continue until the cancellation token fires (before exhausting the budget).
                 Assert.AreEqual(3, callCount);
@@ -752,7 +752,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 retryBaseDelay: TimeSpan.Zero,
                 delayProvider: captureDelay);
 
-            using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
             {
                 // MaxIsRetriableRetryCount (10) retries + 1 final call that hits the budget check = 11 total calls.
                 Assert.AreEqual(DistributedTransactionCommitter.MaxIsRetriableRetryCount + 1, callCount,
@@ -798,7 +798,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 retryBaseDelay: TimeSpan.FromSeconds(15),
                 delayProvider: captureDelay);
 
-            using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
             {
                 // With 15s base delay and exponential backoff (±25% jitter):
                 //   attempt 0 delay = 15s * 2^0 * jitter ≈ 11.25–18.75s (cumulative ≈ 11.25–18.75s, under 30s budget)
@@ -856,7 +856,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 retryBaseDelay: TimeSpan.FromMilliseconds(100),
                 delayProvider: captureDelay);
 
-            using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
             {
                 // With 25s server hint per attempt: attempt 0 delay=25s (cumulative=25s OK), attempt 1 delay=25s (cumulative=50s > 30s budget).
                 // So only 1 retry should succeed before budget exhaustion stops the loop.
@@ -899,7 +899,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
 
             CosmosException thrown = await Assert.ThrowsExceptionAsync<CosmosException>(
-                () => committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None));
+                () => committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None));
 
             Assert.AreEqual((HttpStatusCode)statusCode, thrown.StatusCode);
             Assert.AreEqual(1, callCount);
@@ -927,7 +927,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
 
-            using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
             {
                 Assert.AreEqual((HttpStatusCode)statusCode, response.StatusCode);
                 Assert.IsFalse(response.IsSuccessStatusCode);
@@ -937,7 +937,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
-        [Description("Verifies that a pre-cancelled CancellationToken causes CommitTransactionAsync to throw immediately without issuing any network request.")]
+        [Description("Verifies that a pre-cancelled CancellationToken causes ExecuteTransactionAsync to throw immediately without issuing any network request.")]
         public async Task CommitTransaction_RespectsCancellationToken_PreCancelled()
         {
             using (CancellationTokenSource cts = new CancellationTokenSource())
@@ -952,7 +952,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
 
                 await Assert.ThrowsExceptionAsync<OperationCanceledException>(
-                    () => committer.CommitTransactionAsync(NoOpTrace.Singleton, cts.Token));
+                    () => committer.ExecuteTransactionAsync(NoOpTrace.Singleton, cts.Token));
 
                 this.VerifyProcessResourceOperationCallCount(mockContext, Times.Never());
             }
@@ -981,7 +981,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.FromMilliseconds(500));
 
                 await Assert.ThrowsExceptionAsync<OperationCanceledException>(
-                    () => committer.CommitTransactionAsync(NoOpTrace.Singleton, cts.Token));
+                    () => committer.ExecuteTransactionAsync(NoOpTrace.Singleton, cts.Token));
 
                 Assert.AreEqual(1, callCount);
             }
@@ -1008,7 +1008,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
 
-            using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
             {
                 // 3 retriable failures + 1 success = 4 total calls.
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
@@ -1034,7 +1034,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
 
             IOException ex = await Assert.ThrowsExceptionAsync<IOException>(
-                () => committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None));
+                () => committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None));
 
             Assert.AreEqual("Network error", ex.Message);
             Assert.AreEqual(1, callCount);
@@ -1091,7 +1091,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 OperationType.CommitDistributedTransaction,
                 TimeSpan.Zero);
 
-            using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
             {
                 Assert.IsTrue(response.IsSuccessStatusCode);
                 Assert.AreEqual(3, callCount);
@@ -1127,7 +1127,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
 
-            using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
             {
                 Assert.AreEqual((HttpStatusCode)statusCode, response.StatusCode);
                 Assert.AreEqual(1, callCount, "Envelope response without a DTX sub-status code must not be retried.");
@@ -1156,7 +1156,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
 
-            using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
             {
                 Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
                 Assert.AreEqual(1, callCount, $"Validation failure 400/{subStatusCode} must not be retried.");
@@ -1201,7 +1201,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 delayProvider: captureDelay,
                 maxCumulativeRetryDelay: TimeSpan.FromMinutes(5));
 
-            using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
             {
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
             }
@@ -1237,7 +1237,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
         [TestMethod]
         [Description("A SessionToken set on DistributedTransactionRequestOptions is propagated to the operation's SessionToken field and serialized in the request body JSON.")]
-        public async Task CommitTransactionAsync_PerOperationSessionToken_IsSerializedInRequestBody()
+        public async Task ExecuteTransactionAsync_PerOperationSessionToken_IsSerializedInRequestBody()
         {
             const string expectedToken = "0:1#9#4=8#5=7";
             byte[] capturedBody = null;
@@ -1278,7 +1278,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             };
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(operations, mockContext.Object, OperationType.CommitDistributedTransaction);
-            await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+            await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
 
             Assert.IsNotNull(capturedBody, "Request body must have been captured.");
             string bodyJson = Encoding.UTF8.GetString(capturedBody);
@@ -1288,7 +1288,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
         [TestMethod]
         [Description("When no SessionToken is set on the per-operation options, no sessionToken field appears in the serialized request body.")]
-        public async Task CommitTransactionAsync_NoPerOperationSessionToken_OmitsFieldFromRequestBody()
+        public async Task ExecuteTransactionAsync_NoPerOperationSessionToken_OmitsFieldFromRequestBody()
         {
             byte[] capturedBody = null;
 
@@ -1316,7 +1316,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 .ReturnsAsync(CreateSuccessResponseMessage(operationCount: 1));
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction);
-            await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+            await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
 
             Assert.IsNotNull(capturedBody);
             string bodyJson = Encoding.UTF8.GetString(capturedBody);
@@ -1329,7 +1329,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         [DataRow(" ", DisplayName = "Single space session token")]
         [DataRow("   ", DisplayName = "Multi-space session token")]
         [Description("A whitespace-only or empty SessionToken on DistributedTransactionRequestOptions must be treated as absent and must not appear in the serialized request body.")]
-        public async Task CommitTransactionAsync_WhitespaceOrEmptyPerOperationSessionToken_OmitsFieldFromRequestBody(string sessionToken)
+        public async Task ExecuteTransactionAsync_WhitespaceOrEmptyPerOperationSessionToken_OmitsFieldFromRequestBody(string sessionToken)
         {
             byte[] capturedBody = null;
 
@@ -1369,7 +1369,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             };
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(operations, mockContext.Object, OperationType.CommitDistributedTransaction);
-            await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+            await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
 
             Assert.IsNotNull(capturedBody);
             string bodyJson = Encoding.UTF8.GetString(capturedBody);
@@ -1379,7 +1379,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
         [TestMethod]
         [Description("Each operation independently carries its own session token in the request body.")]
-        public async Task CommitTransactionAsync_MultipleOperations_EachCarriesOwnSessionToken()
+        public async Task ExecuteTransactionAsync_MultipleOperations_EachCarriesOwnSessionToken()
         {
             const string token1 = "0:1#5";
             const string token2 = "1:2#8";
@@ -1422,7 +1422,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             };
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(operations, mockContext.Object, OperationType.CommitDistributedTransaction);
-            await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+            await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
 
             Assert.IsNotNull(capturedBody);
             string bodyJson = Encoding.UTF8.GetString(capturedBody);
@@ -1436,7 +1436,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
         [TestMethod]
         [Description("Verifies that the response Diagnostics is non-null and covers the caller's trace span on a successful single-attempt commit.")]
-        public async Task CommitTransactionAsync_Diagnostics_IsNonNullOnSuccess()
+        public async Task ExecuteTransactionAsync_Diagnostics_IsNonNullOnSuccess()
         {
             Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
             this.SetupProcessResourceOperation(
@@ -1447,7 +1447,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
 
             using (ITrace trace = Trace.GetRootTrace("CommitDistributedTransaction", TraceComponent.Batch, TraceLevel.Info))
-            using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(trace, CancellationToken.None))
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(trace, CancellationToken.None))
             {
                 Assert.IsNotNull(response.Diagnostics, "Diagnostics must not be null.");
                 string diagnosticText = response.Diagnostics.ToString();
@@ -1461,7 +1461,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
         [TestMethod]
         [Description("Verifies that Diagnostics spans all retry attempts — the caller's trace is attached to the final returned response even after multiple isRetriable retries.")]
-        public async Task CommitTransactionAsync_Diagnostics_CoversRetryAttempts()
+        public async Task ExecuteTransactionAsync_Diagnostics_CoversRetryAttempts()
         {
             int callCount = 0;
             Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
@@ -1479,7 +1479,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
 
             using (ITrace trace = Trace.GetRootTrace("CommitDistributedTransaction", TraceComponent.Batch, TraceLevel.Info))
-            using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(trace, CancellationToken.None))
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(trace, CancellationToken.None))
             {
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
                 Assert.IsNotNull(response.Diagnostics, "Diagnostics must not be null after retries.");
@@ -1492,8 +1492,8 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
-        [Description("Verifies that DiagnosticString parsed from the wire response body is correctly propagated through CommitTransactionAsync — protects against accidental omission of the property assignment in the object initializer.")]
-        public async Task CommitTransactionAsync_DiagnosticString_PropagatedFromWireResponse()
+        [Description("Verifies that DiagnosticString parsed from the wire response body is correctly propagated through ExecuteTransactionAsync — protects against accidental omission of the property assignment in the object initializer.")]
+        public async Task ExecuteTransactionAsync_DiagnosticString_PropagatedFromWireResponse()
         {
             const string expectedDiagnosticString = "TransactionAbortedByCoordinator";
             Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
@@ -1507,16 +1507,16 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
 
-            using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
             {
                 Assert.AreEqual(expectedDiagnosticString, response.DiagnosticString,
-                    "DiagnosticString must be propagated from the wire response body through CommitTransactionAsync.");
+                    "DiagnosticString must be propagated from the wire response body through ExecuteTransactionAsync.");
             }
         }
 
         [TestMethod]
-        [Description("Verifies that DiagnosticString from a successful commit is propagated through CommitTransactionAsync and does NOT leak into ErrorMessage (which must remain null on success).")]
-        public async Task CommitTransactionAsync_DiagnosticString_PropagatedOnSuccess_DoesNotPolluteErrorMessage()
+        [Description("Verifies that DiagnosticString from a successful commit is propagated through ExecuteTransactionAsync and does NOT leak into ErrorMessage (which must remain null on success).")]
+        public async Task ExecuteTransactionAsync_DiagnosticString_PropagatedOnSuccess_DoesNotPolluteErrorMessage()
         {
             const string expectedDiagnosticString = "TransactionCommitted";
             Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
@@ -1530,7 +1530,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
 
-            using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
             {
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
                 Assert.AreEqual(expectedDiagnosticString, response.DiagnosticString,
