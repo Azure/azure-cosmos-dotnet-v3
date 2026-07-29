@@ -60,6 +60,8 @@ namespace Microsoft.Azure.Cosmos
         /// Default request timeout
         /// </summary>
         private int gatewayModeMaxConnectionLimit;
+        private int? maxRetryAttemptsOnAbortedTransactions;
+        private TimeSpan? maxRetryWaitTimeOnAbortedTransactions;
         private CosmosSerializationOptions serializerOptions;
         private CosmosSerializer serializerInternal;
         private System.Text.Json.JsonSerializerOptions stjSerializerOptions;
@@ -506,7 +508,19 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        int? MaxRetryAttemptsOnAbortedTransactions { get; set; }
+        int? MaxRetryAttemptsOnAbortedTransactions
+        {
+            get => this.maxRetryAttemptsOnAbortedTransactions;
+            set
+            {
+                if (value < 0)
+                {
+                    throw new ArgumentException("value must be a positive integer.");
+                }
+
+                this.maxRetryAttemptsOnAbortedTransactions = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the maximum cumulative wait time across all retry attempts when a distributed
@@ -534,7 +548,19 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        TimeSpan? MaxRetryWaitTimeOnAbortedTransactions { get; set; }
+        TimeSpan? MaxRetryWaitTimeOnAbortedTransactions
+        {
+            get => this.maxRetryWaitTimeOnAbortedTransactions;
+            set
+            {
+                if (value < TimeSpan.Zero)
+                {
+                    throw new ArgumentException("value must be a positive TimeSpan.");
+                }
+
+                this.maxRetryWaitTimeOnAbortedTransactions = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the boolean to only return the headers and status code in

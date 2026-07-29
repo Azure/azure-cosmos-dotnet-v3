@@ -649,6 +649,42 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void ThrowOnNegativeMaxRetryAttemptsOnAbortedTransactions()
+        {
+            new CosmosClientOptions().MaxRetryAttemptsOnAbortedTransactions = -1;
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void ThrowOnNegativeMaxRetryWaitTimeOnAbortedTransactions()
+        {
+            new CosmosClientOptions().MaxRetryWaitTimeOnAbortedTransactions = TimeSpan.FromSeconds(-1);
+        }
+
+        [TestMethod]
+        public void AbortedTransactionRetryOptionsAcceptValidValues()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
+
+            // Unset (null) is valid and applies SDK defaults downstream.
+            Assert.IsNull(cosmosClientOptions.MaxRetryAttemptsOnAbortedTransactions);
+            Assert.IsNull(cosmosClientOptions.MaxRetryWaitTimeOnAbortedTransactions);
+
+            // Zero is valid (disables automatic abort retries).
+            cosmosClientOptions.MaxRetryAttemptsOnAbortedTransactions = 0;
+            cosmosClientOptions.MaxRetryWaitTimeOnAbortedTransactions = TimeSpan.Zero;
+            Assert.AreEqual(0, cosmosClientOptions.MaxRetryAttemptsOnAbortedTransactions);
+            Assert.AreEqual(TimeSpan.Zero, cosmosClientOptions.MaxRetryWaitTimeOnAbortedTransactions);
+
+            // Positive values are stored and read back unchanged.
+            cosmosClientOptions.MaxRetryAttemptsOnAbortedTransactions = 5;
+            cosmosClientOptions.MaxRetryWaitTimeOnAbortedTransactions = TimeSpan.FromSeconds(15);
+            Assert.AreEqual(5, cosmosClientOptions.MaxRetryAttemptsOnAbortedTransactions);
+            Assert.AreEqual(TimeSpan.FromSeconds(15), cosmosClientOptions.MaxRetryWaitTimeOnAbortedTransactions);
+        }
+
+        [TestMethod]
         public void UserAgentContainsEnvironmentInformation()
         {
             EnvironmentInformation environmentInformation = new EnvironmentInformation();
