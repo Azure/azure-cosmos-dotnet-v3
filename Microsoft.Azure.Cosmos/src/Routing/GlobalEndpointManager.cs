@@ -548,22 +548,19 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public virtual Uri ResolveServiceEndpoint(DocumentServiceRequest request)
         {
-            // For PPAF write hedging in single-master: route to read endpoints
-            // when ExcludeRegions is set to allow failover to read regions.
-            // The AZURE_COSMOS_PPAF_WRITE_HEDGING_ENABLED env var (default true) is checked last so it
-            // only evaluates for the single-master PPAF write path this feature targets.
-            if (this.connectionPolicy.EnablePartitionLevelFailover
-                && request.OperationType.IsWriteOperation()
-                && !this.locationCache.CanUseMultipleWriteLocations(request)
-                && request.RequestContext?.ExcludeRegions != null
-                && request.RequestContext.ExcludeRegions.Count > 0
-                && Microsoft.Azure.Cosmos.ConfigurationManager.IsPpafWriteHedgingEnabled())
+            // PPAF write hedging pins each hedged (non-primary) arm to the exact endpoint that was
+            // selected from the topology snapshot when the hedge fan-out was computed. Resolving from
+            // the region name instead would go through the preferred-location filter, which can drop a
+            // valid account-level hedge target and collapse the arm back onto the primary write
+            // endpoint - producing a duplicate primary write and a primary->primary cache override.
+            // The primary arm never carries this property and keeps its normal resolution path.
+            if (request.Properties != null
+                && request.Properties.TryGetValue(
+                    CrossRegionHedgingAvailabilityStrategy.PPAFHedgeTargetEndpointKey, out object hedgeTargetEndpoint)
+                && hedgeTargetEndpoint is Uri pinnedEndpoint)
             {
-                ReadOnlyCollection<Uri> readEndpoints = this.locationCache.GetApplicableEndpoints(request, isReadRequest: true);
-                int locationIndex = request.RequestContext.LocationIndexToRoute.GetValueOrDefault(0);
-                Uri endpoint = readEndpoints[locationIndex % readEndpoints.Count];
-                request.RequestContext.RouteToLocation(endpoint);
-                return endpoint;
+                request.RequestContext.RouteToLocation(pinnedEndpoint);
+                return pinnedEndpoint;
             }
 
             return this.locationCache.ResolveServiceEndpoint(request);
@@ -616,6 +613,19 @@ namespace Microsoft.Azure.Cosmos.Routing
         public ReadOnlyCollection<string> GetApplicableAccountLevelReadRegions(IEnumerable<string> excludeRegions)
         {
             return this.locationCache.GetApplicableAccountLevelReadRegions(excludeRegions);
+        }
+
+        /// <summary>
+        /// Gets the account-level read regions applicable for PPAF write hedging together with the endpoint
+        /// each region resolved to, from a single topology snapshot.
+        /// </summary>
+        public ReadOnlyCollection<AccountLevelReadRegion> GetApplicableAccountLevelReadRegions(
+            IEnumerable<string> excludeRegions,
+            out ReadOnlyCollection<string> effectivePreferredLocationsFallback)
+        {
+            return this.locationCache.GetApplicableAccountLevelReadRegions(
+                excludeRegions,
+                out effectivePreferredLocationsFallback);
         }
 
         public bool TryGetLocationForGatewayDiagnostics(Uri endpoint, out string regionName)

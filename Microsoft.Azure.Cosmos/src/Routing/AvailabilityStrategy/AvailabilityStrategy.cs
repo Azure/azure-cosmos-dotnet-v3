@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
         internal static AvailabilityStrategy SDKDefaultCrossRegionHedgingStrategyForPPAF(
             TimeSpan threshold,
             TimeSpan? thresholdStep,
-            bool enableMultiWriteRegionHedge = true)
+            bool enableMultiWriteRegionHedge = false)
         {
             return new CrossRegionHedgingAvailabilityStrategy(threshold, thresholdStep, enableMultiWriteRegionHedge, isSDKDefaultStrategy: true);
         }

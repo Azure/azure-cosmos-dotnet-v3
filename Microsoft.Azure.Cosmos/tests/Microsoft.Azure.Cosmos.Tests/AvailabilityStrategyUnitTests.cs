@@ -1,6 +1,7 @@
 ﻿namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.IO;
@@ -12,9 +13,11 @@
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
 
     /// <summary>
     /// Tests for <see cref="AvailabilityStrategy"/>
@@ -123,6 +126,61 @@
 
             return mockCosmosClient;
         }
+
+        /// <summary>
+        /// Helper to create a mock CosmosClient configured as a single-master (single write region)
+        /// account with several read regions and PPAF enabled. Optionally restricts the client's
+        /// preferred locations so tests can cover hedge targets that fall outside them.
+        /// </summary>
+        private static CosmosClient CreateMockSingleMasterPpafClient(
+            int regionCount = 3,
+            IEnumerable<string> preferredLocations = null,
+            bool enablePartitionLevelFailover = true)
+        {
+            Collection<AccountRegion> readRegions = new Collection<AccountRegion>();
+            for (int i = 0; i < regionCount; i++)
+            {
+                readRegions.Add(new AccountRegion()
+                {
+                    Name = $"Region{i}",
+                    Endpoint = new Uri($"https://location{i}.documents.azure.com").ToString()
+                });
+            }
+
+            AccountProperties databaseAccount = new AccountProperties()
+            {
+                ReadLocationsInternal = readRegions,
+                WriteLocationsInternal = new Collection<AccountRegion> { readRegions[0] },
+                EnableMultipleWriteLocations = false,
+            };
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy()
+            {
+                EnablePartitionLevelFailover = enablePartitionLevelFailover,
+                UseMultipleWriteLocations = false,
+                CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions
+                {
+                    DisableSendingMetricsToService = true
+                }
+            };
+
+            foreach (string preferredLocation in preferredLocations ?? Enumerable.Empty<string>())
+            {
+                connectionPolicy.PreferredLocations.Add(preferredLocation);
+            }
+
+            DocumentClient documentClient = new MockDocumentClient(connectionPolicy);
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+                "http://localhost",
+                MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+            CosmosClient mockCosmosClient = cosmosClientBuilder.Build(documentClient);
+
+            mockCosmosClient.DocumentClient.GlobalEndpointManager
+                .InitializeAccountPropertiesAndStartBackgroundRefresh(databaseAccount);
+
+            return mockCosmosClient;
+        }
+
         [TestMethod]
         public async Task RequestMessageCloneTests()
         {
@@ -698,24 +756,47 @@
         }
 
         [TestMethod]
-        public void ShouldHedge_WriteRequest_WithPPAFEnabledAndMultiWrite_ReturnsTrue()
+        public void ShouldHedge_WriteRequest_MultiWriteAccount_PpafDoesNotOverrideOptOut()
         {
+            // Regression: PPAF must not silently opt a multi-write account into write hedging.
+            // On multi-write accounts the decision belongs solely to EnableMultiWriteRegionHedge,
+            // because that is the option whose documented caveat (extra 409/412s, non-deterministic
+            // Create vs Replace on Upsert) the application accepted.
             CrossRegionHedgingAvailabilityStrategy strategy = new CrossRegionHedgingAvailabilityStrategy(
                 threshold: TimeSpan.FromMilliseconds(100),
-                thresholdStep: TimeSpan.FromMilliseconds(50));
+                thresholdStep: TimeSpan.FromMilliseconds(50),
+                enableMultiWriteRegionHedge: false);
 
             using RequestMessage request = CreateWriteRequest();
             using CosmosClient mockCosmosClient = CreateMockMultiWriteClient(
                 regionCount: 2,
                 enablePartitionLevelFailover: true);
 
-            typeof(CrossRegionHedgingAvailabilityStrategy)
-                .GetField("ppafEnabled", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-                .SetValue(strategy, true);
+            bool result = strategy.ShouldHedge(request, mockCosmosClient, ppafWriteHedgingEnabled: true);
 
-            bool result = strategy.ShouldHedge(request, mockCosmosClient);
+            Assert.IsFalse(
+                result,
+                "PPAF must not override EnableMultiWriteRegionHedge=false on a multi-write account.");
+        }
 
-            Assert.IsTrue(result, "Write requests should be hedged when PPAF is enabled and multi-write locations are available.");
+        [TestMethod]
+        public void ShouldHedge_WriteRequest_MultiWriteAccount_HonorsMultiWriteOptIn()
+        {
+            CrossRegionHedgingAvailabilityStrategy strategy = new CrossRegionHedgingAvailabilityStrategy(
+                threshold: TimeSpan.FromMilliseconds(100),
+                thresholdStep: TimeSpan.FromMilliseconds(50),
+                enableMultiWriteRegionHedge: true);
+
+            using RequestMessage request = CreateWriteRequest();
+            using CosmosClient mockCosmosClient = CreateMockMultiWriteClient(
+                regionCount: 2,
+                enablePartitionLevelFailover: true);
+
+            bool result = strategy.ShouldHedge(request, mockCosmosClient, ppafWriteHedgingEnabled: true);
+
+            Assert.IsTrue(
+                result,
+                "Multi-write write hedging should follow EnableMultiWriteRegionHedge when the application opts in.");
         }
 
         [TestMethod]
@@ -728,11 +809,7 @@
             using RequestMessage request = CreateWriteRequest();
             using CosmosClient mockCosmosClient = CreateMockClientWithRegions(regionCount: 2);
 
-            typeof(CrossRegionHedgingAvailabilityStrategy)
-                .GetField("ppafEnabled", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-                .SetValue(strategy, true);
-
-            bool result = strategy.ShouldHedge(request, mockCosmosClient);
+            bool result = strategy.ShouldHedge(request, mockCosmosClient, ppafWriteHedgingEnabled: true);
 
             // With PPAF enabled, write hedging is allowed even on single-master accounts.
             // The hedging uses read regions as failover targets for writes.
@@ -750,11 +827,7 @@
             using RequestMessage request = CreateWriteRequest();
             using CosmosClient mockCosmosClient = CreateMockClientWithRegions(regionCount: 2);
 
-            typeof(CrossRegionHedgingAvailabilityStrategy)
-                .GetField("ppafEnabled", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-                .SetValue(strategy, false);
-
-            bool result = strategy.ShouldHedge(request, mockCosmosClient);
+            bool result = strategy.ShouldHedge(request, mockCosmosClient, ppafWriteHedgingEnabled: false);
 
             Assert.IsFalse(result, "Write requests should not be hedged when both PPAF and multi-write hedge are disabled.");
         }
@@ -769,11 +842,7 @@
             using RequestMessage request = CreateReadRequest();
             using CosmosClient mockCosmosClient = CreateMockClientWithRegions(regionCount: 2);
 
-            typeof(CrossRegionHedgingAvailabilityStrategy)
-                .GetField("ppafEnabled", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-                .SetValue(strategy, true);
-
-            bool result = strategy.ShouldHedge(request, mockCosmosClient);
+            bool result = strategy.ShouldHedge(request, mockCosmosClient, ppafWriteHedgingEnabled: true);
 
             Assert.IsTrue(result, "Read requests should always be hedged regardless of PPAF state.");
         }
@@ -795,11 +864,7 @@
 
             using CosmosClient mockCosmosClient = CreateMockClientWithRegions(regionCount: 2);
 
-            typeof(CrossRegionHedgingAvailabilityStrategy)
-                .GetField("ppafEnabled", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-                .SetValue(strategy, true);
-
-            bool result = strategy.ShouldHedge(request, mockCosmosClient);
+            bool result = strategy.ShouldHedge(request, mockCosmosClient, ppafWriteHedgingEnabled: true);
 
             Assert.IsFalse(result, "Non-document resource types should never be hedged regardless of PPAF state.");
         }
@@ -815,39 +880,66 @@
             using RequestMessage request = CreateWriteRequest();
             using CosmosClient mockCosmosClient = CreateMockMultiWriteClient(regionCount: 2);
 
-            bool result = strategy.ShouldHedge(request, mockCosmosClient);
+            bool result = strategy.ShouldHedge(request, mockCosmosClient, ppafWriteHedgingEnabled: false);
 
             Assert.IsTrue(result, "Write requests should be hedged when EnableMultiWriteRegionHedge is true and multi-write locations are available.");
         }
 
         [TestMethod]
-        public async Task ExecuteAvailabilityStrategyAsync_SetsPpafEnabledFromConnectionPolicy()
+        public void SDKDefaultStrategyForPPAF_DoesNotEnableMultiWriteRegionHedgeByDefault()
         {
-            CrossRegionHedgingAvailabilityStrategy strategy = new CrossRegionHedgingAvailabilityStrategy(
-                threshold: TimeSpan.FromMilliseconds(100),
-                thresholdStep: TimeSpan.FromMilliseconds(50));
+            // Regression: the SDK-default PPAF strategy must not flip the customer-facing
+            // EnableMultiWriteRegionHedge default. Applications on multi-write accounts opt into
+            // write hedging explicitly, because of the extra 409/412 conflicts it can surface.
+            CrossRegionHedgingAvailabilityStrategy strategy =
+                (CrossRegionHedgingAvailabilityStrategy)AvailabilityStrategy.SDKDefaultCrossRegionHedgingStrategyForPPAF(
+                    threshold: TimeSpan.FromMilliseconds(100),
+                    thresholdStep: TimeSpan.FromMilliseconds(50));
 
-            using CosmosClient mockCosmosClient = CreateMockMultiWriteClient(
-                regionCount: 2,
-                enablePartitionLevelFailover: true);
-
-            using RequestMessage request = CreateReadRequest();
-
-            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender =
-                (req, ct) => Task.FromResult(new ResponseMessage(HttpStatusCode.OK));
-
-            await strategy.ExecuteAvailabilityStrategyAsync(
-                sender, mockCosmosClient, request, CancellationToken.None);
-
-            bool ppafEnabled = (bool)typeof(CrossRegionHedgingAvailabilityStrategy)
-                .GetField("ppafEnabled", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-                .GetValue(strategy);
-
-            Assert.IsTrue(ppafEnabled, "ppafEnabled should be set to true when ConnectionPolicy.EnablePartitionLevelFailover is true.");
+            Assert.IsFalse(
+                strategy.EnableMultiWriteRegionHedge,
+                "SDKDefaultCrossRegionHedgingStrategyForPPAF must default EnableMultiWriteRegionHedge to false.");
         }
 
         [TestMethod]
-        public async Task ExecuteAvailabilityStrategyAsync_PpafWriteHedgingDisabledViaEnvVar_DoesNotEnablePpaf()
+        public async Task ExecuteAvailabilityStrategyAsync_SingleMasterPpafWrite_HedgesAcrossReadRegions()
+        {
+            // Behavioral replacement for the old reflection-based ppafEnabled assertion:
+            // PPAF write hedging is derived from the client's ConnectionPolicy on every execution,
+            // so a single-master PPAF client must fan a slow write out to the read regions.
+            CrossRegionHedgingAvailabilityStrategy strategy = new CrossRegionHedgingAvailabilityStrategy(
+                threshold: TimeSpan.FromMilliseconds(1),
+                thresholdStep: TimeSpan.FromMilliseconds(1));
+
+            using CosmosClient mockCosmosClient = CreateMockSingleMasterPpafClient(regionCount: 3);
+            using RequestMessage request = CreateWriteRequest();
+
+            int senderInvocationCount = 0;
+            using SemaphoreSlim releasePrimary = new SemaphoreSlim(0, 1);
+
+            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender = async (req, ct) =>
+            {
+                if (Interlocked.Increment(ref senderInvocationCount) == 1)
+                {
+                    await releasePrimary.WaitAsync(TimeSpan.FromSeconds(5), ct);
+                }
+
+                return new ResponseMessage(HttpStatusCode.OK);
+            };
+
+            ResponseMessage response = await strategy.ExecuteAvailabilityStrategyAsync(
+                sender, mockCosmosClient, request, CancellationToken.None);
+
+            releasePrimary.Release();
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.IsTrue(
+                senderInvocationCount >= 2,
+                $"Expected PPAF write hedging to dispatch a hedge arm, but the sender was invoked {senderInvocationCount} time(s).");
+        }
+
+        [TestMethod]
+        public async Task ExecuteAvailabilityStrategyAsync_PpafWriteHedgingDisabledViaEnvVar_DoesNotHedgeWrites()
         {
             try
             {
@@ -855,26 +947,29 @@
                 Environment.SetEnvironmentVariable("AZURE_COSMOS_PPAF_WRITE_HEDGING_ENABLED", "false");
 
                 CrossRegionHedgingAvailabilityStrategy strategy = new CrossRegionHedgingAvailabilityStrategy(
-                    threshold: TimeSpan.FromMilliseconds(100),
-                    thresholdStep: TimeSpan.FromMilliseconds(50));
+                    threshold: TimeSpan.FromMilliseconds(1),
+                    thresholdStep: TimeSpan.FromMilliseconds(1));
 
-                using CosmosClient mockCosmosClient = CreateMockMultiWriteClient(
-                    regionCount: 2,
-                    enablePartitionLevelFailover: true);
+                using CosmosClient mockCosmosClient = CreateMockSingleMasterPpafClient(regionCount: 3);
+                using RequestMessage request = CreateWriteRequest();
 
-                using RequestMessage request = CreateReadRequest();
+                int senderInvocationCount = 0;
 
-                Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender =
-                    (req, ct) => Task.FromResult(new ResponseMessage(HttpStatusCode.OK));
+                Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender = async (req, ct) =>
+                {
+                    Interlocked.Increment(ref senderInvocationCount);
+                    await Task.Delay(TimeSpan.FromMilliseconds(50), ct);
+                    return new ResponseMessage(HttpStatusCode.OK);
+                };
 
-                await strategy.ExecuteAvailabilityStrategyAsync(
+                ResponseMessage response = await strategy.ExecuteAvailabilityStrategyAsync(
                     sender, mockCosmosClient, request, CancellationToken.None);
 
-                bool ppafEnabled = (bool)typeof(CrossRegionHedgingAvailabilityStrategy)
-                    .GetField("ppafEnabled", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-                    .GetValue(strategy);
-
-                Assert.IsFalse(ppafEnabled, "ppafEnabled should be false when AZURE_COSMOS_PPAF_WRITE_HEDGING_ENABLED is set to false, even when PPAF is enabled.");
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                Assert.AreEqual(
+                    1,
+                    senderInvocationCount,
+                    "Write requests must not hedge when AZURE_COSMOS_PPAF_WRITE_HEDGING_ENABLED is false, even when PPAF is enabled.");
             }
             finally
             {
@@ -883,35 +978,53 @@
         }
 
         [TestMethod]
-        public async Task ConcurrentExecuteAvailabilityStrategy_PpafEnabledField_NoCorruption()
+        public async Task ConcurrentExecuteAvailabilityStrategy_PpafDecisionIsPerExecution()
         {
+            // Regression: the PPAF decision must be derived per execution, not stored on the shared
+            // strategy instance. A single strategy instance is reachable from multiple clients and
+            // from many concurrent requests, so instance state could be flipped across an await and
+            // make a non-PPAF client hedge writes (or a PPAF client skip them).
             CrossRegionHedgingAvailabilityStrategy strategy = new CrossRegionHedgingAvailabilityStrategy(
-                threshold: TimeSpan.FromMilliseconds(100),
-                thresholdStep: TimeSpan.FromMilliseconds(50));
+                threshold: TimeSpan.FromMilliseconds(1),
+                thresholdStep: TimeSpan.FromMilliseconds(1),
+                enableMultiWriteRegionHedge: false);
 
-            using CosmosClient ppafClient = CreateMockMultiWriteClient(
-                regionCount: 2,
-                enablePartitionLevelFailover: true);
-
-            using CosmosClient noPpafClient = CreateMockClientWithRegions(regionCount: 2);
-
-            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender =
-                (req, ct) => Task.FromResult(new ResponseMessage(HttpStatusCode.OK));
+            using CosmosClient ppafClient = CreateMockSingleMasterPpafClient(regionCount: 3);
+            using CosmosClient noPpafClient = CreateMockSingleMasterPpafClient(
+                regionCount: 3,
+                enablePartitionLevelFailover: false);
 
             int concurrentRequests = 50;
             int exceptionCount = 0;
+            int noPpafHedgedCount = 0;
             List<Task> tasks = new List<Task>(concurrentRequests);
 
             for (int i = 0; i < concurrentRequests; i++)
             {
-                CosmosClient client = i % 2 == 0 ? ppafClient : noPpafClient;
+                bool usePpafClient = i % 2 == 0;
+                CosmosClient client = usePpafClient ? ppafClient : noPpafClient;
+
                 tasks.Add(Task.Run(async () =>
                 {
+                    int senderInvocationCount = 0;
+
+                    Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender = async (req, ct) =>
+                    {
+                        Interlocked.Increment(ref senderInvocationCount);
+                        await Task.Delay(TimeSpan.FromMilliseconds(20), ct);
+                        return new ResponseMessage(HttpStatusCode.OK);
+                    };
+
                     try
                     {
-                        using RequestMessage req = CreateReadRequest();
+                        using RequestMessage req = CreateWriteRequest();
                         await strategy.ExecuteAvailabilityStrategyAsync(
                             sender, client, req, CancellationToken.None);
+
+                        if (!usePpafClient && Volatile.Read(ref senderInvocationCount) > 1)
+                        {
+                            Interlocked.Increment(ref noPpafHedgedCount);
+                        }
                     }
                     catch (Exception)
                     {
@@ -924,6 +1037,176 @@
 
             Assert.AreEqual(0, exceptionCount,
                 $"Detected {exceptionCount} exception(s) during concurrent ExecuteAvailabilityStrategyAsync calls with different PPAF settings.");
+            Assert.AreEqual(0, noPpafHedgedCount,
+                $"{noPpafHedgedCount} write request(s) on the non-PPAF client hedged, which means the PPAF decision leaked across concurrent executions.");
+        }
+
+        [TestMethod]
+        public async Task PpafWriteHedge_PinsEachArmToItsOwnAccountLevelEndpoint()
+        {
+            // Regression: a hedge arm used to carry only a region name plus an ExcludeRegions list.
+            // ResolveServiceEndpoint then re-resolved that arm through the preferred-location filter,
+            // and a hedge target outside PreferredLocations collapsed back onto the primary write
+            // endpoint — producing a duplicate write to the primary instead of a real cross-region
+            // hedge. Each arm must instead carry the exact endpoint it was fanned out for.
+            using CosmosClient mockCosmosClient = CreateMockSingleMasterPpafClient(
+                regionCount: 3,
+                preferredLocations: new[] { "Region0", "Region1" });
+
+            CrossRegionHedgingAvailabilityStrategy strategy = new CrossRegionHedgingAvailabilityStrategy(
+                threshold: TimeSpan.FromMilliseconds(1),
+                thresholdStep: TimeSpan.FromMilliseconds(1));
+
+            ConcurrentDictionary<string, Uri> pinnedEndpointByExcludeSignature = new ConcurrentDictionary<string, Uri>();
+            int senderInvocationCount = 0;
+            using SemaphoreSlim releaseArms = new SemaphoreSlim(0, 3);
+
+            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender = async (req, ct) =>
+            {
+                int invocation = Interlocked.Increment(ref senderInvocationCount);
+
+                req.Properties.TryGetValue(
+                    CrossRegionHedgingAvailabilityStrategy.PPAFHedgeTargetEndpointKey,
+                    out object pinnedEndpoint);
+
+                string excludeSignature = req.RequestOptions?.ExcludeRegions == null
+                    ? "<none>"
+                    : string.Join(",", req.RequestOptions.ExcludeRegions);
+
+                pinnedEndpointByExcludeSignature[excludeSignature] = pinnedEndpoint as Uri;
+
+                // Hold the first two arms so the third (non-preferred Region2) arm is dispatched.
+                if (invocation < 3)
+                {
+                    await releaseArms.WaitAsync(TimeSpan.FromSeconds(5), ct);
+                }
+
+                return new ResponseMessage(HttpStatusCode.OK);
+            };
+
+            using RequestMessage request = CreateWriteRequest();
+
+            ResponseMessage response = await strategy.ExecuteAvailabilityStrategyAsync(
+                sender, mockCosmosClient, request, CancellationToken.None);
+
+            releaseArms.Release(2);
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.AreEqual(3, senderInvocationCount, "All three account-level read regions should have been fanned out to.");
+
+            // The primary arm excludes nothing and must not be pinned - it uses normal write routing.
+            Assert.IsTrue(pinnedEndpointByExcludeSignature.TryGetValue("<none>", out Uri primaryPinned));
+            Assert.IsNull(primaryPinned, "The primary arm must not carry a pinned hedge endpoint.");
+
+            // Region1 arm excludes Region0 and Region2.
+            Assert.IsTrue(
+                pinnedEndpointByExcludeSignature.TryGetValue("Region0,Region2", out Uri region1Pinned),
+                "Expected a hedge arm targeting Region1.");
+            Assert.AreEqual(new Uri("https://location1.documents.azure.com/"), region1Pinned);
+
+            // Region2 arm excludes Region0 and Region1. Region2 is NOT in PreferredLocations, which is
+            // exactly the case that used to silently collapse back onto the primary write endpoint.
+            Assert.IsTrue(
+                pinnedEndpointByExcludeSignature.TryGetValue("Region0,Region1", out Uri region2Pinned),
+                "Expected a hedge arm targeting Region2.");
+            Assert.AreEqual(
+                new Uri("https://location2.documents.azure.com/"),
+                region2Pinned,
+                "A hedge target outside PreferredLocations must stay pinned to its own endpoint.");
+        }
+
+        [TestMethod]
+        public async Task PpafWriteHedge_OnlyTheWinningArmPublishesTheCacheOverride()
+        {
+            // Regression: the PPAF cache override used to be applied by every successful arm as soon
+            // as it completed, before winner arbitration. A slow losing arm completing afterwards
+            // could overwrite the winner's override and pin the partition to a region the caller
+            // never actually got its response from.
+            using CosmosClient mockCosmosClient = CreateMockSingleMasterPpafClient(regionCount: 3);
+
+            Mock<GlobalPartitionEndpointManager> partitionEndpointManager = new Mock<GlobalPartitionEndpointManager>(MockBehavior.Loose);
+            List<Uri> publishedEndpoints = new List<Uri>();
+            partitionEndpointManager
+                .Setup(m => m.TrySetPartitionLevelLocationOverrideForSuccessfulHedge(
+                    It.IsAny<DocumentServiceRequest>(),
+                    It.IsAny<Uri>(),
+                    It.IsAny<Uri>()))
+                .Callback<DocumentServiceRequest, Uri, Uri>((_, _, successfulEndpoint) =>
+                {
+                    lock (publishedEndpoints)
+                    {
+                        publishedEndpoints.Add(successfulEndpoint);
+                    }
+                })
+                .Returns(true);
+
+            mockCosmosClient.DocumentClient.PartitionKeyRangeLocationForTests = partitionEndpointManager.Object;
+
+            CrossRegionHedgingAvailabilityStrategy strategy = new CrossRegionHedgingAvailabilityStrategy(
+                threshold: TimeSpan.FromMilliseconds(1),
+                thresholdStep: TimeSpan.FromMilliseconds(1));
+
+            Uri winnerEndpoint = new Uri("https://location1.documents.azure.com/");
+            Uri loserEndpoint = new Uri("https://location2.documents.azure.com/");
+
+            int senderInvocationCount = 0;
+            using SemaphoreSlim holdPrimary = new SemaphoreSlim(0, 1);
+            TaskCompletionSource<bool> loserCompleted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender = async (req, ct) =>
+            {
+                int invocation = Interlocked.Increment(ref senderInvocationCount);
+
+                switch (invocation)
+                {
+                    case 1:
+                        // Primary: never wins.
+                        await holdPrimary.WaitAsync(TimeSpan.FromSeconds(5), CancellationToken.None);
+                        return new ResponseMessage(HttpStatusCode.OK);
+
+                    case 2:
+                        // Winner: fast success routed to Region1.
+                        StampRoutedEndpoint(req, winnerEndpoint);
+                        return new ResponseMessage(HttpStatusCode.OK);
+
+                    default:
+                        // Loser: succeeds late, routed to Region2. It must never publish.
+                        StampRoutedEndpoint(req, loserEndpoint);
+                        await Task.Delay(TimeSpan.FromMilliseconds(200), CancellationToken.None);
+                        loserCompleted.TrySetResult(true);
+                        return new ResponseMessage(HttpStatusCode.OK);
+                }
+            };
+
+            using RequestMessage request = CreateWriteRequest();
+
+            ResponseMessage response = await strategy.ExecuteAvailabilityStrategyAsync(
+                sender, mockCosmosClient, request, CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+
+            // Give any losing arm a chance to complete and (incorrectly) publish.
+            holdPrimary.Release();
+            await Task.WhenAny(loserCompleted.Task, Task.Delay(TimeSpan.FromSeconds(2)));
+            await Task.Delay(TimeSpan.FromMilliseconds(100));
+
+            lock (publishedEndpoints)
+            {
+                Assert.AreEqual(
+                    1,
+                    publishedEndpoints.Count,
+                    $"Exactly one PPAF cache override should be published per hedged execution, saw {publishedEndpoints.Count}.");
+                Assert.AreEqual(
+                    winnerEndpoint,
+                    publishedEndpoints[0],
+                    "The published PPAF override must point at the region that actually served the winning response.");
+            }
+        }
+
+        private static void StampRoutedEndpoint(RequestMessage request, Uri routedEndpoint)
+        {
+            DocumentServiceRequest documentServiceRequest = request.ToDocumentServiceRequest();
+            documentServiceRequest.RequestContext.RouteToLocation(routedEndpoint);
         }
 
         [TestMethod]
@@ -1272,13 +1555,11 @@
             Assert.IsTrue(senderCallCount >= 1,
                 "Write request should be sent when PPAF default hedging is enabled.");
 
-            // Verify ppafEnabled was set from ConnectionPolicy
-            bool ppafEnabled = (bool)typeof(CrossRegionHedgingAvailabilityStrategy)
-                .GetField("ppafEnabled", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-                .GetValue(strategy);
-
-            Assert.IsTrue(ppafEnabled,
-                "ppafEnabled should be true for the default PPAF strategy, enabling write hedging.");
+            // The write path is only reached when PPAF write hedging is active for this client,
+            // so a hedged write proves the default PPAF strategy opted the request in.
+            Assert.IsTrue(
+                strategy.ShouldHedge(writeRequest, mockCosmosClient, ppafWriteHedgingEnabled: true),
+                "The default PPAF strategy should hedge writes on a single-master account.");
         }
 
         /// <summary>

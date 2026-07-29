@@ -447,17 +447,55 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// </summary>
         public ReadOnlyCollection<string> GetApplicableAccountLevelReadRegions(IEnumerable<string> excludeRegions)
         {
+            ReadOnlyCollection<AccountLevelReadRegion> regions = this.GetApplicableAccountLevelReadRegions(
+                excludeRegions,
+                out ReadOnlyCollection<string> effectivePreferredLocationsFallback);
+
+            if (regions.Count == 0)
+            {
+                return effectivePreferredLocationsFallback;
+            }
+
+            List<string> names = new List<string>(regions.Count);
+            foreach (AccountLevelReadRegion region in regions)
+            {
+                names.Add(region.Region);
+            }
+
+            return new ReadOnlyCollection<string>(names);
+        }
+
+        /// <summary>
+        /// Gets the account-level read regions for PPAF write hedging along with the endpoint each region
+        /// resolves to, computed from a single topology snapshot so the region name and the endpoint can
+        /// never disagree. Hedged PPAF write arms are dispatched against the returned endpoint directly
+        /// rather than re-resolving from the region name, because re-resolution filters through
+        /// <see cref="DatabaseAccountLocationsInfo.EffectivePreferredLocations"/> and can therefore collapse a
+        /// non-preferred hedge target back onto the primary write endpoint.
+        /// </summary>
+        /// <param name="excludeRegions">Regions the caller has excluded.</param>
+        /// <param name="effectivePreferredLocationsFallback">
+        /// The effective preferred locations, returned only when the account exposes no read locations at all
+        /// (in which case no endpoints can be bound and the caller must fall back to name-based routing).
+        /// </param>
+        public ReadOnlyCollection<AccountLevelReadRegion> GetApplicableAccountLevelReadRegions(
+            IEnumerable<string> excludeRegions,
+            out ReadOnlyCollection<string> effectivePreferredLocationsFallback)
+        {
             DatabaseAccountLocationsInfo snapshot = this.locationInfo;
             ReadOnlyCollection<string> availableReadLocations = snapshot.AvailableReadLocations;
             ReadOnlyCollection<string> effectivePreferredLocations = snapshot.EffectivePreferredLocations;
+            IReadOnlyDictionary<string, Uri> readEndpointByLocation = snapshot.AvailableReadEndpointByLocation;
+
+            effectivePreferredLocationsFallback = effectivePreferredLocations ?? new ReadOnlyCollection<string>(Array.Empty<string>());
 
             if (availableReadLocations == null || availableReadLocations.Count == 0)
             {
-                return effectivePreferredLocations ?? new ReadOnlyCollection<string>(Array.Empty<string>());
+                return new ReadOnlyCollection<AccountLevelReadRegion>(Array.Empty<AccountLevelReadRegion>());
             }
 
             HashSet<string> excludeSet = excludeRegions == null ? null : new HashSet<string>(excludeRegions);
-            List<string> result = new List<string>(availableReadLocations.Count);
+            List<AccountLevelReadRegion> result = new List<AccountLevelReadRegion>(availableReadLocations.Count);
             HashSet<string> added = new HashSet<string>();
 
             // First, add regions from preferred locations that exist in account read regions (preserves user ordering)
@@ -469,7 +507,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         && (excludeSet == null || !excludeSet.Contains(region))
                         && added.Add(region))
                     {
-                        result.Add(region);
+                        result.Add(new AccountLevelReadRegion(region, LocationCache.TryGetEndpoint(readEndpointByLocation, region)));
                     }
                 }
             }
@@ -480,16 +518,25 @@ namespace Microsoft.Azure.Cosmos.Routing
                 if ((excludeSet == null || !excludeSet.Contains(region))
                     && added.Add(region))
                 {
-                    result.Add(region);
+                    result.Add(new AccountLevelReadRegion(region, LocationCache.TryGetEndpoint(readEndpointByLocation, region)));
                 }
             }
 
-            if (result.Count == 0 && availableReadLocations.Count > 0)
+            if (result.Count == 0)
             {
-                result.Add(availableReadLocations[0]);
+                string fallbackRegion = availableReadLocations[0];
+                result.Add(new AccountLevelReadRegion(fallbackRegion, LocationCache.TryGetEndpoint(readEndpointByLocation, fallbackRegion)));
             }
 
-            return new ReadOnlyCollection<string>(result);
+            return new ReadOnlyCollection<AccountLevelReadRegion>(result);
+        }
+
+        private static Uri TryGetEndpoint(IReadOnlyDictionary<string, Uri> readEndpointByLocation, string region)
+        {
+            return readEndpointByLocation != null
+                && readEndpointByLocation.TryGetValue(region, out Uri endpoint)
+                    ? endpoint
+                    : null;
         }
 
         /// <summary>
@@ -1222,5 +1269,29 @@ namespace Microsoft.Azure.Cosmos.Routing
             Read = 0x1,
             Write = 0x2
         }
+    }
+
+    /// <summary>
+    /// An account-level read region paired with the endpoint it resolved to in the topology snapshot
+    /// the pair was produced from. Used by PPAF write hedging so each hedge arm can carry its explicit
+    /// endpoint through dispatch instead of being re-resolved from the region name.
+    /// </summary>
+    internal readonly struct AccountLevelReadRegion
+    {
+        public AccountLevelReadRegion(string region, Uri endpoint)
+        {
+            this.Region = region;
+            this.Endpoint = endpoint;
+        }
+
+        /// <summary>
+        /// The account-level read region name.
+        /// </summary>
+        public string Region { get; }
+
+        /// <summary>
+        /// The endpoint the region resolved to, or null when the snapshot had no endpoint for the region.
+        /// </summary>
+        public Uri Endpoint { get; }
     }
 }
