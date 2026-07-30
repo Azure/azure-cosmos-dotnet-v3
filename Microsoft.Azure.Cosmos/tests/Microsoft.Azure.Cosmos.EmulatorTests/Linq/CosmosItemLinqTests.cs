@@ -1295,5 +1295,46 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .Count();
             Assert.AreEqual(2, countNonEmpty, "Expected 2 non-empty items via Select+Count");
         }
+
+        /// <summary>
+        /// Validates that using LINQ Take() does not mutate the MaxItemCount property
+        /// on the QueryRequestOptions object passed in by the user.
+        /// </summary>
+        [TestMethod]
+        public async Task LinqTakeDoesNotMutateMaxItemCount()
+        {
+            IList<ToDoActivity> items = await ToDoActivity.CreateRandomItems(
+                this.Container,
+                pkCount: 5,
+                randomPartitionKey: true);
+
+            const int userMaxItemCount = 100;
+            QueryRequestOptions requestOptions = new QueryRequestOptions()
+            {
+                MaxItemCount = userMaxItemCount
+            };
+
+            IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(
+                requestOptions: requestOptions);
+
+            FeedIterator<ToDoActivity> feedIterator = linqQueryable
+                .OrderBy(item => item.id)
+                .Take(2)
+                .ToFeedIterator();
+
+            List<ToDoActivity> results = new List<ToDoActivity>();
+            while (feedIterator.HasMoreResults)
+            {
+                FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync();
+                results.AddRange(response);
+            }
+
+            Assert.AreEqual(2, results.Count, "Take(2) should return exactly 2 results");
+
+            Assert.AreEqual(
+                userMaxItemCount,
+                requestOptions.MaxItemCount,
+                "LINQ Take() must not mutate the user's QueryRequestOptions.MaxItemCount");
+        }
     }
 }

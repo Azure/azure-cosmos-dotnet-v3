@@ -89,6 +89,43 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
+        /// <summary>
+        /// Force-refreshes the routing cache for a single collection when the partition key range the server
+        /// actually served differs from the range the client resolved for the request — i.e. the partition
+        /// moved (split/merge) to a range the client did not know about. If the ids match, or any input is
+        /// missing, this is a no-op.
+        /// </summary>
+        /// <remarks>
+        /// The method only detects the move and issues the refresh; the caller decides which responses to feed in
+        /// and how to handle a refresh failure. The returned task carries any failure so a caller can await and
+        /// retry, or ignore it. The method is stateless and safe to call concurrently. A caller that processes many
+        /// operations at once and wants repeated moves to the same range to refresh only once should dedupe the
+        /// distinct (collection, served range) pairs itself and call this once per distinct pair.
+        /// </remarks>
+        public static Task RefreshRoutingCacheIfPartitionMovedAsync(
+            PartitionKeyRangeCache partitionKeyRangeCache,
+            string collectionResourceId,
+            string clientResolvedPartitionKeyRangeId,
+            string serverServedPartitionKeyRangeId,
+            ITrace trace)
+        {
+            if (partitionKeyRangeCache == null
+                || string.IsNullOrEmpty(collectionResourceId)
+                || string.IsNullOrEmpty(clientResolvedPartitionKeyRangeId)
+                || string.IsNullOrWhiteSpace(serverServedPartitionKeyRangeId)
+                || serverServedPartitionKeyRangeId.Equals(clientResolvedPartitionKeyRangeId, StringComparison.OrdinalIgnoreCase))
+            {
+                return Task.CompletedTask;
+            }
+
+            // The request ended up on a different partition unknown to the client, so refresh the caches.
+            return partitionKeyRangeCache.TryGetPartitionKeyRangeByIdAsync(
+                collectionResourceId,
+                serverServedPartitionKeyRangeId,
+                trace ?? NoOpTrace.Singleton,
+                forceRefresh: true);
+        }
+
         public virtual async Task<PartitionKeyRange> TryGetPartitionKeyRangeByIdAsync(
             string collectionResourceId,
             string partitionKeyRangeId,

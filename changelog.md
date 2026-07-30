@@ -23,7 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Breaking Changes
 
+- [6037](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/XXXX) Distributed Transactions (preview): Renamed `DistributedTransaction.CommitTransactionAsync` to `ExecuteTransactionAsync` to reflect that, in Fast Response mode, the call executes the transaction and may return before the terminal commit/abort outcome. The associated OpenTelemetry span operation names were also renamed from `commit_distributed_{read,write}_transaction` to `execute_distributed_{read,write}_transaction`.
+
 #### Bugs Fixed
+
+- [6032](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6032) ThinClient: Fixes clients using resource-token (permission-scoped) authorization failing or misrouting when thin client mode is enabled by default. Such clients now always route data-plane requests through the Gateway store model, since thin client mode does not support resource-token authorization. Clients using primary/secondary key or Microsoft Entra ID (AAD) authorization are unaffected.
+- [6025](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6025) Fixed `RemotingException` in AppDomain-isolated test hosts by replacing `Type.GetType` with `Assembly.GetType` in `CosmosHttpClientCore.CreateHttpClientHandler` and `CreateSocketsHttpHandlerHelper`. `Type.GetType` fires `AppDomain.TypeResolve` when the type is not found on .NET Framework, which crashes if cross-domain `MarshalByRefObject` proxies have expired leases.
 
 #### Other Changes
 
@@ -38,8 +43,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Breaking Changes
 
+- [5970](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5970) Thin Client: Starting with this release, thin client mode is enabled by default. Accounts and workloads that authenticate with resource tokens are not supported in thin client mode, so customers relying on resource token authentication will experience a breaking change on upgrade. To continue using resource token authentication, opt out of thin client mode by setting the environment variable `AZURE_COSMOS_THIN_CLIENT_ENABLED=false`.
+
 #### Bugs Fixed
 
+- [6003](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6003) LINQ: Fixes `Method 'Contains' is not supported` error when using enum array `.Contains()` in LINQ queries on .NET 10. On .NET 10, the C# compiler resolves `enumArray.Contains(x.Property)` to a 3-argument `MemoryExtensions.Contains` overload (because enum types do not implement `IEquatable<T>`); the SDK now handles this overload correctly.
 - [5989](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5989) Distributed Transactions (preview): Fixes a bodyless `429`/`3200` (RUBudgetExceeded) response on a distributed-transaction commit or read being surfaced to the caller without any retry. The empty response body was misdetected as a semantic per-operation result and deferred to the transaction's outer retry loop, which could not act on it, so the request was never re-sent. Such a throttled response is now retried honoring the server's `x-ms-retry-after-ms` header and the customer-configured rate-limit retry options (`CosmosClientOptions.MaxRetryAttemptsOnRateLimitedRequests` and `MaxRetryWaitTimeOnRateLimitedRequests`, defaults 9 attempts / 30 seconds cumulative), so a coordinator returning large retry-after values cannot stall a commit indefinitely.
 
 #### Other Changes
@@ -56,6 +64,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Breaking Changes
 
+- [5970](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5970) Thin Client: Starting with this release, thin client mode is enabled by default. Accounts and workloads that authenticate with resource tokens are not supported in thin client mode, so customers relying on resource token authentication will experience a breaking change on upgrade. To continue using resource token authentication, opt out of thin client mode by setting the environment variable `AZURE_COSMOS_THIN_CLIENT_ENABLED=false`.
+
 #### Bugs Fixed
 
 - [6008](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6008) AAD Authentication: Fixes a regression (introduced by the CAE/token-revocation change after `3.61.0`) where the SDK attached a non-empty `claims` parameter (the `cp1` client capability) on *every* AAD token acquisition, even when there was no revocation challenge. Because a non-empty `claims` forces the underlying identity library (Azure.Identity/MSAL) to bypass its token cache and request a fresh token from the authority on each acquisition, this could stall the first token acquisition and surface as a hang on the initial request (for example `ReadAccountAsync`) with certificate/managed-identity credentials. The SDK now attaches `claims` only when responding to an actual CAE/revocation challenge; the `cp1` capability continues to be advertised via `isCaeEnabled`, so continuous access evaluation still works while the token cache is used on the normal path. This change also hardens the token-refresh path against a race where a token refresh already in flight when a revocation challenge arrives could, on late completion, republish its stale (no-claims) result over the newer revocation-aware token and drop the challenge; the refresh now detects that it has been superseded and leaves the newer cached state intact, so the revocation is still honored.
@@ -70,6 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [5583](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5583) LINQ: Fixes `.Any()` on `Dictionary`/`IDictionary`/`IReadOnlyDictionary` properties returning no results by wrapping dictionary access with `OBJECTTOARRAY()` so dictionary entries (and predicates on `KeyValuePair.Key`/`Value`) are iterated correctly.
 - [5298](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5298) LINQ: Fixes constant folding for closure-captured variables inside MemberInitExpression (resolves #1664). Previously, the recursion that partially evaluates expressions terminated whenever it encountered a `MemberInitExpression` node, so captured variables inside object initializers were not folded, producing invalid translated SQL.
 - [5927](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5927) ThinClient: Fixes mid-flight fallback to gateway when the service stops advertising thin-client endpoints. Previously the SDK kept routing to stale thin-client URIs and required a client restart to recover.
+- [6023](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6023) LINQ: Fixes `Take()` silently mutating the caller's `QueryRequestOptions.MaxItemCount` property (resolves [#5225](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5225)). The query pipeline now shallow-copies the request options before setting the internal page size, so the user's original object is never modified.
 - [4801](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4801) Spatial: Fixes serialization and deserialization of `Microsoft.Azure.Cosmos.Spatial` geometry types (`Point`, `LineString`, `Polygon`, etc.) when using `CosmosClientOptions.UseSystemTextJsonSerializerWithOptions` (or a custom System.Text.Json-based serializer). Previously these types threw `System.NotSupportedException` on read/create and produced malformed non-GeoJSON output on patch, because only Newtonsoft.Json converters existed; a full set of System.Text.Json converters now produces GeoJSON-compliant output identical to the Newtonsoft serializers (closes #4744).
 - [5866](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5866) Routing: Fixes the `AZURE_COSMOS_USE_LENGTH_AWARE_RANGE_COMPARATOR` environment variable so it is honored across all length-aware range-comparer code paths (including `PartitionKeyRangeCache.TryCombine`) in the GA package, not just preview. Customers can now disable the length-aware range comparer as a mitigation for the hierarchical-partition-key silent empty-result issue (#5859) by setting `AZURE_COSMOS_USE_LENGTH_AWARE_RANGE_COMPARATOR=false`.
 
