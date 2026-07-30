@@ -548,6 +548,21 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public virtual Uri ResolveServiceEndpoint(DocumentServiceRequest request)
         {
+            // PPAF write hedging pins each hedged (non-primary) arm to the exact endpoint that was
+            // selected from the topology snapshot when the hedge fan-out was computed. Resolving from
+            // the region name instead would go through the preferred-location filter, which can drop a
+            // valid account-level hedge target and collapse the arm back onto the primary write
+            // endpoint - producing a duplicate primary write and a primary->primary cache override.
+            // The primary arm never carries this property and keeps its normal resolution path.
+            if (request.Properties != null
+                && request.Properties.TryGetValue(
+                    CrossRegionHedgingAvailabilityStrategy.PPAFHedgeTargetEndpointKey, out object hedgeTargetEndpoint)
+                && hedgeTargetEndpoint is Uri pinnedEndpoint)
+            {
+                request.RequestContext.RouteToLocation(pinnedEndpoint);
+                return pinnedEndpoint;
+            }
+
             return this.locationCache.ResolveServiceEndpoint(request);
         }
 
@@ -593,6 +608,24 @@ namespace Microsoft.Azure.Cosmos.Routing
         public ReadOnlyCollection<string> GetApplicableRegions(IEnumerable<string> excludeRegions, bool isReadRequest)
         {
             return this.locationCache.GetApplicableRegions(excludeRegions, isReadRequest);
+        }
+
+        public ReadOnlyCollection<string> GetApplicableAccountLevelReadRegions(IEnumerable<string> excludeRegions)
+        {
+            return this.locationCache.GetApplicableAccountLevelReadRegions(excludeRegions);
+        }
+
+        /// <summary>
+        /// Gets the account-level read regions applicable for PPAF write hedging together with the endpoint
+        /// each region resolved to, from a single topology snapshot.
+        /// </summary>
+        public ReadOnlyCollection<AccountLevelReadRegion> GetApplicableAccountLevelReadRegions(
+            IEnumerable<string> excludeRegions,
+            out ReadOnlyCollection<string> effectivePreferredLocationsFallback)
+        {
+            return this.locationCache.GetApplicableAccountLevelReadRegions(
+                excludeRegions,
+                out effectivePreferredLocationsFallback);
         }
 
         public bool TryGetLocationForGatewayDiagnostics(Uri endpoint, out string regionName)

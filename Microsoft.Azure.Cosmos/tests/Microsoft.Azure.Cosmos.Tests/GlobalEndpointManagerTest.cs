@@ -124,6 +124,131 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        /// <summary>
+        /// PPAF write hedging pins each hedged arm to the endpoint it was fanned out for.
+        /// Without the pin, a hedge target that is not in PreferredLocations is filtered out by
+        /// <see cref="LocationCache"/> and the arm falls back to the primary write endpoint, so the
+        /// "hedge" becomes a duplicate write to the primary region.
+        /// </summary>
+        [TestMethod]
+        public void ResolveServiceEndpoint_HonorsPinnedPpafHedgeTargetEndpoint()
+        {
+            Uri writeEndpoint = new Uri("https://writeendpoint.net/");
+            Uri preferredReadEndpoint = new Uri("https://readendpoint1.net/");
+            Uri nonPreferredReadEndpoint = new Uri("https://readendpoint2.net/");
+
+            Collection<AccountRegion> readableLocations = new Collection<AccountRegion>
+            {
+                new AccountRegion { Name = "WriteLocation", Endpoint = writeEndpoint.ToString() },
+                new AccountRegion { Name = "ReadLocation1", Endpoint = preferredReadEndpoint.ToString() },
+                new AccountRegion { Name = "ReadLocation2", Endpoint = nonPreferredReadEndpoint.ToString() },
+            };
+
+            AccountProperties databaseAccount = new AccountProperties
+            {
+                ReadLocationsInternal = readableLocations,
+                WriteLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "WriteLocation", Endpoint = writeEndpoint.ToString() }
+                },
+                EnableMultipleWriteLocations = false,
+            };
+
+            Mock<IDocumentClientInternal> mockOwner = new Mock<IDocumentClientInternal>();
+            mockOwner.Setup(owner => owner.ServiceEndpoint).Returns(new Uri("https://defaultendpoint.net/"));
+            mockOwner.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(databaseAccount);
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy();
+
+            // ReadLocation2 is deliberately NOT a preferred location.
+            connectionPolicy.PreferredLocations.Add("WriteLocation");
+            connectionPolicy.PreferredLocations.Add("ReadLocation1");
+
+            using GlobalEndpointManager globalEndpointManager = new GlobalEndpointManager(mockOwner.Object, connectionPolicy);
+            globalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(databaseAccount);
+
+            // Baseline: without the pin, a hedge arm excluding every region but ReadLocation2 falls
+            // back to the primary write endpoint. This is the bug the pin exists to prevent.
+            using (DocumentServiceRequest unpinnedRequest = DocumentServiceRequest.Create(
+                OperationType.Create,
+                ResourceType.Document,
+                AuthorizationTokenType.PrimaryMasterKey))
+            {
+                unpinnedRequest.RequestContext.ExcludeRegions = new List<string> { "WriteLocation", "ReadLocation1" };
+
+                Assert.AreEqual(
+                    writeEndpoint,
+                    globalEndpointManager.ResolveServiceEndpoint(unpinnedRequest),
+                    "Sanity check: an unpinned hedge arm targeting a non-preferred region collapses onto the primary write endpoint.");
+            }
+
+            using (DocumentServiceRequest pinnedRequest = DocumentServiceRequest.Create(
+                OperationType.Create,
+                ResourceType.Document,
+                AuthorizationTokenType.PrimaryMasterKey))
+            {
+                pinnedRequest.RequestContext.ExcludeRegions = new List<string> { "WriteLocation", "ReadLocation1" };
+                pinnedRequest.Properties = new Dictionary<string, object>
+                {
+                    { CrossRegionHedgingAvailabilityStrategy.PPAFHedgeTargetEndpointKey, nonPreferredReadEndpoint }
+                };
+
+                Uri resolved = globalEndpointManager.ResolveServiceEndpoint(pinnedRequest);
+
+                Assert.AreEqual(
+                    nonPreferredReadEndpoint,
+                    resolved,
+                    "A pinned PPAF hedge arm must resolve to its own endpoint even when the region is not preferred.");
+                Assert.AreEqual(
+                    nonPreferredReadEndpoint,
+                    pinnedRequest.RequestContext.LocationEndpointToRoute,
+                    "The pinned endpoint must also be recorded on the request context so the PPAF cache override records the right region.");
+            }
+        }
+
+        [TestMethod]
+        public void ResolveServiceEndpoint_IgnoresNonUriPpafHedgeTargetProperty()
+        {
+            Uri writeEndpoint = new Uri("https://writeendpoint.net/");
+
+            AccountProperties databaseAccount = new AccountProperties
+            {
+                ReadLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "WriteLocation", Endpoint = writeEndpoint.ToString() }
+                },
+                WriteLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "WriteLocation", Endpoint = writeEndpoint.ToString() }
+                },
+                EnableMultipleWriteLocations = false,
+            };
+
+            Mock<IDocumentClientInternal> mockOwner = new Mock<IDocumentClientInternal>();
+            mockOwner.Setup(owner => owner.ServiceEndpoint).Returns(new Uri("https://defaultendpoint.net/"));
+            mockOwner.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(databaseAccount);
+
+            using GlobalEndpointManager globalEndpointManager = new GlobalEndpointManager(mockOwner.Object, new ConnectionPolicy());
+            globalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(databaseAccount);
+
+            using DocumentServiceRequest request = DocumentServiceRequest.Create(
+                OperationType.Create,
+                ResourceType.Document,
+                AuthorizationTokenType.PrimaryMasterKey);
+
+            request.Properties = new Dictionary<string, object>
+            {
+                { CrossRegionHedgingAvailabilityStrategy.PPAFHedgeTargetEndpointKey, "https://readendpoint2.net/" }
+            };
+
+            Assert.AreEqual(
+                writeEndpoint,
+                globalEndpointManager.ResolveServiceEndpoint(request),
+                "A malformed hedge-target property must fall through to normal endpoint resolution.");
+        }
+
         [TestMethod]
         public async Task ValidateCancellationTokenLogicForGetDatabaseAccountFromAnyLocationAsync()
         {
