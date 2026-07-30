@@ -19,11 +19,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+- [6049](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6049) Distributed Transactions: Adds a public `SessionToken` getter on `DistributedTransactionOperationResult`, letting callers read the per-operation session token returned by the coordinator and pass it back via `DistributedTransactionRequestOptions.SessionToken` to enforce read-your-writes session consistency.
+
 #### Breaking Changes
+
+- [6037](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/XXXX) Distributed Transactions (preview): Renamed `DistributedTransaction.CommitTransactionAsync` to `ExecuteTransactionAsync` to reflect that, in Fast Response mode, the call executes the transaction and may return before the terminal commit/abort outcome. The associated OpenTelemetry span operation names were also renamed from `commit_distributed_{read,write}_transaction` to `execute_distributed_{read,write}_transaction`.
 
 #### Bugs Fixed
 
 - [5987](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5987) ThinClient: Fixes an unobserved `TaskScheduler.UnobservedTaskException` (`Http2StreamException` "stream aborted") that could surface when an HTTP/2 thin-client gateway request was retried after an HTTP 408 (common while the emulator is cold and slow). The retriable response is now disposed before the SDK retries, so its underlying HTTP/2 stream is torn down deterministically instead of being left to garbage-collector finalization. The awaited call still surfaces the same cancellation/timeout/`503` result. Note: the orphaned task that the .NET HTTP/2 stack can leave when an in-flight request is cancelled mid-flight is a runtime behavior (see [dotnet/runtime#46961](https://github.com/dotnet/runtime/issues/46961)); to avoid it on older runtimes, run a current .NET runtime or pin the emulator client to HTTP/1.1.
+- [6036](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6036) Distributed Transactions (preview): Fixes the resource body returned by distributed-transaction reads so it is surfaced verbatim, exactly as received from the transaction service.
 - [6032](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6032) ThinClient: Fixes clients using resource-token (permission-scoped) authorization failing or misrouting when thin client mode is enabled by default. Such clients now always route data-plane requests through the Gateway store model, since thin client mode does not support resource-token authorization. Clients using primary/secondary key or Microsoft Entra ID (AAD) authorization are unaffected.
 - [6025](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6025) Fixed `RemotingException` in AppDomain-isolated test hosts by replacing `Type.GetType` with `Assembly.GetType` in `CosmosHttpClientCore.CreateHttpClientHandler` and `CreateSocketsHttpHandlerHelper`. `Type.GetType` fires `AppDomain.TypeResolve` when the type is not found on .NET Framework, which crashes if cross-domain `MarshalByRefObject` proxies have expired leases.
 
