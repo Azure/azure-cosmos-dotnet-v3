@@ -178,7 +178,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the client-side diagnostics for the distributed transaction, covering the full
         /// retry loop and per-attempt spans (address resolution, network, retries, latency).
         /// </summary>
-        /// <remarks>Non-null when the response is returned from <c>CommitTransactionAsync</c>. The SDK sets this property
+        /// <remarks>Non-null when the response is returned from <c>ExecuteTransactionAsync</c>. The SDK sets this property
         /// before returning; callers should treat it as non-null in normal usage but guard defensively in edge cases.</remarks>
         public virtual CosmosDiagnostics Diagnostics { get; internal set; }
 
