@@ -32,20 +32,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     /// (Cosmos DB Built-in Data Contributor), the database/container cannot be created at runtime (that is a
     /// control-plane operation). They must be pre-created out of band (see the setup runbook); these tests
     /// only exercise data-plane operations.
+    ///
+    /// This class covers the auth-shaped scenarios (connectivity in both connection modes, the
+    /// control-plane 403, token refresh). The broader data-plane surface -- queries, batch, change feed,
+    /// session tokens, request options, routing -- lives in <see cref="CosmosAadLiveDataPlaneTests"/>.
     /// </summary>
     [TestClass]
     public class CosmosAadLiveTests
     {
-        private const string DatabaseId = "AadLiveTestDb";
-        private const string ContainerId = "AadLiveTestContainer";
-
-        /// <summary>
-        /// The number of <c>MultiRegionAad</c> test cases in this class, counting each
-        /// <see cref="DataRowAttribute"/> separately. The CI lane gates on exactly this many passing with
-        /// zero skipped/inconclusive results, so keep the <c>ExpectedTestCount</c> parameter in
-        /// <c>templates/build-test-aad.yml</c> in sync when adding or removing cases.
-        /// </summary>
-        internal const int ExpectedTestCaseCount = 8;
+        private const string DatabaseId = AadLiveTestSupport.DatabaseId;
+        private const string ContainerId = AadLiveTestSupport.ContainerId;
 
         private CosmosClient aadClient;
         private Container container;
@@ -53,57 +49,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public async Task TestInitAsync()
         {
-            if (string.IsNullOrEmpty(TestCommon.GetAadAccountEndpoint()))
-            {
-                CosmosAadLiveTests.SkipOrFail("Set COSMOSDB_MULTI_REGION_AAD (or COSMOSDB_MULTI_REGION) to the AAD account endpoint to run the live AAD tests.");
-            }
+            AadLiveTestSupport.ValidateConfiguration();
 
-            if (TestCommon.GetAadTokenCredential() == null)
-            {
-                CosmosAadLiveTests.SkipOrFail("Set AZURE_TENANT_ID / AZURE_CLIENT_ID / AZURE_CLIENT_SECRET (or COSMOSDB_AAD_USE_DEFAULT_CREDENTIAL=true) to run the live AAD tests.");
-            }
-
-            this.aadClient = TestCommon.CreateAadCosmosClient();
-            Assert.IsNotNull(this.aadClient, "Live AAD account/credentials are not configured.");
+            this.aadClient = AadLiveTestSupport.CreateClient();
             this.container = this.aadClient.GetContainer(DatabaseId, ContainerId);
 
             // The account is AAD-only and the service principal is data-plane only, so the
             // database/container must already exist. Verify with a data-plane metadata read and skip
             // (locally) or fail (in strict/CI mode) when the resources or the role assignment are not in place.
-            try
-            {
-                await this.container.ReadContainerAsync();
-            }
-            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-            {
-                CosmosAadLiveTests.SkipOrFail($"Pre-create database '{DatabaseId}' and container '{ContainerId}' (/pk) on the AAD account before running these tests. Response: {ex.Message}");
-            }
-            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.Forbidden || ex.StatusCode == HttpStatusCode.Unauthorized)
-            {
-                CosmosAadLiveTests.SkipOrFail($"The AAD principal is missing the Cosmos DB data-plane role assignment (Cosmos DB Built-in Data Contributor). Response: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Reports an unsatisfied prerequisite for the live AAD tests.
-        ///
-        /// By default the case is skipped via <see cref="Assert.Inconclusive(string)"/>, which keeps local,
-        /// opt-in runs green for developers who have not provisioned the AAD account. When
-        /// <c>COSMOSDB_AAD_STRICT</c> is set (the dedicated CI lane does so), the same condition becomes a
-        /// hard failure instead: an inconclusive run still lets MSTest exit successfully, so without this a
-        /// missing role assignment, a stale endpoint, or a missing fixture could leave the lane green
-        /// without validating a single Entra-authenticated operation.
-        /// </summary>
-        private static void SkipOrFail(string message)
-        {
-            if (TestCommon.IsAadStrictMode())
-            {
-                Assert.Fail($"COSMOSDB_AAD_STRICT is enabled, so an unsatisfied live AAD prerequisite is a failure rather than a skip: {message}");
-            }
-            else
-            {
-                Assert.Inconclusive(message);
-            }
+            await AadLiveTestSupport.ValidateFixtureAsync(this.container);
         }
 
         [TestCleanup]
@@ -286,58 +240,93 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private CosmosClient CreateAadClient(ConnectionMode connectionMode)
         {
-            CosmosClientOptions options = new CosmosClientOptions()
+            return AadLiveTestSupport.CreateClient(new CosmosClientOptions()
             {
                 ConnectionMode = connectionMode,
-            };
-
-            CosmosClient client = TestCommon.CreateAadCosmosClient(options);
-            Assert.IsNotNull(client, "Live AAD account/credentials are not configured.");
-            return client;
+            });
         }
     }
 
     /// <summary>
     /// Guards the constant the CI result gate is built on.
     ///
-    /// The live AAD lane requires exactly <see cref="CosmosAadLiveTests.ExpectedTestCaseCount"/> passing
+    /// The live AAD lane requires exactly <see cref="AadLiveTestSupport.ExpectedTestCaseCount"/> passing
     /// cases with zero skipped/inconclusive results (see the <c>ExpectedTestCount</c> parameter in
     /// <c>templates/build-test-aad.yml</c>). This test runs in the ordinary emulator lane -- it needs no
     /// live account -- and fails with an actionable message the moment a case is added or removed, so the
     /// expected count cannot silently drift away from what the pipeline enforces.
+    ///
+    /// It discovers cases by scanning the whole test assembly for the <c>MultiRegionAad</c> category rather
+    /// than a hard-coded class list. That is deliberate: the lane's filter is
+    /// <c>--filter "TestCategory=MultiRegionAad"</c>, so a new AAD test class would otherwise be picked up
+    /// by the pipeline but invisible to this gate, and the run would fail on a count mismatch with no clue
+    /// as to why.
     /// </summary>
     [TestClass]
     public class CosmosAadLiveTestsGateTests
     {
-        private const string MultiRegionAadCategory = "MultiRegionAad";
+        private const string MultiRegionAadCategory = AadLiveTestSupport.TestCategory;
 
         [TestMethod]
         public void ExpectedTestCaseCountMatchesDiscoveredTestCases()
         {
+            List<string> untagged = new List<string>();
             int discovered = 0;
-            foreach (MethodInfo method in typeof(CosmosAadLiveTests).GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+
+            foreach (Type testClass in typeof(CosmosAadLiveTests).Assembly.GetTypes())
             {
-                if (method.GetCustomAttribute<TestMethodAttribute>() == null)
+                if (testClass.GetCustomAttribute<TestClassAttribute>() == null)
                 {
                     continue;
                 }
 
-                IEnumerable<string> categories = method
+                List<MethodInfo> testMethods = testClass
+                    .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                    .Where(method => method.GetCustomAttribute<TestMethodAttribute>() != null)
+                    .ToList();
+
+                // MSTest's TestCategory filter honours a class-level attribute as if it were declared on
+                // every method, so the gate has to resolve categories the same way or it would undercount a
+                // class that tags itself once.
+                bool classIsLiveAad = testClass
                     .GetCustomAttributes<TestCategoryAttribute>()
-                    .SelectMany(attribute => attribute.TestCategories);
+                    .SelectMany(attribute => attribute.TestCategories)
+                    .Contains(MultiRegionAadCategory);
 
-                Assert.IsTrue(
-                    categories.Contains(MultiRegionAadCategory),
-                    $"{method.Name} must be tagged [TestCategory(\"{MultiRegionAadCategory}\")] so it runs in the live AAD lane that the CI result gate validates.");
+                List<MethodInfo> liveAadMethods = testMethods
+                    .Where(method => classIsLiveAad || method
+                        .GetCustomAttributes<TestCategoryAttribute>()
+                        .SelectMany(attribute => attribute.TestCategories)
+                        .Contains(MultiRegionAadCategory))
+                    .ToList();
 
-                int dataRowCount = method.GetCustomAttributes<DataRowAttribute>().Count();
-                discovered += dataRowCount == 0 ? 1 : dataRowCount;
+                if (liveAadMethods.Count == 0)
+                {
+                    continue;
+                }
+
+                // A class that is partly tagged is the dangerous case: the untagged cases silently never
+                // run in the AAD lane, so the coverage they were written for is not actually validated.
+                untagged.AddRange(testMethods
+                    .Except(liveAadMethods)
+                    .Select(method => $"{testClass.Name}.{method.Name}"));
+
+                foreach (MethodInfo method in liveAadMethods)
+                {
+                    int dataRowCount = method.GetCustomAttributes<DataRowAttribute>().Count();
+                    discovered += dataRowCount == 0 ? 1 : dataRowCount;
+                }
             }
 
             Assert.AreEqual(
-                CosmosAadLiveTests.ExpectedTestCaseCount,
+                0,
+                untagged.Count,
+                $"Every test on a live AAD test class must be tagged [TestCategory(\"{MultiRegionAadCategory}\")] so it runs in the live AAD lane that the CI result gate validates. Untagged: {string.Join(", ", untagged)}.");
+
+            Assert.AreEqual(
+                AadLiveTestSupport.ExpectedTestCaseCount,
                 discovered,
-                $"The number of {MultiRegionAadCategory} test cases changed. Update CosmosAadLiveTests.ExpectedTestCaseCount and the ExpectedTestCount parameter in templates/build-test-aad.yml together, otherwise the live AAD lane's result gate will reject an otherwise healthy run.");
+                $"The number of {MultiRegionAadCategory} test cases changed. Update AadLiveTestSupport.ExpectedTestCaseCount and the ExpectedTestCount parameter in templates/build-test-aad.yml together, otherwise the live AAD lane's result gate will reject an otherwise healthy run.");
         }
     }
 }

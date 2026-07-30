@@ -32,7 +32,7 @@
 # Falsification (how to prove the lane really fails): point 'AadAccountEndpoint' at a nonexistent
 # account, or rename the pre-created container so the fixture is missing, and re-run. The test task
 # fails because of guard (1); even if guard (1) were removed, guard (2) still fails the job because
-# passed (0) != ExpectedTestCount (8).
+# passed (0) != ExpectedTestCount (36).
 
 parameters:
   BuildConfiguration: ''
@@ -43,9 +43,11 @@ parameters:
   AadServiceConnection: ''
   # Fail the tests (instead of skipping them) when a live AAD prerequisite is not satisfied.
   StrictMode: true
-  # Number of MultiRegionAad test cases, counting each [DataRow] separately. Must match
-  # CosmosAadLiveTests.ExpectedTestCaseCount; the gate below requires exactly this many to pass.
-  ExpectedTestCount: 8
+  # Number of MultiRegionAad test cases across every live AAD test class, counting each [DataRow]
+  # separately. Must match AadLiveTestSupport.ExpectedTestCaseCount (which
+  # CosmosAadLiveTestsGateTests enforces in the ordinary emulator lane); the gate below requires
+  # exactly this many to pass.
+  ExpectedTestCount: 36
 
 jobs:
 - job:
@@ -167,7 +169,7 @@ jobs:
           $problems += ('{0} live AAD test case(s) were skipped/inconclusive. The prerequisites (reachable endpoint, Cosmos DB data-plane role assignment, pre-created AadLiveTestDb/AadLiveTestContainer) must be satisfied in CI.' -f $skipped)
         }
         if ($passed -ne $expected) {
-          $problems += ('Expected exactly {0} passed live AAD test case(s) but found {1}. If cases were added or removed, update ExpectedTestCount in templates/build-test-aad.yml and CosmosAadLiveTests.ExpectedTestCaseCount together.' -f $expected, $passed)
+          $problems += ('Expected exactly {0} passed live AAD test case(s) but found {1}. If cases were added or removed, update ExpectedTestCount in templates/build-test-aad.yml and AadLiveTestSupport.ExpectedTestCaseCount together.' -f $expected, $passed)
         }
         if ($total -ne $expected) {
           $problems += ('Expected exactly {0} total live AAD test case(s) but found {1}.' -f $expected, $total)
