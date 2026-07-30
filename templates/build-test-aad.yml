@@ -157,8 +157,20 @@ jobs:
         $skipped = $total - $passed - $failed
 
         Write-Host ('total={0} passed={1} failed={2} skipped/inconclusive={3} (required: {4} passed, 0 failed, 0 skipped)' -f $total, $passed, $failed, $skipped, $expected)
+
+        # Surface each non-passing case as a build issue, not just console output. ADO logs are not readable
+        # by everyone who can see the GitHub check, but logissue entries become check-run annotations, so this
+        # is what makes a red lane diagnosable from the pull request itself.
         foreach ($result in ($results | Where-Object { $_.outcome -ne 'Passed' })) {
-          Write-Host ('  not passed: {0} [{1}]' -f $result.testName, $result.outcome)
+          $detail = $result.SelectSingleNode('*[local-name()="Output"]/*[local-name()="ErrorInfo"]/*[local-name()="Message"]')
+          $message = if ($null -ne $detail) { $detail.InnerText } else { '(no error message in TRX)' }
+          # Annotations are single-line; collapse newlines and cap the length so the useful prefix survives.
+          $message = ($message -replace '\s*\r?\n\s*', ' ').Trim()
+          if ($message.Length -gt 900) {
+            $message = $message.Substring(0, 900) + ' ...'
+          }
+
+          Write-Host ('##vso[task.logissue type=error]{0} [{1}]: {2}' -f $result.testName, $result.outcome, $message)
         }
 
         $problems = @()

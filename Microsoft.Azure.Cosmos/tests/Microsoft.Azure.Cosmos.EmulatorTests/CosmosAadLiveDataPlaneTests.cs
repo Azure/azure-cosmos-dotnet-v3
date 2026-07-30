@@ -752,9 +752,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 // A feed range scoped to a single partition key must see all of that key's items.
-                FeedRange partitionKeyRange = FeedRange.FromPartitionKey(new PartitionKey(partitionKeyValue));
+                // NOTE: the `FeedRange.FromPartitionKey(...)` + `GetItemQueryIterator` combination is
+                // deliberately NOT used here - it throws ArgumentOutOfRangeException in the query pipeline
+                // (see the SDK issue linked from this test's PR). The supported way to scope a query to one
+                // logical partition, and the one Python's suite exercises, is QueryRequestOptions.PartitionKey.
                 int foundInPartition = 0;
-                using (FeedIterator<ToDoActivity> iterator = this.container.GetItemQueryIterator<ToDoActivity>(partitionKeyRange, query))
+                QueryRequestOptions partitionScoped = new QueryRequestOptions
+                {
+                    PartitionKey = new PartitionKey(partitionKeyValue),
+                };
+
+                using (FeedIterator<ToDoActivity> iterator = this.container.GetItemQueryIterator<ToDoActivity>(
+                    query,
+                    requestOptions: partitionScoped))
                 {
                     while (iterator.HasMoreResults)
                     {
