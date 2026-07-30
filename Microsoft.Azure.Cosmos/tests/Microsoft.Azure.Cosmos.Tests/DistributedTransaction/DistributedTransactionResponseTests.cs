@@ -2235,10 +2235,11 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         [TestMethod]
         [Description("Enum.TryParse also accepts the underlying numeric value, so a numeric string matching a defined member is parsed to that member (\"1\" -> FastResponse, \"0\" -> Standard). A conformant coordinator only sends names, so this is acceptable; this test documents the behavior.")]
-        [DataRow("1", DistributedTransactionResponseMode.FastResponse)]
-        [DataRow("0", DistributedTransactionResponseMode.Standard)]
-        public async Task FromResponseMessage_ResponseModeDefinedNumericString_MapsToUnderlyingMember(string numericResponseMode, DistributedTransactionResponseMode expected)
+        [DataRow("1", nameof(DistributedTransactionResponseMode.FastResponse))]
+        [DataRow("0", nameof(DistributedTransactionResponseMode.Standard))]
+        public async Task FromResponseMessage_ResponseModeDefinedNumericString_MapsToUnderlyingMember(string numericResponseMode, string expectedName)
         {
+            DistributedTransactionResponseMode expected = (DistributedTransactionResponseMode)Enum.Parse(typeof(DistributedTransactionResponseMode), expectedName);
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
 
             string json = $@"{{""responseMode"":""{numericResponseMode}"",""operationResponses"":[{{""index"":0,""statusCode"":{(int)HttpStatusCode.OK}}}]}}";
