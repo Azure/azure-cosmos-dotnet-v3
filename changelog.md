@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+- [6049](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6049) Distributed Transactions: Adds a public `SessionToken` getter on `DistributedTransactionOperationResult`, letting callers read the per-operation session token returned by the coordinator and pass it back via `DistributedTransactionRequestOptions.SessionToken` to enforce read-your-writes session consistency.
+
 #### Breaking Changes
 
 - [6037](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/XXXX) Distributed Transactions (preview): Renamed `DistributedTransaction.CommitTransactionAsync` to `ExecuteTransactionAsync` to reflect that, in Fast Response mode, the call executes the transaction and may return before the terminal commit/abort outcome. The associated OpenTelemetry span operation names were also renamed from `commit_distributed_{read,write}_transaction` to `execute_distributed_{read,write}_transaction`.
