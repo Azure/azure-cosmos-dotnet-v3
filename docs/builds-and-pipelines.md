@@ -88,7 +88,8 @@ The gate every PR to `main` / `releases/*` must pass. It excludes doc-only chang
   and `cosmosdb/csharp/nightly-preview` blob containers (cleaning prior contents). Also runs the
   `Preview parity build` stage (`build-preview.yml`), which it invokes with
   `IncludeEmulatorTests: false` — this definition has no `EMULATORMSIURL` variable, and the
-  emulator suite is already covered by rolling.
+  emulator suite is already covered by rolling — and the **Live-account AAD tests** stage
+  (`build-test-aad.yml`, `TestCategory=MultiRegionAad`).
 - **Rolling** (`azure-pipelines-rolling.yml`) — two schedules (weekday 00/05/07/13 UTC; weekend
   every 2h). Runs `build-test.yml` twice (GA and `IsPreview=true`) against the live multi-region
   and multi-master accounts with `--blame-hang --blame-crash` dumps, plus a preview build.
