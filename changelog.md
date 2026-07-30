@@ -20,11 +20,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Features Added
 
 - [6059](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6059) DistributedTransaction (preview): Adds `DistributedTransactionResponse.ResponseMode`, which reports whether the coordinator applied `Standard` or `FastResponse` mode when processing the transaction. The value is parsed from the coordinator response and defaults to `Standard` when not reported.
+- [6049](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6049) Distributed Transactions: Adds a public `SessionToken` getter on `DistributedTransactionOperationResult`, letting callers read the per-operation session token returned by the coordinator and pass it back via `DistributedTransactionRequestOptions.SessionToken` to enforce read-your-writes session consistency.
 
 #### Breaking Changes
 
+- [6037](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/XXXX) Distributed Transactions (preview): Renamed `DistributedTransaction.CommitTransactionAsync` to `ExecuteTransactionAsync` to reflect that, in Fast Response mode, the call executes the transaction and may return before the terminal commit/abort outcome. The associated OpenTelemetry span operation names were also renamed from `commit_distributed_{read,write}_transaction` to `execute_distributed_{read,write}_transaction`.
+
 #### Bugs Fixed
 
+- [6036](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6036) Distributed Transactions (preview): Fixes the resource body returned by distributed-transaction reads so it is surfaced verbatim, exactly as received from the transaction service.
 - [6032](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6032) ThinClient: Fixes clients using resource-token (permission-scoped) authorization failing or misrouting when thin client mode is enabled by default. Such clients now always route data-plane requests through the Gateway store model, since thin client mode does not support resource-token authorization. Clients using primary/secondary key or Microsoft Entra ID (AAD) authorization are unaffected.
 - [6025](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6025) Fixed `RemotingException` in AppDomain-isolated test hosts by replacing `Type.GetType` with `Assembly.GetType` in `CosmosHttpClientCore.CreateHttpClientHandler` and `CreateSocketsHttpHandlerHelper`. `Type.GetType` fires `AppDomain.TypeResolve` when the type is not found on .NET Framework, which crashes if cross-domain `MarshalByRefObject` proxies have expired leases.
 
