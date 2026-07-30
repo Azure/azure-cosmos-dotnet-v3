@@ -85,8 +85,10 @@ The gate every PR to `main` / `releases/*` must pass. It excludes doc-only chang
 - **Nightly** (`azure-pipelines-nightly.yml`, 00:00 UTC) — produces two packages from `main`:
   a GA `X.Y.Z-nightly-MMDDYYYY` and a preview `X.Y.Z-preview-nightly-MMDDYYYY` (`X.Y.Z` from
   [`Directory.Build.props`](../Directory.Build.props)), published to the `cosmosdb/csharp/nightly`
-  and `cosmosdb/csharp/nightly-preview` blob containers (cleaning prior contents). Also runs a
-  preview-parity build and the **live AAD tests** stage.
+  and `cosmosdb/csharp/nightly-preview` blob containers (cleaning prior contents). Also runs the
+  `Preview parity build` stage (`build-preview.yml`), which it invokes with
+  `IncludeEmulatorTests: false` — this definition has no `EMULATORMSIURL` variable, and the
+  emulator suite is already covered by rolling.
 - **Rolling** (`azure-pipelines-rolling.yml`) — two schedules (weekday 00/05/07/13 UTC; weekend
   every 2h). Runs `build-test.yml` twice (GA and `IsPreview=true`) against the live multi-region
   and multi-master accounts with `--blame-hang --blame-crash` dumps, plus a preview build.
@@ -163,7 +165,9 @@ time. Every emulator job pulls in `emulator-setup.yml` and sets
 Steps-only template (no parameters) used by every Windows emulator job:
 
 1. Downloads the emulator MSI from `$env:EMULATORMSIURL` and expands it with `lessmsi`
-   (from [`tools/`](../tools)) instead of installing it.
+   (from [`tools/`](../tools)) instead of installing it. `EMULATORMSIURL` is defined **per-pipeline
+   in the Azure DevOps UI**, not in this repo — a pipeline that gains an emulator-dependent job
+   without that variable being set fails here.
 2. Adds Windows Defender exclusions for the emulator dirs.
 3. Starts it via the `Microsoft.Azure.CosmosDB.Emulator` PowerShell module with:
    `/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=10 /Consistency=Strong /EnablePreview
@@ -358,6 +362,7 @@ re-run, or re-run all failed). Maintainers can also comment `/azp run <pipeline>
 | Symptom | Likely cause / fix |
 | --- | --- |
 | `Get-CosmosDbEmulatorStatus` never reaches Running / emulator job times out | Emulator failed to start on the agent — re-run the job; if persistent, check `emulator-setup.yml` and `$env:EMULATORMSIURL`. |
+| `EMULATORMSIURL is not defined for this pipeline` (or `Invalid URI: The hostname could not be parsed`) | An emulator-dependent job was added to a pipeline whose definition has no `EMULATORMSIURL` variable. Define it in that pipeline's UI variables, or exclude the emulator job (e.g. `IncludeEmulatorTests: false` for `build-preview.yml`). |
 | A single test fails only in one emulator bucket | It's a category-routing issue — check which bucket the category maps to in `build-test.yml`. |
 | `TestCategory=Flaky` test red | Flaky jobs already retry 4×; a hard failure there is usually a real regression. |
 | Live MultiRegion/MultiMaster job fails to connect | The `COSMOSDB_MULTI_REGION` / `COSMOSDB_MULTIMASTER` variable/account — not your code. |

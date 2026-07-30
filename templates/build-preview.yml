@@ -13,6 +13,10 @@ parameters:
   Arguments: ''
   VmImage: ''
   OS: 'Windows'
+  # Set to false for pipelines whose definition does not define the
+  # EMULATORMSIURL variable (see the note above the `Preview Encryption
+  # EmulatorTests` job below).
+  IncludeEmulatorTests: true
 
 jobs:
 
@@ -119,10 +123,15 @@ jobs:
       arguments: -p:Optimize=true -p:SdkProjectRef=true -p:DefineSdkProjectRefSymbol=false
       versioningScheme: OFF
 
+# This is the only job in this template that needs the Cosmos DB Emulator, and
+# therefore the only one that requires the pipeline definition to supply the
+# EMULATORMSIURL variable (it is set per-pipeline in the Azure DevOps UI, not in
+# this repo). Callers whose definition does not define it must pass
+# IncludeEmulatorTests: false, otherwise emulator-setup.yml fails on an empty URL.
 - job:
   displayName: Preview Encryption EmulatorTests ${{ parameters.BuildConfiguration }}
   timeoutInMinutes: 60
-  condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
+  condition: and(eq(${{ parameters.IncludeEmulatorTests }}, true), and(succeeded(), eq('${{ parameters.OS }}', 'Windows')))
   pool:
     name: 'OneES'
 

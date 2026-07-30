@@ -57,6 +57,10 @@ stages:
 # the nightly schedule so any newly-added abstract member on Container under
 # #if PREVIEW that lacks an unconditional override in EncryptionContainer is
 # caught off-PR as well.
+# IncludeEmulatorTests is false because this pipeline definition does not define
+# the EMULATORMSIURL variable (it has never run an emulator job) and the emulator
+# integration suite is already covered by the rolling pipeline, which runs it
+# 4x/weekday and 12x/weekend-day. The parity *builds* are the point here.
 - stage:
   displayName: Preview parity build
   variables:
@@ -67,3 +71,4 @@ stages:
         BuildConfiguration: Release
         Arguments: $(PreviewArguments)
         VmImage: $(VmImage)
+        IncludeEmulatorTests: false
