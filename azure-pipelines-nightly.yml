@@ -63,3 +63,17 @@ stages:
         BuildConfiguration: Release
         Arguments: ' '
         VmImage: $(VmImage)
+
+# Live-account AAD (Microsoft Entra ID) integration tests (TestCategory=MultiRegionAad).
+# Runs against the AAD-only live Cosmos DB account dotnet-v3-multiregion via an Azure Resource
+# Manager (Workload Identity Federation) service connection whose app-registration identity
+# (co-tenant with the account) holds the Cosmos DB data-plane role.
+- stage:
+  displayName: Live-account AAD tests
+  dependsOn: []
+  jobs:
+    - template:  templates/build-test-aad.yml
+      parameters:
+        BuildConfiguration: Release
+        AadAccountEndpoint: 'https://dotnet-v3-multiregion.documents.azure.com:443/'
+        AadServiceConnection: 'dotnet-v3-aad-ci'

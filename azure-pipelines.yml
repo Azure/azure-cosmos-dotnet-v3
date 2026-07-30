@@ -83,3 +83,14 @@ jobs:
     MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
     IncludePerformance: true
     IncludeCoverage: true
+
+# Live-account AAD (Microsoft Entra ID) integration tests (TestCategory=MultiRegionAad).
+# These run on every pipeline (PR + nightly), targeting the AAD-only live Cosmos DB account
+# dotnet-v3-multiregion via an Azure Resource Manager (Workload Identity Federation) service
+# connection whose app-registration identity (co-tenant with the account) holds the Cosmos DB
+# data-plane role. The job stays skipped (green) if 'AadServiceConnection' is cleared.
+- template:  templates/build-test-aad.yml
+  parameters:
+    BuildConfiguration: Release
+    AadAccountEndpoint: 'https://dotnet-v3-multiregion.documents.azure.com:443/'
+    AadServiceConnection: 'dotnet-v3-aad-ci'
