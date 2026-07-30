@@ -96,9 +96,16 @@ namespace Microsoft.Azure.Cosmos
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                await DistributedTransactionCommitterUtils.ResolveCollectionRidsAsync(
+
+                // Resolve effective consistency once, before the commit: session-token work only applies
+                // under Session, and resolving here surfaces a lookup failure before committing, not after.
+                bool isSessionConsistency = await DistributedTransactionCommitter.IsEffectiveSessionConsistencyAsync(
+                    this.clientContext);
+
+                await DistributedTransactionCommitterUtils.PrepareOperationsAsync(
                     this.operations,
                     this.clientContext,
+                    isSessionConsistency,
                     cancellationToken);
 
                 DistributedTransactionServerRequest serverRequest = await DistributedTransactionServerRequest.CreateAsync(
@@ -333,6 +340,35 @@ namespace Microsoft.Azure.Cosmos
                         ex.Message);
                 }
             }
+        }
+
+        /// <summary>
+        /// Determines whether the effective consistency level is Session (client override ?? account default).
+        /// Session-token bookkeeping only applies under Session consistency.
+        /// </summary>
+        /// <remarks>
+        /// A per-request consistency override is not consulted: DistributedTransactionRequestOptions
+        /// exposes none today. If one is added, thread it here and validate via
+        /// ValidationHelpers.IsValidConsistencyLevelOverwrite (matching point operations).
+        /// </remarks>
+        private static async Task<bool> IsEffectiveSessionConsistencyAsync(CosmosClientContext clientContext)
+        {
+            ConsistencyLevel? clientOverride = clientContext.ClientOptions?.ConsistencyLevel;
+            if (clientOverride.HasValue)
+            {
+                return clientOverride.Value == ConsistencyLevel.Session;
+            }
+
+            // Fall back to account consistency; default to Session when the client is unavailable
+            // (e.g., minimal test mocks) so session-token bookkeeping stays active.
+            CosmosClient client = clientContext.Client;
+            if (client == null)
+            {
+                return true;
+            }
+
+            ConsistencyLevel accountLevel = await client.GetAccountConsistencyLevelAsync();
+            return accountLevel == ConsistencyLevel.Session;
         }
     }
 }
