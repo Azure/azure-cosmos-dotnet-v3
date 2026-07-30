@@ -79,6 +79,148 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
+        // GetSessionTokenForPartitionKeyRange must walk the parent ranges when the target range has no
+        // token of its own (freshly-split child), mirroring ResolvePartitionLocalSessionTokenForGateway,
+        // instead of returning null and forcing the DTX caller onto the compound collection-wide token.
+        public void GetSessionTokenForPartitionKeyRange_WalksParents_WhenChildHasNoToken()
+        {
+            SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
+
+            string collectionResourceId = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            const string collectionFullname = "dbs/db1/colls/collName_0";
+
+            // Seed two parent ranges; the child "range_99" intentionally has no token.
+            sessionContainer.SetSessionToken(collectionResourceId, collectionFullname,
+                new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_1:1#100#4=90#5=2" } });
+            sessionContainer.SetSessionToken(collectionResourceId, collectionFullname,
+                new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_2:1#200#4=91#5=3" } });
+
+            // Direct hit: the range's own token is returned as-is.
+            string directParent = sessionContainer.GetSessionTokenForPartitionKeyRange(collectionFullname, "range_1");
+            Assert.IsNotNull(directParent, "A range with its own token must resolve directly.");
+            StringAssert.StartsWith(directParent, "range_1:");
+
+            // Single-parent walk: child inherits the parent's token (only the pkRangeId prefix differs).
+            string childWalk = sessionContainer.GetSessionTokenForPartitionKeyRange(
+                collectionFullname, "range_99", new List<string> { "range_1" });
+            Assert.IsNotNull(childWalk, "A freshly-split child with a known parent must inherit the parent's token.");
+            string expected = "range_99:" + directParent.Substring("range_1:".Length);
+            Assert.AreEqual(expected, childWalk,
+                "The inherited token must equal the parent's token with the child's pkRangeId prefix.");
+
+            // Multi-parent (merge) walk: both parents are considered and a token is produced.
+            string mergeWalk = sessionContainer.GetSessionTokenForPartitionKeyRange(
+                collectionFullname, "range_99", new List<string> { "range_1", "range_2" });
+            Assert.IsNotNull(mergeWalk, "A split child with multiple known parents must inherit a merged token.");
+            StringAssert.StartsWith(mergeWalk, "range_99:");
+
+            // No own token and no resolvable parent → null (the DTX caller then applies no token for the op).
+            Assert.IsNull(
+                sessionContainer.GetSessionTokenForPartitionKeyRange(collectionFullname, "range_77", new List<string> { "range_x" }),
+                "A range with no token and no known parent must return null.");
+            Assert.IsNull(
+                sessionContainer.GetSessionTokenForPartitionKeyRange(collectionFullname, "range_77"),
+                "Without a parent list, a range with no token must return null (no parent walk).");
+        }
+
+        [TestMethod]
+        // Divergent-parent causal correctness (reviewer feedback K1): when a freshly-split child inherits
+        // from multiple parents whose LSN vectors diverge per region, the merged token stamped under the
+        // child range id must carry the element-wise MAX of the parents' vectors — the correct causal floor.
+        // Stamping the child's pkRangeId onto the merged parent vector is intentional and matches the gateway
+        // path (ResolvePartitionLocalSessionTokenForGateway): the pkRangeId is only a routing label, while the
+        // '#'-delimited LSN vector is the causal payload, and ISessionToken.Merge preserves each region's
+        // high-water mark. This test proves the next request after a merge carries a valid causal token rather
+        // than under-reporting either parent's progress.
+        public void GetSessionTokenForPartitionKeyRange_DivergentParents_MergesToPerRegionMax()
+        {
+            string collectionResourceId = ResourceId.NewDocumentCollectionId(42, 130).DocumentCollectionId.ToString();
+            const string collectionFullname = "dbs/db1/colls/collName_1";
+
+            // Two parents with per-region divergence: parent A leads region 4, parent B leads the
+            // global LSN and region 5. A correct causal merge must take the max of each component.
+            const string parentAToken = "range_10:1#100#4=90#5=2";
+            const string parentBToken = "range_20:1#200#4=80#5=9";
+
+            SessionContainer actualContainer = new SessionContainer("127.0.0.1");
+            actualContainer.SetSessionToken(collectionResourceId, collectionFullname,
+                new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, parentAToken } });
+            actualContainer.SetSessionToken(collectionResourceId, collectionFullname,
+                new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, parentBToken } });
+
+            string mergedChild = actualContainer.GetSessionTokenForPartitionKeyRange(
+                collectionFullname, "range_child", new List<string> { "range_10", "range_20" });
+
+            // Build the expected token through the same store/read path so the LSN serialization format
+            // (ConvertToString) matches exactly: element-wise max => global 200, region 4 = 90, region 5 = 9.
+            SessionContainer expectedContainer = new SessionContainer("127.0.0.1");
+            expectedContainer.SetSessionToken(collectionResourceId, collectionFullname,
+                new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_child:1#200#4=90#5=9" } });
+            string expected = expectedContainer.GetSessionTokenForPartitionKeyRange(collectionFullname, "range_child");
+
+            Assert.IsNotNull(mergedChild, "A split child with two known divergent parents must inherit a merged token.");
+            Assert.AreEqual(expected, mergedChild,
+                "The merged child token must carry the element-wise max of both parents' LSN vectors " +
+                "(the causal floor), stamped under the child pkRangeId.");
+        }
+
+        [DataTestMethod]
+        [DataRow("0:1#100", DisplayName = "canonical two-segment")]
+        [DataRow("0:1#100#4=90#5=2", DisplayName = "canonical with multi-region lsn payload")]
+        [DataRow("range_7:1#5", DisplayName = "canonical with non-numeric range id")]
+        // A canonical session token is exactly two non-empty ':'-separated segments ("{pkRangeId}:{lsn}").
+        // The lsn payload's own '#'/'=' separators do not introduce extra ':' segments, so realistic
+        // multi-region tokens remain canonical. Content of the lsn segment is validated separately by Parse.
+        public void IsCanonicalSessionTokenShape_CanonicalTokens_ReturnTrue(string sessionToken)
+        {
+            Assert.IsTrue(SessionContainer.IsCanonicalSessionTokenShape(sessionToken),
+                $"'{sessionToken}' has the canonical two-segment shape and must be accepted.");
+        }
+
+        [DataTestMethod]
+        [DataRow(null, DisplayName = "null")]
+        [DataRow("", DisplayName = "empty")]
+        [DataRow("   ", DisplayName = "whitespace only")]
+        [DataRow("1#9#4=8#5=7", DisplayName = "lsn only, no colon")]
+        [DataRow("0", DisplayName = "single segment")]
+        [DataRow(":1#100", DisplayName = "empty pkRangeId segment (leading colon)")]
+        [DataRow("0:", DisplayName = "empty lsn segment (trailing colon)")]
+        [DataRow("0:1:2", DisplayName = "three segments (multi-colon)")]
+        [DataRow("0:1#100:extra", DisplayName = "multi-colon with content")]
+        // Anything that is not exactly two non-empty ':'-separated segments is non-canonical. Locks in the
+        // Split-based semantics (multi-colon, leading/trailing colon, blank strings) that differ from the
+        // previous single-IndexOf check.
+        public void IsCanonicalSessionTokenShape_NonCanonicalTokens_ReturnFalse(string sessionToken)
+        {
+            Assert.IsFalse(SessionContainer.IsCanonicalSessionTokenShape(sessionToken),
+                $"'{sessionToken ?? "<null>"}' is not a canonical two-segment token and must be rejected.");
+        }
+
+        [DataTestMethod]
+        [DataRow("0:1#100", DisplayName = "canonical, parseable lsn")]
+        [DataRow("0:1#100#4=90#5=2", DisplayName = "canonical with multi-region lsn payload")]
+        // A valid token is both canonically shaped AND has an lsn segment that SessionTokenHelper.Parse accepts.
+        public void IsValidSessionToken_CanonicalAndParseable_ReturnTrue(string sessionToken)
+        {
+            Assert.IsTrue(SessionContainer.IsValidSessionToken(sessionToken),
+                $"'{sessionToken}' is canonically shaped with a parseable lsn and must be accepted.");
+        }
+
+        [DataTestMethod]
+        [DataRow(null, DisplayName = "null")]
+        [DataRow("", DisplayName = "empty")]
+        [DataRow("1#9#4=8#5=7", DisplayName = "bad shape: lsn only, no colon")]
+        [DataRow("0:not-a-valid-lsn", DisplayName = "shape valid, content unparseable")]
+        [DataRow("0:100", DisplayName = "shape valid, legacy non-Vector lsn rejected by Parse")]
+        // A token that is non-canonical in shape OR whose lsn segment fails Parse is not valid. Content
+        // validation never throws — it returns false so callers can classify deterministically up front.
+        public void IsValidSessionToken_BadShapeOrUnparseableContent_ReturnFalse(string sessionToken)
+        {
+            Assert.IsFalse(SessionContainer.IsValidSessionToken(sessionToken),
+                $"'{sessionToken ?? "<null>"}' is not a valid session token and must be rejected without throwing.");
+        }
+
+        [TestMethod]
         public void TestResolveGlobalSessionTokenReturnsEmptyStringOnEmptyCache()
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
