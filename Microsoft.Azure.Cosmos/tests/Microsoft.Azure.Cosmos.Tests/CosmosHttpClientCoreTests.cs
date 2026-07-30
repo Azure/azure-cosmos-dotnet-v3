@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Net.Security;
@@ -15,6 +16,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -838,6 +841,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             using CosmosHttpClient cosmosHttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
 
             string diagnostics;
+            IReadOnlyList<ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics> recordedStatistics;
             using (ITrace trace = Trace.GetRootTrace(nameof(ThinClientRetriableResponsesAreDisposedBeforeRetryAsync)))
             {
                 ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
@@ -861,6 +865,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 // response was disposed.
                 trace.AddDatum("stats", datum);
                 diagnostics = new CosmosTraceDiagnostics(trace).ToString();
+                recordedStatistics = datum.HttpResponseStatisticsList;
             }
 
             Assert.AreEqual(2, droppedResponseContents.Count, "Two 408 responses should be produced before success.");
@@ -872,6 +877,39 @@ namespace Microsoft.Azure.Cosmos.Tests
             // The disposed 408 responses still serialize their status into diagnostics without throwing
             // ObjectDisposedException, proving the retriable-response disposal does not corrupt diagnostics.
             StringAssert.Contains(diagnostics, HttpStatusCode.RequestTimeout.ToString());
+
+            // Diagnostics is not the only consumer that outlives the disposal. The OpenTelemetry network
+            // metrics path is the one that actually reads .Content on a recorded response
+            // (CosmosDbMeterUtil.GetNetworkMetricsValues -> GetPayloadSize), which is what the comment in
+            // CosmosHttpClientCore.SendHttpHelperAsync claims is safe because GetPayloadSize swallows
+            // ObjectDisposedException. The 408 content deliberately reports no Content-Length, so the
+            // eagerly captured HttpResponseStatistics.ResponseContentLength is null and the metrics path is
+            // forced down that guarded fallback instead of using the cached value.
+            foreach (DisposeTrackingContent content in droppedResponseContents)
+            {
+                Assert.ThrowsException<ObjectDisposedException>(
+                    () => { _ = content.Headers.ContentLength; },
+                    "Reading Content-Length on the disposed 408 content must throw, otherwise this test would " +
+                    "not be exercising the ObjectDisposedException guard in CosmosDbMeterUtil.GetPayloadSize.");
+            }
+
+            List<ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics> retriedStatistics = recordedStatistics
+                .Where(stat => stat.HttpResponseMessage?.StatusCode == HttpStatusCode.RequestTimeout)
+                .ToList();
+            Assert.AreEqual(2, retriedStatistics.Count, "Both dropped 408 attempts should be recorded in diagnostics.");
+
+            foreach (ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics stat in retriedStatistics)
+            {
+                Assert.IsNull(
+                    stat.ResponseContentLength,
+                    "The 408 content reports no Content-Length, so the metrics path must fall back to reading the disposed content.");
+
+                // Would throw ObjectDisposedException if the guard in GetPayloadSize were ever removed.
+                NetworkMetricData metricData = CosmosDbMeterUtil.GetNetworkMetricsValues(stat);
+
+                Assert.IsNotNull(metricData.ResponseBodySize);
+                Assert.AreEqual(0L, metricData.ResponseBodySize.Value, "The guarded fallback should report a 0 byte body for a disposed response.");
+            }
         }
 
         private static DocumentServiceRequest CreateDocumentServiceRequestByOperation(
@@ -913,8 +951,12 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             protected override bool TryComputeLength(out long length)
             {
+                // Report no computable length so the response carries no Content-Length header. That mirrors
+                // a chunked / ResponseHeadersRead HTTP/2 response and forces the OpenTelemetry metrics path
+                // (CosmosDbMeterUtil.GetNetworkMetricsValues) down its GetPayloadSize fallback, which is the
+                // only consumer that reads .Content on a response the retry loop has already disposed.
                 length = 0;
-                return true;
+                return false;
             }
 
             protected override void Dispose(bool disposing)
