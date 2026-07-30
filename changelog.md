@@ -23,14 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [5829](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5829) Routing: Adds Gateway Account Property Flag for Dynamic Hedging Control. Introduces a Gateway-controlled `disableCrossRegionalHedging` account property that lets operators dynamically disable PPAF cross-region hedging (and any customer-configured `AvailabilityStrategy`) without rolling back PPAF entirely. The SDK reconciles `ConnectionPolicy.AvailabilityStrategy` against the Gateway-supplied flag on each account-properties refresh; toggling the flag back to `false` restores the customer-configured strategy or rebuilds the SDK default.
 - [5976](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5976) Upgraded Direct package to 3.44.0.
 - [5976](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5976) Direct: Adds barrier early yield on 429 — ConsistencyWriter and QuorumReader yield early with substatus 21013 (`Server_WriteBarrierThrottled`) when all replicas return 429 during barrier requests. Direct retries the 429 internally and surfaces a synthetic 408/21013 to the SDK when retries are exhausted. The SDK's `ClientRetryPolicy` recognizes this substatus and avoids marking the endpoint unavailable, preventing unnecessary cross-region failover. Adds internal opt-out flag and env-var kill switch (`AZURE_COSMOS_BARRIER_EARLY_YIELD_ON_429_ENABLED`).
-
-#### Breaking Changes
-
-- [5976](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5976) Direct: The `GenerateEmbeddings` query plan rewrite (`embeddingParameterMap`) that was present in Direct 3.43.2 is not included in Direct 3.44.0. Queries using `GenerateEmbeddings` in Direct mode may produce different query plans. This exclusion was intentional for this release branch.
 - [6049](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6049) Distributed Transactions: Adds a public `SessionToken` getter on `DistributedTransactionOperationResult`, letting callers read the per-operation session token returned by the coordinator and pass it back via `DistributedTransactionRequestOptions.SessionToken` to enforce read-your-writes session consistency.
 
 #### Breaking Changes
 
+- [5976](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5976) Direct: The `GenerateEmbeddings` query plan rewrite (`embeddingParameterMap`) that was present in Direct 3.43.2 is not included in Direct 3.44.0. Queries using `GenerateEmbeddings` in Direct mode may produce different query plans. This exclusion was intentional for this release branch.
 - [6037](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/XXXX) Distributed Transactions (preview): Renamed `DistributedTransaction.CommitTransactionAsync` to `ExecuteTransactionAsync` to reflect that, in Fast Response mode, the call executes the transaction and may return before the terminal commit/abort outcome. The associated OpenTelemetry span operation names were also renamed from `commit_distributed_{read,write}_transaction` to `execute_distributed_{read,write}_transaction`.
 
 #### Bugs Fixed
