@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.IO;
     using System.Net;
+    using System.Text;
     using System.Text.Json;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -209,7 +210,10 @@ namespace Microsoft.Azure.Cosmos
                     throw new JsonException($"The 'resourceBody' value must be a JSON object, but was '{resourceBody.ValueKind}'.");
                 }
 
-                byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(resourceBody);
+                // Surface the coordinator's document verbatim: GetRawText() preserves raw UTF-8, quotes, and
+                // numeric tokens as received (no SDK re-escaping). Pure pass-through — escapes are not decoded.
+                // Do NOT use Utf8JsonWriter/WriteTo: its encoder re-introduces \uXXXX escaping.
+                byte[] bytes = Encoding.UTF8.GetBytes(resourceBody.GetRawText());
                 result.ResourceStream = new MemoryStream(bytes, 0, bytes.Length, writable: false, publiclyVisible: true);
             }
 
