@@ -19,12 +19,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+- [6049](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6049) Distributed Transactions: Adds a public `SessionToken` getter on `DistributedTransactionOperationResult`, letting callers read the per-operation session token returned by the coordinator and pass it back via `DistributedTransactionRequestOptions.SessionToken` to enforce read-your-writes session consistency.
+
 #### Breaking Changes
+
+- [6037](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/XXXX) Distributed Transactions (preview): Renamed `DistributedTransaction.CommitTransactionAsync` to `ExecuteTransactionAsync` to reflect that, in Fast Response mode, the call executes the transaction and may return before the terminal commit/abort outcome. The associated OpenTelemetry span operation names were also renamed from `commit_distributed_{read,write}_transaction` to `execute_distributed_{read,write}_transaction`.
 
 #### Bugs Fixed
 
 - [6051](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6051) Cross Region Hedging: Fixes an `InvalidOperationException` ("A task may only be disposed if it is in a completion state") that could be thrown from `CrossRegionHedgingAvailabilityStrategy` when a hedged request completed at the same moment the application's `CancellationToken` was cancelled from another thread. The exception could surface instead of the operation's real result or cancellation, and was most visible in query workloads, where the pipeline cancels prefetch operations frequently.
+- [6036](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6036) Distributed Transactions (preview): Fixes the resource body returned by distributed-transaction reads so it is surfaced verbatim, exactly as received from the transaction service.
 - [6032](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6032) ThinClient: Fixes clients using resource-token (permission-scoped) authorization failing or misrouting when thin client mode is enabled by default. Such clients now always route data-plane requests through the Gateway store model, since thin client mode does not support resource-token authorization. Clients using primary/secondary key or Microsoft Entra ID (AAD) authorization are unaffected.
+- [6025](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6025) Fixed `RemotingException` in AppDomain-isolated test hosts by replacing `Type.GetType` with `Assembly.GetType` in `CosmosHttpClientCore.CreateHttpClientHandler` and `CreateSocketsHttpHandlerHelper`. `Type.GetType` fires `AppDomain.TypeResolve` when the type is not found on .NET Framework, which crashes if cross-domain `MarshalByRefObject` proxies have expired leases.
 
 #### Other Changes
 
@@ -43,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
+- [6003](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6003) LINQ: Fixes `Method 'Contains' is not supported` error when using enum array `.Contains()` in LINQ queries on .NET 10. On .NET 10, the C# compiler resolves `enumArray.Contains(x.Property)` to a 3-argument `MemoryExtensions.Contains` overload (because enum types do not implement `IEquatable<T>`); the SDK now handles this overload correctly.
 - [5989](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5989) Distributed Transactions (preview): Fixes a bodyless `429`/`3200` (RUBudgetExceeded) response on a distributed-transaction commit or read being surfaced to the caller without any retry. The empty response body was misdetected as a semantic per-operation result and deferred to the transaction's outer retry loop, which could not act on it, so the request was never re-sent. Such a throttled response is now retried honoring the server's `x-ms-retry-after-ms` header and the customer-configured rate-limit retry options (`CosmosClientOptions.MaxRetryAttemptsOnRateLimitedRequests` and `MaxRetryWaitTimeOnRateLimitedRequests`, defaults 9 attempts / 30 seconds cumulative), so a coordinator returning large retry-after values cannot stall a commit indefinitely.
 
 #### Other Changes
