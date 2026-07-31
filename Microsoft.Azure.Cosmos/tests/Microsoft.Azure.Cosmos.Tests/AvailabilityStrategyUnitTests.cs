@@ -1041,11 +1041,15 @@
         /// The primary arm faults synchronously with a non-OCE exception (so its Task ends Faulted, not
         /// Canceled) while the app token stays uncancelled, and a later region wins. The winner is gated
         /// on the primary having faulted, so the faulted primary is always dequeued through the phase-1
-        /// faulted-task branch — no reliance on Task.Delay timing. After forcing finalization, the test
-        /// asserts the unobserved-exception event never fired. Reverting the fix leaves the faulted
-        /// primary unobserved and fails this test.
+        /// faulted-task branch — no reliance on Task.Delay timing. Finalization is forced synchronously
+        /// with GC.WaitForPendingFinalizers (no wall-clock delay), and the assertion is scoped to the
+        /// exact injected fault (an <see cref="ArgumentNullException"/> with ParamName "request"), so a
+        /// task leaked by an unrelated test cannot be misattributed to this one. The test is also marked
+        /// <c>[DoNotParallelize]</c> to keep the process-global GC window isolated. Reverting the fix
+        /// leaves the faulted primary unobserved and fails this test.
         /// </summary>
         [TestMethod]
+        [DoNotParallelize]
         public async Task LosingHedgeFaultsAppTokenNotCancelled_NoUnobservedTaskException()
         {
             // Arrange. A large primary threshold guarantees the primary arm faults long before its
@@ -1107,28 +1111,40 @@
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
 
                 // Force the faulted losing task to be finalized. If its exception were left unobserved,
-                // the finalizer would raise TaskScheduler.UnobservedTaskException during this window.
-                await Task.Delay(50);
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
+                // the Task finalizer raises TaskScheduler.UnobservedTaskException while it is finalized.
+                // Yield once so any trailing internal continuations drop their references to the
+                // abandoned task before it is collected; this is a GC-settle window only — request
+                // routing above is TaskCompletionSource-gated and does not depend on this delay.
+                await Task.Yield();
+                for (int attempt = 0; attempt < 5; attempt++)
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                }
             }
             finally
             {
                 TaskScheduler.UnobservedTaskException -= handler;
             }
 
-            // Assert
+            // Assert. Scope the assertion to the exact fault this test injects — an
+            // ArgumentNullException with ParamName "request" — so a task leaked by an unrelated test
+            // that happens to be finalized inside this GC window cannot be misattributed to this test.
+            List<Exception> injectedLeaks;
             lock (unobservedExceptions)
             {
-                Assert.AreEqual(
-                    0,
-                    unobservedExceptions.Count,
-                    $"A faulted losing hedge arm must never surface as an unobserved task exception " +
-                    $"(senderCallCount={senderCallCount}). Observed: " +
-                    string.Join("; ", unobservedExceptions.Select(e => e?.Message)));
+                injectedLeaks = unobservedExceptions
+                    .SelectMany(e => (e as AggregateException)?.Flatten().InnerExceptions ?? (IEnumerable<Exception>)new[] { e })
+                    .Where(inner => inner is ArgumentNullException ane && ane.ParamName == "request")
+                    .ToList();
             }
+
+            Assert.AreEqual(
+                0,
+                injectedLeaks.Count,
+                $"The faulted losing hedge arm (injected ArgumentNullException(\"request\")) must never " +
+                $"surface as an unobserved task exception (senderCallCount={senderCallCount}). Observed: " +
+                string.Join("; ", injectedLeaks.Select(e => e?.Message)));
         }
 
         /// <summary>
