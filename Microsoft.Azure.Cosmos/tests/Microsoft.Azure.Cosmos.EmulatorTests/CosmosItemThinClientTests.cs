@@ -233,6 +233,90 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("ThinClient")]
+        public async Task ResourceTokenAuth_ThinClient_CreateAndReadItemAsync()
+        {
+            // Ensure thin-client mode is on for this test (TestInit already sets it, but be explicit).
+            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
+
+            // 1) Using the key-based client from TestInit, create a User and a Permission
+            //    scoped to the test container with PermissionMode.All so we can write + read.
+            string userId = "thinclient-user-" + Guid.NewGuid();
+            UserResponse userResponse = await this.database.CreateUserAsync(userId);
+            Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
+            User user = userResponse.User;
+
+            string permissionId = "thinclient-perm-" + Guid.NewGuid();
+            PermissionProperties permissionProperties = new PermissionProperties(
+                permissionId,
+                PermissionMode.All,
+                this.container);
+
+            PermissionResponse permissionResponse = await user.CreatePermissionAsync(permissionProperties);
+            Assert.AreEqual(HttpStatusCode.Created, permissionResponse.StatusCode);
+            string resourceToken = permissionResponse.Resource.Token;
+            Assert.IsFalse(string.IsNullOrEmpty(resourceToken), "Resource token should be issued by the service.");
+
+            // 2) Parse the AccountEndpoint out of the connection string so we can build a
+            //    resource-token-based client (the token overload does not accept a full
+            //    connection string).
+            string accountEndpoint = this.connectionString
+                .Split(';', StringSplitOptions.RemoveEmptyEntries)
+                .Select(part => part.Trim())
+                .First(part => part.StartsWith("AccountEndpoint=", StringComparison.OrdinalIgnoreCase))
+                ["AccountEndpoint=".Length..];
+
+            CosmosClientOptions tokenClientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                ApplicationPreferredRegions = PreferredRegions,
+                Serializer = this.cosmosSystemTextJsonSerializer,
+            };
+            tokenClientOptions.CustomHandlers.Add(new ExcludeRegionsInjectingHandler(ExcludeRegions));
+
+            // 3) Build a second CosmosClient authenticated only via the resource token,
+            //    with thin-client mode enabled, and exercise item CRUD through it.
+            using (CosmosClient tokenClient = new CosmosClient(accountEndpoint, resourceToken, tokenClientOptions))
+            {
+                Container tokenContainer = tokenClient.GetContainer(this.database.Id, this.container.Id);
+
+                string pk = "rt-pk-" + Guid.NewGuid();
+                TestObject warmUpItem = new TestObject
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = pk,
+                    Other = "ThinClient resource-token warm-up"
+                };
+
+                // Warm up the thin-client connectivity probe on the token-auth client.
+                await WarmUpThinClientProbeAsync(tokenContainer, warmUpItem);
+
+                // Create via resource-token + thin client.
+                TestObject item = new TestObject
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = pk,
+                    Other = "ThinClient resource-token item"
+                };
+
+                ItemResponse<TestObject> createResponse = await tokenContainer.CreateItemAsync(
+                    item,
+                    new PartitionKey(item.Pk));
+                Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+                AssertExcludedRegionsNotInDiagnostics(createResponse.Diagnostics.ToString());
+
+                // Read it back via resource-token + thin client.
+                ItemResponse<TestObject> readResponse = await tokenContainer.ReadItemAsync<TestObject>(
+                    item.Id,
+                    new PartitionKey(item.Pk));
+                Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
+                Assert.AreEqual(item.Id, readResponse.Resource.Id);
+                Assert.AreEqual(item.Pk, readResponse.Resource.Pk);
+                AssertExcludedRegionsNotInDiagnostics(readResponse.Diagnostics.ToString());
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("ThinClient")]
         public async Task TestThinClientWithExecuteStoredProcedureAsync()
         {
             CosmosClient localClient = null;

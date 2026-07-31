@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
     internal class DistributedWriteTransactionCore : DistributedWriteTransaction
     {
         internal const string CommitAlreadyCalledMessage =
-            "CommitTransactionAsync has already been called on this transaction instance. " +
+            "ExecuteTransactionAsync has already been called on this transaction instance. " +
             "A DistributedWriteTransaction is single-use because each commit generates a new " +
             "idempotency token; a second call would bypass server-side duplicate detection and " +
             "risk a double-commit. To retry, construct a new DistributedWriteTransaction with " +
@@ -280,16 +280,16 @@ namespace Microsoft.Azure.Cosmos
 
         /// <inheritdoc/>
         /// <remarks>
-        /// Each call to <see cref="DistributedTransaction.CommitTransactionAsync"/> generates a unique
+        /// Each call to <see cref="DistributedTransaction.ExecuteTransactionAsync"/> generates a unique
         /// idempotency token that the server uses for duplicate detection during the SDK's internal
         /// retries. A second call would generate a new token and bypass that server-side duplicate
         /// detection, risking a double-commit. When the previous commit's outcome is unknown
         /// (e.g., cancellation or network failure), verify the resulting state before retrying
         /// to avoid duplicate writes.
         /// </remarks>
-        /// <exception cref="InvalidOperationException">Thrown if <see cref="DistributedTransaction.CommitTransactionAsync"/> has already been called on this instance.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if <see cref="DistributedTransaction.ExecuteTransactionAsync"/> has already been called on this instance.</exception>
         /// <exception cref="OperationCanceledException">Thrown if <paramref name="cancellationToken"/> is cancelled before or during the commit.</exception>
-        public override Task<DistributedTransactionResponse> CommitTransactionAsync(CancellationToken cancellationToken = default)
+        public override Task<DistributedTransactionResponse> ExecuteTransactionAsync(CancellationToken cancellationToken = default)
         {
             if (this.operations.Count == 0)
             {
@@ -302,7 +302,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return this.clientContext.OperationHelperAsync(
-                operationName: $"{nameof(DistributedWriteTransaction)}.{nameof(CommitTransactionAsync)}",
+                operationName: $"{nameof(DistributedWriteTransaction)}.{nameof(ExecuteTransactionAsync)}",
                 containerName: null,
                 databaseName: null,
                 operationType: OperationType.CommitDistributedTransaction,
@@ -314,9 +314,9 @@ namespace Microsoft.Azure.Cosmos
                         clientContext: this.clientContext,
                         operationType: OperationType.CommitDistributedTransaction);
 
-                    return committer.CommitTransactionAsync(trace, cancellationToken);
+                    return committer.ExecuteTransactionAsync(trace, cancellationToken);
                 },
-                openTelemetry: new (OpenTelemetryConstants.Operations.CommitDistributedWriteTransaction,
+                openTelemetry: new (OpenTelemetryConstants.Operations.ExecuteDistributedWriteTransaction,
                                     (response) => new OpenTelemetryResponse(response)),
                 traceComponent: TraceComponent.Batch);
         }

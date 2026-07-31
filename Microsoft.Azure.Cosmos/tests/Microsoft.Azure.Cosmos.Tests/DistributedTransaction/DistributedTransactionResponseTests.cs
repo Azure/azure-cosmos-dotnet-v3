@@ -1869,6 +1869,87 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [Description("The resource body stream must preserve non-ASCII characters as raw UTF-8 (e.g. 北京, 😀), " +
+                     "including non-ASCII property names, instead of emitting \\uXXXX escape sequences.")]
+        public async Task FromResponseMessage_ResourceBody_PreservesNonAsciiCharacters()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            // resourceBody contains CJK text, a supplementary-plane emoji, and a non-ASCII property name,
+            // all as raw UTF-8. The SDK must surface this object verbatim.
+            const string resourceBody = "{\"id\":\"item1\",\"city\":\"北京\",\"mood\":\"😀\",\"名前\":\"東京\"}";
+            string json = "{\"operationResponses\":[{\"index\":0,\"statusCode\":200,\"resourceBody\":" + resourceBody + "}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            using StreamReader reader = new StreamReader(response[0].ResourceStream, Encoding.UTF8);
+            string body = reader.ReadToEnd();
+
+            // Exact equality proves the body is verbatim, not merely that the fragments survived.
+            Assert.AreEqual(resourceBody, body, "Resource body must be surfaced byte-for-byte, including the non-ASCII property name.");
+        }
+
+        [TestMethod]
+        [Description("The resource body is a pure pass-through: escape sequences the transaction service sends " +
+                     "(e.g. \\u00e9, \\n) are surfaced verbatim and are NOT decoded/normalized by the SDK.")]
+        public async Task FromResponseMessage_ResourceBody_DoesNotDecodeEscapeSequences()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            // The coordinator sends a \uXXXX escape and a \n escape. A pass-through must preserve them
+            // literally rather than decoding \u00e9 -> é or \n -> a newline.
+            const string resourceBody = "{\"id\":\"item1\",\"name\":\"caf\\u00e9\",\"note\":\"a\\nb\"}";
+            string json = "{\"operationResponses\":[{\"index\":0,\"statusCode\":200,\"resourceBody\":" + resourceBody + "}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            using StreamReader reader = new StreamReader(response[0].ResourceStream, Encoding.UTF8);
+            string body = reader.ReadToEnd();
+
+            Assert.AreEqual(resourceBody, body, "Escaped input must be surfaced verbatim, not decoded.");
+            Assert.IsFalse(body.Contains("café"), "\\u00e9 must not be decoded to é.");
+        }
+
+        [TestMethod]
+        [Description("The resource body must surface every value exactly as the transaction coordinator sent it. " +
+                     "Numeric tokens — including scientific/exponent notation (e.g. 3.141592653589793E0), large " +
+                     "integers, and trailing-zero decimals — are passed through verbatim without any re-formatting.")]
+        public async Task FromResponseMessage_ResourceBody_PreservesNumericTokensVerbatim()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            // Every numeric token below must appear byte-for-byte in the resource body, exactly as received.
+            const string resourceBody = "{\"id\":\"item1\",\"pi\":3.141592653589793E0,\"scaled\":1.5E2,\"largeInt\":12345678901234567890,\"plain\":1.50}";
+            string json = "{\"operationResponses\":[{\"index\":0,\"statusCode\":200,\"resourceBody\":" + resourceBody + "}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            using StreamReader reader = new StreamReader(response[0].ResourceStream, Encoding.UTF8);
+            string body = reader.ReadToEnd();
+
+            // Exact equality proves no numeric token was re-formatted (E-notation, trailing zeros, large int all intact).
+            Assert.AreEqual(resourceBody, body, "Numeric tokens must be surfaced exactly as received, with no re-formatting.");
+        }
+
+        [TestMethod]
         [Description("GetOperationResultAtIndex<T> returns default(T) when the operation has no resource body.")]
         public async Task GetOperationResultAtIndex_WithoutResourceBody_ResourceIsDefault()
         {
