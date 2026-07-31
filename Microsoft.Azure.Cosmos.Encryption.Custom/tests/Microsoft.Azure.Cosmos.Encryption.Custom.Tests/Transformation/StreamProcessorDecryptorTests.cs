@@ -123,8 +123,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         public async Task Decrypt_Skips_EncryptionInfo_Block()
         {
             // Arrange
-            // Build a document that already has _ei. (Encryptor will append another one during encryption; we want to ensure decryptor skips only the encrypted one at top-level.)
-            var doc = new { id = "1", _ei = new { ignore = true }, SensitiveStr = "abc" };
+            // Encrypt a normal document; the encryptor writes the top-level _ei metadata block.
+            // The decryptor must strip that top-level metadata block from the decrypted output. (A
+            // document that already carries a top-level _ei is now rejected up front by the
+            // encryptor, so the duplicate-_ei scenario the earlier revision exercised here can no
+            // longer occur.)
+            var doc = new { id = "1", SensitiveStr = "abc" };
             string[] paths = new[] { "/SensitiveStr" };
             EncryptionOptions options = CreateOptions(paths);
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
