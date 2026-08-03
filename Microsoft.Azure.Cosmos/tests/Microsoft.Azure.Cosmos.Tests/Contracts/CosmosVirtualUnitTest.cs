@@ -57,7 +57,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Contracts
             HashSet<string> nonMockableClasses = new HashSet<string>()
             {
                 "ChangeFeedStartFrom",
-                "ChangeFeedMode"
+                "ChangeFeedMode",
+                "DistributedTransaction"
             };
 
             // All of the public classes should not contain an internal abstract method
