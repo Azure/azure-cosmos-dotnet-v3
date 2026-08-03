@@ -18,6 +18,22 @@ namespace Microsoft.Azure.Cosmos
 
         public virtual bool ShouldThrow503OnTimeout => false;
 
+        /// <summary>
+        /// The request timeout of the first attempt in this policy's timeout sequence.
+        /// Cross-region metadata hedging derives its hedge threshold from this value
+        /// (first-attempt timeout + a fixed step) so the threshold always sits between
+        /// the first and second HTTP attempt timeouts. See
+        /// <c>docs/metadata-hedging-simple-design.md</c> §5.
+        /// </summary>
+        public virtual TimeSpan FirstAttemptTimeout
+        {
+            get
+            {
+                using IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> e = this.GetTimeoutEnumerator();
+                return e.MoveNext() ? e.Current.requestTimeout : TimeSpan.Zero;
+            }
+        }
+
         public static HttpTimeoutPolicy GetTimeoutPolicy(
            DocumentServiceRequest documentServiceRequest,
            bool isPartitionLevelFailoverEnabled = false,
