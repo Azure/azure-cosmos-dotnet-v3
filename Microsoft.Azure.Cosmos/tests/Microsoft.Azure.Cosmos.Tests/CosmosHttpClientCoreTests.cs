@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Net.Security;
@@ -14,6 +15,9 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Security.Cryptography.X509Certificates;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -800,6 +804,114 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreSame(HttpTimeoutPolicyDefault.Instance, thinClientPolicy);
         }
 
+        [TestMethod]
+        public async Task ThinClientRetriableResponsesAreDisposedBeforeRetryAsync()
+        {
+            // Regression test for the retriable-response disposal fix.
+            // On the HTTP/2 thin-client path a 408 response is retried (ShouldRetryBasedOnResponse).
+            // The dropped 408 response must be disposed before the retry so the underlying stream is
+            // torn down deterministically instead of being left to GC finalization, where an HTTP/2
+            // stream abort would surface as an unobserved Http2StreamException ("stream aborted").
+            // This validates the disposal mechanism over an in-memory handler; a real-transport
+            // (Kestrel HTTP/2 / emulator) characterization test that reproduces the unobserved-task
+            // symptom is tracked separately.
+            List<DisposeTrackingContent> droppedResponseContents = new List<DisposeTrackingContent>();
+            int count = 0;
+            Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                count++;
+
+                if (count <= 2)
+                {
+                    DisposeTrackingContent content = new DisposeTrackingContent();
+                    droppedResponseContents.Add(content);
+                    return Task.FromResult(new HttpResponseMessage(HttpStatusCode.RequestTimeout) { Content = content });
+                }
+
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("ok") });
+            }
+
+            DocumentServiceRequest documentServiceRequest = CreateDocumentServiceRequestByOperation(ResourceType.Document, OperationType.Read);
+            HttpTimeoutPolicy thinClientPolicy = HttpTimeoutPolicy.GetTimeoutPolicy(
+                documentServiceRequest: documentServiceRequest,
+                isPartitionLevelFailoverEnabled: false,
+                isThinClientEnabled: true);
+
+            HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+            using CosmosHttpClient cosmosHttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
+
+            string diagnostics;
+            IReadOnlyList<ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics> recordedStatistics;
+            using (ITrace trace = Trace.GetRootTrace(nameof(ThinClientRetriableResponsesAreDisposedBeforeRetryAsync)))
+            {
+                ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
+                HttpResponseMessage responseMessage = await cosmosHttpClient.SendHttpAsync(() =>
+                    new ValueTask<HttpRequestMessage>(
+                        result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
+                    resourceType: ResourceType.Document,
+                    timeoutPolicy: thinClientPolicy,
+                    clientSideRequestStatistics: datum,
+                    cancellationToken: default,
+                    documentServiceRequest: documentServiceRequest);
+
+                Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+
+                // The dropped 408 responses were disposed before each retry, but the diagnostics still
+                // hold a reference to them (RecordHttpResponse stored each one). Serializing the trace
+                // runs the production diagnostics path (TraceJsonWriter reads StatusCode / ReasonPhrase
+                // on every recorded response) over those now-disposed responses. This asserts the
+                // disposal added by this fix stays dispose-safe for diagnostics - the actual risk of
+                // disposing a still-referenced response - rather than only proving the
+                // response was disposed.
+                trace.AddDatum("stats", datum);
+                diagnostics = new CosmosTraceDiagnostics(trace).ToString();
+                recordedStatistics = datum.HttpResponseStatisticsList;
+            }
+
+            Assert.AreEqual(2, droppedResponseContents.Count, "Two 408 responses should be produced before success.");
+            foreach (DisposeTrackingContent content in droppedResponseContents)
+            {
+                Assert.IsTrue(content.IsDisposed, "Dropped retriable (408) response should be disposed before the retry.");
+            }
+
+            // The disposed 408 responses still serialize their status into diagnostics without throwing
+            // ObjectDisposedException, proving the retriable-response disposal does not corrupt diagnostics.
+            StringAssert.Contains(diagnostics, HttpStatusCode.RequestTimeout.ToString());
+
+            // Diagnostics is not the only consumer that outlives the disposal. The OpenTelemetry network
+            // metrics path is the one that actually reads .Content on a recorded response
+            // (CosmosDbMeterUtil.GetNetworkMetricsValues -> GetPayloadSize), which is what the comment in
+            // CosmosHttpClientCore.SendHttpHelperAsync claims is safe because GetPayloadSize swallows
+            // ObjectDisposedException. The 408 content deliberately reports no Content-Length, so the
+            // eagerly captured HttpResponseStatistics.ResponseContentLength is null and the metrics path is
+            // forced down that guarded fallback instead of using the cached value.
+            foreach (DisposeTrackingContent content in droppedResponseContents)
+            {
+                Assert.ThrowsException<ObjectDisposedException>(
+                    () => { _ = content.Headers.ContentLength; },
+                    "Reading Content-Length on the disposed 408 content must throw, otherwise this test would " +
+                    "not be exercising the ObjectDisposedException guard in CosmosDbMeterUtil.GetPayloadSize.");
+            }
+
+            List<ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics> retriedStatistics = recordedStatistics
+                .Where(stat => stat.HttpResponseMessage?.StatusCode == HttpStatusCode.RequestTimeout)
+                .ToList();
+            Assert.AreEqual(2, retriedStatistics.Count, "Both dropped 408 attempts should be recorded in diagnostics.");
+
+            foreach (ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics stat in retriedStatistics)
+            {
+                Assert.IsNull(
+                    stat.ResponseContentLength,
+                    "The 408 content reports no Content-Length, so the metrics path must fall back to reading the disposed content.");
+
+                // Would throw ObjectDisposedException if the guard in GetPayloadSize were ever removed.
+                NetworkMetricData metricData = CosmosDbMeterUtil.GetNetworkMetricsValues(stat);
+
+                Assert.IsNotNull(metricData.ResponseBodySize);
+                Assert.AreEqual(0L, metricData.ResponseBodySize.Value, "The guarded fallback should report a 0 byte body for a disposed response.");
+            }
+        }
+
         private static DocumentServiceRequest CreateDocumentServiceRequestByOperation(
             ResourceType resourceType,
             OperationType operationType)
@@ -825,6 +937,32 @@ namespace Microsoft.Azure.Cosmos.Tests
             protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
                 return await this.sendFunc(request, cancellationToken);
+            }
+        }
+
+        private sealed class DisposeTrackingContent : HttpContent
+        {
+            public bool IsDisposed { get; private set; }
+
+            protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
+            {
+                return Task.CompletedTask;
+            }
+
+            protected override bool TryComputeLength(out long length)
+            {
+                // Report no computable length so the response carries no Content-Length header. That mirrors
+                // a chunked / ResponseHeadersRead HTTP/2 response and forces the OpenTelemetry metrics path
+                // (CosmosDbMeterUtil.GetNetworkMetricsValues) down its GetPayloadSize fallback, which is the
+                // only consumer that reads .Content on a response the retry loop has already disposed.
+                length = 0;
+                return false;
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                this.IsDisposed = true;
+                base.Dispose(disposing);
             }
         }
     }
