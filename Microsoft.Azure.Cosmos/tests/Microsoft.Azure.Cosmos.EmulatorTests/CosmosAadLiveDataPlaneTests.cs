@@ -10,7 +10,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using System.Net;
     using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -1002,19 +1004,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsFalse(string.IsNullOrEmpty(sessionToken), "A session-consistency account must return a session token.");
                 }
 
-                ItemResponse<ToDoActivity> read = await this.container.ReadItemAsync<ToDoActivity>(
-                    item.id,
-                    partitionKey,
-                    new ItemRequestOptions { SessionToken = sessionToken });
+                using (CosmosClient freshClient = AadLiveTestSupport.CreateClient())
+                {
+                    Container freshContainer = freshClient.GetContainer(AadLiveTestSupport.DatabaseId, AadLiveTestSupport.ContainerId);
+                    ItemResponse<ToDoActivity> read = await freshContainer.ReadItemAsync<ToDoActivity>(
+                        item.id,
+                        partitionKey,
+                        new ItemRequestOptions { SessionToken = sessionToken });
 
-                Assert.AreEqual(item.id, read.Resource.id);
+                    Assert.AreEqual(item.id, read.Resource.id);
 
-                QueryDefinition query = new QueryDefinition("SELECT * FROM c WHERE c.id = @id").WithParameter("@id", item.id);
-                List<ToDoActivity> queried = await this.DrainQueryAsync<ToDoActivity>(
-                    query,
-                    new QueryRequestOptions { PartitionKey = partitionKey, SessionToken = sessionToken });
+                    QueryDefinition query = new QueryDefinition("SELECT * FROM c WHERE c.id = @id").WithParameter("@id", item.id);
+                    List<ToDoActivity> queried = await this.DrainQueryAsync<ToDoActivity>(
+                        freshContainer,
+                        query,
+                        new QueryRequestOptions { PartitionKey = partitionKey, SessionToken = sessionToken });
 
-                Assert.AreEqual(1, queried.Count);
+                    Assert.AreEqual(1, queried.Count);
+                }
             }
             finally
             {
@@ -1347,6 +1354,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 readableRegions = (await probe.ReadAccountAsync()).ReadableRegions.Select(region => region.Name).ToList();
             }
 
+            Assert.IsTrue(readableRegions.Count > 1, "The live AAD hedging test requires a multi-region account so there is a second region to hedge to.");
+
             // A very low threshold makes hedging fire on essentially every request rather than depending on
             // an unpredictable latency spike.
             using (CosmosClient hedgingClient = AadLiveTestSupport.CreateClient(new CosmosClientOptions
@@ -1371,6 +1380,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         item.id,
                         partitionKey);
                     Assert.AreEqual(item.id, hedged.Resource.id);
+                    AssertHedgeContextPresent(hedged.Diagnostics.ToString(), readableRegions);
 
                     // The strategy is also disable-able per request, which is a separate code path.
                     ItemResponse<ToDoActivity> notHedged = await AadLiveTestSupport.ReadItemToleratingReplicationLagAsync<ToDoActivity>(
@@ -1379,6 +1389,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         partitionKey,
                         new ItemRequestOptions { AvailabilityStrategy = AvailabilityStrategy.DisabledStrategy() });
                     Assert.AreEqual(item.id, notHedged.Resource.id);
+                    Assert.IsFalse(
+                        notHedged.Diagnostics.ToString().Contains("\"Hedge Context\"", StringComparison.Ordinal),
+                        "Disabling the availability strategy per request should remove hedge diagnostics from the read.");
                 }
                 finally
                 {
@@ -1415,9 +1428,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         /// <summary>
         /// The AAD scope is derived from the account host by default but can be overridden with
-        /// <c>AZURE_COSMOS_AAD_SCOPE_OVERRIDE</c> for sovereign clouds and custom endpoints. Setting it to
-        /// the value the SDK would have computed proves the override is actually read and used (a token
-        /// issued for a wrong scope is rejected by the service), without depending on a second cloud.
+        /// <c>AZURE_COSMOS_AAD_SCOPE_OVERRIDE</c> for sovereign clouds and custom endpoints. The live service
+        /// call uses a delegating credential so the test can assert the SDK requested the override scope
+        /// without needing a second cloud or a second account.
         /// Mirrors Python's AAD scope coverage in test_aad.
         /// </summary>
         [TestMethod]
@@ -1426,7 +1439,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             const string scopeOverrideEnvironmentVariable = "AZURE_COSMOS_AAD_SCOPE_OVERRIDE";
             string originalValue = Environment.GetEnvironmentVariable(scopeOverrideEnvironmentVariable);
             string endpoint = TestCommon.GetAadAccountEndpoint();
-            string explicitScope = string.Format(CultureInfo.InvariantCulture, "https://{0}/.default", new Uri(endpoint).Host);
+            string delegatedScope = string.Format(CultureInfo.InvariantCulture, "https://{0}/.default", new Uri(endpoint).Host);
+            string explicitScope = "https://scope-override-test.invalid/.default";
+            List<string> requestedScopes = new List<string>();
 
             string partitionKeyValue = AadLiveTestSupport.NewPartitionKeyValue("scopeoverride");
             PartitionKey partitionKey = new PartitionKey(partitionKeyValue);
@@ -1437,7 +1452,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Environment.SetEnvironmentVariable(scopeOverrideEnvironmentVariable, explicitScope);
 
                 // The override is read while the client is being constructed.
-                using (CosmosClient scopedClient = AadLiveTestSupport.CreateClient())
+                using (CosmosClient scopedClient = AadLiveTestSupport.CreateClient(
+                    new RecordingDelegatingTokenCredential(
+                        TestCommon.GetAadTokenCredential(),
+                        requestContext =>
+                        {
+                            lock (requestedScopes)
+                            {
+                                requestedScopes.Add(requestContext.Scopes[0]);
+                            }
+                        },
+                        requestContext => new TokenRequestContext(
+                            scopes: new[] { delegatedScope },
+                            parentRequestId: requestContext.ParentRequestId,
+                            claims: requestContext.Claims,
+                            tenantId: requestContext.TenantId,
+                            isCaeEnabled: requestContext.IsCaeEnabled))))
                 {
                     Container scopedContainer = scopedClient.GetContainer(AadLiveTestSupport.DatabaseId, AadLiveTestSupport.ContainerId);
 
@@ -1446,6 +1476,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         await scopedContainer.CreateItemAsync(item, partitionKey);
                         ItemResponse<ToDoActivity> read = await scopedContainer.ReadItemAsync<ToDoActivity>(item.id, partitionKey);
                         Assert.AreEqual(item.id, read.Resource.id);
+                        CollectionAssert.Contains(requestedScopes, explicitScope);
                     }
                     finally
                     {
@@ -1468,8 +1499,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task<List<T>> DrainQueryAsync<T>(QueryDefinition query, QueryRequestOptions requestOptions)
         {
+            return await this.DrainQueryAsync<T>(this.container, query, requestOptions);
+        }
+
+        private async Task<List<T>> DrainQueryAsync<T>(Container container, QueryDefinition query, QueryRequestOptions requestOptions)
+        {
             List<T> results = new List<T>();
-            using (FeedIterator<T> iterator = this.container.GetItemQueryIterator<T>(query, requestOptions: requestOptions))
+            using (FeedIterator<T> iterator = container.GetItemQueryIterator<T>(query, requestOptions: requestOptions))
             {
                 while (iterator.HasMoreResults)
                 {
@@ -1511,6 +1547,51 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             public string name { get; set; }
 
             public int total { get; set; }
+        }
+
+        private static void AssertHedgeContextPresent(string diagnostics, IReadOnlyList<string> readableRegions)
+        {
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics), "Read diagnostics should be populated.");
+            StringAssert.Contains(diagnostics, "\"Hedge Context\"");
+
+            foreach (string region in readableRegions)
+            {
+                StringAssert.Contains(diagnostics, region);
+            }
+        }
+
+        private sealed class RecordingDelegatingTokenCredential : TokenCredential
+        {
+            private readonly TokenCredential innerCredential;
+            private readonly Action<TokenRequestContext> onTokenRequested;
+            private readonly Func<TokenRequestContext, TokenRequestContext> forwardedRequestContextFactory;
+
+            public RecordingDelegatingTokenCredential(
+                TokenCredential innerCredential,
+                Action<TokenRequestContext> onTokenRequested,
+                Func<TokenRequestContext, TokenRequestContext> forwardedRequestContextFactory = null)
+            {
+                this.innerCredential = innerCredential ?? throw new ArgumentNullException(nameof(innerCredential));
+                this.onTokenRequested = onTokenRequested ?? throw new ArgumentNullException(nameof(onTokenRequested));
+                this.forwardedRequestContextFactory = forwardedRequestContextFactory;
+            }
+
+            public override AccessToken GetToken(TokenRequestContext requestContext, CancellationToken cancellationToken)
+            {
+                this.onTokenRequested(requestContext);
+                return this.innerCredential.GetToken(this.GetForwardedRequestContext(requestContext), cancellationToken);
+            }
+
+            public override ValueTask<AccessToken> GetTokenAsync(TokenRequestContext requestContext, CancellationToken cancellationToken)
+            {
+                this.onTokenRequested(requestContext);
+                return this.innerCredential.GetTokenAsync(this.GetForwardedRequestContext(requestContext), cancellationToken);
+            }
+
+            private TokenRequestContext GetForwardedRequestContext(TokenRequestContext requestContext)
+            {
+                return this.forwardedRequestContextFactory?.Invoke(requestContext) ?? requestContext;
+            }
         }
     }
 }

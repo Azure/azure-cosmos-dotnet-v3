@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Net;
     using System.Threading.Tasks;
+    using global::Azure.Core;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
@@ -112,9 +113,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// </summary>
         internal static CosmosClient CreateClient(CosmosClientOptions clientOptions = null)
         {
-            CosmosClient client = TestCommon.CreateAadCosmosClient(clientOptions);
+            CosmosClient client = AadLiveTestSupport.CreateClient(
+                tokenCredential: TestCommon.GetAadTokenCredential(),
+                clientOptions: clientOptions);
             Assert.IsNotNull(client, "Live AAD account/credentials are not configured.");
             return client;
+        }
+
+        /// <summary>
+        /// Creates an Entra-authenticated <see cref="CosmosClient"/> for the live AAD account using an
+        /// explicit credential wrapper. This keeps the live tests on the real account while allowing
+        /// request-context recording or delegation in scenarios that need to assert what the SDK asked the
+        /// credential for.
+        /// </summary>
+        internal static CosmosClient CreateClient(TokenCredential tokenCredential, CosmosClientOptions clientOptions = null)
+        {
+            string endpoint = TestCommon.GetAadAccountEndpoint();
+            if (string.IsNullOrEmpty(endpoint) || tokenCredential == null)
+            {
+                return null;
+            }
+
+            return new CosmosClient(endpoint, tokenCredential, clientOptions);
         }
 
         /// <summary>
