@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Plumbing regression guard for the "AddressRefresh forceRefresh after partition migration" work item.
     ///
-    /// This is NOT the work-item signal. It verifies the two independent header pass-throughs in
+    /// This is NOT the work-item signal. It verifies the two distinct header pass-throughs in
     /// <see cref="GatewayAddressCache.GetServerAddressesViaGatewayAsync"/>
     /// (Microsoft.Azure.Cosmos/src/Routing/GatewayAddressCache.cs), which cover two DIFFERENT caches and
     /// must not be conflated:
@@ -30,14 +30,30 @@ namespace Microsoft.Azure.Cosmos
     ///     i.e. re-resolves WHICH partition key ranges exist. Driven by
     ///     <see cref="DocumentServiceRequest.ForceCollectionRoutingMapRefresh"/>.
     ///
-    /// The distinction matters after a split / merge / migration: the set of partition key ranges itself
-    /// changes, so force-refreshing the ADDRESSES of a range that no longer exists cannot recover the
-    /// request — only a routing map refresh can. A test that only covers <c>x-ms-force-refresh</c>
-    /// therefore does not protect the post-migration re-routing path.
+    /// The distinction matters because the two conditions it has to cover are not the same:
+    ///
+    ///   * A physical partition MIGRATION can move the replicas backing a partition key range while the
+    ///     range topology is preserved. The range identity stays valid, so the addresses go stale but the
+    ///     routing map does not: re-resolving the addresses is sufficient.
+    ///   * A SPLIT or MERGE changes WHICH partition key ranges exist. The routing map must be re-resolved
+    ///     before the addresses of the replacement range can be resolved at all, so force-refreshing the
+    ///     addresses of the old range cannot recover the request on its own.
+    ///   * A generic 410/0 does not identify which of the two occurred, which is why both refresh axes are
+    ///     worth investigating. It does not by itself establish the policy the SDK should apply.
+    ///
+    /// The coupling between the two flags is ONE-WAY: a requested collection routing map refresh also
+    /// drives client-side address re-resolution (subject to the concurrent-update guard in
+    /// <see cref="GatewayAddressCache"/>), while forcing an ADDRESS refresh never requests a routing map
+    /// refresh. A test that only covers <c>x-ms-force-refresh</c> therefore does not protect the
+    /// routing-map re-resolution path. For the same reason, the <c>ForceAddressRefresh</c> diagnostics block
+    /// proves that this shared client branch ran, but does not identify which flag drove it or which service
+    /// header was sent.
     ///
     /// The actual question under investigation — whether the SDK DECIDES to set either flag on a generic
-    /// 410 after a migration — lives in the closed-source Microsoft.Azure.Cosmos.Direct binary and cannot
-    /// be exercised here. See AddressRefreshForceRefreshPostMigrationTests (FaultInjection) for that.
+    /// 410 after a physical migration or topology change — lives in the closed-source
+    /// Microsoft.Azure.Cosmos.Direct binary and cannot be exercised here. The FaultInjection matrix in
+    /// AddressRefreshForceRefreshPostMigrationTests pins the shared-branch marker, but cannot attribute it
+    /// to either flag; resolving that decision requires Direct-side or outbound-header evidence.
     /// </summary>
     [TestClass]
     public class AddressRefreshForceRefreshUnitTests
@@ -112,18 +128,24 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Companion guard for the OTHER refresh axis, and the one that actually governs post-migration
-        /// re-routing: <c>x-ms-collectionroutingmap-refresh</c>.
+        /// Companion guard for the OTHER refresh axis, and the one that governs re-routing after a range
+        /// topology change: <c>x-ms-collectionroutingmap-refresh</c>.
         ///
-        /// After a split / merge / migration the set of partition key ranges changes, so re-resolving the
-        /// ADDRESSES of a stale range cannot recover the request — the client must re-resolve the routing
-        /// map itself. This pins the pass-through at GatewayAddressCache.cs:859-862 so that a regression
-        /// which silently stops emitting the routing map refresh header is caught here rather than in a
-        /// live-site incident.
+        /// A split or a merge changes which partition key ranges exist, so re-resolving the ADDRESSES of a
+        /// range that is no longer in the map cannot recover the request — the client must re-resolve the
+        /// routing map itself. A physical migration is the other case: it can stale the addresses of a range
+        /// while leaving the range topology intact, so the address axis alone covers it. A generic 410/0 does
+        /// not say which happened, which is why both axes are guarded. This pins the
+        /// <c>x-ms-collectionroutingmap-refresh</c> pass-through in
+        /// <see cref="GatewayAddressCache.GetServerAddressesViaGatewayAsync"/> so that a regression which
+        /// silently stops emitting the routing map refresh header is caught here rather than in a live-site
+        /// incident.
         ///
         /// Note this header is driven by <see cref="DocumentServiceRequest.ForceCollectionRoutingMapRefresh"/>,
-        /// NOT by the <c>forceRefreshPartitionAddresses</c> argument — the two are independent, which is
-        /// precisely why the force-refresh test above does not cover this path.
+        /// NOT by the <c>forceRefreshPartitionAddresses</c> argument. The coupling is one-way: requesting a
+        /// routing map refresh also triggers client-side address re-resolution (subject to the
+        /// concurrent-update guard), while forcing an address refresh never requests a routing map refresh —
+        /// which is precisely why the force-refresh test above does not cover this path.
         /// </summary>
         [TestMethod]
         [Owner("nalutripician")]
@@ -155,7 +177,7 @@ namespace Microsoft.Azure.Cosmos
                 "Guard: the cold forced address lookup must have reached the Gateway, otherwise the negative assertion below is vacuous.");
             Assert.IsFalse(
                 routingMapRefreshHeaderPresence.Contains(true),
-                "Forcing an ADDRESS refresh must not imply a COLLECTION ROUTING MAP refresh; the two headers are independent.");
+                "Forcing an ADDRESS refresh must not imply a COLLECTION ROUTING MAP refresh; address-force does not request map refresh.");
 
             // Act 2: a request that opts into the routing map refresh must propagate the header.
             DocumentServiceRequest routingMapRequest = DocumentServiceRequest.Create(OperationType.Invalid, ResourceType.Address, AuthorizationTokenType.Invalid);
@@ -169,7 +191,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: CancellationToken.None);
 
             // Assert: the routing map refresh reached the Gateway address feed. Without this the client
-            // stays pinned to a stale partition key range set after a split / merge / migration.
+            // stays pinned to a stale partition key range set after a split or a merge.
             Assert.IsTrue(
                 routingMapRefreshHeaderPresence.Contains(true),
                 "ForceCollectionRoutingMapRefresh must send x-ms-collectionroutingmap-refresh: true so the Gateway bypasses its cached collection routing map.");
