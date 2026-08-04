@@ -26,10 +26,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     /// therefore cannot provision anything at run time (see
     /// <see cref="CosmosAadLiveTests.AadControlPlaneIsForbiddenAsync"/>, which asserts the 403).
     ///
-    /// That is the one structural difference from the Python SDK's AAD lane, which keeps a
-    /// master-key client around for control-plane setup. This account has key auth disabled, so
-    /// <see cref="DatabaseId"/> / <see cref="ContainerId"/> (partition key <c>/pk</c>) must be
-    /// pre-created out of band and every test has to fit inside that single container.
+    /// This account has key auth disabled, so <see cref="DatabaseId"/> / <see cref="ContainerId"/>
+    /// (partition key <c>/pk</c>) must be pre-created out of band and every test has to fit inside
+    /// that single container.
     /// </summary>
     internal static class AadLiveTestSupport
     {

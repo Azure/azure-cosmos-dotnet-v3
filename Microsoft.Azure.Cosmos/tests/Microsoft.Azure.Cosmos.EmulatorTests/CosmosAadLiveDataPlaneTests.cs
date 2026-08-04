@@ -17,8 +17,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
-    /// Live-account AAD (Microsoft Entra ID) coverage for the data-plane surface, brought to parity with the
-    /// Python SDK's AAD lane (Azure/azure-sdk-for-python#46568).
+    /// Live-account AAD (Microsoft Entra ID) coverage for the data-plane surface.
     ///
     /// Why this exists
     /// ---------------
@@ -27,28 +26,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     /// to catch an operation whose request path drops or mishandles the authorization header -- patch, batch,
     /// bulk, read-many, change feed continuations, per-request region overrides and hedged cross-region reads
     /// all build their requests differently, and a regression in any one of them is invisible to a CRUD-only
-    /// smoke test. Python closed the same gap by making its whole data-plane suite runnable under AAD; this
-    /// class is the .NET equivalent for the operations that are reachable here.
+    /// smoke test.
     ///
-    /// Fixture constraint (the one real divergence from Python)
-    /// -------------------------------------------------------
-    /// Python's lane keeps a master-key client for setup and only swaps the *data* client to AAD. This
-    /// account has local auth disabled, so there is no key client: the CI principal holds only
+    /// Fixture constraint
+    /// ------------------
+    /// This account has local auth disabled, so there is no key client: the CI principal holds only
     /// Cosmos DB Built-in Data Contributor, which grants <c>readMetadata</c> + container actions + item
     /// actions and denies database/container creation (a control-plane operation). Every test therefore runs
     /// against the single pre-created <see cref="AadLiveTestSupport.DatabaseId"/> /
     /// <see cref="AadLiveTestSupport.ContainerId"/> (<c>/pk</c>) fixture, isolating itself behind a unique
     /// partition key and cleaning up in a <c>finally</c> block.
     ///
-    /// Consequently the following Python areas are *not* reachable from a data-plane-only token and are
-    /// deliberately out of scope rather than silently missing. Each needs a container created with
+    /// Consequently the following areas are *not* reachable from a data-plane-only token and are deliberately
+    /// out of scope rather than silently missing. Each needs a container created with
     /// non-default settings, a second container, or an account-level feature:
     /// hierarchical/sub-partition keys, computed properties, container TTL, composite/vector/full-text
     /// indexing (and therefore vector, full-text, hybrid and semantic-reranker search), autoscale and
     /// throughput control, partition splits, per-partition automatic failover and circuit breaker,
     /// all-versions-and-deletes change feed (needs continuous backup), the change feed processor (needs a
-    /// lease container), and server-side scripts. Additionally, throughput buckets have a Python surface with
-    /// no .NET equivalent today, so there is nothing to test here.
+    /// lease container), and server-side scripts.
     ///
     /// Every case is tagged <c>MultiRegionAad</c> and runs in the fail-closed CI lane
     /// (<c>templates/build-test-aad.yml</c>): the lane requires at least one result and rejects any failure
@@ -106,8 +102,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         /// <summary>
         /// Patch builds a dedicated request body and uses a different resource operation than replace, so it
-        /// exercises an authorization path that plain CRUD does not. Covers Python's patch coverage in
-        /// test_crud.
+        /// exercises an authorization path that plain CRUD does not.
         /// </summary>
         [TestMethod]
         public async Task AadItemPatchAsync()
@@ -193,7 +188,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <summary>
         /// Optimistic concurrency: the ETag travels as a request header, and a stale ETag must produce 412
         /// rather than silently overwriting. Also covers the 304 path, which is only observable through the
-        /// stream API because the typed API throws on non-success codes. Mirrors Python's etag coverage.
+        /// stream API because the typed API throws on non-success codes.
         /// </summary>
         [TestMethod]
         public async Task AadItemConditionalOperationsAsync()
@@ -243,8 +238,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         /// <summary>
         /// The stream APIs bypass the serializer and return the raw <see cref="ResponseMessage"/>, so they
-        /// have their own request/response plumbing. Covers Python's *_item stream-equivalent coverage and
-        /// the "no exception on error status" contract that the typed API does not have.
+        /// have their own request/response plumbing and expose the "no exception on error status" contract
+        /// that the typed API does not have.
         /// </summary>
         [TestMethod]
         public async Task AadItemStreamOperationsAsync()
@@ -302,8 +297,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         /// <summary>
         /// Disabling the write response payload changes the request headers and makes the SDK return a
-        /// response with no body, which is a distinct deserialization path. Mirrors Python's
-        /// test_crud_response_payload_on_write_disabled, including the per-request override that re-enables it.
+        /// response with no body, which is a distinct deserialization path. The per-request override must
+        /// still be able to re-enable the payload.
         /// </summary>
         [TestMethod]
         public async Task AadContentResponseOnWriteDisabledAsync()
@@ -346,8 +341,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         /// <summary>
         /// ReadMany issues point reads (or a query) per partition and merges the results, so it neither
-        /// looks like a point read nor like a query on the wire. Mirrors Python's test_read_items, including
-        /// the "missing id is omitted rather than fatal" behaviour.
+        /// looks like a point read nor like a query on the wire. A missing id must be omitted rather than
+        /// making the whole operation fail.
         /// </summary>
         [TestMethod]
         public async Task AadReadManyItemsAsync()
@@ -392,8 +387,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <summary>
         /// Bulk mode replaces the whole request pipeline with a batching executor that groups operations by
         /// partition key range, so it is the single most likely place for an auth header to be built
-        /// differently. .NET-specific (Python's equivalent is per-operation concurrency), and worth covering
-        /// precisely because it has no counterpart to inherit correctness from.
+        /// differently from ordinary item operations.
         /// </summary>
         [TestMethod]
         public async Task AadBulkExecutionAsync()
@@ -430,9 +424,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         /// <summary>
-        /// Transactional batch is a single request carrying many operations with its own wire format.
-        /// Mirrors Python's test_transactional_batch: the success path, and the rollback path where one
-        /// failing operation must leave the whole batch unapplied.
+        /// Transactional batch is a single request carrying many operations with its own wire format. The
+        /// success path and the rollback path both need coverage because one failing operation must leave the
+        /// whole batch unapplied.
         /// </summary>
         [TestMethod]
         public async Task AadTransactionalBatchAsync()
@@ -514,9 +508,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         /// <summary>
         /// Aggregates run through the query pipeline's aggregate stage and return a shape unrelated to the
-        /// stored document, so they exercise a different response path than a projection query. Mirrors
-        /// Python's test_aggregate. Scoped to a single partition key so the expected values are exact rather
-        /// than "at least".
+        /// stored document, so they exercise a different response path than a projection query. Scoped to a
+        /// single partition key so the expected values are exact rather than "at least".
         /// </summary>
         [TestMethod]
         public async Task AadAggregateQueryAsync()
@@ -547,9 +540,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         /// <summary>
         /// ORDER BY is served by a separate pipeline stage that fans out per partition key range and merges
-        /// in order, so it makes several authenticated round trips where a simple query makes one. Mirrors
-        /// Python's test_orderby. Runs cross-partition (no partition key filter) and isolates its own data
-        /// with a marker on <see cref="ToDoActivity.description"/>.
+        /// in order, so it makes several authenticated round trips where a simple query makes one. Runs
+        /// cross-partition (no partition key filter) and isolates its own data with a marker on
+        /// <see cref="ToDoActivity.description"/>.
         /// </summary>
         [TestMethod]
         public async Task AadOrderByQueryAsync()
@@ -597,8 +590,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         /// <summary>
         /// A cross-partition query that is resumed from a continuation token re-authenticates on the follow-up
-        /// request, so it proves the token is applied to more than just the first page. Mirrors Python's
-        /// cross-partition / execution-context query coverage.
+        /// request, so it proves the token is applied to more than just the first page.
         /// </summary>
         [TestMethod]
         public async Task AadCrossPartitionQueryWithContinuationAsync()
@@ -658,7 +650,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         /// <summary>
         /// DISTINCT, GROUP BY and OFFSET/LIMIT each add their own pipeline stage on top of the base query.
-        /// Mirrors the corresponding Python query tests. Scoped to one partition key so the counts are exact.
+        /// Scoped to one partition key so the counts are exact.
         /// </summary>
         [TestMethod]
         public async Task AadDistinctGroupByOffsetLimitQueryAsync()
@@ -706,8 +698,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         /// <summary>
         /// Feed ranges are how a caller parallelises a query itself, and the per-feed-range overload takes a
-        /// different code path than a plain cross-partition query. Mirrors Python's test_feed_range and
-        /// test_query_feed_range, including the documented JSON round trip.
+        /// different code path than a plain cross-partition query. The documented JSON round trip is covered
+        /// as part of the same scenario.
         /// </summary>
         [TestMethod]
         public async Task AadFeedRangeQueryAsync()
@@ -756,8 +748,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // NOTE: the `FeedRange.FromPartitionKey(...)` + `GetItemQueryIterator` combination is
                 // deliberately NOT used here - it throws ArgumentOutOfRangeException in the query pipeline
                 // (https://github.com/Azure/azure-cosmos-dotnet-v3/issues/6062). The supported way to scope a
-                // query to one logical partition, and the one Python's suite exercises, is
-                // QueryRequestOptions.PartitionKey.
+                // query to one logical partition is QueryRequestOptions.PartitionKey.
                 int foundInPartition = 0;
                 QueryRequestOptions partitionScoped = new QueryRequestOptions
                 {
@@ -785,8 +776,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <summary>
         /// The query stream API and the response metadata (RU charge, activity id, diagnostics, index
         /// metrics) are what callers use for telemetry, and index metrics in particular only appear when an
-        /// extra request header is honoured. Mirrors Python's test_query_response_headers /
-        /// test_cosmos_responses.
+        /// extra request header is honoured.
         /// </summary>
         [TestMethod]
         public async Task AadQueryResponseMetadataAsync()
@@ -841,8 +831,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         /// <summary>
         /// The LINQ provider builds the SQL text itself, so it is a distinct entry point into the query
-        /// pipeline. .NET-specific (Python has no LINQ equivalent) and therefore has no sibling test to
-        /// inherit coverage from.
+        /// pipeline.
         /// </summary>
         [TestMethod]
         public async Task AadLinqQueryAsync()
@@ -883,7 +872,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <summary>
         /// Change feed uses its own request headers and its own start-from modes. Scoping the read to a feed
         /// range built from this test's partition key is what makes the expected item count exact on a shared
-        /// container. Mirrors Python's test_change_feed start-from coverage.
+        /// container.
         /// </summary>
         [TestMethod]
         public async Task AadChangeFeedStartFromAsync()
@@ -979,9 +968,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         /// <summary>
         /// Session tokens are round-tripped through request/response headers on every operation, and passing
-        /// one back explicitly is how a caller pins read-your-writes across clients. Mirrors Python's
-        /// test_session / test_latest_session_token. Branches on the account's configured consistency because
-        /// a session token is only guaranteed to be issued under session consistency.
+        /// one back explicitly is how a caller pins read-your-writes across clients. Branches on the account's
+        /// configured consistency because a session token is only guaranteed to be issued under session
+        /// consistency.
         /// </summary>
         [TestMethod]
         public async Task AadSessionTokenAsync()
@@ -1031,7 +1020,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <summary>
         /// Request-level knobs (priority level, caller-supplied headers) are serialized alongside the
         /// authorization header, so a change to header handling can break them together. Also asserts the
-        /// response metadata callers depend on. Mirrors Python's test_headers.
+        /// response metadata callers depend on.
         /// </summary>
         [TestMethod]
         public async Task AadRequestAndResponseHeadersAsync()
@@ -1076,7 +1065,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <summary>
         /// Every request option is optional, and passing null must not change behaviour. This is the
         /// regression guard for a null-handling bug in the options-to-headers path, which under AAD would
-        /// surface as a lost authorization header. Mirrors Python's test_none_options.
+        /// surface as a lost authorization header.
         /// </summary>
         [TestMethod]
         public async Task AadNullRequestOptionsAsync()
@@ -1114,7 +1103,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         /// <summary>
         /// Non-ASCII content has to survive UTF-8 encoding in the request body and in query parameters
-        /// (which are also carried in the body). Mirrors Python's test_encoding.
+        /// (which are also carried in the body).
         ///
         /// Deliberately keeps the partition key ASCII: a partition key value is additionally serialized into
         /// an HTTP header, and no test in this suite establishes that non-ASCII partition keys round-trip, so
@@ -1158,7 +1147,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// The partition key value is serialized into a request header, so each JSON type -- and the two
         /// special values, undefined (<see cref="PartitionKey.None"/>) and explicit null
         /// (<see cref="PartitionKey.Null"/>) -- has its own encoding to get wrong. The stream API is used
-        /// because <see cref="ToDoActivity"/> types <c>pk</c> as a string. Mirrors Python's test_partition_key.
+        /// because <see cref="ToDoActivity"/> types <c>pk</c> as a string.
         /// </summary>
         [TestMethod]
         public async Task AadPartitionKeyVariationsAsync()
@@ -1214,9 +1203,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         /// <summary>
         /// Excluding regions per request re-resolves the endpoint for that request only, which is a
-        /// different routing path than the client-level preference list. Mirrors Python's
-        /// test_excluded_locations. Degrades to asserting the no-op case on a single-region account rather
-        /// than skipping, because the CI lane treats a skip as a failure.
+        /// different routing path than the client-level preference list. Degrades to asserting the no-op case
+        /// on a single-region account rather than skipping, because the CI lane treats a skip as a failure.
         /// </summary>
         [TestMethod]
         public async Task AadExcludeRegionsAsync()
@@ -1272,8 +1260,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         /// <summary>
         /// The two client-level region preferences are mutually exclusive and are resolved during client
-        /// initialisation -- which, under AAD, is also when the first token is fetched. Mirrors Python's
-        /// test_effective_preferred_locations / regional routing coverage.
+        /// initialisation -- which, under AAD, is also when the first token is fetched.
         /// </summary>
         [TestMethod]
         public async Task AadPreferredRegionsAsync()
@@ -1338,7 +1325,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <summary>
         /// Cross-region hedging can issue the same logical request to a second region in parallel, so each
         /// hedged request needs its own valid token. A hedged read must still return exactly one correct
-        /// result. Mirrors Python's test_availability_strategy.
+        /// result.
         /// </summary>
         [TestMethod]
         public async Task AadAvailabilityStrategyAsync()
@@ -1401,8 +1388,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         /// <summary>
         /// Container metadata reads are the <c>readMetadata</c> data action and populate the caches every
-        /// subsequent request depends on, so a token problem here would cascade. Mirrors Python's
-        /// test_container_properties_cache / test_resource_id.
+        /// subsequent request depends on, so a token problem here would cascade.
         /// </summary>
         [TestMethod]
         public async Task AadContainerMetadataAndCacheAsync()
@@ -1430,7 +1416,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <c>AZURE_COSMOS_AAD_SCOPE_OVERRIDE</c> for sovereign clouds and custom endpoints. The live service
         /// call uses a delegating credential so the test can assert the SDK requested the override scope
         /// without needing a second cloud or a second account.
-        /// Mirrors Python's AAD scope coverage in test_aad.
         /// </summary>
         [TestMethod]
         public async Task AadScopeOverrideAsync()
