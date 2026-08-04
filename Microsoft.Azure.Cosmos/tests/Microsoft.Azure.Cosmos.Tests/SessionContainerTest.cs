@@ -124,6 +124,47 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
+        // GetSessionTokenForPartitionKeyRange must resolve a rid-based collection link ("dbs/{rid}/colls/{rid}")
+        // through the ResourceId.Parse branch, not just name-based links, and land on the same per-partition
+        // token map. Both link forms must yield identical tokens for the same range so a DTX caller that holds
+        // a self-link resolves exactly as one holding a name-based link.
+        public void GetSessionTokenForPartitionKeyRange_ResolvesRidBasedCollectionLink()
+        {
+            SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
+
+            ResourceId resourceId = ResourceId.NewDocumentCollectionId(42, 129);
+            string collectionResourceId = resourceId.DocumentCollectionId.ToString();
+            const string collectionFullname = "dbs/db1/colls/collName_rid";
+            string ridBasedLink = string.Format("dbs/{0}/colls/{1}", resourceId.DatabaseId.ToString(), collectionResourceId);
+
+            sessionContainer.SetSessionToken(collectionResourceId, collectionFullname,
+                new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_1:1#100#4=90#5=2" } });
+
+            // Direct hit via the rid-based link resolves the same token as the name-based link.
+            string ridResolved = sessionContainer.GetSessionTokenForPartitionKeyRange(ridBasedLink, "range_1");
+            Assert.IsNotNull(ridResolved, "A rid-based collection link must resolve the range's token.");
+            Assert.AreEqual(
+                sessionContainer.GetSessionTokenForPartitionKeyRange(collectionFullname, "range_1"),
+                ridResolved,
+                "The rid-based and name-based links must resolve to the same token for the same range.");
+
+            // Parent-walk also works through the rid-based link.
+            string ridChildWalk = sessionContainer.GetSessionTokenForPartitionKeyRange(
+                ridBasedLink, "range_99", new List<string> { "range_1" });
+            Assert.AreEqual("range_99:" + ridResolved.Substring("range_1:".Length), ridChildWalk,
+                "The parent walk must resolve identically through a rid-based link.");
+
+            // An unknown collection rid (never seeded) resolves to null rather than throwing.
+            string unknownRidLink = string.Format(
+                "dbs/{0}/colls/{1}",
+                resourceId.DatabaseId.ToString(),
+                ResourceId.NewDocumentCollectionId(42, 130).DocumentCollectionId.ToString());
+            Assert.IsNull(
+                sessionContainer.GetSessionTokenForPartitionKeyRange(unknownRidLink, "range_1"),
+                "An unseeded collection rid must resolve to null.");
+        }
+
+        [TestMethod]
         // Divergent-parent causal correctness (reviewer feedback K1): when a freshly-split child inherits
         // from multiple parents whose LSN vectors diverge per region, the merged token stamped under the
         // child range id must carry the element-wise MAX of the parents' vectors — the correct causal floor.
