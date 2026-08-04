@@ -9,6 +9,7 @@ instead.
 - [How it plugs into the SDK](#how-it-plugs-into-the-sdk)
 - [Building](#building)
 - [Running the tests](#running-the-tests)
+- [Verifying a Direct version bump](#verifying-a-direct-version-bump)
 - [Working on / maintaining the project](#working-on--maintaining-the-project)
 - [Adding a new fault type](#adding-a-new-fault-type)
 - [Changelog rules](#changelog-rules)
@@ -145,8 +146,93 @@ If a required variable is missing, the affected tests fail fast with
 ### How CI runs them
 
 `azure-pipelines-faultinjection.yml` runs the integration tests on the internal
-`OneES` pool with the `COSMOSDB_MULTI_REGION` secret wired in, using
-`dotnet test` over `Microsoft.Azure.Cosmos/FaultInjection/tests/*.csproj`.
+`OneES` pool with the `COSMOSDB_MULTI_REGION` secret wired in, via
+`templates/build-fault-injection.yml` with `IncludeIntegration: true`.
+
+The **same template** runs on every PR from `azure-pipelines.yml` with
+`IncludeIntegration: false` — it builds `src` + `tests`, runs the account-free
+unit tests, and validates `dotnet pack`. That PR gate exists specifically so a
+`$(DirectVersion)` bump cannot break this package unnoticed (see below).
+
+## Verifying a Direct version bump
+
+`FaultInjection.csproj` and `FaultInjectionTests.csproj` both pin
+`Microsoft.Azure.Cosmos.Direct` to `[$(DirectVersion)]` and the implementation
+binds to `Microsoft.Azure.Documents` internals (`IChaosInterceptor`,
+`Rntbd.Channel`, `Rntbd.Dispatcher`, `StoreResponse`, `TransportException`, …).
+A PR that changes `DirectVersion` in the root `Directory.Build.props` can break
+this package while the main SDK still builds cleanly, so run the ladder below on
+the PR branch before signing off.
+
+| # | Gate | Command | Catches |
+| - | ---- | ------- | ------- |
+| 1 | src compiles | `dotnet build Microsoft.Azure.Cosmos/FaultInjection/src/FaultInjection.csproj -c Release` | removed/renamed Direct APIs (`TreatWarningsAsErrors`, so warnings fail too) |
+| 2 | tests compile | `dotnet build Microsoft.Azure.Cosmos/FaultInjection/tests/FaultInjectionTests.csproj -c Release` | test-only Direct API usage |
+| 3 | unit tests | `dotnet test ...FaultInjectionTests.csproj -c Release --no-build --filter "FullyQualifiedName~FaultInjectionUnitTests\|FullyQualifiedName~FaultInjectionBuilderValidationTests"` | builder/validation regressions, no account needed |
+| 4 | packaging | `dotnet pack ...FaultInjection.csproj -c Release --no-build -o <out>` | delay-signing / nuspec regressions |
+| 5 | binding | inspect `Microsoft.Azure.Cosmos.Direct.dll` in `tests/bin/Release/net6.0` | confirms the *new* Direct is what actually got bound |
+| 6 | integration **diffed against a baseline** | see below | behavior changes in retry/failover paths |
+| 7 | downlevel compat | see below | the shipped package meeting an *older* Direct at customer runtime |
+
+Gates 1–4 are what the PR pipeline automates. Gates 5–7 are manual and matter
+most when the Direct bump is the point of the PR.
+
+### Gate 6 — always diff, never read the raw number
+
+The integration suite has a standing set of failures (Gateway-mode `Gone` cases,
+metadata response-delay timing). A raw pass/fail count from the PR branch is
+meaningless on its own — you must compare it to the same run on `main`:
+
+```powershell
+$env:COSMOSDB_MULTI_REGION = "<multi-region account connection string>"
+$proj = "Microsoft.Azure.Cosmos/FaultInjection/tests/FaultInjectionTests.csproj"
+# proxy tests need COSMOSDB_THIN_CLIENT; skip them unless you have one
+$skipProxy = '--filter', 'FullyQualifiedName!~FaultInjectionProxyTests'
+
+# PR branch
+dotnet build $proj -c Release
+dotnet test $proj -c Release --no-build @skipProxy --logger "trx;LogFileName=fi-pr.trx"
+
+# Baseline: the merge-base with main
+git checkout --detach $(git merge-base HEAD origin/main)
+dotnet build $proj -c Release
+dotnet test $proj -c Release --no-build @skipProxy --logger "trx;LogFileName=fi-baseline.trx"
+git checkout -   # back to the PR branch
+
+# Diff the failing sets - only "fails on PR but not baseline" is a regression
+$dir = "Microsoft.Azure.Cosmos/FaultInjection/tests/TestResults"
+function Fails($p) { ([xml](Get-Content $p)).TestRun.Results.UnitTestResult |
+    Where-Object outcome -eq 'Failed' | ForEach-Object testName | Sort-Object }
+Compare-Object (Fails "$dir/fi-baseline.trx") (Fails "$dir/fi-pr.trx") |
+    Where-Object SideIndicator -eq '=>'
+```
+
+An empty result from the final `Compare-Object` means **no regressions**.
+
+### Gate 7 — downlevel compatibility with the released SDK
+
+This is the failure mode a plain build cannot catch. The shipped
+`Microsoft.Azure.Cosmos.FaultInjection` nupkg takes a dependency on
+`Microsoft.Azure.Cosmos` `$(ClientOfficialVersion)` but does **not** ship Direct
+itself (`PrivateAssets="All"`). At customer runtime it therefore binds to the
+`Microsoft.Azure.Cosmos.Direct.dll` embedded in that *already-released* SDK —
+which was built against the **previous** `DirectVersion`.
+
+So when a PR moves `DirectVersion` from `X` to `Y`, `FaultInjection.dll` is
+compiled against `Y` but will meet `X` at runtime until the SDK itself ships
+again. If the implementation picks up a type or member that only exists in `Y`,
+consumers get a `TypeLoadException` / `MissingMethodException` at runtime.
+
+To check, diff the `Microsoft.Azure.Documents` types and members that
+`Microsoft.Azure.Cosmos.FaultInjection.dll` references against the *old* Direct
+assembly in the NuGet cache
+(`<globalPackagesFolder>/microsoft.azure.cosmos.direct/<oldVersion>/lib/netstandard2.0/`).
+Every referenced type and member must still exist there. If one does not, either
+hold the FaultInjection release until the SDK ships with the new Direct, or avoid
+the new API.
+
+> `dotnet nuget locals global-packages --list` prints the cache location — this
+> repo redirects it away from the default `~/.nuget/packages`.
 
 ## Working on / maintaining the project
 
