@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
         /// before the dispatch is awaited, it remains observable even when <see cref="ExecuteTransactionAsync"/>
         /// throws <see cref="OperationCanceledException"/> — including cancellation during an in-flight dispatch.
         /// </remarks>
-        internal abstract Guid IdempotencyToken { get; }
+        internal virtual Guid IdempotencyToken => Guid.Empty;
 
         /// <summary>
         /// Commits the distributed transaction.
