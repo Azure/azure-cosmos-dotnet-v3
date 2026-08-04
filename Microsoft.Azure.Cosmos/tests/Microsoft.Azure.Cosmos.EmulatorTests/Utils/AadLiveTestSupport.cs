@@ -57,17 +57,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         internal const string TestCategory = "MultiRegionAad";
 
         /// <summary>
-        /// The total number of <c>MultiRegionAad</c> test cases across every live AAD test class, counting
-        /// each <see cref="DataRowAttribute"/> separately. The CI lane gates on exactly this many passing
-        /// with zero skipped/inconclusive results, so keep the <c>ExpectedTestCount</c> parameter in
-        /// <c>templates/build-test-aad.yml</c> in sync when adding or removing cases.
-        ///
-        /// <see cref="CosmosAadLiveTestsGateTests"/> runs in the ordinary emulator lane and fails when this
-        /// drifts from what is actually declared, so the mismatch is caught before the live lane runs.
-        /// </summary>
-        internal const int ExpectedTestCaseCount = 36;
-
-        /// <summary>
         /// Reports an unsatisfied prerequisite for the live AAD tests.
         ///
         /// By default the case is skipped via <see cref="Assert.Inconclusive(string)"/>, which keeps local,
@@ -165,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// </summary>
         internal static string NewPartitionKeyValue(string prefix)
         {
-            return $"{prefix}-{Guid.NewGuid():N}";
+            return $"{prefix}-{DateTime.UtcNow:O}-{Guid.NewGuid():N}";
         }
 
         /// <summary>

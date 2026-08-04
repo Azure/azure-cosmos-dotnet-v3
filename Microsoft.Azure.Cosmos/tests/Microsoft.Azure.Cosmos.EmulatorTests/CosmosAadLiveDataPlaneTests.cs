@@ -51,9 +51,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     /// no .NET equivalent today, so there is nothing to test here.
     ///
     /// Every case is tagged <c>MultiRegionAad</c> and runs in the fail-closed CI lane
-    /// (<c>templates/build-test-aad.yml</c>): the lane requires exactly
-    /// <see cref="AadLiveTestSupport.ExpectedTestCaseCount"/> passing results and zero skips, so these tests
-    /// must be deterministic against a healthy account.
+    /// (<c>templates/build-test-aad.yml</c>): the lane requires at least one result and rejects any failure
+    /// or skip, so these tests must be deterministic against a healthy account.
     /// </summary>
     [TestClass]
     [TestCategory(AadLiveTestSupport.TestCategory)]

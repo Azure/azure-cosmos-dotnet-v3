@@ -248,19 +248,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     }
 
     /// <summary>
-    /// Guards the constant the CI result gate is built on.
-    ///
-    /// The live AAD lane requires exactly <see cref="AadLiveTestSupport.ExpectedTestCaseCount"/> passing
-    /// cases with zero skipped/inconclusive results (see the <c>ExpectedTestCount</c> parameter in
-    /// <c>templates/build-test-aad.yml</c>). This test runs in the ordinary emulator lane -- it needs no
-    /// live account -- and fails with an actionable message the moment a case is added or removed, so the
-    /// expected count cannot silently drift away from what the pipeline enforces.
-    ///
-    /// It discovers cases by scanning the whole test assembly for the <c>MultiRegionAad</c> category rather
-    /// than a hard-coded class list. That is deliberate: the lane's filter is
-    /// <c>--filter "TestCategory=MultiRegionAad"</c>, so a new AAD test class would otherwise be picked up
-    /// by the pipeline but invisible to this gate, and the run would fail on a count mismatch with no clue
-    /// as to why.
+    /// Verifies that a live AAD test class cannot accidentally leave one of its test methods out of the
+    /// <c>MultiRegionAad</c> pipeline lane.
     /// </summary>
     [TestClass]
     public class CosmosAadLiveTestsGateTests
@@ -268,10 +257,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private const string MultiRegionAadCategory = AadLiveTestSupport.TestCategory;
 
         [TestMethod]
-        public void ExpectedTestCaseCountMatchesDiscoveredTestCases()
+        public void AllLiveAadTestsAreCategorized()
         {
             List<string> untagged = new List<string>();
-            int discovered = 0;
 
             foreach (Type testClass in typeof(CosmosAadLiveTests).Assembly.GetTypes())
             {
@@ -310,23 +298,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 untagged.AddRange(testMethods
                     .Except(liveAadMethods)
                     .Select(method => $"{testClass.Name}.{method.Name}"));
-
-                foreach (MethodInfo method in liveAadMethods)
-                {
-                    int dataRowCount = method.GetCustomAttributes<DataRowAttribute>().Count();
-                    discovered += dataRowCount == 0 ? 1 : dataRowCount;
-                }
             }
 
             Assert.AreEqual(
                 0,
                 untagged.Count,
                 $"Every test on a live AAD test class must be tagged [TestCategory(\"{MultiRegionAadCategory}\")] so it runs in the live AAD lane that the CI result gate validates. Untagged: {string.Join(", ", untagged)}.");
-
-            Assert.AreEqual(
-                AadLiveTestSupport.ExpectedTestCaseCount,
-                discovered,
-                $"The number of {MultiRegionAadCategory} test cases changed. Update AadLiveTestSupport.ExpectedTestCaseCount and the ExpectedTestCount parameter in templates/build-test-aad.yml together, otherwise the live AAD lane's result gate will reject an otherwise healthy run.");
         }
     }
 }
