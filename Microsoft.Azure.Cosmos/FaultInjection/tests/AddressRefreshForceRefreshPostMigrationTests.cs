@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Text;
     using System.Text.Json;
     using System.Text.Json.Serialization;
@@ -28,7 +29,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
     /// This test reproduces a MATRIX of 410 substatuses on a Direct-mode ReadItem and records, per
     /// substatus, whether the SDK issued a FORCED address refresh (observable in CosmosDiagnostics as a
     /// "ForceAddressRefresh" block). The output is a verdict table mapping each substatus to H1
-    /// (SDK does not force on a generic 410).
+    /// (SDK does not force on a generic 410). The observed behavior is additionally PINNED as a baseline
+    /// assertion, so this rig also serves as a regression guard: if the closed-source Direct force-refresh
+    /// decision changes for any substatus, the test fails instead of quietly printing a different table.
     ///
     /// IMPORTANT — scope and limitations (see the work-item public spec, section 6):
     ///   * This rig runs against a HEALTHY account. Fault injection makes the SDK observe a 410, but the
@@ -72,16 +75,25 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         /// </summary>
         private sealed class SubStatusCase
         {
-            public SubStatusCase(int subStatusCode, string label, string category)
+            public SubStatusCase(int subStatusCode, string label, string category, bool expectedForcedAddressRefresh)
             {
                 this.SubStatusCode = subStatusCode;
                 this.Label = label;
                 this.Category = category;
+                this.ExpectedForcedAddressRefresh = expectedForcedAddressRefresh;
             }
 
             public int SubStatusCode { get; }
             public string Label { get; }
             public string Category { get; }
+
+            /// <summary>
+            /// Behavior observed against Microsoft.Azure.Cosmos.Direct 3.43.1 and pinned here so that a
+            /// change in the closed-source force-refresh decision is caught by this test rather than
+            /// silently changing the reported table. If this assertion fails, Direct's behavior moved —
+            /// re-run the investigation and update the baseline deliberately.
+            /// </summary>
+            public bool ExpectedForcedAddressRefresh { get; }
         }
 
         private sealed class CaseResult
@@ -144,13 +156,18 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             // The customer scenario surfaces as a generic 410 (0 / 21005 ServerGenerated410). The migration
             // substatuses (1007 CompletingSplit, 1008 CompletingPartitionMigration) and 1002
             // PartitionKeyRangeGone are the contrast baselines that are expected to force a refresh today.
+            //
+            // The final constructor argument is the FORCED-REFRESH BASELINE observed against Direct 3.43.1.
+            // It is asserted below so this rig doubles as a regression guard: if Direct stops (or starts)
+            // forcing an address refresh for a given substatus, this test fails loudly instead of quietly
+            // printing a different table that nobody reads.
             List<SubStatusCase> matrix = new List<SubStatusCase>
             {
-                new SubStatusCase(0, "Generic 410 / SubStatus 0", "generic"),
-                new SubStatusCase(21005, "ServerGenerated410 / SubStatus 21005", "generic"),
-                new SubStatusCase(1007, "CompletingSplit / SubStatus 1007", "migration"),
-                new SubStatusCase(1008, "CompletingPartitionMigration / SubStatus 1008", "migration"),
-                new SubStatusCase(1002, "PartitionKeyRangeGone / SubStatus 1002", "pkrange-gone"),
+                new SubStatusCase(0, "Generic 410 / SubStatus 0", "generic", expectedForcedAddressRefresh: true),
+                new SubStatusCase(21005, "ServerGenerated410 / SubStatus 21005", "generic", expectedForcedAddressRefresh: true),
+                new SubStatusCase(1007, "CompletingSplit / SubStatus 1007", "migration", expectedForcedAddressRefresh: false),
+                new SubStatusCase(1008, "CompletingPartitionMigration / SubStatus 1008", "migration", expectedForcedAddressRefresh: true),
+                new SubStatusCase(1002, "PartitionKeyRangeGone / SubStatus 1002", "pkrange-gone", expectedForcedAddressRefresh: false),
             };
 
             List<CaseResult> results = new List<CaseResult>();
@@ -164,14 +181,28 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
             this.TestContext.WriteLine(report);
 
-            // Invariant assertions only — the H1 verdict itself is REPORTED, not asserted, because the
-            // "expected" behavior on a generic 410 is exactly what this investigation is determining.
+            // Invariant assertions: every row must actually have exercised the injected path.
             foreach (CaseResult result in results)
             {
                 Assert.IsTrue(
                     result.HitCount >= 1,
                     $"Fault was not injected for {result.Case.Label} (hit count {result.HitCount}); the matrix row did not exercise the intended path.");
             }
+
+            // Regression assertions: pin the force-refresh decision observed against Direct 3.43.1.
+            // The H1 VERDICT (is forcing on a generic 410 the right behavior?) remains an open product
+            // question reported in the table above, but the CURRENT behavior is pinned so that a change in
+            // the closed-source Direct decision surfaces as a test failure. Update the baseline in the
+            // matrix above deliberately, alongside a re-run of the investigation, if this fails.
+            List<string> drifted = results
+                .Where(result => result.ForcedAddressRefreshObserved != result.Case.ExpectedForcedAddressRefresh)
+                .Select(result => $"  {result.Case.Label}: expected forcedAddressRefresh={result.Case.ExpectedForcedAddressRefresh}, observed={result.ForcedAddressRefreshObserved}")
+                .ToList();
+
+            Assert.AreEqual(
+                0,
+                drifted.Count,
+                $"Direct force-refresh behavior drifted from the pinned {directVersion} baseline:{Environment.NewLine}{string.Join(Environment.NewLine, drifted)}{Environment.NewLine}{report}");
         }
 
         private async Task<CaseResult> RunSingleSubStatusCaseAsync(SubStatusCase substatusCase)
