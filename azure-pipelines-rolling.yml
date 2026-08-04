@@ -19,6 +19,9 @@ schedules:
 
 variables:
   ReleaseArguments: ' --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=Ignore" --verbosity normal --logger "console;verbosity=detailed" --blame-hang --blame-crash'
+  # templates/build-preview.yml has its own dedicated "Flaky" job, so the Flaky
+  # category is left in here to match how azure-pipelines.yml drives the same template.
+  PreviewArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Ignore" --verbosity normal '
   VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
 
 jobs:
@@ -49,9 +52,13 @@ jobs:
 # the rolling schedule so any newly-added abstract member on Container under
 # #if PREVIEW that lacks an unconditional override in EncryptionContainer is
 # caught off-PR as well.
+# NOTE: Arguments must carry the TestCategory exclusions. This template's
+# "Preview Tests" job runs Microsoft.Azure.Cosmos.Tests with no emulator
+# installed on the agent, so an empty filter pulls in the quarantined,
+# account-dependent BinaryEncodingOverTheWireTests and fails every run.
 - template:  templates/build-preview.yml
   parameters:
     BuildConfiguration: Release
-    Arguments: ' '
+    Arguments: $(PreviewArguments)
     VmImage: $(VmImage)
 

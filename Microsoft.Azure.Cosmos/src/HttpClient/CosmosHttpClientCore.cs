@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos
             Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
         {
             // TODO: Remove type check and use #if NET6_0_OR_GREATER when multitargetting is possible
-            Type socketHandlerType = Type.GetType("System.Net.Http.SocketsHttpHandler, System.Net.Http");
+            Type socketHandlerType = typeof(HttpClient).Assembly.GetType("System.Net.Http.SocketsHttpHandler");
 
             if (socketHandlerType != null)
             {
@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos
             Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
         {
             // TODO: Remove Reflection when multitargetting is possible
-            Type socketHandlerType = Type.GetType("System.Net.Http.SocketsHttpHandler, System.Net.Http");
+            Type socketHandlerType = typeof(HttpClient).Assembly.GetType("System.Net.Http.SocketsHttpHandler");
 
             object socketHttpHandler = Activator.CreateInstance(socketHandlerType);
 
@@ -430,6 +430,13 @@ namespace Microsoft.Azure.Cosmos
 
                         if (clientSideRequestStatistics is ClientSideRequestStatisticsTraceDatum datum)
                         {
+                            // Diagnostics keep a reference to responseMessage but only read
+                            // post-dispose-safe members later - status code, reason phrase, and response
+                            // headers (content length and activity id are captured eagerly here). The
+                            // OpenTelemetry metrics path (CosmosDbMeterUtil.GetNetworkMetricsValues) may also
+                            // read the response content headers, but it guards that access with
+                            // ObjectDisposedException handling in GetPayloadSize. So it stays safe to read
+                            // even after the retriable response is disposed below.
                             datum.RecordHttpResponse(requestMessage, responseMessage, resourceType, requestStartTime);
                         }
 
@@ -443,6 +450,14 @@ namespace Microsoft.Azure.Cosmos
                         {
                             return responseMessage;
                         }
+
+                        // The response is retriable and retries remain, so it will not be returned
+                        // to the caller. Dispose it now so the underlying response stream is torn
+                        // down deterministically instead of being left to GC finalization. Over
+                        // HTTP/2 (thin-client path) an undisposed response can leave the stream's
+                        // read loop to finalization, where an abort surfaces as an unobserved
+                        // Http2StreamException ("stream aborted").
+                        responseMessage.Dispose();
                     }
                     catch (Exception e)
                     {

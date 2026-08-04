@@ -21,4 +21,4 @@ Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/Contracts @kir
 Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Contracts/DotNetSDKAPI.json @Azure/azure-cosmosdb-lt
 Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Contracts/DotNetPreviewSDKAPI.json @Azure/azure-cosmosdb-lt
 Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Contracts/DotNetSDKTelemetryAPI.json @Azure/azure-cosmosdb-lt
-CODEOWNERS @Pilchie @kirankumarkolli @kushagraThapar @jeet1995 @kundadebdatta @xinlian12
+CODEOWNERS @Pilchie @kirankumarkolli @FabianMeiswinkel @kushagraThapar @jeet1995 @kundadebdatta @xinlian12

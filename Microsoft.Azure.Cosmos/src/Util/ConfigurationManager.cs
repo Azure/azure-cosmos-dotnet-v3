@@ -51,6 +51,15 @@ namespace Microsoft.Azure.Cosmos
         internal static readonly string AADScopeOverride = "AZURE_COSMOS_AAD_SCOPE_OVERRIDE";
 
         /// <summary>
+        /// A read-only string containing the environment variable name for enabling AAD token
+        /// revocation handling (emergency revocation and Continuous Access Evaluation). When this
+        /// flag is not set (or set to false), the SDK behaves exactly as it did before the token
+        /// revocation feature was introduced: no CAE client capability (cp1) is advertised and no
+        /// revocation detection / retry is performed. The default value for this flag is false.
+        /// </summary>
+        internal static readonly string AadTokenRevocationEnabled = "AZURE_COSMOS_AAD_TOKEN_REVOCATION_ENABLED";
+
+        /// <summary>
         /// A read-only string containing the environment variable name for capturing the consecutive failure count for reads, before triggering per partition
         /// circuit breaker flow. The default value for this interval is 10 consecutive requests within 1 min window.
         /// </summary>
@@ -113,6 +122,14 @@ namespace Microsoft.Azure.Cosmos
         internal static readonly string BinaryEncodingEnabled = "AZURE_COSMOS_BINARY_ENCODING_ENABLED";
 
         /// <summary>
+        /// A read-only string containing the environment variable name for enabling cross-region metadata
+        /// hedging. Metadata hedging applies to the Collection Read and PartitionKeyRange ReadFeed metadata
+        /// cache reads. It is enabled by default in the preview package; in the GA package it follows the
+        /// account's PPAF state unless this environment variable is explicitly set.
+        /// </summary>
+        internal static readonly string MetadataHedgingEnabled = "AZURE_COSMOS_METADATA_HEDGING_ENABLED";
+
+        /// <summary>
         /// A read-only string containing the environment variable name for enabling binary encoding. This will eventually
         /// be removed once binary encoding is enabled by default for both preview
         /// and GA.
@@ -140,6 +157,14 @@ namespace Microsoft.Azure.Cosmos
         /// See: https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5730
         /// </summary>
         internal static readonly string TcpDnsDotSuffixEnabled = "AZURE_COSMOS_TCP_DNS_DOT_SUFFIX_ENABLED";
+
+        /// <summary>
+        /// Environment variable to disable the barrier early yield on 429 optimization.
+        /// When set to "false", the Direct transport layer will not yield early on barrier
+        /// throttling and will instead spin until timeout (pre-3.44.0 behavior).
+        /// Default: true (enabled).
+        /// </summary>
+        internal static readonly string BarrierEarlyYieldOn429Enabled = "AZURE_COSMOS_BARRIER_EARLY_YIELD_ON_429_ENABLED";
 
         /// <summary>
         /// Environment variable to override the HTTP/2 PING keep-alive delay (in seconds).
@@ -225,6 +250,20 @@ namespace Microsoft.Azure.Cosmos
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.ThinClientModeEnabled,
                         defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating whether AAD token revocation handling (emergency
+        /// revocation and Continuous Access Evaluation) is enabled. Defaults to false, in which case
+        /// the SDK preserves the exact pre-feature AAD behavior (no cp1 capability, no revocation retry).
+        /// </summary>
+        /// <returns>A boolean flag indicating if AAD token revocation handling is enabled.</returns>
+        public static bool IsAadTokenRevocationEnabled()
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.AadTokenRevocationEnabled,
+                        defaultValue: false);
         }
 
         /// <summary>
@@ -452,6 +491,36 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Resolves the tri-state opt-in for cross-region metadata hedging.
+        /// <list type="bullet">
+        /// <item>If the <c>AZURE_COSMOS_METADATA_HEDGING_ENABLED</c> environment variable is set to a valid
+        /// boolean, that value wins (<c>true</c> force-enables, <c>false</c> is a hard kill-switch).</item>
+        /// <item>If the environment variable is unset, the preview package defaults to <c>true</c> (on) and
+        /// the GA package returns <c>null</c> so hedging follows the account's PPAF state.</item>
+        /// </list>
+        /// </summary>
+        /// <returns>
+        /// <c>true</c> / <c>false</c> when explicitly configured; otherwise <c>true</c> for preview builds and
+        /// <c>null</c> (follow PPAF) for GA builds.
+        /// </returns>
+        public static bool? GetMetadataHedgingOptIn()
+        {
+            string value = Environment.GetEnvironmentVariable(ConfigurationManager.MetadataHedgingEnabled);
+            if (!string.IsNullOrEmpty(value) && bool.TryParse(value, out bool parsed))
+            {
+                return parsed;
+            }
+
+#if PREVIEW
+            // Preview package: metadata hedging is on by default.
+            return true;
+#else
+            // GA package: follow the account's PPAF state (resolved per-request by the strategy).
+            return null;
+#endif
+        }
+
+        /// <summary>
         /// Gets the boolean value indicating if DNS dot-suffix (FQDN trailing dot) is enabled
         /// for Direct mode TCP connections. When enabled, appends a trailing '.' to hostnames
         /// before DNS resolution, causing the resolver to treat them as absolute (fully qualified)
@@ -466,6 +535,22 @@ namespace Microsoft.Azure.Cosmos
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.TcpDnsDotSuffixEnabled,
                         defaultValue: false);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating if the barrier early yield on 429 optimization
+        /// is enabled. When true (default), ConsistencyWriter and QuorumReader in the Direct
+        /// transport layer yield early on barrier throttling. Set to false via environment
+        /// variable to revert to pre-3.44.0 spin-until-timeout behavior without an SDK redeploy.
+        /// Default: true.
+        /// </summary>
+        /// <returns>A boolean flag indicating if barrier early yield on 429 is enabled.</returns>
+        public static bool IsBarrierEarlyYieldOn429Enabled()
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.BarrierEarlyYieldOn429Enabled,
+                        defaultValue: true);
         }
 
         /// <summary>
