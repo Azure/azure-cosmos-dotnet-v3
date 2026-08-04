@@ -13,13 +13,22 @@ namespace Microsoft.Azure.Cosmos.Tracing
     {
         /// <summary>
         /// Default upper bound on the number of child traces retained under a single
-        /// trace node. Guards against pathological, effectively unbounded diagnostics
-        /// tree growth (for example, a background cross-partition query prefetch loop
-        /// retrying transport-generated 410s hundreds/thousands of times, which can
-        /// produce a multi-hundred-megabyte diagnostics string). See
+        /// trace node. This is a catastrophe-only guardrail against effectively unbounded
+        /// diagnostics tree growth (for example, a background cross-partition query
+        /// prefetch loop retrying transport-generated 410s without limit). See
         /// https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5325.
         /// </summary>
-        private const int DefaultMaxChildCount = 1000;
+        /// <remarks>
+        /// The value must sit above realistic healthy per-node breadth, because the same
+        /// node accumulates both. On the cross-partition fan-out path a single
+        /// <c>Prefetching</c> node receives one <c>Prefetch</c> child per physical
+        /// partition, so a healthy query against a very large container legitimately
+        /// produces thousands of children at one node. A per-node count cannot
+        /// distinguish that from a retry storm, so the bound is deliberately set high
+        /// enough that only runaway growth is truncated and no healthy operation loses
+        /// diagnostics fidelity.
+        /// </remarks>
+        private const int DefaultMaxChildCount = 10000;
 
         /// <summary>
         /// Data key used to surface, on the affected node, how many child traces were

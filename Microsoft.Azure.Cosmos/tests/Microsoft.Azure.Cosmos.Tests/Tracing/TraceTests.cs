@@ -285,7 +285,7 @@
         {
             // The default limit must be comfortably above realistic per-node breadth so
             // normal operations (and existing diagnostics baselines) are never truncated.
-            Assert.IsTrue(Trace.MaxChildCount >= 1000);
+            Assert.IsTrue(Trace.MaxChildCount >= 10000);
 
             using (Trace rootTrace = Trace.GetRootTrace(name: "RootTrace"))
             {
@@ -383,6 +383,44 @@
             {
                 Trace.MaxChildCount = originalMaxChildCount;
             }
+        }
+
+        [TestMethod]
+        public void TestDefaultMaxChildCountDoesNotTruncateCrossPartitionFanOut()
+        {
+            // The cross-partition fan-out path attaches one "Prefetch" child per physical
+            // partition to a single "Prefetching" node, so healthy per-node breadth scales
+            // with partition count. Assert that a very large container's fan-out is fully
+            // retained under the default limit, with no suppression and no PartialResults.
+            const int MaxExpectedPartitionBreadth = 5000;
+            Assert.IsTrue(
+                Trace.MaxChildCount > MaxExpectedPartitionBreadth,
+                "The default limit must exceed the widest realistic cross-partition fan-out.");
+
+            Trace rootTrace = Trace.GetRootTrace(name: "RootTrace");
+            using (ITrace prefetching = rootTrace.StartChild("Prefetching"))
+            {
+                for (int i = 0; i < MaxExpectedPartitionBreadth; i++)
+                {
+                    using (prefetching.StartChild("Prefetch"))
+                    {
+                    }
+                }
+
+                Assert.AreEqual(0, ((Trace)prefetching).SuppressedChildCount);
+            }
+
+            CosmosTraceDiagnostics diagnostics = new CosmosTraceDiagnostics(rootTrace);
+            JObject jObject = JObject.Parse(diagnostics.ToString());
+
+            Assert.IsNull(
+                jObject["Summary"]["PartialResults"],
+                "A healthy cross-partition fan-out must not be reported as partial.");
+
+            rootTrace.SetWalkingStateRecursively();
+            ITrace prefetchingNode = rootTrace.Children[0];
+            Assert.AreEqual(MaxExpectedPartitionBreadth, prefetchingNode.Children.Count);
+            Assert.IsFalse(prefetchingNode.Data.ContainsKey(Trace.TruncatedChildTraceCountKey));
         }
 
         [TestMethod]
