@@ -485,6 +485,35 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 "A caller-supplied session token must always be honored, regardless of the write-gate.");
         }
 
+        [TestMethod]
+        [Description("Write-gate derivation via TryCreateAsync: building the resolver through the real factory (not the internal constructor) exercises the throwaway Document/Create probe and GlobalEndpointManager.CanUseMultipleWriteLocations(request) gate. On a single-master account the derivation must gate a write sub-op (no token) while still tokening a read sub-op — proving the probe path actually runs and gates, which the constructor-injection write-gate tests bypass.")]
+        public async Task WriteGate_DerivedFromTryCreate_SingleMaster_GatesWriteButNotRead()
+        {
+            const string token = "0:1#100#4=90#5=2";
+            SessionContainer sessionContainer = SeedSessionContainer(token);
+            Microsoft.Azure.Cosmos.Routing.CollectionRoutingMap routingMap = BuildCompleteRoutingMap(("0", string.Empty, "FF", null));
+
+            // CreateResolverAsync builds the resolver through TryCreateAsync, which derives multi-master
+            // capability from the mock's real GlobalEndpointManager (default single-master ConnectionPolicy) —
+            // the exact probe the internal-constructor write-gate tests inject past.
+            (DistributedTransactionSessionTokenResolver resolver, ContainerProperties containerProperties, string collectionPath) =
+                await this.CreateResolverAsync(sessionContainer, routingMap);
+
+            DistributedTransactionOperation writeOp = new DistributedTransactionOperation(
+                OperationType.Create, operationIndex: 0, DatabaseName, ContainerName, new PartitionKey("pk1"), id: "write");
+            DistributedTransactionOperation readOp = new DistributedTransactionOperation(
+                OperationType.Read, operationIndex: 1, DatabaseName, ContainerName, new PartitionKey("pk1"), id: "read");
+
+            await resolver.ApplyTokensAsync(new[] { writeOp, readOp }, collectionPath, containerProperties);
+
+            Assert.IsTrue(string.IsNullOrEmpty(writeOp.SessionToken),
+                "The real TryCreateAsync derivation must gate a single-master write sub-op (no auto-resolved token).");
+            Assert.AreEqual("0", writeOp.ResolvedPartitionKeyRangeId,
+                "The resolved range must still be recorded for a gated write so split detection covers it.");
+            Assert.AreEqual(token, readOp.SessionToken,
+                "A read sub-op is never gated and must receive the resolved token under the derived single-master gate.");
+        }
+
         // ─── Helpers ─────────────────────────────────────────────────────────────
 
         private static SessionContainer SeedSessionContainer(params string[] tokens)

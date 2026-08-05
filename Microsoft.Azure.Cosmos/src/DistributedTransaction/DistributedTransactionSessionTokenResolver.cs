@@ -147,9 +147,11 @@ namespace Microsoft.Azure.Cosmos
         /// Reviewer feedback K2: a metadata failure must not silently degrade an operation to a tokenless
         /// Session request when the <see cref="SessionContainer"/> already holds causal progress for the
         /// collection — that would weaken read-your-writes / write-ordering on a transient blip. When cached
-        /// progress exists we fail (surface the error to the commit's retry loop / caller) instead of dropping
-        /// the token; only when there is nothing to lose (no cached progress) do we degrade to best-effort
-        /// no-token and return null.
+        /// progress exists we fail instead of dropping the token; only when there is nothing to lose (no
+        /// cached progress) do we degrade to best-effort no-token and return null. The failure surfaces to
+        /// the commit's caller as a terminal error: this lookup runs inside PrepareOperationsAsync, which the
+        /// committer invokes before ExecuteCommitWithRetryAsync, so the throw is not retried by the commit
+        /// retry loop.
         /// </remarks>
         private async Task<Routing.CollectionRoutingMap> TryLookupRoutingMapAsync(
             string collectionPath,
@@ -259,6 +261,14 @@ namespace Microsoft.Azure.Cosmos
         /// unavailable, range not found, or a None partition key). The compound collection-wide token is
         /// never substituted: it aggregates every partition's LSN, so stamping it on one op would attach
         /// other partitions' progress to it.
+        /// <para>
+        /// Degrading to no token (never throwing) is intentional parity with the point-op session path
+        /// (GatewayStoreModel.TryResolveSessionTokenAsync / ApplySessionTokenAsync), which also applies no
+        /// token when a key can't be resolved. No forced cache refresh is needed: a full key against the
+        /// complete map always resolves — during a split to the covering parent range, whose token is the
+        /// correct causal floor — and the recorded ResolvedPartitionKeyRangeId lets post-commit split
+        /// detection reconcile any partition move.
+        /// </para>
         /// </remarks>
         private string ResolvePartitionLocalToken(
             string collectionPath,
@@ -281,8 +291,9 @@ namespace Microsoft.Azure.Cosmos
                 try
                 {
                     // Delegate key-guard, effective-key and range lookup to the shared core so DTX and the
-                    // point-op path share one definition. collectionCacheUptoDate is moot here: KeyMismatch
-                    // and StaleMetadata both degrade to "no token".
+                    // point-op path share one definition. collectionCacheUptoDate: true classifies a
+                    // short/partial key as KeyMismatch; StaleMetadata is effectively unreachable on a
+                    // complete map. Every non-Resolved outcome degrades to "no token" (see remarks).
                     PartitionKeyRangeResolutionKind resolutionKind = AddressResolver.TryResolvePartitionKeyToRange(
                         partitionKey.InternalKey,
                         containerProperties,

@@ -2142,6 +2142,79 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             return sb.ToString();
         }
 
+        // ─── IsEffectiveSessionConsistencyAsync (feature on/off gate) ───────────
+
+        [TestMethod]
+        [Description("Client override = Session enables session-token bookkeeping (returns true) and short-circuits before consulting the account level.")]
+        public async Task IsEffectiveSessionConsistency_ClientOverrideSession_ReturnsTrue()
+        {
+            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+            mockContext.Setup(c => c.ClientOptions)
+                .Returns(new CosmosClientOptions { ConsistencyLevel = Cosmos.ConsistencyLevel.Session });
+
+            bool isSession = await DistributedTransactionCommitter.IsEffectiveSessionConsistencyAsync(mockContext.Object);
+
+            Assert.IsTrue(isSession, "A client ConsistencyLevel override of Session must enable session-token bookkeeping.");
+            mockContext.VerifyGet(c => c.Client, Times.Never(),
+                "A client-level override must short-circuit and never consult the account consistency level.");
+        }
+
+        [TestMethod]
+        [Description("Client override = a non-Session level (Eventual) disables session-token bookkeeping (returns false) and short-circuits before consulting the account level.")]
+        public async Task IsEffectiveSessionConsistency_ClientOverrideNonSession_ReturnsFalse()
+        {
+            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+            mockContext.Setup(c => c.ClientOptions)
+                .Returns(new CosmosClientOptions { ConsistencyLevel = Cosmos.ConsistencyLevel.Eventual });
+
+            bool isSession = await DistributedTransactionCommitter.IsEffectiveSessionConsistencyAsync(mockContext.Object);
+
+            Assert.IsFalse(isSession, "A non-Session client ConsistencyLevel override must disable session-token bookkeeping.");
+            mockContext.VerifyGet(c => c.Client, Times.Never(),
+                "A client-level override must short-circuit and never consult the account consistency level.");
+        }
+
+        [TestMethod]
+        [Description("No client override: falls back to the account consistency level. A Session account returns true.")]
+        public async Task IsEffectiveSessionConsistency_NoOverride_AccountSession_ReturnsTrue()
+        {
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(accountConsistencyLevel: Cosmos.ConsistencyLevel.Session);
+            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+            mockContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
+            mockContext.Setup(c => c.Client).Returns(client);
+
+            bool isSession = await DistributedTransactionCommitter.IsEffectiveSessionConsistencyAsync(mockContext.Object);
+
+            Assert.IsTrue(isSession, "With no client override and a Session account, session-token bookkeeping must be enabled.");
+        }
+
+        [TestMethod]
+        [Description("No client override: falls back to the account consistency level. A non-Session (Eventual) account returns false.")]
+        public async Task IsEffectiveSessionConsistency_NoOverride_AccountNonSession_ReturnsFalse()
+        {
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(accountConsistencyLevel: Cosmos.ConsistencyLevel.Eventual);
+            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+            mockContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
+            mockContext.Setup(c => c.Client).Returns(client);
+
+            bool isSession = await DistributedTransactionCommitter.IsEffectiveSessionConsistencyAsync(mockContext.Object);
+
+            Assert.IsFalse(isSession, "With no client override and a non-Session account, session-token bookkeeping must be disabled.");
+        }
+
+        [TestMethod]
+        [Description("No client override and no client (e.g., minimal test mocks): defaults to Session (true) so session-token bookkeeping stays active.")]
+        public async Task IsEffectiveSessionConsistency_NoOverride_NullClient_ReturnsTrue()
+        {
+            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+            mockContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
+            mockContext.Setup(c => c.Client).Returns((CosmosClient)null);
+
+            bool isSession = await DistributedTransactionCommitter.IsEffectiveSessionConsistencyAsync(mockContext.Object);
+
+            Assert.IsTrue(isSession, "When the client is unavailable, the gate must default to Session so bookkeeping stays active.");
+        }
+
         private Mock<CosmosClientContext> CreateMockContext(
             ISessionContainer sessionContainer,
             string responseContent,

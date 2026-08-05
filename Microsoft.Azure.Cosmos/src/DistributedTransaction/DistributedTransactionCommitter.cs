@@ -351,7 +351,7 @@ namespace Microsoft.Azure.Cosmos
         /// exposes none today. If one is added, thread it here and validate via
         /// ValidationHelpers.IsValidConsistencyLevelOverwrite (matching point operations).
         /// </remarks>
-        private static async Task<bool> IsEffectiveSessionConsistencyAsync(CosmosClientContext clientContext)
+        internal static async Task<bool> IsEffectiveSessionConsistencyAsync(CosmosClientContext clientContext)
         {
             ConsistencyLevel? clientOverride = clientContext.ClientOptions?.ConsistencyLevel;
             if (clientOverride.HasValue)
