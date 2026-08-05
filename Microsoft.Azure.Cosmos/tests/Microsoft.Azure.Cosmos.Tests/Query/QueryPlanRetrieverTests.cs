@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -100,6 +101,111 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             Assert.AreEqual(innerException, cosmosException.InnerException);
             Assert.IsNotNull(cosmosException.Trace);
             Assert.IsNotNull(cosmosException.Diagnostics);
+        }
+
+        /// <summary>
+        /// Cancellation-isolation contract for the gateway query-plan path
+        /// (<see cref="QueryPlanRetriever.GetQueryPlanThroughGatewayAsync"/>), which routes
+        /// through <see cref="MetadataDetachedExecutor.ExecuteDetachedAsync{T}(System.Func{CancellationToken, System.Threading.Tasks.Task{T}}, CancellationToken)"/>.
+        /// When the caller cancels mid-flight, the caller must surface
+        /// <see cref="OperationCanceledException"/> on the response path while the detached
+        /// gateway request keeps running on the executor's internal (non-cancelled) token, so
+        /// the pipeline's <c>ClientRetryPolicy</c> cross-region decision cannot be preempted.
+        /// This mirrors <c>ClientCollectionCacheDetachedWiringTests</c> for the higher-risk
+        /// query-plan wire-up.
+        /// </summary>
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task GetQueryPlanThroughGatewayAsync_CallerCancelMidFlight_SurfacesOCE_DetachedGatewayRequestKeepsRunning()
+        {
+            using ManualResetEventSlim operationStarted = new ManualResetEventSlim(false);
+            using SemaphoreSlim releaseOperation = new SemaphoreSlim(0, 1);
+            TaskCompletionSource<bool> detachedObservedNonCanceledToken =
+                new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            Mock<CosmosQueryClient> queryClient = new Mock<CosmosQueryClient>();
+            queryClient
+                .Setup(c => c.ExecuteQueryPlanRequestAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<SqlQuerySpec>(),
+                    It.IsAny<Cosmos.PartitionKey?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(async (
+                    string resourceUri,
+                    ResourceType resourceType,
+                    OperationType operationType,
+                    SqlQuerySpec sqlQuerySpec,
+                    Cosmos.PartitionKey? partitionKey,
+                    string supportedQueryFeatures,
+                    Guid clientQueryCorrelationId,
+                    ITrace trace,
+                    CancellationToken detachedToken) =>
+                {
+                    operationStarted.Set();
+                    await releaseOperation.WaitAsync(TimeSpan.FromSeconds(30));
+                    // The token handed to the gateway request is the executor's detached token,
+                    // never the caller's, so it must not be cancelled when the caller cancels.
+                    detachedObservedNonCanceledToken.TrySetResult(!detachedToken.IsCancellationRequested);
+                    return new PartitionedQueryExecutionInfo();
+                });
+
+            CosmosQueryContextCore queryContext = new CosmosQueryContextCore(
+                client: queryClient.Object,
+                resourceTypeEnum: ResourceType.Document,
+                operationType: OperationType.Query,
+                resourceType: typeof(QueryResponseCore),
+                resourceLink: "dbs/db/colls/coll",
+                correlatedActivityId: Guid.NewGuid(),
+                isContinuationExpected: false,
+                allowNonValueAggregateQuery: true,
+                useSystemPrefix: false);
+
+            using CancellationTokenSource callerCts = new CancellationTokenSource();
+
+            Task<PartitionedQueryExecutionInfo> gatewayTask = QueryPlanRetriever.GetQueryPlanThroughGatewayAsync(
+                queryContext,
+                new SqlQuerySpec("SELECT * FROM c"),
+                "dbs/db/colls/coll",
+                partitionKey: null,
+                isHybridSearchQueryPlanOptimizationDisabled: true,
+                trace: NoOpTrace.Singleton,
+                cancellationToken: callerCts.Token);
+
+            Assert.IsTrue(
+                operationStarted.Wait(TimeSpan.FromSeconds(30)),
+                "Gateway query-plan request should have started before caller cancellation.");
+
+            // Caller cancels while the gateway request is still in flight.
+            callerCts.Cancel();
+
+            // The caller surfaces OperationCanceledException on the response path...
+            await Assert.ThrowsExceptionAsync<OperationCanceledException>(() => gatewayTask);
+
+            // ...but the detached gateway request must NOT have been cancelled: it is still
+            // blocked on the gate, not completed.
+            Assert.IsFalse(
+                detachedObservedNonCanceledToken.Task.IsCompleted,
+                "Detached gateway request must keep running after caller cancellation.");
+
+            // Release the gate and confirm the detached request ran to completion on a
+            // non-cancelled (detached) token.
+            releaseOperation.Release();
+
+            Task completed = await Task.WhenAny(
+                detachedObservedNonCanceledToken.Task,
+                Task.Delay(TimeSpan.FromSeconds(30)));
+            Assert.AreSame(
+                detachedObservedNonCanceledToken.Task,
+                completed,
+                "Detached gateway request should have completed after the gate was released.");
+            Assert.IsTrue(
+                detachedObservedNonCanceledToken.Task.Result,
+                "Detached gateway request must observe a non-cancelled (detached) token.");
         }
 
         [TestMethod]
