@@ -14,10 +14,8 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
-    /// Owns the distributed-transaction per-partition session-token resolution: it resolves each operation's
-    /// partition and applies that partition's token. Created once per commit via <see cref="TryCreateAsync"/>,
-    /// holding the resolved SessionContainer and PartitionKeyRangeCache so the commit's single pass over
-    /// operations can apply tokens without re-resolving infrastructure.
+    /// Applies each operation's <em>partition-local</em> session token rather than the compound collection
+    /// token, mirroring the point-op path in GatewayStoreModel.
     /// </summary>
     internal sealed class DistributedTransactionSessionTokenResolver
     {
@@ -36,10 +34,10 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Creates a resolver for auto per-partition token resolution, or returns null when it can't run —
-        /// non-Session consistency, a custom ISessionContainer, or the PartitionKeyRangeCache is unavailable
-        /// (tokens can still be passed explicitly via request options). Resolves the built-in SessionContainer
-        /// and PartitionKeyRangeCache once so the commit's single pass can apply tokens without re-resolving.
+        /// Returns null when auto-resolution cannot run: consistency is not Session, the client uses a custom
+        /// <see cref="ISessionContainer"/> rather than the built-in one, or the PartitionKeyRangeCache is
+        /// unavailable. None of these is an error — the commit proceeds without an auto-applied token, and
+        /// callers can still supply one via request options.
         /// </summary>
         internal static async Task<DistributedTransactionSessionTokenResolver> TryCreateAsync(
             CosmosClientContext clientContext,
@@ -67,8 +65,6 @@ namespace Microsoft.Azure.Cosmos
                 return null;
             }
 
-            // Best-effort: no cache means no partition resolves (no token applied anyway), so disable
-            // auto-resolution for this commit and let Utils skip token application.
             Routing.PartitionKeyRangeCache partitionKeyRangeCache;
             try
             {
@@ -88,42 +84,49 @@ namespace Microsoft.Azure.Cosmos
                 return null;
             }
 
-            // Capture multi-master capability once (point ops skip the token on a single-master write; DTX
-            // mirrors that). A throwaway Document/Create request drives the request-based
-            // CanUseMultipleWriteLocations(request) gate — the exact point-op predicate. The account-level
-            // CanSupportMultipleWriteLocations accessor is avoided: its ">1 write region" clause breaks that
-            // parity and could gate off a token the point-op path would keep (weaker read-your-own-writes).
-            bool canUseMultipleWriteLocations = false;
-            try
-            {
-                Routing.GlobalEndpointManager globalEndpointManager = clientContext.DocumentClient?.GlobalEndpointManager;
-                if (globalEndpointManager != null)
-                {
-                    using (DocumentServiceRequest documentWriteProbe = DocumentServiceRequest.Create(
-                        OperationType.Create,
-                        ResourceType.Document,
-                        AuthorizationTokenType.PrimaryMasterKey))
-                    {
-                        canUseMultipleWriteLocations = globalEndpointManager.CanUseMultipleWriteLocations(documentWriteProbe);
-                    }
-                }
-            }
-            catch (Exception ex) when (!(ex is OperationCanceledException))
-            {
-                // Best-effort: on failure assume single-master (the conservative gate) — a missed token on a
-                // multi-master write only costs an extra server-side session check, never correctness.
-                DefaultTrace.TraceWarning(
-                    "DistributedTransaction could not determine multi-master capability; assuming single-master " +
-                    "for the session-token write-gate. Exception: {0}",
-                    ex.Message);
-            }
+            bool canUseMultipleWriteLocations = DistributedTransactionSessionTokenResolver.CanUseMultipleWriteLocationsForDocumentWrite(
+                clientContext);
 
             return new DistributedTransactionSessionTokenResolver(sessionContainer, partitionKeyRangeCache, canUseMultipleWriteLocations);
         }
 
+        private static bool CanUseMultipleWriteLocationsForDocumentWrite(CosmosClientContext clientContext)
+        {
+            try
+            {
+                Routing.GlobalEndpointManager globalEndpointManager = clientContext.DocumentClient?.GlobalEndpointManager;
+                if (globalEndpointManager == null)
+                {
+                    return false;
+                }
+
+                // Drives the same per-request gate the point-op path uses. The account-level
+                // CanSupportMultipleWriteLocations is deliberately avoided: its ">1 write region" clause would
+                // gate off a token the point-op path would keep, weakening read-your-own-writes.
+                using (DocumentServiceRequest documentWriteProbe = DocumentServiceRequest.Create(
+                    OperationType.Create,
+                    ResourceType.Document,
+                    AuthorizationTokenType.PrimaryMasterKey))
+                {
+                    return globalEndpointManager.CanUseMultipleWriteLocations(documentWriteProbe);
+                }
+            }
+            catch (Exception ex) when (!(ex is OperationCanceledException))
+            {
+                // Single-master is the conservative assumption: a missed token on a multi-master write costs
+                // an extra server-side session check, never correctness.
+                DefaultTrace.TraceWarning(
+                    "DistributedTransaction could not determine multi-master capability; assuming single-master " +
+                    "for the session-token write-gate. Exception: {0}",
+                    ex.Message);
+                return false;
+            }
+        }
+
         /// <summary>
-        /// Resolves and applies a per-partition session token to every operation in the collection that has
-        /// no explicit token. The routing map is looked up once per collection and reused across its ops.
+        /// Applies a partition-local session token to each operation, skipping any that already carries one
+        /// and any write excluded by the multi-master gate. Scoped to a single collection so its routing map
+        /// is looked up once and shared.
         /// </summary>
         internal async Task ApplyTokensAsync(
             IEnumerable<DistributedTransactionOperation> operations,
@@ -141,18 +144,11 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Looks up the collection routing map that maps a partition key to a physical partition.
+        /// Unlike the usual Try* convention this can throw: when the session container already holds causal
+        /// progress for the collection, a metadata failure is surfaced rather than degraded, because
+        /// committing tokenless would serve stale reads inside a session that has already promised progress.
+        /// Returns null only when nothing is cached and there is no guarantee to lose.
         /// </summary>
-        /// <remarks>
-        /// Reviewer feedback K2: a metadata failure must not silently degrade an operation to a tokenless
-        /// Session request when the <see cref="SessionContainer"/> already holds causal progress for the
-        /// collection — that would weaken read-your-writes / write-ordering on a transient blip. When cached
-        /// progress exists we fail instead of dropping the token; only when there is nothing to lose (no
-        /// cached progress) do we degrade to best-effort no-token and return null. The failure surfaces to
-        /// the commit's caller as a terminal error: this lookup runs inside PrepareOperationsAsync, which the
-        /// committer invokes before ExecuteCommitWithRetryAsync, so the throw is not retried by the commit
-        /// retry loop.
-        /// </remarks>
         private async Task<Routing.CollectionRoutingMap> TryLookupRoutingMapAsync(
             string collectionPath,
             string containerResourceId)
@@ -168,9 +164,10 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (Exception ex) when (!(ex is OperationCanceledException))
             {
+                // The throw runs inside PrepareOperationsAsync, before ExecuteCommitWithRetryAsync, so the
+                // commit retry loop does not swallow it.
                 if (this.CollectionHasCachedProgress(collectionPath))
                 {
-                    // Fail rather than silently drop an existing causal token (K2).
                     DefaultTrace.TraceError(
                         "DistributedTransaction routing-map lookup failed for collection '{0}' while the session " +
                         "container already holds causal progress; failing the commit instead of sending Session " +
@@ -180,7 +177,7 @@ namespace Microsoft.Azure.Cosmos
                     throw;
                 }
 
-                // No cached progress — nothing to lose, degrade to best-effort no-token.
+                // Nothing cached, so there is no guarantee to violate; degrade to no token.
                 DefaultTrace.TraceWarning(
                     "DistributedTransaction routing-map lookup failed for collection '{0}' with no cached progress; " +
                     "operations in this collection will be sent with no session token. Exception: {1}",
@@ -189,9 +186,9 @@ namespace Microsoft.Azure.Cosmos
                 return null;
             }
 
+            // Same reasoning as the catch above: a null map is as token-destroying as a throw.
             if (routingMap == null && this.CollectionHasCachedProgress(collectionPath))
             {
-                // Lookup returned no map (e.g. cache miss) but we hold progress — fail rather than drop it (K2).
                 throw new InvalidOperationException(
                     $"DistributedTransaction could not resolve the routing map for collection '{collectionPath}' " +
                     "while the session container already holds causal progress; failing the commit instead of " +
@@ -201,30 +198,19 @@ namespace Microsoft.Azure.Cosmos
             return routingMap;
         }
 
-        /// <summary>
-        /// True when the built-in <see cref="SessionContainer"/> already holds a session token (causal
-        /// progress) for the collection. Used by the K2 failure policy to decide between failing and
-        /// degrading to best-effort no-token on a metadata failure.
-        /// </summary>
         private bool CollectionHasCachedProgress(string collectionPath)
         {
             return !string.IsNullOrEmpty(this.sessionContainer.GetSessionToken(collectionPath));
         }
 
-        /// <summary>
-        /// Resolves the operation's partition range and applies a per-partition session token, unless the
-        /// caller already provided one (never overridden). The resolved range is recorded even for
-        /// user-supplied-token ops so the post-commit capture pass can detect a partition move for them,
-        /// matching the point-op path. An operation whose partition can't be resolved gets no token.
-        /// </summary>
         private void TryApplyResolvedSessionToken(
             DistributedTransactionOperation operation,
             string collectionPath,
             ContainerProperties containerProperties,
             Routing.CollectionRoutingMap routingMap)
         {
-            // Resolve and record the range up front, regardless of token source, so the commit's capture
-            // pass can detect a partition move even for user-supplied-token ops — matching the point-op path.
+            // Resolved ahead of the two early returns below: either may skip applying a token, but neither
+            // should skip recording the range id.
             string resolvedToken = this.ResolvePartitionLocalToken(
                 collectionPath,
                 containerProperties,
@@ -232,15 +218,22 @@ namespace Microsoft.Azure.Cosmos
                 operation.PartitionKey,
                 out string resolvedPartitionKeyRangeId);
 
+            // The DTX analogue of DocumentServiceRequest.RequestContext.ResolvedPartitionKeyRangeId: sub-ops
+            // are payload items in one batched commit, so there is no RequestContext to hang it on. Consumed by
+            // PartitionKeyRangeCache.RefreshRoutingCacheIfPartitionMovedAsync, which compares it against the
+            // range the server actually served to detect a split. It must be captured here at send time, not
+            // recomputed after the commit: by then the routing cache may have refreshed past the split and
+            // would always agree with the server, silently defeating the detection. The DTX-side capture call
+            // lands in a follow-up PR, so this property is write-only for now — not dead code.
             operation.ResolvedPartitionKeyRangeId = resolvedPartitionKeyRangeId;
 
             if (!string.IsNullOrEmpty(operation.SessionToken))
             {
-                return; // User explicitly provided a token — don't override (range still recorded above).
+                return; // A caller-supplied token is authoritative.
             }
 
-            // Write-gate parity with point ops (GatewayStoreModel): a single-master write gets no token;
-            // reads and multi-master writes still do. The range is already recorded above for split detection.
+            // Write-gate parity with GatewayStoreModel: on a single-master account the write goes to the sole
+            // write region, so a token would add a session check with nothing to wait for.
             if (!OperationTypeExtensions.IsReadOperation(operation.OperationType) && !this.canUseMultipleWriteLocations)
             {
                 return;
@@ -253,23 +246,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Resolves the partition-local session token for an operation's partition key, mirroring
-        /// GatewayStoreModel.TryResolveSessionTokenAsync.
+        /// Returns the partition's own token, never the compound collection token.
         /// </summary>
-        /// <remarks>
-        /// Returns the partition's token, or null when it has no token yet or can't be resolved (routing map
-        /// unavailable, range not found, or a None partition key). The compound collection-wide token is
-        /// never substituted: it aggregates every partition's LSN, so stamping it on one op would attach
-        /// other partitions' progress to it.
-        /// <para>
-        /// Degrading to no token (never throwing) is intentional parity with the point-op session path
-        /// (GatewayStoreModel.TryResolveSessionTokenAsync / ApplySessionTokenAsync), which also applies no
-        /// token when a key can't be resolved. No forced cache refresh is needed: a full key against the
-        /// complete map always resolves — during a split to the covering parent range, whose token is the
-        /// correct causal floor — and the recorded ResolvedPartitionKeyRangeId lets post-commit split
-        /// detection reconcile any partition move.
-        /// </para>
-        /// </remarks>
         private string ResolvePartitionLocalToken(
             string collectionPath,
             ContainerProperties containerProperties,
@@ -279,8 +257,8 @@ namespace Microsoft.Azure.Cosmos
         {
             resolvedPartitionKeyRangeId = null;
 
-            // A None or default(PartitionKey) can't be routed; both lack a routable key (None is the sentinel,
-            // default has a null InternalKey). Mapping either would stamp a wrong-partition token.
+            // None is the unroutable sentinel and default(PartitionKey) has a null InternalKey; routing either
+            // would stamp another partition's token.
             if (partitionKey.IsNone || partitionKey.InternalKey == null)
             {
                 return null;
@@ -290,10 +268,9 @@ namespace Microsoft.Azure.Cosmos
             {
                 try
                 {
-                    // Delegate key-guard, effective-key and range lookup to the shared core so DTX and the
-                    // point-op path share one definition. collectionCacheUptoDate: true classifies a
-                    // short/partial key as KeyMismatch; StaleMetadata is effectively unreachable on a
-                    // complete map. Every non-Resolved outcome degrades to "no token" (see remarks).
+                    // Shared with the point-op path so key-guard, effective-key and range lookup have one
+                    // definition. collectionCacheUptoDate: true classifies a partial key as KeyMismatch rather
+                    // than sending the caller around a refresh loop the up-to-date map cannot improve on.
                     PartitionKeyRangeResolutionKind resolutionKind = AddressResolver.TryResolvePartitionKeyToRange(
                         partitionKey.InternalKey,
                         containerProperties,
@@ -303,14 +280,16 @@ namespace Microsoft.Azure.Cosmos
 
                     if (resolutionKind == PartitionKeyRangeResolutionKind.Resolved)
                     {
-                        // Record the range for split detection, then return the partition's token (may be
-                        // null). range.Parents lets a freshly-split child inherit the parent's progress.
                         resolvedPartitionKeyRangeId = range.Id;
+
+                        // No forced refresh: a full key against a complete map always resolves, during a split
+                        // to the covering parent whose token is the correct causal floor. range.Parents lets a
+                        // freshly-split child inherit that progress instead of starting from no token.
                         return this.sessionContainer.GetSessionTokenForPartitionKeyRange(collectionPath, range.Id, range.Parents);
                     }
 
-                    // KeyMismatch or StaleMetadata: apply no token and trace (observable degrade-to-eventual).
-                    // Never throw — real routing surfaces any key mismatch server-side for the actual write.
+                    // Traced because the operation silently drops to eventual consistency; a genuine key
+                    // mismatch still fails server-side on the real write.
                     DefaultTrace.TraceWarning(
                         "DistributedTransaction could not resolve an operation's partition key to a single range in " +
                         "collection '{0}' (outcome: {1}); applying no session token (served at eventual consistency).",
@@ -319,7 +298,6 @@ namespace Microsoft.Azure.Cosmos
                 }
                 catch (Exception ex) when (!(ex is OperationCanceledException))
                 {
-                    // Routing resolution failed (e.g., stale cache); apply no token.
                     DefaultTrace.TraceWarning(
                         "DistributedTransaction per-partition session-token resolution failed for collection '{0}'; " +
                         "applying no token for this operation. Exception: {1}",
@@ -328,7 +306,9 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            // Partition unresolved (no routing map or range not found): apply no token, never the compound token.
+            // Degrade to no token rather than throw, matching GatewayStoreModel.TryResolveSessionTokenAsync.
+            // Never the compound collection token: it aggregates every partition's LSN, so stamping it here
+            // would make this operation wait on unrelated partitions.
             return null;
         }
     }
