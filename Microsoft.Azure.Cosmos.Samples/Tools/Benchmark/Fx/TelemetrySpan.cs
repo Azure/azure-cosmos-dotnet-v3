@@ -86,8 +86,22 @@ namespace CosmosBenchmark
 
         private static void RecordLatency(double elapsedMilliseoncds)
         {
+            double[] histogram = TelemetrySpan.latencyHistogram;
+            if (histogram == null)
+            {
+                return;
+            }
+
             int index = Interlocked.Increment(ref latencyIndex);
-            latencyHistogram[index] = elapsedMilliseoncds;
+
+            // In continuous (--duration) mode the operation count can exceed the histogram
+            // capacity (sized to ItemCount). Guard the write so the run does not crash; the
+            // end-of-run percentile summary is then based on the first ItemCount samples while
+            // the authoritative per-window telemetry continues via the metrics sink.
+            if (index < histogram.Length)
+            {
+                histogram[index] = elapsedMilliseoncds;
+            }
         }
 
         internal static void ResetLatencyHistogram(int totalNumberOfIterations)

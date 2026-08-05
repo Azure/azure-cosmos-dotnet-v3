@@ -14,7 +14,7 @@
         [TestInitialize]
         public void Setup()
         {
-            this.listener = new DiagnosticDataListener();
+            this.listener = new DiagnosticDataListener(new BenchmarkConfig());
         }
 
         [TestCleanup]

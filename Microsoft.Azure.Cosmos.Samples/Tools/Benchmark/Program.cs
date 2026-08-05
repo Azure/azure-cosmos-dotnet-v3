@@ -9,6 +9,7 @@ namespace CosmosBenchmark
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
+    using System.Net;
     using System.Net.Http;
     using System.Reflection;
     using System.Threading;
@@ -160,9 +161,31 @@ namespace CosmosBenchmark
                 ContainerResponse containerResponse = await Program.CreatePartitionedContainerAsync(config, cosmosClient);
                 Container container = containerResponse;
 
-                int? currentContainerThroughput = await container.ReadThroughputAsync();
+                // ReadThroughputAsync reads the offer, a control-plane operation that Cosmos
+                // data-plane RBAC (AAD) does not support. Under keyless auth (--aad /
+                // disableLocalAuth=true) it returns 403 Forbidden (substatus 5302). The value is
+                // only needed to auto-derive the task count when --pl is not supplied; when --pl
+                // is set (the perf / DR-drill deployments always set it) it is unused. So tolerate
+                // the denial and fall back to the configured --throughput (-t) value instead of
+                // crashing, keeping the keyless steady-state workload runnable.
+                int? currentContainerThroughput = null;
+                bool throughputReadDenied = false;
+                try
+                {
+                    currentContainerThroughput = await container.ReadThroughputAsync();
+                }
+                catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.Forbidden)
+                {
+                    throughputReadDenied = true;
+                    currentContainerThroughput = config.Throughput;
+                    Utility.TeeTraceInformation(
+                        $"ReadThroughputAsync denied ({(int)ce.StatusCode}/{ce.SubStatusCode}); throughput " +
+                        $"(offer) reads are unavailable under data-plane RBAC / keyless auth (--aad). " +
+                        $"Falling back to the configured --throughput value ({config.Throughput} RU/s). " +
+                        $"Use --pl to size the task count explicitly.");
+                }
 
-                if (!currentContainerThroughput.HasValue)
+                if (!throughputReadDenied && !currentContainerThroughput.HasValue)
                 {
                     // Container throughput is not configured. It is shared database throughput
                     ThroughputResponse throughputResponse = await database.ReadThroughputAsync(requestOptions: null);
@@ -182,6 +205,28 @@ namespace CosmosBenchmark
                 string partitionKeyPath = containerResponse.Resource.PartitionKeyPath;
                 int opsPerTask = config.ItemCount / taskCount;
 
+                // Optional per-window metrics sink (W3). When configured, route per-operation
+                // latency/RU/error samples plus .NET runtime metrics to the dedicated dashboard
+                // schema. Defaults to null (no-op) so existing count-based runs are unaffected.
+                IMetricsSink metricsSink = MetricsSinkFactory.Create(config);
+                PerfMetricsReporter perfReporter = null;
+                if (metricsSink != null)
+                {
+                    PerfRunContext perfRunContext = new PerfRunContext
+                    {
+                        Operation = string.IsNullOrWhiteSpace(config.WorkloadName) ? config.WorkloadType : config.WorkloadName,
+                        Hostname = Environment.MachineName,
+                        SdkVersion = config.ResolveSdkVersion(),
+                        CommitSha = config.ResolveSdkSourceRef() ?? config.CommitId,
+                        ConfigConcurrency = taskCount,
+                        ConfigApplicationRegion = config.ApplicationPreferredRegions,
+                        RunTag = config.RunTag,
+                    };
+
+                    perfReporter = new PerfMetricsReporter(metricsSink, perfRunContext, config.MetricsReportingIntervalInSec);
+                    perfReporter.Start();
+                }
+
                 // TBD: 2 clients SxS some overhead
                 RunSummary runSummary;
 
@@ -200,8 +245,18 @@ namespace CosmosBenchmark
                         Program.ClearCoreSdkListeners();
                     }
 
-                    IExecutionStrategy execution = IExecutionStrategy.StartNew(benchmarkOperationFactory);
-                    runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask, 0.01);
+                    try
+                    {
+                        IExecutionStrategy execution = IExecutionStrategy.StartNew(benchmarkOperationFactory);
+                        runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask, 0.01);
+                    }
+                    finally
+                    {
+                        if (perfReporter != null)
+                        {
+                            await perfReporter.StopAndFlushAsync();
+                        }
+                    }
                 }
 
                 if (config.CleanupOnFinish)
@@ -291,6 +346,13 @@ namespace CosmosBenchmark
             }
             else if (benchmarkTypeName.Name.EndsWith("V2BenchmarkOperation"))
             {
+                if (documentClient == null)
+                {
+                    throw new NotSupportedException(
+                        $"Workload type {config.WorkloadType} uses the V2 DocumentClient, which requires master-key auth (-k). " +
+                        "Use a V3 workload (the six tracked operations are all V3) when running with --aad.");
+                }
+
                 ci = benchmarkTypeName.GetConstructor(new Type[] { typeof(Microsoft.Azure.Documents.Client.DocumentClient), typeof(string), typeof(string), typeof(string), typeof(string) });
                 ctorArguments = new object[]
                     {

@@ -50,6 +50,16 @@ namespace CosmosBenchmark
                             benchmarkOperation: this.benchmarkOperation());
             }
 
+            // Continuous (duration) mode: loop the executors until a shared deadline instead of
+            // stopping after a fixed iteration count. Computed once so all executors share it.
+            DateTime? executionDeadline = benchmarkConfig.IsDurationMode
+                ? DateTime.UtcNow.Add(benchmarkConfig.RunDuration.Value)
+                : (DateTime?)null;
+            if (executionDeadline.HasValue)
+            {
+                Utility.TeePrint("Continuous mode: running until {0:o} ({1})", executionDeadline.Value, benchmarkConfig.RunDuration.Value);
+            }
+
             this.pendingExecutorCount = serialExecutorConcurrency;
             for (int i = 0; i < serialExecutorConcurrency; i++)
             {
@@ -58,7 +68,8 @@ namespace CosmosBenchmark
                         isWarmup: false,
                         traceFailures: benchmarkConfig.TraceFailures,
                         completionCallback: () => Interlocked.Decrement(ref this.pendingExecutorCount),
-                        benchmarkConfig);
+                        benchmarkConfig,
+                        executionDeadline);
             }
 
             return await this.LogOutputStats(
@@ -122,6 +133,8 @@ namespace CosmosBenchmark
                 RunSummary runSummary = new RunSummary(
                     benchmarkConfig,
                     executors.Length);
+
+                runSummary.AverageRuPerSecond = lastSummary.Rups();
 
                 if (summaryCounters.Length > 10)
                 {
