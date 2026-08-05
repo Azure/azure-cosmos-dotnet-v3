@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using Microsoft.Azure.Cosmos.Core.Trace;
 
     internal static class ConfigurationManager
     {
@@ -183,6 +184,14 @@ namespace Microsoft.Azure.Cosmos
         /// Environment variable name to enable deterministic lease-id partition key values for Change Feed lease creation.
         /// </summary>
         internal static readonly string ChangeFeedLeaseIdAsPartitionKeyEnabled = "AZURE_COSMOS_CHANGE_FEED_LEASE_ID_AS_PARTITION_KEY_ENABLED";
+
+        /// <summary>
+        /// Environment variable to override the factor used when computing the initial per-partition
+        /// page size for a cross-partition ORDER BY query that carries a TOP or LIMIT clause.
+        /// </summary>
+        internal static readonly string PageSizeFactorForTop = "AZURE_COSMOS_PAGE_SIZE_FACTOR_FOR_TOP";
+        internal static readonly int DefaultPageSizeFactorForTop = 2;
+        internal static readonly int MinPageSizeFactorForTop = 1;
 
         public static T GetEnvironmentVariable<T>(string variable, T defaultValue)
         {
@@ -413,6 +422,33 @@ namespace Microsoft.Azure.Cosmos
                     .GetEnvironmentVariable(
                         variable: HybridSearchQueryPlanOptimizationDisabled,
                         defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the factor applied to the initial per-partition page size of a cross-partition
+        /// ORDER BY query that has a TOP or LIMIT clause. Defaults to <see cref="DefaultPageSizeFactorForTop"/>
+        /// and can be overridden with the <c>AZURE_COSMOS_PAGE_SIZE_FACTOR_FOR_TOP</c> environment variable.
+        /// </summary>
+        public static int GetPageSizeFactorForTop()
+        {
+            string value = Environment.GetEnvironmentVariable(ConfigurationManager.PageSizeFactorForTop);
+            if (string.IsNullOrEmpty(value))
+            {
+                return ConfigurationManager.DefaultPageSizeFactorForTop;
+            }
+
+            if (!int.TryParse(value, out int factorOverride))
+            {
+                DefaultTrace.TraceWarning(
+                    "Ignoring the {0} environment variable because '{1}' is not a valid integer. Using the default value of {2}.",
+                    ConfigurationManager.PageSizeFactorForTop,
+                    value,
+                    ConfigurationManager.DefaultPageSizeFactorForTop);
+
+                return ConfigurationManager.DefaultPageSizeFactorForTop;
+            }
+
+            return Math.Max(factorOverride, ConfigurationManager.MinPageSizeFactorForTop);
         }
 
         /// <summary>
