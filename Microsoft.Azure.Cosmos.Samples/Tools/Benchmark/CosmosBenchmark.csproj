@@ -28,7 +28,7 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
-    <!-- Enabled easier integration into master -->
+    <!-- Enables easier integration into main -->
     <PackageReference Include="Microsoft.Azure.Cosmos" Version="*" />
   </ItemGroup>
 

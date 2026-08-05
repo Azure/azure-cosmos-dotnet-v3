@@ -18,7 +18,7 @@ while :
 do
     #Kill any running processes
     pkill -f run.sh
-    git pull origin master
+    git pull origin main
 
     # Distribute workload between modes
     mode=$((i % 3))
