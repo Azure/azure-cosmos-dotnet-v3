@@ -347,6 +347,35 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void CosmosClientOptions_Clone_PreservesAbortedTransactionRetryOptions()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                MaxRetryAttemptsOnAbortedTransactions = 5,
+                MaxRetryWaitTimeOnAbortedTransactions = TimeSpan.FromSeconds(12),
+            };
+
+            CosmosClientOptions clone = options.Clone();
+
+            Assert.AreEqual(5, clone.MaxRetryAttemptsOnAbortedTransactions,
+                "Clone() must preserve MaxRetryAttemptsOnAbortedTransactions");
+            Assert.AreEqual(TimeSpan.FromSeconds(12), clone.MaxRetryWaitTimeOnAbortedTransactions,
+                "Clone() must preserve MaxRetryWaitTimeOnAbortedTransactions");
+            Assert.AreNotSame(options, clone, "Clone() must return a distinct instance");
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_AbortedTransactionRetryOptions_DefaultToNull()
+        {
+            CosmosClientOptions options = new CosmosClientOptions();
+
+            Assert.IsNull(options.MaxRetryAttemptsOnAbortedTransactions,
+                "MaxRetryAttemptsOnAbortedTransactions must be null by default so the SDK default applies");
+            Assert.IsNull(options.MaxRetryWaitTimeOnAbortedTransactions,
+                "MaxRetryWaitTimeOnAbortedTransactions must be null by default so the SDK default applies");
+        }
+
+        [TestMethod]
         public void CosmosClientOptions_Clone_PreservesEmbeddingGenerator()
         {
             ICosmosEmbeddingGenerator generator = new MockEmbeddingGenerator();
@@ -617,6 +646,42 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void ThrowOnNullEndpoint()
         {
             new CosmosClientBuilder(null, "testKey");
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void ThrowOnNegativeMaxRetryAttemptsOnAbortedTransactions()
+        {
+            new CosmosClientOptions().MaxRetryAttemptsOnAbortedTransactions = -1;
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void ThrowOnNegativeMaxRetryWaitTimeOnAbortedTransactions()
+        {
+            new CosmosClientOptions().MaxRetryWaitTimeOnAbortedTransactions = TimeSpan.FromSeconds(-1);
+        }
+
+        [TestMethod]
+        public void AbortedTransactionRetryOptionsAcceptValidValues()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
+
+            // Unset (null) is valid and applies SDK defaults downstream.
+            Assert.IsNull(cosmosClientOptions.MaxRetryAttemptsOnAbortedTransactions);
+            Assert.IsNull(cosmosClientOptions.MaxRetryWaitTimeOnAbortedTransactions);
+
+            // Zero is valid (disables automatic abort retries).
+            cosmosClientOptions.MaxRetryAttemptsOnAbortedTransactions = 0;
+            cosmosClientOptions.MaxRetryWaitTimeOnAbortedTransactions = TimeSpan.Zero;
+            Assert.AreEqual(0, cosmosClientOptions.MaxRetryAttemptsOnAbortedTransactions);
+            Assert.AreEqual(TimeSpan.Zero, cosmosClientOptions.MaxRetryWaitTimeOnAbortedTransactions);
+
+            // Positive values are stored and read back unchanged.
+            cosmosClientOptions.MaxRetryAttemptsOnAbortedTransactions = 5;
+            cosmosClientOptions.MaxRetryWaitTimeOnAbortedTransactions = TimeSpan.FromSeconds(15);
+            Assert.AreEqual(5, cosmosClientOptions.MaxRetryAttemptsOnAbortedTransactions);
+            Assert.AreEqual(TimeSpan.FromSeconds(15), cosmosClientOptions.MaxRetryWaitTimeOnAbortedTransactions);
         }
 
         [TestMethod]
