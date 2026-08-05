@@ -19,15 +19,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+#### Breaking Changes
+
+#### Bugs Fixed
+
+#### Other Changes
+
+### <a name="3.62.1"/> [3.62.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.62.1) - 2026-8-5
+
+#### Features Added
+
 - [6070](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6070) Batch: Adds the `AZURE_COSMOS_MAX_OPERATIONS_IN_BATCH_REQUEST` environment variable to configure the maximum number of operations in a direct mode batch request, up to the service limit.
-- [6053](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6053) VectorIndex Policy: Adds `QuantizerType` to the official (GA) package.
-- [5970](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5970) ThinClient: Adds an HTTP/2 connectivity probe (`POST /connectivity-probe`) that validates each discovered thin client (proxy) regional endpoint over HTTP/2 before routing traffic to it. Data-plane traffic uses the proxy only for regions whose endpoint has passed its probe; any other region transparently uses the standard gateway, with no client restart required. Thin client mode is now enabled by default (opt-out via `AZURE_COSMOS_THIN_CLIENT_ENABLED=false`); the probe verifies HTTP/2 reachability per region at runtime, so no client-side HTTP/2 opt-in is required. When enabled, the SDK additionally issues the probe and routes data-plane traffic to the proxy regional endpoints on port `10250` over HTTP/2, which is useful to know when diagnosing unexpected requests or egress rules that only allow `443`.
-- [5829](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5829) Routing: Adds Gateway Account Property Flag for Dynamic Hedging Control. Introduces a Gateway-controlled `disableCrossRegionalHedging` account property that lets operators dynamically disable PPAF cross-region hedging (and any customer-configured `AvailabilityStrategy`) without rolling back PPAF entirely. The SDK reconciles `ConnectionPolicy.AvailabilityStrategy` against the Gateway-supplied flag on each account-properties refresh; toggling the flag back to `false` restores the customer-configured strategy or rebuilds the SDK default.
-- [5976](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5976) Upgraded Direct package to 3.44.0.
-- [5976](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5976) Direct: Adds barrier early yield on 429 — ConsistencyWriter and QuorumReader yield early with substatus 21013 (`Server_WriteBarrierThrottled`) when all replicas return 429 during barrier requests. Direct retries the 429 internally and surfaces a synthetic 408/21013 to the SDK when retries are exhausted. The SDK's `ClientRetryPolicy` recognizes this substatus and avoids marking the endpoint unavailable, preventing unnecessary cross-region failover. Adds internal opt-out flag and env-var kill switch (`AZURE_COSMOS_BARRIER_EARLY_YIELD_ON_429_ENABLED`).
-- [6049](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6049) Distributed Transactions: Adds a public `SessionToken` getter on `DistributedTransactionOperationResult`, letting callers read the per-operation session token returned by the coordinator and pass it back via `DistributedTransactionRequestOptions.SessionToken` to enforce read-your-writes session consistency.
-- [6042](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6042) Distributed Transactions (preview): Adds `CosmosClientOptions.MaxRetryAttemptsOnAbortedTransactions` and `CosmosClientOptions.MaxRetryWaitTimeOnAbortedTransactions` to tune the automatic retry bounds (attempt-count cap and cumulative wait-time budget) applied when a distributed transaction commit is reported as aborted but retriable. Setting the attempt cap to 0 disables automatic abort retries; leaving the options unset applies the SDK defaults.
-- [6042](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6042) Distributed Transactions (preview): Adds `CosmosClientOptions.MaxRetryAttemptsOnAbortedTransactions` and `CosmosClientOptions.MaxRetryWaitTimeOnAbortedTransactions` to tune the automatic retry bounds (attempt-count cap and cumulative wait-time budget) applied when a distributed transaction commit is reported as aborted but retriable. Setting the attempt cap to 0 disables automatic abort retries; leaving the options unset applies the SDK defaults. Negative values are rejected with `ArgumentException`.
 
 #### Breaking Changes
 
