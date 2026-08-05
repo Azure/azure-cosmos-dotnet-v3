@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Threading;
 
     internal static class ConfigurationManager
     {
@@ -176,6 +177,16 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal static readonly string ChangeFeedLeaseIdAsPartitionKeyEnabled = "AZURE_COSMOS_CHANGE_FEED_LEASE_ID_AS_PARTITION_KEY_ENABLED";
 
+        /// <summary>
+        /// A read-only string containing the environment variable name for overriding the maximum number of
+        /// operations allowed in a single Direct mode batch request. When not set, the SDK uses the default
+        /// value defined by <see cref="Documents.Constants.MaxOperationsInDirectModeBatchRequest"/>.
+        /// </summary>
+        internal static readonly string MaxOperationsInDirectModeBatchRequest = "AZURE_COSMOS_MAX_OPERATIONS_IN_BATCH_REQUEST";
+
+        private static Lazy<int> maxOperationsInDirectModeBatchRequestCached =
+            ConfigurationManager.CreateMaxOperationsInDirectModeBatchRequestCache();
+
         public static T GetEnvironmentVariable<T>(string variable, T defaultValue)
         {
             string value = Environment.GetEnvironmentVariable(variable);
@@ -184,6 +195,48 @@ namespace Microsoft.Azure.Cosmos
                 return defaultValue;
             }
             return (T)Convert.ChangeType(value, typeof(T));
+        }
+
+        public static int GetMaxOperationsInDirectModeBatchRequest()
+        {
+            return ConfigurationManager.maxOperationsInDirectModeBatchRequestCached.Value;
+        }
+
+        internal static void ResetMaxOperationsInDirectModeBatchRequestCacheForTesting()
+        {
+            ConfigurationManager.maxOperationsInDirectModeBatchRequestCached =
+                ConfigurationManager.CreateMaxOperationsInDirectModeBatchRequestCache();
+        }
+
+        private static Lazy<int> CreateMaxOperationsInDirectModeBatchRequestCache()
+        {
+            return new Lazy<int>(
+                ConfigurationManager.GetMaxOperationsInDirectModeBatchRequestInternal,
+                LazyThreadSafetyMode.PublicationOnly);
+        }
+
+        private static int GetMaxOperationsInDirectModeBatchRequestInternal()
+        {
+            string environmentValue = Environment.GetEnvironmentVariable(ConfigurationManager.MaxOperationsInDirectModeBatchRequest);
+
+            if (string.IsNullOrEmpty(environmentValue))
+            {
+                return Documents.Constants.MaxOperationsInDirectModeBatchRequest;
+            }
+
+            if (!int.TryParse(environmentValue, out int parsedValue))
+            {
+                throw new ArgumentException(
+                    $"Environment variable {ConfigurationManager.MaxOperationsInDirectModeBatchRequest} must be a valid integer. Current value: {environmentValue}");
+            }
+
+            if (parsedValue <= 0 || parsedValue > Documents.Constants.MaxOperationsInDirectModeBatchRequest)
+            {
+                throw new ArgumentException(
+                    $"Environment variable {ConfigurationManager.MaxOperationsInDirectModeBatchRequest} must be between 1 and {Documents.Constants.MaxOperationsInDirectModeBatchRequest}. Current value: {environmentValue}");
+            }
+
+            return parsedValue;
         }
 
         public static int GetMaxRetriesInLocalRegionWhenRemoteRegionPreferred()
