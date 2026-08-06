@@ -72,6 +72,16 @@ jobs:
     BuildConfiguration: Release
     Arguments: $(ReleaseArguments)
     VmImage:  $(VmImage)
+
+# FaultInjection compiles against Microsoft.Azure.Cosmos.Direct internals, so a
+# $(DirectVersion) bump can break it while the main SDK still builds. Keep this
+# gate on the PR pipeline; the live-account tests stay in the release pipeline.
+- template:  templates/build-fault-injection.yml
+  parameters:
+    BuildConfiguration: Release
+    Arguments: $(ReleaseArguments)
+    VmImage:  $(VmImage)
+    IncludeIntegration: false
     
 - template:  templates/build-thinclient.yml
   parameters:
