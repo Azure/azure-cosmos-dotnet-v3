@@ -101,42 +101,8 @@ namespace Microsoft.Azure.Cosmos.Common
 
         private static string GetSessionToken(SessionContainerState self, string collectionLink)
         {
-            bool arePathSegmentsParsed = PathsHelper.TryParsePathSegments(
-                collectionLink,
-                out _,
-                out _,
-                out string resourceIdOrFullName,
-                out bool isNameBased);
-
-            ConcurrentDictionary<string, ISessionToken> partitionKeyRangeIdToTokenMap = null;
-
-            if (arePathSegmentsParsed)
-            {
-                ulong? maybeRID = null;
-
-                if (isNameBased)
-                {
-                    string collectionName = PathsHelper.GetCollectionPath(resourceIdOrFullName);
-
-                    if (self.collectionNameByResourceId.TryGetValue(collectionName, out ulong rid))
-                    {
-                        maybeRID = rid;
-                    }
-                }
-                else
-                {
-                    ResourceId resourceId = ResourceId.Parse(resourceIdOrFullName);
-                    if (resourceId.DocumentCollection != 0)
-                    {
-                        maybeRID = resourceId.UniqueDocumentCollectionId;
-                    }
-                }
-
-                if (maybeRID.HasValue)
-                {
-                    self.sessionTokensRIDBased.TryGetValue(maybeRID.Value, out partitionKeyRangeIdToTokenMap);
-                }
-            }
+            ConcurrentDictionary<string, ISessionToken> partitionKeyRangeIdToTokenMap =
+                SessionContainer.GetPartitionKeyRangeIdToTokenMap(self, collectionLink);
 
             if (partitionKeyRangeIdToTokenMap == null)
             {
@@ -148,44 +114,10 @@ namespace Microsoft.Azure.Cosmos.Common
 
         private static string GetSessionTokenForPartitionKeyRange(SessionContainerState self, string collectionLink, string partitionKeyRangeId, IReadOnlyList<string> parents)
         {
-            bool arePathSegmentsParsed = PathsHelper.TryParsePathSegments(
-                collectionLink,
-                out _,
-                out _,
-                out string resourceIdOrFullName,
-                out bool isNameBased);
-
-            if (!arePathSegmentsParsed)
-            {
-                return null;
-            }
-
-            ulong? maybeRID = null;
-
-            if (isNameBased)
-            {
-                string collectionName = PathsHelper.GetCollectionPath(resourceIdOrFullName);
-                if (self.collectionNameByResourceId.TryGetValue(collectionName, out ulong rid))
-                {
-                    maybeRID = rid;
-                }
-            }
-            else
-            {
-                ResourceId resourceId = ResourceId.Parse(resourceIdOrFullName);
-                if (resourceId.DocumentCollection != 0)
-                {
-                    maybeRID = resourceId.UniqueDocumentCollectionId;
-                }
-            }
-
-            if (maybeRID.HasValue
-                && self.sessionTokensRIDBased.TryGetValue(maybeRID.Value, out ConcurrentDictionary<string, ISessionToken> partitionKeyRangeIdToTokenMap))
-            {
-                return SessionContainer.BuildPartitionLocalSessionToken(partitionKeyRangeIdToTokenMap, partitionKeyRangeId, parents);
-            }
-
-            return null;
+            return SessionContainer.BuildPartitionLocalSessionToken(
+                SessionContainer.GetPartitionKeyRangeIdToTokenMap(self, collectionLink),
+                partitionKeyRangeId,
+                parents);
         }
 
         /// <summary>
@@ -390,6 +322,52 @@ namespace Microsoft.Azure.Cosmos.Common
             return partitionKeyRangeIdToTokenMap;
         }
 
+        // Shared by the collection-token and partition-local lookups so collection-rid resolution can't
+        // change in one and miss the other. Kept separate from the DocumentServiceRequest overload above:
+        // that one guards ResourceId.Parse behind a non-empty ResourceId check this path never had, so
+        // merging the two would move where a malformed rid throws.
+        private static ConcurrentDictionary<string, ISessionToken> GetPartitionKeyRangeIdToTokenMap(SessionContainerState self, string collectionLink)
+        {
+            if (!PathsHelper.TryParsePathSegments(
+                collectionLink,
+                out _,
+                out _,
+                out string resourceIdOrFullName,
+                out bool isNameBased))
+            {
+                return null;
+            }
+
+            ulong? maybeRID = null;
+
+            if (isNameBased)
+            {
+                string collectionName = PathsHelper.GetCollectionPath(resourceIdOrFullName);
+
+                if (self.collectionNameByResourceId.TryGetValue(collectionName, out ulong rid))
+                {
+                    maybeRID = rid;
+                }
+            }
+            else
+            {
+                ResourceId resourceId = ResourceId.Parse(resourceIdOrFullName);
+                if (resourceId.DocumentCollection != 0)
+                {
+                    maybeRID = resourceId.UniqueDocumentCollectionId;
+                }
+            }
+
+            ConcurrentDictionary<string, ISessionToken> partitionKeyRangeIdToTokenMap = null;
+
+            if (maybeRID.HasValue)
+            {
+                self.sessionTokensRIDBased.TryGetValue(maybeRID.Value, out partitionKeyRangeIdToTokenMap);
+            }
+
+            return partitionKeyRangeIdToTokenMap;
+        }
+
         private static void SetSessionToken(SessionContainerState self, ResourceId resourceId, string collectionName, string encodedToken)
         {
             string partitionKeyRangeId;
@@ -477,10 +455,18 @@ namespace Microsoft.Azure.Cosmos.Common
 
         /// <summary>
         /// Returns true when <paramref name="sessionToken"/> is both canonically shaped ("{pkRangeId}:{lsn}")
-        /// and its lsn segment parses — i.e. <see cref="SetSessionToken(string, string, INameValueCollection)"/>
-        /// will accept it. Lets callers outside the write path (e.g. distributed transactions) detect a
-        /// malformed token deterministically up front, without mutating state, throwing, or catching parse exceptions.
+        /// and its lsn segment parses. Lets callers outside the write path (e.g. distributed transactions)
+        /// detect a malformed token deterministically up front, without mutating state and without forcing
+        /// the caller to catch parse exceptions.
         /// </summary>
+        /// <remarks>
+        /// Accepts a strict subset of what <see cref="SetSessionToken(string, string, INameValueCollection)"/>
+        /// accepts, so a true result implies the writer would accept it but not the converse. The writer's
+        /// unbounded Split(':') reads only parts[0]/parts[1], so it stores "0:1#100:extra" as "1#100",
+        /// whereas the canonical-shape check rejects any 3+ segment token outright. See
+        /// <see cref="IsCanonicalSessionTokenShape(string)"/> for why this deliberately does not loosen
+        /// toward the writer.
+        /// </remarks>
         internal static bool IsValidSessionToken(string sessionToken)
         {
             if (!SessionContainer.IsCanonicalSessionTokenShape(sessionToken))
@@ -494,8 +480,11 @@ namespace Microsoft.Azure.Cosmos.Common
                 SessionTokenHelper.Parse(tokenParts[1], HttpConstants.Versions.CurrentVersion);
                 return true;
             }
-            catch (Exception ex) when (!(ex is OperationCanceledException))
+            catch (DocumentClientException)
             {
+                // Parse signals an unparseable lsn by throwing InternalServerErrorException (a
+                // DocumentClientException). Catching only that keeps genuine defects — a null deref or
+                // an argument bug inside Parse — visible instead of silently reported as "malformed token".
                 return false;
             }
         }
