@@ -39,8 +39,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
         /// Gets or sets the start request continuation token to start looking for changes after.
         /// </summary>
         /// <remarks>
-        /// This is only used when lease store is not initialized and is ignored if a lease exists and has continuation token.
-        /// If this is specified, both StartTime and StartFromBeginning are ignored.
+        /// This is only used when lease store is not initialized and is ignored if a lease exists and has a continuation token.
+        /// If this is specified, StartFromBeginning is ignored. StartTime is ignored for the initial start position
+        /// but is still persisted in the lease and sent as If-Modified-Since alongside the continuation token.
         /// </remarks>
         /// <seealso cref="ChangeFeedOptions.RequestContinuation"/>
         public string StartContinuation { get; set; }
@@ -49,9 +50,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
         /// Gets or sets the time (exclusive) to start looking for changes after.
         /// </summary>
         /// <remarks>
-        /// This is only used when:
-        /// (1) Lease store is not initialized and is ignored if a lease exists and has continuation token.
-        /// (2) StartContinuation is not specified.
+        /// When set, the start time is persisted in the lease document and sent as the If-Modified-Since
+        /// header alongside the continuation token on subsequent change feed requests. This ensures
+        /// documents are returned after the specified time even after partition merges.
+        /// The start time is honored across processor restarts via persistence in the lease.
+        /// If StartContinuation is specified, this property is ignored for the initial start position
+        /// but is still persisted and sent alongside the continuation token.
         /// If this is specified, StartFromBeginning is ignored.
         /// </remarks>
         /// <seealso cref="ChangeFeedOptions.StartTime"/>
@@ -71,12 +75,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
         }
 
         /// <summary>
+        /// Gets a value indicating whether the start time was explicitly set by the user
+        /// via the builder (as opposed to being auto-anchored by the processor on startup).
+        /// </summary>
+        public bool IsStartTimeUserExplicit { get; set; }
+
+        /// <summary>
         /// Gets or sets a value indicating whether change feed in the Azure Cosmos DB service should start from beginning (true) or from current (false).
         /// By default it's start from current (false).
         /// </summary>
         /// <remarks>
         /// This is only used when:
-        /// (1) Lease store is not initialized and is ignored if a lease exists and has continuation token.
+        /// (1) Lease store is not initialized and is ignored if a lease exists and has a continuation token.
         /// (2) StartContinuation is not specified.
         /// (3) StartTime is not specified.
         /// </remarks>

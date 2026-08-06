@@ -2779,11 +2779,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 accumulator = await this.ReadChangeFeedToEnd(client, coll.SelfLink, options);
                 Assert.AreEqual(string.Empty, accumulator);
 
-                // 8. If-None-Match wins.
+                // 8. Both If-None-Match and If-Modified-Since apply — start time filters documents at the continuation position.
                 options.StartTime = timestamps[1];
                 options.RequestContinuation = lsns[0].ToString();
                 accumulator = await this.ReadChangeFeedToEnd(client, coll.SelfLink, options);
-                Assert.AreEqual("doc2.", accumulator);
+                Assert.AreEqual(string.Empty, accumulator);
             }
             finally
             {
