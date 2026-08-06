@@ -82,7 +82,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
         public override Task<DocumentServiceLease> CreateLeaseIfNotExistAsync(
             PartitionKeyRange partitionKeyRange,
-            string continuationToken)
+            string continuationToken) => this.CreateLeaseIfNotExistAsync(partitionKeyRange, continuationToken, startTime: null);
+
+        public override Task<DocumentServiceLease> CreateLeaseIfNotExistAsync(
+            PartitionKeyRange partitionKeyRange,
+            string continuationToken,
+            DateTime? startTime)
         {
             if (partitionKeyRange == null)
             {
@@ -95,7 +100,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 LeaseId = leaseToken,
                 LeaseToken = leaseToken,
                 ContinuationToken = continuationToken,
-                FeedRange = new FeedRangeEpk(partitionKeyRange.ToRange())
+                FeedRange = new FeedRangeEpk(partitionKeyRange.ToRange()),
+                StartTime = startTime,
             };
 
             return this.TryCreateDocumentServiceLeaseAsync(documentServiceLease);
@@ -103,7 +109,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
         public override Task<DocumentServiceLease> CreateLeaseIfNotExistAsync(
             FeedRangeEpk feedRange,
-            string continuationToken)
+            string continuationToken) => this.CreateLeaseIfNotExistAsync(feedRange, continuationToken, startTime: null);
+
+        public override Task<DocumentServiceLease> CreateLeaseIfNotExistAsync(
+            FeedRangeEpk feedRange,
+            string continuationToken,
+            DateTime? startTime)
         {
             if (feedRange == null)
             {
@@ -116,7 +127,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 LeaseId = leaseToken,
                 LeaseToken = leaseToken,
                 ContinuationToken = continuationToken,
-                FeedRange = feedRange
+                FeedRange = feedRange,
+                StartTime = startTime,
             };
 
             return this.TryCreateDocumentServiceLeaseAsync(documentServiceLease);

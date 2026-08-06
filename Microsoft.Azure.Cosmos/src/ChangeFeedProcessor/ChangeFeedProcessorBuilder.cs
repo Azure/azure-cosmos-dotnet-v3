@@ -151,7 +151,9 @@ namespace Microsoft.Azure.Cosmos
         /// continuation token on subsequent change feed requests. This ensures documents are returned after
         /// the specified time even after partition merges.
         /// Passing <see cref="DateTime.MinValue"/> clears the persisted start time from the lease document.
-        /// If this is specified, StartFromBeginning is ignored.
+        /// After it is cleared, a lease without a continuation starts from the current time unless
+        /// <see cref="WithStartFromBeginning"/> is also configured.
+        /// A non-MinValue start time takes precedence over StartFromBeginning.
         /// </remarks>
         /// <param name="startTime">Date and time when to start looking for changes. Use <see cref="DateTime.MinValue"/> to clear a previously persisted start time.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
@@ -162,11 +164,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new InvalidOperationException($"Using the '{nameof(WithStartTime)}' option with ChangeFeedProcessor is not supported with {ChangeFeedMode.AllVersionsAndDeletes} mode.");
             }
 
-            if (startTime == null)
-            {
-                throw new ArgumentNullException(nameof(startTime));
-            }
-
+            // DateTime.MinValue is the explicit opt-out for a start time persisted by an earlier run.
             this.changeFeedProcessorOptions.StartTime = startTime == DateTime.MinValue ? null : startTime;
             this.changeFeedProcessorOptions.IsStartTimeUserExplicit = true;
             return this;

@@ -729,8 +729,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         PageSizeHint = 1,
                     }) as ChangeFeedIteratorCore;
 
-                // First read — should have If-Modified-Since but no If-None-Match (etag)
-                await feedIterator.ReadNextAsync(this.cancellationToken);
+                string continuationToken;
+                using (ResponseMessage firstResponse = await feedIterator.ReadNextAsync(this.cancellationToken))
+                {
+                    continuationToken = firstResponse.Headers.ContinuationToken;
+                }
+
+                // First read should have If-Modified-Since but no If-None-Match (etag).
                 Assert.IsTrue(headerHandler.CapturedRequests.Count > 0, "Expected at least one request to be captured.");
 
                 RequestMessage firstCapturedRequest = headerHandler.CapturedRequests[0];
@@ -750,25 +755,35 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                     (capabilitiesValue & changeFeedWithStartTimePostMergeFlag) == changeFeedWithStartTimePostMergeFlag,
                     $"SDKSupportedCapabilities header should include ChangeFeedWithStartTimePostMerge flag on first request. Actual value: {capabilitiesValue}");
 
-                while (feedIterator.HasMoreResults)
+                Assert.IsFalse(string.IsNullOrEmpty(continuationToken), "The first response should return a continuation token.");
+                StringAssert.Contains(continuationToken, "startTime", "The continuation token should persist the original start time.");
+
+                headerHandler.CapturedRequests.Clear();
+                feedIterator = itemsCore.GetChangeFeedStreamIterator(
+                    ChangeFeedStartFrom.ContinuationToken(continuationToken),
+                    ChangeFeedMode.Incremental,
+                    new ChangeFeedRequestOptions()
+                    {
+                        PageSizeHint = 1,
+                    }) as ChangeFeedIteratorCore;
+
+                bool receivedNotModified = false;
+                while (!receivedNotModified)
                 {
-                    // After reading the first page, subsequent requests should include If-None-Match (the etag/continuation)
                     headerHandler.CapturedRequests.Clear();
 
                     using (ResponseMessage feedResponse = await feedIterator.ReadNextAsync(this.cancellationToken))
                     {
-                        Assert.IsTrue(headerHandler.CapturedRequests.Count > 0, "Expected at least one request in the second read.");
+                        Assert.IsTrue(headerHandler.CapturedRequests.Count > 0, "Expected a request from the resumed iterator.");
 
                         RequestMessage capturedRequest = headerHandler.CapturedRequests[0];
                         ifNoneMatch = capturedRequest.Headers.IfNoneMatch;
-                        Assert.IsNotNull(ifNoneMatch, "If-None-Match (etag) header should be set on subsequent change feed requests as the continuation.");
+                        Assert.IsNotNull(ifNoneMatch, "The resumed iterator should send the persisted continuation as If-None-Match.");
                         Assert.AreNotEqual("*", ifNoneMatch, "If-None-Match should be a specific etag, not '*'.");
 
-                        // The If-Modified-Since should still be present on subsequent requests (for merge handling)
                         ifModifiedSince = capturedRequest.Headers[Microsoft.Azure.Documents.HttpConstants.HttpHeaders.IfModifiedSince];
-                        Assert.IsNotNull(ifModifiedSince, "If-Modified-Since should still be present on subsequent requests for start time based change feed.");
+                        Assert.AreEqual(expectedIfModifiedSince, ifModifiedSince, "The resumed iterator should preserve the original start time.");
 
-                        // Validate that SDKSupportedCapabilities header includes ChangeFeedWithStartTimePostMerge
                         sdkCapabilities = capturedRequest.Headers[Microsoft.Azure.Documents.HttpConstants.HttpHeaders.SDKSupportedCapabilities];
                         Assert.IsNotNull(sdkCapabilities, "SDKSupportedCapabilities header should be present on change feed requests.");
                         capabilitiesValue = ulong.Parse(sdkCapabilities);
@@ -778,9 +793,25 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
                         if (feedResponse.StatusCode == HttpStatusCode.NotModified)
                         {
-                            break;
+                            receivedNotModified = true;
                         }
                     }
+                }
+
+                await this.CreateRandomItems(itemsCore, 1, randomPartitionKey: true);
+                headerHandler.CapturedRequests.Clear();
+
+                using (ResponseMessage feedResponse = await feedIterator.ReadNextAsync(this.cancellationToken))
+                {
+                    Assert.AreEqual(HttpStatusCode.OK, feedResponse.StatusCode, "The resumed iterator should read a document added after NotModified.");
+                    Assert.IsTrue(headerHandler.CapturedRequests.Count > 0, "Expected a request after the NotModified transition.");
+
+                    RequestMessage capturedRequest = headerHandler.CapturedRequests[0];
+                    Assert.IsNotNull(capturedRequest.Headers.IfNoneMatch, "If-None-Match should survive a NotModified transition.");
+                    Assert.AreEqual(
+                        expectedIfModifiedSince,
+                        capturedRequest.Headers[Microsoft.Azure.Documents.HttpConstants.HttpHeaders.IfModifiedSince],
+                        "If-Modified-Since should survive a NotModified transition.");
                 }
             }
             finally
