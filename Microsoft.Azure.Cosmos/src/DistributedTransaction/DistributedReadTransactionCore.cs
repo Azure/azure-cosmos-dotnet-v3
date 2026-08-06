@@ -21,12 +21,26 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly CosmosClientContext clientContext;
         private readonly List<DistributedTransactionOperation> operations;
+        private readonly object idempotencyTokenLock = new object();
+        private Guid latestIdempotencyToken;
         private int isCommitInvoked;
 
         internal DistributedReadTransactionCore(CosmosClientContext clientContext)
         {
             this.clientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
             this.operations = new List<DistributedTransactionOperation>();
+        }
+
+        /// <inheritdoc/>
+        internal override Guid IdempotencyToken
+        {
+            get
+            {
+                lock (this.idempotencyTokenLock)
+                {
+                    return this.latestIdempotencyToken;
+                }
+            }
         }
 
         public override DistributedReadTransaction ReadItem(
@@ -77,13 +91,22 @@ namespace Microsoft.Azure.Cosmos
                     DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                         operations: this.operations,
                         clientContext: this.clientContext,
-                        operationType: OperationType.Read);
+                        operationType: OperationType.Read,
+                        onDispatch: this.PublishIdempotencyToken);
 
                     return committer.ExecuteTransactionAsync(trace, cancellationToken);
                 },
                 openTelemetry: new (OpenTelemetryConstants.Operations.ExecuteDistributedReadTransaction,
                                     (response) => new OpenTelemetryResponse(response)),
                 traceComponent: TraceComponent.Batch);
+        }
+
+        private void PublishIdempotencyToken(Guid token)
+        {
+            lock (this.idempotencyTokenLock)
+            {
+                this.latestIdempotencyToken = token;
+            }
         }
 
         private static void ValidateItemId(string id)

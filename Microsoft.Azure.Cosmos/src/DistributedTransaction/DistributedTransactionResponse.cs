@@ -165,9 +165,19 @@ namespace Microsoft.Azure.Cosmos
         public virtual Guid IdempotencyToken { get; }
 
         /// <summary>
-        /// Gets a value indicating whether the transaction is safe to retry with the same idempotency token.
+        /// Gets a value indicating whether the coordinator marked this outcome as retriable. When
+        /// <c>true</c>, the SDK resubmits the identical operations under a new token if the prior attempt
+        /// is terminally Aborted (HTTP 452), otherwise under the same token.
         /// </summary>
         public virtual bool IsRetriable { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether the transaction is durably Aborted, derived from the response
+        /// status code (HTTP 452). On a retriable response this selects the retry token: a durable Abort
+        /// rotates to a new token, any other status replays the same one.
+        /// </summary>
+        internal bool IsTransactionAborted =>
+            (int)this.StatusCode == (int)StatusCodes.TransactionAborted;
 
         /// <summary>
         /// Gets the diagnostic string from the coordinator describing the transaction outcome
@@ -230,7 +240,9 @@ namespace Microsoft.Azure.Cosmos
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                // Extract idempotency token from response headers, fallback to the request token if absent.
+                // Extract idempotency token from response headers, falling back to the request token if absent.
+                // The committer always rotates the token before dispatch, so the fallback is non-empty on this
+                // path; a caller that builds a response before dispatching would surface Guid.Empty.
                 Guid idempotencyToken = GetIdempotencyTokenFromHeaders(responseMessage.Headers, serverRequest.IdempotencyToken);
 
                 DistributedTransactionResponse response = null;
