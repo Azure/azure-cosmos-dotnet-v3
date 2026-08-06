@@ -823,6 +823,32 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 "A persisted user start time on the lease must be forwarded to the iterator on restart.");
         }
 
+        [TestMethod]
+        public void FeedProcessorFactory_PersistedLeaseStartTime_WithoutContinuationToken_ForwardsStartTimeToIterator()
+        {
+            DateTime persistedStartTime = DateTime.UtcNow.AddMinutes(-5);
+            ChangeFeedProcessorOptions options = new ChangeFeedProcessorOptions
+            {
+                StartTime = DateTime.UtcNow.AddSeconds(-1),
+                IsStartTimeUserExplicit = false,
+            };
+
+            DocumentServiceLeaseCore lease = new DocumentServiceLeaseCore
+            {
+                LeaseId = "0",
+                LeaseToken = "0",
+                ContinuationToken = null,
+                StartTime = persistedStartTime,
+            };
+
+            DateTime? iteratorStartTime = ChangeFeedProcessorCoreTests.GetIteratorStartTime(options, lease);
+
+            Assert.AreEqual(
+                persistedStartTime,
+                iteratorStartTime,
+                "A persisted start time must remain the initial read position before the first checkpoint.");
+        }
+
         private static ChangeFeedProcessorCore CreateProcessor(
             out Mock<ChangeFeedObserverFactory> factory,
             out Mock<ChangeFeedObserver> observer)
