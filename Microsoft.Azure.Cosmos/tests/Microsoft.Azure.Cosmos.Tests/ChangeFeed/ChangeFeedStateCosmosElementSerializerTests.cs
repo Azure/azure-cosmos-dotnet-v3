@@ -137,5 +137,41 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             Assert.IsTrue(monadicState.Succeeded);
             Assert.IsTrue(monadicState.Result is ChangeFeedStateContinuation);
         }
+
+        [DataTestMethod]
+        [DataRow("continuation")]
+        [DataRow("continuationAndStartTime")]
+        public void Continuation_InvalidStartTime_FailsWithFormatException(string type)
+        {
+            CosmosObject token = CosmosObject.Create(
+                new System.Collections.Generic.Dictionary<string, CosmosElement>()
+                {
+                    { "type", CosmosString.Create(type) },
+                    { "value", CosmosString.Create("someEtag") },
+                    { "startTime", CosmosString.Create("not-a-date") },
+                });
+
+            TryCatch<ChangeFeedState> monadicState = ChangeFeedStateCosmosElementSerializer.MonadicFromCosmosElement(token);
+
+            Assert.IsTrue(monadicState.Failed);
+            Assert.IsInstanceOfType(monadicState.Exception.InnerException, typeof(FormatException));
+        }
+
+        [TestMethod]
+        public void Continuation_NonStringStartTime_FailsWithFormatException()
+        {
+            CosmosObject token = CosmosObject.Create(
+                new System.Collections.Generic.Dictionary<string, CosmosElement>()
+                {
+                    { "type", CosmosString.Create("continuation") },
+                    { "value", CosmosString.Create("someEtag") },
+                    { "startTime", CosmosBoolean.Create(true) },
+                });
+
+            TryCatch<ChangeFeedState> monadicState = ChangeFeedStateCosmosElementSerializer.MonadicFromCosmosElement(token);
+
+            Assert.IsTrue(monadicState.Failed);
+            Assert.IsInstanceOfType(monadicState.Exception.InnerException, typeof(FormatException));
+        }
     }
 }

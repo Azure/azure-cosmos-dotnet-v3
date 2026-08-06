@@ -49,11 +49,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public async Task HandlePartitionGoneAsync_PKRangeBasedLease_Split()
         {
             string continuation = Guid.NewGuid().ToString();
+            DateTime startTime = DateTime.UtcNow.AddMinutes(-5);
             Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("", "FF", true, false);
             DocumentServiceLeaseCore lease = new DocumentServiceLeaseCore()
             {
                 LeaseToken = "0",
                 ContinuationToken = continuation,
+                StartTime = startTime,
                 Owner = Guid.NewGuid().ToString(),
                 FeedRange = new FeedRangeEpk(range)
             };
@@ -94,19 +96,23 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             leaseManager.Verify(l => l.CreateLeaseIfNotExistAsync(
                It.IsAny<Documents.PartitionKeyRange>(),
-               It.IsAny<string>()), Times.Exactly(2));
+               It.IsAny<string>(),
+               It.IsAny<DateTime?>()), Times.Exactly(2));
 
             leaseManager.Verify(l => l.CreateLeaseIfNotExistAsync(
                It.IsAny<FeedRangeEpk>(),
-               It.IsAny<string>()), Times.Never);
+               It.IsAny<string>(),
+               It.IsAny<DateTime?>()), Times.Never);
 
             leaseManager.Verify(l => l.CreateLeaseIfNotExistAsync(
                It.Is<Documents.PartitionKeyRange>(pkRange => pkRange.Id == resultingRanges[0].Id),
-               It.Is<string>(c => c == continuation)), Times.Once);
+               It.Is<string>(c => c == continuation),
+               It.Is<DateTime?>(value => value == startTime)), Times.Once);
 
             leaseManager.Verify(l => l.CreateLeaseIfNotExistAsync(
                It.Is<Documents.PartitionKeyRange>(pkRange => pkRange.Id == resultingRanges[1].Id),
-               It.Is<string>(c => c == continuation)), Times.Once);
+               It.Is<string>(c => c == continuation),
+               It.Is<DateTime?>(value => value == startTime)), Times.Once);
         }
 
         /// <summary>
@@ -116,11 +122,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public async Task HandlePartitionGoneAsync_EpkBasedLease_Split()
         {
             string continuation = Guid.NewGuid().ToString();
+            DateTime startTime = DateTime.UtcNow.AddMinutes(-5);
             Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("AA", "EE", true, false);
             DocumentServiceLeaseCoreEpk lease = new DocumentServiceLeaseCoreEpk()
             {
                 LeaseToken = "AA-BB",
                 ContinuationToken = continuation,
+                StartTime = startTime,
                 Owner = Guid.NewGuid().ToString(),
                 FeedRange = new FeedRangeEpk(range)
             };
@@ -162,23 +170,28 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             leaseManager.Verify(l => l.CreateLeaseIfNotExistAsync(
                It.IsAny<Documents.PartitionKeyRange>(),
-               It.IsAny<string>()), Times.Never);
+               It.IsAny<string>(),
+               It.IsAny<DateTime?>()), Times.Never);
 
             leaseManager.Verify(l => l.CreateLeaseIfNotExistAsync(
                It.IsAny<FeedRangeEpk>(),
-               It.IsAny<string>()), Times.Exactly(3));
+               It.IsAny<string>(),
+               It.IsAny<DateTime?>()), Times.Exactly(3));
 
             leaseManager.Verify(l => l.CreateLeaseIfNotExistAsync(
                It.Is<FeedRangeEpk>(epk => epk.Range.Min == range.Min && epk.Range.Max == resultingRanges[0].MaxExclusive),
-               It.Is<string>(c => c == continuation)), Times.Once);
+               It.Is<string>(c => c == continuation),
+               It.Is<DateTime?>(value => value == startTime)), Times.Once);
 
             leaseManager.Verify(l => l.CreateLeaseIfNotExistAsync(
                It.Is<FeedRangeEpk>(epk => epk.Range.Min == resultingRanges[1].MinInclusive && epk.Range.Max == resultingRanges[1].MaxExclusive),
-               It.Is<string>(c => c == continuation)), Times.Once);
+               It.Is<string>(c => c == continuation),
+               It.Is<DateTime?>(value => value == startTime)), Times.Once);
 
             leaseManager.Verify(l => l.CreateLeaseIfNotExistAsync(
                It.Is<FeedRangeEpk>(epk => epk.Range.Min == resultingRanges[2].MinInclusive && epk.Range.Max == range.Max),
-               It.Is<string>(c => c == continuation)), Times.Once);
+               It.Is<string>(c => c == continuation),
+               It.Is<DateTime?>(value => value == startTime)), Times.Once);
         }
 
         /// <summary>
@@ -188,11 +201,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public async Task HandlePartitionGoneAsync_PKRangeBasedLease_Merge()
         {
             string continuation = Guid.NewGuid().ToString();
+            DateTime startTime = DateTime.UtcNow.AddMinutes(-5);
             Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("", "BB", true, false);
             DocumentServiceLeaseCore lease = new DocumentServiceLeaseCore()
             {
                 LeaseToken = "0",
                 ContinuationToken = continuation,
+                StartTime = startTime,
                 Owner = Guid.NewGuid().ToString(),
                 FeedRange = new FeedRangeEpk(range)
             };
@@ -232,15 +247,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             leaseManager.Verify(l => l.CreateLeaseIfNotExistAsync(
                It.IsAny<Documents.PartitionKeyRange>(),
-               It.IsAny<string>()), Times.Never);
+               It.IsAny<string>(),
+               It.IsAny<DateTime?>()), Times.Never);
 
             leaseManager.Verify(l => l.CreateLeaseIfNotExistAsync(
                It.IsAny<FeedRangeEpk>(),
-               It.IsAny<string>()), Times.Once);
+               It.IsAny<string>(),
+               It.IsAny<DateTime?>()), Times.Once);
 
             leaseManager.Verify(l => l.CreateLeaseIfNotExistAsync(
                It.Is<FeedRangeEpk>(epKRange => epKRange.Range.Min == range.Min && epKRange.Range.Max == range.Max),
-               It.Is<string>(c => c == continuation)), Times.Once);
+               It.Is<string>(c => c == continuation),
+               It.Is<DateTime?>(value => value == startTime)), Times.Once);
         }
 
         /// <summary>

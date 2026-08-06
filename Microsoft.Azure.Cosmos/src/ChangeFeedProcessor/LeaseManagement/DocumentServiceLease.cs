@@ -81,6 +81,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         /// When set, the If-Modified-Since header is sent alongside the continuation token
         /// to ensure documents are returned after this time even after partition merges.
         /// </summary>
-        public virtual DateTime? StartTime { get; set; }
+        public abstract DateTime? StartTime { get; set; }
     }
 }
