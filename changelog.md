@@ -25,6 +25,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Other Changes
 
+### <a name="3.63.0-preview.1"/> [3.63.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.63.0-preview.1) - 2026-8-5
+
+#### Features Added
+
+- [6070](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6070) Batch: Adds the `AZURE_COSMOS_MAX_OPERATIONS_IN_BATCH_REQUEST` environment variable to configure the maximum number of operations in a direct mode batch request, up to the service limit.
+
+### <a name="3.62.1"/> [3.62.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.62.1) - 2026-8-5
+
+#### Features Added
+
+- [6070](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6070) Batch: Adds the `AZURE_COSMOS_MAX_OPERATIONS_IN_BATCH_REQUEST` environment variable to configure the maximum number of operations in a direct mode batch request, up to the service limit.
+
+#### Breaking Changes
+
+#### Bugs Fixed
+
+#### Other Changes
+
 ### <a name="3.63.0-preview.0"/> [3.63.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.63.0-preview.0) - 2026-7-15
 
 #### Features Added
