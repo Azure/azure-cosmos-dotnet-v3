@@ -89,10 +89,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                         // "continuation" type - rather than introducing a new type - preserves backward
                         // compatibility: an older SDK that predates this feature simply ignores the
                         // unknown startTime field instead of failing to parse the token.
-                        if (cosmosObject.TryGetValue(StartTimePropertyName, out CosmosString continuationStartTimePropertyValue))
+                        if (cosmosObject.TryGetValue(StartTimePropertyName, out CosmosElement continuationStartTimePropertyValue))
                         {
+                            if (!(continuationStartTimePropertyValue is CosmosString continuationStartTimeString))
+                            {
+                                return TryCatch<ChangeFeedState>.FromException(
+                                    new FormatException(
+                                        $"expected change feed state to have a string startTime property: {cosmosElement}"));
+                            }
+
                             if (!DateTime.TryParse(
-                                continuationStartTimePropertyValue.Value,
+                                continuationStartTimeString.Value,
                                 CultureInfo.InvariantCulture,
                                 DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal | DateTimeStyles.AllowWhiteSpaces,
                                 out DateTime continuationStartTimeUtc))
