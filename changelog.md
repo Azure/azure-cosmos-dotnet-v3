@@ -20,7 +20,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Features Added
 
 - [6059](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6059) DistributedTransaction (preview): Adds `DistributedTransactionResponse.ResponseMode`, which reports whether the coordinator applied `Standard` or `FastResponse` mode when processing the transaction. The value is parsed from the coordinator response and defaults to `Standard` when not reported.
-- [6070](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6070) Batch: Adds the `AZURE_COSMOS_MAX_OPERATIONS_IN_BATCH_REQUEST` environment variable to configure the maximum number of operations in a direct mode batch request, up to the service limit.
 - [6053](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6053) VectorIndex Policy: Adds `QuantizerType` to the official (GA) package.
 - [5970](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5970) ThinClient: Adds an HTTP/2 connectivity probe (`POST /connectivity-probe`) that validates each discovered thin client (proxy) regional endpoint over HTTP/2 before routing traffic to it. Data-plane traffic uses the proxy only for regions whose endpoint has passed its probe; any other region transparently uses the standard gateway, with no client restart required. Thin client mode is now enabled by default (opt-out via `AZURE_COSMOS_THIN_CLIENT_ENABLED=false`); the probe verifies HTTP/2 reachability per region at runtime, so no client-side HTTP/2 opt-in is required. When enabled, the SDK additionally issues the probe and routes data-plane traffic to the proxy regional endpoints on port `10250` over HTTP/2, which is useful to know when diagnosing unexpected requests or egress rules that only allow `443`.
 - [5829](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5829) Routing: Adds Gateway Account Property Flag for Dynamic Hedging Control. Introduces a Gateway-controlled `disableCrossRegionalHedging` account property that lets operators dynamically disable PPAF cross-region hedging (and any customer-configured `AvailabilityStrategy`) without rolling back PPAF entirely. The SDK reconciles `ConnectionPolicy.AvailabilityStrategy` against the Gateway-supplied flag on each account-properties refresh; toggling the flag back to `false` restores the customer-configured strategy or rebuilds the SDK default.
@@ -48,6 +47,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Other Changes
 
 - [5991](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5991) TargetReplicaSetSize : Updated address cache logic to use partition-specific target replica set size when available, falling back to the user replication policy value.
+
+### <a name="3.63.0-preview.1"/> [3.63.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.63.0-preview.1) - 2026-8-5
+
+#### Features Added
+
+- [6070](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6070) Batch: Adds the `AZURE_COSMOS_MAX_OPERATIONS_IN_BATCH_REQUEST` environment variable to configure the maximum number of operations in a direct mode batch request, up to the service limit.
+
+### <a name="3.62.1"/> [3.62.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.62.1) - 2026-8-5
+
+#### Features Added
+
+- [6070](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6070) Batch: Adds the `AZURE_COSMOS_MAX_OPERATIONS_IN_BATCH_REQUEST` environment variable to configure the maximum number of operations in a direct mode batch request, up to the service limit.
 
 ### <a name="3.63.0-preview.0"/> [3.63.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.63.0-preview.0) - 2026-7-15
 
