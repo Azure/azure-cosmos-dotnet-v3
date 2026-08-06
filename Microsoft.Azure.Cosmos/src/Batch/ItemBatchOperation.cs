@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos
 #pragma warning disable SA1401 // Fields should be private
         protected Memory<byte> body;
 #pragma warning restore SA1401 // Fields should be private
+        private readonly bool disposeResourceStream;
         private bool isDisposed;
 
         public ItemBatchOperation(
@@ -34,7 +35,8 @@ namespace Microsoft.Azure.Cosmos
             string id = null,
             Stream resourceStream = null,
             TransactionalBatchItemRequestOptions requestOptions = null,
-            CosmosClientContext cosmosClientContext = null)
+            CosmosClientContext cosmosClientContext = null,
+            bool disposeResourceStream = true)
         {
             this.OperationType = operationType;
             this.OperationIndex = operationIndex;
@@ -43,6 +45,7 @@ namespace Microsoft.Azure.Cosmos
             this.ResourceStream = resourceStream;
             this.RequestOptions = requestOptions;
             this.ClientContext = cosmosClientContext;
+            this.disposeResourceStream = disposeResourceStream;
         }
 
         public ItemBatchOperation(
@@ -51,7 +54,8 @@ namespace Microsoft.Azure.Cosmos
             ContainerInternal containerCore,
             string id = null,
             Stream resourceStream = null,
-            TransactionalBatchItemRequestOptions requestOptions = null)
+            TransactionalBatchItemRequestOptions requestOptions = null,
+            bool disposeResourceStream = true)
         {
             this.OperationType = operationType;
             this.OperationIndex = operationIndex;
@@ -60,6 +64,7 @@ namespace Microsoft.Azure.Cosmos
             this.ResourceStream = resourceStream;
             this.RequestOptions = requestOptions;
             this.ClientContext = containerCore.ClientContext;
+            this.disposeResourceStream = disposeResourceStream;
         }
 
         public PartitionKey? PartitionKey { get; internal set; }
@@ -290,7 +295,7 @@ namespace Microsoft.Azure.Cosmos
             if (disposing && !this.isDisposed)
             {
                 this.isDisposed = true;
-                if (this.ResourceStream != null)
+                if (this.disposeResourceStream && this.ResourceStream != null)
                 {
                     this.ResourceStream.Dispose();
                     this.ResourceStream = null;

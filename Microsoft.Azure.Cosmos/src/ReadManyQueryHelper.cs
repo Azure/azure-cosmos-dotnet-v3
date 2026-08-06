@@ -173,7 +173,13 @@ namespace Microsoft.Azure.Cosmos
 
                 Documents.Routing.PartitionKeyInternal partitionKeyInternal = 
                             await this.GetPartitionKeyInternalAsync(item.pk, trace, cancellationToken);
-                string effectivePartitionKeyValue = partitionKeyInternal.GetEffectivePartitionKeyString(this.partitionKeyDefinition);
+
+                // When the container's last partition key path has been resolved to "/id" (the
+                // migration scenario), the item's "id" is appended to the supplied prefix partition
+                // key above, producing one more component than the declared partition key
+                // definition. Compute the effective partition key non-strictly so the appended
+                // component is honored (it yields the full hierarchical EPK) instead of throwing.
+                string effectivePartitionKeyValue = partitionKeyInternal.GetEffectivePartitionKeyString(this.partitionKeyDefinition, strict: false);
                 PartitionKeyRange partitionKeyRange = collectionRoutingMap.GetRangeByEffectivePartitionKey(effectivePartitionKeyValue);
                 if (partitionKeyRangeItemMap.TryGetValue(partitionKeyRange, out List<(string, PartitionKey)> itemList))
                 {
@@ -334,7 +340,14 @@ namespace Microsoft.Azure.Cosmos
                 else 
                 {
                     object[] pkValues = items[i].Item2.InternalKey.ToObjectArray();
-                    if (pkValues.Length != this.partitionKeyDefinition.Paths.Count)
+
+                    // In the migration scenario the container's last partition key path is resolved
+                    // to "/id" and the item's id is appended to the supplied partition key, producing
+                    // one more value than the declared partition key definition. The trailing id
+                    // value is redundant here because the query already filters on "c.id"; only the
+                    // declared partition key paths are projected below. Require a value for every
+                    // declared path and ignore any additional appended component.
+                    if (pkValues.Length < this.partitionKeyDefinition.Paths.Count)
                     {
                         throw new ArgumentException("Number of components in the partition key " +
                             "value does not match the definition.");

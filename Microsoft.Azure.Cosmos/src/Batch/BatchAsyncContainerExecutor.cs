@@ -247,7 +247,13 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(operation.RequestOptions?.Properties?.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKeyString, out object _) == null, "EPK is not supported");
             Documents.Routing.PartitionKeyInternal partitionKeyInternal = await this.GetPartitionKeyInternalAsync(operation, cancellationToken);
             operation.PartitionKeyJson = partitionKeyInternal.ToJsonString();
-            string effectivePartitionKeyString = partitionKeyInternal.GetEffectivePartitionKeyString(partitionKeyDefinition);
+
+            // When the container's last partition key path has been resolved to "/id" (the migration
+            // scenario), the operation's "id" is appended to the supplied prefix partition key
+            // above, producing one more component than the declared partition key definition.
+            // Compute the effective partition key non-strictly so the appended component is honored
+            // (it yields the full hierarchical EPK) instead of throwing.
+            string effectivePartitionKeyString = partitionKeyInternal.GetEffectivePartitionKeyString(partitionKeyDefinition, strict: false);
             return collectionRoutingMap.GetRangeByEffectivePartitionKey(effectivePartitionKeyString).Id;
         }
 

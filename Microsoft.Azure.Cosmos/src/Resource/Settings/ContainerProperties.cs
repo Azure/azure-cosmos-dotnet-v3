@@ -738,6 +738,11 @@ namespace Microsoft.Azure.Cosmos
                 this.isLastPartitionKeyPathId = string.Equals(lastPartitionKeyPath, "/id", StringComparison.Ordinal);
                 return this.isLastPartitionKeyPathId.Value;
             }
+
+            set
+            {
+                this.isLastPartitionKeyPathId = value;
+            }
         }
 
         internal IReadOnlyList<IReadOnlyList<string>> PartitionKeyPathTokens

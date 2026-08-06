@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -40,6 +41,20 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public async Task<TransactionalBatchResponse> ExecuteAsync(ITrace trace, CancellationToken cancellationToken)
+        {
+            TransactionalBatchResponse response = await this.ExecuteOnceAsync(trace, cancellationToken);
+
+            if (response.StatusCode == HttpStatusCode.BadRequest
+                && (int)response.SubStatusCode == ContainerPropertiesExtensions.AddIdToLastPartitionKeyPathSubStatusCode
+                && await this.container.TryMarkLastPartitionKeyPathIsIdAsync(cancellationToken))
+            {
+                return await this.ExecuteOnceAsync(trace, cancellationToken);
+            }
+
+            return response;
+        }
+
+        private async Task<TransactionalBatchResponse> ExecuteOnceAsync(ITrace trace, CancellationToken cancellationToken)
         {
             using (ITrace executeNextBatchTrace = trace.StartChild("Execute Next Batch", TraceComponent.Batch, Tracing.TraceLevel.Info))
             {

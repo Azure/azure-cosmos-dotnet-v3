@@ -86,6 +86,30 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void ItemBatchOperationCanLeaveResourceStreamOpen()
+        {
+            TrackingStream ownedStream = new TrackingStream();
+            new ItemBatchOperation(
+                operationType: OperationType.Create,
+                operationIndex: 0,
+                partitionKey: Cosmos.PartitionKey.Null,
+                resourceStream: ownedStream).Dispose();
+
+            Assert.IsTrue(ownedStream.IsDisposed);
+
+            TrackingStream externallyOwnedStream = new TrackingStream();
+            new ItemBatchOperation(
+                operationType: OperationType.Create,
+                operationIndex: 0,
+                partitionKey: Cosmos.PartitionKey.Null,
+                resourceStream: externallyOwnedStream,
+                disposeResourceStream: false).Dispose();
+
+            Assert.IsFalse(externallyOwnedStream.IsDisposed);
+            externallyOwnedStream.Dispose();
+        }
+
+        [TestMethod]
         public async Task RetryOnNameStale()
         {
             ItemBatchOperation itemBatchOperation = CreateItem("test");
@@ -369,6 +393,17 @@ namespace Microsoft.Azure.Cosmos.Tests
             public string Status { get; set; }
 
             public bool Updated { get; set; }
+        }
+
+        private sealed class TrackingStream : MemoryStream
+        {
+            public bool IsDisposed { get; private set; }
+
+            protected override void Dispose(bool disposing)
+            {
+                this.IsDisposed = true;
+                base.Dispose(disposing);
+            }
         }
 
         private class ClientWithSplitDetection : MockDocumentClient

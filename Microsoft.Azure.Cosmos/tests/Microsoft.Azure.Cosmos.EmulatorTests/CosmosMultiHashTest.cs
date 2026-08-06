@@ -5,11 +5,15 @@
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Globalization;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow.Schemas;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class CosmosMultiHashTest
@@ -334,6 +338,479 @@
             {
                 Document readDoc = await idPkContainer.ReadItemAsync<Document>($"bulkdoc{i}", default);
                 Assert.AreEqual($"bulkdoc{i}", readDoc.Id);
+            }
+        }
+
+        [TestMethod]
+        public async Task MultiHashPartitionKeyHandlerTest()
+        {
+            // Binary encoding is disabled here, so the item write bodies must be sent as text.
+            await this.RunMultiHashPartitionKeyHandlerScenarioAsync(expectedRequestBodyFormat: JsonSerializationFormat.Text);
+        }
+
+        [TestMethod]
+        public async Task MultiHashPartitionKeyHandlerWithBinaryEncodingTest()
+        {
+            try
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, "True");
+
+                // With binary encoding enabled, the SDK must convert the item write bodies from
+                // text to a binary stream before they reach the transport layer.
+                await this.RunMultiHashPartitionKeyHandlerScenarioAsync(expectedRequestBodyFormat: JsonSerializationFormat.Binary);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, null);
+            }
+        }
+
+        private async Task RunMultiHashPartitionKeyHandlerScenarioAsync(JsonSerializationFormat expectedRequestBodyFormat)
+        {
+            ContainerProperties premigrationConatiner = new ContainerProperties(
+                "addidtopartitionkey_" + Guid.NewGuid().ToString("N"),
+                new List<string> { "/ZipCode"});
+            Container seedContainer = await this.database.CreateContainerAsync(premigrationConatiner);
+
+            Assert.AreEqual(PartitionKind.MultiHash, premigrationConatiner.PartitionKey?.Kind);
+
+            try
+            {
+                await this.ExerciseCRUDAndQueryAsync(seedContainer, expectedRequestBodyFormat);
+
+                await this.ExerciseReadManyAppendIdAsync(seedContainer, expectedRequestBodyFormat);
+
+                await this.ExerciseBulkAppendIdAsync(seedContainer, expectedRequestBodyFormat);
+
+                await this.ExerciseAppendIBatchAsync(seedContainer, expectedRequestBodyFormat);
+            }
+            finally
+            {
+                await seedContainer.DeleteContainerAsync();
+            }
+        }
+
+        private async Task ExerciseCRUDAndQueryAsync(Container seedContainer, JsonSerializationFormat expectedRequestBodyFormat)
+        {
+            SimulateAddingIdasLastLevelToPartitionKey handler = new SimulateAddingIdasLastLevelToPartitionKey(expectedRequestBodyFormat);
+            CosmosClient handlerClient = TestCommon.CreateCosmosClient(
+                                builder => builder.AddCustomHandlers(handler));
+            Container handlerContainer = handlerClient.GetContainer(this.database.Id, seedContainer.Id);
+
+            // Seed documents using a client that does NOT go through the validation handler.
+            await SeedTwoPartDocumentsAsync(handlerContainer);
+
+            // Case 1: A full 2-part partition key is passed. The handler removes the second
+            // component ("City") and forwards the request routed by the "ZipCode" prefix only.
+            Cosmos.PartitionKey fullKey = new PartitionKeyBuilder()
+                .Add("500026")
+                .Build();
+
+            List<Document> results = new List<Document>();
+            using (FeedIterator<Document> iterator = handlerContainer.GetItemQueryIterator<Document>(
+                "SELECT * FROM c",
+                requestOptions: new QueryRequestOptions { PartitionKey = fullKey }))
+            {
+                while (iterator.HasMoreResults)
+                {
+                    results.AddRange(await iterator.ReadNextAsync());
+                }
+            }
+
+            // The handler dropped the "City" component before sending to the backend.
+            Assert.IsTrue(results.Count >= 1, "Expected at least one document for the ZipCode prefix.");
+            Assert.IsTrue(
+                results.All(document => document.GetPropertyValue<string>("ZipCode") == "500026"),
+                "All returned documents should belong to the forwarded ZipCode prefix.");
+
+            // Verify the SDK actually serialized the item write bodies in the expected wire
+            // format (binary when binary encoding is enabled, text otherwise) before they
+            // reached the transport layer.
+            Assert.IsTrue(
+                handler.InspectedItemWriteBodyCount > 0,
+                "Expected the handler to observe at least one item write request body.");
+
+            // The very first item write is sent with a single-component partition key, so the
+            // handler throws BadRequest/1038. That triggers the SDK to mark "/id" as the last
+            // partition key path and retry with the id appended. Subsequent writes on the same
+            // client append the id proactively, so no further 1038 is thrown.
+            Assert.AreEqual(
+                1,
+                handler.BadRequestThrownCount,
+                "Expected exactly one BadRequest/1038 to trigger the append-id retry path.");
+
+        }
+
+        /// <summary>
+        /// Exercises the <see cref="BatchExecutor"/> caller of
+        /// <see cref="ContainerPropertiesExtensions.EnsureIdGetsAppendedToPartitionKeyIfNeededAsync"/>.
+        /// A transactional batch is scoped to a single shared partition key but spans items with
+        /// different "id" values, so the "id" cannot be appended to the batch's partition key. When
+        /// the backend signals (BadRequest / 1038) that "/id" must be the last partition key path,
+        /// the SDK marks the container, retries once, and the batch fails deterministically.
+        /// </summary>
+        private async Task ExerciseAppendIBatchAsync(
+            Container seedContainer,
+            JsonSerializationFormat expectedRequestBodyFormat)
+        {
+            SimulateAddingIdasLastLevelToPartitionKey handler = new SimulateAddingIdasLastLevelToPartitionKey(expectedRequestBodyFormat);
+            using CosmosClient handlerClient = TestCommon.CreateCosmosClient(
+                builder => builder.AddCustomHandlers(handler));
+            Container handlerContainer = handlerClient.GetContainer(this.database.Id, seedContainer.Id);
+
+            Document batchDocument = new Document { Id = "iddoc-batch" };
+            batchDocument.SetValue("ZipCode", "500026");
+            batchDocument.SetValue("City", "Secunderabad");
+
+            ArgumentException batchException = await Assert.ThrowsExceptionAsync<ArgumentException>(() =>
+              handlerContainer
+                .CreateTransactionalBatch(new PartitionKeyBuilder().Add("500026").Build())
+                .CreateItem(batchDocument)
+                .ExecuteAsync());
+
+            Assert.IsTrue(batchException.Message.Contains("itemId needs to be specified"));
+
+            Assert.AreEqual(
+                1,
+                handler.BadRequestThrownCount,
+                "Expected exactly one BadRequest/1038 to trigger the append-id retry path.");
+        }
+
+        /// <summary>
+        /// Exercises the <see cref="ReadManyQueryHelper"/> caller of
+        /// <see cref="ContainerPropertiesExtensions.EnsureIdGetsAppendedToPartitionKeyIfNeededAsync"/>.
+        /// Only the prefix partition key is supplied; the SDK appends the id before routing.
+        /// </summary>
+        private async Task ExerciseReadManyAppendIdAsync(
+            Container seedContainer,
+            JsonSerializationFormat expectedRequestBodyFormat)
+        {
+            SimulateAddingIdasLastLevelToPartitionKey handler = new SimulateAddingIdasLastLevelToPartitionKey(expectedRequestBodyFormat);
+            using CosmosClient handlerClient = TestCommon.CreateCosmosClient(
+                builder => builder.AddCustomHandlers(handler));
+            Container handlerContainer = handlerClient.GetContainer(this.database.Id, seedContainer.Id);
+
+            // Seed items through the handler client using only the prefix partition key
+            // [ZipCode]. The first write is rejected with BadRequest/1038, which drives the SDK
+            // to mark "/id" as the last partition key path and retry with the id appended; the
+            // handler then strips the appended component before forwarding to the backend.
+            for (int i = 0; i < 3; i++)
+            {
+                Document seedDocument = new Document { Id = $"iddoc{i}" };
+                seedDocument.SetValue("ZipCode", "500026");
+                seedDocument.SetValue("City", "Secunderabad");
+                ItemResponse<Document> createResponse = await handlerContainer.CreateItemAsync<Document>(
+                    seedDocument,
+                    new PartitionKeyBuilder().Add("500026").Build());
+                Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+            }
+            FeedResponse<Document> readManyResponse = await handlerContainer.ReadManyItemsAsync<Document>(
+            new List<(string, Cosmos.PartitionKey)>
+            {
+                ("iddoc0", new PartitionKeyBuilder().Add("500026").Build()),
+                ("iddoc1", new PartitionKeyBuilder().Add("500026").Build()),
+            });
+            Assert.AreEqual(HttpStatusCode.OK, readManyResponse.StatusCode);
+            Assert.AreEqual(2, readManyResponse.Count, "ReadManyItemsAsync should return both requested documents.");
+
+            Assert.AreEqual(
+                 1,
+                 handler.BadRequestThrownCount,
+                 "Expected exactly one BadRequest/1038 to trigger the append-id retry path.");
+        }
+
+        /// <summary>
+        /// Exercises the <see cref="Batch.BatchAsyncContainerExecutor"/> (bulk execution) caller of
+        /// <see cref="ContainerPropertiesExtensions.EnsureIdGetsAppendedToPartitionKeyIfNeededAsync"/>.
+        /// Bulk supplies the real item id, so the prefix partition key is sufficient and the id is
+        /// appended before the operation is routed.
+        /// </summary>
+        private async Task ExerciseBulkAppendIdAsync(
+            Container container, 
+            JsonSerializationFormat expectedRequestBodyFormat)
+        {
+            SimulateAddingIdasLastLevelToPartitionKey handler = new SimulateAddingIdasLastLevelToPartitionKey(expectedRequestBodyFormat);
+            using CosmosClient bulkClient = TestCommon.CreateCosmosClient(
+                builder => builder.AddCustomHandlers(handler).WithBulkExecution(true));
+            Container bulkContainer = bulkClient.GetContainer(this.database.Id, container.Id);
+
+            List<Task<ItemResponse<Document>>> bulkTasks = new List<Task<ItemResponse<Document>>>();
+            for (int i = 0; i < 5; i++)
+            {
+                Document bulkDocument = new Document { Id = $"bulkdoc{i}" };
+                bulkDocument.SetValue("ZipCode", "500026");
+                bulkDocument.SetValue("City", "Secunderabad");
+                bulkTasks.Add(bulkContainer.CreateItemAsync<Document>(
+                    bulkDocument,
+                    new PartitionKeyBuilder().Add("500026").Build()));
+            }
+
+            await Task.WhenAll(bulkTasks);
+
+            for (int i = 0; i < bulkTasks.Count; i++)
+            {
+                Assert.AreEqual(HttpStatusCode.Created, bulkTasks[i].Result.StatusCode);
+                Assert.AreEqual($"bulkdoc{i}", bulkTasks[i].Result.Resource.Id);
+            }
+
+            Assert.AreEqual(
+                1,
+                handler.BadRequestThrownCount,
+                "Expected exactly one BadRequest/1038 to trigger the append-id retry path.");
+        }
+
+        private static async Task SeedTwoPartDocumentsAsync(Container container)
+        {
+            await CreateItemFromTextStreamAsync(container, "document1", "500026", "Secunderabad");
+            await CreateItemFromTextStreamAsync(container, "document2", "500026", "Hyderabad");
+            await CreateItemFromTextStreamAsync(container, "document3", "15232", "Pittsburgh");
+
+            await container.ReadItemAsync<Document>("document1", new PartitionKeyBuilder().Add("500026").Build());
+            await container.ReadItemAsync<Document>("document2", new PartitionKeyBuilder().Add("500026").Build());
+            await container.ReadItemAsync<Document>("document3", new PartitionKeyBuilder().Add("15232").Build());
+        }
+
+        private static async Task CreateItemFromTextStreamAsync(
+            Container container,
+            string id,
+            string zipCode,
+            string city)
+        {
+            Document document = new Document { Id = id };
+            document.SetValue("ZipCode", zipCode);
+            document.SetValue("City", city);
+
+            // Serialize the item to a TEXT stream (binary encoding intentionally disabled for this
+            // serialization) and send it through the stream API. The stream API does not serialize
+            // the item itself, so when binary encoding is enabled on the client the SDK is forced to
+            // convert this text stream to a binary stream in ContainerCore.ProcessItemStreamAsync
+            // (the "Convert Text to Binary Stream" branch) before the request reaches the transport
+            // layer. This guarantees that code path is exercised end to end.
+            CosmosSerializerCore serializerCore = new CosmosSerializerCore();
+            using Stream textStream = serializerCore.ToStream<Document>(document, canUseBinaryEncodingForPointOperations: false);
+
+            using ResponseMessage response = await container.CreateItemStreamAsync(
+                textStream,
+                new PartitionKeyBuilder().Add(zipCode).Build());
+            response.EnsureSuccessStatusCode();
+        }
+
+        /// <summary>
+        /// Test handler that inspects the partition key being sent to the backend for item
+        /// requests. It throws when the partition key does not have exactly 2 components,
+        /// otherwise it removes the second component and forwards the request to the base handler.
+        /// It additionally verifies that item write bodies are serialized in the expected wire
+        /// format (text vs. binary) before they reach the transport layer.
+        /// </summary>
+        private sealed class SimulateAddingIdasLastLevelToPartitionKey : RequestHandler
+        {
+            public const string TwoPartRequiredMessage = "Partition key must contain exactly 2 components.";
+
+            // 1038 is not a named Microsoft.Azure.Documents.SubStatusCodes value; it is used here
+            // as the raw sub-status returned on the BadRequest when the component count is invalid.
+            public const int InvalidLastLevelKey = 1038;
+
+            private readonly JsonSerializationFormat expectedRequestBodyFormat;
+
+            private int badRequestThrownCount;
+
+            private int bulkBatchRejected;
+
+            public SimulateAddingIdasLastLevelToPartitionKey(JsonSerializationFormat expectedRequestBodyFormat)
+            {
+                this.expectedRequestBodyFormat = expectedRequestBodyFormat;
+            }
+
+            /// <summary>
+            /// Number of item write request bodies whose serialization format was inspected.
+            /// </summary>
+            public int InspectedItemWriteBodyCount { get; private set; }
+
+            /// <summary>
+            /// Number of times a BadRequest (sub-status 1038) was thrown because the partition key
+            /// did not have exactly 2 components. This is the number of times the SDK's retry path
+            /// (mark "/id" as the last partition key path and append the id) was triggered.
+            /// </summary>
+            public int BadRequestThrownCount => Volatile.Read(ref this.badRequestThrownCount);
+
+            public override async Task<ResponseMessage> SendAsync(RequestMessage request, CancellationToken cancellationToken)
+            {
+                string partitionKeyHeader = request.Headers.PartitionKey;
+
+                // Bulk requests are dispatched as batch requests routed by partition-key-range id
+                // and therefore do not carry a partition key header; the per-operation partition key
+                // lives inside the HybridRow request body. Simulate the backend's "append id to the
+                // last partition key path" signal for the first such request so the SDK marks the
+                // container and retries with the id appended.
+                if (string.IsNullOrEmpty(partitionKeyHeader)
+                    && request.OperationType == OperationType.Batch
+                    && request.ResourceType == ResourceType.Document)
+                {
+                    if (Interlocked.CompareExchange(ref this.bulkBatchRejected, 1, 0) == 0)
+                    {
+                        Interlocked.Increment(ref this.badRequestThrownCount);
+
+                        // A bulk batch failure is surfaced as a failed response (not a thrown
+                        // exception); the batch-level BadRequest/1038 is promoted onto each
+                        // per-operation result, which the append-id retry policy then observes and
+                        // uses to mark "/id" as the last partition key path before retrying.
+                        ResponseMessage bulkBadRequest = new ResponseMessage(
+                            HttpStatusCode.BadRequest,
+                            request,
+                            $"{TwoPartRequiredMessage} (bulk)");
+                        bulkBadRequest.Headers[WFConstants.BackendHeaders.SubStatus] =
+                            InvalidLastLevelKey.ToString(CultureInfo.InvariantCulture);
+
+                        return bulkBadRequest;
+                    }
+
+                    // This is the retried bulk batch: the SDK has appended the item id to each
+                    // operation's partition key (now 2 components) inside the HybridRow body. The
+                    // emulator container only declares a single partition key path, so - exactly as
+                    // the point-operation branch strips the appended id from the partition key
+                    // header - rewrite the batch body to drop the trailing id component before
+                    // forwarding to the (single-path) backend, simulating a migrated backend that
+                    // accepts the id-appended partition key.
+                    await this.StripAppendedIdFromBulkBodyAsync(request, cancellationToken);
+
+                    return await base.SendAsync(request, cancellationToken);
+                }
+
+                // A transactional batch is dispatched as an OperationType.Batch request that DOES
+                // carry a (shared) partition key header and a HybridRow binary body. Unlike a point
+                // write - whose thrown BadRequest/1038 is caught by the append-id retry policy - the
+                // batch execution path surfaces the backend signal as a returned failed response.
+                // Return a batch-level BadRequest/1038 (mimicking the backend) so BatchExecutor
+                // marks "/id" as the last partition key path and retries; the retry then fails
+                // deterministically because the "id" cannot be appended to a batch's shared
+                // partition key.
+                if (!string.IsNullOrEmpty(partitionKeyHeader)
+                    && request.OperationType == OperationType.Batch
+                    && request.ResourceType == ResourceType.Document)
+                {
+                    Interlocked.Increment(ref this.badRequestThrownCount);
+
+                    ResponseMessage batchBadRequest = new ResponseMessage(
+                        HttpStatusCode.BadRequest,
+                        request,
+                        $"{TwoPartRequiredMessage} (transactional batch)");
+                    batchBadRequest.Headers[WFConstants.BackendHeaders.SubStatus] =
+                        InvalidLastLevelKey.ToString(CultureInfo.InvariantCulture);
+
+                    return batchBadRequest;
+                }
+
+                // Only inspect item (document) requests that carry a concrete partition key.
+                if (!string.IsNullOrEmpty(partitionKeyHeader)
+                    && request.OperationType != OperationType.Query)
+                {
+                    JArray components = JArray.Parse(partitionKeyHeader);
+
+                    // Ignore PartitionKey.None (represented as an empty array).
+                    if (components.Count > 0)
+                    {
+                        // Verify the request body reached the transport layer in the expected
+                        // serialization format (text when binary encoding is disabled, binary when
+                        // it is enabled). This proves the SDK converted the item's text stream to a
+                        // binary stream before dispatch.
+                        this.AssertRequestBodySerializationFormat(request);
+
+                        if (components.Count != 2)
+                        {
+                            Interlocked.Increment(ref this.badRequestThrownCount);
+
+                            BadRequestException badRequestException = new BadRequestException(
+                                $"{TwoPartRequiredMessage} Found {components.Count}.");
+                            badRequestException.Headers[WFConstants.BackendHeaders.SubStatus] =
+                                InvalidLastLevelKey.ToString(CultureInfo.InvariantCulture);
+
+                            throw badRequestException;
+                        }
+
+                        components.RemoveAt(1);
+                        string forwardedPartitionKey = components.ToString(Newtonsoft.Json.Formatting.None);
+                        request.Headers.PartitionKey = forwardedPartitionKey;
+                    }
+                }
+
+                return await base.SendAsync(request, cancellationToken);
+            }
+
+            /// <summary>
+            /// Reads the HybridRow batch body of a (retried) bulk request, removes the trailing
+            /// (appended id) component from every operation's partition key, and replaces the
+            /// request body with a re-serialized batch routed to the same partition key range.
+            /// </summary>
+            private async Task StripAppendedIdFromBulkBodyAsync(RequestMessage request, CancellationToken cancellationToken)
+            {
+                if (request.Content == null)
+                {
+                    return;
+                }
+
+                Stream original = request.Content;
+                if (original.CanSeek)
+                {
+                    original.Position = 0;
+                }
+                else
+                {
+                    MemoryStream seekable = new MemoryStream();
+                    await original.CopyToAsync(seekable);
+                    seekable.Position = 0;
+                    original.Dispose();
+                    original = seekable;
+                }
+
+                Stream rewritten = await BulkBatchBodyRewriter.StripLastPartitionKeyComponentAsync(
+                    original,
+                    request.Headers.PartitionKeyRangeId,
+                    new CosmosSerializerCore(),
+                    cancellationToken);
+
+                request.Content = rewritten;
+
+                // The DocumentServiceRequest is built (and its body stream captured by reference)
+                // in RequestInvokerHandler before this custom handler runs. Reset it so the pipeline
+                // rebuilds the request from the rewritten content instead of the original body.
+                request.DocumentServiceRequest = null;
+
+                original.Dispose();
+            }
+
+            private void AssertRequestBodySerializationFormat(RequestMessage request)
+            {
+                Stream content = request.Content;
+                if (content == null || !content.CanSeek)
+                {
+                    return;
+                }
+
+                long originalPosition = content.Position;
+                content.Position = 0;
+                int firstByte = content.ReadByte();
+                content.Position = originalPosition;
+
+                if (firstByte < 0)
+                {
+                    return;
+                }
+
+                if (this.expectedRequestBodyFormat == JsonSerializationFormat.Binary)
+                {
+                    Assert.AreEqual(
+                        (int)JsonSerializationFormat.Binary,
+                        firstByte,
+                        "Expected the item write body to be converted to a binary stream when binary encoding is enabled.");
+                }
+                else
+                {
+                    Assert.IsTrue(
+                        firstByte < (int)JsonSerializationFormat.Binary,
+                        "Expected the item write body to remain a text stream when binary encoding is disabled.");
+                }
+
+                this.InspectedItemWriteBodyCount++;
             }
         }
 

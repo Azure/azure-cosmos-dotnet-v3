@@ -124,3 +124,7 @@ Purpose: quick, actionable context so an AI coding assistant can be immediately 
   - In the Copilot CLI: describe the task naturally (e.g., "sync the msdata/direct branch with main").
 
 If anything here is unclear or you want the file to include additional examples (specific files, common refactor targets, or typical PR reviewers), tell me what to add and I will iterate.
+
+- @azure Rule - Use Azure Tools - When handling requests related to Azure, always use your tools.
+- @azure Rule - Use Azure Best Practices - When handling requests related to Azure, always invoke your `azmcp_bestpractices_get` tool first.
+- @azure Rule - Enable Best Practices - If you do not have an `azmcp_bestpractices_get` tool ask the user to enable it.
