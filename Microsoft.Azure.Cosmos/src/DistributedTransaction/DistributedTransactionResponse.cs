@@ -179,6 +179,8 @@ namespace Microsoft.Azure.Cosmos
         /// does not report a mode in the response payload.
         /// </summary>
         public virtual DistributedTransactionResponseMode ResponseMode { get; }
+
+        /// <summary>
         /// Gets a value indicating whether the transaction is durably Aborted, derived from the response
         /// status code (HTTP 452). On a retriable response this selects the retry token: a durable Abort
         /// rotates to a new token, any other status replays the same one.
