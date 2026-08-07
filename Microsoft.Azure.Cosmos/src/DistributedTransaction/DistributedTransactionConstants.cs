@@ -12,6 +12,14 @@ namespace Microsoft.Azure.Cosmos
         // Commit guard: values used with Interlocked.CompareExchange to enforce single-use semantics.
         internal const int CommitNotStarted = 0;
         internal const int CommitStarted = 1;
+
+        /// <summary>
+        /// Envelope sub-status paired with HTTP 200 when every operation completed with 304. The
+        /// coordinator cannot send a 304 envelope because HTTP layers strip its body, discarding the
+        /// per-operation results. Not defined by <see cref="SubStatusCodes"/> in the referenced Direct package.
+        /// </summary>
+        internal const SubStatusCodes AllOperationsNotModified = (SubStatusCodes)5425;
+
         internal static bool IsDistributedTransactionRequest(OperationType operationType, ResourceType resourceType)
         {
             return (operationType == OperationType.CommitDistributedTransaction

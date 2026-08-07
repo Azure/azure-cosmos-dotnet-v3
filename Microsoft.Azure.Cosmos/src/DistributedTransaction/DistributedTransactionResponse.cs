@@ -532,6 +532,15 @@ namespace Microsoft.Azure.Cosmos
                     : $"{effectiveErrorMessage} ({diagnosticString})";
             }
 
+            // Restore the 304 envelope the coordinator could not send on the wire. Checked after the
+            // error-message merge so ErrorMessage stays null: this is not an error outcome.
+            if (finalStatusCode == HttpStatusCode.OK &&
+                finalSubStatusCode == DistributedTransactionConstants.AllOperationsNotModified)
+            {
+                finalStatusCode = HttpStatusCode.NotModified;
+                finalSubStatusCode = SubStatusCodes.Unknown;
+            }
+
             return new DistributedTransactionResponse(
                 finalStatusCode,
                 finalSubStatusCode,

@@ -451,6 +451,124 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(expected, response.IsSuccessStatusCode);
         }
 
+        // All-operations-NotModified envelope translation
+
+        [TestMethod]
+        [Description("A 200 + 5425 envelope is surfaced as 304 with no sub-status, results preserved.")]
+        public async Task FromResponseMessage_AllOperationsNotModified_TranslatesEnvelopeToNotModified()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 2);
+
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":304},{""index"":1,""statusCode"":304}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+            responseMessage.Headers.SubStatusCode = DistributedTransactionConstants.AllOperationsNotModified;
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.NotModified, response.StatusCode);
+            Assert.AreEqual(SubStatusCodes.Unknown, response.SubStatusCode, "The 5425 marker must not be surfaced to the caller.");
+            Assert.IsFalse(response.IsSuccessStatusCode, "304 is outside the 2xx success range.");
+            Assert.IsNull(response.ErrorMessage, "An all-NotModified transaction is not an error outcome.");
+            Assert.AreEqual(2, response.Count);
+
+            for (int i = 0; i < response.Count; i++)
+            {
+                Assert.AreEqual(HttpStatusCode.NotModified, response[i].StatusCode, $"Result[{i}] must keep its own status.");
+                Assert.AreEqual(i, response[i].Index);
+            }
+        }
+
+        [TestMethod]
+        [Description("An HTTP 200 envelope carrying a sub-status other than 5425 is not translated.")]
+        public async Task FromResponseMessage_SuccessWithOtherSubStatus_LeavesStatusUnchanged()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":200}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+            responseMessage.Headers.SubStatusCode = SubStatusCodes.CompletingSplit;
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.AreEqual(SubStatusCodes.CompletingSplit, response.SubStatusCode);
+            Assert.IsTrue(response.IsSuccessStatusCode);
+        }
+
+        [TestMethod]
+        [Description("The 5425 marker only translates an HTTP 200 envelope, not an error envelope.")]
+        public async Task FromResponseMessage_ErrorStatusWithNotModifiedSubStatus_LeavesStatusUnchanged()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":{(int)HttpStatusCode.Conflict}}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.Conflict, json);
+            responseMessage.Headers.SubStatusCode = DistributedTransactionConstants.AllOperationsNotModified;
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.Conflict, response.StatusCode);
+            Assert.AreEqual(DistributedTransactionConstants.AllOperationsNotModified, response.SubStatusCode);
+        }
+
+        [TestMethod]
+        [Description("A 304 arriving directly on the wire is passed through unchanged.")]
+        public async Task FromResponseMessage_WireNotModified_LeavesStatusUnchanged()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":304}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.NotModified, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.NotModified, response.StatusCode);
+            Assert.AreEqual(SubStatusCodes.Unknown, response.SubStatusCode);
+            Assert.AreEqual(1, response.Count);
+        }
+
+        [TestMethod]
+        [Description("A 200 + 5425 envelope with no body is malformed and still fails closed with 500.")]
+        public async Task FromResponseMessage_AllOperationsNotModified_NullContent_ReturnsInternalServerError()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK)
+            {
+                Content = null
+            };
+            responseMessage.Headers.SubStatusCode = DistributedTransactionConstants.AllOperationsNotModified;
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+
         // Indexer and enumerator
 
         [TestMethod]
