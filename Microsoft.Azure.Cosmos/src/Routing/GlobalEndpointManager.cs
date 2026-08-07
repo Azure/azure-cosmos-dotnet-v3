@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json.Linq;
 
@@ -43,9 +44,20 @@ namespace Microsoft.Azure.Cosmos.Routing
         private bool isBackgroundAccountRefreshActive = false;
         private DateTime LastBackgroundRefreshUtc = DateTime.MinValue;
 
+        // Drives the thin client HTTP/2 connectivity probe.
+        private EndpointProbeClient? thinClientProbeClient;
+
         // Last observed value of the account-level disableCrossRegionalHedging flag.
         // Tracked separately so the change event fires when only this flag toggles.
         private bool lastKnownDisableCrossRegionalHedging = false;
+
+        // Last observed value of the account-level EnablePartitionLevelFailover flag.
+        // Tracked separately (mirroring lastKnownDisableCrossRegionalHedging) so PPAF-enablement
+        // change detection keys off GEM's own baseline rather than connectionPolicy.EnablePartitionLevelFailover,
+        // which the subscriber (DocumentClient) mutates. This decouples "what the gateway reported"
+        // from "what we last applied" and keeps detection correct against any future external writer
+        // of connectionPolicy.EnablePartitionLevelFailover.
+        private bool lastKnownEnablePartitionLevelFailover = false;
 
         /// <summary>
         /// Event that is raised when PPAF (Per Partition Automatic Failover) enablement status changes
@@ -53,9 +65,10 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// </summary>
         /// <remarks>
         /// First argument is the latest <c>EnablePartitionLevelFailover</c> value observed from the
-        /// Gateway (falls back to the existing connection-policy value when the property is absent).
-        /// Second argument is the latest <c>disableCrossRegionalHedging</c> value (false when absent
-        /// from the Gateway response).
+        /// Gateway (falls back to <see cref="lastKnownEnablePartitionLevelFailover"/> when the property
+        /// is absent, so a dropped property preserves the previously-honored value rather than implying
+        /// a transition). Second argument is the latest <c>disableCrossRegionalHedging</c> value (falls
+        /// back to <see cref="lastKnownDisableCrossRegionalHedging"/> when absent from the Gateway response).
         /// </remarks>
         internal event Action<bool, bool>? OnEnablePartitionLevelFailoverConfigChanged;
 
@@ -124,6 +137,60 @@ namespace Microsoft.Azure.Cosmos.Routing
         public bool HasThinClientReadLocations => this.locationCache.HasThinClientReadLocations;
 
         public bool HasThinClientWriteLocations => this.locationCache.HasThinClientWriteLocations;
+
+        /// <summary>
+        /// Returns true only when the endpoint has been confirmed healthy by the connectivity probe.
+        /// Fails closed: an un-probed or failed endpoint, or a missing probe client, reports unhealthy, so the
+        /// routing site uses the proxy only for probe-confirmed regions and Gateway V1 otherwise.
+        /// </summary>
+        public bool IsProxyEndpointHealthy(Uri thinClientEndpoint)
+        {
+            EndpointProbeClient? probeClient = this.thinClientProbeClient;
+            return probeClient != null && probeClient.IsEndpointHealthy(thinClientEndpoint);
+        }
+
+        /// <summary>
+        /// True only when every advertised thin client READ regional endpoint is probe-healthy. Used by the
+        /// failover walk, which routes a whole read-endpoint list rather than a single endpoint. Fails closed:
+        /// returns false when no probe client is wired or no read endpoints are advertised.
+        /// </summary>
+        public bool AreAllThinClientReadEndpointsHealthy
+        {
+            get
+            {
+                EndpointProbeClient? probeClient = this.thinClientProbeClient;
+                if (probeClient == null)
+                {
+                    return false;
+                }
+
+                ReadOnlyCollection<Uri> readEndpoints = this.ThinClientReadEndpoints;
+                if (readEndpoints == null || readEndpoints.Count == 0)
+                {
+                    return false;
+                }
+
+                foreach (Uri endpoint in readEndpoints)
+                {
+                    if (!probeClient.IsEndpointHealthy(endpoint))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Computes the thin client regional endpoint for <paramref name="request"/> without pinning it onto the
+        /// request context, so the routing layer can evaluate <see cref="IsProxyEndpointHealthy"/> before
+        /// deciding whether to pin the thin client endpoint or fall back to the gateway (service) endpoint.
+        /// </summary>
+        public Uri GetThinClientEndpointCandidate(DocumentServiceRequest request)
+        {
+            return this.locationCache.GetThinClientEndpointCandidate(request, request.IsReadOnlyRequest);
+        }
 
         public int PreferredLocationCount
         {
@@ -376,7 +443,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
                 catch (Exception e)
                 {
-                    DefaultTrace.TraceInformation("GlobalEndpointManager: Fail to reach gateway endpoint {0}, {1}", endpoint, e.Message);
+                    if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Information))
+                    {
+                        DefaultTrace.TraceInformation("GlobalEndpointManager: Fail to reach gateway endpoint {0}, {1}", endpoint, e.Message);
+                    }
                     if (GetAccountPropertiesHelper.IsNonRetriableException(e))
                     {
                         DefaultTrace.TraceInformation("GlobalEndpointManager: Exception is not retriable");
@@ -552,6 +622,9 @@ namespace Microsoft.Azure.Cosmos.Routing
         public void Dispose()
         {
             this.connectionPolicy.PreferenceChanged -= this.OnPreferenceChanged;
+
+            this.thinClientProbeClient?.Dispose();
+
             if (!this.cancellationTokenSource.IsCancellationRequested)
             {
                 try
@@ -632,9 +705,16 @@ namespace Microsoft.Azure.Cosmos.Routing
             // subsequent transitions, not on the first observation.
             this.lastKnownDisableCrossRegionalHedging = databaseAccount.DisableCrossRegionalHedging ?? false;
 
+            // Capture the initial EnablePartitionLevelFailover baseline from the effective
+            // (post-client-override) value applied just above, so the change-event only fires on
+            // subsequent transitions, not on the first observation.
+            this.lastKnownEnablePartitionLevelFailover = this.connectionPolicy.EnablePartitionLevelFailover;
+
             GlobalEndpointManager.ParseThinClientLocationsFromAdditionalProperties(databaseAccount);
 
             this.locationCache.OnDatabaseAccountRead(databaseAccount);
+
+            _ = this.RunThinClientProbeCycleAsync();
 
             if (this.isBackgroundAccountRefreshActive)
             {
@@ -734,7 +814,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                     return;
                 }
                 
-                DefaultTrace.TraceCritical("GlobalEndpointManager: StartLocationBackgroundRefreshWithTimer() - Unable to refresh database account from any serviceEndpoint. Exception: {0}", ex.Message);
+                if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Critical))
+                {
+                    DefaultTrace.TraceCritical("GlobalEndpointManager: StartLocationBackgroundRefreshWithTimer() - Unable to refresh database account from any serviceEndpoint. Exception: {0}", ex.Message);
+                }
             }
 
             // Call itself to create a loop to continuously do background refresh every 5 minutes
@@ -793,7 +876,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 bool ppafEnablementChanged = !ignorePpafChanges
                     && accountProperties.EnablePartitionLevelFailover.HasValue
-                    && (this.connectionPolicy.EnablePartitionLevelFailover != accountProperties.EnablePartitionLevelFailover.Value);
+                    && (this.lastKnownEnablePartitionLevelFailover != accountProperties.EnablePartitionLevelFailover.Value);
 
                 // Hedging change-detection mirrors the PPAF .HasValue guard above:
                 // a missing property in the response is "no signal", NOT an implicit false.
@@ -811,7 +894,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 if (ppafEnablementChanged || disableHedgingFlagChanged)
                 {
                     bool latestPpafEnabled = accountProperties.EnablePartitionLevelFailover
-                        ?? this.connectionPolicy.EnablePartitionLevelFailover;
+                        ?? this.lastKnownEnablePartitionLevelFailover;
 
                     // Only advance lastKnown when the gateway emitted an explicit value; otherwise
                     // preserve the cached value so a later property-restored response diffs against
@@ -819,7 +902,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                     bool latestDisableHedging = accountProperties.DisableCrossRegionalHedging
                         ?? this.lastKnownDisableCrossRegionalHedging;
 
+                    bool previousPpafEnabled = this.lastKnownEnablePartitionLevelFailover;
                     bool previousDisableHedging = this.lastKnownDisableCrossRegionalHedging;
+                    this.lastKnownEnablePartitionLevelFailover = latestPpafEnabled;
                     this.lastKnownDisableCrossRegionalHedging = latestDisableHedging;
                     try
                     {
@@ -827,10 +912,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
                     catch
                     {
-                        // Restore the baseline so the next refresh re-detects and retries the missed
+                        // Restore both baselines so the next refresh re-detects and retries the missed
                         // transition rather than diffing against an already-advanced value and going silent.
-                        // The subscriber reverts its own cached flag in tandem (see
+                        // The subscriber reverts its own cached state in tandem (see
                         // DocumentClient.UpdatePartitionLevelFailoverConfigWithAccountRefresh).
+                        this.lastKnownEnablePartitionLevelFailover = previousPpafEnabled;
                         this.lastKnownDisableCrossRegionalHedging = previousDisableHedging;
                         throw;
                     }
@@ -840,12 +926,23 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 this.locationCache.OnDatabaseAccountRead(accountProperties);
 
+                // Probe the thin client regional endpoints after every account-topology refresh so the
+                // routing gate reflects the latest proxy connectivity health. Fire-and-forget (not awaited):
+                // this method is shared with the forced-refresh path that ClientRetryPolicy invokes inline on
+                // a request's failover retry, and an unreachable endpoint can take seconds to time out. The
+                // probe is self-guarded (never throws, single-flight, permanent success cache) and the next
+                // dispatch safely falls back to Gateway V1 until a region is confirmed healthy, so there is no
+                // need to block the refresh on it.
+                _ = this.RunThinClientProbeCycleAsync();
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceWarning("Failed to refresh database account with exception: {0}. Activity Id: '{1}'",
-                    ex.Message,
-                    System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Warning))
+                {
+                    DefaultTrace.TraceWarning("Failed to refresh database account with exception: {0}. Activity Id: '{1}'",
+                        ex.Message,
+                        System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                }
             }
             finally
             {
@@ -898,6 +995,63 @@ namespace Microsoft.Azure.Cosmos.Routing
         public Uri ResolveThinClientEndpoint(DocumentServiceRequest request)
         {
             return this.locationCache.ResolveThinClientEndpoint(request, request.IsReadOnlyRequest);
+        }
+
+        /// <summary>
+        /// Wires the thin client HTTP/2 <see cref="CosmosHttpClient"/> used by the connectivity probe. Must run
+        /// before the first topology refresh. Never trips client construction: if the probe client cannot be
+        /// created it is left null and <see cref="IsProxyEndpointHealthy"/> fails closed, so all traffic uses
+        /// Gateway V1 until a probe client is wired and an endpoint is confirmed healthy.
+        /// </summary>
+        public void SetThinClientHttpClient(CosmosHttpClient httpClient)
+        {
+            if (httpClient == null)
+            {
+                return;
+            }
+
+            try
+            {
+                this.thinClientProbeClient ??= new EndpointProbeClient(httpClient);
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceWarning(
+                    "Failed to wire thin client connectivity-probe client; thin client routing will stay on Gateway V1. Exception: {0}",
+                    ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Runs one connectivity-probe cycle against the thin client regional endpoints from the most recent
+        /// topology refresh, populating the per-endpoint success cache. No-op when no probe client is wired or
+        /// the account advertises no thin client read locations. Only endpoints not yet cached healthy are
+        /// probed. Never throws; probe failures must not fail topology refresh.
+        /// </summary>
+        public async Task RunThinClientProbeCycleAsync()
+        {
+            EndpointProbeClient? probeClient = this.thinClientProbeClient;
+            if (probeClient == null || !this.locationCache.HasThinClientReadLocations)
+            {
+                return;
+            }
+
+            try
+            {
+                HashSet<Uri> endpoints = this.locationCache.GetThinClientRegionalEndpoints();
+                if (endpoints.Count == 0)
+                {
+                    return;
+                }
+
+                await probeClient.RunProbeCycleAsync(endpoints, this.cancellationTokenSource.Token);
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceWarning(
+                    "Thin client probe cycle threw; ignoring to protect topology refresh. Exception: {0}",
+                    ex.Message);
+            }
         }
     }
 }

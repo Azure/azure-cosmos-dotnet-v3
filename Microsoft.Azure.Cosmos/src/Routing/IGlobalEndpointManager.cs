@@ -25,9 +25,13 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         bool HasThinClientWriteLocations { get; }
 
+        bool AreAllThinClientReadEndpointsHealthy { get; }
+
         int PreferredLocationCount { get; }
 
         Uri ResolveServiceEndpoint(DocumentServiceRequest request);
+
+        ReadOnlyCollection<Uri> GetApplicableEndpoints(DocumentServiceRequest request, bool isReadRequest);
 
         string GetLocation(Uri endpoint);
 

@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Handler;
 
     /// <summary>
     /// This is a thread safe AsyncCache that allows refreshing values in the background.
@@ -114,11 +115,14 @@ namespace Microsoft.Azure.Cosmos
                     {
                         bool removed = this.TryRemove(key);
 
-                        DefaultTrace.TraceError(
-                            "AsyncCacheNonBlocking Failed GetAsync. key: {0}, tryRemoved: {1}, Exception: {2}",
-                            key,
-                            removed,
-                            e.Message);
+                        if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Error))
+                        {
+                            DefaultTrace.TraceError(
+                                "AsyncCacheNonBlocking Failed GetAsync. key: {0}, tryRemoved: {1}, Exception: {2}",
+                                key,
+                                removed,
+                                e.Message);
+                        }
                     }
 
                     if (this.enableAsyncCacheExceptionNoSharing)
@@ -163,10 +167,13 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (Exception e)
             {
-                DefaultTrace.TraceError(
-                            "AsyncCacheNonBlocking Failed GetAsync with key: {0}, Exception: {1}",
-                            key.ToString(),
-                            e.Message);
+                if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Error))
+                {
+                    DefaultTrace.TraceError(
+                        "AsyncCacheNonBlocking Failed GetAsync with key: {0}, Exception: {1}",
+                        key.ToString(),
+                        e.Message);
+                }
 
                 // Remove the failed task from the dictionary so future requests can send other calls..
                 this.values.TryRemove(key, out _);
@@ -220,7 +227,13 @@ namespace Microsoft.Azure.Cosmos
 
                 Task continuationTask = backgroundRefreshTask
                     .ContinueWith(
-                        task => DefaultTrace.TraceVerbose("Failed to refresh addresses in the background with exception: {0}", task.Exception.Message),
+                        task =>
+                        {
+                            if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Verbose))
+                            {
+                                DefaultTrace.TraceVerbose("Failed to refresh addresses in the background with exception: {0}", task.Exception.Message);
+                            }
+                        },
                         TaskContinuationOptions.OnlyOnFaulted);
             }
         }
@@ -246,22 +259,40 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (Exception ex)
             {
-                if (initialValue.ShouldRemoveFromCacheThreadSafe())
+                // In some scenarios when a background failure occurs like a 404
+                // the initial cache value should be removed. The removal latch
+                // (ShouldRemoveFromCacheThreadSafe) is a one-shot that can only fire
+                // once for the lifetime of this cached entry, so it must only be
+                // consumed when a removal is actually performed. Evaluate whether the
+                // exception is removable first; a non-removable (e.g. transient/non-404)
+                // background-refresh failure must not burn the latch, otherwise a later
+                // genuine 404 would find the latch already consumed and fail to evict
+                // the stale entry.
+                if (this.removeFromCacheOnBackgroundRefreshException(ex)
+                    && initialValue.ShouldRemoveFromCacheThreadSafe())
                 {
-                    bool removed = false;
+                    bool removed = this.TryRemove(key);
 
-                    // In some scenarios when a background failure occurs like a 404
-                    // the initial cache value should be removed.
-                    if (this.removeFromCacheOnBackgroundRefreshException(ex))
+                    if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Error))
                     {
-                        removed = this.TryRemove(key);
+                        DefaultTrace.TraceError(
+                            "AsyncCacheNonBlocking Failed. key: {0}, operation: {1}, tryRemoved: {2}, Exception: {3}",
+                            key,
+                            operationName,
+                            removed,
+                            ex.Message);
                     }
-
-                    DefaultTrace.TraceError(
-                        "AsyncCacheNonBlocking Failed. key: {0}, operation: {1}, tryRemoved: {2}, Exception: {3}",
+                }
+                else if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Verbose))
+                {
+                    // A non-removable (e.g. transient/non-404) background-refresh failure retains
+                    // the stale value (stale-while-refresh) and intentionally does not consume the
+                    // removal latch. Trace at Verbose so the failure remains observable without
+                    // emitting Error-level noise for what is an expected transient condition.
+                    DefaultTrace.TraceVerbose(
+                        "AsyncCacheNonBlocking background refresh failed without removing the entry. key: {0}, operation: {1}, Exception: {2}",
                         key,
                         operationName,
-                        removed,
                         ex.Message);
                 }
 
