@@ -9,6 +9,7 @@ namespace CosmosBenchmark
     using System.Diagnostics;
     using System.Linq;
     using System.Runtime;
+    using Azure.Identity;
     using CommandLine;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Documents.Client;
@@ -21,15 +22,24 @@ namespace CosmosBenchmark
     {
         private static readonly string UserAgentSuffix = "cosmosdbdotnetbenchmark";
 
+        /// <summary>
+        /// When no account key is provided the benchmark authenticates with AAD
+        /// (Microsoft Entra ID) using a data-plane RBAC token.
+        /// </summary>
+        internal bool UseAadAuthentication => string.IsNullOrWhiteSpace(this.Key);
+
         [Option('w', Required = true, HelpText = "Workload type insert, read")]
         public string WorkloadType { get; set; }
 
         [Option('e', Required = true, HelpText = "Cosmos account end point")]
         public string EndPoint { get; set; }
 
-        [Option('k', Required = true, HelpText = "Cosmos account master key")]
+        [Option('k', Required = false, HelpText = "Cosmos account master key. If not provided, AAD (Microsoft Entra ID) authentication via DefaultAzureCredential is used.")]
         [JsonIgnore]
         public string Key { get; set; }
+
+        [Option(Required = false, HelpText = "User-assigned managed identity client id to use for AAD auth. Only used when no account key is provided.")]
+        public string AadManagedIdentityClientId { get; set; }
 
         [Option("isthinclientenabled", Required = false, HelpText = "ThinClient enabled")]
         public string IsThinClientEnabledRaw { get; set; }
@@ -256,14 +266,49 @@ namespace CosmosBenchmark
                 clientOptions.ConsistencyLevel = (Microsoft.Azure.Cosmos.ConsistencyLevel)Enum.Parse(typeof(Microsoft.Azure.Cosmos.ConsistencyLevel), this.ConsistencyLevel, ignoreCase: true);
             }
 
+            if (this.UseAadAuthentication)
+            {
+                return new Microsoft.Azure.Cosmos.CosmosClient(
+                            this.EndPoint,
+                            this.CreateTokenCredential(),
+                            clientOptions);
+            }
+
             return new Microsoft.Azure.Cosmos.CosmosClient(
                         this.EndPoint,
                         this.Key,
                         clientOptions);
         }
 
+        /// <summary>
+        /// Builds an Azure.Core TokenCredential for AAD (Microsoft Entra ID)
+        /// authentication. On an Azure VM this resolves the VM's managed identity; locally it
+        /// falls back to the Azure CLI, Visual Studio, environment variables, etc. Pass
+        /// --aadmanagedidentityclientid when the VM has more than one user-assigned identity.
+        /// </summary>
+        private Azure.Core.TokenCredential CreateTokenCredential()
+        {
+            if (!string.IsNullOrWhiteSpace(this.AadManagedIdentityClientId))
+            {
+                return new DefaultAzureCredential(new DefaultAzureCredentialOptions
+                {
+                    ManagedIdentityClientId = this.AadManagedIdentityClientId
+                });
+            }
+
+            return new DefaultAzureCredential();
+        }
+
         internal DocumentClient CreateDocumentClient(string accountKey)
         {
+            if (this.UseAadAuthentication)
+            {
+                // The V2 SDK (Microsoft.Azure.DocumentDB.Core) does not support AAD /
+                // TokenCredential authentication, so no V2 client is created in AAD mode.
+                // Only V3 (CosmosClient) workloads can run when authenticating with AAD.
+                return null;
+            }
+
             Microsoft.Azure.Documents.ConsistencyLevel? consistencyLevel = null;
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
             {
