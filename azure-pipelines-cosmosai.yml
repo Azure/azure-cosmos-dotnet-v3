@@ -1,0 +1,33 @@
+# CI pipeline for Microsoft.Azure.Cosmos.AI — runs on every PR touching the AI package.
+# Validates the three-build parity strategy (NuGet ref, SdkProjectRef, parity check)
+# before changes reach main, complementing the manual release-gate in
+# azure-pipelines-cosmosai-official.yml.
+trigger: none
+
+pr:
+  branches:
+    include:
+    - main
+    - releases/*
+  paths:
+    include:
+    - 'Microsoft.Azure.Cosmos.AI/**'
+    - 'templates/cosmosai-nuget-pack.yml'
+    - 'templates/static-tools-cosmosai.yml'
+    - 'azure-pipelines-cosmosai.yml'
+    - 'azure-pipelines-cosmosai-official.yml'
+    - 'Directory.Build.props'
+
+variables:
+  BuildConfiguration: Release
+
+jobs:
+- template: templates/static-tools-cosmosai.yml
+  parameters:
+    BuildConfiguration: '${{ variables.BuildConfiguration }}'
+
+- template: templates/cosmosai-nuget-pack.yml
+  parameters:
+    BuildConfiguration: '${{ variables.BuildConfiguration }}'
+    ReleasePackage: false
+    OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos.AI'
