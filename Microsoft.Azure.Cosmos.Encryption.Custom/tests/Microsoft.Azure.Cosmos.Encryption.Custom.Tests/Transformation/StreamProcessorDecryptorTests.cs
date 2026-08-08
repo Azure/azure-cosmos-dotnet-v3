@@ -75,6 +75,27 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             return ((MemoryStream)encryptedStream, props);
         }
 
+        private static async Task<(MemoryStream encrypted, EncryptionProperties properties)> EncryptRawJsonAsync(string json, EncryptionOptions options)
+        {
+            using MemoryStream input = new(Encoding.UTF8.GetBytes(json));
+            MemoryStream encryptedStream = new();
+            await EncryptionProcessor.EncryptAsync(input, encryptedStream, mockEncryptor.Object, options, JsonProcessor.Stream, new CosmosDiagnosticsContext(), CancellationToken.None);
+            encryptedStream.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(encryptedStream, new JsonDocumentOptions { AllowTrailingCommas = true });
+            JsonElement ei = jd.RootElement.GetProperty(Constants.EncryptedInfo);
+            EncryptionProperties props = JsonSerializer.Deserialize<EncryptionProperties>(ei.GetRawText(), SystemTextOptions);
+            encryptedStream.Position = 0;
+            return (encryptedStream, props);
+        }
+
+        private static async Task<JsonDocument> DecryptToJsonAsync(MemoryStream encrypted, EncryptionProperties props)
+        {
+            MemoryStream output = new();
+            await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+            output.Position = 0;
+            return JsonDocument.Parse(output);
+        }
+
         [TestMethod]
         public async Task Decrypt_AllPrimitiveTypesAndContainers()
         {
@@ -120,26 +141,232 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         }
 
         [TestMethod]
-        public async Task Decrypt_Skips_EncryptionInfo_Block()
+        public async Task Encrypt_Throws_When_Document_Already_Contains_TopLevel_EncryptionInfo()
         {
             // Arrange
-            // Build a document that already has _ei. (Encryptor will append another one during encryption; we want to ensure decryptor skips only the encrypted one at top-level.)
+            // This document already carries a top-level _ei property (the reserved encryption
+            // metadata name). Encrypting it must fail up front with a clear error rather than
+            // emitting an ambiguous duplicate _ei. This matches the Newtonsoft processor, whose
+            // JObject.Add throws on the duplicate _ei key. (Earlier this input was accepted and
+            // produced a document with two top-level _ei properties.)
             var doc = new { id = "1", _ei = new { ignore = true }, SensitiveStr = "abc" };
             string[] paths = new[] { "/SensitiveStr" };
             EncryptionOptions options = CreateOptions(paths);
-            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
 
-            // Act
-            MemoryStream output = new();
-            DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+            // Act + Assert
+            Stream input = TestCommon.ToStream(doc);
+            using MemoryStream output = new();
+            try
+            {
+                await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, JsonProcessor.Stream, new CosmosDiagnosticsContext(), CancellationToken.None);
+                Assert.Fail("Expected InvalidOperationException when encrypting a document that already contains a top-level _ei.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                StringAssert.Contains(ex.Message, Constants.EncryptedInfo);
+            }
+        }
 
-            // Assert
-            output.Position = 0;
-            using JsonDocument jd = JsonDocument.Parse(output);
-            JsonElement root = jd.RootElement;
-            Assert.IsFalse(root.TryGetProperty(Constants.EncryptedInfo, out _));
-            Assert.AreEqual("abc", root.GetProperty("SensitiveStr").GetString());
-            Assert.AreEqual(1, ctx.DecryptionInfoList.Count);
+        // Depth-gating counterpart to the top-level _ei guard above: a nested (non-top-level)
+        // property named _ei must NOT trigger the guard. Encryption succeeds, the nested value
+        // round-trips, and the top-level metadata _ei is still stripped on decrypt.
+        [TestMethod]
+        public async Task Encrypt_NestedEiProperty_DoesNotThrow()
+        {
+            var doc = new { id = "1", enc = "x", payload = new Dictionary<string, object> { ["_ei"] = "userdata", ["keep"] = "v" } };
+
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, CreateOptions(new[] { "/enc" }));
+            using JsonDocument jd = await DecryptToJsonAsync(encrypted, props);
+
+            Assert.AreEqual("v", jd.RootElement.GetProperty("payload").GetProperty("keep").GetString());
+            Assert.AreEqual("userdata", jd.RootElement.GetProperty("payload").GetProperty("_ei").GetString());
+            Assert.IsFalse(jd.RootElement.TryGetProperty(Constants.EncryptedInfo, out _), "Top-level _ei metadata must be stripped on decrypt.");
+        }
+
+        // A pass-through (non-encrypted) string value that contains JSON escape sequences must not
+        // be escaped a second time during encrypt + decrypt.
+        [TestMethod]
+        public async Task RoundTrip_PassThroughStringWithJsonEscapes_PreservesValue()
+        {
+            string note = "he said \"hi\" \\ end\n\tline\u0001end";
+            var doc = new { id = "1", enc = "secret", note };
+
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, CreateOptions(new[] { "/enc" }));
+            using JsonDocument jd = await DecryptToJsonAsync(encrypted, props);
+
+            Assert.AreEqual(note, jd.RootElement.GetProperty("note").GetString());
+        }
+
+        // A pass-through property NAME that contains JSON escape sequences must not be
+        // double-escaped during encrypt + decrypt.
+        [TestMethod]
+        public async Task RoundTrip_PassThroughPropertyNameWithJsonEscapes_PreservesName()
+        {
+            // Property name (semantic): we"ird\name
+            string json = "{\"id\":\"1\",\"enc\":\"secret\",\"we\\\"ird\\\\name\":\"value\"}";
+
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawJsonAsync(json, CreateOptions(new[] { "/enc" }));
+            using JsonDocument jd = await DecryptToJsonAsync(encrypted, props);
+
+            bool found = false;
+            foreach (JsonProperty p in jd.RootElement.EnumerateObject())
+            {
+                if (p.Name == "we\"ird\\name")
+                {
+                    found = true;
+                    Assert.AreEqual("value", p.Value.GetString());
+                }
+            }
+
+            Assert.IsTrue(found, "Pass-through property name with JSON escapes was not preserved verbatim.");
+        }
+
+        // String values written through the pass-through branch INSIDE an encrypted object payload
+        // must not be double-escaped either.
+        [TestMethod]
+        public async Task RoundTrip_StringWithEscapesInsideEncryptedObject_PreservesValue()
+        {
+            string note = "va\\lue\nwith\"quote\u00e9";
+            var doc = new { id = "1", secret = new { note } };
+
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, CreateOptions(new[] { "/secret" }));
+            using JsonDocument jd = await DecryptToJsonAsync(encrypted, props);
+
+            JsonElement secret = jd.RootElement.GetProperty("secret");
+            Assert.AreEqual(note, secret.GetProperty("note").GetString());
+        }
+
+        // A JSON null inside an encrypted object/array must not wipe the pending encrypted path;
+        // _ep must record the real path and the payload must stay decryptable.
+        [TestMethod]
+        public async Task RoundTrip_NullInsideEncryptedObject_RemainsDecryptable()
+        {
+            var doc = new { id = "1", obj = new Dictionary<string, object> { ["a"] = null, ["b"] = "x" } };
+
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, CreateOptions(new[] { "/obj" }));
+
+            // The encrypted _ep must contain the real path, never a null entry.
+            CollectionAssert.AreEqual(new[] { "/obj" }, props.EncryptedPaths.ToList());
+
+            using JsonDocument jd = await DecryptToJsonAsync(encrypted, props);
+            JsonElement obj = jd.RootElement.GetProperty("obj");
+            Assert.AreEqual(JsonValueKind.Object, obj.ValueKind);
+            Assert.AreEqual(JsonValueKind.Null, obj.GetProperty("a").ValueKind);
+            Assert.AreEqual("x", obj.GetProperty("b").GetString());
+        }
+
+        // A decrypted integral double (e.g. 5.0) must keep its double form (5.0) instead of
+        // flipping to an integer (5).
+        [TestMethod]
+        public async Task RoundTrip_IntegralDouble_PreservesDotZero()
+        {
+            string json = "{\"id\":\"1\",\"d\":5.0}";
+
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawJsonAsync(json, CreateOptions(new[] { "/d" }));
+            using JsonDocument jd = await DecryptToJsonAsync(encrypted, props);
+
+            Assert.AreEqual("5.0", jd.RootElement.GetProperty("d").GetRawText());
+        }
+
+        // WriteDoubleValueNewtonsoftStyle also fail-softs non-finite doubles to Newtonsoft's quoted
+        // string form ("NaN"/"Infinity"/"-Infinity"). NOTE: this branch is NOT reachable via normal
+        // encryption -- both processors reject non-finite doubles at serialize time (the Stream path
+        // via an explicit IsFinite check; the Newtonsoft path because SqlFloatSerializer.Serialize
+        // throws ArgumentOutOfRangeException on NaN/Infinity) -- and real AEAD decrypt would reject a
+        // tampered ciphertext first. It is defensive-only, exercised here (like
+        // Decrypt_ForgedUnknownTypeMarker) via forged Double bits + a non-authenticating stub.
+        [TestMethod]
+        public async Task Decrypt_ForgedNonFiniteDouble_WritesNewtonsoftStyleQuotedString()
+        {
+            (double value, string expected)[] cases =
+            {
+                (double.NaN, "NaN"),
+                (double.PositiveInfinity, "Infinity"),
+                (double.NegativeInfinity, "-Infinity"),
+            };
+
+            var doc = new { id = "1", SensitiveStr = "abc" };
+            EncryptionOptions options = CreateOptions(new[] { "/SensitiveStr" });
+
+            foreach ((double value, string expected) in cases)
+            {
+                (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+                // First base64 byte is the type marker the decryptor dispatches on; the stub
+                // encryptor ignores the remaining ciphertext bytes.
+                string forgedBase64 = Convert.ToBase64String(new byte[] { (byte)TypeMarker.Double, 0x00, 0x00, 0x00 });
+
+                MemoryStream forged = new();
+                using (JsonDocument jd = JsonDocument.Parse(encrypted, new JsonDocumentOptions { AllowTrailingCommas = true }))
+                using (Utf8JsonWriter w = new(forged))
+                {
+                    w.WriteStartObject();
+                    w.WriteString("id", jd.RootElement.GetProperty("id").GetString());
+                    w.WriteString("SensitiveStr", forgedBase64);
+                    w.WritePropertyName(Constants.EncryptedInfo);
+                    jd.RootElement.GetProperty(Constants.EncryptedInfo).WriteTo(w);
+                    w.WriteEndObject();
+                }
+
+                forged.Position = 0;
+
+                // Forge the raw IEEE-754 bits directly; SqlFloatSerializer.Serialize refuses NaN/Infinity.
+                byte[] doubleBytes = BitConverter.GetBytes(value);
+                StreamProcessor sp = new StreamProcessor { Encryptor = new AlwaysPlaintextMdeEncryptor(doubleBytes) };
+                MemoryStream output = new();
+                _ = await sp.DecryptStreamAsync(forged, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+
+                output.Position = 0;
+                using JsonDocument outDoc = JsonDocument.Parse(output);
+                JsonElement d = outDoc.RootElement.GetProperty("SensitiveStr");
+                Assert.AreEqual(JsonValueKind.String, d.ValueKind, $"Non-finite double {value} should decrypt to a quoted string.");
+                Assert.AreEqual(expected, d.GetString());
+            }
+        }
+
+        // Companion to RoundTrip_StringWithEscapesInsideEncryptedObject_PreservesValue: a property
+        // NAME (not value) that carries JSON escapes and is written through the payload-buffering
+        // branch (WritePropertyNameVerbatim into encryptionPayloadWriter) must round-trip verbatim.
+        [TestMethod]
+        public async Task RoundTrip_EscapedPropertyNameInsideEncryptedObject_PreservesName()
+        {
+            // Semantic nested name: we"ird\name
+            string json = "{\"id\":\"1\",\"secret\":{\"we\\\"ird\\\\name\":1}}";
+
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawJsonAsync(json, CreateOptions(new[] { "/secret" }));
+            using JsonDocument jd = await DecryptToJsonAsync(encrypted, props);
+
+            JsonElement secret = jd.RootElement.GetProperty("secret");
+            bool found = false;
+            foreach (JsonProperty p in secret.EnumerateObject())
+            {
+                if (p.Name == "we\"ird\\name")
+                {
+                    found = true;
+                    Assert.AreEqual(1, p.Value.GetInt32());
+                }
+            }
+
+            Assert.IsTrue(found, "Escaped nested property name inside an encrypted object was not preserved.");
+        }
+
+        // Companion to RoundTrip_NullInsideEncryptedObject_RemainsDecryptable: the null-guard also
+        // protects the array-payload shape, which completes through the distinct EndArray branch.
+        [TestMethod]
+        public async Task RoundTrip_NullInsideEncryptedArray_RemainsDecryptable()
+        {
+            string json = "{\"id\":\"1\",\"arr\":[null,1]}";
+
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawJsonAsync(json, CreateOptions(new[] { "/arr" }));
+
+            // The encrypted _ep must contain the real path, never a null entry.
+            CollectionAssert.AreEqual(new[] { "/arr" }, props.EncryptedPaths.ToList());
+
+            using JsonDocument jd = await DecryptToJsonAsync(encrypted, props);
+            JsonElement arr = jd.RootElement.GetProperty("arr");
+            Assert.AreEqual(JsonValueKind.Array, arr.ValueKind);
+            Assert.AreEqual(JsonValueKind.Null, arr[0].ValueKind);
+            Assert.AreEqual(1, arr[1].GetInt32());
         }
 
         [TestMethod]
@@ -793,6 +1020,50 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             }
         }
 
+        [TestMethod]
+        public async Task Decrypt_ViaTrickleStream_OneBytePerRead_Succeeds()
+        {
+            // Regression test for the no-progress buffer-growth guard. Feeding the encrypted payload
+            // one byte at a time drives many reads where the scan makes no progress (a partially read
+            // token) yet the buffer is nowhere near full. Before the guard, the decryptor grew the
+            // buffer on every such no-progress read — doubling per byte until it blew past
+            // MaxBufferSize and threw "maximum buffer size" on otherwise valid input. With the guard
+            // (grow only when the buffer is genuinely full), one-byte trickle input decrypts correctly.
+            // The sibling test above deliberately uses 7-byte chunks to sidestep this exact bug; this
+            // test locks in the fix using the pathological 1-byte case.
+            var doc = new
+            {
+                id = "1",
+                SensitiveStr = "secret-data-long-enough-to-force-many-no-progress-single-byte-reads",
+            };
+            string[] paths = new[] { "/SensitiveStr" };
+            EncryptionOptions options = CreateOptions(paths);
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+            byte[] encryptedBytes = encrypted.ToArray();
+            using TrickleStream trickleInput = new(encryptedBytes, bytesPerRead: 1);
+            MemoryStream output = new();
+
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
+            try
+            {
+                DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(
+                    trickleInput, output, mockEncryptor.Object, props,
+                    new CosmosDiagnosticsContext(), cts.Token);
+
+                output.Position = 0;
+                using JsonDocument jd = JsonDocument.Parse(output);
+                Assert.AreEqual(
+                    "secret-data-long-enough-to-force-many-no-progress-single-byte-reads",
+                    jd.RootElement.GetProperty("SensitiveStr").GetString());
+                Assert.IsTrue(ctx.DecryptionInfoList[0].PathsDecrypted.Contains("/SensitiveStr"));
+            }
+            catch (OperationCanceledException)
+            {
+                Assert.Fail("Timed out — no-progress buffer-growth bug caused runaway buffer doubling");
+            }
+        }
+
         private static async Task<(CosmosEncryptor cosmosEncryptor, MemoryStream feedPayloadStream, IReadOnlyList<FeedDoc> sourceDocuments)> CreateBenchmarkFeedPayloadAsync(int documentCount, int documentSizeInKb)
         {
             byte[] wrappedDek = Enumerable.Range(0, 32).Select(i => (byte)i).ToArray();
@@ -895,6 +1166,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             public AlwaysPlaintextMdeEncryptor(string raw)
             {
                 this.payload = Encoding.UTF8.GetBytes(raw);
+            }
+
+            public AlwaysPlaintextMdeEncryptor(byte[] payload)
+            {
+                this.payload = payload;
             }
 
             internal override (byte[] plainText, int plainTextLength) Decrypt(DataEncryptionKey encryptionKey, byte[] cipherText, int cipherTextLength, ArrayPoolManager arrayPoolManager)
