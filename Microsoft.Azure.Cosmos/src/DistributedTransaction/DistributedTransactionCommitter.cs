@@ -96,6 +96,18 @@ namespace Microsoft.Azure.Cosmos
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
+
+                bool isReadTransaction = this.operationType == OperationType.Read;
+                ConsistencyLevel? effectiveConsistencyLevel = isReadTransaction
+                    ? await this.ResolveEffectiveConsistencyLevelAsync()
+                    : null;
+
+                // Direct validates writes unconditionally and reads only under Session consistency.
+                if (!isReadTransaction || effectiveConsistencyLevel == ConsistencyLevel.Session)
+                {
+                    this.ValidateUserSuppliedSessionTokens();
+                }
+
                 await DistributedTransactionCommitterUtils.ResolveCollectionRidsAsync(
                     this.operations,
                     this.clientContext,
@@ -114,6 +126,38 @@ namespace Microsoft.Azure.Cosmos
             {
                 DefaultTrace.TraceError($"Distributed transaction failed: {ex.Message}");
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Resolves the effective consistency level for the transaction.
+        /// </summary>
+        private async Task<ConsistencyLevel?> ResolveEffectiveConsistencyLevelAsync()
+        {
+            ConsistencyLevel? clientOverride = this.clientContext.ClientOptions?.ConsistencyLevel;
+            if (clientOverride.HasValue)
+            {
+                return clientOverride.Value;
+            }
+
+            DocumentClient documentClient = this.clientContext.DocumentClient;
+            if (documentClient == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                return await documentClient.GetDefaultConsistencyLevelAsync();
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                DefaultTrace.TraceWarning(
+                    "Distributed transaction could not resolve the account consistency level ([{0}] {1}); " +
+                    "session token failures will be traced rather than surfaced.",
+                    ex.GetType().Name,
+                    ex.Message);
+                return null;
             }
         }
 
@@ -430,6 +474,59 @@ namespace Microsoft.Azure.Cosmos
             return message;
         }
 
+        /// <summary>
+        /// Rejects malformed caller-supplied session token segments for writes and Session-consistent reads.
+        /// </summary>
+        /// <remarks>
+        /// Compound request tokens remain supported for point-operation compatibility; response tokens remain partition-local.
+        /// </remarks>
+        private void ValidateUserSuppliedSessionTokens()
+        {
+            foreach (DistributedTransactionOperation operation in this.operations)
+            {
+                string sessionToken = operation?.SessionToken;
+                if (string.IsNullOrEmpty(sessionToken))
+                {
+                    continue;
+                }
+
+                // Match point-operation behavior by ignoring empty compound-token segments.
+                foreach (string segment in sessionToken.Split(SessionTokenHelper.CharArrayWithComma, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    if (DistributedTransactionCommitter.TryValidateSessionToken(segment, out string _))
+                    {
+                        continue;
+                    }
+
+                    throw new ArgumentException(
+                        $"Distributed transaction operation index {operation.OperationIndex} was given the session token " +
+                        $"'{FormatSessionTokenForMessage(sessionToken)}', which contains the segment '{FormatSessionTokenForMessage(segment)}'. Every segment must be a valid " +
+                        "'<partitionKeyRangeId>:<token>' pair. The transaction was not sent.",
+                        nameof(DistributedTransactionRequestOptions.SessionToken));
+                }
+            }
+        }
+
+        private static string FormatSessionTokenForMessage(string sessionToken)
+        {
+            return TruncateForLog(sessionToken)
+                .Replace("\r", "\\r")
+                .Replace("\n", "\\n");
+        }
+
+        /// <summary>
+        /// Determines whether a session token is usable: it must parse, and it must carry the partition
+        /// key range id the progress was recorded against.
+        /// </summary>
+        /// <param name="sessionToken">The token reported for a single operation.</param>
+        /// <param name="failureReason">The reason the token is unusable, or <c>null</c> when it is usable.</param>
+        /// <remarks>
+        /// The range id is checked separately because
+        /// <see cref="SessionTokenHelper.TryParse(string, out string, out ISessionToken)"/> accepts a bare
+        /// LSN and reports a null range id for it. Without that check a prefix-less token reaches
+        /// <see cref="ISessionContainer.SetSessionToken(string, string, INameValueCollection)"/>
+        /// and fails there with an <see cref="IndexOutOfRangeException"/>.
+        /// </remarks>
         private static bool TryValidateSessionToken(string sessionToken, out string failureReason)
         {
             if (!SessionTokenHelper.TryParse(sessionToken, out string partitionKeyRangeId, out ISessionToken _))
