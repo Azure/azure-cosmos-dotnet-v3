@@ -39,6 +39,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A <see cref="Task{TResult}"/> containing a <see cref="DistributedTransactionResponse"/> that represents the result of the transaction.</returns>
+        /// <exception cref="ArgumentException">Thrown when a write transaction or Session-consistent read transaction contains a <see cref="DistributedTransactionRequestOptions.SessionToken"/> the SDK cannot interpret.</exception>
         /// <exception cref="InvalidOperationException">Thrown if <see cref="ExecuteTransactionAsync"/> has already been called on this instance.</exception>
         /// <exception cref="OperationCanceledException">Thrown if <paramref name="cancellationToken"/> is cancelled before or during the commit.</exception>
         public abstract Task<DistributedTransactionResponse> ExecuteTransactionAsync(CancellationToken cancellationToken = default);
