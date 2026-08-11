@@ -45,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Other Changes
 
 - [5991](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5991) TargetReplicaSetSize : Updated address cache logic to use partition-specific target replica set size when available, falling back to the user replication policy value.
+- [6081](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6081) Distributed Transactions (preview): Fixes per-operation session tokens being captured from sub-operations whose status carries no trustworthy replica progress, such as throttles, `Gone`, `ServiceUnavailable`, and `ReadSessionNotAvailable`. Because tokens merge to the highest LSN, capturing one could advance a partition past what its replicas will serve, surfacing later as `ReadSessionNotAvailable` on session reads. Capture now covers the same statuses point operations capture on.
 
 ### <a name="3.63.0-preview.1"/> [3.63.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.63.0-preview.1) - 2026-8-5
 
