@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Text;
     using System.Text.Json;
-    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -98,15 +97,16 @@ namespace Microsoft.Azure.Cosmos
         internal bool HasIndex { get; set; }
 
         /// <summary>
-        /// Gets the session token returned by the distributed transaction coordinator for
-        /// this operation. Callers can pass this value back through
-        /// <c>DistributedTransactionRequestOptions.SessionToken</c> on a subsequent DTx
-        /// operation to enforce read-your-writes session consistency for that op.
+        /// Gets the session token returned for this operation. Callers can pass this value
+        /// back through <c>DistributedTransactionRequestOptions.SessionToken</c> on a
+        /// subsequent operation to enforce read-your-writes session consistency.
         /// </summary>
         /// <remarks>
-        /// Treat the value as opaque: pass it back unchanged via
-        /// <c>DistributedTransactionRequestOptions.SessionToken</c>. It may be <c>null</c> or
-        /// non-canonical if the coordinator omits or misformats the token.
+        /// Treat the value as opaque and pass it back unchanged.
+        /// <para>
+        /// The value is <c>null</c> when no token was returned. A token that is not in
+        /// the expected format is preserved for diagnostics and rejected if passed back.
+        /// </para>
         /// </remarks>
         public virtual string SessionToken { get; internal set; }
 
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a <see cref="DistributedTransactionOperationResult"/> from a JSON element.
         /// </summary>
         /// <param name="json">The JSON element containing the operation result.</param>
-        /// <returns>The deserialized operation result with a canonical session token.</returns>
+        /// <returns>The deserialized operation result with the session token returned by the server.</returns>
         internal static DistributedTransactionOperationResult FromJson(JsonElement json)
         {
             if (json.ValueKind != JsonValueKind.Object)
@@ -228,27 +228,7 @@ namespace Microsoft.Azure.Cosmos
                 result.ResourceStream = new MemoryStream(bytes, 0, bytes.Length, writable: false, publiclyVisible: true);
             }
 
-            if (!string.IsNullOrWhiteSpace(result.SessionToken))
-            {
-                int colonIndex = result.SessionToken.IndexOf(':');
-                if (colonIndex > 0 && colonIndex < result.SessionToken.Length - 1)
-                {
-                    // Already in canonical SDK session-token format — leave as-is.
-                }
-                else if (!string.IsNullOrWhiteSpace(result.PartitionKeyRangeId))
-                {
-                    result.SessionToken = result.PartitionKeyRangeId + ":" + result.SessionToken;
-                }
-                else
-                {
-                    DefaultTrace.TraceWarning(
-                        "DTC operation index {0} returned session token without a valid partitionKeyRangeId (value: '{1}'); session token will not be merged into the session container.",
-                        result.Index,
-                        result.PartitionKeyRangeId ?? "<absent>");
-                    result.SessionToken = null;
-                }
-            }
-            else if (result.SessionToken != null)
+            if (result.SessionToken != null && string.IsNullOrWhiteSpace(result.SessionToken))
             {
                 // Normalize whitespace-only to null so downstream guards don't need to recheck.
                 result.SessionToken = null;

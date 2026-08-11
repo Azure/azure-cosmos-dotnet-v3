@@ -106,7 +106,10 @@ namespace Microsoft.Azure.Cosmos
                     this.clientContext.SerializerCore,
                     cancellationToken);
 
-                return await this.ExecuteCommitWithRetryAsync(serverRequest, trace, cancellationToken);
+                // Resolve once per transaction; retries use the same consistency level.
+                ConsistencyLevel? effectiveConsistencyLevel = await this.ResolveEffectiveConsistencyLevelAsync();
+
+                return await this.ExecuteCommitWithRetryAsync(serverRequest, effectiveConsistencyLevel, trace, cancellationToken);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
@@ -115,8 +118,41 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        /// <summary>
+        /// Resolves the effective consistency level for the transaction.
+        /// </summary>
+        private async Task<ConsistencyLevel?> ResolveEffectiveConsistencyLevelAsync()
+        {
+            ConsistencyLevel? clientOverride = this.clientContext.ClientOptions?.ConsistencyLevel;
+            if (clientOverride.HasValue)
+            {
+                return clientOverride.Value;
+            }
+
+            DocumentClient documentClient = this.clientContext.DocumentClient;
+            if (documentClient == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                return await documentClient.GetDefaultConsistencyLevelAsync();
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                DefaultTrace.TraceWarning(
+                    "Distributed transaction could not resolve the account consistency level ([{0}] {1}); " +
+                    "session token failures will be traced rather than surfaced.",
+                    ex.GetType().Name,
+                    ex.Message);
+                return null;
+            }
+        }
+
         private async Task<DistributedTransactionResponse> ExecuteCommitWithRetryAsync(
             DistributedTransactionServerRequest serverRequest,
+            ConsistencyLevel? effectiveConsistencyLevel,
             ITrace parentTrace,
             CancellationToken cancellationToken)
         {
@@ -133,7 +169,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                DistributedTransactionResponse response = await this.ExecuteCommitAsync(serverRequest, rotateIdempotencyToken, parentTrace, cancellationToken);
+                DistributedTransactionResponse response = await this.ExecuteCommitAsync(serverRequest, effectiveConsistencyLevel, rotateIdempotencyToken, parentTrace, cancellationToken);
 
                 if (response.IsSuccessStatusCode || !response.IsRetriable)
                 {
@@ -215,6 +251,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<DistributedTransactionResponse> ExecuteCommitAsync(
             DistributedTransactionServerRequest serverRequest,
+            ConsistencyLevel? effectiveConsistencyLevel,
             bool rotateIdempotencyToken,
             ITrace parentTrace,
             CancellationToken cancellationToken)
@@ -256,10 +293,23 @@ namespace Microsoft.Azure.Cosmos
                             attemptTrace,
                             cancellationToken);
 
-                        DistributedTransactionCommitter.MergeSessionTokens(
-                            response,
-                            serverRequest,
-                            this.clientContext.DocumentClient?.sessionContainer);
+                        try
+                        {
+                            DistributedTransactionCommitter.MergeSessionTokens(
+                                response,
+                                serverRequest,
+                                this.clientContext.DocumentClient?.sessionContainer,
+                                effectiveConsistencyLevel,
+                                this.operationType);
+                        }
+                        catch
+                        {
+                            // Ownership of the response transfers to the caller only on the return path.
+                            // When bookkeeping throws, nothing else can reach it, so it is disposed here
+                            // rather than left to the finalizer.
+                            response.Dispose();
+                            throw;
+                        }
 
                         return response;
                     }
@@ -279,7 +329,9 @@ namespace Microsoft.Azure.Cosmos
         internal static void MergeSessionTokens(
             DistributedTransactionResponse response,
             DistributedTransactionServerRequest serverRequest,
-            ISessionContainer sessionContainer)
+            ISessionContainer sessionContainer,
+            ConsistencyLevel? effectiveConsistencyLevel,
+            OperationType operationType)
         {
             // Mirror the pattern used by GatewayStoreModel.CaptureSessionTokenAndHandleSplitAsync.
             // after a response is received, store each operation's session token in the SessionContainer
@@ -287,8 +339,7 @@ namespace Microsoft.Azure.Cosmos
             // without getting ReadSessionNotAvailable.
             //
             // DTC spans multiple collections so the server embeds per-operation session tokens in the JSON body.
-            // DistributedTransactionOperationResult.FromJson assembles each token into canonical SDK session-token
-            // format, and capture is gated per sub-operation on the same statuses point operations capture on.
+            // Capture is gated per sub-operation on the same statuses point operations capture on.
             if (response == null || response.Count == 0 || serverRequest == null || sessionContainer == null)
             {
                 return;
@@ -296,11 +347,24 @@ namespace Microsoft.Azure.Cosmos
 
             RequestNameValueCollection headers = new RequestNameValueCollection();
 
+            // Surfacing a token failure ends the transaction with an exception, so it may only happen once
+            // the outcome is settled. ExecuteCommitWithRetryAsync decides on retries after this method
+            // returns, and the message below asserts the transaction committed in full, so both conditions
+            // are evaluated on the envelope rather than on the sub-operation that carried the bad token.
+            bool transactionCommitted = DistributedTransactionCommitter.IsCommittedInFull(response);
+
             for (int i = 0; i < response.Count; i++)
             {
                 DistributedTransactionOperationResult result = response[i];
 
+                bool surfaceTokenFailures = transactionCommitted
+                    && effectiveConsistencyLevel == ConsistencyLevel.Session;
+
                 DistributedTransactionOperation operation = null;
+                string collectionFullName = null;
+                string failureReason = null;
+                Exception failureCause = null;
+
                 try
                 {
                     operation = serverRequest.Operations[result.Index];
@@ -321,30 +385,115 @@ namespace Microsoft.Azure.Cosmos
                         continue;
                     }
 
-                    // SessionToken is already in canonical SDK session-token format, assembled by FromJson.
-                    // Note: each SetSessionToken call acquires a write lock on the SessionContainer.
-                    // For a future optimization, consider a batch-update API on ISessionContainer to
-                    // reduce lock acquisitions when multiple operations target the same collection.
-                    headers.Clear();
-                    headers[HttpConstants.HttpHeaders.SessionToken] = result.SessionToken;
+                    collectionFullName = DistributedTransactionConstants.GetCollectionFullName(operation.Database, operation.Container);
 
-                    sessionContainer.SetSessionToken(
-                        operation.CollectionResourceId,
-                        DistributedTransactionConstants.GetCollectionFullName(operation.Database, operation.Container),
-                        headers);
+                    if (DistributedTransactionCommitter.TryValidateSessionToken(result.SessionToken, out string validationFailure))
+                    {
+                        // SetSessionToken acquires a write lock on the session container.
+                        headers.Clear();
+                        headers[HttpConstants.HttpHeaders.SessionToken] = result.SessionToken;
+
+                        sessionContainer.SetSessionToken(
+                            operation.CollectionResourceId,
+                            collectionFullName,
+                            headers);
+                    }
+                    else
+                    {
+                        failureReason = $"{validationFailure} Token: '{TruncateForLog(result.SessionToken)}'.";
+                    }
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
-                    // Session-token bookkeeping must never fail a transaction the server already committed.
-                    // Log and continue so the remaining operations' tokens are still attempted.
-                    DefaultTrace.TraceWarning(
-                        "DTC session token merge failed for operation index {0} (collection {1}): [{2}] {3}",
-                        result.Index,
-                        operation?.CollectionResourceId ?? "<unknown>",
-                        ex.GetType().Name,
-                        ex.Message);
+                    failureCause = ex;
+                    failureReason = ex.Message;
+                }
+
+                if (failureReason == null)
+                {
+                    continue;
+                }
+
+                // The collection is unknown only when resolving the operation itself threw.
+                string collectionScope = collectionFullName == null
+                    ? string.Empty
+                    : $" for collection '{collectionFullName}'";
+
+                // Apply the same policy to invalid and rejected tokens.
+                string message = $"Session token for operation index {result.Index} could not be recorded{collectionScope}: {failureReason}";
+
+                // Keep server-supplied braces out of the format string.
+                DefaultTrace.TraceWarning("{0} Session token was not recorded.", message);
+
+                if (surfaceTokenFailures)
+                {
+                    // Read transactions never commit, so the caller-facing outcome differs even though the
+                    // capture path is shared.
+                    string outcome = operationType == OperationType.Read
+                        ? " The read transaction completed successfully and should not be retried."
+                        : " The transaction was committed successfully and should not be retried.";
+
+                    // Stop at the first failure; later tokens are intentionally not recorded.
+                    throw new InvalidOperationException(message + outcome, failureCause);
                 }
             }
+        }
+
+        /// <summary>
+        /// Determines whether the response represents a transaction that committed in full: a non-error,
+        /// non-retriable envelope in which every sub-operation also carries a non-error status.
+        /// </summary>
+        /// <remarks>
+        /// A MultiStatus envelope is a success status but reports a rolled back transaction through its
+        /// sub-operations, so the envelope status alone cannot establish that the transaction committed.
+        /// </remarks>
+        private static bool IsCommittedInFull(DistributedTransactionResponse response)
+        {
+            if (response.IsRetriable || (int)response.StatusCode >= (int)StatusCodes.StartingErrorCode)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < response.Count; i++)
+            {
+                if ((int)response[i].StatusCode >= (int)StatusCodes.StartingErrorCode)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Determines whether a session token is usable: it must parse, and it must carry the partition
+        /// key range id the progress was recorded against.
+        /// </summary>
+        /// <param name="sessionToken">The token reported for a single operation.</param>
+        /// <param name="failureReason">The reason the token is unusable, or <c>null</c> when it is usable.</param>
+        /// <remarks>
+        /// The range id is checked separately because
+        /// <see cref="SessionTokenHelper.TryParse(string, out string, out ISessionToken)"/> accepts a bare
+        /// LSN and reports an empty range id for it. Without that check a prefix-less token reaches
+        /// <see cref="ISessionContainer.SetSessionToken(string, string, INameValueCollection)"/>
+        /// and fails there with an <see cref="IndexOutOfRangeException"/>.
+        /// </remarks>
+        private static bool TryValidateSessionToken(string sessionToken, out string failureReason)
+        {
+            if (!SessionTokenHelper.TryParse(sessionToken, out string partitionKeyRangeId, out ISessionToken _))
+            {
+                failureReason = "the token could not be parsed.";
+                return false;
+            }
+
+            if (string.IsNullOrEmpty(partitionKeyRangeId))
+            {
+                failureReason = "the token is missing the partitionKeyRangeId prefix.";
+                return false;
+            }
+
+            failureReason = null;
+            return true;
         }
     }
 }
