@@ -1519,7 +1519,29 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(expected, response.IsRetriable);
         }
 
-        // DiagnosticString parsing
+        // IsTransactionAborted derivation
+
+        [DataTestMethod]
+        [Description("IsTransactionAborted is derived from the response status code: it is true only when the status is HTTP 452 (TransactionAborted), and false for every other status.")]
+        [DataRow((int)StatusCodes.TransactionAborted, true, DisplayName = "452 → IsTransactionAborted=true")]
+        [DataRow((int)HttpStatusCode.ServiceUnavailable, false, DisplayName = "503 → IsTransactionAborted=false")]
+        [DataRow((int)HttpStatusCode.Conflict, false, DisplayName = "409 → IsTransactionAborted=false")]
+        [DataRow((int)HttpStatusCode.OK, false, DisplayName = "200 → IsTransactionAborted=false")]
+        public async Task FromResponseMessage_IsTransactionAborted_DerivedFromStatusCode(int statusCode, bool expectedAborted)
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":" + statusCode + "}]}";
+            ResponseMessage responseMessage = BuildResponseMessage((HttpStatusCode)statusCode, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(expectedAborted, response.IsTransactionAborted);
+        }
 
         [DataTestMethod]
         [Description("DiagnosticString deserializes from the top-level JSON property case-insensitively.")]
