@@ -43,13 +43,13 @@ x-ms-cosmos-dtx-cross-region-retry: True
 - **Value** — `True`. No other value is defined.
 - **Semantics** — presence-only. The header is present **only** on a cross-region retry. Its absence means "not a cross-region retry" and MUST carry exactly the meaning a request carries today.
 
-The header is never sent on its own: it always accompanies an `x-ms-cosmos-idempotency-token` that has already been dispatched at least once, in a different write region.
+The header is never sent on its own: it always accompanies an `x-ms-cosmos-idempotency-token` that has already been dispatched in a different write region.
 
-> Transport dependency: the gateway-to-coordinator hop is RNTBD, so this header also requires a matching request identifier in that protocol, allocated from the next free slot (the highest currently allocated identifier is `0x0109`). That allocation is coordinator-side work and is out of scope for this document.
+> Transport dependency: the gateway-to-coordinator hop is RNTBD, so this header also requires a matching request identifier in that protocol. Allocating it is coordinator-side work and is out of scope for this document.
 
 ## 5. Client Emission Rules
 
-`CosmosClient` tracks the write region each dispatch of the current idempotency token is sent to, and applies the following rules.
+`CosmosClient` tracks the write region each dispatch of the current idempotency token is sent to, and applies the following rules. Regions are compared by region identity, not by resolved endpoint: two dispatches that reach the same write region through different endpoints are not a region change.
 
 ### 5.1 When the header is set
 
@@ -79,7 +79,7 @@ After a retriable abort, `CosmosClient` resubmits the same operations under a **
 
 ### 5.5 The signal is independent of diagnostics
 
-`CosmosClient` already records retry counts and contacted regions in diagnostics, but only when the caller enables and serialises them. This signal MUST NOT depend on that. It MUST be emitted from the client's own routing state, as an explicit indication that this is a retry and that the region changed.
+`CosmosClient` already records retry counts and contacted regions in diagnostics, but only when the caller enables and serialises them. This signal MUST NOT depend on that. It MUST be emitted from the client's own routing state, as an explicit indication that this attempt has been dispatched across a write-region boundary.
 
 ## 6. Coordinator Expectations
 
@@ -98,7 +98,7 @@ A request **without** the header keeps its current handling. The additional reco
 
 **Write transactions only.** The header applies to distributed *write* transactions. Distributed read transactions carry no ledger or commit state, so replaying one in another region cannot execute a write twice or leave a transaction in limbo, and `CosmosClient` MUST NOT set the header on them.
 
-**Independent of account configuration.** The signal is orthogonal to the account's consistency level, to its commit configuration, and to the response mode the coordinator applies. It reports a routing fact; it does not select behaviour.
+**Independent of account configuration.** The signal is orthogonal to the account's consistency level and to its commit configuration. It reports a routing fact; it does not select behaviour.
 
 **Additive and ignorable.** The header is purely additive. A coordinator that does not recognise it MUST handle the request exactly as it does today, and `CosmosClient` MUST remain correct when talking to such a coordinator — the header changes what the coordinator *can* know, never what the client requires it to do.
 
@@ -107,4 +107,4 @@ A request **without** the header keeps its current handling. The additional reco
 ## 8. Open Questions
 
 - **Header name.** `x-ms-cosmos-dtx-cross-region-retry` is proposed here for consistency with the existing DTC header family; the final name and its RNTBD identifier need coordinator-team sign-off before implementation.
-- **Rollout ordering.** The header should be published before the client-side change is widely deployed, so that customers do not need to upgrade the SDK a second time to pick up the behaviour. Because the header is additive and ignorable (section 7), the two sides can ship in either order without breaking correctness.
+- **Rollout sequencing.** Correctness holds in either order, because the header is additive and ignorable (section 7) — but the boundary protection it enables only takes effect once the coordinator understands it. The sequencing to confirm with the coordinator team is how early the client-side change should ship, so that customers do not need to upgrade the SDK a second time to pick up the behaviour.
