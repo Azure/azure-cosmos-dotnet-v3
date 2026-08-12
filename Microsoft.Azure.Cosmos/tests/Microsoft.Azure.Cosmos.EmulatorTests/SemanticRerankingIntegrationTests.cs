@@ -111,7 +111,10 @@
             Assert.IsTrue(results.RerankScores.Count > 0);
             Assert.AreEqual(4, results.RerankScores[0].Index);
             Assert.IsNotNull(results.Latency);
-            Assert.IsNotNull(results.TokenUseage);
+            Assert.IsNotNull(results.TokenUsage);
+#pragma warning disable CS0618 // Type or member is obsolete
+            Assert.AreSame(results.TokenUsage, results.TokenUseage);
+#pragma warning restore CS0618 // Type or member is obsolete
         }
 #endif
     }
