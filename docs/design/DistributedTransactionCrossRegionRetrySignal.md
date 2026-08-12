@@ -12,10 +12,10 @@ A distributed write transaction is driven by the coordinator in three durable st
 
 How far that guarantee extends across regions depends on how the account commits:
 
-- **End region commit** — the transaction waits for commits from all designated regions (R1, R2, …). This preserves the transaction boundary and avoids data loss even when a region is lost mid-transaction, at the cost of significantly higher latency. It is the default for single-write-region accounts, and applies conceptually to multi-region accounts although it is less meaningful there.
+- **N-region commit** — the transaction waits for commits from all N designated regions (R1, R2, …). This preserves the transaction boundary and avoids data loss even when a region is lost mid-transaction, at the cost of significantly higher latency. It is the default for single-write-region accounts, and applies conceptually to multi-region accounts although it is less meaningful there.
 - **Quorum commit in the primary write region** — the transaction commits on a quorum in R1 alone. This is materially faster, and some customers choose it for that reason, but the transaction boundary is not guaranteed to be honoured if a failover happens while the transaction is in flight.
 
-This trade-off is independent of the account's consistency level; it applies even under eventual consistency, because what end region commit buys is protection against data loss, not a stronger read guarantee.
+This trade-off is independent of the account's consistency level; it applies even under eventual consistency, because what N-region commit buys is protection against data loss, not a stronger read guarantee.
 
 The gap this document addresses is the second case. When a failover interrupts a transaction, the client retries in the new region — and the coordinator there needs to know that is what happened.
 
