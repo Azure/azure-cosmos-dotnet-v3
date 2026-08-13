@@ -451,6 +451,124 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(expected, response.IsSuccessStatusCode);
         }
 
+        // All-operations-NotModified envelope translation
+
+        [TestMethod]
+        [Description("A 200 + 5425 envelope is surfaced as 304 with no sub-status, results preserved.")]
+        public async Task FromResponseMessage_AllOperationsNotModified_TranslatesEnvelopeToNotModified()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 2);
+
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":304},{""index"":1,""statusCode"":304}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+            responseMessage.Headers.SubStatusCode = DistributedTransactionConstants.AllOperationsNotModified;
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.NotModified, response.StatusCode);
+            Assert.AreEqual(SubStatusCodes.Unknown, response.SubStatusCode, "The 5425 marker must not be surfaced to the caller.");
+            Assert.IsFalse(response.IsSuccessStatusCode, "304 is outside the 2xx success range.");
+            Assert.IsNull(response.ErrorMessage, "An all-NotModified transaction is not an error outcome.");
+            Assert.AreEqual(2, response.Count);
+
+            for (int i = 0; i < response.Count; i++)
+            {
+                Assert.AreEqual(HttpStatusCode.NotModified, response[i].StatusCode, $"Result[{i}] must keep its own status.");
+                Assert.AreEqual(i, response[i].Index);
+            }
+        }
+
+        [TestMethod]
+        [Description("An HTTP 200 envelope carrying a sub-status other than 5425 is not translated.")]
+        public async Task FromResponseMessage_SuccessWithOtherSubStatus_LeavesStatusUnchanged()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":200}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+            responseMessage.Headers.SubStatusCode = SubStatusCodes.CompletingSplit;
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.AreEqual(SubStatusCodes.CompletingSplit, response.SubStatusCode);
+            Assert.IsTrue(response.IsSuccessStatusCode);
+        }
+
+        [TestMethod]
+        [Description("The 5425 marker only translates an HTTP 200 envelope, not an error envelope.")]
+        public async Task FromResponseMessage_ErrorStatusWithNotModifiedSubStatus_LeavesStatusUnchanged()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":{(int)HttpStatusCode.Conflict}}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.Conflict, json);
+            responseMessage.Headers.SubStatusCode = DistributedTransactionConstants.AllOperationsNotModified;
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.Conflict, response.StatusCode);
+            Assert.AreEqual(DistributedTransactionConstants.AllOperationsNotModified, response.SubStatusCode);
+        }
+
+        [TestMethod]
+        [Description("A 304 arriving directly on the wire is passed through unchanged.")]
+        public async Task FromResponseMessage_WireNotModified_LeavesStatusUnchanged()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":304}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.NotModified, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.NotModified, response.StatusCode);
+            Assert.AreEqual(SubStatusCodes.Unknown, response.SubStatusCode);
+            Assert.AreEqual(1, response.Count);
+        }
+
+        [TestMethod]
+        [Description("A 200 + 5425 envelope with no body is malformed and still fails closed with 500.")]
+        public async Task FromResponseMessage_AllOperationsNotModified_NullContent_ReturnsInternalServerError()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK)
+            {
+                Content = null
+            };
+            responseMessage.Headers.SubStatusCode = DistributedTransactionConstants.AllOperationsNotModified;
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+
         // Indexer and enumerator
 
         [TestMethod]
@@ -2145,6 +2263,157 @@ namespace Microsoft.Azure.Cosmos.Tests
             DistributedTransactionOperationResult<TestDocument> typed = response.GetOperationResultAtIndex<TestDocument>(0);
 
             Assert.IsNull(typed.Resource);
+        }
+
+        // ResponseMode parsing
+
+        [TestMethod]
+        [Description("The DistributedTransactionResponseMode enum values must be Standard=0 and FastResponse=1.")]
+        public void DistributedTransactionResponseMode_HasExpectedValues()
+        {
+            Assert.AreEqual(0, (int)DistributedTransactionResponseMode.Standard);
+            Assert.AreEqual(1, (int)DistributedTransactionResponseMode.FastResponse);
+        }
+
+        [TestMethod]
+        [Description("A top-level \"responseMode\":\"FastResponse\" must be parsed into ResponseMode == FastResponse.")]
+        public async Task FromResponseMessage_ResponseModeFastResponse_ParsesFastResponse()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = $@"{{""responseMode"":""FastResponse"",""operationResponses"":[{{""index"":0,""statusCode"":{(int)HttpStatusCode.OK}}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(DistributedTransactionResponseMode.FastResponse, response.ResponseMode);
+        }
+
+        [TestMethod]
+        [Description("A top-level \"responseMode\":\"Standard\" must be parsed into ResponseMode == Standard.")]
+        public async Task FromResponseMessage_ResponseModeStandard_ParsesStandard()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = $@"{{""responseMode"":""Standard"",""operationResponses"":[{{""index"":0,""statusCode"":{(int)HttpStatusCode.OK}}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(DistributedTransactionResponseMode.Standard, response.ResponseMode);
+        }
+
+        [TestMethod]
+        [Description("When the response payload omits responseMode, ResponseMode must default to Standard.")]
+        public async Task FromResponseMessage_ResponseModeAbsent_DefaultsToStandard()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":{(int)HttpStatusCode.OK}}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(DistributedTransactionResponseMode.Standard, response.ResponseMode);
+        }
+
+        [TestMethod]
+        [Description("An unrecognized responseMode name from a newer coordinator must fall back to Standard.")]
+        public async Task FromResponseMessage_ResponseModeUnknownName_DefaultsToStandard()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = $@"{{""responseMode"":""TurboResponse"",""operationResponses"":[{{""index"":0,""statusCode"":{(int)HttpStatusCode.OK}}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(DistributedTransactionResponseMode.Standard, response.ResponseMode);
+        }
+
+        [TestMethod]
+        [Description("An unrecognized numeric responseMode string (not a defined enum value) must fall back to Standard.")]
+        [DataRow("7")]
+        [DataRow("-1")]
+        [DataRow("99")]
+        public async Task FromResponseMessage_ResponseModeUndefinedNumericString_DefaultsToStandard(string numericResponseMode)
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = $@"{{""responseMode"":""{numericResponseMode}"",""operationResponses"":[{{""index"":0,""statusCode"":{(int)HttpStatusCode.OK}}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(DistributedTransactionResponseMode.Standard, response.ResponseMode);
+        }
+
+        [TestMethod]
+        [Description("Enum.TryParse also accepts the underlying numeric value, so a numeric string matching a defined member is parsed to that member (\"1\" -> FastResponse, \"0\" -> Standard). A conformant coordinator only sends names, so this is acceptable; this test documents the behavior.")]
+        [DataRow("1", nameof(DistributedTransactionResponseMode.FastResponse))]
+        [DataRow("0", nameof(DistributedTransactionResponseMode.Standard))]
+        public async Task FromResponseMessage_ResponseModeDefinedNumericString_MapsToUnderlyingMember(string numericResponseMode, string expectedName)
+        {
+            DistributedTransactionResponseMode expected = (DistributedTransactionResponseMode)Enum.Parse(typeof(DistributedTransactionResponseMode), expectedName);
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = $@"{{""responseMode"":""{numericResponseMode}"",""operationResponses"":[{{""index"":0,""statusCode"":{(int)HttpStatusCode.OK}}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(expected, response.ResponseMode);
+        }
+
+        [TestMethod]
+        [Description("responseMode is a top-level envelope field, so a FastResponse response whose operation indices are unmappable must still report ResponseMode == FastResponse on the fail-closed 500.")]
+        public async Task FromResponseMessage_FastResponseWithUnmappableIndices_PreservesResponseMode()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 2);
+
+            // Two results, but both carry index 0 -> not a complete permutation -> fail closed on success status.
+            string json = $@"{{""responseMode"":""FastResponse"",""operationResponses"":[{{""index"":0,""statusCode"":{(int)HttpStatusCode.OK}}},{{""index"":0,""statusCode"":{(int)HttpStatusCode.OK}}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.InternalServerError, response.StatusCode);
+            Assert.AreEqual(DistributedTransactionResponseMode.FastResponse, response.ResponseMode);
         }
 
         // Helpers
