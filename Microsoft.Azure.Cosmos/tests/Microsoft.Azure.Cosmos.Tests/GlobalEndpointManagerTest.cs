@@ -659,6 +659,363 @@ namespace Microsoft.Azure.Cosmos
                 "Change event must propagate the new explicit false value.");
         }
 
+        /// <summary>
+        /// PPAF-enablement companion to the disableCrossRegionalHedging tests: an explicit gateway
+        /// transition of EnablePartitionLevelFailover must fire the change event exactly once and
+        /// propagate the new value. Validates that change detection keys off the dedicated
+        /// lastKnownEnablePartitionLevelFailover baseline.
+        /// </summary>
+        [TestMethod]
+        public async Task RefreshDatabaseAccount_EnablePartitionLevelFailover_ExplicitTransition_FiresChangeEventOnce()
+        {
+            AccountProperties initialAccount = new AccountProperties
+            {
+                ReadLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "Region0", Endpoint = "https://region0.documents.azure.com/" }
+                },
+                EnablePartitionLevelFailover = false
+            };
+
+            AccountProperties refreshAccount = new AccountProperties
+            {
+                ReadLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "Region0", Endpoint = "https://region0.documents.azure.com/" }
+                },
+                EnablePartitionLevelFailover = true
+            };
+
+            Mock<IDocumentClientInternal> mockOwner = new Mock<IDocumentClientInternal>();
+            mockOwner.Setup(owner => owner.ServiceEndpoint).Returns(new Uri("https://defaultendpoint.net/"));
+            mockOwner.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(refreshAccount);
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy();
+
+            using GlobalEndpointManager gem = new GlobalEndpointManager(mockOwner.Object, connectionPolicy);
+            gem.InitializeAccountPropertiesAndStartBackgroundRefresh(initialAccount);
+
+            int changeEventInvocations = 0;
+            bool? observedPpafEnabled = null;
+            gem.OnEnablePartitionLevelFailoverConfigChanged += (ppafEnabled, _) =>
+            {
+                Interlocked.Increment(ref changeEventInvocations);
+                observedPpafEnabled = ppafEnabled;
+            };
+
+            await gem.RefreshLocationAsync(forceRefresh: true);
+
+            Assert.AreEqual(
+                1,
+                changeEventInvocations,
+                "An explicit EnablePartitionLevelFailover transition (false -> true) must fire the change event exactly once.");
+            Assert.IsTrue(observedPpafEnabled.HasValue && observedPpafEnabled.Value == true,
+                "Change event must propagate the new explicit EnablePartitionLevelFailover value.");
+        }
+
+        /// <summary>
+        /// When the gateway response omits EnablePartitionLevelFailover (HasValue == false), the absence
+        /// must not be treated as a transition. The dedicated baseline must be preserved and no change
+        /// event fired, mirroring the disableCrossRegionalHedging property-dropped behavior.
+        /// </summary>
+        [TestMethod]
+        public async Task RefreshDatabaseAccount_EnablePartitionLevelFailover_PropertyDropped_DoesNotFireChangeEvent()
+        {
+            AccountProperties initialAccount = new AccountProperties
+            {
+                ReadLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "Region0", Endpoint = "https://region0.documents.azure.com/" }
+                },
+                EnablePartitionLevelFailover = true
+            };
+
+            AccountProperties refreshAccount = new AccountProperties
+            {
+                ReadLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "Region0", Endpoint = "https://region0.documents.azure.com/" }
+                }
+                // EnablePartitionLevelFailover intentionally NOT set (null).
+            };
+
+            Mock<IDocumentClientInternal> mockOwner = new Mock<IDocumentClientInternal>();
+            mockOwner.Setup(owner => owner.ServiceEndpoint).Returns(new Uri("https://defaultendpoint.net/"));
+            mockOwner.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(refreshAccount);
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy();
+
+            using GlobalEndpointManager gem = new GlobalEndpointManager(mockOwner.Object, connectionPolicy);
+            gem.InitializeAccountPropertiesAndStartBackgroundRefresh(initialAccount);
+
+            int changeEventInvocations = 0;
+            gem.OnEnablePartitionLevelFailoverConfigChanged += (_, _) => Interlocked.Increment(ref changeEventInvocations);
+
+            await gem.RefreshLocationAsync(forceRefresh: true);
+
+            Assert.AreEqual(
+                0,
+                changeEventInvocations,
+                "Dropping the EnablePartitionLevelFailover property from the gateway response must not be treated as a transition.");
+        }
+
+        /// <summary>
+        /// Exception-recovery: when a subscriber throws while handling a PPAF-enablement transition, the
+        /// dedicated lastKnownEnablePartitionLevelFailover baseline must be rolled back so a subsequent
+        /// refresh re-detects the missed transition rather than diffing against an already-advanced value.
+        /// </summary>
+        [TestMethod]
+        public async Task RefreshDatabaseAccount_EnablePartitionLevelFailover_SubscriberThrows_BaselineRolledBackAndRedetected()
+        {
+            AccountProperties initialAccount = new AccountProperties
+            {
+                ReadLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "Region0", Endpoint = "https://region0.documents.azure.com/" }
+                },
+                EnablePartitionLevelFailover = false
+            };
+
+            AccountProperties refreshAccount = new AccountProperties
+            {
+                ReadLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "Region0", Endpoint = "https://region0.documents.azure.com/" }
+                },
+                EnablePartitionLevelFailover = true
+            };
+
+            Mock<IDocumentClientInternal> mockOwner = new Mock<IDocumentClientInternal>();
+            mockOwner.Setup(owner => owner.ServiceEndpoint).Returns(new Uri("https://defaultendpoint.net/"));
+            mockOwner.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(refreshAccount);
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy();
+
+            using GlobalEndpointManager gem = new GlobalEndpointManager(mockOwner.Object, connectionPolicy);
+            gem.InitializeAccountPropertiesAndStartBackgroundRefresh(initialAccount);
+
+            int changeEventInvocations = 0;
+            gem.OnEnablePartitionLevelFailoverConfigChanged += (_, _) =>
+            {
+                Interlocked.Increment(ref changeEventInvocations);
+                throw new InvalidOperationException("Simulated subscriber failure while applying PPAF-enablement change.");
+            };
+
+            // First refresh: the subscriber throws; the background refresh swallows the exception after the
+            // baseline is rolled back.
+            await gem.RefreshLocationAsync(forceRefresh: true);
+
+            // Second refresh observes the same gateway value; because the baseline was rolled back, the
+            // transition must be re-detected and the event fired again.
+            await gem.RefreshLocationAsync(forceRefresh: true);
+
+            Assert.AreEqual(
+                2,
+                changeEventInvocations,
+                "After a throwing subscriber, the PPAF-enablement baseline must be rolled back so the next refresh re-detects and re-fires the transition.");
+        }
+
+        /// <summary>
+        /// PPAF-enablement off-direction companion: an explicit gateway transition from
+        /// EnablePartitionLevelFailover=true to false must fire the change event exactly once and
+        /// propagate the new <c>false</c> value. The off-transition is the one that drops the
+        /// SDK-default availability strategy, so it is covered explicitly (mirroring the
+        /// disableCrossRegionalHedging ExplicitFalseAfterTrue companion).
+        /// </summary>
+        [TestMethod]
+        public async Task RefreshDatabaseAccount_EnablePartitionLevelFailover_ExplicitFalseAfterTrue_FiresChangeEvent()
+        {
+            AccountProperties initialAccount = new AccountProperties
+            {
+                ReadLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "Region0", Endpoint = "https://region0.documents.azure.com/" }
+                },
+                EnablePartitionLevelFailover = true
+            };
+
+            AccountProperties refreshAccount = new AccountProperties
+            {
+                ReadLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "Region0", Endpoint = "https://region0.documents.azure.com/" }
+                },
+                EnablePartitionLevelFailover = false
+            };
+
+            Mock<IDocumentClientInternal> mockOwner = new Mock<IDocumentClientInternal>();
+            mockOwner.Setup(owner => owner.ServiceEndpoint).Returns(new Uri("https://defaultendpoint.net/"));
+            mockOwner.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(refreshAccount);
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy();
+
+            using GlobalEndpointManager gem = new GlobalEndpointManager(mockOwner.Object, connectionPolicy);
+            gem.InitializeAccountPropertiesAndStartBackgroundRefresh(initialAccount);
+
+            int changeEventInvocations = 0;
+            bool? observedPpafEnabled = null;
+            gem.OnEnablePartitionLevelFailoverConfigChanged += (ppafEnabled, _) =>
+            {
+                Interlocked.Increment(ref changeEventInvocations);
+                observedPpafEnabled = ppafEnabled;
+            };
+
+            await gem.RefreshLocationAsync(forceRefresh: true);
+
+            Assert.AreEqual(
+                1,
+                changeEventInvocations,
+                "An explicit EnablePartitionLevelFailover transition (true -> false) must fire the change event exactly once.");
+            Assert.IsTrue(observedPpafEnabled.HasValue && observedPpafEnabled.Value == false,
+                "Change event must propagate the new explicit false EnablePartitionLevelFailover value.");
+        }
+
+        /// <summary>
+        /// Absent-property fallback propagation: when the PPAF property is dropped (no transition) but the
+        /// disableCrossRegionalHedging flag changes (so the event still fires), the propagated PPAF value
+        /// must be the preserved <c>lastKnownEnablePartitionLevelFailover</c> baseline — NOT an implicit
+        /// false. This exercises the <c>?? this.lastKnownEnablePartitionLevelFailover</c> fallback through
+        /// to a subscriber, which no other test drives.
+        /// </summary>
+        [TestMethod]
+        public async Task RefreshDatabaseAccount_EnablePartitionLevelFailover_PropertyDroppedWithHedgingChange_PropagatesPreservedBaseline()
+        {
+            AccountProperties initialAccount = new AccountProperties
+            {
+                ReadLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "Region0", Endpoint = "https://region0.documents.azure.com/" }
+                },
+                EnablePartitionLevelFailover = true,
+                DisableCrossRegionalHedging = false
+            };
+
+            // PPAF property dropped (null) so it is "no signal"; the hedging flag flips false -> true so
+            // the change event still fires and carries the (unchanged) PPAF value through the fallback.
+            AccountProperties refreshAccount = new AccountProperties
+            {
+                ReadLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "Region0", Endpoint = "https://region0.documents.azure.com/" }
+                },
+                // EnablePartitionLevelFailover intentionally NOT set (null).
+                DisableCrossRegionalHedging = true
+            };
+
+            Mock<IDocumentClientInternal> mockOwner = new Mock<IDocumentClientInternal>();
+            mockOwner.Setup(owner => owner.ServiceEndpoint).Returns(new Uri("https://defaultendpoint.net/"));
+            mockOwner.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(refreshAccount);
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy();
+
+            using GlobalEndpointManager gem = new GlobalEndpointManager(mockOwner.Object, connectionPolicy);
+            gem.InitializeAccountPropertiesAndStartBackgroundRefresh(initialAccount);
+
+            int changeEventInvocations = 0;
+            bool? observedPpafEnabled = null;
+            bool? observedDisableHedging = null;
+            gem.OnEnablePartitionLevelFailoverConfigChanged += (ppafEnabled, disableHedging) =>
+            {
+                Interlocked.Increment(ref changeEventInvocations);
+                observedPpafEnabled = ppafEnabled;
+                observedDisableHedging = disableHedging;
+            };
+
+            await gem.RefreshLocationAsync(forceRefresh: true);
+
+            Assert.AreEqual(
+                1,
+                changeEventInvocations,
+                "The hedging-flag change must fire the event even though the PPAF property was dropped.");
+            Assert.IsTrue(observedPpafEnabled.HasValue && observedPpafEnabled.Value == true,
+                "A dropped PPAF property must propagate the preserved lastKnownEnablePartitionLevelFailover baseline (true), not an implicit false.");
+            Assert.IsTrue(observedDisableHedging.HasValue && observedDisableHedging.Value == true,
+                "The hedging flag value that triggered the event must be propagated.");
+        }
+
+        /// <summary>
+        /// Baseline-preservation: a dropped PPAF property must not advance
+        /// <c>lastKnownEnablePartitionLevelFailover</c>. This is proven by a follow-up refresh that emits an
+        /// explicit <c>false</c> after the drop: if the baseline had been wrongly advanced to false on the
+        /// drop, the explicit-false refresh would be a no-op; because it is preserved at true, the
+        /// explicit-false refresh fires a real true -> false transition.
+        /// </summary>
+        [TestMethod]
+        public async Task RefreshDatabaseAccount_EnablePartitionLevelFailover_PropertyDropped_PreservesBaselineForLaterExplicitFalse()
+        {
+            AccountProperties initialAccount = new AccountProperties
+            {
+                ReadLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "Region0", Endpoint = "https://region0.documents.azure.com/" }
+                },
+                EnablePartitionLevelFailover = true
+            };
+
+            AccountProperties propertyDroppedAccount = new AccountProperties
+            {
+                ReadLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "Region0", Endpoint = "https://region0.documents.azure.com/" }
+                }
+                // EnablePartitionLevelFailover intentionally NOT set (null).
+            };
+
+            AccountProperties explicitFalseAccount = new AccountProperties
+            {
+                ReadLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "Region0", Endpoint = "https://region0.documents.azure.com/" }
+                },
+                EnablePartitionLevelFailover = false
+            };
+
+            // Use a mutable response so each forced refresh observes a distinct account snapshot,
+            // independent of how many endpoints the refresh path probes per call.
+            AccountProperties currentResponse = propertyDroppedAccount;
+
+            Mock<IDocumentClientInternal> mockOwner = new Mock<IDocumentClientInternal>();
+            mockOwner.Setup(owner => owner.ServiceEndpoint).Returns(new Uri("https://defaultendpoint.net/"));
+            mockOwner.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(() => currentResponse);
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy();
+
+            using GlobalEndpointManager gem = new GlobalEndpointManager(mockOwner.Object, connectionPolicy);
+            gem.InitializeAccountPropertiesAndStartBackgroundRefresh(initialAccount);
+
+            int changeEventInvocations = 0;
+            bool? observedPpafEnabled = null;
+            gem.OnEnablePartitionLevelFailoverConfigChanged += (ppafEnabled, _) =>
+            {
+                Interlocked.Increment(ref changeEventInvocations);
+                observedPpafEnabled = ppafEnabled;
+            };
+
+            // Refresh 1: property dropped — must NOT fire and must NOT advance the baseline.
+            await gem.RefreshLocationAsync(forceRefresh: true);
+            Assert.AreEqual(
+                0,
+                changeEventInvocations,
+                "Dropping the EnablePartitionLevelFailover property must not be treated as a transition.");
+
+            // Refresh 2: explicit false — fires only if the baseline was preserved at true across the drop.
+            currentResponse = explicitFalseAccount;
+            await gem.RefreshLocationAsync(forceRefresh: true);
+
+            Assert.AreEqual(
+                1,
+                changeEventInvocations,
+                "An explicit false after a property drop must fire a true -> false transition, proving the dropped-property refresh preserved the baseline at true.");
+            Assert.IsTrue(observedPpafEnabled.HasValue && observedPpafEnabled.Value == false,
+                "The explicit-false transition must propagate the new false value.");
+        }
+
         private sealed class GetAccountRequestInjector
         {
             public Func<Uri, bool> ShouldFailRequest { get; set; }

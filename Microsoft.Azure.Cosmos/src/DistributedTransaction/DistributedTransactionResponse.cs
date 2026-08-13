@@ -57,10 +57,15 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets the <see cref="DistributedTransactionOperationResult"/> at the specified index in the response.
+        /// Gets the <see cref="DistributedTransactionOperationResult"/> for the request operation at the specified index.
         /// </summary>
-        /// <param name="index">The zero-based index of the operation result to get.</param>
-        /// <returns>The <see cref="DistributedTransactionOperationResult"/> at the specified index.</returns>
+        /// <param name="index">The zero-based index of the request operation whose result to get.</param>
+        /// <returns>The <see cref="DistributedTransactionOperationResult"/> for the request operation at the specified index.</returns>
+        /// <remarks>
+        /// Results may arrive out of request order; the SDK reorders them by per-operation <c>index</c>,
+        /// so on a successful response <c>response[i]</c> is the i-th submitted operation. Payloads that
+        /// can't be mapped back (missing, duplicate, or out-of-range indices) fail closed (HTTP 500).
+        /// </remarks>
         public virtual DistributedTransactionOperationResult this[int index]
         {
             get
@@ -87,6 +92,8 @@ namespace Microsoft.Azure.Cosmos
         /// or <c>default(<typeparamref name="T"/>)</c> when the server did not return a body for that operation.
         /// </returns>
         /// <remarks>
+        /// <c>index</c> refers to the i-th operation submitted, regardless of the order the coordinator
+        /// returned results (see the indexer for reordering and fail-closed details).
         /// The underlying <see cref="DistributedTransactionOperationResult.ResourceStream"/> is left intact and
         /// remains readable after this call, so this method may be invoked multiple times (with the same or
         /// different <typeparamref name="T"/>) for the same index, and direct access via the indexer continues
@@ -158,9 +165,19 @@ namespace Microsoft.Azure.Cosmos
         public virtual Guid IdempotencyToken { get; }
 
         /// <summary>
-        /// Gets a value indicating whether the transaction is safe to retry with the same idempotency token.
+        /// Gets a value indicating whether the coordinator marked this outcome as retriable. When
+        /// <c>true</c>, the SDK resubmits the identical operations under a new token if the prior attempt
+        /// is terminally Aborted (HTTP 452), otherwise under the same token.
         /// </summary>
         public virtual bool IsRetriable { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether the transaction is durably Aborted, derived from the response
+        /// status code (HTTP 452). On a retriable response this selects the retry token: a durable Abort
+        /// rotates to a new token, any other status replays the same one.
+        /// </summary>
+        internal bool IsTransactionAborted =>
+            (int)this.StatusCode == (int)StatusCodes.TransactionAborted;
 
         /// <summary>
         /// Gets the diagnostic string from the coordinator describing the transaction outcome
@@ -171,7 +188,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the client-side diagnostics for the distributed transaction, covering the full
         /// retry loop and per-attempt spans (address resolution, network, retries, latency).
         /// </summary>
-        /// <remarks>Non-null when the response is returned from <c>CommitTransactionAsync</c>. The SDK sets this property
+        /// <remarks>Non-null when the response is returned from <c>ExecuteTransactionAsync</c>. The SDK sets this property
         /// before returning; callers should treat it as non-null in normal usage but guard defensively in edge cases.</remarks>
         public virtual CosmosDiagnostics Diagnostics { get; internal set; }
 
@@ -223,7 +240,9 @@ namespace Microsoft.Azure.Cosmos
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                // Extract idempotency token from response headers, fallback to the request token if absent.
+                // Extract idempotency token from response headers, falling back to the request token if absent.
+                // The committer always rotates the token before dispatch, so the fallback is non-empty on this
+                // path; a caller that builds a response before dispatching would surface Guid.Empty.
                 Guid idempotencyToken = GetIdempotencyTokenFromHeaders(responseMessage.Headers, serverRequest.IdempotencyToken);
 
                 DistributedTransactionResponse response = null;
@@ -273,6 +292,12 @@ namespace Microsoft.Azure.Cosmos
                         if (responseMessage.IsSuccessStatusCode)
                         {
                             SubStatusCodes wireSubStatusCode = responseMessage.Headers.SubStatusCode;
+
+                            // Preserve the envelope isRetriable/DiagnosticString before disposing: a wrong
+                            // result count is no more trustworthy than bad indices, and the retry signal is
+                            // independent of the unusable payload. Matches the two unmappable fail-closed paths.
+                            bool wireIsRetriable = response.IsRetriable;
+                            string wireDiagnosticString = response.DiagnosticString;
                             response.Dispose();
 
                             return new DistributedTransactionResponse(
@@ -282,7 +307,11 @@ namespace Microsoft.Azure.Cosmos
                                 responseMessage.Headers,
                                 serverRequest.Operations,
                                 serializer,
-                                idempotencyToken);
+                                idempotencyToken,
+                                wireIsRetriable)
+                            {
+                                DiagnosticString = wireDiagnosticString,
+                            };
                         }
 
                         response.CreateAndPopulateResults(serverRequest.Operations);
@@ -308,16 +337,26 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
-            if (disposing && this.results != null)
+            if (disposing)
             {
-                foreach (DistributedTransactionOperationResult result in this.results)
-                {
-                    result.ResourceStream?.Dispose();
-                }
+                DisposeResultStreams(this.results);
             }
 
             this.results = null;
             this.isDisposed = true;
+        }
+
+        private static void DisposeResultStreams(IEnumerable<DistributedTransactionOperationResult> results)
+        {
+            if (results == null)
+            {
+                return;
+            }
+
+            foreach (DistributedTransactionOperationResult result in results)
+            {
+                result.ResourceStream?.Dispose();
+            }
         }
 
         private static Guid GetIdempotencyTokenFromHeaders(Headers headers, Guid fallbackToken)
@@ -404,23 +443,61 @@ namespace Microsoft.Azure.Cosmos
                     catch (JsonException jsonEx)
                     {
                         DefaultTrace.TraceWarning(
-                            "DistributedTransactionResponse: per-operation parse failed; forcing isRetriable=false. {0}",
+                            "DistributedTransactionResponse: per-operation parse failed; discarding results. {0}",
                             jsonEx.Message);
 
-                        // Dispose any resource streams allocated for the partially-parsed operations
-                        // before discarding them.
-                        foreach (DistributedTransactionOperationResult partial in results)
-                        {
-                            partial.ResourceStream?.Dispose();
-                        }
-
+                        DisposeResultStreams(results);
                         results.Clear();
-                        isRetriable = false;
 
+                        // Preserve the coordinator's top-level isRetriable: it was parsed from the document
+                        // root before this loop and is independent of any single operationResponses element.
                         if (responseMessage.IsSuccessStatusCode)
                         {
-                            return CreateDeserializationFailureResponse(responseMessage, serverRequest, serializer, idempotencyToken);
+                            return CreateDeserializationFailureResponse(responseMessage, serverRequest, serializer, idempotencyToken, diagnosticString, isRetriable);
                         }
+                    }
+                }
+            }
+
+            // Reorder so response[i] maps to request operation i via the per-operation 'index' (wire order
+            // is not guaranteed). The indices must form a complete permutation of 0..n-1; otherwise the
+            // payload is uninterpretable and we fail closed rather than surface misaligned data.
+            if (results.Count > 0 && results.Count == serverRequest.Operations.Count)
+            {
+                DistributedTransactionOperationResult[] ordered = new DistributedTransactionOperationResult[results.Count];
+                bool canReorder = true;
+                foreach (DistributedTransactionOperationResult r in results)
+                {
+                    if (!r.HasIndex || r.Index < 0 || r.Index >= ordered.Length || ordered[r.Index] != null)
+                    {
+                        canReorder = false;
+                        break;
+                    }
+
+                    ordered[r.Index] = r;
+                }
+
+                if (canReorder)
+                {
+                    results.Clear();
+                    results.AddRange(ordered);
+                }
+                else
+                {
+                    DefaultTrace.TraceWarning(
+                        "DistributedTransactionResponse: operation indices are not a complete permutation of 0..{0}; response is not interpretable.",
+                        results.Count - 1);
+
+                    DisposeResultStreams(results);
+                    results.Clear();
+
+                    // isRetriable is independent of the operation indices, so preserve it: combined with the
+                    // idempotency token it lets the caller retry rather than fail terminally. On a success
+                    // status fail closed with 500; on an error status leave results empty so the
+                    // count-mismatch path pads with uniform error placeholders.
+                    if (responseMessage.IsSuccessStatusCode)
+                    {
+                        return CreateDeserializationFailureResponse(responseMessage, serverRequest, serializer, idempotencyToken, diagnosticString, isRetriable);
                     }
                 }
             }
@@ -455,6 +532,15 @@ namespace Microsoft.Azure.Cosmos
                     : $"{effectiveErrorMessage} ({diagnosticString})";
             }
 
+            // Restore the 304 envelope the coordinator could not send on the wire. Checked after the
+            // error-message merge so ErrorMessage stays null: this is not an error outcome.
+            if (finalStatusCode == HttpStatusCode.OK &&
+                finalSubStatusCode == DistributedTransactionConstants.AllOperationsNotModified)
+            {
+                finalStatusCode = HttpStatusCode.NotModified;
+                finalSubStatusCode = SubStatusCodes.Unknown;
+            }
+
             return new DistributedTransactionResponse(
                 finalStatusCode,
                 finalSubStatusCode,
@@ -473,10 +559,17 @@ namespace Microsoft.Azure.Cosmos
         private void CreateAndPopulateResults(
             IReadOnlyList<DistributedTransactionOperation> operations)
         {
+            // Dispose previously-parsed streams before replacing the list (the count-mismatch error path
+            // reaches here with live results). Other paths already cleared results, so this is a no-op.
+            DisposeResultStreams(this.results);
+
             this.results = new List<DistributedTransactionOperationResult>(operations.Count);
 
             for (int i = 0; i < operations.Count; i++)
             {
+                // Leave per-op fields (SessionToken/PartitionKeyRangeId/ActivityId) null: this synthesized
+                // path only runs when per-op results are missing/unmappable. The envelope ActivityId remains
+                // on DistributedTransactionResponse.ActivityId.
                 this.results.Add(new DistributedTransactionOperationResult(this.StatusCode)
                 {
                     SubStatusCode = this.SubStatusCode,
@@ -488,11 +581,17 @@ namespace Microsoft.Azure.Cosmos
         /// Builds an InternalServerError response indicating the server replied with success but
         /// the SDK could not deserialize the response payload. Mirrors TransactionalBatch behavior.
         /// </summary>
+        /// <remarks>
+        /// <paramref name="diagnosticString"/> and the coordinator's <paramref name="isRetriable"/> verdict
+        /// are independent of the unreadable payload, so both are preserved on the failure response.
+        /// </remarks>
         private static DistributedTransactionResponse CreateDeserializationFailureResponse(
             ResponseMessage responseMessage,
             DistributedTransactionServerRequest serverRequest,
             CosmosSerializerCore serializer,
-            Guid idempotencyToken)
+            Guid idempotencyToken,
+            string diagnosticString = null,
+            bool isRetriable = false)
         {
             DistributedTransactionResponse failedResponse = new DistributedTransactionResponse(
                 HttpStatusCode.InternalServerError,
@@ -501,7 +600,11 @@ namespace Microsoft.Azure.Cosmos
                 responseMessage.Headers,
                 serverRequest.Operations,
                 serializer,
-                idempotencyToken);
+                idempotencyToken,
+                isRetriable)
+            {
+                DiagnosticString = diagnosticString,
+            };
 
             failedResponse.CreateAndPopulateResults(serverRequest.Operations);
             return failedResponse;
