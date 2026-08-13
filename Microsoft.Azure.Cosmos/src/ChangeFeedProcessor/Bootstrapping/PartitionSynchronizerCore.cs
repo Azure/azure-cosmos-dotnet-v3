@@ -73,9 +73,36 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
 
             DefaultTrace.TraceInformation("Lease {0} is gone due to split or merge", leaseToken);
 
+            FeedRangeInternal feedRange = lease.FeedRange;
+            if (feedRange == null)
+            {
+                if (lease is DocumentServiceLeaseCoreEpk)
+                {
+                    // EPK-based leases have no PartitionKeyRangeId to resolve the range from; the lease token
+                    // itself only encodes the range, which is exactly what's missing.
+                    DefaultTrace.TraceError("Lease {0} is gone but has no FeedRange and is not a PKRange-based lease; the range cannot be resolved", leaseToken);
+                    throw new InvalidOperationException($"Lease {leaseToken} is gone but has no FeedRange and its range cannot be resolved.");
+                }
+
+                PartitionKeyRange currentRange = await this.partitionKeyRangeCache.TryGetPartitionKeyRangeByIdAsync(
+                    this.containerRid,
+                    leaseToken,
+                    NoOpTrace.Singleton,
+                    forceRefresh: true);
+                if (currentRange == null)
+                {
+                    DefaultTrace.TraceError("Lease {0} is gone but has no FeedRange and its PartitionKeyRangeId could not be resolved", leaseToken);
+                    throw new InvalidOperationException($"Lease {leaseToken} is gone but has no FeedRange and its PartitionKeyRangeId could not be resolved.");
+                }
+
+                feedRange = new FeedRangeEpk(currentRange.ToRange());
+
+                lease.FeedRange = feedRange;
+            }
+
             IReadOnlyList<PartitionKeyRange> overlappingRanges = await this.partitionKeyRangeCache.TryGetOverlappingRangesAsync(
                 this.containerRid, 
-                ((FeedRangeEpk)lease.FeedRange).Range, 
+                ((FeedRangeEpk)feedRange).Range, 
                 NoOpTrace.Singleton, 
                 forceRefresh: true);
             if (overlappingRanges.Count == 0)

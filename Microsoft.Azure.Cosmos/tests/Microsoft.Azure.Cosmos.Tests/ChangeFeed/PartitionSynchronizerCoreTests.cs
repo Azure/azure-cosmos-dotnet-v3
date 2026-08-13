@@ -6,7 +6,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
+    using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
@@ -303,6 +305,138 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             leaseManager.Verify(l => l.CreateLeaseIfNotExistAsync(
                It.IsAny<FeedRangeEpk>(),
                It.IsAny<string>()), Times.Never);
+        }
+
+        /// <summary>
+        /// Verifies a PKRange-based lease with a null FeedRange is resolved via its PartitionKeyRangeId
+        /// instead of throwing, and that the split completes normally.
+        /// </summary>
+        [TestMethod]
+        public async Task HandlePartitionGoneAsync_PKRangeBasedLease_WithNullFeedRange_ResolvesRangeAndSplitsSuccessfully()
+        {
+            DocumentServiceLeaseCore lease = new DocumentServiceLeaseCore()
+            {
+                LeaseToken = "0",
+                ContinuationToken = Guid.NewGuid().ToString(),
+                Owner = Guid.NewGuid().ToString(),
+                FeedRange = null,
+            };
+
+            Documents.PartitionKeyRange currentRange = new Documents.PartitionKeyRange() { Id = "0", MinInclusive = "", MaxExclusive = "FF" };
+            List<Documents.PartitionKeyRange> childRanges = new List<Documents.PartitionKeyRange>()
+            {
+                new Documents.PartitionKeyRange(){ Id = "1", MinInclusive = "", MaxExclusive = "BB" },
+                new Documents.PartitionKeyRange(){ Id = "2", MinInclusive = "BB", MaxExclusive = "FF" },
+            };
+
+            Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
+                Mock.Of<ICosmosAuthorizationTokenProvider>(),
+                Mock.Of<Documents.IStoreModel>(),
+                new Mock<Common.CollectionCache>(false).Object,
+                this.endpointManager,
+                false,
+                false,
+                null);
+
+            pkRangeCache.Setup(p => p.TryGetPartitionKeyRangeByIdAsync(
+                It.IsAny<string>(),
+                lease.CurrentLeaseToken,
+                It.IsAny<ITrace>(),
+                It.IsAny<bool>())).ReturnsAsync(currentRange);
+
+            pkRangeCache.Setup(p => p.TryGetOverlappingRangesAsync(
+                It.IsAny<string>(),
+                It.Is<Documents.Routing.Range<string>>(r => r.Min == currentRange.MinInclusive && r.Max == currentRange.MaxExclusive),
+                It.IsAny<ITrace>(),
+                It.IsAny<bool>())).ReturnsAsync(childRanges);
+
+            Mock<DocumentServiceLeaseManager> leaseManager = new Mock<DocumentServiceLeaseManager>();
+            leaseManager.Setup(l => l.CreateLeaseIfNotExistAsync(It.IsAny<Documents.PartitionKeyRange>(), It.IsAny<string>()))
+                .ReturnsAsync((Documents.PartitionKeyRange range, string continuation) => new DocumentServiceLeaseCore { LeaseToken = range.Id, ContinuationToken = continuation });
+
+            PartitionSynchronizerCore partitionSynchronizerCore = new PartitionSynchronizerCore(
+                Mock.Of<ContainerInternal>(),
+                Mock.Of<DocumentServiceLeaseContainer>(),
+                leaseManager.Object,
+                1,
+                pkRangeCache.Object,
+                Guid.NewGuid().ToString());
+
+            (IEnumerable<DocumentServiceLease> newLeases, bool removeCurrentLease) =
+                await partitionSynchronizerCore.HandlePartitionGoneAsync(lease);
+
+            Assert.IsTrue(removeCurrentLease, "The parent lease should be marked for removal once child leases are created.");
+            Assert.AreEqual(2, newLeases.Count(), "Both child ranges should have produced a new lease.");
+
+            leaseManager.Verify(l => l.CreateLeaseIfNotExistAsync(
+               It.IsAny<Documents.PartitionKeyRange>(),
+               It.IsAny<string>()), Times.Exactly(2));
+        }
+
+        /// <summary>
+        /// Verifies a lease rehydrated from saved in-memory lease state (which produces a null
+        /// FeedRange for a PKRange-based lease) can still be split successfully end-to-end.
+        /// </summary>
+        [TestMethod]
+        public async Task HandlePartitionGoneAsync_LeaseRehydratedFromSavedInMemoryState_SplitsSuccessfully()
+        {
+            string leaseToken = "0";
+            string continuationToken = Guid.NewGuid().ToString();
+
+            string legacyLeaseStateJson =
+                "[{\"id\":\"" + leaseToken + "\",\"LeaseToken\":\"" + leaseToken + "\"," +
+                "\"ContinuationToken\":\"" + continuationToken + "\",\"Owner\":\"owner1\"}]";
+
+            using MemoryStream leaseStateStream = new MemoryStream(Encoding.UTF8.GetBytes(legacyLeaseStateJson));
+            DocumentServiceLeaseStoreManagerInMemory storeManager = new DocumentServiceLeaseStoreManagerInMemory(leaseStateStream);
+
+            IReadOnlyList<DocumentServiceLease> restoredLeases = await storeManager.LeaseContainer.GetAllLeasesAsync();
+            DocumentServiceLease restoredLease = restoredLeases.Single();
+
+            Assert.IsInstanceOfType(restoredLease, typeof(DocumentServiceLeaseCore));
+            Assert.IsNull(restoredLease.FeedRange);
+
+            Documents.PartitionKeyRange currentRange = new Documents.PartitionKeyRange() { Id = leaseToken, MinInclusive = "", MaxExclusive = "FF" };
+            List<Documents.PartitionKeyRange> childRanges = new List<Documents.PartitionKeyRange>()
+            {
+                new Documents.PartitionKeyRange(){ Id = "1", MinInclusive = "", MaxExclusive = "BB" },
+                new Documents.PartitionKeyRange(){ Id = "2", MinInclusive = "BB", MaxExclusive = "FF" },
+            };
+
+            Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
+                Mock.Of<ICosmosAuthorizationTokenProvider>(),
+                Mock.Of<Documents.IStoreModel>(),
+                new Mock<Common.CollectionCache>(false).Object,
+                this.endpointManager,
+                false,
+                false,
+                null);
+
+            pkRangeCache.Setup(p => p.TryGetPartitionKeyRangeByIdAsync(
+                It.IsAny<string>(),
+                leaseToken,
+                It.IsAny<ITrace>(),
+                It.IsAny<bool>())).ReturnsAsync(currentRange);
+
+            pkRangeCache.Setup(p => p.TryGetOverlappingRangesAsync(
+                It.IsAny<string>(),
+                It.Is<Documents.Routing.Range<string>>(r => r.Min == currentRange.MinInclusive && r.Max == currentRange.MaxExclusive),
+                It.IsAny<ITrace>(),
+                It.IsAny<bool>())).ReturnsAsync(childRanges);
+
+            PartitionSynchronizerCore partitionSynchronizerCore = new PartitionSynchronizerCore(
+                Mock.Of<ContainerInternal>(),
+                storeManager.LeaseContainer,
+                storeManager.LeaseManager,
+                1,
+                pkRangeCache.Object,
+                Guid.NewGuid().ToString());
+
+            (IEnumerable<DocumentServiceLease> newLeases, bool removeCurrentLease) =
+                await partitionSynchronizerCore.HandlePartitionGoneAsync(restoredLease);
+
+            Assert.IsTrue(removeCurrentLease);
+            Assert.AreEqual(2, newLeases.Count());
         }
 
         /// <summary>
