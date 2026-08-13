@@ -72,7 +72,7 @@ When creating a **server error** `FaultInjectionResult` (via `FaultInjectionServ
 | -------------- | -------------- | ----------- |
 | `Times`        | `WithTimes(int)` | Specifies how many times to inject the fault for a single operation (retries within one logical operation). By default, there is no limit. |
 | `Delay`        | `WithDelay(TimeSpan)` | Specifies how long to delay the fault injection. Only applicable for `SendDelay`, `ResponseDelay`, and `ConnectionDelay` error types (and required for them). |
-| `InjectionRate`| `WithInjectionRate(double)` | Specifies how often the rule is applied when applicable to an operation, in the range `(0, 1]`. By default, the rate is 100% (`1.0`). |
+| `InjectionRate`| `WithInjectionRate(double)` | Specifies how often the rule is applied when applicable to an operation, in the range `(0, 1]`. By default, the rate is 100% (`1.0`). This can also be changed at runtime with `FaultInjectionRule.SetInjectionRate(double)` — see [Changing a Rule at Runtime](#changing-a-rule-at-runtime). |
 | `SuppressServiceRequest` | `WithSuppressServiceRequest(bool)` | When `true`, the real request is never sent to the backend and the injected fault is returned immediately. When `false`, the request is still sent (useful for delay-style faults). |
 
 When creating a **connection error** `FaultInjectionResult` (via `FaultInjectionConnectionErrorResultBuilder`), the following properties apply instead:
@@ -140,6 +140,44 @@ When creating a `FaultInjectionRule`, you can also specify the following propert
 | `StartDelay`   | `WithStartDelay(TimeSpan)` | How long to wait after rule creation before the rule starts injecting faults. |
 | `HitLimit`     | `WithHitLimit(int)` | The maximum number of times the rule can be applied across all operations. Must be greater than 0. |
 | `IsEnabled`    | `IsEnabled(bool)` | Whether the rule is enabled. A disabled rule is never applied. Rules are enabled by default and can be toggled multiple times. |
+
+#### Changing a Rule at Runtime
+
+Some properties of a `FaultInjectionRule` can be changed after the rule has been handed to a `FaultInjector` and the `CosmosClient` has been created. This lets a single client instance be driven through several fault profiles without rebuilding it.
+
+| Method | Description |
+| ------ | ----------- |
+| `Enable()` / `Disable()` | Turns fault injection for the rule on or off. |
+| `SetInjectionRate(double)` | Changes how often the fault is injected, in the range `(0, 1]`. Use `Disable()` for 0%. |
+| `GetInjectionRate()` | Returns the rate currently in effect. |
+
+Both take effect on the next request evaluated by the rule. `SetInjectionRate` may also be called before the client is created; the value is carried over when the rule is registered.
+
+```c#
+FaultInjectionRule rule = new FaultInjectionRuleBuilder(
+    id: "ServiceUnavailableRule",
+    condition: new FaultInjectionConditionBuilder()
+        .WithOperationType(FaultInjectionOperationType.ReadItem)
+        .Build(),
+    result: FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
+        .WithInjectionRate(0.1) // start at 10%
+        .Build())
+    .Build();
+
+CosmosClient client = new CosmosClientBuilder(endpoint, key)
+    .WithFaultInjection(new FaultInjector(new List<FaultInjectionRule> { rule }))
+    .Build();
+
+// ... run the workload at 10% ...
+
+rule.SetInjectionRate(0.5); // ramp to 50%, same client, same rule
+
+// ... run the workload at 50% ...
+
+rule.Disable(); // stop injecting entirely
+```
+
+> **Note:** `SetInjectionRate` only affects server error and custom server error rules. Connection error rules use `WithThreshold` instead, which is fixed at build time; calling `SetInjectionRate` on such a rule is a no-op.
 
 
 ### `FaultInjector`

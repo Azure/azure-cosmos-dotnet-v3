@@ -252,6 +252,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             this.enabled = true;
         }
 
+        public void SetInjectionRate(double injectionRate)
+        {
+            this.result.SetInjectionRate(injectionRate);
+        }
+
         public List<Uri> GetAddresses()
         {
             return this.condition.GetPhysicalAddresses();

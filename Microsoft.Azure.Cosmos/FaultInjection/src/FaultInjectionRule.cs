@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 {
     using System;
     using System.Collections.Generic;
+    using System.Threading;
 
     /// <summary>
     /// Fault Injector Rule
@@ -18,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly TimeSpan startDelay;
         private readonly int hitLimit;
         private volatile bool enabled;
+        private double injectionRate;
         private IFaultInjectionRuleInternal? effectiveRule;
 
         /// <summary>
@@ -46,6 +48,12 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             this.startDelay = startDelay;
             this.hitLimit = hitLimit;
             this.enabled = enabled;
+            this.injectionRate = this.result switch
+            {
+                FaultInjectionServerErrorResult serverErrorResult => serverErrorResult.GetInjectionRate(),
+                FaultInjectionCustomServerErrorResult customServerErrorResult => customServerErrorResult.GetInjectionRate(),
+                _ => 1,
+            };
         }
 
         /// <summary>
@@ -132,6 +140,38 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         }
 
         /// <summary>
+        /// Gets the injection rate of the fault injection rule, which is the probability that the
+        /// fault is injected into a request that already matches the rule's condition.
+        /// </summary>
+        /// <returns>the injection rate, in the range (0, 1].</returns>
+        public double GetInjectionRate()
+        {
+            return Volatile.Read(ref this.injectionRate);
+        }
+
+        /// <summary>
+        /// Updates the injection rate of the fault injection rule. Like <see cref="Enable"/> and
+        /// <see cref="Disable"/>, this can be called at any time, including after the rule has been
+        /// registered with a <see cref="CosmosClient"/>. The new rate takes effect on the next
+        /// request evaluated by the rule.
+        /// Only applies to server error and custom server error rules; it is ignored for connection
+        /// error rules, which use a connection threshold instead.
+        /// </summary>
+        /// <param name="injectionRate">the new injection rate, in the range (0, 1].</param>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when injectionRate is not within the valid range.</exception>
+        public void SetInjectionRate(double injectionRate)
+        {
+            if (injectionRate <= 0 || injectionRate > 1)
+            {
+                throw new ArgumentOutOfRangeException($"Argument '{nameof(injectionRate)}' must be within the range (0, 1].");
+            }
+
+            Volatile.Write(ref this.injectionRate, injectionRate);
+
+            FaultInjectionRule.ApplyInjectionRate(this.effectiveRule, injectionRate);
+        }
+
+        /// <summary>
         /// Gets the count of how many times the rule has been applied.
         /// </summary>
         /// <returns>the hit count.</returns>
@@ -165,6 +205,23 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         internal void SetEffectiveFaultInjectionRule(IFaultInjectionRuleInternal effectiveRule)
         {
             this.effectiveRule = effectiveRule;
+
+            // Carry over any injection rate set on this rule before it was registered with a client.
+            FaultInjectionRule.ApplyInjectionRate(effectiveRule, Volatile.Read(ref this.injectionRate));
+        }
+
+        private static void ApplyInjectionRate(IFaultInjectionRuleInternal? effectiveRule, double injectionRate)
+        {
+            switch (effectiveRule)
+            {
+                case FaultInjectionServerErrorRule serverErrorRule:
+                    serverErrorRule.SetInjectionRate(injectionRate);
+                    break;
+
+                case FaultInjectionCustomServerErrorRule customServerErrorRule:
+                    customServerErrorRule.SetInjectionRate(injectionRate);
+                    break;
+            }
         }
 
         /// <summary>
