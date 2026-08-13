@@ -15,7 +15,9 @@ How far that guarantee extends across regions depends on how the account commits
 - **N-region commit** — waits for commits from all N designated regions. Preserves the boundary and avoids data loss even when a region is lost mid-transaction, at a significant latency cost. Default for single-write-region accounts.
 - **Quorum commit in the primary write region** — commits on a quorum in R1 alone. Materially faster, and chosen by customers for that reason, but the boundary is not guaranteed if a failover interrupts a transaction.
 
-The trade-off is independent of the account's consistency level: what N-region commit buys is protection against data loss, not a stronger read guarantee. This document addresses the second case.
+The trade-off is independent of the account's consistency level: what N-region commit buys is protection against data loss, not a stronger read guarantee.
+
+**This document addresses the second case — accounts that do not use N-region commit.** Under N-region commit the boundary already survives a failover, so the signal has nothing to add. It is the accounts that traded that protection away for latency where a failover can strand a transaction, and where the coordinator in the new region needs to be told what happened.
 
 ## 3. Problem: Same Token, Different Region
 
@@ -33,9 +35,9 @@ This matters at scale: a regional failover can leave a very large number of tran
 x-ms-cosmos-dtx-cross-region-retry: False
 ```
 
-- **Name** — follows the existing DTC request header family (`x-ms-cosmos-idempotency-token`, `x-ms-cosmos-operation-type`, `x-ms-cosmos-resource-type`). Pending coordinator-team sign-off (section 7).
+- **Name** — follows the existing DTC request header family (`x-ms-cosmos-idempotency-token`, `x-ms-cosmos-operation-type`, `x-ms-cosmos-resource-type`). Pending coordinator-team sign-off (section 6).
 - **Value** — `True` or `False`; no other value is defined.
-- **Presence** — sent on **every** distributed write transaction request. `False` MUST carry exactly the meaning a request carries today; `True` is the signal to reconcile. An absent header identifies a client predating this contract and MUST be treated as `False`.
+- **Presence** — sent on **every** distributed write transaction request. `False` MUST carry exactly the meaning a request carries today; `True` reports that this attempt may already exist under the same token in another region. An absent header identifies a client predating this contract and MUST be treated as `False`.
 
 > Transport dependency: the gateway-to-coordinator hop is RNTBD, so this header also requires a matching request identifier there. Allocating it is coordinator-side work, out of scope here.
 
@@ -58,18 +60,7 @@ Two rules follow, both normative:
 
 The value MUST be derived from the client's own routing state. `CosmosClient` already records retry counts and contacted regions in diagnostics, but only when the caller enables and serialises them; this signal MUST NOT depend on that.
 
-## 6. Coordinator Expectations
-
-On a request with `True`, the coordinator is expected to read the ledger record and the participant records for that token **before** deciding how to answer, rather than treating the request as a new transaction. Based on participant state, that resolves to one of:
-
-- committed — the recorded outcome is returned;
-- aborted — the abort is returned;
-- not yet resolvable — the request times out rather than executing again;
-- no durable record — handled as a first submission.
-
-`False` keeps current handling, so the reconciliation cost falls only on requests that actually crossed a boundary.
-
-## 7. Applicability, Compatibility and Open Questions
+## 6. Applicability, Compatibility and Open Questions
 
 - **Write transactions only.** Read transactions carry no ledger or commit state, so replaying one elsewhere cannot execute a write twice or leave a transaction in limbo. `CosmosClient` MUST omit the header on them entirely rather than sending `False`.
 - **Independent of account configuration.** Orthogonal to consistency level and commit configuration; it reports a routing fact and does not select behaviour.
