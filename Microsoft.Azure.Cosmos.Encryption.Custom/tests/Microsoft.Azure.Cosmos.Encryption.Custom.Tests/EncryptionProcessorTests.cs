@@ -228,7 +228,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
-        public async Task DeserializeAndDecryptResponse_ReadOnlyMde_ReportsNewtonsoftFallback()
+        public async Task DeserializeAndDecryptResponse_ReadOnlyMde_SkipsStreamAttempt()
         {
             TestDoc doc = TestDoc.Create();
             using MemoryStream encryptedItem = new();
@@ -264,7 +264,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.AreEqual(doc.SensitiveStr, actual.SensitiveStr);
             lock (scopes)
             {
-                Assert.IsTrue(scopes.Contains(
+                Assert.IsFalse(scopes.Contains(
                     CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream));
                 Assert.IsTrue(scopes.Contains(
                     CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft));
@@ -272,7 +272,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
-        public async Task DeserializeAndDecryptResponse_NonSeekableMde_ReportsNewtonsoftFallback()
+        public async Task DeserializeAndDecryptResponse_NonSeekableMde_SkipsStreamAttempt()
         {
             TestDoc doc = TestDoc.Create();
             using MemoryStream encryptedItem = new();
@@ -308,7 +308,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.AreEqual(doc.SensitiveStr, actual.SensitiveStr);
             lock (scopes)
             {
-                Assert.IsTrue(scopes.Contains(
+                Assert.IsFalse(scopes.Contains(
                     CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream));
                 Assert.IsTrue(scopes.Contains(
                     CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft));

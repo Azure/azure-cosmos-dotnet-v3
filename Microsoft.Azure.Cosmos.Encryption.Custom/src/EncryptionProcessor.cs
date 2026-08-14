@@ -493,6 +493,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
+            if (!content.CanRead || !content.CanWrite || !content.CanSeek)
+            {
+                using IDisposable fallbackScope = diagnosticsContext.CreateScope(
+                    CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft);
+                return await DecryptJsonArrayNewtonsoftAsync(content, encryptor, cancellationToken);
+            }
+
             try
             {
                 using IDisposable selectionScope = diagnosticsContext.CreateScope(
@@ -505,10 +512,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
             catch (NotSupportedException)
             {
-                if (content.CanSeek)
-                {
-                    content.Position = 0;
-                }
+                content.Position = 0;
 
                 using IDisposable fallbackScope = diagnosticsContext.CreateScope(
                     CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft);
