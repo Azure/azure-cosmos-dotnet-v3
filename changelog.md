@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+- [6059](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6059) DistributedTransaction (preview): Adds `DistributedTransactionResponse.ResponseMode`, which reports whether the coordinator applied `Standard` or `FastResponse` mode when processing the transaction. The value is parsed from the coordinator response and defaults to `Standard` when not reported.
 - [6053](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6053) VectorIndex Policy: Adds `QuantizerType` to the official (GA) package.
 - [5976](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5976) Upgraded Direct package to 3.44.0.
 - [5976](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5976) Direct: Adds barrier early yield on 429 — ConsistencyWriter and QuorumReader yield early with substatus 21013 (`Server_WriteBarrierThrottled`) when all replicas return 429 during barrier requests. Direct retries the 429 internally and surfaces a synthetic 408/21013 to the SDK when retries are exhausted. The SDK's `ClientRetryPolicy` recognizes this substatus and avoids marking the endpoint unavailable, preventing unnecessary cross-region failover. Adds internal opt-out flag and env-var kill switch (`AZURE_COSMOS_BARRIER_EARLY_YIELD_ON_429_ENABLED`).
