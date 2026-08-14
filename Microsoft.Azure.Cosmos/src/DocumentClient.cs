@@ -1175,7 +1175,7 @@ namespace Microsoft.Azure.Cosmos
             // clients are unaffected by either check.
             // Do not gate on the initial ThinClientWritableLocationsInternal count: it is a snapshot of
             // dynamic account topology and would pin StoreModel to plain GatewayStoreModel for the
-            // client's lifetime, breaking the enable direction of the #5927 dynamic-switch contract.
+            // client's lifetime, breaking the enable direction of the dynamic-switch contract.
             // Per-request routability is enforced downstream by ThinClientStoreModel.IsThinClientRoutable
             // (live LocationCache flags) and the probe-health gate in DispatchAsync, so accounts that
             // never advertise thin-client endpoints transparently fall through to the gateway path.
