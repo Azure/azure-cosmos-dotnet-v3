@@ -37,7 +37,8 @@ namespace Microsoft.Azure.Cosmos
             IReadOnlyList<DistributedTransactionOperation> operations,
             CosmosSerializerCore serializer,
             Guid idempotencyToken,
-            bool isRetriable = false)
+            bool isRetriable = false,
+            DistributedTransactionResponseMode responseMode = DistributedTransactionResponseMode.Standard)
         {
             this.Headers = headers;
             this.StatusCode = statusCode;
@@ -47,6 +48,7 @@ namespace Microsoft.Azure.Cosmos
             this.SerializerCore = serializer;
             this.IdempotencyToken = idempotencyToken;
             this.IsRetriable = isRetriable;
+            this.ResponseMode = responseMode;
         }
 
         /// <summary>
@@ -172,6 +174,13 @@ namespace Microsoft.Azure.Cosmos
         public virtual bool IsRetriable { get; }
 
         /// <summary>
+        /// Gets the response mode the coordinator applied when processing the transaction.
+        /// Defaults to <see cref="DistributedTransactionResponseMode.Standard"/> when the coordinator
+        /// does not report a mode in the response payload.
+        /// </summary>
+        public virtual DistributedTransactionResponseMode ResponseMode { get; }
+
+        /// <summary>
         /// Gets a value indicating whether the transaction is durably Aborted, derived from the response
         /// status code (HTTP 452). On a retriable response this selects the retry token: a durable Abort
         /// rotates to a new token, any other status replays the same one.
@@ -293,11 +302,13 @@ namespace Microsoft.Azure.Cosmos
                         {
                             SubStatusCodes wireSubStatusCode = responseMessage.Headers.SubStatusCode;
 
-                            // Preserve the envelope isRetriable/DiagnosticString before disposing: a wrong
-                            // result count is no more trustworthy than bad indices, and the retry signal is
-                            // independent of the unusable payload. Matches the two unmappable fail-closed paths.
+                            // Preserve the envelope isRetriable/DiagnosticString/ResponseMode before disposing:
+                            // a wrong result count is no more trustworthy than bad indices, and these envelope
+                            // signals are independent of the unusable payload. Matches the two unmappable
+                            // fail-closed paths.
                             bool wireIsRetriable = response.IsRetriable;
                             string wireDiagnosticString = response.DiagnosticString;
+                            DistributedTransactionResponseMode wireResponseMode = response.ResponseMode;
                             response.Dispose();
 
                             return new DistributedTransactionResponse(
@@ -308,7 +319,8 @@ namespace Microsoft.Azure.Cosmos
                                 serverRequest.Operations,
                                 serializer,
                                 idempotencyToken,
-                                wireIsRetriable)
+                                wireIsRetriable,
+                                wireResponseMode)
                             {
                                 DiagnosticString = wireDiagnosticString,
                             };
@@ -390,6 +402,7 @@ namespace Microsoft.Azure.Cosmos
             List<DistributedTransactionOperationResult> results = new List<DistributedTransactionOperationResult>();
             bool isRetriable = false;
             string diagnosticString = null;
+            DistributedTransactionResponseMode responseMode = DistributedTransactionResponseMode.Standard;
 
             JsonDocument responseJson;
             try
@@ -426,6 +439,21 @@ namespace Microsoft.Azure.Cosmos
                     diagnosticString = diagnosticStringElement.GetString();
                 }
 
+                // Parse the top-level "responseMode" field. Per the coordinator contract it is the string
+                // *name* of the enum ("Standard"/"FastResponse"). Values that are absent, not a string,
+                // unparseable, or not a defined enum member (e.g. an unrecognized numeric string, or a newer
+                // mode this SDK does not recognize) fall back to Standard. Note: because Enum.TryParse also
+                // accepts the underlying numeric value, a numeric string that matches a defined member (e.g.
+                // "1" -> FastResponse) is accepted; a conformant coordinator only sends names, so this is
+                // acceptable.
+                if (DistributedTransactionOperationResult.TryGetProperty(root, DistributedTransactionSerializer.ResponseMode, out JsonElement responseModeElement) &&
+                    responseModeElement.ValueKind == JsonValueKind.String &&
+                    Enum.TryParse(responseModeElement.GetString(), ignoreCase: true, out DistributedTransactionResponseMode parsedResponseMode) &&
+                    Enum.IsDefined(typeof(DistributedTransactionResponseMode), parsedResponseMode))
+                {
+                    responseMode = parsedResponseMode;
+                }
+
                 // Parse operation results from "operationResponses" array.
                 if (DistributedTransactionOperationResult.TryGetProperty(root, DistributedTransactionSerializer.OperationResponses, out JsonElement operationResponses) &&
                     operationResponses.ValueKind == JsonValueKind.Array)
@@ -449,11 +477,12 @@ namespace Microsoft.Azure.Cosmos
                         DisposeResultStreams(results);
                         results.Clear();
 
-                        // Preserve the coordinator's top-level isRetriable: it was parsed from the document
-                        // root before this loop and is independent of any single operationResponses element.
+                        // Preserve the coordinator's top-level isRetriable and responseMode: both were parsed
+                        // from the document root before this loop and are independent of any single
+                        // operationResponses element.
                         if (responseMessage.IsSuccessStatusCode)
                         {
-                            return CreateDeserializationFailureResponse(responseMessage, serverRequest, serializer, idempotencyToken, diagnosticString, isRetriable);
+                            return CreateDeserializationFailureResponse(responseMessage, serverRequest, serializer, idempotencyToken, diagnosticString, isRetriable, responseMode);
                         }
                     }
                 }
@@ -491,13 +520,13 @@ namespace Microsoft.Azure.Cosmos
                     DisposeResultStreams(results);
                     results.Clear();
 
-                    // isRetriable is independent of the operation indices, so preserve it: combined with the
-                    // idempotency token it lets the caller retry rather than fail terminally. On a success
-                    // status fail closed with 500; on an error status leave results empty so the
-                    // count-mismatch path pads with uniform error placeholders.
+                    // isRetriable and responseMode are independent of the operation indices, so preserve them:
+                    // isRetriable combined with the idempotency token lets the caller retry rather than fail
+                    // terminally. On a success status fail closed with 500; on an error status leave results
+                    // empty so the count-mismatch path pads with uniform error placeholders.
                     if (responseMessage.IsSuccessStatusCode)
                     {
-                        return CreateDeserializationFailureResponse(responseMessage, serverRequest, serializer, idempotencyToken, diagnosticString, isRetriable);
+                        return CreateDeserializationFailureResponse(responseMessage, serverRequest, serializer, idempotencyToken, diagnosticString, isRetriable, responseMode);
                     }
                 }
             }
@@ -532,6 +561,15 @@ namespace Microsoft.Azure.Cosmos
                     : $"{effectiveErrorMessage} ({diagnosticString})";
             }
 
+            // Restore the 304 envelope the coordinator could not send on the wire. Checked after the
+            // error-message merge so ErrorMessage stays null: this is not an error outcome.
+            if (finalStatusCode == HttpStatusCode.OK &&
+                finalSubStatusCode == DistributedTransactionConstants.AllOperationsNotModified)
+            {
+                finalStatusCode = HttpStatusCode.NotModified;
+                finalSubStatusCode = SubStatusCodes.Unknown;
+            }
+
             return new DistributedTransactionResponse(
                 finalStatusCode,
                 finalSubStatusCode,
@@ -540,7 +578,8 @@ namespace Microsoft.Azure.Cosmos
                 serverRequest.Operations,
                 serializer,
                 idempotencyToken,
-                isRetriable)
+                isRetriable,
+                responseMode)
             {
                 results = results,
                 DiagnosticString = diagnosticString
@@ -573,8 +612,9 @@ namespace Microsoft.Azure.Cosmos
         /// the SDK could not deserialize the response payload. Mirrors TransactionalBatch behavior.
         /// </summary>
         /// <remarks>
-        /// <paramref name="diagnosticString"/> and the coordinator's <paramref name="isRetriable"/> verdict
-        /// are independent of the unreadable payload, so both are preserved on the failure response.
+        /// <paramref name="diagnosticString"/>, the coordinator's <paramref name="isRetriable"/> verdict,
+        /// and <paramref name="responseMode"/> are independent of the unreadable payload, so they are
+        /// preserved on the failure response.
         /// </remarks>
         private static DistributedTransactionResponse CreateDeserializationFailureResponse(
             ResponseMessage responseMessage,
@@ -582,7 +622,8 @@ namespace Microsoft.Azure.Cosmos
             CosmosSerializerCore serializer,
             Guid idempotencyToken,
             string diagnosticString = null,
-            bool isRetriable = false)
+            bool isRetriable = false,
+            DistributedTransactionResponseMode responseMode = DistributedTransactionResponseMode.Standard)
         {
             DistributedTransactionResponse failedResponse = new DistributedTransactionResponse(
                 HttpStatusCode.InternalServerError,
@@ -592,7 +633,8 @@ namespace Microsoft.Azure.Cosmos
                 serverRequest.Operations,
                 serializer,
                 idempotencyToken,
-                isRetriable)
+                isRetriable,
+                responseMode)
             {
                 DiagnosticString = diagnosticString,
             };
