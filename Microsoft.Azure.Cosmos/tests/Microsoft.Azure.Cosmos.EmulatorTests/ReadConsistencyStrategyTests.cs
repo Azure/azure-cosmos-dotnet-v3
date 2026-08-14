@@ -345,13 +345,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCategory("MultiMaster")]
         public async Task LastCommittedSingleWriteRegionRejectedForMultiMasterAccount()
         {
-            string connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", null);
+            string connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTIMASTER", null);
 
             Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "False");
 
             if (string.IsNullOrEmpty(connectionString))
             {
-                Assert.Fail("Set environment variable COSMOSDB_MULTI_REGION to run the tests");
+                Assert.Fail("Set environment variable COSMOSDB_MULTIMASTER to run the tests");
             }
 
             using CosmosClient multiMasterClient = new CosmosClient(connectionString);
