@@ -1173,18 +1173,12 @@ namespace Microsoft.Azure.Cosmos
             // rotation (an AzureKeyCredential key updated from a master key to a resource token mid-session) is
             // additionally guarded live per request in GetStoreProxy. Master-key and AAD/token-credential
             // clients are unaffected by either check.
-            //
-            // Note: intentionally NOT gated on the initial ThinClientWritableLocationsInternal count.
-            // The bidirectional dynamic-enable contract introduced in #5927 requires that a client that
-            // starts without thin-client locations still transitions to thin-client routing on the very
-            // next account refresh that advertises them — without a client restart. Gating construction
-            // of ThinClientStoreModel (and wiring of the connectivity probe) on the init-time count
-            // would break the enable-direction of that contract because StoreModel would be permanently
-            // pinned to plain GatewayStoreModel. Per-request routability is enforced downstream by
-            // ThinClientStoreModel.IsThinClientRoutable (which checks LocationCache.HasThinClientRead/
-            // WriteLocations) and by the probe-health gate in DispatchAsync, so accounts that never gain
-            // thin-client locations transparently keep falling back to the inherited gateway path with
-            // no observable difference from the pre-#5960 behavior.
+            // Do not gate on the initial ThinClientWritableLocationsInternal count: it is a snapshot of
+            // dynamic account topology and would pin StoreModel to plain GatewayStoreModel for the
+            // client's lifetime, breaking the enable direction of the #5927 dynamic-switch contract.
+            // Per-request routability is enforced downstream by ThinClientStoreModel.IsThinClientRoutable
+            // (live LocationCache flags) and the probe-health gate in DispatchAsync, so accounts that
+            // never advertise thin-client endpoints transparently fall through to the gateway path.
             bool isResourceTokenAuthorization = DocumentClient.IsResourceTokenAuthorization(this.cosmosAuthorization);
 
             this.isThinClientEnabled = this.isThinClientFeatureFlagEnabled
