@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Linq;
     using System.Net;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
@@ -273,6 +275,120 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 response.StatusCode,
                 "Read with both ConsistencyLevel and ReadConsistencyStrategy headers should succeed (Direct package 3.43.1+ contract).");
             Assert.AreEqual(testItem.id, response.Resource.id);
+        }
+
+        /// <summary>
+        /// Verifies that <see cref="ReadConsistencyStrategy.LastCommittedSingleWriteRegion"/> is honored in
+        /// Gateway mode against a single-write-region (single-master) account such as the emulator.
+        /// For a single-master account the SDK translates the strategy into hub-region routing: it sets the
+        /// <c>x-ms-cosmos-hub-region-processing-only</c> header to true and downgrades the wire
+        /// ReadConsistencyStrategy header to <see cref="ReadConsistencyStrategy.LatestCommitted"/>.
+        /// The interceptor confirms the headers actually sent on the wire, proving the value is honored
+        /// end-to-end in Gateway mode.
+        /// </summary>
+        [TestMethod]
+        public async Task ReadItemWithLastCommittedSingleWriteRegionInGatewayMode()
+        {
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+            await this.Container.CreateItemAsync(testItem);
+
+            string readConsistencyStrategyHeader = null;
+            string hubRegionHeader = null;
+            RequestHandlerHelper interceptor = new RequestHandlerHelper
+            {
+                UpdateRequestMessage = (request) =>
+                {
+                    if (request.OperationType == Documents.OperationType.Read
+                        && request.ResourceType == Documents.ResourceType.Document)
+                    {
+                        readConsistencyStrategyHeader = request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy];
+                        hubRegionHeader = request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion];
+                    }
+                }
+            };
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Gateway
+            };
+            clientOptions.CustomHandlers.Add(interceptor);
+
+            using CosmosClient customClient = TestCommon.CreateCosmosClient(clientOptions);
+            Container container = customClient.GetContainer(this.database.Id, this.Container.Id);
+
+            ItemResponse<ToDoActivity> readResponse = await container.ReadItemAsync<ToDoActivity>(
+                testItem.id,
+                new Cosmos.PartitionKey(testItem.pk),
+                new ItemRequestOptions { ReadConsistencyStrategy = Cosmos.ReadConsistencyStrategy.LastCommittedSingleWriteRegion });
+
+            Assert.AreEqual(
+                HttpStatusCode.OK,
+                readResponse.StatusCode,
+                "Read with LastCommittedSingleWriteRegion should succeed in Gateway mode against a single-master account.");
+            Assert.AreEqual(testItem.id, readResponse.Resource.id);
+
+            // For a single-master account the strategy is honored via hub-region routing.
+            Assert.AreEqual(
+                bool.TrueString,
+                hubRegionHeader,
+                "LastCommittedSingleWriteRegion should set the hub-region-processing-only header for single-master accounts.");
+            Assert.AreEqual(
+                ReadConsistencyStrategy.LatestCommitted.ToString(),
+                readConsistencyStrategyHeader,
+                "LastCommittedSingleWriteRegion should be sent on the wire as LatestCommitted with hub-region routing.");
+        }
+
+        /// <summary>
+        /// Verifies that <see cref="ReadConsistencyStrategy.LastCommittedSingleWriteRegion"/> is rejected on a multi-master account.
+        /// </summary>
+        [TestMethod]
+        [TestCategory("MultiMaster")]
+        public async Task LastCommittedSingleWriteRegionRejectedForMultiMasterAccount()
+        {
+            string connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", null);
+
+            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "False");
+
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                Assert.Fail("Set environment variable COSMOSDB_MULTI_REGION to run the tests");
+            }
+
+            using CosmosClient multiMasterClient = new CosmosClient(connectionString);
+
+            AccountProperties account = await multiMasterClient.ReadAccountAsync();
+            Assert.IsTrue(
+                account.WritableRegions.Count() > 1,
+                "Configured account must be multi-master.");
+
+            Cosmos.Database multiMasterDatabase = null;
+            try
+            {
+                multiMasterDatabase = await multiMasterClient.CreateDatabaseIfNotExistsAsync("ReadConsistencyStrategyMultiMasterTests");
+                Container multiMasterContainer = await multiMasterDatabase.CreateContainerIfNotExistsAsync(
+                    new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/pk"),
+                    throughput: 400);
+
+                ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+                await multiMasterContainer.CreateItemAsync(testItem);
+
+                ArgumentException exception = await Assert.ThrowsExceptionAsync<ArgumentException>(
+                    () => multiMasterContainer.ReadItemAsync<ToDoActivity>(
+                        testItem.id,
+                        new Cosmos.PartitionKey(testItem.pk),
+                        new ItemRequestOptions { ReadConsistencyStrategy = Cosmos.ReadConsistencyStrategy.LastCommittedSingleWriteRegion }),
+                    "LastCommittedSingleWriteRegion must be rejected on a multi-master account.");
+
+                StringAssert.Contains(exception.Message, nameof(Cosmos.ReadConsistencyStrategy.LastCommittedSingleWriteRegion));
+                StringAssert.Contains(exception.Message, "multi-master");
+            }
+            finally
+            {
+                if (multiMasterDatabase != null)
+                {
+                    await multiMasterDatabase.DeleteAsync();
+                }
+            }
         }
     }
 }
