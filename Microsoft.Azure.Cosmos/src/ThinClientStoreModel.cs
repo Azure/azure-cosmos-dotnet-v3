@@ -61,12 +61,23 @@ namespace Microsoft.Azure.Cosmos
         /// the proxy request can be populated with ProxyStartEpk / ProxyEndEpk, and so the gateway
         /// fall-back still has the PKR available for split detection in
         /// <see cref="GatewayStoreModel.CaptureSessionTokenAndHandleSplitAsync"/>. It is therefore
-        /// resolved for every non-master, partitioned (or stored-procedure) request, regardless of
+        /// resolved for every non-master, partitioned (or stored-procedure) request whenever the
+        /// account currently advertises thin-client endpoints (either direction), regardless of
         /// whether per partition automatic failover / circuit breaker is enabled.
+        ///
+        /// When the account currently advertises no thin-client endpoints, every request in this
+        /// model falls through to the inherited gateway path via <see cref="DispatchAsync"/>. In
+        /// that state we defer to the base decision (PPAF/PPCB-gated) so a Gateway-mode client
+        /// whose account never gains thin-client endpoints incurs the same PKR-resolution overhead
+        /// as a plain <see cref="GatewayStoreModel"/>. The check is re-evaluated per request off
+        /// the live <see cref="LocationCache"/> flags, so as soon as the service begins advertising
+        /// thin-client endpoints the eager resolution kicks back in for the next dispatch.
         /// </summary>
         protected override bool ShouldResolvePartitionKeyRange()
         {
-            return true;
+            return base.ShouldResolvePartitionKeyRange()
+                || this.endpointManager.HasThinClientReadLocations
+                || this.endpointManager.HasThinClientWriteLocations;
         }
 
         /// <summary>
