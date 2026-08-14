@@ -45,6 +45,47 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             }
         }
 
+        [TestMethod]
+        [Description("Rotating the idempotency token resets the tracker, so a sticky True from the prior token cannot leak onto the new one.")]
+        public async Task RotateIdempotencyToken_ResetsCrossRegionRetryTracker()
+        {
+            DistributedTransactionCrossRegionRetryTracker tracker = new DistributedTransactionCrossRegionRetryTracker();
+            DistributedTransactionServerRequest request = await DistributedTransactionServerRequest.CreateAsync(
+                CreateTestOperations(),
+                MockCosmosUtil.Serializer,
+                CancellationToken.None,
+                tracker);
+
+            Assert.AreSame(tracker, request.CrossRegionRetryTracker);
+
+            request.RotateIdempotencyToken();
+            tracker.RecordDispatch("East US");
+            tracker.RecordDispatch("West US");
+            Assert.IsTrue(tracker.HasCrossedRegionBoundary, "Test precondition: the signal must be set before rotation.");
+
+            request.RotateIdempotencyToken();
+
+            Assert.IsFalse(
+                tracker.HasCrossedRegionBoundary,
+                "A rotated token has no record in any region, so the signal must not carry over.");
+        }
+
+        [TestMethod]
+        [Description("Rotating the idempotency token is safe for a read transaction, which carries no cross-region retry tracker.")]
+        public async Task RotateIdempotencyToken_WithoutTracker_DoesNotThrow()
+        {
+            DistributedTransactionServerRequest request = await DistributedTransactionServerRequest.CreateAsync(
+                CreateTestOperations(),
+                MockCosmosUtil.Serializer,
+                CancellationToken.None);
+
+            Assert.IsNull(request.CrossRegionRetryTracker);
+
+            request.RotateIdempotencyToken();
+
+            Assert.AreNotEqual(System.Guid.Empty, request.IdempotencyToken);
+        }
+
         private static IReadOnlyList<DistributedTransactionOperation> CreateTestOperations()
         {
             return new List<DistributedTransactionOperation>

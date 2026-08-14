@@ -104,7 +104,12 @@ namespace Microsoft.Azure.Cosmos
                 DistributedTransactionServerRequest serverRequest = await DistributedTransactionServerRequest.CreateAsync(
                     this.operations,
                     this.clientContext.SerializerCore,
-                    cancellationToken);
+                    cancellationToken,
+                    // Read transactions hold no commit state, so replaying one in another region is
+                    // harmless and the signal is omitted for them.
+                    this.operationType == OperationType.CommitDistributedTransaction
+                        ? new DistributedTransactionCrossRegionRetryTracker()
+                        : null);
 
                 return await this.ExecuteCommitWithRetryAsync(serverRequest, trace, cancellationToken);
             }
@@ -274,6 +279,13 @@ namespace Microsoft.Azure.Cosmos
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.OperationType, requestMessage.OperationType.ToOperationTypeString());
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.ResourceType, requestMessage.ResourceType.ToResourceTypeString());
             requestMessage.UseGatewayMode = true;
+
+            // ClientRetryPolicy can re-dispatch this message to another write region without returning
+            // here, so the tracker rides along and the header is stamped per dispatch.
+            if (serverRequest.CrossRegionRetryTracker != null)
+            {
+                requestMessage.Properties[DistributedTransactionCrossRegionRetryTracker.PropertyKey] = serverRequest.CrossRegionRetryTracker;
+            }
         }
 
         internal static void MergeSessionTokens(

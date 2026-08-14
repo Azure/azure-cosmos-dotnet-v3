@@ -382,6 +382,12 @@ namespace Microsoft.Azure.Cosmos
                 request.RequestContext.RouteToLocation(
                     this.retryContext?.RetryLocationIndex ?? 0,
                     usePreferredLocations: false);
+
+                // Stamped at the last point before dispatch where the pinned endpoint is known, so a
+                // failover driven by this policy is reported on the request that crosses the boundary.
+                DistributedTransactionCrossRegionRetryTracker.StampCrossRegionRetryHeader(
+                    request,
+                    this.globalEndpointManager.GetLocation(this.locationEndpoint));
             }
 
             // Hedging-Detection API: tag the upcoming dispatch reason on Properties so that

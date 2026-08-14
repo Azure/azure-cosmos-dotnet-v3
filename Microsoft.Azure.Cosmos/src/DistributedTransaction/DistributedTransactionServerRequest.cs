@@ -17,10 +17,12 @@ namespace Microsoft.Azure.Cosmos
 
         private DistributedTransactionServerRequest(
             IReadOnlyList<DistributedTransactionOperation> operations,
-            CosmosSerializerCore serializerCore)
+            CosmosSerializerCore serializerCore,
+            DistributedTransactionCrossRegionRetryTracker crossRegionRetryTracker)
         {
             this.Operations = operations ?? throw new ArgumentNullException(nameof(operations));
             this.serializerCore = serializerCore ?? throw new ArgumentNullException(nameof(serializerCore));
+            this.CrossRegionRetryTracker = crossRegionRetryTracker;
         }
 
         public IReadOnlyList<DistributedTransactionOperation> Operations { get; }
@@ -34,6 +36,12 @@ namespace Microsoft.Azure.Cosmos
         public Guid IdempotencyToken { get; private set; }
 
         /// <summary>
+        /// Tracks which write regions the current <see cref="IdempotencyToken"/> has been dispatched to,
+        /// or null for a read transaction.
+        /// </summary>
+        public DistributedTransactionCrossRegionRetryTracker CrossRegionRetryTracker { get; }
+
+        /// <summary>
         /// Assigns a fresh <see cref="Guid"/> to <see cref="IdempotencyToken"/> and returns it. Called for
         /// each new logical attempt (first attempt or a post-Abort resubmission); a non-aborted retriable
         /// retry reuses the current token instead.
@@ -42,15 +50,23 @@ namespace Microsoft.Azure.Cosmos
         public Guid RotateIdempotencyToken()
         {
             this.IdempotencyToken = Guid.NewGuid();
+
+            // Reset here rather than at the call sites so tracking cannot outlive the token it describes.
+            this.CrossRegionRetryTracker?.ResetForNewToken();
+
             return this.IdempotencyToken;
         }
 
         public static async Task<DistributedTransactionServerRequest> CreateAsync(
             IReadOnlyList<DistributedTransactionOperation> operations,
             CosmosSerializerCore serializerCore,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            DistributedTransactionCrossRegionRetryTracker crossRegionRetryTracker = null)
         {
-            DistributedTransactionServerRequest request = new DistributedTransactionServerRequest(operations, serializerCore);
+            DistributedTransactionServerRequest request = new DistributedTransactionServerRequest(
+                operations,
+                serializerCore,
+                crossRegionRetryTracker);
             await request.CreateBodyStreamAsync(cancellationToken);
             return request;
         }

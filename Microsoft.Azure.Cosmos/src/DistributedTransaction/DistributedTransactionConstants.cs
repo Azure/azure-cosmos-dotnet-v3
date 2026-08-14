@@ -20,6 +20,16 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal const SubStatusCodes AllOperationsNotModified = (SubStatusCodes)5425;
 
+        /// <summary>
+        /// Request header reporting whether the current dispatch of a distributed write transaction has
+        /// crossed write regions while replaying the same idempotency token.
+        /// </summary>
+        /// <remarks>
+        /// Declared here rather than on <see cref="HttpConstants.HttpHeaders"/> because that type ships in
+        /// the Microsoft.Azure.Cosmos.Direct package and the name is pending coordinator-team sign-off.
+        /// </remarks>
+        internal const string CrossRegionRetryHeader = "x-ms-cosmos-dtx-cross-region-retry";
+
         internal static bool IsDistributedTransactionRequest(OperationType operationType, ResourceType resourceType)
         {
             return (operationType == OperationType.CommitDistributedTransaction

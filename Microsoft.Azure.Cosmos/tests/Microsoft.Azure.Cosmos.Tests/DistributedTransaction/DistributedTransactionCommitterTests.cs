@@ -1169,6 +1169,184 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 "Every attempt must carry a real (non-empty) idempotency token.");
         }
 
+        // ─── Cross-region retry signal ─────────────────────────────────────────
+        // The committer only attaches a tracker whose lifetime matches the idempotency token;
+        // ClientRetryPolicy reads it back and stamps the header per dispatch.
+
+        [TestMethod]
+        [Description("A write transaction carries the cross-region retry tracker on the request, which is how ClientRetryPolicy stamps the signal on a dispatch it re-routes to another write region without returning to the committer.")]
+        public async Task ExecuteTransactionAsync_WriteTransaction_CarriesCrossRegionRetryTracker()
+        {
+            List<DistributedTransactionCrossRegionRetryTracker> capturedTrackers = new List<DistributedTransactionCrossRegionRetryTracker>();
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            this.SetupProcessResourceOperationWithStreamAndEnricherCapture(
+                mockContext,
+                (stream, enricher) => capturedTrackers.Add(
+                    CaptureCrossRegionRetryTracker(enricher, OperationType.CommitDistributedTransaction)),
+                () => Task.FromResult(CreateSuccessResponseMessage(operationCount: 1)));
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
+
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            }
+
+            Assert.AreEqual(1, capturedTrackers.Count);
+            Assert.IsNotNull(capturedTrackers[0],
+                "Without a tracker on the request the coordinator can never be told that a retry crossed write regions.");
+        }
+
+        [TestMethod]
+        [Description("A read transaction holds no commit state, so replaying it in another region cannot execute a write twice; the signal is omitted entirely rather than sent as False.")]
+        public async Task ExecuteTransactionAsync_ReadTransaction_OmitsCrossRegionRetryTracker()
+        {
+            List<DistributedTransactionCrossRegionRetryTracker> capturedTrackers = new List<DistributedTransactionCrossRegionRetryTracker>();
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            this.SetupProcessResourceOperationWithStreamAndEnricherCapture(
+                mockContext,
+                (stream, enricher) => capturedTrackers.Add(
+                    CaptureCrossRegionRetryTracker(enricher, OperationType.Read)),
+                () => Task.FromResult(CreateSuccessResponseMessage(operationCount: 1)));
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                CreateTestOperations(), mockContext.Object, OperationType.Read, TimeSpan.Zero);
+
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            }
+
+            Assert.AreEqual(1, capturedTrackers.Count);
+            Assert.IsNull(capturedTrackers[0],
+                "A read transaction must not carry the signal at all.");
+        }
+
+        [TestMethod]
+        [Description("A durably aborted (452) retry resubmits under a new idempotency token, which has no record in any region, so region tracking restarts and the next attempt starts from False.")]
+        public async Task ExecuteTransactionAsync_RetryAfterAbort_ResetsCrossRegionRetryTracker()
+        {
+            int callCount = 0;
+            List<DistributedTransactionCrossRegionRetryTracker> capturedTrackers = new List<DistributedTransactionCrossRegionRetryTracker>();
+            List<bool> signalAtAttemptStart = new List<bool>();
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            this.SetupProcessResourceOperationWithStreamAndEnricherCapture(
+                mockContext,
+                (stream, enricher) => DriveCrossRegionCrossingForAttempt(
+                    enricher, capturedTrackers, signalAtAttemptStart),
+                () =>
+                {
+                    callCount++;
+                    return callCount == 1
+                        ? Task.FromResult(new ResponseMessage((HttpStatusCode)StatusCodes.TransactionAborted)
+                        {
+                            Content = new MemoryStream(Encoding.UTF8.GetBytes("{\"isRetriable\":true}"))
+                        })
+                        : Task.FromResult(CreateSuccessResponseMessage(operationCount: 1));
+                });
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
+
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                Assert.AreEqual(2, callCount, "A durably aborted retriable outcome must be retried.");
+            }
+
+            Assert.AreSame(capturedTrackers[0], capturedTrackers[1],
+                "Tracking spans the whole commit, so both attempts must share one tracker.");
+            CollectionAssert.AreEqual(
+                new[] { false, false },
+                signalAtAttemptStart,
+                "The rotated token has no record in any region, so its first dispatch must report False even though its predecessor crossed a boundary.");
+        }
+
+        [TestMethod]
+        [Description("A retriable non-aborted retry replays the SAME idempotency token, so a boundary already crossed under that token must still be reported on every later dispatch.")]
+        public async Task ExecuteTransactionAsync_RetryWithoutAbort_DoesNotResetCrossRegionRetryTracker()
+        {
+            int callCount = 0;
+            List<DistributedTransactionCrossRegionRetryTracker> capturedTrackers = new List<DistributedTransactionCrossRegionRetryTracker>();
+            List<bool> signalAtAttemptStart = new List<bool>();
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            this.SetupProcessResourceOperationWithStreamAndEnricherCapture(
+                mockContext,
+                (stream, enricher) => DriveCrossRegionCrossingForAttempt(
+                    enricher, capturedTrackers, signalAtAttemptStart),
+                () =>
+                {
+                    callCount++;
+                    return callCount == 1
+                        ? Task.FromResult(CreateRetriableNonAbortedResponseMessage())
+                        : Task.FromResult(CreateSuccessResponseMessage(operationCount: 1));
+                });
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
+
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                Assert.AreEqual(2, callCount, "A retriable non-aborted outcome must be retried.");
+            }
+
+            Assert.AreSame(capturedTrackers[0], capturedTrackers[1],
+                "Tracking spans the whole commit, so both attempts must share one tracker.");
+            CollectionAssert.AreEqual(
+                new[] { false, true },
+                signalAtAttemptStart,
+                "The same token is replayed through a fresh retry policy, so the signal must survive that policy's reset.");
+        }
+
+        /// <summary>
+        /// Stands in for <see cref="ClientRetryPolicy"/> driving one attempt across a write-region
+        /// boundary, recording the signal the attempt started with.
+        /// </summary>
+        /// <remarks>
+        /// The crossing is simulated because the committer's contract is only that one tracker spans the
+        /// attempts and resets when the token rotates; detecting a boundary from pinned endpoints is
+        /// <see cref="ClientRetryPolicyTests"/>' concern.
+        /// </remarks>
+        private static void DriveCrossRegionCrossingForAttempt(
+            Action<RequestMessage> enricher,
+            List<DistributedTransactionCrossRegionRetryTracker> capturedTrackers,
+            List<bool> signalAtAttemptStart)
+        {
+            DistributedTransactionCrossRegionRetryTracker tracker = CaptureCrossRegionRetryTracker(
+                enricher, OperationType.CommitDistributedTransaction);
+
+            capturedTrackers.Add(tracker);
+
+            signalAtAttemptStart.Add(tracker.HasCrossedRegionBoundary);
+
+            tracker.RecordDispatch("East US");
+            tracker.RecordDispatch("West US");
+        }
+
+        private static DistributedTransactionCrossRegionRetryTracker CaptureCrossRegionRetryTracker(
+            Action<RequestMessage> enricher,
+            OperationType operationType)
+        {
+            using (RequestMessage request = new RequestMessage
+            {
+                ResourceType = ResourceType.DistributedTransactionBatch,
+                OperationType = operationType,
+            })
+            {
+                enricher(request);
+
+                return request.Properties.TryGetValue(
+                    DistributedTransactionCrossRegionRetryTracker.PropertyKey,
+                    out object tracker)
+                        ? tracker as DistributedTransactionCrossRegionRetryTracker
+                        : null;
+            }
+        }
+
         [TestMethod]
         [Description("FastResponse retry model: a durably Aborted (HTTP 452) response marked isRetriable:true is retried until success.")]
         public async Task CommitTransaction_RetriesWhenRetriableAndAborted_ThenSucceeds()
