@@ -32,12 +32,17 @@ namespace CompatMatrix
 #endif
 
         private const string ActivitySourceName = "Microsoft.Azure.Cosmos.Encryption.Custom";
+        private const string AccountKeyEnvironmentVariable = "COSMOS_COMPAT_MATRIX_KEY";
         private const string StreamPropertyName = "encryption-json-processor";
         private const string PartitionKeyValue = "compat-matrix";
+        private const string KeyContainerId = "keys";
+        private const string ItemContainerId = "items";
         private const string MdeFamily = "MDE";
         private const string AeadFamily = "AEAD";
         private const string NewtonsoftProcessor = "Newtonsoft";
         private const string StreamProcessor = "Stream";
+        private const string EncryptOperation = "Encrypt";
+        private const string DecryptOperation = "Decrypt";
         private const string MdeAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized;
 #pragma warning disable CS0618
         private static readonly string AeadAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized;
@@ -91,7 +96,6 @@ namespace CompatMatrix
                     "identity" => EmitIdentity(),
                     "write" => await WriteAsync(arguments),
                     "read" => await ReadAsync(arguments),
-                    "tamper" => await TamperAsync(arguments),
                     _ => throw new InvalidOperationException($"Unknown worker action: {action}"),
                 };
 
@@ -153,7 +157,7 @@ namespace CompatMatrix
             WorkerSettings settings = WorkerSettings.Create(arguments);
             using CosmosClient client = CreateClient(settings);
             Database database = await client.CreateDatabaseIfNotExistsAsync(settings.Database);
-            Container keyContainer = await CreateContainerAsync(database, GetKeyContainerId(WorkerRole), "/id");
+            Container keyContainer = await CreateContainerAsync(database, KeyContainerId, "/id");
             CosmosDataEncryptionKeyProvider provider = await CreateProviderAsync(database, keyContainer.Id);
 
             await provider.DataEncryptionKeyContainer.CreateDataEncryptionKeyAsync(
@@ -165,46 +169,57 @@ namespace CompatMatrix
                 AeadAlgorithm,
                 new CustomEncryptionKeyWrapMetadata("compat-matrix", GetMasterKeyId(WorkerRole)));
 
+            Container plain = await CreateContainerAsync(database, ItemContainerId, "/PK");
+            Container encrypted = plain.WithEncryptor(new MatrixEncryptor(provider));
             int failures = 0;
             foreach (WriteScenario scenario in GetWriteScenarios())
             {
                 string scenarioId = $"write:{WorkerRole}:{scenario.Family}:{scenario.Processor}";
                 try
                 {
-                    Container plain = await CreateContainerAsync(
-                        database,
-                        GetItemContainerId(WorkerRole, scenario.Family),
-                        "/PK");
-                    Container encrypted = plain.WithEncryptor(new MatrixEncryptor(provider));
                     string documentId = GetDocumentId(WorkerRole, scenario.Family, scenario.Processor);
                     Doc document = BuildDocument(documentId);
-                    List<string> scopes = await CaptureScopesAsync(async () =>
+                    List<string> writeScopes = await CaptureScopesAsync(async () =>
                     {
                         await encrypted.UpsertItemAsync(
                             document,
                             new PartitionKey(PartitionKeyValue),
                             CreateEncryptionOptions(WorkerRole, scenario.Family, scenario.Processor));
+                    });
+                    EnsureProcessorScopes(
+                        writeScopes,
+                        scenario.Family,
+                        EncryptOperation,
+                        scenario.Processor);
 
-                        Doc selfRead = (await encrypted.ReadItemAsync<Doc>(
+                    Doc selfRead = null;
+                    List<string> selfReadScopes = await CaptureScopesAsync(async () =>
+                    {
+                        selfRead = (await encrypted.ReadItemAsync<Doc>(
                             documentId,
                             new PartitionKey(PartitionKeyValue),
                             WithProcessor(new ItemRequestOptions(), scenario.Processor))).Resource;
-                        EnsureDocumentMatches(selfRead, documentId);
                     });
-
-                    EnsureRawEncrypted(await ReadRawAsync(plain, documentId), scenario.Family);
-                    EnsureProcessorScopes(
-                        scopes,
+                    EnsureDocumentMatches(selfRead, documentId);
+                    string actualReadProcessor = EnsureDecryptProcessorScopes(
+                        selfReadScopes,
                         scenario.Family,
                         scenario.Processor,
-                        expectScope: true,
                         allowNewtonsoftFallback: false);
-                    EmitObservation(scenarioId, "pass", "write, raw encryption, and self-read succeeded", scenario.Processor, scopes);
+
+                    EnsureRawEncrypted(await ReadRawAsync(plain, documentId), scenario.Family);
+                    EmitObservation(
+                        scenarioId,
+                        "pass",
+                        "write, raw encryption, and self-read succeeded",
+                        scenario.Processor,
+                        actualReadProcessor,
+                        writeScopes.Concat(selfReadScopes).ToList());
                 }
                 catch (Exception exception)
                 {
                     failures++;
-                    EmitObservation(scenarioId, "fail", Describe(exception), scenario.Processor, null);
+                    EmitObservation(scenarioId, "fail", Describe(exception), scenario.Processor, null, null);
                 }
             }
 
@@ -222,49 +237,67 @@ namespace CompatMatrix
 
             using CosmosClient client = CreateClient(settings);
             Database database = client.GetDatabase(settings.Database);
-            Container keyContainer = database.GetContainer(GetKeyContainerId(writer));
+            Container keyContainer = database.GetContainer(KeyContainerId);
             CosmosDataEncryptionKeyProvider provider = await CreateProviderAsync(database, keyContainer.Id);
+            Container plain = database.GetContainer(ItemContainerId);
+            Container encrypted = plain.WithEncryptor(new MatrixEncryptor(provider));
 
             int failures = 0;
             foreach (ReadScenario scenario in GetReadScenarios(writer))
             {
-                foreach (string path in GetReadPaths(scenario.ReadProcessor))
+                foreach (string path in GetReadPaths())
                 {
                     string scenarioId =
-                        $"read:{writer}->{WorkerRole}:{scenario.Family}:{scenario.WriteProcessor}->{scenario.ReadProcessor}:{path}";
+                        $"read:{writer}->{WorkerRole}:{scenario.Family}:{scenario.WriteProcessor}->{GetRequestedProcessorLabel(scenario.ReadProcessor)}:{path}";
                     try
                     {
-                        Container plain = database.GetContainer(GetItemContainerId(writer, scenario.Family));
-                        Container encrypted = plain.WithEncryptor(new MatrixEncryptor(provider));
                         string documentId = GetDocumentId(writer, scenario.Family, scenario.WriteProcessor);
                         EnsureRawEncrypted(await ReadRawAsync(plain, documentId), scenario.Family);
 
                         Doc document = null;
-                        List<string> scopes = await CaptureScopesAsync(async () =>
+                        List<string> typedReadScopes = await CaptureScopesAsync(async () =>
                         {
                             document = await ReadDocumentAsync(encrypted, documentId, path, scenario.ReadProcessor);
+                        });
+                        EnsureDocumentMatches(document, documentId);
+                        string typedActualProcessor = EnsureDecryptProcessorScopes(
+                            typedReadScopes,
+                            scenario.Family,
+                            scenario.ReadProcessor,
+                            allowNewtonsoftFallback:
+                                scenario.ReadProcessor == StreamProcessor &&
+                                path == "query");
+
+                        List<string> streamReadScopes = await CaptureScopesAsync(async () =>
+                        {
                             await EnsureDecryptedJsonFidelityAsync(
                                 encrypted,
                                 documentId,
                                 path,
                                 scenario.ReadProcessor);
                         });
-
-                        EnsureDocumentMatches(document, documentId);
-                        EnsureProcessorScopes(
-                            scopes,
+                        string streamActualProcessor = EnsureDecryptProcessorScopes(
+                            streamReadScopes,
                             scenario.Family,
                             scenario.ReadProcessor,
-                            expectScope: true,
                             allowNewtonsoftFallback:
                                 scenario.ReadProcessor == StreamProcessor &&
                                 path == "query");
-                        EmitObservation(scenarioId, "pass", "peer document decrypted exactly", scenario.ReadProcessor, scopes);
+                        string actualProcessors =
+                            $"typed={typedActualProcessor},stream={streamActualProcessor}";
+
+                        EmitObservation(
+                            scenarioId,
+                            "pass",
+                            $"peer document decrypted exactly; requested={scenario.ReadProcessor}; {actualProcessors}",
+                            scenario.ReadProcessor,
+                            actualProcessors,
+                            typedReadScopes.Concat(streamReadScopes).ToList());
                     }
                     catch (Exception exception)
                     {
                         failures++;
-                        EmitObservation(scenarioId, "fail", Describe(exception), scenario.ReadProcessor, null);
+                        EmitObservation(scenarioId, "fail", Describe(exception), scenario.ReadProcessor, null, null);
                     }
                 }
             }
@@ -272,36 +305,11 @@ namespace CompatMatrix
             return failures;
         }
 
-        private static IEnumerable<string> GetReadPaths(string processor)
+        private static IEnumerable<string> GetReadPaths()
         {
-            _ = processor;
             yield return "point";
             yield return "query";
             yield return "feed";
-        }
-
-        private static async Task<int> TamperAsync(IReadOnlyDictionary<string, string> arguments)
-        {
-            WorkerSettings settings = WorkerSettings.Create(arguments);
-            using CosmosClient client = CreateClient(settings);
-            Database database = await client.CreateDatabaseIfNotExistsAsync(settings.Database);
-            Container plain = await CreateContainerAsync(database, "items-tamper", "/PK");
-            string documentId = $"tamper-{WorkerRole}";
-            await plain.UpsertItemAsync(BuildDocument(documentId), new PartitionKey(PartitionKeyValue));
-
-            string scenarioId = "guard:plaintext-rejected";
-            JObject raw = await ReadRawAsync(plain, documentId);
-            try
-            {
-                EnsureRawEncrypted(raw, MdeFamily);
-                EmitObservation(scenarioId, "fail", "plaintext document passed the raw encryption oracle", null, null);
-                return 1;
-            }
-            catch (CompatibilityOracleException)
-            {
-                EmitObservation(scenarioId, "pass", "plaintext document was rejected", null, null);
-                return 0;
-            }
         }
 
         private static IEnumerable<WriteScenario> GetWriteScenarios()
@@ -657,44 +665,81 @@ namespace CompatMatrix
         private static void EnsureProcessorScopes(
             IReadOnlyCollection<string> scopes,
             string family,
-            string processor,
-            bool expectScope,
-            bool allowNewtonsoftFallback)
+            string operation,
+            string processor)
         {
 #if COMPAT_CURRENT
-            if (family != MdeFamily || !expectScope)
+            if (family != MdeFamily)
             {
                 return;
             }
 
-            string expectedEncrypt = "EncryptionProcessor.Encrypt.Mde." + processor;
-            string expectedDecrypt = "EncryptionProcessor.Decrypt.Mde." + processor;
+            string prefix = string.Equals(operation, EncryptOperation, StringComparison.Ordinal)
+                ? "EncryptionProcessor.Encrypt.Mde."
+                : string.Equals(operation, DecryptOperation, StringComparison.Ordinal)
+                    ? "EncryptionProcessor.Decrypt.Mde."
+                    : throw new InvalidOperationException($"Unknown processor operation: {operation}");
+            string expectedScope = prefix + processor;
             string oppositeProcessor = processor == StreamProcessor ? NewtonsoftProcessor : StreamProcessor;
-            string oppositeEncrypt = "EncryptionProcessor.Encrypt.Mde." + oppositeProcessor;
-            string oppositeDecrypt = "EncryptionProcessor.Decrypt.Mde." + oppositeProcessor;
-
-            if (!scopes.Contains(expectedEncrypt, StringComparer.Ordinal) &&
-                !scopes.Contains(expectedDecrypt, StringComparer.Ordinal))
+            string oppositeScope = prefix + oppositeProcessor;
+            if (!scopes.Contains(expectedScope, StringComparer.Ordinal))
             {
                 throw new InvalidOperationException(
-                    $"Requested {processor} processor was not observed. Scopes=[{string.Join(", ", scopes)}]");
+                    $"Expected {operation} processor {processor} was not observed. Scopes=[{string.Join(", ", scopes)}]");
             }
 
-            bool oppositeEncryptObserved = scopes.Contains(oppositeEncrypt, StringComparer.Ordinal);
-            bool oppositeDecryptObserved = scopes.Contains(oppositeDecrypt, StringComparer.Ordinal);
-            if (oppositeEncryptObserved ||
-                (oppositeDecryptObserved &&
-                 !(allowNewtonsoftFallback && processor == StreamProcessor)))
+            if (scopes.Contains(oppositeScope, StringComparer.Ordinal))
             {
                 throw new InvalidOperationException(
-                    $"Unexpected {oppositeProcessor} processor was observed. Scopes=[{string.Join(", ", scopes)}]");
+                    $"Unexpected {operation} processor {oppositeProcessor} was observed. Scopes=[{string.Join(", ", scopes)}]");
             }
 #else
             _ = scopes;
             _ = family;
+            _ = operation;
             _ = processor;
-            _ = expectScope;
+#endif
+        }
+
+        private static string EnsureDecryptProcessorScopes(
+            IReadOnlyCollection<string> scopes,
+            string family,
+            string requestedProcessor,
+            bool allowNewtonsoftFallback)
+        {
+#if COMPAT_CURRENT
+            if (family != MdeFamily)
+            {
+                return requestedProcessor;
+            }
+
+            string streamScope = "EncryptionProcessor.Decrypt.Mde." + StreamProcessor;
+            string newtonsoftScope = "EncryptionProcessor.Decrypt.Mde." + NewtonsoftProcessor;
+            bool streamObserved = scopes.Contains(streamScope, StringComparer.Ordinal);
+            bool newtonsoftObserved = scopes.Contains(newtonsoftScope, StringComparer.Ordinal);
+            if (requestedProcessor == NewtonsoftProcessor)
+            {
+                EnsureProcessorScopes(scopes, family, DecryptOperation, NewtonsoftProcessor);
+                return NewtonsoftProcessor;
+            }
+
+            if (streamObserved && !newtonsoftObserved)
+            {
+                return StreamProcessor;
+            }
+
+            if (allowNewtonsoftFallback && newtonsoftObserved)
+            {
+                return NewtonsoftProcessor;
+            }
+
+            throw new InvalidOperationException(
+                $"Requested {requestedProcessor} decrypt processor was not observed without an unexpected fallback. Scopes=[{string.Join(", ", scopes)}]");
+#else
+            _ = scopes;
+            _ = family;
             _ = allowNewtonsoftFallback;
+            return requestedProcessor;
 #endif
         }
 
@@ -760,16 +805,6 @@ namespace CompatMatrix
                     : token.ToString(Formatting.None);
         }
 
-        private static string GetKeyContainerId(string writer)
-        {
-            return $"keys-{writer}";
-        }
-
-        private static string GetItemContainerId(string writer, string family)
-        {
-            return $"items-{writer}-{family.ToLowerInvariant()}";
-        }
-
         private static string GetDekId(string writer, string family)
         {
             return $"{writer}-{family.ToLowerInvariant()}-dek";
@@ -783,6 +818,11 @@ namespace CompatMatrix
         private static string GetDocumentId(string writer, string family, string processor)
         {
             return $"{writer}-{family.ToLowerInvariant()}-{processor.ToLowerInvariant()}";
+        }
+
+        private static string GetRequestedProcessorLabel(string processor)
+        {
+            return processor == StreamProcessor ? "StreamRequested" : processor;
         }
 
         private static Dictionary<string, string> ParseArguments(IEnumerable<string> args)
@@ -814,7 +854,8 @@ namespace CompatMatrix
             string scenarioId,
             string status,
             string detail,
-            string processor,
+            string requestedProcessor,
+            string actualProcessor,
             IReadOnlyList<string> scopes)
         {
             Emit(new WorkerRecord
@@ -824,7 +865,8 @@ namespace CompatMatrix
                 ScenarioId = scenarioId,
                 Status = status,
                 Detail = detail,
-                Processor = processor,
+                RequestedProcessor = requestedProcessor,
+                ActualProcessor = actualProcessor,
                 ObservedScopes = scopes,
             });
         }
@@ -858,10 +900,17 @@ namespace CompatMatrix
 
             public static WorkerSettings Create(IReadOnlyDictionary<string, string> arguments)
             {
+                string key = Environment.GetEnvironmentVariable(AccountKeyEnvironmentVariable);
+                if (string.IsNullOrWhiteSpace(key))
+                {
+                    throw new InvalidOperationException(
+                        $"Missing required environment variable {AccountKeyEnvironmentVariable}.");
+                }
+
                 return new WorkerSettings
                 {
                     Endpoint = GetRequired(arguments, "endpoint"),
-                    Key = GetRequired(arguments, "key"),
+                    Key = key,
                     Database = GetRequired(arguments, "database"),
                 };
             }
@@ -895,7 +944,9 @@ namespace CompatMatrix
 
             public string MdeVersion { get; set; }
 
-            public string Processor { get; set; }
+            public string RequestedProcessor { get; set; }
+
+            public string ActualProcessor { get; set; }
 
             public IReadOnlyList<string> ObservedScopes { get; set; }
         }

@@ -7,6 +7,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.IO;
     using System.Linq;
     using Newtonsoft.Json;
 
@@ -38,7 +40,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
 
         public string MdeVersion { get; set; }
 
-        public string Processor { get; set; }
+        public string RequestedProcessor { get; set; }
+
+        public string ActualProcessor { get; set; }
 
         public IReadOnlyList<string> ObservedScopes { get; set; }
     }
@@ -71,6 +75,53 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         }
     }
 
+    internal static class CompatibilityMatrixWorkerProcess
+    {
+        internal const string AccountKeyEnvironmentVariable = "COSMOS_COMPAT_MATRIX_KEY";
+
+        public static ProcessStartInfo CreateStartInfo(
+            string workerPath,
+            string accountKey,
+            IEnumerable<string> arguments)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(workerPath);
+            ArgumentNullException.ThrowIfNull(arguments);
+
+            string[] argumentArray = arguments.ToArray();
+            if (argumentArray.Any(argument =>
+                argument.StartsWith("--key=", StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new InvalidOperationException("Compatibility worker secrets must not be passed on the command line.");
+            }
+
+            ProcessStartInfo startInfo = new()
+            {
+                FileName = "dotnet",
+                WorkingDirectory = Path.GetDirectoryName(workerPath),
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+            startInfo.ArgumentList.Add(workerPath);
+            foreach (string argument in argumentArray)
+            {
+                startInfo.ArgumentList.Add(argument);
+            }
+
+            if (!string.IsNullOrWhiteSpace(accountKey))
+            {
+                startInfo.Environment[AccountKeyEnvironmentVariable] = accountKey;
+            }
+            else
+            {
+                startInfo.Environment.Remove(AccountKeyEnvironmentVariable);
+            }
+
+            return startInfo;
+        }
+    }
+
     internal static class CompatibilityMatrixResultOracle
     {
         public static void Validate(
@@ -99,6 +150,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 if (!actual.TryAdd(record.ScenarioId, record))
                 {
                     throw new InvalidOperationException($"Duplicate compatibility scenario: {record.ScenarioId}");
+                }
+
+                if (string.Equals(record.Status, "pass", StringComparison.Ordinal) &&
+                    (string.IsNullOrWhiteSpace(record.RequestedProcessor) ||
+                     string.IsNullOrWhiteSpace(record.ActualProcessor)))
+                {
+                    throw new InvalidOperationException(
+                        $"Passing compatibility scenario did not report requested and actual processors: {record.ScenarioId}");
                 }
             }
 

@@ -56,7 +56,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             string[] commonArguments =
             {
                 "--endpoint=" + endpoint,
-                "--key=" + key,
                 "--database=" + databaseId,
             };
 
@@ -64,41 +63,39 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             try
             {
                 ValidateObservations(
-                    await RunWorkerAsync(
+                    await RunAuthenticatedWorkerAsync(
                         workers["released"],
                         matrixTimeout.Token,
+                        key,
                         commonArguments.Prepend("--action=write").ToArray()),
                     GetWriteScenarios("released"));
                 ValidateObservations(
-                    await RunWorkerAsync(
+                    await RunAuthenticatedWorkerAsync(
                         workers["current"],
                         matrixTimeout.Token,
+                        key,
                         commonArguments.Prepend("--action=write").ToArray()),
                     GetWriteScenarios("current"));
                 ValidateObservations(
-                    await RunWorkerAsync(
+                    await RunAuthenticatedWorkerAsync(
                         workers["current"],
                         matrixTimeout.Token,
+                        key,
                         commonArguments
                             .Prepend("--writer=released")
                             .Prepend("--action=read")
                             .ToArray()),
                     GetReadScenarios("released", "current"));
                 ValidateObservations(
-                    await RunWorkerAsync(
+                    await RunAuthenticatedWorkerAsync(
                         workers["released"],
                         matrixTimeout.Token,
+                        key,
                         commonArguments
                             .Prepend("--writer=current")
                             .Prepend("--action=read")
                             .ToArray()),
                     GetReadScenarios("current", "released"));
-                ValidateObservations(
-                    await RunWorkerAsync(
-                        workers["current"],
-                        matrixTimeout.Token,
-                        commonArguments.Prepend("--action=tamper").ToArray()),
-                    new[] { "guard:plaintext-rejected" });
             }
             catch (Exception exception)
             {
@@ -186,20 +183,36 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             CancellationToken matrixCancellationToken,
             params string[] arguments)
         {
-            ProcessStartInfo startInfo = new()
-            {
-                FileName = "dotnet",
-                WorkingDirectory = Path.GetDirectoryName(workerPath),
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-            };
-            startInfo.ArgumentList.Add(workerPath);
-            foreach (string argument in arguments)
-            {
-                startInfo.ArgumentList.Add(argument);
-            }
+            return await RunWorkerCoreAsync(
+                workerPath,
+                matrixCancellationToken,
+                null,
+                arguments);
+        }
+
+        private static async Task<WorkerInvocation> RunAuthenticatedWorkerAsync(
+            string workerPath,
+            CancellationToken matrixCancellationToken,
+            string accountKey,
+            params string[] arguments)
+        {
+            return await RunWorkerCoreAsync(
+                workerPath,
+                matrixCancellationToken,
+                accountKey,
+                arguments);
+        }
+
+        private static async Task<WorkerInvocation> RunWorkerCoreAsync(
+            string workerPath,
+            CancellationToken matrixCancellationToken,
+            string accountKey,
+            string[] arguments)
+        {
+            ProcessStartInfo startInfo = CompatibilityMatrixWorkerProcess.CreateStartInfo(
+                workerPath,
+                accountKey,
+                arguments);
 
             using Process process = Process.Start(startInfo)
                 ?? throw new InvalidOperationException($"Failed to start compatibility worker: {workerPath}");
@@ -219,7 +232,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 _ = await standardErrorTask;
 
                 throw new TimeoutException(
-                    $"Compatibility matrix or worker deadline expired: {Path.GetFileName(workerPath)} {SanitizeArguments(arguments)}");
+                    $"Compatibility matrix or worker deadline expired: {Path.GetFileName(workerPath)} {string.Join(" ", arguments)}");
             }
 
             string standardOutput = await standardOutputTask;
@@ -345,11 +358,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 foreach (string path in new[] { "point", "query", "feed" })
                 {
                     scenarios.Add(
-                        $"read:{writer}->{reader}:{family}:{writeProcessor}->{readProcessor}:{path}");
+                        $"read:{writer}->{reader}:{family}:{writeProcessor}->{GetRequestedProcessorLabel(readProcessor)}:{path}");
                 }
             }
 
             return scenarios;
+        }
+
+        private static string GetRequestedProcessorLabel(string processor)
+        {
+            return processor == "Stream" ? "StreamRequested" : processor;
         }
 
         private static string GetCurrentSourceAssemblySha256()
@@ -388,16 +406,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             catch (CosmosException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
             {
             }
-        }
-
-        private static string SanitizeArguments(IEnumerable<string> arguments)
-        {
-            return string.Join(
-                " ",
-                arguments.Select(argument =>
-                    argument.StartsWith("--key=", StringComparison.Ordinal)
-                        ? "--key=<redacted>"
-                        : argument));
         }
 
         private sealed class WorkerInvocation

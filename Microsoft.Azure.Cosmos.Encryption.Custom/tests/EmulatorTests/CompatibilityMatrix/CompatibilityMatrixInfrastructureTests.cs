@@ -7,6 +7,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Linq;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -73,6 +75,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         }
 
         [TestMethod]
+        public void ValidateResults_RequiresProcessorEvidenceForPassingScenario()
+        {
+            IReadOnlyCollection<string> expected = new[] { "released-write-mde-newtonsoft" };
+            CompatibilityMatrixRecord actual = Pass("released-write-mde-newtonsoft");
+            actual.ActualProcessor = null;
+
+            Assert.ThrowsException<InvalidOperationException>(
+                () => CompatibilityMatrixResultOracle.Validate(expected, new[] { actual }));
+        }
+
+        [TestMethod]
         public void ValidateIdentity_RequiresExactReleasedVersionAndDistinctBinaries()
         {
             CompatibilityMatrixRecord released = Identity("released", "1.0.0-preview07", "released-hash");
@@ -109,6 +122,45 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             Assert.AreEqual(@"Q:\repo\bin\Debug\net8.0\CompatMatrix.Current.dll", workers["current"]);
         }
 
+        [TestMethod]
+        public void CreateWorkerStartInfo_PassesAccountKeyOnlyThroughEnvironment()
+        {
+            const string accountKey = "secret-key";
+
+            ProcessStartInfo startInfo = CompatibilityMatrixWorkerProcess.CreateStartInfo(
+                @"Q:\repo\CompatMatrix.Current.dll",
+                accountKey,
+                new[] { "--action=write", "--database=test" });
+
+            Assert.AreEqual(
+                accountKey,
+                startInfo.Environment[CompatibilityMatrixWorkerProcess.AccountKeyEnvironmentVariable]);
+            Assert.IsFalse(startInfo.ArgumentList.Any(argument => argument.Contains(accountKey)));
+        }
+
+        [TestMethod]
+        public void CreateWorkerStartInfo_RejectsAccountKeyArgument()
+        {
+            Assert.ThrowsException<InvalidOperationException>(
+                () => CompatibilityMatrixWorkerProcess.CreateStartInfo(
+                    @"Q:\repo\CompatMatrix.Current.dll",
+                    "secret-key",
+                    new[] { "--key=secret-key" }));
+        }
+
+        [TestMethod]
+        public void CreateWorkerStartInfo_RemovesAccountKeyForIdentityAction()
+        {
+            ProcessStartInfo startInfo = CompatibilityMatrixWorkerProcess.CreateStartInfo(
+                @"Q:\repo\CompatMatrix.Current.dll",
+                null,
+                new[] { "--action=identity" });
+
+            Assert.IsFalse(
+                startInfo.Environment.ContainsKey(
+                    CompatibilityMatrixWorkerProcess.AccountKeyEnvironmentVariable));
+        }
+
         private static CompatibilityMatrixRecord Pass(string scenarioId)
         {
             return new CompatibilityMatrixRecord
@@ -116,6 +168,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 Kind = "observation",
                 ScenarioId = scenarioId,
                 Status = "pass",
+                RequestedProcessor = "Newtonsoft",
+                ActualProcessor = "Newtonsoft",
             };
         }
 
