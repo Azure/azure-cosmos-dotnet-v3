@@ -421,6 +421,10 @@ namespace Microsoft.Azure.Cosmos
         /// ORDER BY query that has a TOP or LIMIT clause. Defaults to <see cref="DefaultPageSizeFactorForTop"/>
         /// and can be overridden with the <c>AZURE_COSMOS_PAGE_SIZE_FACTOR_FOR_TOP</c> environment variable.
         /// </summary>
+        /// <remarks>
+        /// A malformed value is traced and ignored in favor of the default rather than throwing, which is
+        /// why this parses the value itself instead of using <see cref="GetEnvironmentVariable{T}"/>.
+        /// </remarks>
         public static int GetPageSizeFactorForTop()
         {
             string value = Environment.GetEnvironmentVariable(ConfigurationManager.PageSizeFactorForTop);

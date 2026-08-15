@@ -57,13 +57,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             Environment.SetEnvironmentVariable(EnvVarName, this.priorEnvVarValue);
         }
 
-        [TestMethod]
-        public void DefaultFactorIsTwo()
-        {
-            Assert.AreEqual(DefaultFactor, Microsoft.Azure.Cosmos.ConfigurationManager.DefaultPageSizeFactorForTop);
-            Assert.AreEqual(DefaultFactor, Microsoft.Azure.Cosmos.ConfigurationManager.GetPageSizeFactorForTop());
-        }
-
         [DataTestMethod]
         [DataRow("5", 5, DisplayName = "Legacy value restores the previous behavior")]
         [DataRow("3", 3, DisplayName = "Arbitrary valid value is honored")]
@@ -75,27 +68,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         [DataRow("5x", DefaultFactor, DisplayName = "Trailing garbage falls back to the default")]
         [DataRow("99999999999999999999", DefaultFactor, DisplayName = "Overflowing value falls back to the default")]
         [DataRow("", DefaultFactor, DisplayName = "Empty value falls back to the default")]
+        [DataRow(" ", DefaultFactor, DisplayName = "Whitespace falls back to the default")]
         public void EnvironmentVariableOverride(string envVarValue, int expectedFactor)
         {
             Environment.SetEnvironmentVariable(EnvVarName, envVarValue);
 
             Assert.AreEqual(expectedFactor, Microsoft.Azure.Cosmos.ConfigurationManager.GetPageSizeFactorForTop());
-        }
-
-        [TestMethod]
-        public void MalformedOverrideNeverThrows()
-        {
-            // PipelineFactory caches the factor in a static initializer. A throw here would leave the type
-            // permanently unusable for the lifetime of the process, even after the variable is corrected.
-            foreach (string malformed in new[] { "abc", "2.5", "5x", "99999999999999999999", " " })
-            {
-                Environment.SetEnvironmentVariable(EnvVarName, malformed);
-
-                Assert.AreEqual(
-                    DefaultFactor,
-                    Microsoft.Azure.Cosmos.ConfigurationManager.GetPageSizeFactorForTop(),
-                    $"'{malformed}' should have fallen back to the default.");
-            }
         }
 
         [TestMethod]
@@ -167,12 +145,37 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         [TestMethod]
         public void FactorIsInertWhenRangeCountDoesNotExceedIt()
         {
+            // ceil(1000 / 1) * 2 = 2000, capped by top: a single partition container is unaffected by the
+            // factor, and stays unaffected for any value the override can produce.
+            foreach (int factor in new[] { 1, DefaultFactor, 5, 100 })
+            {
+                Assert.AreEqual(
+                    1000,
+                    PipelineFactory.ComputeOptimalPageSize(
+                        queryInfo: CreateOrderByQueryInfo(top: 1000),
+                        targetRangeCount: 1,
+                        maxItemCount: 1000,
+                        isContinuationExpected: true,
+                        pageSizeFactorForTop: factor));
+            }
+
             // ceil(1000 / 2) * 2 = 1000, capped by top: a two range container sees no reduction at all.
             Assert.AreEqual(
                 1000,
                 PipelineFactory.ComputeOptimalPageSize(
                     queryInfo: CreateOrderByQueryInfo(top: 1000),
                     targetRangeCount: 2,
+                    maxItemCount: 1000,
+                    isContinuationExpected: true,
+                    pageSizeFactorForTop: DefaultFactor));
+
+            // ceil(1000 / 3) * 2 = 668: three ranges is the smallest count where lowering the factor
+            // changes the page size at all.
+            Assert.AreEqual(
+                668,
+                PipelineFactory.ComputeOptimalPageSize(
+                    queryInfo: CreateOrderByQueryInfo(top: 1000),
+                    targetRangeCount: 3,
                     maxItemCount: 1000,
                     isContinuationExpected: true,
                     pageSizeFactorForTop: DefaultFactor));
@@ -277,6 +280,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             const int Top = 100;
             const int MaxItemCount = 1000;
 
+            // PipelineFactory caches the factor in a static initializer, so it reflects the environment as it
+            // was when the type was first touched, which TestInitialize cannot undo. The expectation below is
+            // a live read, so the two only agree when the host process did not set the variable.
+            Assert.IsNull(
+                this.priorEnvVarValue,
+                $"This test cannot run with {EnvVarName} set in the host process. It was '{this.priorEnvVarValue}'.");
+
             List<CosmosObject> documents = Enumerable
                 .Range(0, 200)
                 .Select(x => CosmosObject.Parse($"{{\"pk\" : {x} }}"))
@@ -326,9 +336,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 isContinuationExpected: true,
                 pageSizeFactorForTop: Microsoft.Azure.Cosmos.ConfigurationManager.GetPageSizeFactorForTop());
 
-            CollectionAssert.AreNotEqual(
-                new List<int>(),
-                recorder.ObservedPageSizes,
+            Assert.AreNotEqual(
+                0,
+                recorder.ObservedPageSizes.Count,
                 "The pipeline never queried the container, so the page size was never observed.");
             CollectionAssert.AreEqual(
                 Enumerable.Repeat((int)expectedPageSize, recorder.ObservedPageSizes.Count).ToList(),
