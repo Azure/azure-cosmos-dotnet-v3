@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Threading;
     using Microsoft.Azure.Cosmos.Core.Trace;
 
     internal static class ConfigurationManager
@@ -160,6 +161,14 @@ namespace Microsoft.Azure.Cosmos
         internal static readonly string TcpDnsDotSuffixEnabled = "AZURE_COSMOS_TCP_DNS_DOT_SUFFIX_ENABLED";
 
         /// <summary>
+        /// Environment variable to disable the barrier early yield on 429 optimization.
+        /// When set to "false", the Direct transport layer will not yield early on barrier
+        /// throttling and will instead spin until timeout (pre-3.44.0 behavior).
+        /// Default: true (enabled).
+        /// </summary>
+        internal static readonly string BarrierEarlyYieldOn429Enabled = "AZURE_COSMOS_BARRIER_EARLY_YIELD_ON_429_ENABLED";
+
+        /// <summary>
         /// Environment variable to override the HTTP/2 PING keep-alive delay (in seconds).
         /// After this many seconds of inactivity on an HTTP/2 connection, a PING frame is sent
         /// to detect broken connections in the pool. Default: 1 second.
@@ -178,6 +187,16 @@ namespace Microsoft.Azure.Cosmos
         internal static readonly string ChangeFeedLeaseIdAsPartitionKeyEnabled = "AZURE_COSMOS_CHANGE_FEED_LEASE_ID_AS_PARTITION_KEY_ENABLED";
 
         /// <summary>
+        /// A read-only string containing the environment variable name for overriding the maximum number of
+        /// operations allowed in a single Direct mode batch request. When not set, the SDK uses the default
+        /// value defined by <see cref="Documents.Constants.MaxOperationsInDirectModeBatchRequest"/>.
+        /// </summary>
+        internal static readonly string MaxOperationsInDirectModeBatchRequest = "AZURE_COSMOS_MAX_OPERATIONS_IN_BATCH_REQUEST";
+
+        private static Lazy<int> maxOperationsInDirectModeBatchRequestCached =
+            ConfigurationManager.CreateMaxOperationsInDirectModeBatchRequestCache();
+
+        /// <summary>
         /// Environment variable to override the factor used when computing the initial per-partition
         /// page size for a cross-partition ORDER BY query that carries a TOP or LIMIT clause.
         /// </summary>
@@ -193,6 +212,48 @@ namespace Microsoft.Azure.Cosmos
                 return defaultValue;
             }
             return (T)Convert.ChangeType(value, typeof(T));
+        }
+
+        public static int GetMaxOperationsInDirectModeBatchRequest()
+        {
+            return ConfigurationManager.maxOperationsInDirectModeBatchRequestCached.Value;
+        }
+
+        internal static void ResetMaxOperationsInDirectModeBatchRequestCacheForTesting()
+        {
+            ConfigurationManager.maxOperationsInDirectModeBatchRequestCached =
+                ConfigurationManager.CreateMaxOperationsInDirectModeBatchRequestCache();
+        }
+
+        private static Lazy<int> CreateMaxOperationsInDirectModeBatchRequestCache()
+        {
+            return new Lazy<int>(
+                ConfigurationManager.GetMaxOperationsInDirectModeBatchRequestInternal,
+                LazyThreadSafetyMode.PublicationOnly);
+        }
+
+        private static int GetMaxOperationsInDirectModeBatchRequestInternal()
+        {
+            string environmentValue = Environment.GetEnvironmentVariable(ConfigurationManager.MaxOperationsInDirectModeBatchRequest);
+
+            if (string.IsNullOrEmpty(environmentValue))
+            {
+                return Documents.Constants.MaxOperationsInDirectModeBatchRequest;
+            }
+
+            if (!int.TryParse(environmentValue, out int parsedValue))
+            {
+                throw new ArgumentException(
+                    $"Environment variable {ConfigurationManager.MaxOperationsInDirectModeBatchRequest} must be a valid integer. Current value: {environmentValue}");
+            }
+
+            if (parsedValue <= 0 || parsedValue > Documents.Constants.MaxOperationsInDirectModeBatchRequest)
+            {
+                throw new ArgumentException(
+                    $"Environment variable {ConfigurationManager.MaxOperationsInDirectModeBatchRequest} must be between 1 and {Documents.Constants.MaxOperationsInDirectModeBatchRequest}. Current value: {environmentValue}");
+            }
+
+            return parsedValue;
         }
 
         public static int GetMaxRetriesInLocalRegionWhenRemoteRegionPreferred()
@@ -567,6 +628,22 @@ namespace Microsoft.Azure.Cosmos
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.TcpDnsDotSuffixEnabled,
                         defaultValue: false);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating if the barrier early yield on 429 optimization
+        /// is enabled. When true (default), ConsistencyWriter and QuorumReader in the Direct
+        /// transport layer yield early on barrier throttling. Set to false via environment
+        /// variable to revert to pre-3.44.0 spin-until-timeout behavior without an SDK redeploy.
+        /// Default: true.
+        /// </summary>
+        /// <returns>A boolean flag indicating if barrier early yield on 429 is enabled.</returns>
+        public static bool IsBarrierEarlyYieldOn429Enabled()
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.BarrierEarlyYieldOn429Enabled,
+                        defaultValue: true);
         }
 
         /// <summary>
