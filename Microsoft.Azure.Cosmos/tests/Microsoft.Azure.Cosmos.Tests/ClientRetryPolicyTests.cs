@@ -36,6 +36,9 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         private static Uri Location1Endpoint = new Uri("https://location1.documents.azure.com");
         private static Uri Location2Endpoint = new Uri("https://location2.documents.azure.com");
 
+        // An account-level endpoint that CreateDatabaseAccount never advertises as a read or write location.
+        private static Uri NonTopologyEndpoint = new Uri("https://account.documents.azure.com");
+
         private const string HubRegionHeader = "x-ms-cosmos-hub-region-processing-only";
         private ReadOnlyCollection<string> preferredLocations;
         private AccountProperties databaseAccount;
@@ -2884,13 +2887,13 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 "A DTX read must never route to a read-only region, even in multi-master.");
         }
 
-        // ─── DTX cross-region retry signal ──────────────────────────────────────────
+        // ─── DTX dispatch signals ──────────────────────────────────────────────────
         // Stamped per dispatch: a write-region failover is driven by this policy re-dispatching the same
         // request without returning to DistributedTransactionCommitter.
 
         [TestMethod]
-        [Description("The first dispatch of an idempotency token reports False, and every further dispatch that stays in the same write region keeps reporting False.")]
-        public void OnBeforeSendRequest_DistributedTransactionWrite_ReportsFalseWhileRegionIsUnchanged()
+        [Description("The first dispatch of an idempotency token reports neither signal, and a re-dispatch that stays in the same write region is a retry but not a cross-region redirect.")]
+        public void OnBeforeSendRequest_DistributedTransactionWrite_ReportsRetryWithoutRedirectWhileRegionIsUnchanged()
         {
             using GlobalEndpointManager endpointManager = this.Initialize(
                 useMultipleWriteLocations: false,
@@ -2904,23 +2907,22 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 enableEndpointDiscovery: true,
                 isThinClientEnabled: false);
 
-            using DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequestWithCrossRegionRetryTracker();
+            using DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequestWithDispatchTracker();
 
             retryPolicy.OnBeforeSendRequest(request);
-            Assert.AreEqual(
-                bool.FalseString,
-                request.Headers[DistributedTransactionConstants.CrossRegionRetryHeader]);
+            ClientRetryPolicyTests.AssertDispatchHeaders(request, bool.FalseString, bool.FalseString);
 
             retryPolicy.OnBeforeSendRequest(request);
-            Assert.AreEqual(
+            ClientRetryPolicyTests.AssertDispatchHeaders(
+                request,
+                bool.TrueString,
                 bool.FalseString,
-                request.Headers[DistributedTransactionConstants.CrossRegionRetryHeader],
-                "A re-dispatch that stays in the same write region is not a cross-region retry.");
+                "A re-dispatch of the same token is a retry, but staying in the same write region is not a redirect.");
         }
 
         [TestMethod]
-        [Description("A 403.3 write-region failover re-dispatches the same idempotency token into another write region, which must be reported as True and must stay True afterwards - including when a later failover routes the token back to the region it started in.")]
-        public async Task OnBeforeSendRequest_DistributedTransactionWrite_ReportsTrueAfterWriteRegionFailoverAndStaysTrue()
+        [Description("A 403.3 write-region failover re-dispatches the same idempotency token into another write region, which must be reported as a redirect and must stay reported afterwards - including when a later failover routes the token back to the region it started in.")]
+        public async Task OnBeforeSendRequest_DistributedTransactionWrite_ReportsRedirectAfterWriteRegionFailoverAndStaysTrue()
         {
             using GlobalEndpointManager endpointManager = this.Initialize(
                 useMultipleWriteLocations: false,
@@ -2934,11 +2936,11 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 enableEndpointDiscovery: true,
                 isThinClientEnabled: false);
 
-            using DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequestWithCrossRegionRetryTracker();
+            using DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequestWithDispatchTracker();
 
             retryPolicy.OnBeforeSendRequest(request);
             string firstRegion = ClientRetryPolicyTests.ResolveDispatchRegion(endpointManager, request);
-            Assert.AreEqual(bool.FalseString, request.Headers[DistributedTransactionConstants.CrossRegionRetryHeader]);
+            ClientRetryPolicyTests.AssertDispatchHeaders(request, bool.FalseString, bool.FalseString);
 
             Assert.IsTrue(
                 (await retryPolicy.ShouldRetryAsync(
@@ -2950,9 +2952,10 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             string secondRegion = ClientRetryPolicyTests.ResolveDispatchRegion(endpointManager, request);
             Assert.AreNotEqual(firstRegion, secondRegion,
                 "Test precondition: the failover must have moved the request to a different write region.");
-            Assert.AreEqual(
+            ClientRetryPolicyTests.AssertDispatchHeaders(
+                request,
                 bool.TrueString,
-                request.Headers[DistributedTransactionConstants.CrossRegionRetryHeader],
+                bool.TrueString,
                 "The coordinator in the new region has no record of this token and must be told the attempt already exists elsewhere.");
 
             Assert.IsTrue(
@@ -2964,15 +2967,16 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             retryPolicy.OnBeforeSendRequest(request);
             Assert.AreEqual(firstRegion, ClientRetryPolicyTests.ResolveDispatchRegion(endpointManager, request),
                 "Test precondition: the flip-flop must have routed the token back to the region it started in.");
-            Assert.AreEqual(
+            ClientRetryPolicyTests.AssertDispatchHeaders(
+                request,
                 bool.TrueString,
-                request.Headers[DistributedTransactionConstants.CrossRegionRetryHeader],
-                "The signal is sticky for the lifetime of a token, so returning to the origin region must not revert it.");
+                bool.TrueString,
+                "The redirect signal is sticky for the lifetime of a token, so returning to the origin region must not revert it.");
         }
 
         [TestMethod]
-        [Description("A read transaction carries no tracker, so the header is omitted entirely rather than sent as False.")]
-        public void OnBeforeSendRequest_DistributedTransactionRead_OmitsCrossRegionRetryHeader()
+        [Description("A read transaction carries no tracker, so both headers are omitted entirely rather than sent as False.")]
+        public void OnBeforeSendRequest_DistributedTransactionRead_OmitsDispatchHeaders()
         {
             using GlobalEndpointManager endpointManager = this.Initialize(
                 useMultipleWriteLocations: false,
@@ -2990,14 +2994,16 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             retryPolicy.OnBeforeSendRequest(request);
 
-            Assert.IsNull(
-                request.Headers[DistributedTransactionConstants.CrossRegionRetryHeader],
-                "Replaying a read transaction elsewhere cannot execute a write twice, so it carries no signal at all.");
+            ClientRetryPolicyTests.AssertDispatchHeaders(
+                request,
+                null,
+                null,
+                "Replaying a read transaction elsewhere cannot execute a write twice, so it carries no signals at all.");
         }
 
         [TestMethod]
-        [Description("A single-write-region account never changes write region, so every dispatch must report False even though the retry policy's internal failover counter advances.")]
-        public async Task OnBeforeSendRequest_SingleWriteRegionAccount_NeverReportsCrossRegionRetry()
+        [Description("A single-write-region account never changes write region, so every dispatch reports a retry but never a redirect, even though the retry policy's internal failover counter advances.")]
+        public async Task OnBeforeSendRequest_SingleWriteRegionAccount_NeverReportsCrossRegionRedirect()
         {
             using GlobalEndpointManager endpointManager = this.Initialize(
                 useMultipleWriteLocations: false,
@@ -3012,14 +3018,12 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 enableEndpointDiscovery: true,
                 isThinClientEnabled: false);
 
-            using DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequestWithCrossRegionRetryTracker();
+            using DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequestWithDispatchTracker();
 
             retryPolicy.OnBeforeSendRequest(request);
 
             string firstRegion = ClientRetryPolicyTests.ResolveDispatchRegion(endpointManager, request);
-            Assert.AreEqual(
-                bool.FalseString,
-                request.Headers[DistributedTransactionConstants.CrossRegionRetryHeader]);
+            ClientRetryPolicyTests.AssertDispatchHeaders(request, bool.FalseString, bool.FalseString);
 
             for (int attempt = 1; attempt <= 3; attempt++)
             {
@@ -3036,11 +3040,105 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                     ClientRetryPolicyTests.ResolveDispatchRegion(endpointManager, request),
                     $"A single-write-region account cannot route attempt {attempt} anywhere else.");
 
-                Assert.AreEqual(
+                ClientRetryPolicyTests.AssertDispatchHeaders(
+                    request,
+                    bool.TrueString,
                     bool.FalseString,
-                    request.Headers[DistributedTransactionConstants.CrossRegionRetryHeader],
-                    $"The failover counter advanced on attempt {attempt}, but no boundary was crossed.");
+                    $"The failover counter advanced on attempt {attempt}, but no region boundary was crossed.");
             }
+        }
+
+        [TestMethod]
+        [Description("With endpoint discovery disabled the client is pinned to the endpoint it was configured with, so a distributed transaction has no failover path and can never report a cross-region redirect.")]
+        public async Task OnBeforeSendRequest_EndpointDiscoveryDisabled_PinsToConfiguredEndpointAndNeverRedirects()
+        {
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: false,
+                isPreferredLocationsListEmpty: false,
+                configuredEndpointOverride: ClientRetryPolicyTests.NonTopologyEndpoint);
+
+            ClientRetryPolicy retryPolicy = new(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery: false,
+                isThinClientEnabled: false);
+
+            using DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequestWithDispatchTracker();
+
+            retryPolicy.OnBeforeSendRequest(request);
+
+            Assert.AreEqual(
+                ClientRetryPolicyTests.NonTopologyEndpoint,
+                endpointManager.ResolveServiceEndpoint(request),
+                "Endpoint discovery is off, so routing must not substitute a write region from the account topology.");
+            ClientRetryPolicyTests.AssertDispatchHeaders(request, bool.FalseString, bool.FalseString);
+
+            Assert.IsFalse(
+                (await retryPolicy.ShouldRetryAsync(
+                    ClientRetryPolicyTests.CreateWriteForbiddenException(request),
+                    CancellationToken.None)).ShouldRetry,
+                "A 403.3 cannot be retried elsewhere while the client is pinned to a single endpoint.");
+
+            retryPolicy.OnBeforeSendRequest(request);
+            ClientRetryPolicyTests.AssertDispatchHeaders(
+                request,
+                bool.TrueString,
+                bool.FalseString,
+                "The committer can still replay this token, but with no failover path the dispatch stays in the configured endpoint's region.");
+        }
+
+        [TestMethod]
+        [Description("A configured endpoint that is not itself a write region is only a bootstrap contact point; with endpoint discovery on, a distributed transaction routes from the account topology and still reports a redirect after a write-region failover.")]
+        public async Task OnBeforeSendRequest_ConfiguredEndpointOutsideTopology_RoutesToWriteRegionAndReportsRedirectAfterFailover()
+        {
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: false,
+                configuredEndpointOverride: ClientRetryPolicyTests.NonTopologyEndpoint);
+
+            ClientRetryPolicy retryPolicy = new(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery: true,
+                isThinClientEnabled: false);
+
+            using DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequestWithDispatchTracker();
+
+            retryPolicy.OnBeforeSendRequest(request);
+
+            Assert.AreEqual(
+                ClientRetryPolicyTests.Location1Endpoint,
+                endpointManager.ResolveServiceEndpoint(request),
+                "The configured endpoint is not a write region, so the dispatch must be routed from the account topology instead.");
+            ClientRetryPolicyTests.AssertDispatchHeaders(request, bool.FalseString, bool.FalseString);
+
+            Assert.IsTrue(
+                (await retryPolicy.ShouldRetryAsync(
+                    ClientRetryPolicyTests.CreateWriteForbiddenException(request),
+                    CancellationToken.None)).ShouldRetry,
+                "A 403.3 must still trigger a write-region failover when the configured endpoint is outside the topology.");
+
+            retryPolicy.OnBeforeSendRequest(request);
+
+            Assert.AreEqual(
+                ClientRetryPolicyTests.Location2Endpoint,
+                endpointManager.ResolveServiceEndpoint(request),
+                "Test precondition: the failover must have moved the request to the other write region.");
+            ClientRetryPolicyTests.AssertDispatchHeaders(request, bool.TrueString, bool.TrueString);
+        }
+
+        private static void AssertDispatchHeaders(
+            DocumentServiceRequest request,
+            string expectedIsRetry,
+            string expectedIsCrossRegionRedirect,
+            string message = null)
+        {
+            Assert.AreEqual(expectedIsRetry, request.Headers[DistributedTransactionConstants.IsDtxRetry], message);
+            Assert.AreEqual(expectedIsCrossRegionRedirect, request.Headers[DistributedTransactionConstants.IsDtxCrossRegionRedirect], message);
         }
 
         private static string ResolveDispatchRegion(GlobalEndpointManager endpointManager, DocumentServiceRequest request)
@@ -3050,13 +3148,13 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             return endpointManager.GetLocation(endpointManager.ResolveServiceEndpoint(request));
         }
 
-        private static DocumentServiceRequest CreateDtxRequestWithCrossRegionRetryTracker()
+        private static DocumentServiceRequest CreateDtxRequestWithDispatchTracker()
         {
             DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
 
             request.Properties = new Dictionary<string, object>
             {
-                [DistributedTransactionCrossRegionRetryTracker.PropertyKey] = new DistributedTransactionCrossRegionRetryTracker()
+                [DistributedTransactionDispatchTracker.PropertyKey] = new DistributedTransactionDispatchTracker()
             };
 
             return request;
@@ -3155,7 +3253,8 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             ReadOnlyCollection<string> preferedRegionListOverride = null,
             bool enablePartitionLevelFailover = false,
             bool enablePartitionLevelCircuitBreaker = false,
-            bool multimasterMetadataWriteRetryTest = false)
+            bool multimasterMetadataWriteRetryTest = false,
+            Uri configuredEndpointOverride = null)
         {
             this.databaseAccount = ClientRetryPolicyTests.CreateDatabaseAccount(
                 useMultipleWriteLocations,
@@ -3178,7 +3277,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             if (!multimasterMetadataWriteRetryTest)
             {
                 this.mockedClient = new Mock<IDocumentClientInternal>();
-                mockedClient.Setup(owner => owner.ServiceEndpoint).Returns(ClientRetryPolicyTests.Location1Endpoint);
+                mockedClient.Setup(owner => owner.ServiceEndpoint).Returns(configuredEndpointOverride ?? ClientRetryPolicyTests.Location1Endpoint);
                 mockedClient.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>())).ReturnsAsync(this.databaseAccount);
             }
             else

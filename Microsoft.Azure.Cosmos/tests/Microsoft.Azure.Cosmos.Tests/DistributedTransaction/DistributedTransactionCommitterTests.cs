@@ -1169,20 +1169,20 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 "Every attempt must carry a real (non-empty) idempotency token.");
         }
 
-        // ─── Cross-region retry signal ─────────────────────────────────────────
+        // ─── Dispatch signals ──────────────────────────────────────────────────
         // The committer only attaches a tracker whose lifetime matches the idempotency token;
-        // ClientRetryPolicy reads it back and stamps the header per dispatch.
+        // ClientRetryPolicy reads it back and stamps the headers per dispatch.
 
         [TestMethod]
-        [Description("A write transaction carries the cross-region retry tracker on the request, which is how ClientRetryPolicy stamps the signal on a dispatch it re-routes to another write region without returning to the committer.")]
-        public async Task ExecuteTransactionAsync_WriteTransaction_CarriesCrossRegionRetryTracker()
+        [Description("A write transaction carries the dispatch tracker on the request, which is how ClientRetryPolicy stamps the signals on a dispatch it re-routes to another write region without returning to the committer.")]
+        public async Task ExecuteTransactionAsync_WriteTransaction_CarriesDispatchTracker()
         {
-            List<DistributedTransactionCrossRegionRetryTracker> capturedTrackers = new List<DistributedTransactionCrossRegionRetryTracker>();
+            List<DistributedTransactionDispatchTracker> capturedTrackers = new List<DistributedTransactionDispatchTracker>();
             Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
             this.SetupProcessResourceOperationWithStreamAndEnricherCapture(
                 mockContext,
                 (stream, enricher) => capturedTrackers.Add(
-                    CaptureCrossRegionRetryTracker(enricher, OperationType.CommitDistributedTransaction)),
+                    CaptureDispatchTracker(enricher, OperationType.CommitDistributedTransaction)),
                 () => Task.FromResult(CreateSuccessResponseMessage(operationCount: 1)));
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
@@ -1195,19 +1195,19 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             Assert.AreEqual(1, capturedTrackers.Count);
             Assert.IsNotNull(capturedTrackers[0],
-                "Without a tracker on the request the coordinator can never be told that a retry crossed write regions.");
+                "Without a tracker on the request the coordinator can never be told that a dispatch is a retry or crossed write regions.");
         }
 
         [TestMethod]
-        [Description("A read transaction holds no commit state, so replaying it in another region cannot execute a write twice; the signal is omitted entirely rather than sent as False.")]
-        public async Task ExecuteTransactionAsync_ReadTransaction_OmitsCrossRegionRetryTracker()
+        [Description("A read transaction holds no commit state, so replaying it cannot execute a write twice; both signals are omitted entirely rather than sent as False.")]
+        public async Task ExecuteTransactionAsync_ReadTransaction_OmitsDispatchTracker()
         {
-            List<DistributedTransactionCrossRegionRetryTracker> capturedTrackers = new List<DistributedTransactionCrossRegionRetryTracker>();
+            List<DistributedTransactionDispatchTracker> capturedTrackers = new List<DistributedTransactionDispatchTracker>();
             Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
             this.SetupProcessResourceOperationWithStreamAndEnricherCapture(
                 mockContext,
                 (stream, enricher) => capturedTrackers.Add(
-                    CaptureCrossRegionRetryTracker(enricher, OperationType.Read)),
+                    CaptureDispatchTracker(enricher, OperationType.Read)),
                 () => Task.FromResult(CreateSuccessResponseMessage(operationCount: 1)));
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
@@ -1220,22 +1220,22 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             Assert.AreEqual(1, capturedTrackers.Count);
             Assert.IsNull(capturedTrackers[0],
-                "A read transaction must not carry the signal at all.");
+                "A read transaction must not carry the signals at all.");
         }
 
         [TestMethod]
-        [Description("A durably aborted (452) retry resubmits under a new idempotency token, which has no record in any region, so region tracking restarts and the next attempt starts from False.")]
-        public async Task ExecuteTransactionAsync_RetryAfterAbort_ResetsCrossRegionRetryTracker()
+        [Description("A durably aborted (452) retry resubmits under a new idempotency token, which has no dispatch history, so the next attempt starts from False on both signals.")]
+        public async Task ExecuteTransactionAsync_RetryAfterAbort_ResetsDispatchTracker()
         {
             int callCount = 0;
-            List<DistributedTransactionCrossRegionRetryTracker> capturedTrackers = new List<DistributedTransactionCrossRegionRetryTracker>();
-            List<bool> signalAtAttemptStart = new List<bool>();
+            List<DistributedTransactionDispatchTracker> capturedTrackers = new List<DistributedTransactionDispatchTracker>();
+            List<(bool IsRetry, bool IsCrossRegionRedirect)> signalsAtAttemptStart = new List<(bool, bool)>();
 
             Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
             this.SetupProcessResourceOperationWithStreamAndEnricherCapture(
                 mockContext,
                 (stream, enricher) => DriveCrossRegionCrossingForAttempt(
-                    enricher, capturedTrackers, signalAtAttemptStart),
+                    enricher, capturedTrackers, signalsAtAttemptStart),
                 () =>
                 {
                     callCount++;
@@ -1259,24 +1259,24 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             Assert.AreSame(capturedTrackers[0], capturedTrackers[1],
                 "Tracking spans the whole commit, so both attempts must share one tracker.");
             CollectionAssert.AreEqual(
-                new[] { false, false },
-                signalAtAttemptStart,
-                "The rotated token has no record in any region, so its first dispatch must report False even though its predecessor crossed a boundary.");
+                new[] { (IsRetry: false, IsCrossRegionRedirect: false), (IsRetry: false, IsCrossRegionRedirect: false) },
+                signalsAtAttemptStart,
+                "The rotated token has no dispatch history, so its first dispatch must report neither signal even though its predecessor crossed a boundary.");
         }
 
         [TestMethod]
-        [Description("A retriable non-aborted retry replays the SAME idempotency token, so a boundary already crossed under that token must still be reported on every later dispatch.")]
-        public async Task ExecuteTransactionAsync_RetryWithoutAbort_DoesNotResetCrossRegionRetryTracker()
+        [Description("A retriable non-aborted retry replays the SAME idempotency token, so both signals already earned under that token must still be reported on every later dispatch.")]
+        public async Task ExecuteTransactionAsync_RetryWithoutAbort_DoesNotResetDispatchTracker()
         {
             int callCount = 0;
-            List<DistributedTransactionCrossRegionRetryTracker> capturedTrackers = new List<DistributedTransactionCrossRegionRetryTracker>();
-            List<bool> signalAtAttemptStart = new List<bool>();
+            List<DistributedTransactionDispatchTracker> capturedTrackers = new List<DistributedTransactionDispatchTracker>();
+            List<(bool IsRetry, bool IsCrossRegionRedirect)> signalsAtAttemptStart = new List<(bool, bool)>();
 
             Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
             this.SetupProcessResourceOperationWithStreamAndEnricherCapture(
                 mockContext,
                 (stream, enricher) => DriveCrossRegionCrossingForAttempt(
-                    enricher, capturedTrackers, signalAtAttemptStart),
+                    enricher, capturedTrackers, signalsAtAttemptStart),
                 () =>
                 {
                     callCount++;
@@ -1297,37 +1297,37 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             Assert.AreSame(capturedTrackers[0], capturedTrackers[1],
                 "Tracking spans the whole commit, so both attempts must share one tracker.");
             CollectionAssert.AreEqual(
-                new[] { false, true },
-                signalAtAttemptStart,
-                "The same token is replayed through a fresh retry policy, so the signal must survive that policy's reset.");
+                new[] { (IsRetry: false, IsCrossRegionRedirect: false), (IsRetry: true, IsCrossRegionRedirect: true) },
+                signalsAtAttemptStart,
+                "The same token is replayed through a fresh retry policy, so both signals must survive that policy's reset.");
         }
 
         /// <summary>
         /// Stands in for <see cref="ClientRetryPolicy"/> driving one attempt across a write-region
-        /// boundary, recording the signal the attempt started with.
+        /// boundary, recording the signals the attempt started with.
         /// </summary>
         /// <remarks>
         /// The crossing is simulated because the committer's contract is only that one tracker spans the
-        /// attempts and resets when the token rotates; detecting a boundary from pinned endpoints is
+        /// attempts and resets when the token rotates; deriving the signals from pinned endpoints is
         /// <see cref="ClientRetryPolicyTests"/>' concern.
         /// </remarks>
         private static void DriveCrossRegionCrossingForAttempt(
             Action<RequestMessage> enricher,
-            List<DistributedTransactionCrossRegionRetryTracker> capturedTrackers,
-            List<bool> signalAtAttemptStart)
+            List<DistributedTransactionDispatchTracker> capturedTrackers,
+            List<(bool IsRetry, bool IsCrossRegionRedirect)> signalsAtAttemptStart)
         {
-            DistributedTransactionCrossRegionRetryTracker tracker = CaptureCrossRegionRetryTracker(
+            DistributedTransactionDispatchTracker tracker = CaptureDispatchTracker(
                 enricher, OperationType.CommitDistributedTransaction);
 
             capturedTrackers.Add(tracker);
 
-            signalAtAttemptStart.Add(tracker.HasCrossedRegionBoundary);
+            signalsAtAttemptStart.Add((tracker.IsRetry, tracker.IsCrossRegionRedirect));
 
             tracker.RecordDispatch("East US");
             tracker.RecordDispatch("West US");
         }
 
-        private static DistributedTransactionCrossRegionRetryTracker CaptureCrossRegionRetryTracker(
+        private static DistributedTransactionDispatchTracker CaptureDispatchTracker(
             Action<RequestMessage> enricher,
             OperationType operationType)
         {
@@ -1340,9 +1340,9 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 enricher(request);
 
                 return request.Properties.TryGetValue(
-                    DistributedTransactionCrossRegionRetryTracker.PropertyKey,
+                    DistributedTransactionDispatchTracker.PropertyKey,
                     out object tracker)
-                        ? tracker as DistributedTransactionCrossRegionRetryTracker
+                        ? tracker as DistributedTransactionDispatchTracker
                         : null;
             }
         }

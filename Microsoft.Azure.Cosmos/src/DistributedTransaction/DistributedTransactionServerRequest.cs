@@ -18,11 +18,11 @@ namespace Microsoft.Azure.Cosmos
         private DistributedTransactionServerRequest(
             IReadOnlyList<DistributedTransactionOperation> operations,
             CosmosSerializerCore serializerCore,
-            DistributedTransactionCrossRegionRetryTracker crossRegionRetryTracker)
+            DistributedTransactionDispatchTracker dispatchTracker)
         {
             this.Operations = operations ?? throw new ArgumentNullException(nameof(operations));
             this.serializerCore = serializerCore ?? throw new ArgumentNullException(nameof(serializerCore));
-            this.CrossRegionRetryTracker = crossRegionRetryTracker;
+            this.DispatchTracker = dispatchTracker;
         }
 
         public IReadOnlyList<DistributedTransactionOperation> Operations { get; }
@@ -36,10 +36,10 @@ namespace Microsoft.Azure.Cosmos
         public Guid IdempotencyToken { get; private set; }
 
         /// <summary>
-        /// Tracks which write regions the current <see cref="IdempotencyToken"/> has been dispatched to,
-        /// or null for a read transaction.
+        /// Tracks how the current <see cref="IdempotencyToken"/> has been dispatched, or null for a read
+        /// transaction.
         /// </summary>
-        public DistributedTransactionCrossRegionRetryTracker CrossRegionRetryTracker { get; }
+        public DistributedTransactionDispatchTracker DispatchTracker { get; }
 
         /// <summary>
         /// Assigns a fresh <see cref="Guid"/> to <see cref="IdempotencyToken"/> and returns it. Called for
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
             this.IdempotencyToken = Guid.NewGuid();
 
             // Reset here rather than at the call sites so tracking cannot outlive the token it describes.
-            this.CrossRegionRetryTracker?.ResetForNewToken();
+            this.DispatchTracker?.ResetForNewToken();
 
             return this.IdempotencyToken;
         }
@@ -61,12 +61,12 @@ namespace Microsoft.Azure.Cosmos
             IReadOnlyList<DistributedTransactionOperation> operations,
             CosmosSerializerCore serializerCore,
             CancellationToken cancellationToken,
-            DistributedTransactionCrossRegionRetryTracker crossRegionRetryTracker = null)
+            DistributedTransactionDispatchTracker dispatchTracker = null)
         {
             DistributedTransactionServerRequest request = new DistributedTransactionServerRequest(
                 operations,
                 serializerCore,
-                crossRegionRetryTracker);
+                dispatchTracker);
             await request.CreateBodyStreamAsync(cancellationToken);
             return request;
         }

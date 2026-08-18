@@ -105,10 +105,10 @@ namespace Microsoft.Azure.Cosmos
                     this.operations,
                     this.clientContext.SerializerCore,
                     cancellationToken,
-                    // Read transactions hold no commit state, so replaying one in another region is
-                    // harmless and the signal is omitted for them.
+                    // Read transactions hold no commit state, so replaying one is harmless and both
+                    // signals are omitted for them.
                     this.operationType == OperationType.CommitDistributedTransaction
-                        ? new DistributedTransactionCrossRegionRetryTracker()
+                        ? new DistributedTransactionDispatchTracker()
                         : null);
 
                 return await this.ExecuteCommitWithRetryAsync(serverRequest, trace, cancellationToken);
@@ -281,10 +281,10 @@ namespace Microsoft.Azure.Cosmos
             requestMessage.UseGatewayMode = true;
 
             // ClientRetryPolicy can re-dispatch this message to another write region without returning
-            // here, so the tracker rides along and the header is stamped per dispatch.
-            if (serverRequest.CrossRegionRetryTracker != null)
+            // here, so the tracker rides along and the headers are stamped per dispatch.
+            if (serverRequest.DispatchTracker != null)
             {
-                requestMessage.Properties[DistributedTransactionCrossRegionRetryTracker.PropertyKey] = serverRequest.CrossRegionRetryTracker;
+                requestMessage.Properties[DistributedTransactionDispatchTracker.PropertyKey] = serverRequest.DispatchTracker;
             }
         }
 

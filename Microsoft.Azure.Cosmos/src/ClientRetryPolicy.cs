@@ -385,7 +385,7 @@ namespace Microsoft.Azure.Cosmos
 
                 // Stamped at the last point before dispatch where the pinned endpoint is known, so a
                 // failover driven by this policy is reported on the request that crosses the boundary.
-                DistributedTransactionCrossRegionRetryTracker.StampCrossRegionRetryHeader(
+                DistributedTransactionDispatchTracker.StampDispatchHeaders(
                     request,
                     this.globalEndpointManager.GetLocation(this.locationEndpoint));
             }

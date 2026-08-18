@@ -45,7 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Other Changes
 
 - [5991](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5991) TargetReplicaSetSize : Updated address cache logic to use partition-specific target replica set size when available, falling back to the user replication policy value.
-- [6086](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6086) Distributed Transactions (preview): Adds the `x-ms-cosmos-dtx-cross-region-retry` request header to distributed write transactions, reporting whether the same idempotency token was already dispatched to a different write region so that a mid-transaction write region failover is not mistaken for a first submission. Read transactions are unaffected.
+- [6086](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6086) Distributed Transactions (preview): Adds `x-ms-cosmos-internal-is-dtx-retry` (the idempotency token was already dispatched) and `x-ms-cosmos-internal-is-dtx-cross-region-redirect` (it now targets a different write region) to distributed write transactions, so a retry or write region failover is not mistaken for a first submission. Read transactions are unaffected.
 
 ### <a name="3.63.0-preview.1"/> [3.63.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.63.0-preview.1) - 2026-8-5
 
