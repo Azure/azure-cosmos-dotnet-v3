@@ -228,9 +228,10 @@ namespace Microsoft.Azure.Cosmos
                 result.ResourceStream = new MemoryStream(bytes, 0, bytes.Length, writable: false, publiclyVisible: true);
             }
 
-            if (result.SessionToken != null && string.IsNullOrWhiteSpace(result.SessionToken))
+            if (string.IsNullOrWhiteSpace(result.SessionToken))
             {
-                // Normalize whitespace-only to null so downstream guards don't need to recheck.
+                // Collapse "absent" and "whitespace-only" into a single null so capture-side guards
+                // need only one check.
                 result.SessionToken = null;
             }
 
