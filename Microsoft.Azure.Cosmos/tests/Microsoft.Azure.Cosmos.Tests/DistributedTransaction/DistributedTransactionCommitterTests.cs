@@ -813,6 +813,50 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
+        [Description("A success envelope that also reports isRetriable is never retried, so it is the outcome the " +
+                     "caller receives and a malformed token on it must surface rather than be traced as unsettled.")]
+        public async Task ExecuteTransactionAsync_ThrowsOnMalformedToken_WhenSuccessEnvelopeAlsoReportsRetriable()
+        {
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: null,
+                statusCode: HttpStatusCode.OK,
+                accountConsistencyLevel: Cosmos.ConsistencyLevel.Session);
+
+            int attempts = 0;
+            this.SetupProcessResourceOperation(
+                mockContext,
+                () =>
+                {
+                    attempts++;
+
+                    string json = @"{""isRetriable"":true,""operationResponses"":[{""index"":0,""statusCode"":200,""sessionToken"":""malformed""}]}";
+                    return Task.FromResult(new ResponseMessage(HttpStatusCode.OK)
+                    {
+                        Content = new MemoryStream(Encoding.UTF8.GetBytes(json))
+                    });
+                });
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                this.CreateOperations(1), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
+
+            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None),
+                "A success status ends the retry loop regardless of isRetriable, so the token failure is settled.");
+
+            Assert.AreEqual(1, attempts, "A success envelope is terminal, so it must not be retried.");
+            StringAssert.Contains(exception.Message, "malformed",
+                "The message must include the offending value so it can be diagnosed.");
+
+            Assert.IsTrue(
+                string.IsNullOrEmpty(sessionContainer.GetSessionToken(
+                    DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName))),
+                "A malformed token must never reach the session container.");
+        }
+
+        [TestMethod]
         [Description("A malformed token on a NotModified operation surfaces. NotModified is captured on the point " +
                      "operation path, so dropping it here would be the same silent degradation on a read transaction.")]
         public async Task ExecuteTransactionAsync_ThrowsOnMalformedToken_WhenOperationIsNotModified()

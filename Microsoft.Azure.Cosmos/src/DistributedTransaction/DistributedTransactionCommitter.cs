@@ -348,9 +348,10 @@ namespace Microsoft.Azure.Cosmos
             RequestNameValueCollection headers = new RequestNameValueCollection();
 
             // Surfacing a token failure ends the transaction with an exception, so it may only happen once
-            // the outcome is settled. ExecuteCommitWithRetryAsync decides on retries after this method
-            // returns, and the message below asserts the transaction committed in full, so both conditions
-            // are evaluated on the envelope rather than on the sub-operation that carried the bad token.
+            // the outcome is settled. IsCommittedInFull mirrors the terminal condition ExecuteCommitWithRetryAsync
+            // applies after this method returns, and the message below asserts the transaction committed in full,
+            // so both conditions are evaluated on the envelope rather than on the sub-operation that carried
+            // the bad token.
             bool transactionCommitted = DistributedTransactionCommitter.IsCommittedInFull(response);
 
             for (int i = 0; i < response.Count; i++)
@@ -440,8 +441,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Determines whether the response represents a transaction that committed in full: a non-error,
-        /// non-retriable envelope in which every sub-operation also carries a non-error status.
+        /// Determines whether the response represents a transaction that committed in full: a settled,
+        /// non-error envelope in which every sub-operation also carries a non-error status.
         /// </summary>
         /// <remarks>
         /// A MultiStatus envelope is a success status but reports a rolled back transaction through its
@@ -449,7 +450,13 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         private static bool IsCommittedInFull(DistributedTransactionResponse response)
         {
-            if (response.IsRetriable || (int)response.StatusCode >= (int)StatusCodes.StartingErrorCode)
+            // Mirrors the terminal condition in ExecuteCommitWithRetryAsync. A response that the loop will
+            // not retry is the outcome the caller receives, which is the only point a token failure may
+            // surface on. Testing IsRetriable alone would leave a success envelope that also reports
+            // isRetriable unsettled here even though the loop returns it, silently dropping its token.
+            bool outcomeIsSettled = response.IsSuccessStatusCode || !response.IsRetriable;
+
+            if (!outcomeIsSettled || (int)response.StatusCode >= (int)StatusCodes.StartingErrorCode)
             {
                 return false;
             }
