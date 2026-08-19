@@ -351,24 +351,22 @@ namespace Microsoft.Azure.Cosmos
             // the outcome is settled. IsCommittedInFull mirrors the terminal condition ExecuteCommitWithRetryAsync
             // applies after this method returns, and the message below asserts the transaction committed in full,
             // so both conditions are evaluated on the envelope rather than on the sub-operation that carried
-            // the bad token.
-            bool transactionCommitted = DistributedTransactionCommitter.IsCommittedInFull(response);
+            // the bad token. Ordering the consistency test first skips the envelope scan whenever the failure
+            // could not be surfaced anyway.
+            bool surfaceTokenFailures = effectiveConsistencyLevel == ConsistencyLevel.Session
+                && DistributedTransactionCommitter.IsCommittedInFull(response);
 
             for (int i = 0; i < response.Count; i++)
             {
                 DistributedTransactionOperationResult result = response[i];
 
-                bool surfaceTokenFailures = transactionCommitted
-                    && effectiveConsistencyLevel == ConsistencyLevel.Session;
-
-                DistributedTransactionOperation operation = null;
                 string collectionFullName = null;
                 string failureReason = null;
                 Exception failureCause = null;
 
                 try
                 {
-                    operation = serverRequest.Operations[result.Index];
+                    DistributedTransactionOperation operation = serverRequest.Operations[result.Index];
 
                     if (string.IsNullOrEmpty(result.SessionToken) || string.IsNullOrEmpty(operation.CollectionResourceId))
                     {
@@ -481,7 +479,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// The range id is checked separately because
         /// <see cref="SessionTokenHelper.TryParse(string, out string, out ISessionToken)"/> accepts a bare
-        /// LSN and reports an empty range id for it. Without that check a prefix-less token reaches
+        /// LSN and reports a null range id for it. Without that check a prefix-less token reaches
         /// <see cref="ISessionContainer.SetSessionToken(string, string, INameValueCollection)"/>
         /// and fails there with an <see cref="IndexOutOfRangeException"/>.
         /// </remarks>
