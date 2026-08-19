@@ -311,7 +311,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
         /// LIMIT clause the result set is capped, so anything fetched past that cap is loaded by the backend and
         /// then discarded, which is why that branch uses the smaller factor.
         /// </remarks>
-        internal static long ComputeOptimalPageSize(
+        public static long ComputeOptimalPageSize(
             QueryInfo queryInfo,
             int targetRangeCount,
             int maxItemCount,
