@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos
 
         private string originalDispatchRegion;
         private int dispatchCount;
+        private bool hasUnresolvedDispatch;
 
         /// <summary>
         /// Derived rather than assigned: the headers are read after <see cref="RecordDispatch"/> has counted
@@ -44,8 +45,12 @@ namespace Microsoft.Azure.Cosmos
         /// Records the region an imminent dispatch is pinned to.
         /// </summary>
         /// <remarks>
-        /// Records intent, so a send that fails after routing still counts as a dispatch. That over-reports
-        /// true, the safe direction: the request may have reached the coordinator before failing.
+        /// Records intent: a send that fails after routing still counts, because it may have reached the
+        /// coordinator first. So a failure before the request leaves the process (authorization, store
+        /// proxy resolution) is counted anyway, over-reporting in the safe direction. Conversely a gateway
+        /// resend after a retriable WebException is not counted, because CosmosHttpClientCore retries in
+        /// place without re-entering <see cref="ClientRetryPolicy.OnBeforeSendRequest"/>; that
+        /// under-reports, but only for connection failures that never reached the coordinator.
         /// </remarks>
         internal void RecordDispatch(string regionName)
         {
@@ -54,12 +59,20 @@ namespace Microsoft.Azure.Cosmos
             // An unresolvable region cannot place this dispatch, but the dispatch itself still happened.
             if (string.IsNullOrEmpty(regionName))
             {
+                this.hasUnresolvedDispatch = true;
                 return;
             }
 
             if (this.originalDispatchRegion == null)
             {
                 this.originalDispatchRegion = regionName;
+
+                // An earlier dispatch went somewhere this client could not name, so this region cannot be
+                // trusted as the origin. Report a crossing rather than hide one that may have happened.
+                if (this.hasUnresolvedDispatch)
+                {
+                    this.IsCrossRegionRedirect = true;
+                }
             }
             else if (!string.Equals(this.originalDispatchRegion, regionName, StringComparison.OrdinalIgnoreCase))
             {
@@ -71,6 +84,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.originalDispatchRegion = null;
             this.dispatchCount = 0;
+            this.hasUnresolvedDispatch = false;
             this.IsCrossRegionRedirect = false;
         }
 

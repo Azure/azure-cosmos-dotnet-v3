@@ -3131,6 +3131,103 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             ClientRetryPolicyTests.AssertDispatchHeaders(request, bool.TrueString, bool.TrueString);
         }
 
+        [TestMethod]
+        [Description("The committer replays a retriable non-aborted attempt under a new retry policy but the same idempotency token, so signals earned under the previous policy must survive a policy that has never seen the request.")]
+        public async Task OnBeforeSendRequest_SameTokenDispatchedByANewRetryPolicy_KeepsSignalsEarnedUnderThePreviousPolicy()
+        {
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: false);
+
+            using DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequestWithDispatchTracker();
+
+            ClientRetryPolicy firstAttemptPolicy = new(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery: true,
+                isThinClientEnabled: false);
+
+            firstAttemptPolicy.OnBeforeSendRequest(request);
+            string firstRegion = ClientRetryPolicyTests.ResolveDispatchRegion(endpointManager, request);
+            ClientRetryPolicyTests.AssertDispatchHeaders(request, bool.FalseString, bool.FalseString);
+
+            Assert.IsTrue(
+                (await firstAttemptPolicy.ShouldRetryAsync(
+                    ClientRetryPolicyTests.CreateWriteForbiddenException(request),
+                    CancellationToken.None)).ShouldRetry,
+                "Test precondition: the attempt must fail its write region over.");
+
+            firstAttemptPolicy.OnBeforeSendRequest(request);
+            Assert.AreNotEqual(
+                firstRegion,
+                ClientRetryPolicyTests.ResolveDispatchRegion(endpointManager, request),
+                "Test precondition: the failover must have moved the token to another write region.");
+            ClientRetryPolicyTests.AssertDispatchHeaders(request, bool.TrueString, bool.TrueString);
+
+            // The committer's next attempt runs on a policy with no retry context and no failover count.
+            ClientRetryPolicy secondAttemptPolicy = new(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery: true,
+                isThinClientEnabled: false);
+
+            // Overwrite the wire state with what a policy-scoped design would have produced, so the
+            // assertion below can only pass if the new policy re-derived both signals from the token.
+            request.Headers[DistributedTransactionConstants.IsDtxRetry] = bool.FalseString;
+            request.Headers[DistributedTransactionConstants.IsDtxCrossRegionRedirect] = bool.FalseString;
+
+            secondAttemptPolicy.OnBeforeSendRequest(request);
+
+            ClientRetryPolicyTests.AssertDispatchHeaders(
+                request,
+                bool.TrueString,
+                bool.TrueString,
+                "A policy that has never seen this request reports no retries and no failovers of its own, so state scoped to the policy would lose both signals here.");        }
+
+        [TestMethod]
+        [Description("A multi-master account can accept a commit in more than one write region, so a failover that moves an idempotency token between them must still be reported as a redirect.")]
+        public async Task OnBeforeSendRequest_MultiMaster_DistributedTransactionWrite_ReportsRedirectAfterWriteRegionFailover()
+        {
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: true,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: false);
+
+            ClientRetryPolicy retryPolicy = new(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery: true,
+                isThinClientEnabled: false);
+
+            using DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequestWithDispatchTracker();
+
+            retryPolicy.OnBeforeSendRequest(request);
+            string firstRegion = ClientRetryPolicyTests.ResolveDispatchRegion(endpointManager, request);
+            ClientRetryPolicyTests.AssertDispatchHeaders(request, bool.FalseString, bool.FalseString);
+
+            Assert.IsTrue(
+                (await retryPolicy.ShouldRetryAsync(
+                    ClientRetryPolicyTests.CreateWriteForbiddenException(request),
+                    CancellationToken.None)).ShouldRetry,
+                "Test precondition: a 403.3 must fail the transaction over to another write region.");
+
+            retryPolicy.OnBeforeSendRequest(request);
+
+            Assert.AreNotEqual(
+                firstRegion,
+                ClientRetryPolicyTests.ResolveDispatchRegion(endpointManager, request),
+                "Test precondition: the failover must have moved the request to the other write region.");
+            ClientRetryPolicyTests.AssertDispatchHeaders(
+                request,
+                bool.TrueString,
+                bool.TrueString,
+                "Both regions can accept this commit, so the coordinator in the new one must be told the token already exists elsewhere.");
+        }
+
         private static void AssertDispatchHeaders(
             DocumentServiceRequest request,
             string expectedIsRetry,

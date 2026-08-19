@@ -95,17 +95,19 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
-        public void RecordDispatch_UnresolvableRegionOnFirstDispatch_LeavesRegionStateUntouched()
+        public void RecordDispatch_UnresolvableRegionBeforeAnyKnownRegion_ReportsRedirectOnceOneResolves()
         {
             DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
 
             tracker.RecordDispatch(null);
             tracker.RecordDispatch(string.Empty);
+
+            // Nothing has been placed in a known region yet, so there is no boundary to have crossed.
             Assert.IsFalse(tracker.IsCrossRegionRedirect);
 
-            // No region was recorded, so the first resolvable one becomes the origin rather than a crossing.
+            // Those dispatches may have landed elsewhere, so East US cannot be trusted as the origin.
             tracker.RecordDispatch(EastUs);
-            Assert.IsFalse(tracker.IsCrossRegionRedirect);
+            Assert.IsTrue(tracker.IsCrossRegionRedirect);
         }
 
         [TestMethod]
@@ -189,6 +191,20 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             // The new token has no record in any region, so this is a first dispatch, not a crossing.
             tracker.RecordDispatch(WestUs);
+            Assert.IsFalse(tracker.IsCrossRegionRedirect);
+        }
+
+        [TestMethod]
+        public void ResetForNewToken_AfterUnresolvableDispatch_DoesNotChargeItToTheNewToken()
+        {
+            DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
+
+            tracker.RecordDispatch(null);
+            tracker.ResetForNewToken();
+
+            // The rotated token has never been dispatched anywhere, so the unnamed dispatch its
+            // predecessor made cannot make the new token's first dispatch a crossing.
+            tracker.RecordDispatch(EastUs);
             Assert.IsFalse(tracker.IsCrossRegionRedirect);
         }
 

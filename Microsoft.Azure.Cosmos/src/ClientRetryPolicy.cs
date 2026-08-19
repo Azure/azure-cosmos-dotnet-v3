@@ -379,15 +379,22 @@ namespace Microsoft.Azure.Cosmos
             // downstream re-resolution (e.g. on retry) stays on the write-region branch.
             if (this.isDtxRequest)
             {
-                request.RequestContext.RouteToLocation(
-                    this.retryContext?.RetryLocationIndex ?? 0,
-                    usePreferredLocations: false);
+                int dispatchLocationIndex = this.retryContext?.RetryLocationIndex ?? 0;
 
-                // Stamped at the last point before dispatch where the pinned endpoint is known, so a
-                // failover driven by this policy is reported on the request that crosses the boundary.
-                DistributedTransactionDispatchTracker.StampDispatchHeaders(
-                    request,
-                    this.globalEndpointManager.GetLocation(this.locationEndpoint));
+                request.RequestContext.RouteToLocation(dispatchLocationIndex, usePreferredLocations: false);
+
+                // this.locationEndpoint was resolved before the line above re-routed the request, and on a
+                // failover retry that resolve short-circuits on the hub pin (RouteToHub) rather than
+                // consulting the index. Stamping it would name the hub for a dispatch already bound for
+                // the other write region, reporting no crossing on a multi-master failover that has one.
+                string dispatchRegion = this.globalEndpointManager.GetLocation(
+                    this.globalEndpointManager.ResolveServiceEndpoint(request));
+
+                // Resolving pinned its choice and cleared the index routing set above; restore it so this
+                // block only reads.
+                request.RequestContext.RouteToLocation(dispatchLocationIndex, usePreferredLocations: false);
+
+                DistributedTransactionDispatchTracker.StampDispatchHeaders(request, dispatchRegion);
             }
 
             // Hedging-Detection API: tag the upcoming dispatch reason on Properties so that
