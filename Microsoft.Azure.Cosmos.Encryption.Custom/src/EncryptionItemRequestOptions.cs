@@ -9,6 +9,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// </summary>
     public sealed class EncryptionItemRequestOptions : ItemRequestOptions
     {
+        internal JsonProcessor? JsonProcessorOverride { get; set; }
+
         /// <summary>
         /// Gets or sets options to be provided for encryption of data.
         /// </summary>

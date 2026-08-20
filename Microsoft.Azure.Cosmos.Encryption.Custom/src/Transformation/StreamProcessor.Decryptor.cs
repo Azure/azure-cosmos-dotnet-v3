@@ -343,6 +343,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             ArgumentNullException.ThrowIfNull(properties);
             _ = diagnosticsContext;
 
+            if (properties.EncryptionFormatVersion == EncryptionFormatVersion.AeAes)
+            {
+                throw new NotSupportedException(
+                    $"Documents encrypted with the legacy encryption algorithm (encryption format version: {EncryptionFormatVersion.AeAes}) are not supported by the Stream JSON processor. Use the Newtonsoft JSON processor to decrypt this document.");
+            }
+
             if (properties.EncryptionFormatVersion != EncryptionFormatVersion.Mde)
             {
                 throw new NotSupportedException($"Unknown encryption format version: {properties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");

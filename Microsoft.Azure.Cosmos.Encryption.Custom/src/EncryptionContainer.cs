@@ -88,10 +88,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                             cancellationToken);
                     }
 
-                    encryptableItem.SetDecryptableItem(
-                        EncryptionProcessor.BaseSerializer.FromStream<JObject>(responseMessage.Content),
-                        this.Encryptor,
-                        this.CosmosSerializer);
+                    this.SetDecryptableItemIfContentAvailable(encryptableItem, responseMessage);
 
                     return new EncryptionItemResponse<T>(
                         responseMessage,
@@ -174,6 +171,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     this.Encryptor,
                     diagnosticsContext,
                     requestOptions,
+                    this.DefaultJsonProcessor,
                     cancellationToken);
             }
 
@@ -289,6 +287,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     this.Encryptor,
                     diagnosticsContext,
                     requestOptions,
+                    this.DefaultJsonProcessor,
                     cancellationToken);
             }
 
@@ -340,10 +339,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                             cancellationToken);
                     }
 
-                    encryptableItem.SetDecryptableItem(
-                        EncryptionProcessor.BaseSerializer.FromStream<JObject>(responseMessage.Content),
-                        this.Encryptor,
-                        this.CosmosSerializer);
+                    this.SetDecryptableItemIfContentAvailable(encryptableItem, responseMessage);
 
                     return new EncryptionItemResponse<T>(
                         responseMessage,
@@ -433,6 +429,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     this.Encryptor,
                     diagnosticsContext,
                     requestOptions,
+                    this.DefaultJsonProcessor,
                     cancellationToken);
             }
 
@@ -480,10 +477,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                             cancellationToken);
                     }
 
-                    encryptableItem.SetDecryptableItem(
-                        EncryptionProcessor.BaseSerializer.FromStream<JObject>(responseMessage.Content),
-                        this.Encryptor,
-                        this.CosmosSerializer);
+                    this.SetDecryptableItemIfContentAvailable(encryptableItem, responseMessage);
 
                     return new EncryptionItemResponse<T>(
                         responseMessage,
@@ -566,6 +560,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     this.Encryptor,
                     diagnosticsContext,
                     requestOptions,
+                    this.DefaultJsonProcessor,
                     cancellationToken);
             }
 
@@ -578,7 +573,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return new EncryptionTransactionalBatch(
                 this.container.CreateTransactionalBatch(partitionKey),
                 this.Encryptor,
-                this.CosmosSerializer);
+                this.CosmosSerializer,
+                this.DefaultJsonProcessor);
         }
 
         public override Task<ContainerResponse> DeleteContainerAsync(
@@ -986,12 +982,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return this.ResponseFactory.CreateItemFeedResponse<T>(responseMessage);
         }
 
+#if ENCRYPTIONPREVIEW || SDKPROJECTREF
         public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
             CancellationToken cancellationToken = default)
         {
             return this.container.GetPartitionKeyRangesAsync(feedRange, cancellationToken);
         }
+#endif
 
         public override Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
                Cosmos.PartitionKey partitionKey,
@@ -1026,14 +1024,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
 #if NET8_0_OR_GREATER
         /// <summary>
-        /// Sets <c>JsonProcessor.Stream</c> as the default for subsequent encryption operations on this container.
+        /// Sets <c>JsonProcessor.Stream</c> as the default for subsequent response decryption on this container.
         /// </summary>
         /// <remarks>
         /// <para>
         /// This is a one-way, configure-once-before-use switch. It should be set during container setup,
-        /// before any encryption-aware operation (read/query/change-feed) is issued on the container instance.
-        /// Per-call <c>RequestOptions.Properties["encryption-json-processor"]</c> overrides remain effective
-        /// after this call and can route individual operations back through the Newtonsoft path.
+        /// before any encryption-aware read/query/change-feed operation is issued on the container instance.
+        /// Per-call <c>WithEncryptionJsonProcessor</c> overrides (and the legacy request-options property-bag
+        /// form) remain effective after this call and can route individual operations back through Newtonsoft.
+        /// Writes continue to use Newtonsoft unless their request options explicitly select another processor.
         /// </para>
         /// <para>
         /// Mutating the default while iterators are in flight has undefined behavior — per-operation
@@ -1045,6 +1044,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this.DefaultJsonProcessor = JsonProcessor.Stream;
         }
 #endif
+
+        private void SetDecryptableItemIfContentAvailable(
+            EncryptableItem encryptableItem,
+            ResponseMessage responseMessage)
+        {
+            if (responseMessage.Content == null)
+            {
+                return;
+            }
+
+            encryptableItem.SetDecryptableItem(
+                EncryptionProcessor.BaseSerializer.FromStream<JObject>(responseMessage.Content),
+                this.Encryptor,
+                this.CosmosSerializer);
+        }
 
 #if PREVIEW && SDKPROJECTREF
         public override Task<SemanticRerankResult> SemanticRerankAsync(

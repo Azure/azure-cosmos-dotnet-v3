@@ -668,15 +668,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         }
 
         [TestMethod]
-        [ExpectedException(typeof(NotSupportedException))]
-        public async Task UnsupportedJsonProcessor_ThrowsNotSupportedException()
+        public async Task UnsupportedJsonProcessor_FallsBackToDefault()
         {
-            // This test validates that unsupported JsonProcessor values (e.g., Stream on net6.0/netstandard2.0)
-            // are properly rejected with a clear error message.
-            // We cast an int to JsonProcessor to simulate a value that doesn't exist on this platform.
             TestDoc testDoc = TestDoc.Create();
-
-            // Cast 99 to JsonProcessor - this simulates an unsupported/future processor value
             JsonProcessor unsupportedProcessor = (JsonProcessor)99;
 
             EncryptionItemRequestOptions options = new()
@@ -693,8 +687,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 }
             };
 
-            // This should throw NotSupportedException on all platforms for an unsupported processor value
-            await encryptionContainer.CreateItemAsync(testDoc, new PartitionKey(testDoc.PK), options);
+            ItemResponse<TestDoc> response = await encryptionContainer.CreateItemAsync(
+                testDoc,
+                new PartitionKey(testDoc.PK),
+                options);
+
+            Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+            VerifyExpectedDocResponse(testDoc, response.Resource);
         }
 
         [TestMethod]
@@ -3139,4 +3138,3 @@ cancellationToken) =>
         #endregion
     }
 }
-

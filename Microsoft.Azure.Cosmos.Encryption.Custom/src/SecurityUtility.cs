@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     using System;
     using System.Diagnostics;
+    using System.Runtime.CompilerServices;
     using System.Security.Cryptography;
     using System.Text;
 
@@ -78,23 +79,42 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 return false;
             }
 
-            Debug.Assert(buffer1.Length >= lengthToCompare, "invalid lengthToCompare");
             Debug.Assert(buffer2Index > -1 && buffer2Index < buffer2.Length, "invalid index");
-            if ((buffer2.Length - buffer2Index) < lengthToCompare)
+
+            // Length/index checks are on non-secret sizes, so returning early here leaks no timing
+            // about the compared bytes. Requiring both buffers to hold the full lengthToCompare also
+            // closes a footgun where a shorter buffer1 previously matched on a prefix.
+            if (buffer2Index < 0 || buffer1.Length < lengthToCompare || (buffer2.Length - buffer2Index) < lengthToCompare)
             {
                 return false;
             }
 
-            for (int index = 0; index < buffer1.Length && index < lengthToCompare; ++index)
+ #if NET8_0_OR_GREATER
+            return CryptographicOperations.FixedTimeEquals(
+                buffer1.AsSpan(0, lengthToCompare),
+                buffer2.AsSpan(buffer2Index, lengthToCompare));
+#else
+            return CompareBytesFixedTime(buffer1, buffer2, buffer2Index, lengthToCompare);
+#endif
+        }
+
+#if !NET8_0_OR_GREATER
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+        private static bool CompareBytesFixedTime(
+            byte[] buffer1,
+            byte[] buffer2,
+            int buffer2Index,
+            int lengthToCompare)
+        {
+            int accumulatedDifference = 0;
+            for (int index = 0; index < lengthToCompare; ++index)
             {
-                if (buffer1[index] != buffer2[buffer2Index + index])
-                {
-                    return false;
-                }
+                accumulatedDifference |= buffer1[index] ^ buffer2[buffer2Index + index];
             }
 
-            return true;
+            return accumulatedDifference == 0;
         }
+#endif
 
         /// <summary>
         /// Gets hex representation of byte array.

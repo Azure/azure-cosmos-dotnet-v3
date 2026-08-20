@@ -90,6 +90,12 @@ internal sealed class NewtonsoftAdapter : IMdeJsonProcessorAdapter
     {
         input.Position = 0;
         JObject itemJObj = this.ReadJObject(input);
+        if (itemJObj == null)
+        {
+            input.Position = 0;
+            return (MdePropertyStatus.None, null, null);
+        }
+
         JObject encryptionProperties = this.RetrieveEncryptionProperties(itemJObj);
         if (encryptionProperties == null)
         {

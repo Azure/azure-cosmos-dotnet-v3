@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Net;
@@ -288,6 +289,94 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 Times.Once);
         }
 
+        [TestMethod]
+        public void GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes_ForwardsToInnerContainer()
+        {
+            Container.ChangeFeedHandler<ChangeFeedItem<JObject>> handler =
+                (_, _, _) => Task.CompletedTask;
+            this.innerContainerMock
+                .Setup(c => c.GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes("processor", handler))
+                .Returns((ChangeFeedProcessorBuilder)null);
+
+            ChangeFeedProcessorBuilder builder =
+                this.encryptionContainer.GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes("processor", handler);
+
+            Assert.IsNull(builder);
+            this.innerContainerMock.Verify(
+                c => c.GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes("processor", handler),
+                Times.Once);
+        }
+
+        [DataTestMethod]
+        [DataRow("Create")]
+        [DataRow("Replace")]
+        [DataRow("Upsert")]
+        public async Task EncryptableItem_ContentResponseDisabled_PreservesSuccessfulWrite(string operation)
+        {
+            EncryptionItemRequestOptions requestOptions = new ()
+            {
+                EnableContentResponseOnWrite = false,
+                EncryptionOptions = new EncryptionOptions
+                {
+                    DataEncryptionKeyId = "dekId",
+#pragma warning disable CS0618
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+#pragma warning restore CS0618
+                    PathsToEncrypt = Array.Empty<string>(),
+                },
+            };
+            HttpStatusCode statusCode = operation == "Create"
+                ? HttpStatusCode.Created
+                : HttpStatusCode.OK;
+            ResponseMessage innerResponse = new (statusCode);
+            this.innerContainerMock
+                .Setup(c => c.CreateItemStreamAsync(
+                    It.IsAny<Stream>(),
+                    new PartitionKey("pk1"),
+                    requestOptions,
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(innerResponse);
+            this.innerContainerMock
+                .Setup(c => c.ReplaceItemStreamAsync(
+                    It.IsAny<Stream>(),
+                    "doc1",
+                    new PartitionKey("pk1"),
+                    requestOptions,
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(innerResponse);
+            this.innerContainerMock
+                .Setup(c => c.UpsertItemStreamAsync(
+                    It.IsAny<Stream>(),
+                    new PartitionKey("pk1"),
+                    requestOptions,
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(innerResponse);
+            EncryptableItemStream item = new (
+                new MemoryStream(Encoding.UTF8.GetBytes("{\"id\":\"doc1\",\"pk\":\"pk1\"}")));
+
+            ItemResponse<EncryptableItemStream> response = operation switch
+            {
+                "Create" => await this.encryptionContainer.CreateItemAsync(
+                    item,
+                    new PartitionKey("pk1"),
+                    requestOptions),
+                "Replace" => await this.encryptionContainer.ReplaceItemAsync(
+                    item,
+                    "doc1",
+                    new PartitionKey("pk1"),
+                    requestOptions),
+                "Upsert" => await this.encryptionContainer.UpsertItemAsync(
+                    item,
+                    new PartitionKey("pk1"),
+                    requestOptions),
+                _ => throw new AssertFailedException($"Unknown operation: {operation}"),
+            };
+
+            Assert.AreEqual(statusCode, response.StatusCode);
+            Assert.AreSame(item, response.Resource);
+            Assert.ThrowsException<InvalidOperationException>(() => _ = item.DecryptableItem);
+        }
+
         [DataTestMethod]
         [DynamicData(nameof(GetSupportedJsonProcessorsData), DynamicDataSourceType.Method)]
         public async Task GetItemQueryIterator_ForNonDecryptableType_UsesResponseFactoryAsync(string jsonProcessor)
@@ -443,6 +532,80 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             Assert.IsInstanceOfType(decryptableItem, typeof(StreamDecryptableItem),
                 "With UseStreamingJsonProcessingByDefault and null requestOptions, change feed iterator should use Stream processor.");
+        }
+
+        [TestMethod]
+        public async Task ReadItemStreamAsync_WithNullRequestOptions_UsesDefaultJsonProcessor()
+        {
+            this.encryptionContainer.UseStreamingJsonProcessingByDefault();
+            ResponseMessage innerResponse = CreateOkResponse("{\"id\":\"doc1\"}");
+            this.innerContainerMock
+                .Setup(c => c.ReadItemStreamAsync("doc1", new PartitionKey("pk1"), null, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(innerResponse);
+            List<Activity> activities = new ();
+            using ActivityListener listener = new ()
+            {
+                ShouldListenTo = source => source.Name == "Microsoft.Azure.Cosmos.Encryption.Custom",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStarted = activity => activities.Add(activity),
+            };
+            ActivitySource.AddActivityListener(listener);
+
+            using ResponseMessage response = await this.encryptionContainer.ReadItemStreamAsync(
+                "doc1",
+                new PartitionKey("pk1"),
+                requestOptions: null,
+                cancellationToken: default);
+
+            Assert.IsTrue(activities.Any(activity =>
+                activity.DisplayName == CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream));
+        }
+
+        [TestMethod]
+        public async Task CreateItemStreamAsync_ContainerDefaultDoesNotChangeWriteProcessor()
+        {
+            Mock<Encryptor> mdeEncryptor = TestEncryptorFactory.CreateMde("dekId", out _);
+            EncryptionContainer container = CreateEncryptionContainer(
+                this.innerContainerMock,
+                mdeEncryptor,
+                this.responseFactoryMock,
+                this.serializerMock);
+            container.UseStreamingJsonProcessingByDefault();
+            this.innerContainerMock
+                .Setup(c => c.CreateItemStreamAsync(
+                    It.IsAny<Stream>(),
+                    new PartitionKey("pk1"),
+                    It.IsAny<ItemRequestOptions>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(CreateOkResponse("{\"id\":\"doc1\"}"));
+            EncryptionItemRequestOptions requestOptions = new ()
+            {
+                EncryptionOptions = new EncryptionOptions
+                {
+                    DataEncryptionKeyId = "dekId",
+#pragma warning disable CS0618
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+#pragma warning restore CS0618
+                    PathsToEncrypt = new[] { "/Sensitive" },
+                },
+            };
+            List<Activity> activities = new ();
+            using ActivityListener listener = new ()
+            {
+                ShouldListenTo = source => source.Name == "Microsoft.Azure.Cosmos.Encryption.Custom",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStarted = activity => activities.Add(activity),
+            };
+            ActivitySource.AddActivityListener(listener);
+
+            using ResponseMessage response = await container.CreateItemStreamAsync(
+                new MemoryStream(Encoding.UTF8.GetBytes("{\"id\":\"doc1\",\"Sensitive\":\"secret\"}")),
+                new PartitionKey("pk1"),
+                requestOptions,
+                cancellationToken: default);
+
+            Assert.IsTrue(activities.Any(activity =>
+                activity.DisplayName == CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + JsonProcessor.Newtonsoft));
         }
 #endif
 

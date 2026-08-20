@@ -16,16 +16,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     {
         private readonly Encryptor encryptor;
         private readonly CosmosSerializer cosmosSerializer;
+        private readonly JsonProcessor defaultJsonProcessor;
+        private readonly List<RequestOptions> operationRequestOptions = new ();
         private TransactionalBatch transactionalBatch;
 
         public EncryptionTransactionalBatch(
             TransactionalBatch transactionalBatch,
             Encryptor encryptor,
-            CosmosSerializer cosmosSerializer)
+            CosmosSerializer cosmosSerializer,
+            JsonProcessor defaultJsonProcessor)
         {
             this.transactionalBatch = transactionalBatch ?? throw new ArgumentNullException(nameof(transactionalBatch));
             this.encryptor = encryptor ?? throw new ArgumentNullException(nameof(encryptor));
             this.cosmosSerializer = cosmosSerializer ?? throw new ArgumentNullException(nameof(cosmosSerializer));
+            this.defaultJsonProcessor = defaultJsonProcessor;
         }
 
         public override TransactionalBatch CreateItem<T>(
@@ -38,6 +42,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 this.transactionalBatch = this.transactionalBatch.CreateItem(
                     item,
                     requestOptions);
+                this.operationRequestOptions.Add(requestOptions);
 
                 return this;
             }
@@ -70,6 +75,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this.transactionalBatch = this.transactionalBatch.CreateItemStream(
                 streamPayload,
                 requestOptions);
+            this.operationRequestOptions.Add(requestOptions);
 
             return this;
         }
@@ -81,6 +87,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this.transactionalBatch = this.transactionalBatch.DeleteItem(
                 id,
                 requestOptions);
+            this.operationRequestOptions.Add(requestOptions);
 
             return this;
         }
@@ -92,6 +99,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this.transactionalBatch = this.transactionalBatch.ReadItem(
                 id,
                 requestOptions);
+            this.operationRequestOptions.Add(requestOptions);
 
             return this;
         }
@@ -108,6 +116,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     id,
                     item,
                     requestOptions);
+                this.operationRequestOptions.Add(requestOptions);
 
                 return this;
             }
@@ -143,6 +152,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 id,
                 streamPayload,
                 requestOptions);
+            this.operationRequestOptions.Add(requestOptions);
 
             return this;
         }
@@ -157,6 +167,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 this.transactionalBatch = this.transactionalBatch.UpsertItem(
                     item,
                     requestOptions);
+                this.operationRequestOptions.Add(requestOptions);
 
                 return this;
             }
@@ -189,6 +200,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this.transactionalBatch = this.transactionalBatch.UpsertItemStream(
                 streamPayload,
                 requestOptions);
+            this.operationRequestOptions.Add(requestOptions);
 
             return this;
         }
@@ -202,6 +214,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 TransactionalBatchResponse response = await this.transactionalBatch.ExecuteAsync(cancellationToken);
                 return await this.DecryptTransactionalBatchResponseAsync(
                     response,
+                    requestOptions: null,
                     diagnosticsContext,
                     cancellationToken);
             }
@@ -217,6 +230,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 TransactionalBatchResponse response = await this.transactionalBatch.ExecuteAsync(requestOptions, cancellationToken);
                 return await this.DecryptTransactionalBatchResponseAsync(
                     response,
+                    requestOptions,
                     diagnosticsContext,
                     cancellationToken);
             }
@@ -224,20 +238,27 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         private async Task<TransactionalBatchResponse> DecryptTransactionalBatchResponseAsync(
             TransactionalBatchResponse response,
+            TransactionalBatchRequestOptions requestOptions,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             List<TransactionalBatchOperationResult> decryptedTransactionalBatchOperationResults = new ();
+            JsonProcessor batchJsonProcessor = requestOptions.GetJsonProcessor(this.defaultJsonProcessor);
+            int operationIndex = 0;
 
             foreach (TransactionalBatchOperationResult result in response)
             {
                 if (response.IsSuccessStatusCode && result.ResourceStream != null)
                 {
+                    JsonProcessor jsonProcessor = operationIndex < this.operationRequestOptions.Count
+                        ? this.operationRequestOptions[operationIndex].GetJsonProcessor(batchJsonProcessor)
+                        : batchJsonProcessor;
                     (Stream decryptedStream, _) = await EncryptionProcessor.DecryptAsync(
                         result.ResourceStream,
                         this.encryptor,
+                        jsonProcessor,
+                        legacyFallback: true,
                         diagnosticsContext,
-                        requestOptions: null,
                         cancellationToken);
 
                     decryptedTransactionalBatchOperationResults.Add(new EncryptionTransactionalBatchOperationResult(result, decryptedStream));
@@ -246,6 +267,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 {
                     decryptedTransactionalBatchOperationResults.Add(result);
                 }
+
+                operationIndex++;
             }
 
             return new EncryptionTransactionalBatchResponse(

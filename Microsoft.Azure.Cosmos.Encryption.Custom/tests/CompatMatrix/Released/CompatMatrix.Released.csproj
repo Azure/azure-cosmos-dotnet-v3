@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>CompatMatrix.Released</AssemblyName>
+    <RootNamespace>CompatMatrix</RootNamespace>
+    <DefineConstants>$(DefineConstants);COMPAT_RELEASED</DefineConstants>
+    <SignAssembly>false</SignAssembly>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoWarn>$(NoWarn);CS0618</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Worker\Program.cs" Link="Program.cs" />
+    <Compile Include="..\Worker\KeyProviders.cs" Link="KeyProviders.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Azure.Cosmos.Encryption.Custom" Version="[1.0.0-preview07]" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+</Project>

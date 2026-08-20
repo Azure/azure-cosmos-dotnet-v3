@@ -28,15 +28,32 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         internal static bool TryReadJsonProcessorOverride(this RequestOptions requestOptions, out JsonProcessor jsonProcessor)
         {
             jsonProcessor = JsonProcessor.Newtonsoft;
+            JsonProcessor? typedOverride = requestOptions switch
+            {
+                EncryptionItemRequestOptions itemOptions => itemOptions.JsonProcessorOverride,
+                EncryptionTransactionalBatchItemRequestOptions batchItemOptions => batchItemOptions.JsonProcessorOverride,
+                _ => null,
+            };
+            if (typedOverride.HasValue)
+            {
+                jsonProcessor = typedOverride.Value;
+                return true;
+            }
+
             if (requestOptions?.Properties != null &&
                 requestOptions.Properties.TryGetValue(JsonProcessorPropertyBagKey, out object value) && value != null)
             {
                 if (value is JsonProcessor enumVal)
                 {
-                    jsonProcessor = enumVal;
-                    return true;
+                    if (Enum.IsDefined(typeof(JsonProcessor), enumVal))
+                    {
+                        jsonProcessor = enumVal;
+                        return true;
+                    }
                 }
-                else if (value is string s && Enum.TryParse(s, true, out JsonProcessor parsed))
+                else if (value is string s
+                    && Enum.TryParse(s, true, out JsonProcessor parsed)
+                    && Enum.IsDefined(typeof(JsonProcessor), parsed))
                 {
                     jsonProcessor = parsed;
                     return true;

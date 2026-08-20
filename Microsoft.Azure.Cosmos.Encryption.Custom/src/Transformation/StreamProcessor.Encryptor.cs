@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             CancellationToken cancellationToken)
         {
             List<string> pathsEncrypted = new (encryptionOptions.PathsToEncrypt is ICollection<string> c ? c.Count : 0);
+            HashSet<string> encounteredEncryptedPaths = new (StringComparer.Ordinal);
 
             using ArrayPoolManager arrayPoolManager = new ();
 
@@ -221,6 +222,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                                 if (matchedPath != null)
                                 {
+                                    if (!encounteredEncryptedPaths.Add(matchedPath))
+                                    {
+                                        throw new InvalidOperationException(
+                                            $"The input document contains a duplicate targeted property '{matchedPath.Substring(1)}'. Duplicate encrypted properties are not supported.");
+                                    }
+
                                     encryptPropertyName = matchedPath;
                                 }
                             }

@@ -33,8 +33,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Exception innerException)
             : base(innerException.Message, innerException)
         {
-            this.DataEncryptionKeyId = dataEncryptionKeyId ?? throw new ArgumentNullException(dataEncryptionKeyId);
-            this.EncryptedContent = encryptedContent ?? throw new ArgumentNullException(encryptedContent);
+            // This exception wraps a real decrypt failure (innerException). A corrupt document can
+            // legitimately have a missing/null DEK id (e.g. an _ei block without _en). Coalesce to
+            // empty rather than throwing here: throwing ArgumentNullException from the constructor
+            // would discard innerException and surface a confusing ArgumentNullException instead of
+            // the real error. This matches the stream-mode DecryptableItem path, which already
+            // coalesces these values.
+            this.DataEncryptionKeyId = dataEncryptionKeyId ?? string.Empty;
+            this.EncryptedContent = encryptedContent ?? string.Empty;
         }
     }
 }

@@ -29,11 +29,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         public override async Task<(T, DecryptionContext)> GetItemAsync<T>()
         {
-            if (this.decryptableContent is not JObject document)
+            if (this.decryptableContent is not JObject encryptedDocument)
             {
                 return (this.cosmosSerializer.FromStream<T>(EncryptionProcessor.BaseSerializer.ToStream(this.decryptableContent)), null);
             }
 
+            JObject document = (JObject)encryptedDocument.DeepClone();
             try
             {
                 (JObject decryptedItem, DecryptionContext decryptionContext) = await EncryptionProcessor.DecryptAsync(
@@ -46,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
             catch (Exception exception)
             {
-                string dataEncryptionKeyId = !(document.TryGetValue(Constants.EncryptedInfo, out JToken encryptedInfo) &&
+                string dataEncryptionKeyId = !(encryptedDocument.TryGetValue(Constants.EncryptedInfo, out JToken encryptedInfo) &&
                     (encryptedInfo is JObject encryptedInfoObject))
                     ? null
                     : (string)encryptedInfoObject.GetValue(Constants.EncryptionDekId);
