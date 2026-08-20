@@ -76,7 +76,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 EncryptionOptions = encryptionOptions,
             };
 #if NET8_0_OR_GREATER
-            requestOptions.WithEncryptionJsonProcessor(jsonProcessor);
+            requestOptions.Properties = new System.Collections.Generic.Dictionary<string, object>
+            {
+                { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, jsonProcessor.ToString() },
+            };
 #else
             Assert.AreEqual(JsonProcessor.Newtonsoft, jsonProcessor);
 #endif

@@ -183,75 +183,37 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         }
 
         [TestMethod]
-        public void WithEncryptionJsonProcessor_WritesSelection_ReadBackViaGetJsonProcessor()
+        public void GetJsonProcessor_EncryptionItemOptions_CachesOverrideAndRemovesProperty()
         {
-            QueryRequestOptions ro = new QueryRequestOptions()
-                .WithEncryptionJsonProcessor(JsonProcessor.Stream);
+            EncryptionItemRequestOptions requestOptions = new ()
+            {
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Stream" },
+                    { "unrelated", 123 },
+                },
+            };
 
-            Assert.AreEqual(JsonProcessor.Stream, ro.GetJsonProcessor(JsonProcessor.Newtonsoft));
-
-            ro.WithEncryptionJsonProcessor(JsonProcessor.Newtonsoft);
-            Assert.AreEqual(JsonProcessor.Newtonsoft, ro.GetJsonProcessor(JsonProcessor.Stream));
-        }
-
-        [TestMethod]
-        public void WithEncryptionJsonProcessor_ReturnsSameInstance_AndPreservesConcreteType()
-        {
-            QueryRequestOptions ro = new ();
-            QueryRequestOptions result = ro.WithEncryptionJsonProcessor(JsonProcessor.Stream);
-
-            Assert.AreSame(ro, result);
-        }
-
-        [TestMethod]
-        public void WithEncryptionJsonProcessor_EncryptionItemOptions_DoesNotUseProperties()
-        {
-            EncryptionItemRequestOptions requestOptions = new ();
-
-            requestOptions.WithEncryptionJsonProcessor(JsonProcessor.Stream);
-
-            Assert.IsNull(requestOptions.Properties);
             Assert.AreEqual(JsonProcessor.Stream, requestOptions.GetJsonProcessor(JsonProcessor.Newtonsoft));
-        }
-
-        [TestMethod]
-        public void WithEncryptionJsonProcessor_EncryptionBatchItemOptions_DoesNotUseProperties()
-        {
-            EncryptionTransactionalBatchItemRequestOptions requestOptions = new ();
-
-            requestOptions.WithEncryptionJsonProcessor(JsonProcessor.Stream);
-
-            Assert.IsNull(requestOptions.Properties);
             Assert.AreEqual(JsonProcessor.Stream, requestOptions.GetJsonProcessor(JsonProcessor.Newtonsoft));
+            Assert.IsFalse(requestOptions.Properties.ContainsKey(JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey));
+            Assert.AreEqual(123, requestOptions.Properties["unrelated"]);
         }
 
         [TestMethod]
-        public void WithEncryptionJsonProcessor_DoesNotMutateCallerSuppliedPropertiesDictionary()
+        public void GetJsonProcessor_EncryptionBatchItemOptions_CachesOverrideAndRemovesProperty()
         {
-            Dictionary<string, object> shared = new () { { "unrelated", 123 } };
-            QueryRequestOptions ro = new () { Properties = shared };
+            EncryptionTransactionalBatchItemRequestOptions requestOptions = new ()
+            {
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Stream" },
+                },
+            };
 
-            ro.WithEncryptionJsonProcessor(JsonProcessor.Stream);
-
-            Assert.IsFalse(shared.ContainsKey(JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey), "Original dictionary must not be mutated.");
-            Assert.IsFalse(ReferenceEquals(shared, ro.Properties), "A new dictionary should have been assigned.");
-            Assert.IsTrue(ro.Properties.ContainsKey(JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey));
-            Assert.AreEqual(123, ro.Properties["unrelated"], "Pre-existing properties must be preserved in the copy.");
-        }
-
-        [TestMethod]
-        public void WithEncryptionJsonProcessor_NullRequestOptions_Throws()
-        {
-            QueryRequestOptions ro = null;
-            Assert.ThrowsException<ArgumentNullException>(() => ro.WithEncryptionJsonProcessor(JsonProcessor.Stream));
-        }
-
-        [TestMethod]
-        public void WithEncryptionJsonProcessor_UndefinedValue_Throws()
-        {
-            QueryRequestOptions ro = new ();
-            Assert.ThrowsException<ArgumentOutOfRangeException>(
-                () => ro.WithEncryptionJsonProcessor((JsonProcessor)999));
+            Assert.AreEqual(JsonProcessor.Stream, requestOptions.GetJsonProcessor(JsonProcessor.Newtonsoft));
+            Assert.AreEqual(JsonProcessor.Stream, requestOptions.GetJsonProcessor(JsonProcessor.Newtonsoft));
+            Assert.IsNull(requestOptions.Properties);
         }
     }
 }

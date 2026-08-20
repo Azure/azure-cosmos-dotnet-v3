@@ -24,8 +24,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [TestMethod]
         public async Task ExecuteAsync_UsesPerOperationJsonProcessorOverride()
         {
-            TransactionalBatchItemRequestOptions itemOptions = new TransactionalBatchItemRequestOptions()
-                .WithEncryptionJsonProcessor(JsonProcessor.Stream);
+            TransactionalBatchItemRequestOptions itemOptions = new ()
+            {
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Stream" },
+                },
+            };
             EncryptionTransactionalBatch batch = CreateBatch(
                 setupOperation: inner => inner
                     .Setup(b => b.ReadItem("id", itemOptions))
@@ -46,8 +51,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                     .Setup(b => b.ReadItem("id", null))
                     .Returns(inner.Object));
             batch.ReadItem("id");
-            TransactionalBatchRequestOptions requestOptions = new TransactionalBatchRequestOptions()
-                .WithEncryptionJsonProcessor(JsonProcessor.Stream);
+            TransactionalBatchRequestOptions requestOptions = new ()
+            {
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Stream" },
+                },
+            };
 
             List<Activity> activities = await ExecuteAndCaptureActivitiesAsync(
                 () => batch.ExecuteAsync(requestOptions));

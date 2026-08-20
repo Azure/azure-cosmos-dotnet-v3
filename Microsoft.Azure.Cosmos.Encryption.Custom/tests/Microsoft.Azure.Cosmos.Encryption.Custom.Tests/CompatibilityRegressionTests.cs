@@ -227,7 +227,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 EncryptionOptions = encryptionOptions,
             };
 #if NET8_0_OR_GREATER
-            requestOptions.WithEncryptionJsonProcessor(jsonProcessor);
+            requestOptions.Properties = new Dictionary<string, object>
+            {
+                { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, jsonProcessor.ToString() },
+            };
 #else
             Assert.AreEqual(JsonProcessor.Newtonsoft, jsonProcessor);
 #endif
@@ -409,8 +412,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 JsonProcessor.Newtonsoft,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
-            ItemRequestOptions requestOptions = new ItemRequestOptions()
-                .WithEncryptionJsonProcessor(JsonProcessor.Stream);
+            ItemRequestOptions requestOptions = (ItemRequestOptions)RequestOptionsOverrideHelper.Create(JsonProcessor.Stream);
 
             NotSupportedException exception = await Assert.ThrowsExceptionAsync<NotSupportedException>(
                 () => EncryptionProcessor.DecryptAsync(

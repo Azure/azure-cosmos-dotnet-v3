@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     using System;
+    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos;
 
     /// <summary>
@@ -48,6 +49,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     if (Enum.IsDefined(typeof(JsonProcessor), enumVal))
                     {
                         jsonProcessor = enumVal;
+                        StoreInternalOverride(requestOptions, jsonProcessor);
                         return true;
                     }
                 }
@@ -56,6 +58,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     && Enum.IsDefined(typeof(JsonProcessor), parsed))
                 {
                     jsonProcessor = parsed;
+                    StoreInternalOverride(requestOptions, jsonProcessor);
                     return true;
                 }
             }
@@ -71,6 +74,30 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             return defaultJsonProcessor;
+        }
+
+        private static void StoreInternalOverride(RequestOptions requestOptions, JsonProcessor jsonProcessor)
+        {
+            switch (requestOptions)
+            {
+                case EncryptionItemRequestOptions itemOptions:
+                    itemOptions.JsonProcessorOverride = jsonProcessor;
+                    break;
+                case EncryptionTransactionalBatchItemRequestOptions batchItemOptions:
+                    batchItemOptions.JsonProcessorOverride = jsonProcessor;
+                    break;
+                default:
+                    return;
+            }
+
+            Dictionary<string, object> properties = new ();
+            foreach (KeyValuePair<string, object> property in requestOptions.Properties)
+            {
+                properties[property.Key] = property.Value;
+            }
+
+            properties.Remove(JsonProcessorPropertyBagKey);
+            requestOptions.Properties = properties.Count == 0 ? null : properties;
         }
     }
 }

@@ -1030,8 +1030,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <para>
         /// This is a one-way, configure-once-before-use switch. It should be set during container setup,
         /// before any encryption-aware read/query/change-feed operation is issued on the container instance.
-        /// Per-call <c>WithEncryptionJsonProcessor</c> overrides (and the legacy request-options property-bag
-        /// form) remain effective after this call and can route individual operations back through Newtonsoft.
+        /// Per-call <c>RequestOptions.Properties["encryption-json-processor"]</c> overrides remain effective
+        /// after this call and can route individual operations back through Newtonsoft.
         /// Writes continue to use Newtonsoft unless their request options explicitly select another processor.
         /// </para>
         /// <para>
