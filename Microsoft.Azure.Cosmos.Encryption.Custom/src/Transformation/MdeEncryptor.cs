@@ -10,9 +10,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     {
         internal virtual byte[] Encrypt(DataEncryptionKey encryptionKey, TypeMarker typeMarker, byte[] plainText, int plainTextLength)
         {
-            // DataEncryptionKey implementations written against the original abstract surface
-            // (array-based EncryptData only) cannot pre-compute the ciphertext size; route
-            // them through the array-based API.
+            // Older keys expose only the array-based API.
             if (!encryptionKey.ProvidesEncryptByteCount())
             {
                 return EncryptLegacy(encryptionKey, typeMarker, plainText, plainTextLength);

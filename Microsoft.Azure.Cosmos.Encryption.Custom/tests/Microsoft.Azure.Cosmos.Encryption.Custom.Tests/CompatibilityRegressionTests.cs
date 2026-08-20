@@ -18,26 +18,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using Newtonsoft.Json.Linq;
 
     /// <summary>
-    /// Regression tests for released-package compatibility findings that are not covered by
-    /// <see cref="CrossProcessorCompatibilityTests"/>:
-    ///  - C4: custom <see cref="Encryptor"/>/<see cref="DataEncryptionKey"/> subclasses written
-    ///    against the released package (no GetEncryptionKeyAsync / no buffer-based members) must keep
-    ///    working and must NOT be silently bypassed on the MDE path.
-    ///  - M1: integral literals beyond Int64 and non-finite doubles are rejected by both paths.
-    ///  - M2: integral doubles decrypt with Newtonsoft-compatible text ("5.0", not "5") so the
-    ///    TypeMarker does not flap between Double and Long across re-encrypt cycles.
-    ///  - F-9: legacy-algorithm documents produce a clear error through the Stream decrypt path.
-    ///  - F-10: a non-object _ei value is passed through unchanged (not an error).
+    /// Regression tests for released subclass compatibility and JSON processor parity.
     /// </summary>
     [TestClass]
     public class CompatibilityRegressionTests
     {
         private const string DekId = "legacyCompatDek";
 
-        /// <summary>
-        /// An Encryptor written against the released surface: overrides ONLY
-        /// EncryptAsync/DecryptAsync. GetEncryptionKeyAsync is intentionally NOT overridden.
-        /// </summary>
         private sealed class Preview08StyleEncryptor : Encryptor
         {
             public int EncryptCalls;
@@ -58,11 +45,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
         }
 
-        /// <summary>
-        /// A DataEncryptionKey written against the released surface: overrides ONLY the
-        /// array-based EncryptData/DecryptData. None of the buffer-based members added later
-        /// are overridden.
-        /// </summary>
         private class ReleasedStyleDataEncryptionKey : DataEncryptionKey
         {
             public int ArrayEncryptCalls;
@@ -85,10 +67,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
         }
 
-        /// <summary>
-        /// An Encryptor that DOES override GetEncryptionKeyAsync, handing out a
-        /// released-style DataEncryptionKey (array-based members only).
-        /// </summary>
         private sealed class KeyAccessEncryptor : Encryptor
         {
             public readonly ReleasedStyleDataEncryptionKey Dek = new ();
@@ -278,8 +256,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 #endif
 
-        // ---- C4: custom Encryptor dispatch ---------------------------------------------------
-
         [TestMethod]
         public async Task CustomEncryptor_WithoutKeyAccess_NewtonsoftPath_DispatchesThroughEncryptAsync()
         {
@@ -402,7 +378,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [TestMethod]
         public async Task CustomEncryptor_WithoutKeyAccess_StreamDecrypt_ThrowsClearError()
         {
-            // Encrypt with the supported (Newtonsoft) path first.
             Preview08StyleEncryptor encryptor = new ();
             string json = "{\"id\":\"1\",\"Sensitive\":\"secret value\"}";
 
@@ -451,9 +426,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [TestMethod]
         public async Task CustomDataEncryptionKey_ArrayBasedOnly_StreamPath_RoundTrips()
         {
-            // A legacy DataEncryptionKey works on the Stream path too, provided the Encryptor
-            // exposes it via GetEncryptionKeyAsync: the buffer-based calls fall back to the
-            // array-based implementation.
             KeyAccessEncryptor encryptor = new ();
             string json = "{\"id\":\"1\",\"Sensitive\":\"secret value\"}";
 
@@ -481,13 +453,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 #endif
 
-        // ---- M1: non-finite doubles rejected on the Newtonsoft path ---------------------------
-
         [TestMethod]
         public async Task NewtonsoftEncrypt_InfinityProducingLiteral_Throws()
         {
-            // 1e309 overflows double range; modern runtimes parse it as +Infinity which is not
-            // representable in JSON. Must be rejected, matching the Stream path.
             Preview08StyleEncryptor encryptor = new ();
             string json = "{\"id\":\"1\",\"Big\":1e309}";
 
@@ -515,15 +483,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
 #if NET8_0_OR_GREATER
-        // ---- M2: integral double text parity ---------------------------------------------------
-
         [TestMethod]
         public async Task IntegralDouble_RoundTrip_PreservesDoubleTypeMarkerAcrossProcessors()
         {
             Moq.Mock<Encryptor> mockEncryptor = TestEncryptorFactory.CreateMde(DekId, out _);
             string json = "{\"id\":\"1\",\"D\":5.0}";
 
-            // Encrypt (Newtonsoft) -> decrypt (Stream): text must stay an explicit double.
             Stream encrypted = await EncryptAsync(
                 ToStream(json),
                 mockEncryptor.Object,
@@ -549,8 +514,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             string decryptedJson = new StreamReader(decrypted).ReadToEnd();
             StringAssert.Contains(decryptedJson, "\"D\":5.0", "Stream decrypt must format integral doubles with an explicit decimal point (Newtonsoft parity)");
 
-            // Re-encrypt the Stream-decrypted text (Newtonsoft) -> the value must classify as
-            // Double again (no Long/Double TypeMarker flapping).
             Stream reEncrypted = await EncryptAsync(
                 ToStream(decryptedJson),
                 mockEncryptor.Object,
@@ -576,15 +539,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.AreEqual(5.0, finalDoc.RootElement.GetProperty("D").GetDouble(), 0.0);
         }
 
-        // ---- F-9: clear error for legacy-algorithm documents via the Stream decrypt API --------
-
         [TestMethod]
         public async Task StreamDecrypt_LegacyFormatVersionDocument_ThrowsActionableError()
         {
             Moq.Mock<Encryptor> mockEncryptor = TestEncryptorFactory.CreateMde(DekId, out _);
 
-            // Hand-crafted legacy (_ef=2) envelope; MDE algorithm string so the adapter's
-            // algorithm gate does not fire first and the format gate is exercised.
+            // Use MDE metadata with format 2 to exercise the format gate.
             string json = "{\"id\":\"1\",\"_ei\":{\"_ef\":2,\"_en\":\"" + DekId + "\",\"_ea\":\"" + CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized + "\",\"_ed\":\"AAEC\",\"_ep\":[]}}";
 
             NotSupportedException ex = await Assert.ThrowsExceptionAsync<NotSupportedException>(() => DecryptStreamAsync(
@@ -596,8 +556,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             StringAssert.Contains(ex.Message, "legacy", "error must state the document uses the legacy algorithm");
             StringAssert.Contains(ex.Message, "Newtonsoft", "error must point the user to the Newtonsoft processor");
         }
-
-        // ---- F-10: non-object _ei value passes through ------------------------------------------
 
         [TestMethod]
         public async Task StreamDecrypt_NonObjectEiValue_PassesDocumentThrough()

@@ -81,9 +81,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             Debug.Assert(buffer2Index > -1 && buffer2Index < buffer2.Length, "invalid index");
 
-            // Length/index checks are on non-secret sizes, so returning early here leaks no timing
-            // about the compared bytes. Requiring both buffers to hold the full lengthToCompare also
-            // closes a footgun where a shorter buffer1 previously matched on a prefix.
+            // Bounds are public; only the byte comparison must be constant-time.
             if (buffer2Index < 0 || buffer1.Length < lengthToCompare || (buffer2.Length - buffer2Index) < lengthToCompare)
             {
                 return false;

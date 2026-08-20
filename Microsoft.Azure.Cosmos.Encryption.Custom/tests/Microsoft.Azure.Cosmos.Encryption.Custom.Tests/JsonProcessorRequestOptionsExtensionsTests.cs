@@ -188,7 +188,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             QueryRequestOptions ro = new QueryRequestOptions()
                 .WithEncryptionJsonProcessor(JsonProcessor.Stream);
 
-            // The per-call selection must win over whatever container default is supplied.
             Assert.AreEqual(JsonProcessor.Stream, ro.GetJsonProcessor(JsonProcessor.Newtonsoft));
 
             ro.WithEncryptionJsonProcessor(JsonProcessor.Newtonsoft);
@@ -201,8 +200,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             QueryRequestOptions ro = new ();
             QueryRequestOptions result = ro.WithEncryptionJsonProcessor(JsonProcessor.Stream);
 
-            // Generic TRequestOptions keeps the concrete type for fluent chaining, and the same
-            // instance is returned (the call configures, it does not clone the options object).
             Assert.AreSame(ro, result);
         }
 
@@ -231,8 +228,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [TestMethod]
         public void WithEncryptionJsonProcessor_DoesNotMutateCallerSuppliedPropertiesDictionary()
         {
-            // A properties dictionary may be shared with other request-options instances; the extension
-            // must copy into a fresh dictionary rather than mutating the caller's original.
             Dictionary<string, object> shared = new () { { "unrelated", 123 } };
             QueryRequestOptions ro = new () { Properties = shared };
 

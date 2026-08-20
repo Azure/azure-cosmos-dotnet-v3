@@ -44,9 +44,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             using ArrayPoolManager arrayPoolManager = new ();
 
-            // Custom Encryptor implementations that pre-date GetEncryptionKeyAsync are routed
-            // through their EncryptAsync override (the original release behavior) so their
-            // logic (auditing, key scoping, alternative crypto) is not silently bypassed.
+            // Older encryptors expose only EncryptAsync/DecryptAsync.
             bool useDataEncryptionKeyDirectly = encryptor.ProvidesDataEncryptionKeyAccess();
             DataEncryptionKey encryptionKey = useDataEncryptionKeyDirectly
                 ? await encryptor.GetEncryptionKeyAsync(encryptionOptions.DataEncryptionKeyId, encryptionOptions.EncryptionAlgorithm, token)
@@ -111,8 +109,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             using ArrayPoolManager arrayPoolManager = new ();
             using ArrayPoolManager<char> charPoolManager = new ();
 
-            // See EncryptAsync: legacy custom Encryptor implementations dispatch through
-            // their DecryptAsync override instead of direct DataEncryptionKey access.
             bool useDataEncryptionKeyDirectly = encryptor.ProvidesDataEncryptionKeyAccess();
             DataEncryptionKey encryptionKey = useDataEncryptionKeyDirectly
                 ? await encryptor.GetEncryptionKeyAsync(encryptionProperties.DataEncryptionKeyId, encryptionProperties.EncryptionAlgorithm, cancellationToken)
@@ -166,11 +162,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             return decryptionContext;
         }
 
-        /// <summary>
-        /// Per-property encryption through <see cref="Custom.Encryptor.EncryptAsync"/>, replicating the
-        /// original release behavior for custom Encryptor implementations that do not expose a
-        /// <see cref="DataEncryptionKey"/> via <see cref="Custom.Encryptor.GetEncryptionKeyAsync"/>.
-        /// </summary>
         private static async Task<byte[]> EncryptThroughEncryptorAsync(
             Encryptor encryptor,
             EncryptionOptions encryptionOptions,
@@ -179,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             int processedBytesLength,
             CancellationToken token)
         {
-            // The pooled buffer is oversized; the Encryptor contract takes an exact-size array.
+            // Encryptor requires an exact-length array.
             byte[] plainText = new byte[processedBytesLength];
             Buffer.BlockCopy(processedBytes, 0, plainText, 0, processedBytesLength);
 
@@ -195,10 +186,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             return cipherTextWithTypeMarker;
         }
 
-        /// <summary>
-        /// Per-property decryption through <see cref="Custom.Encryptor.DecryptAsync"/>; counterpart of
-        /// <see cref="EncryptThroughEncryptorAsync"/>.
-        /// </summary>
         private static async Task<byte[]> DecryptThroughEncryptorAsync(
             Encryptor encryptor,
             EncryptionProperties encryptionProperties,

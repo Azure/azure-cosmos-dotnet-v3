@@ -60,15 +60,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [TestMethod]
         public void DecryptData_TamperedAuthenticationTag_RejectedAtEveryBytePosition()
         {
-            // The authentication tag is verified with SecurityUtility.CompareBytes, which is
-            // constant-time. A single flipped bit at ANY tag position — including the last byte — must
-            // be rejected. This guards the MAC check against a regression to an early-exit comparison
-            // that could stop before the final byte.
             byte[] plainText = Enumerable.Range(0, 16).Select(i => (byte)i).ToArray();
             byte[] cipher = algorithm.EncryptData(plainText);
 
-            // Cipher layout: [version:1][authTag:32][iv:16][ciphertext]. The tag occupies the 32 bytes
-            // immediately after the version byte (KeySizeInBytes for a 256-bit key).
+            // The tag follows the algorithm-version byte.
             const int tagOffset = 1;
             const int tagLength = 32;
 
@@ -87,7 +82,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [TestMethod]
         public void DecryptData_TamperedCipherText_Rejected()
         {
-            // Flipping a ciphertext byte changes the recomputed tag, so the MAC check must fail.
             byte[] plainText = Enumerable.Range(0, 16).Select(i => (byte)i).ToArray();
             byte[] cipher = algorithm.EncryptData(plainText);
 

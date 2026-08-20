@@ -187,8 +187,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 byte[] blob = Convert.FromBase64String(doc[name].ToObject<string>());
                 Assert.AreEqual(marker, blob[0], $"TypeMarker byte for {name}");
 
-                // Wire layout: TypeMarker(1) ‖ AEAD blob. The AEAD blob's first byte is the
-                // algorithm version, pinned to 1 by the SDK (MdeEncryptionAlgorithm.Version).
+                // Layout: type marker followed by the versioned AEAD payload.
                 Assert.AreEqual(1, blob[1], $"AEAD algorithm version byte for {name}");
             }
         }
@@ -196,8 +195,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [TestMethod]
         public async Task Fixture_FreshEncryptionWithFixedKey_RoundTripsAndKeepsVersionByte()
         {
-            // AEAD is IV-randomized, so fresh ciphertext differs run to run; what must stay
-            // stable is the deterministic layout (version byte) and decryptability.
             Encryptor encryptor = CreateFixtureEncryptor();
 
             EncryptionOptions options = new ()
