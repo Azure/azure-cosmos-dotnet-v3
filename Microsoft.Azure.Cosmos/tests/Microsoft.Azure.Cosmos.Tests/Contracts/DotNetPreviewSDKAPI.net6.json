@@ -1379,6 +1379,18 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.DistributedTransactionOperationResult`1[T] GetOperationResultAtIndex[T](Int32);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.DistributedTransactionResponseMode get_ResponseMode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.DistributedTransactionResponseMode get_ResponseMode();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.DistributedTransactionResponseMode ResponseMode": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.DistributedTransactionResponseMode ResponseMode;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.DistributedTransactionResponseMode get_ResponseMode();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Microsoft.Azure.Cosmos.Headers get_Headers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -1458,6 +1470,27 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void Dispose();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:True;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.DistributedTransactionResponseMode;System.Enum;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:True;IsClass:False;IsValueType:True;IsNested:False;IsGenericType:False;IsSerializable:True": {
+      "Subclasses": {},
+      "Members": {
+        "Int32 value__": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Int32 value__;IsInitOnly:False;IsStatic:False;"
+        },
+        "Microsoft.Azure.Cosmos.DistributedTransactionResponseMode FastResponse": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.DistributedTransactionResponseMode FastResponse;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.DistributedTransactionResponseMode Standard": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.DistributedTransactionResponseMode Standard;IsInitOnly:False;IsStatic:True;"
         }
       },
       "NestedTypes": {}
