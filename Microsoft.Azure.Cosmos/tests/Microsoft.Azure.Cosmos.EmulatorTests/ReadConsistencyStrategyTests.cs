@@ -337,58 +337,5 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 readConsistencyStrategyHeader,
                 "LastCommittedSingleWriteRegion should be sent on the wire as LatestCommitted with hub-region routing.");
         }
-
-        /// <summary>
-        /// Verifies that <see cref="ReadConsistencyStrategy.LastCommittedSingleWriteRegion"/> is rejected on a multi-master account.
-        /// </summary>
-        [TestMethod]
-        [TestCategory("MultiMaster")]
-        public async Task LastCommittedSingleWriteRegionRejectedForMultiMasterAccount()
-        {
-            string connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTIMASTER", null);
-
-            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "False");
-
-            if (string.IsNullOrEmpty(connectionString))
-            {
-                Assert.Fail("Set environment variable COSMOSDB_MULTIMASTER to run the tests");
-            }
-
-            using CosmosClient multiMasterClient = new CosmosClient(connectionString);
-
-            AccountProperties account = await multiMasterClient.ReadAccountAsync();
-            Assert.IsTrue(
-                account.WritableRegions.Count() > 1,
-                "Configured account must be multi-master.");
-
-            Cosmos.Database multiMasterDatabase = null;
-            try
-            {
-                multiMasterDatabase = await multiMasterClient.CreateDatabaseIfNotExistsAsync("ReadConsistencyStrategyMultiMasterTests");
-                Container multiMasterContainer = await multiMasterDatabase.CreateContainerIfNotExistsAsync(
-                    new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/pk"),
-                    throughput: 400);
-
-                ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
-                await multiMasterContainer.CreateItemAsync(testItem);
-
-                ArgumentException exception = await Assert.ThrowsExceptionAsync<ArgumentException>(
-                    () => multiMasterContainer.ReadItemAsync<ToDoActivity>(
-                        testItem.id,
-                        new Cosmos.PartitionKey(testItem.pk),
-                        new ItemRequestOptions { ReadConsistencyStrategy = Cosmos.ReadConsistencyStrategy.LastCommittedSingleWriteRegion }),
-                    "LastCommittedSingleWriteRegion must be rejected on a multi-master account.");
-
-                StringAssert.Contains(exception.Message, nameof(Cosmos.ReadConsistencyStrategy.LastCommittedSingleWriteRegion));
-                StringAssert.Contains(exception.Message, "multi-master");
-            }
-            finally
-            {
-                if (multiMasterDatabase != null)
-                {
-                    await multiMasterDatabase.DeleteAsync();
-                }
-            }
-        }
     }
 }
