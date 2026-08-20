@@ -607,6 +607,52 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsTrue(activities.Any(activity =>
                 activity.DisplayName == CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + JsonProcessor.Newtonsoft));
         }
+
+        [TestMethod]
+        public async Task CreateItemStreamAsync_HiddenProcessorPropertyIsNotForwardedToCosmos()
+        {
+            Mock<Encryptor> mdeEncryptor = TestEncryptorFactory.CreateMde("dekId", out _);
+            EncryptionContainer container = CreateEncryptionContainer(
+                this.innerContainerMock,
+                mdeEncryptor,
+                this.responseFactoryMock,
+                this.serializerMock);
+            EncryptionItemRequestOptions requestOptions = new ()
+            {
+                EncryptionOptions = new EncryptionOptions
+                {
+                    DataEncryptionKeyId = "dekId",
+#pragma warning disable CS0618
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+#pragma warning restore CS0618
+                    PathsToEncrypt = new[] { "/Sensitive" },
+                },
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Stream" },
+                },
+            };
+            ItemRequestOptions forwardedOptions = null;
+            this.innerContainerMock
+                .Setup(c => c.CreateItemStreamAsync(
+                    It.IsAny<Stream>(),
+                    new PartitionKey("pk1"),
+                    It.IsAny<ItemRequestOptions>(),
+                    It.IsAny<CancellationToken>()))
+                .Callback<Stream, PartitionKey, ItemRequestOptions, CancellationToken>(
+                    (_, _, options, _) => forwardedOptions = options)
+                .ReturnsAsync(CreateOkResponse("{\"id\":\"doc1\"}"));
+
+            using ResponseMessage response = await container.CreateItemStreamAsync(
+                new MemoryStream(Encoding.UTF8.GetBytes("{\"id\":\"doc1\",\"Sensitive\":\"secret\"}")),
+                new PartitionKey("pk1"),
+                requestOptions,
+                cancellationToken: default);
+
+            Assert.AreSame(requestOptions, forwardedOptions);
+            Assert.IsNull(forwardedOptions.Properties);
+            Assert.AreEqual(JsonProcessor.Stream, requestOptions.GetJsonProcessor(JsonProcessor.Newtonsoft));
+        }
 #endif
 
         private static EncryptionContainer CreateEncryptionContainer(
