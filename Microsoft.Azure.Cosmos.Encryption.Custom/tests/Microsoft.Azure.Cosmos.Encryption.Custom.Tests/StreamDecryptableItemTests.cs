@@ -10,6 +10,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
+    using System.Reflection;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
@@ -492,6 +494,159 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsNull(context);
         }
 
+        [TestMethod]
+        public async Task GetItemAsync_SequentialCallsWithDifferentTypes_MatchesNewtonsoftPath()
+        {
+            TestDoc originalDoc = TestDoc.Create();
+            int streamDecryptCalls = 0;
+            Mock<Encryptor> streamDecryptor = CreateEncryptor(() => Interlocked.Increment(ref streamDecryptCalls));
+
+            await using DecryptableItem newtonsoftItem = await CreateDecryptableItemAsync(
+                DecryptableItemVariant.Newtonsoft,
+                originalDoc,
+                encrypt: true,
+                decryptor: mockEncryptor.Object,
+                serializer: cosmosSerializer);
+            await using DecryptableItem streamItem = await CreateDecryptableItemAsync(
+                DecryptableItemVariant.Stream,
+                originalDoc,
+                encrypt: true,
+                decryptor: streamDecryptor.Object,
+                serializer: cosmosSerializer,
+                encryptionEncryptor: mockEncryptor.Object);
+
+            (TestDoc newtonsoftTyped, _) = await newtonsoftItem.GetItemAsync<TestDoc>();
+            (TestDoc streamTyped, _) = await streamItem.GetItemAsync<TestDoc>();
+            (JObject newtonsoftJson, _) = await newtonsoftItem.GetItemAsync<JObject>();
+            (JObject streamJson, _) = await streamItem.GetItemAsync<JObject>();
+
+            Assert.AreEqual(originalDoc.Id, newtonsoftTyped.Id);
+            Assert.AreEqual(originalDoc.Id, streamTyped.Id);
+            Assert.AreEqual(originalDoc.SensitiveStr, newtonsoftTyped.SensitiveStr);
+            Assert.AreEqual(originalDoc.SensitiveStr, streamTyped.SensitiveStr);
+            Assert.AreEqual(originalDoc.Id, (string)newtonsoftJson["id"]);
+            Assert.AreEqual(originalDoc.Id, (string)streamJson["id"]);
+            Assert.AreEqual(originalDoc.SensitiveInt, (int)streamJson[nameof(TestDoc.SensitiveInt)]);
+            Assert.AreEqual(1, streamDecryptCalls, "Different requested types should reuse the same decrypted plaintext.");
+        }
+
+        [TestMethod]
+        public async Task GetItemAsync_ConcurrentCallsWithDifferentTypes_DecryptsOnceWithoutPerTypeObjectCache()
+        {
+            TestDoc originalDoc = TestDoc.Create();
+            TrackingStream trackingStream = await CreateTrackingEncryptedStreamAsync(originalDoc, mockEncryptor.Object);
+            using SemaphoreSlim decryptionStarted = new (0, 1);
+            using SemaphoreSlim allowDecryptionToComplete = new (0, 1);
+            int decryptAsyncCalls = 0;
+
+            Mock<Encryptor> slowEncryptor = new ();
+            slowEncryptor.Setup(m => m.DecryptAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .Returns<byte[], string, string, CancellationToken>(async (cipherText, dataEncryptionKeyId, algorithm, token) =>
+                {
+                    _ = dataEncryptionKeyId;
+                    _ = algorithm;
+                    Interlocked.Increment(ref decryptAsyncCalls);
+                    decryptionStarted.Release();
+                    await allowDecryptionToComplete.WaitAsync(token);
+                    return TestCommon.DecryptData(cipherText);
+                });
+
+            int typedSerializerCalls = 0;
+            int jsonSerializerCalls = 0;
+            Mock<CosmosSerializer> serializer = new ();
+            serializer.Setup(s => s.FromStream<TestDoc>(It.IsAny<Stream>()))
+                .Returns<Stream>(stream =>
+                {
+                    Interlocked.Increment(ref typedSerializerCalls);
+                    return EncryptionProcessor.BaseSerializer.FromStream<TestDoc>(stream);
+                });
+            serializer.Setup(s => s.FromStream<JObject>(It.IsAny<Stream>()))
+                .Returns<Stream>(stream =>
+                {
+                    Interlocked.Increment(ref jsonSerializerCalls);
+                    return EncryptionProcessor.BaseSerializer.FromStream<JObject>(stream);
+                });
+
+            StreamDecryptableItem item = new (trackingStream, slowEncryptor.Object, serializer.Object);
+            try
+            {
+                Task<(TestDoc, DecryptionContext)> typedTask = item.GetItemAsync<TestDoc>();
+                await decryptionStarted.WaitAsync();
+
+                Task<(JObject, DecryptionContext)> jsonTask = item.GetItemAsync<JObject>();
+                allowDecryptionToComplete.Release();
+
+                await Task.WhenAll(typedTask, jsonTask);
+                (TestDoc typed, DecryptionContext typedContext) = await typedTask;
+                (JObject json, DecryptionContext jsonContext) = await jsonTask;
+
+                Assert.AreEqual(originalDoc.Id, typed.Id);
+                Assert.AreEqual(originalDoc.SensitiveStr, typed.SensitiveStr);
+                Assert.AreEqual(originalDoc.Id, (string)json["id"]);
+                Assert.AreEqual(originalDoc.SensitiveInt, (int)json[nameof(TestDoc.SensitiveInt)]);
+                Assert.AreSame(typedContext, jsonContext);
+                Assert.AreEqual(1, decryptAsyncCalls);
+                Assert.AreEqual(1, typedSerializerCalls);
+                Assert.AreEqual(1, jsonSerializerCalls);
+
+                (TestDoc repeatedTyped, DecryptionContext repeatedTypedContext) = await item.GetItemAsync<TestDoc>();
+                (JObject repeatedJson, DecryptionContext repeatedJsonContext) = await item.GetItemAsync<JObject>();
+
+                Assert.AreNotSame(typed, repeatedTyped);
+                Assert.AreNotSame(json, repeatedJson);
+                Assert.AreEqual(typed.Id, repeatedTyped.Id);
+                Assert.AreEqual(typed.SensitiveStr, repeatedTyped.SensitiveStr);
+                Assert.IsTrue(JToken.DeepEquals(json, repeatedJson));
+                Assert.AreSame(typedContext, repeatedTypedContext);
+                Assert.AreSame(jsonContext, repeatedJsonContext);
+                Assert.AreEqual(1, decryptAsyncCalls);
+                Assert.AreEqual(2, typedSerializerCalls);
+                Assert.AreEqual(2, jsonSerializerCalls);
+
+                await item.DisposeAsync();
+                await Assert.ThrowsExceptionAsync<ObjectDisposedException>(
+                    async () => await item.GetItemAsync<TestDoc>());
+            }
+            finally
+            {
+                await item.DisposeAsync();
+            }
+        }
+
+        [TestMethod]
+        public async Task DisposeAsync_AfterSuccessfulDecryption_DisposesAndClearsCachedPlaintext()
+        {
+            TestDoc originalDoc = TestDoc.Create();
+            Stream encryptedStream = await CreateEncryptedStreamAsync(originalDoc, mockEncryptor.Object);
+            StreamDecryptableItem item = new (encryptedStream, mockEncryptor.Object, cosmosSerializer);
+
+            try
+            {
+                _ = await item.GetItemAsync<TestDoc>();
+
+                FieldInfo cachedContentField = typeof(StreamDecryptableItem).GetField(
+                    "cachedDecryptedContent",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.IsNotNull(cachedContentField);
+
+                PooledMemoryStream cachedContent = (PooledMemoryStream)cachedContentField.GetValue(item);
+                Assert.IsNotNull(cachedContent);
+                int plaintextLength = checked((int)cachedContent.Length);
+                byte[] cachedBuffer = cachedContent.GetBuffer();
+                Assert.IsTrue(cachedBuffer.AsSpan(0, plaintextLength).ToArray().Any(value => value != 0));
+
+                await item.DisposeAsync();
+
+                Assert.IsFalse(cachedContent.CanRead);
+                Assert.IsNull(cachedContentField.GetValue(item));
+                Assert.IsTrue(cachedBuffer.All(value => value == 0), "Cached plaintext buffer should be cleared before it is returned to the pool.");
+            }
+            finally
+            {
+                await item.DisposeAsync();
+            }
+        }
+
         [DataTestMethod]
         [DynamicData(nameof(GetDecryptableItemVariants), DynamicDataSourceType.Method)]
         public async Task GetItemAsync_WithInvalidDek_ThrowsEncryptionException_ForAllVariants(DecryptableItemVariant variant)
@@ -570,7 +725,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
-        public async Task GetItemAsync_StreamDecryptableItem_CachesResultAndDisposesStream()
+        public async Task GetItemAsync_StreamDecryptableItem_RetainsPlaintextAndDeserializesEveryCall()
         {
             TestDoc originalDoc = TestDoc.Create();
             int decryptAsyncCalls = 0;
@@ -605,10 +760,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
                 (TestDoc secondResult, DecryptionContext secondContext) = await decryptableItem.GetItemAsync<TestDoc>();
 
-                Assert.AreSame(firstResult, secondResult, "Cached item should be returned on subsequent calls.");
+                Assert.AreNotSame(firstResult, secondResult, "Each call should deserialize an independent object from the retained canonical JSON.");
+                Assert.AreEqual(firstResult.Id, secondResult.Id);
+                Assert.AreEqual(firstResult.SensitiveStr, secondResult.SensitiveStr);
+                Assert.AreEqual(firstResult.SensitiveInt, secondResult.SensitiveInt);
                 Assert.AreSame(firstContext, secondContext, "Cached decryption context should be returned on subsequent calls.");
                 Assert.AreEqual(1, decryptAsyncCalls, "DecryptAsync should not be invoked again for cached data.");
-                Assert.AreEqual(1, serializerCalls, "Serializer should not be invoked again for cached data.");
+                Assert.AreEqual(2, serializerCalls, "Every call should deserialize from the retained canonical JSON.");
                 Assert.AreEqual(2, trackingStream.AsyncDisposeCallCount, "Underlying stream should not be disposed again beyond the initial decryption path.");
 
                 await decryptableItem.DisposeAsync();
@@ -652,6 +810,291 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             finally
             {
                 await item.DisposeAsync();
+            }
+        }
+
+        [TestMethod]
+        public async Task GetItemAsync_WhenSerializerThrowsForSecondType_DoesNotExposeCachedPlaintext()
+        {
+            TestDoc originalDoc = TestDoc.Create();
+            const string knownSecret = "second-type-diagnostic-must-not-expose-this-secret";
+            originalDoc.SensitiveStr = knownSecret;
+            Stream encryptedStream = await CreateTrackingEncryptedStreamAsync(originalDoc, mockEncryptor.Object);
+            InvalidOperationException serializerFailure = new ("Serializer failure for second requested type.");
+
+            Mock<CosmosSerializer> serializer = new ();
+            serializer.Setup(s => s.FromStream<TestDoc>(It.IsAny<Stream>()))
+                .Returns<Stream>(stream => EncryptionProcessor.BaseSerializer.FromStream<TestDoc>(stream));
+            serializer.Setup(s => s.FromStream<JObject>(It.IsAny<Stream>()))
+                .Throws(serializerFailure);
+
+            StreamDecryptableItem item = new (encryptedStream, mockEncryptor.Object, serializer.Object);
+            try
+            {
+                (TestDoc firstResult, DecryptionContext firstContext) = await item.GetItemAsync<TestDoc>();
+                Assert.AreEqual(originalDoc.Id, firstResult.Id);
+                Assert.IsNotNull(firstContext);
+
+                EncryptionException exception = await Assert.ThrowsExceptionAsync<EncryptionException>(
+                    () => item.GetItemAsync<JObject>());
+
+                Assert.AreSame(serializerFailure, exception.InnerException);
+                Assert.AreEqual(dekId, exception.DataEncryptionKeyId);
+                Assert.IsTrue(
+                    string.IsNullOrEmpty(exception.EncryptedContent) ||
+                    !exception.EncryptedContent.Contains(knownSecret, StringComparison.Ordinal),
+                    "EncryptedContent must never be populated from the cached canonical plaintext.");
+            }
+            finally
+            {
+                await item.DisposeAsync();
+            }
+        }
+
+        [TestMethod]
+        public async Task GetItemAsync_WhenSerializerThrowsForSecondType_RetainsCanonicalPlaintextForSubsequentCall()
+        {
+            TestDoc originalDoc = TestDoc.Create();
+            Stream encryptedStream = await CreateTrackingEncryptedStreamAsync(originalDoc, mockEncryptor.Object);
+            InvalidOperationException serializerFailure = new ("Serializer failure for second requested type.");
+            int typedSerializerCalls = 0;
+
+            Mock<CosmosSerializer> serializer = new ();
+            serializer.Setup(s => s.FromStream<TestDoc>(It.IsAny<Stream>()))
+                .Returns<Stream>(stream =>
+                {
+                    Interlocked.Increment(ref typedSerializerCalls);
+                    return EncryptionProcessor.BaseSerializer.FromStream<TestDoc>(stream);
+                });
+            serializer.Setup(s => s.FromStream<JObject>(It.IsAny<Stream>()))
+                .Throws(serializerFailure);
+
+            StreamDecryptableItem item = new (encryptedStream, mockEncryptor.Object, serializer.Object);
+            try
+            {
+                (TestDoc firstResult, DecryptionContext firstContext) = await item.GetItemAsync<TestDoc>();
+
+                EncryptionException exception = await Assert.ThrowsExceptionAsync<EncryptionException>(
+                    () => item.GetItemAsync<JObject>());
+
+                (TestDoc subsequentResult, DecryptionContext subsequentContext) = await item.GetItemAsync<TestDoc>();
+
+                Assert.AreSame(serializerFailure, exception.InnerException);
+                Assert.AreNotSame(firstResult, subsequentResult);
+                Assert.AreEqual(originalDoc.Id, subsequentResult.Id);
+                Assert.AreEqual(originalDoc.SensitiveStr, subsequentResult.SensitiveStr);
+                Assert.AreEqual(originalDoc.SensitiveInt, subsequentResult.SensitiveInt);
+                Assert.AreSame(firstContext, subsequentContext);
+                Assert.AreEqual(2, typedSerializerCalls, "A failed alternate deserialization must not poison the retained canonical plaintext.");
+            }
+            finally
+            {
+                await item.DisposeAsync();
+            }
+        }
+
+        [TestMethod]
+        public async Task GetItemAsync_WhenFirstSerializationFails_ReportsOriginalEncryptedContentWithoutPlaintext()
+        {
+            TestDoc originalDoc = TestDoc.Create();
+            const string knownSecret = "first-call-diagnostic-must-not-expose-this-secret";
+            originalDoc.SensitiveStr = knownSecret;
+            Stream encryptedStream = await CreateEncryptedStreamAsync(originalDoc, mockEncryptor.Object);
+
+            string originalEncryptedContent;
+            using (StreamReader reader = new (encryptedStream, leaveOpen: true))
+            {
+                originalEncryptedContent = await reader.ReadToEndAsync();
+            }
+
+            encryptedStream.Position = 0;
+
+            InvalidOperationException serializerFailure = new ("Serializer failure after successful decryption.");
+            Mock<CosmosSerializer> serializer = new ();
+            serializer.Setup(s => s.FromStream<TestDoc>(It.IsAny<Stream>()))
+                .Throws(serializerFailure);
+
+            StreamDecryptableItem item = new (encryptedStream, mockEncryptor.Object, serializer.Object);
+            try
+            {
+                EncryptionException exception = await Assert.ThrowsExceptionAsync<EncryptionException>(
+                    () => item.GetItemAsync<TestDoc>());
+
+                Assert.AreSame(serializerFailure, exception.InnerException);
+                Assert.AreEqual(dekId, exception.DataEncryptionKeyId);
+                Assert.AreEqual(
+                    originalEncryptedContent,
+                    exception.EncryptedContent,
+                    "When the original encrypted payload is available, diagnostics must preserve it rather than substituting decrypted content.");
+                Assert.IsFalse(
+                    exception.EncryptedContent.Contains(knownSecret, StringComparison.Ordinal),
+                    "EncryptedContent must never contain decrypted plaintext.");
+            }
+            finally
+            {
+                await item.DisposeAsync();
+            }
+        }
+
+        [TestMethod]
+        public async Task GetItemAsync_WhenFirstSerializationFailsWithPooledEncryptedInput_PreservesOriginalContentAndReleasesBuffers()
+        {
+            TestDoc originalDoc = TestDoc.Create();
+            const string knownSecret = "pooled-encrypted-diagnostic-secret";
+            originalDoc.SensitiveStr = knownSecret;
+
+            EncryptionOptions encryptionOptions = new ()
+            {
+                DataEncryptionKeyId = dekId,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                PathsToEncrypt = TestDoc.PathsToEncrypt,
+            };
+
+            Mock<Encryptor> mdeEncryptor = TestEncryptorFactory.CreateMde(dekId, out _);
+            PooledMemoryStream encryptedInput = new ();
+            StreamDecryptableItem item = null;
+
+            try
+            {
+                await using Stream plaintextInput = originalDoc.ToStream();
+                await EncryptionProcessor.EncryptAsync(
+                    plaintextInput,
+                    encryptedInput,
+                    mdeEncryptor.Object,
+                    encryptionOptions,
+                    JsonProcessor.Stream,
+                    new CosmosDiagnosticsContext(),
+                    CancellationToken.None).ConfigureAwait(false);
+
+                encryptedInput.Position = 0;
+                string originalEncryptedContent = Encoding.UTF8.GetString(encryptedInput.ToArray());
+                Assert.IsFalse(originalEncryptedContent.Contains(knownSecret, StringComparison.Ordinal));
+                byte[] encryptedInputBuffer = encryptedInput.GetBuffer();
+
+                FieldInfo cachedContentField = typeof(StreamDecryptableItem).GetField(
+                    "cachedDecryptedContent",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.IsNotNull(cachedContentField);
+
+                InvalidOperationException serializerFailure = new ("First serializer call failed.");
+                int serializerCalls = 0;
+                Stream serializerInput = null;
+                PooledMemoryStream cachedPlaintext = null;
+                byte[] cachedPlaintextBuffer = null;
+
+                Mock<CosmosSerializer> serializer = new ();
+                serializer.Setup(s => s.FromStream<TestDoc>(It.IsAny<Stream>()))
+                    .Callback<Stream>(stream =>
+                    {
+                        serializerCalls++;
+                        serializerInput = stream;
+                        cachedPlaintext = (PooledMemoryStream)cachedContentField.GetValue(item);
+                        cachedPlaintextBuffer = cachedPlaintext.GetBuffer();
+                    })
+                    .Throws(serializerFailure);
+
+                item = new StreamDecryptableItem(encryptedInput, mdeEncryptor.Object, serializer.Object);
+
+                EncryptionException exception = await Assert.ThrowsExceptionAsync<EncryptionException>(
+                    () => item.GetItemAsync<TestDoc>());
+
+                Assert.AreSame(serializerFailure, exception.InnerException);
+                Assert.AreEqual(1, serializerCalls, "The serializer must fail on its first invocation.");
+                Assert.IsFalse(encryptedInput.CanRead, "The original pooled encrypted input must be disposed after failure.");
+                Assert.IsNotNull(serializerInput);
+                Assert.IsFalse(serializerInput.CanRead, "The decrypted adapter stream must be disposed after failure.");
+                Assert.IsNotNull(cachedPlaintext);
+                Assert.IsFalse(cachedPlaintext.CanRead, "The cached pooled plaintext stream must be disposed after failure.");
+                Assert.IsNull(cachedContentField.GetValue(item), "The item must not retain the cached pooled plaintext stream.");
+                Assert.IsTrue(encryptedInputBuffer.All(value => value == 0), "The original pooled input buffer must be cleared before return.");
+                Assert.IsTrue(cachedPlaintextBuffer.All(value => value == 0), "The cached pooled plaintext buffer must be cleared before return.");
+                Assert.AreEqual(
+                    originalEncryptedContent,
+                    exception.EncryptedContent,
+                    "The exact encrypted JSON must survive the stream decrypt adapter disposing its pooled input.");
+                Assert.IsFalse(exception.EncryptedContent.Contains(knownSecret, StringComparison.Ordinal));
+            }
+            finally
+            {
+                if (item != null)
+                {
+                    await item.DisposeAsync();
+                }
+                else
+                {
+                    await encryptedInput.DisposeAsync();
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task GetItemAsync_WhenFirstSerializationFailsWithPooledPlaintextInput_RedactsContentAndReleasesBuffers()
+        {
+            const string knownSecret = "pooled-plaintext-diagnostic-secret";
+            string originalPlaintext = $"{{\"id\":\"plain-item\",\"secret\":\"{knownSecret}\"}}";
+            byte[] plaintextBytes = Encoding.UTF8.GetBytes(originalPlaintext);
+            PooledMemoryStream plaintextInput = new ();
+            await plaintextInput.WriteAsync(plaintextBytes.AsMemory(0, plaintextBytes.Length));
+            plaintextInput.Position = 0;
+            byte[] plaintextInputBuffer = plaintextInput.GetBuffer();
+
+            FieldInfo cachedContentField = typeof(StreamDecryptableItem).GetField(
+                "cachedDecryptedContent",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.IsNotNull(cachedContentField);
+
+            InvalidOperationException serializerFailure = new ("First serializer call failed.");
+            int serializerCalls = 0;
+            Stream serializerInput = null;
+            PooledMemoryStream cachedPlaintext = null;
+            byte[] cachedPlaintextBuffer = null;
+            StreamDecryptableItem item = null;
+
+            Mock<CosmosSerializer> serializer = new ();
+            serializer.Setup(s => s.FromStream<JObject>(It.IsAny<Stream>()))
+                .Callback<Stream>(stream =>
+                {
+                    serializerCalls++;
+                    serializerInput = stream;
+                    cachedPlaintext = (PooledMemoryStream)cachedContentField.GetValue(item);
+                    cachedPlaintextBuffer = cachedPlaintext.GetBuffer();
+                })
+                .Throws(serializerFailure);
+
+            try
+            {
+                item = new StreamDecryptableItem(plaintextInput, mockEncryptor.Object, serializer.Object);
+
+                EncryptionException exception = await Assert.ThrowsExceptionAsync<EncryptionException>(
+                    () => item.GetItemAsync<JObject>());
+
+                Assert.AreSame(serializerFailure, exception.InnerException);
+                Assert.AreEqual(1, serializerCalls, "The serializer must fail on its first invocation.");
+                Assert.AreSame(plaintextInput, serializerInput, "The unencrypted path should deserialize the original input stream.");
+                Assert.IsFalse(plaintextInput.CanRead, "The original pooled plaintext input must be disposed after failure.");
+                Assert.IsNotNull(cachedPlaintext);
+                Assert.IsFalse(cachedPlaintext.CanRead, "The cached pooled plaintext stream must be disposed after failure.");
+                Assert.IsNull(cachedContentField.GetValue(item), "The item must not retain the cached pooled plaintext stream.");
+                Assert.IsTrue(plaintextInputBuffer.All(value => value == 0), "The original pooled input buffer must be cleared before return.");
+                Assert.IsTrue(cachedPlaintextBuffer.All(value => value == 0), "The cached pooled plaintext buffer must be cleared before return.");
+                Assert.AreNotEqual(
+                    originalPlaintext,
+                    exception.EncryptedContent,
+                    "EncryptedContent must not expose the original plaintext item.");
+                Assert.IsFalse(
+                    (exception.EncryptedContent ?? string.Empty).Contains(knownSecret, StringComparison.Ordinal),
+                    "EncryptedContent must not expose plaintext secrets.");
+            }
+            finally
+            {
+                if (item != null)
+                {
+                    await item.DisposeAsync();
+                }
+                else
+                {
+                    await plaintextInput.DisposeAsync();
+                }
             }
         }
 
