@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+- [6089](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/6089) Throughput Bucketing: Promotes throughput bucketing to general availability (GA). `CosmosClientOptions.ThroughputBucket`, `RequestOptions.ThroughputBucket`, and `CosmosClientBuilder.WithThroughputBucket(int)` are now available in the official (GA) package. These APIs let you tag requests with a throughput bucket so the service can partition provisioned throughput across workloads. A bucket set at the request level takes precedence over one set at the client level.
 - [6059](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6059) DistributedTransaction (preview): Adds `DistributedTransactionResponse.ResponseMode`, which reports whether the coordinator applied `Standard` or `FastResponse` mode when processing the transaction. The value is parsed from the coordinator response and defaults to `Standard` when not reported.
 - [6053](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6053) VectorIndex Policy: Adds `QuantizerType` to the official (GA) package.
 - [5976](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5976) Upgraded Direct package to 3.44.0.

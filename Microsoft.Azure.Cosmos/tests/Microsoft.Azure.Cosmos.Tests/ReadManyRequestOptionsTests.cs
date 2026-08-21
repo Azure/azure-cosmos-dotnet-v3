@@ -183,10 +183,12 @@ namespace Microsoft.Azure.Cosmos.Tests
         // rather than discovering it through silent degradation. Mapping each of
         // these is a separate scope from PR #5905.
         //
-        // ThroughputBucket, OperationMetricsOptions, and NetworkMetricsOptions are
-        // PREVIEW-only public (#if PREVIEW on RequestOptions.cs lines 128, 220, 230);
-        // they exist as inherited public members on PREVIEW CI builds and are
-        // invisible to GetProperties(Public) on non-PREVIEW builds. nameof(...) works
+        // ThroughputBucket is now GA public (the #if PREVIEW gate on
+        // RequestOptions.cs was removed when the feature was promoted to GA);
+        // OperationMetricsOptions and NetworkMetricsOptions remain PREVIEW-only
+        // public (#if PREVIEW on RequestOptions.cs). PREVIEW-only members exist as
+        // inherited public members on PREVIEW CI builds and are invisible to
+        // GetProperties(Public) on non-PREVIEW builds. nameof(...) works
         // on internal members via the test project's InternalsVisibleTo regardless of
         // build flavor, so listing them here is safe and necessary in BOTH builds.
         private static readonly HashSet<string> NotMappedByEither_PreExistingGap = new HashSet<string>(StringComparer.Ordinal)

@@ -125,12 +125,7 @@ namespace Microsoft.Azure.Cosmos
         /// <see cref="RequestOptions.ThroughputBucket"/> cannot be set in RequestOptions.
         /// </remarks>
         /// <seealso href="https://aka.ms/cosmsodb-bucketing"/>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        int? ThroughputBucket { get; set; }
+        public int? ThroughputBucket { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
