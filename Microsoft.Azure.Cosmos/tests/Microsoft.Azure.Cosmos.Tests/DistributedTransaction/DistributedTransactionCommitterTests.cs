@@ -769,6 +769,196 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
+        [Description("Verifies that the attempt-count cap is read from CosmosClientOptions.MaxRetryAttemptsOnAbortedTransactions.")]
+        public async Task CommitTransaction_AttemptCapFromClientOptions_IsHonored()
+        {
+            const int configuredCap = 3;
+            int callCount = 0;
+            List<TimeSpan> capturedDelays = new List<TimeSpan>();
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext(
+                new CosmosClientOptions { MaxRetryAttemptsOnAbortedTransactions = configuredCap });
+            this.SetupProcessResourceOperation(
+                mockContext,
+                () =>
+                {
+                    callCount++;
+                    return Task.FromResult(CreateRetriableErrorResponseMessage());
+                });
+
+            Func<TimeSpan, CancellationToken, Task> captureDelay = (delay, _) =>
+            {
+                capturedDelays.Add(delay);
+                return Task.CompletedTask;
+            };
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                CreateTestOperations(),
+                mockContext.Object,
+                OperationType.CommitDistributedTransaction,
+                retryBaseDelay: TimeSpan.Zero,
+                delayProvider: captureDelay);
+
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.AreEqual(configuredCap + 1, callCount,
+                    "Expected exactly configuredCap retries plus one final call that triggers budget exhaustion.");
+                Assert.AreEqual(configuredCap, capturedDelays.Count,
+                    "Delay provider must be called once per retry attempt.");
+                Assert.IsTrue(response.IsRetriable);
+            }
+        }
+
+        [TestMethod]
+        [Description("Verifies that the cumulative wait cap is read from CosmosClientOptions.MaxRetryWaitTimeOnAbortedTransactions.")]
+        public async Task CommitTransaction_CumulativeWaitCapFromClientOptions_IsHonored()
+        {
+            int callCount = 0;
+            List<TimeSpan> capturedDelays = new List<TimeSpan>();
+            // Small cumulative budget (10s) with a 15s base delay: the first planned delay already exceeds it,
+            // so exactly one call happens and no delay is slept.
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext(
+                new CosmosClientOptions { MaxRetryWaitTimeOnAbortedTransactions = TimeSpan.FromSeconds(10) });
+            this.SetupProcessResourceOperation(
+                mockContext,
+                () =>
+                {
+                    callCount++;
+                    return Task.FromResult(CreateRetriableErrorResponseMessage());
+                });
+
+            Func<TimeSpan, CancellationToken, Task> captureDelay = (delay, _) =>
+            {
+                capturedDelays.Add(delay);
+                return Task.CompletedTask;
+            };
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                CreateTestOperations(),
+                mockContext.Object,
+                OperationType.CommitDistributedTransaction,
+                retryBaseDelay: TimeSpan.FromSeconds(15),
+                delayProvider: captureDelay);
+
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.AreEqual(1, callCount,
+                    "Expected exactly 1 call: the first planned delay (~15s) exceeds the 10s cumulative budget.");
+                Assert.AreEqual(0, capturedDelays.Count,
+                    "No delay should be slept once the first planned delay exceeds the cumulative budget.");
+                Assert.IsTrue(response.IsRetriable);
+            }
+        }
+
+        [TestMethod]
+        [Description("Verifies that setting CosmosClientOptions.MaxRetryAttemptsOnAbortedTransactions to 0 disables automatic abort retries.")]
+        public async Task CommitTransaction_ZeroAttemptCapFromClientOptions_DisablesRetries()
+        {
+            int callCount = 0;
+            List<TimeSpan> capturedDelays = new List<TimeSpan>();
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext(
+                new CosmosClientOptions { MaxRetryAttemptsOnAbortedTransactions = 0 });
+            this.SetupProcessResourceOperation(
+                mockContext,
+                () =>
+                {
+                    callCount++;
+                    return Task.FromResult(CreateRetriableErrorResponseMessage());
+                });
+
+            Func<TimeSpan, CancellationToken, Task> captureDelay = (delay, _) =>
+            {
+                capturedDelays.Add(delay);
+                return Task.CompletedTask;
+            };
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                CreateTestOperations(),
+                mockContext.Object,
+                OperationType.CommitDistributedTransaction,
+                retryBaseDelay: TimeSpan.Zero,
+                delayProvider: captureDelay);
+
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.AreEqual(1, callCount,
+                    "With the attempt cap at 0, the first retriable response must be returned without retrying.");
+                Assert.AreEqual(0, capturedDelays.Count,
+                    "No delay should be slept when abort retries are disabled.");
+                Assert.IsTrue(response.IsRetriable);
+            }
+        }
+
+        [TestMethod]
+        [Description("Verifies that when CosmosClientOptions leaves the abort-retry bounds unset, the committer falls back to the SDK defaults.")]
+        public async Task CommitTransaction_UnsetClientOptions_FallsBackToDefaults()
+        {
+            int callCount = 0;
+            List<TimeSpan> capturedDelays = new List<TimeSpan>();
+            // Client options present but bounds unset -> defaults apply (10 attempts).
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext(new CosmosClientOptions());
+            this.SetupProcessResourceOperation(
+                mockContext,
+                () =>
+                {
+                    callCount++;
+                    return Task.FromResult(CreateRetriableErrorResponseMessage());
+                });
+
+            Func<TimeSpan, CancellationToken, Task> captureDelay = (delay, _) =>
+            {
+                capturedDelays.Add(delay);
+                return Task.CompletedTask;
+            };
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                CreateTestOperations(),
+                mockContext.Object,
+                OperationType.CommitDistributedTransaction,
+                retryBaseDelay: TimeSpan.Zero,
+                delayProvider: captureDelay);
+
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.AreEqual(DistributedTransactionCommitter.MaxIsRetriableRetryCount + 1, callCount,
+                    "Unset options must fall back to the default attempt cap.");
+                Assert.AreEqual(DistributedTransactionCommitter.MaxIsRetriableRetryCount, capturedDelays.Count,
+                    "Delay provider must be called once per retry attempt under the default cap.");
+            }
+        }
+
+        [TestMethod]
+        [Description("Verifies that an explicit test override for maxIsRetriableRetryCount takes precedence over CosmosClientOptions.")]
+        public async Task CommitTransaction_ExplicitAttemptCapOverridesClientOptions()
+        {
+            const int optionsCap = 8;
+            const int explicitCap = 2;
+            int callCount = 0;
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext(
+                new CosmosClientOptions { MaxRetryAttemptsOnAbortedTransactions = optionsCap });
+            this.SetupProcessResourceOperation(
+                mockContext,
+                () =>
+                {
+                    callCount++;
+                    return Task.FromResult(CreateRetriableErrorResponseMessage());
+                });
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                CreateTestOperations(),
+                mockContext.Object,
+                OperationType.CommitDistributedTransaction,
+                retryBaseDelay: TimeSpan.Zero,
+                delayProvider: (delay, _) => Task.CompletedTask,
+                maxIsRetriableRetryCount: explicitCap);
+
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.AreEqual(explicitCap + 1, callCount,
+                    "The explicit constructor override must take precedence over the client options value.");
+            }
+        }
+
+        [TestMethod]
         [Description("Verifies that the outer retry loop stops when the cumulative delay budget (MaxCumulativeRetryDelay) is exceeded, even if attempt count has not been reached.")]
         public async Task CommitTransaction_ExhaustsCumulativeDelayBudget_ReturnsLastResponse()
         {
@@ -937,6 +1127,211 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
+        [Description("FastResponse retry matrix (isRetriable=true, not durably Aborted): the commit retries the identical operations but replays the SAME idempotency token, because the prior attempt was not terminally consumed. Any non-452 retriable status is treated as 'not aborted'.")]
+        public async Task CommitTransaction_RetriesWithSameTokenWhenRetriableButNotAborted()
+        {
+            int callCount = 0;
+            List<string> capturedTokens = new List<string>();
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            this.SetupProcessResourceOperationWithStreamAndEnricherCapture(
+                mockContext,
+                (stream, enricher) =>
+                {
+                    RequestMessage request = new RequestMessage
+                    {
+                        ResourceType = ResourceType.DistributedTransactionBatch,
+                        OperationType = OperationType.CommitDistributedTransaction,
+                    };
+                    enricher(request);
+                    capturedTokens.Add(request.Headers[HttpConstants.HttpHeaders.IdempotencyToken]);
+                },
+                () =>
+                {
+                    callCount++;
+                    return callCount == 1
+                        ? Task.FromResult(CreateRetriableNonAbortedResponseMessage())
+                        : Task.FromResult(CreateSuccessResponseMessage(operationCount: 1));
+                });
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
+
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                Assert.IsTrue(response.IsSuccessStatusCode);
+                Assert.AreEqual(2, callCount, "A retriable non-aborted outcome must be retried.");
+            }
+
+            Assert.AreEqual(2, capturedTokens.Count, "Both the initial attempt and the retry must stamp a token.");
+            Assert.AreEqual(capturedTokens[0], capturedTokens[1],
+                "A retriable non-aborted retry must replay the SAME idempotency token, not a rotated one.");
+            Assert.IsFalse(capturedTokens.Contains(Guid.Empty.ToString()),
+                "Every attempt must carry a real (non-empty) idempotency token.");
+        }
+
+        [TestMethod]
+        [Description("FastResponse retry model: a durably Aborted (HTTP 452) response marked isRetriable:true is retried until success.")]
+        public async Task CommitTransaction_RetriesWhenRetriableAndAborted_ThenSucceeds()
+        {
+            int callCount = 0;
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            this.SetupProcessResourceOperation(
+                mockContext,
+                () =>
+                {
+                    callCount++;
+                    if (callCount == 1)
+                    {
+                        return Task.FromResult(
+                            new ResponseMessage((HttpStatusCode)StatusCodes.TransactionAborted)
+                            {
+                                Content = new MemoryStream(Encoding.UTF8.GetBytes("{\"isRetriable\":true}"))
+                            });
+                    }
+
+                    return Task.FromResult(CreateSuccessResponseMessage(operationCount: 1));
+                });
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
+
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                Assert.IsTrue(response.IsSuccessStatusCode);
+                Assert.AreEqual(2, callCount);
+            }
+        }
+        [DataTestMethod]
+        [Description("FastResponse retry matrix (isRetriable=false): a non-retriable outcome is never retried, regardless of the transaction status — including a durably Aborted (HTTP 452) transaction. The response is returned after a single call.")]
+        [DataRow((int)StatusCodes.TransactionAborted, DisplayName = "isRetriable:false + Aborted (452) — no retry")]
+        [DataRow((int)HttpStatusCode.ServiceUnavailable, DisplayName = "isRetriable:false + non-aborted (503) — no retry")]
+        public async Task CommitTransaction_DoesNotRetryWhenNotRetriable(int statusCode)
+        {
+            int callCount = 0;
+            string json = "{\"isRetriable\":false}";
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            this.SetupProcessResourceOperation(
+                mockContext,
+                () =>
+                {
+                    callCount++;
+                    return Task.FromResult(
+                        new ResponseMessage((HttpStatusCode)statusCode)
+                        {
+                            Content = new MemoryStream(Encoding.UTF8.GetBytes(json))
+                        });
+                });
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
+
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.AreEqual((HttpStatusCode)statusCode, response.StatusCode);
+                Assert.IsFalse(response.IsRetriable);
+                Assert.AreEqual(1, callCount, "A non-retriable outcome must never be retried, even when durably Aborted.");
+            }
+        }
+
+        [TestMethod]
+        [Description("FastResponse retry matrix (isRetriable=true, not durably Aborted): N consecutive non-aborted retriable outcomes produce N+1 wire attempts that ALL replay the same idempotency token — the token is only rotated once an attempt is terminally Aborted (spec §4.2).")]
+        public async Task CommitTransaction_NRetriableNonAbortedReplaysSameToken()
+        {
+            const int retriableNonAbortedCount = 4;
+            int callCount = 0;
+            List<string> capturedTokens = new List<string>();
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            this.SetupProcessResourceOperationWithStreamAndEnricherCapture(
+                mockContext,
+                (stream, enricher) =>
+                {
+                    RequestMessage request = new RequestMessage
+                    {
+                        ResourceType = ResourceType.DistributedTransactionBatch,
+                        OperationType = OperationType.CommitDistributedTransaction,
+                    };
+                    enricher(request);
+                    capturedTokens.Add(request.Headers[HttpConstants.HttpHeaders.IdempotencyToken]);
+                },
+                () =>
+                {
+                    callCount++;
+                    return callCount <= retriableNonAbortedCount
+                        ? Task.FromResult(CreateRetriableNonAbortedResponseMessage())
+                        : Task.FromResult(CreateSuccessResponseMessage(operationCount: 2));
+                });
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                CreateTestOperations(count: 2),
+                mockContext.Object,
+                OperationType.CommitDistributedTransaction,
+                TimeSpan.Zero);
+
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.IsTrue(response.IsSuccessStatusCode);
+            }
+
+            Assert.AreEqual(retriableNonAbortedCount + 1, callCount, "Expected N non-aborted retriable outcomes followed by one success.");
+            Assert.AreEqual(retriableNonAbortedCount + 1, capturedTokens.Count,
+                "Each wire attempt — including the first — must stamp an idempotency token.");
+            Assert.AreEqual(1, new HashSet<string>(capturedTokens).Count,
+                "All attempts must replay the SAME idempotency token; a non-aborted retriable outcome never rotates the token.");
+            Assert.IsFalse(capturedTokens.Contains(Guid.Empty.ToString()),
+                "Every attempt must carry a real (non-empty) idempotency token.");
+        }
+
+        [TestMethod]
+        [Description("FastResponse retry matrix, mixed transitions: a durably Aborted retriable outcome rotates to a NEW token, while a subsequent non-aborted retriable outcome replays the SAME token. Verifies the token strategy is decided per-response from its durable status (spec §4.2).")]
+        public async Task CommitTransaction_AbortThenNonAbort_RotatesThenReplaysToken()
+        {
+            int callCount = 0;
+            List<string> capturedTokens = new List<string>();
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            this.SetupProcessResourceOperationWithStreamAndEnricherCapture(
+                mockContext,
+                (stream, enricher) =>
+                {
+                    RequestMessage request = new RequestMessage
+                    {
+                        ResourceType = ResourceType.DistributedTransactionBatch,
+                        OperationType = OperationType.CommitDistributedTransaction,
+                    };
+                    enricher(request);
+                    capturedTokens.Add(request.Headers[HttpConstants.HttpHeaders.IdempotencyToken]);
+                },
+                () =>
+                {
+                    callCount++;
+                    switch (callCount)
+                    {
+                        // Attempt 1: durably Aborted → the next attempt must rotate to a NEW token.
+                        case 1:
+                            return Task.FromResult(CreateRetriableErrorResponseMessage());
+                        // Attempt 2 (new token): not aborted → the next attempt must REPLAY the same token.
+                        case 2:
+                            return Task.FromResult(CreateRetriableNonAbortedResponseMessage());
+                        // Attempt 3 (same token as attempt 2) succeeds.
+                        default:
+                            return Task.FromResult(CreateSuccessResponseMessage(operationCount: 1));
+                    }
+                });
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
+
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.IsTrue(response.IsSuccessStatusCode);
+                Assert.AreEqual(3, callCount);
+            }
+
+            Assert.AreEqual(3, capturedTokens.Count, "Three wire attempts expected.");
+            Assert.AreNotEqual(capturedTokens[0], capturedTokens[1],
+                "After a durable Abort, the retry must rotate to a NEW idempotency token.");
+            Assert.AreEqual(capturedTokens[1], capturedTokens[2],
+                "After a non-aborted retriable outcome, the retry must replay the SAME idempotency token.");
+        }
+
+        [TestMethod]
         [Description("Verifies that a pre-cancelled CancellationToken causes ExecuteTransactionAsync to throw immediately without issuing any network request.")]
         public async Task CommitTransaction_RespectsCancellationToken_PreCancelled()
         {
@@ -1041,8 +1436,8 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
-        [Description("Verifies that the SDK sends byte-for-byte identical request bodies AND the same idempotency token on every outer-loop retry. Required so the coordinator can recognise replays via the idempotency token and safely re-prepare from the same payload (per dtx-sdk-response-status-codes.md, Part C §9: 'Aborted (SDK retry): Resets record to Preparing with new transaction ID, same idempotency token').")]
-        public async Task CommitTransaction_SameBodyAndTokenSentOnEveryRetryAttempt()
+        [Description("Verifies that the SDK sends byte-for-byte identical request bodies but a NEW, distinct idempotency token on every outer-loop attempt. Per DistributedTransactionFastResponseMode.md §4.2, each retriable-abort retry is a new logical attempt that MUST use a fresh idempotency token; the prior token remains terminally Aborted and must never be replayed. The serialized body is reused unchanged so the coordinator re-prepares from the identical payload under the new token.")]
+        public async Task CommitTransaction_SendsNewIdempotencyTokenOnEachRetry()
         {
             int callCount = 0;
             List<string> capturedTokens = new List<string>();
@@ -1098,8 +1493,10 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             }
 
             Assert.AreEqual(3, capturedTokens.Count, "Three attempts expected: two retriable failures plus one success.");
-            Assert.AreEqual(1, new HashSet<string>(capturedTokens).Count,
-                "The same idempotency token must be used on every retry attempt.");
+            Assert.AreEqual(3, new HashSet<string>(capturedTokens).Count,
+                "Each attempt must use a NEW, distinct idempotency token; the prior aborted token must never be replayed.");
+            Assert.IsFalse(capturedTokens.Contains(Guid.Empty.ToString()),
+                "Every attempt must carry a real (non-empty) idempotency token.");
 
             Assert.AreEqual(3, capturedBodies.Count);
             Assert.IsTrue(capturedBodies[0].Length > 0, "Captured body must be non-empty.");
@@ -1107,6 +1504,160 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 "Retry attempt #2 must send a byte-for-byte identical request body.");
             CollectionAssert.AreEqual(capturedBodies[0], capturedBodies[2],
                 "Retry attempt #3 must send a byte-for-byte identical request body.");
+        }
+
+        [TestMethod]
+        [Description("Verifies that the first attempt gets a freshly rotated idempotency token and that N retriable-abort responses produce N+1 distinct tokens across attempts (spec §4.2).")]
+        public async Task CommitTransaction_NRetriableAbortsProduceNPlusOneDistinctTokens()
+        {
+            const int retriableAbortCount = 4;
+            int callCount = 0;
+            List<string> capturedTokens = new List<string>();
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            this.SetupProcessResourceOperationWithStreamAndEnricherCapture(
+                mockContext,
+                (stream, enricher) =>
+                {
+                    RequestMessage request = new RequestMessage
+                    {
+                        ResourceType = ResourceType.DistributedTransactionBatch,
+                        OperationType = OperationType.CommitDistributedTransaction,
+                    };
+                    enricher(request);
+                    capturedTokens.Add(request.Headers[HttpConstants.HttpHeaders.IdempotencyToken]);
+                },
+                () =>
+                {
+                    callCount++;
+                    return callCount <= retriableAbortCount
+                        ? Task.FromResult(CreateRetriableErrorResponseMessage())
+                        : Task.FromResult(CreateSuccessResponseMessage(operationCount: 2));
+                });
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                CreateTestOperations(count: 2),
+                mockContext.Object,
+                OperationType.CommitDistributedTransaction,
+                TimeSpan.Zero);
+
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.IsTrue(response.IsSuccessStatusCode);
+            }
+
+            Assert.AreEqual(retriableAbortCount + 1, callCount, "Expected N retriable aborts followed by one success.");
+            Assert.AreEqual(retriableAbortCount + 1, capturedTokens.Count,
+                "Each wire attempt — including the first — must stamp an idempotency token.");
+            Assert.AreEqual(retriableAbortCount + 1, new HashSet<string>(capturedTokens).Count,
+                "N retriable aborts must produce N+1 distinct idempotency tokens (a fresh token per attempt, including the first).");
+        }
+
+        [TestMethod]
+        [Description("Verifies the onDispatch callback fires once per wire attempt (including the first) with the freshly rotated idempotency token, so the published token always matches the token stamped on that attempt's request (spec §4.4).")]
+        public async Task CommitTransaction_OnDispatchCallback_PublishesRotatedTokenPerAttempt()
+        {
+            const int retriableAbortCount = 3;
+            int callCount = 0;
+            List<string> capturedRequestTokens = new List<string>();
+            List<Guid> publishedTokens = new List<Guid>();
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            this.SetupProcessResourceOperationWithStreamAndEnricherCapture(
+                mockContext,
+                (stream, enricher) =>
+                {
+                    RequestMessage request = new RequestMessage
+                    {
+                        ResourceType = ResourceType.DistributedTransactionBatch,
+                        OperationType = OperationType.CommitDistributedTransaction,
+                    };
+                    enricher(request);
+                    capturedRequestTokens.Add(request.Headers[HttpConstants.HttpHeaders.IdempotencyToken]);
+                },
+                () =>
+                {
+                    callCount++;
+                    return callCount <= retriableAbortCount
+                        ? Task.FromResult(CreateRetriableErrorResponseMessage())
+                        : Task.FromResult(CreateSuccessResponseMessage(operationCount: 1));
+                });
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                CreateTestOperations(),
+                mockContext.Object,
+                OperationType.CommitDistributedTransaction,
+                retryBaseDelay: TimeSpan.Zero,
+                onDispatch: token => publishedTokens.Add(token));
+
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.IsTrue(response.IsSuccessStatusCode);
+            }
+
+            Assert.AreEqual(retriableAbortCount + 1, publishedTokens.Count,
+                "onDispatch must fire exactly once per wire attempt (including the first).");
+            CollectionAssert.AreEqual(
+                capturedRequestTokens,
+                publishedTokens.Select(t => t.ToString()).ToList(),
+                "Each published token must equal the idempotency token stamped on that attempt's request.");
+            Assert.IsFalse(publishedTokens.Contains(Guid.Empty),
+                "No published token may be Guid.Empty — every dispatch carries a real token.");
+        }
+
+        [TestMethod]
+        [Description("When cancellation fires at the retry boundary (via the injected delay provider) after an attempt has dispatched, the commit throws OperationCanceledException but the last token published to onDispatch equals the last dispatched request token — never Guid.Empty. Spec §4.4: cancellation preserves the latest token that reached dispatch.")]
+        public async Task CommitTransaction_CancelledAtRetryBoundary_RetainsLastDispatchedToken()
+        {
+            using (CancellationTokenSource cts = new CancellationTokenSource())
+            {
+                int callCount = 0;
+                List<string> capturedRequestTokens = new List<string>();
+                List<Guid> publishedTokens = new List<Guid>();
+                Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+                this.SetupProcessResourceOperationWithStreamAndEnricherCapture(
+                    mockContext,
+                    (stream, enricher) =>
+                    {
+                        RequestMessage request = new RequestMessage
+                        {
+                            ResourceType = ResourceType.DistributedTransactionBatch,
+                            OperationType = OperationType.CommitDistributedTransaction,
+                        };
+                        enricher(request);
+                        capturedRequestTokens.Add(request.Headers[HttpConstants.HttpHeaders.IdempotencyToken]);
+                    },
+                    () =>
+                    {
+                        callCount++;
+                        return Task.FromResult(CreateRetriableErrorResponseMessage());
+                    });
+
+                // Injected delay provider cancels at the first retry boundary, then honours the cancelled token —
+                // deterministically triggering cancellation between attempts, never mid-dispatch.
+                Func<TimeSpan, CancellationToken, Task> cancelAtBoundary = (delay, token) =>
+                {
+                    cts.Cancel();
+                    token.ThrowIfCancellationRequested();
+                    return Task.CompletedTask;
+                };
+
+                DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                    CreateTestOperations(),
+                    mockContext.Object,
+                    OperationType.CommitDistributedTransaction,
+                    retryBaseDelay: TimeSpan.Zero,
+                    delayProvider: cancelAtBoundary,
+                    onDispatch: token => publishedTokens.Add(token));
+
+                await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+                    () => committer.ExecuteTransactionAsync(NoOpTrace.Singleton, cts.Token));
+
+                Assert.AreEqual(1, callCount, "Exactly one attempt should dispatch before cancellation at the retry boundary.");
+                Assert.AreEqual(1, publishedTokens.Count, "onDispatch must have published the token of the dispatched attempt.");
+                Assert.AreNotEqual(Guid.Empty, publishedTokens[publishedTokens.Count - 1],
+                    "The published token must not be Guid.Empty after cancellation.");
+                Assert.AreEqual(capturedRequestTokens[capturedRequestTokens.Count - 1], publishedTokens[publishedTokens.Count - 1].ToString(),
+                    "The latest published token must equal the last dispatched request token, so the attempt remains identifiable after cancellation.");
+            }
         }
 
         [DataTestMethod]
@@ -1654,6 +2205,13 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             return mockContext;
         }
 
+        private Mock<CosmosClientContext> CreateMockClientContext(CosmosClientOptions clientOptions)
+        {
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            mockContext.Setup(x => x.ClientOptions).Returns(clientOptions);
+            return mockContext;
+        }
+
         private void SetupProcessResourceOperation(
             Mock<CosmosClientContext> mockContext,
             Func<Task<ResponseMessage>> responseFactory)
@@ -1755,6 +2313,19 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
         private static ResponseMessage CreateRetriableErrorResponseMessage()
         {
+            // FastResponse retry model: durably Aborted (HTTP 452) AND retriable — the retry uses a NEW
+            // token because the prior token is terminally consumed on the coordinator.
+            string json = "{\"isRetriable\":true}";
+            return new ResponseMessage((HttpStatusCode)StatusCodes.TransactionAborted)
+            {
+                Content = new MemoryStream(Encoding.UTF8.GetBytes(json))
+            };
+        }
+
+        private static ResponseMessage CreateRetriableNonAbortedResponseMessage()
+        {
+            // FastResponse retry model: retriable but NOT durably Aborted (any non-452 status) — the retry
+            // replays the SAME token so the coordinator's duplicate detection keeps the resubmission idempotent.
             string json = "{\"isRetriable\":true}";
             return new ResponseMessage(HttpStatusCode.ServiceUnavailable)
             {
