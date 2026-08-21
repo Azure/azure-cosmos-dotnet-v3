@@ -357,7 +357,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             int encryptedPathCount = properties.EncryptedPaths is ICollection<string> ec ? ec.Count : properties.EncryptedPaths.Count();
             using ArrayPoolManager arrayPoolManager = new (initialRentCapacity: (encryptedPathCount * 2) + 4);
 
-            DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(properties.DataEncryptionKeyId, properties.EncryptionAlgorithm, cancellationToken);
+            DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(
+                properties.DataEncryptionKeyId,
+                properties.EncryptionAlgorithm,
+                cancellationToken) ?? throw new NotSupportedException(
+                    "Stream processing requires an Encryptor that overrides GetEncryptionKeyAsync.");
 
             List<string> pathsDecrypted = new (encryptedPathCount);
             using Utf8JsonWriter writer = new (outputBufferWriter);

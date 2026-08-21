@@ -12,33 +12,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// </summary>
     public abstract class DataEncryptionKey
     {
-        private bool? providesEncryptByteCount;
-
         /// <summary>
         /// Gets raw key bytes of the data encryption key.
         /// </summary>
         public abstract byte[] RawKey { get; }
-
-        /// <summary>
-        /// Gets a value indicating whether this instance overrides <see cref="GetEncryptByteCount"/>
-        /// and therefore supports the SDK's buffer-based encryption path. Implementations written
-        /// against earlier package versions (array-based members only) are routed through
-        /// <see cref="EncryptData(byte[])"/>/<see cref="DecryptData(byte[])"/> instead.
-        /// </summary>
-        internal bool ProvidesEncryptByteCount()
-        {
-            if (!this.providesEncryptByteCount.HasValue)
-            {
-                System.Reflection.MethodInfo method = this.GetType()
-                    .GetMethod(nameof(this.GetEncryptByteCount), new[] { typeof(int) });
-
-                this.providesEncryptByteCount =
-                    method?.DeclaringType != typeof(DataEncryptionKey) &&
-                    method?.GetBaseDefinition().DeclaringType == typeof(DataEncryptionKey);
-            }
-
-            return this.providesEncryptByteCount.Value;
-        }
 
         /// <summary>
         /// Gets Encryption algorithm to be used with this data encryption key.
@@ -82,16 +59,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// Calculate size of input after encryption.
         /// </summary>
         /// <param name="plainTextLength">Input data size.</param>
-        /// <returns>Size of input when encrypted.</returns>
+        /// <returns>Size of input when encrypted, or a negative value when unsupported.</returns>
         /// <remarks>
-        /// The default implementation throws <see cref="NotSupportedException"/>; the exact
-        /// ciphertext size cannot be predicted for an arbitrary algorithm. Override this member
-        /// (together with the buffer-based <see cref="EncryptData(byte[], int, int, byte[], int)"/>)
-        /// to enable the SDK's buffer-based encryption paths.
+        /// The default returns a negative value, routing older implementations through
+        /// <see cref="EncryptData(byte[])"/>.
         /// </remarks>
         public virtual int GetEncryptByteCount(int plainTextLength)
         {
-            throw new NotSupportedException($"This {nameof(DataEncryptionKey)} implementation does not support buffer-based encryption. Override {nameof(this.GetEncryptByteCount)} to enable it.");
+            return -1;
         }
 
         /// <summary>

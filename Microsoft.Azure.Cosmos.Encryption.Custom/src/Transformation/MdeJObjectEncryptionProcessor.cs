@@ -44,11 +44,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             using ArrayPoolManager arrayPoolManager = new ();
 
-            // Older encryptors expose only EncryptAsync/DecryptAsync.
-            bool useDataEncryptionKeyDirectly = encryptor.ProvidesDataEncryptionKeyAccess();
-            DataEncryptionKey encryptionKey = useDataEncryptionKeyDirectly
-                ? await encryptor.GetEncryptionKeyAsync(encryptionOptions.DataEncryptionKeyId, encryptionOptions.EncryptionAlgorithm, token)
-                : null;
+            DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(
+                encryptionOptions.DataEncryptionKeyId,
+                encryptionOptions.EncryptionAlgorithm,
+                token);
+            bool useDataEncryptionKeyDirectly = encryptionKey != null;
 
             foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
             {
@@ -109,10 +109,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             using ArrayPoolManager arrayPoolManager = new ();
             using ArrayPoolManager<char> charPoolManager = new ();
 
-            bool useDataEncryptionKeyDirectly = encryptor.ProvidesDataEncryptionKeyAccess();
-            DataEncryptionKey encryptionKey = useDataEncryptionKeyDirectly
-                ? await encryptor.GetEncryptionKeyAsync(encryptionProperties.DataEncryptionKeyId, encryptionProperties.EncryptionAlgorithm, cancellationToken)
-                : null;
+            DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(
+                encryptionProperties.DataEncryptionKeyId,
+                encryptionProperties.EncryptionAlgorithm,
+                cancellationToken);
+            bool useDataEncryptionKeyDirectly = encryptionKey != null;
 
             List<string> pathsDecrypted = new (encryptionProperties.EncryptedPaths.Count());
 

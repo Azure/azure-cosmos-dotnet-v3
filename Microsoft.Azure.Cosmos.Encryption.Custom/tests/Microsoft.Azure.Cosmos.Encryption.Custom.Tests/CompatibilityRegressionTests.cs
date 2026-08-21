@@ -88,43 +88,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
         }
 
-        private sealed class HiddenKeyAccessEncryptor : Encryptor
-        {
-            public new Task<DataEncryptionKey> GetEncryptionKeyAsync(
-                string dataEncryptionKeyId,
-                string encryptionAlgorithm,
-                CancellationToken cancellationToken = default)
-            {
-                throw new InvalidOperationException("A hidden method must not be treated as a virtual override.");
-            }
-
-            public override Task<byte[]> EncryptAsync(
-                byte[] plainText,
-                string dataEncryptionKeyId,
-                string encryptionAlgorithm,
-                CancellationToken cancellationToken = default)
-            {
-                return Task.FromResult(TestCommon.EncryptData(plainText));
-            }
-
-            public override Task<byte[]> DecryptAsync(
-                byte[] cipherText,
-                string dataEncryptionKeyId,
-                string encryptionAlgorithm,
-                CancellationToken cancellationToken = default)
-            {
-                return Task.FromResult(TestCommon.DecryptData(cipherText));
-            }
-        }
-
-        private sealed class HiddenEncryptByteCountDataEncryptionKey : ReleasedStyleDataEncryptionKey
-        {
-            public new int GetEncryptByteCount(int plainTextLength)
-            {
-                throw new InvalidOperationException("A hidden method must not be treated as a virtual override.");
-            }
-        }
-
         private sealed class OverpredictingDataEncryptionKey : DataEncryptionKey
         {
             public override byte[] RawKey => null;
@@ -318,18 +281,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             using JsonDocument doc = JsonDocument.Parse(decrypted);
             Assert.AreEqual("secret value", doc.RootElement.GetProperty("Sensitive").GetString());
-        }
-
-        [TestMethod]
-        public void CustomEncryptor_HiddenKeyAccessMethod_IsNotTreatedAsOverride()
-        {
-            Assert.IsFalse(new HiddenKeyAccessEncryptor().ProvidesDataEncryptionKeyAccess());
-        }
-
-        [TestMethod]
-        public void CustomDataEncryptionKey_HiddenByteCountMethod_IsNotTreatedAsOverride()
-        {
-            Assert.IsFalse(new HiddenEncryptByteCountDataEncryptionKey().ProvidesEncryptByteCount());
         }
 
 #if NET8_0_OR_GREATER

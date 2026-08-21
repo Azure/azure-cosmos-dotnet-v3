@@ -10,13 +10,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     {
         internal virtual byte[] Encrypt(DataEncryptionKey encryptionKey, TypeMarker typeMarker, byte[] plainText, int plainTextLength)
         {
-            // Older keys expose only the array-based API.
-            if (!encryptionKey.ProvidesEncryptByteCount())
+            int encryptByteCount = encryptionKey.GetEncryptByteCount(plainTextLength);
+            if (encryptByteCount < 0)
             {
                 return EncryptLegacy(encryptionKey, typeMarker, plainText, plainTextLength);
             }
 
-            int encryptedTextLength = encryptionKey.GetEncryptByteCount(plainTextLength) + 1;
+            int encryptedTextLength = encryptByteCount + 1;
 
             byte[] encryptedText = new byte[encryptedTextLength];
 
@@ -52,13 +52,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
         internal virtual (byte[], int) Encrypt(DataEncryptionKey encryptionKey, TypeMarker typeMarker, byte[] plainText, int plainTextLength, ArrayPoolManager arrayPoolManager)
         {
-            if (!encryptionKey.ProvidesEncryptByteCount())
+            int encryptByteCount = encryptionKey.GetEncryptByteCount(plainTextLength);
+            if (encryptByteCount < 0)
             {
                 byte[] legacyEncryptedText = EncryptLegacy(encryptionKey, typeMarker, plainText, plainTextLength);
                 return (legacyEncryptedText, legacyEncryptedText.Length);
             }
 
-            int encryptedTextLength = encryptionKey.GetEncryptByteCount(plainTextLength) + 1;
+            int encryptedTextLength = encryptByteCount + 1;
 
             byte[] encryptedText = arrayPoolManager.Rent(encryptedTextLength);
 
