@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Concurrent;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
@@ -21,14 +22,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     /// <see cref="ReadConsistencyStrategy.LastCommittedSingleWriteRegion"/> on a two-region
     /// single-master account whose application region is the READ replica (not the hub).
     ///
-    /// Requires a real account. Set the connection string in an environment variable:
-    ///     setx COSMOSDB_MULTIREGION "AccountEndpoint=...;AccountKey=...;"
+    /// Requires a real account. The connection string is read from the same environment variable
+    /// used by <see cref="CosmosItemIntegrationTests"/>:
+    ///     setx COSMOSDB_MULTI_REGION "AccountEndpoint=...;AccountKey=...;"
     /// Never commit or paste the connection string.
     ///
-    /// Topology this is written against:
-    ///   - Single write region (hub)  : West US 2
-    ///   - Read replica               : West Central US
-    ///   - ApplicationRegion          : West Central US   (the replica, NOT the hub)
+    /// Regions are discovered from the account rather than hard coded: the hub is taken from the
+    /// account's write endpoints, and the application region is the first read endpoint that is not
+    /// the hub. On the account this was written against that resolves to West US 2 (hub) and
+    /// West Central US (replica), but any single write region account with two or more regions works.
     ///
     /// NOTE on ApplicationRegion vs ApplicationPreferredRegions: these are NOT equivalent.
     /// ApplicationRegion expands, via ConnectionPolicy.SetCurrentLocation, into a proximity-ordered
@@ -41,16 +43,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestCategory("MultiRegion")]
     public class DisabledStrategyLastCommittedHangTests
     {
-        private const string ConnectionStringEnvVar = "COSMOSDB_MULTIREGION";
+        private const string ConnectionStringEnvVar = "COSMOSDB_MULTI_REGION";
 
         private const string PartitionLevelFailoverEnvVar = "AZURE_COSMOS_PARTITION_LEVEL_FAILOVER_ENABLED";
-
-        /// <summary>
-        /// The read replica region — the client's application region. Deliberately NOT the hub.
-        /// Override via COSMOSDB_MULTIREGION_READ_REGION if your account uses different regions.
-        /// </summary>
-        private static string ApplicationRegionUnderTest =>
-            Environment.GetEnvironmentVariable("COSMOSDB_MULTIREGION_READ_REGION") ?? Regions.WestCentralUS;
 
         private static readonly TimeSpan HangThreshold = TimeSpan.FromSeconds(60);
 
@@ -68,16 +63,56 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private string connectionString;
 
+        /// <summary>
+        /// The hub (write) region of the account under test.
+        /// </summary>
+        private string hubRegion;
+
+        /// <summary>
+        /// The read replica used as the client's application region. Deliberately NOT the hub —
+        /// that asymmetry is what the harness exercises.
+        /// </summary>
+        private string applicationRegion;
+
         [TestInitialize]
-        public void TestInit()
+        public async Task TestInitAsync()
         {
-            this.connectionString = Environment.GetEnvironmentVariable(ConnectionStringEnvVar);
+            this.connectionString = ConfigurationManager.GetEnvironmentVariable<string>(ConnectionStringEnvVar, null);
+
             if (string.IsNullOrEmpty(this.connectionString))
             {
-                Assert.Inconclusive(
-                    $"Set environment variable {ConnectionStringEnvVar} to a two-region single-master " +
-                    "account connection string to run this test.");
+                Assert.Fail($"Set environment variable {ConnectionStringEnvVar} to run the tests");
             }
+
+            // Discover the topology with a plain client that has no application region of its own,
+            // so the endpoint lists reflect the account rather than a client side preference.
+            using CosmosClient bootstrapClient = new CosmosClient(this.connectionString);
+
+            // Force the account properties to be fetched before reading the endpoint caches.
+            await bootstrapClient.ReadAccountAsync();
+
+            IDictionary<string, Uri> writeRegions = bootstrapClient.DocumentClient.GlobalEndpointManager
+                .GetAvailableWriteEndpointsByLocation();
+            IDictionary<string, Uri> readRegions = bootstrapClient.DocumentClient.GlobalEndpointManager
+                .GetAvailableReadEndpointsByLocation();
+
+            Assert.AreEqual(
+                1,
+                writeRegions.Count,
+                "This harness targets a single write region (single master) account. " +
+                $"{ConnectionStringEnvVar} points at an account with {writeRegions.Count} write regions.");
+
+            this.hubRegion = writeRegions.Keys.First();
+
+            this.applicationRegion = readRegions.Keys.FirstOrDefault(
+                region => !string.Equals(region, this.hubRegion, StringComparison.OrdinalIgnoreCase));
+
+            Assert.IsNotNull(
+                this.applicationRegion,
+                "This harness needs a read region that is not the hub. " +
+                $"{ConnectionStringEnvVar} points at an account whose only region is {this.hubRegion}.");
+
+            Console.WriteLine($"Hub (write) region: {this.hubRegion}; application region: {this.applicationRegion}.");
         }
 
         /// <summary>
@@ -169,7 +204,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // The replica region, not the hub. This expands to a proximity-ordered list of
                 // ALL account regions (see class remarks).
-                ApplicationRegion = ApplicationRegionUnderTest,
+                ApplicationRegion = this.applicationRegion,
             };
 
             // PPAF is not a public CosmosClientOptions knob — it is driven by this environment
