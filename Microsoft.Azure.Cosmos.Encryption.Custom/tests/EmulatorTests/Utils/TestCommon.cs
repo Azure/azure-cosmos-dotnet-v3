@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests.Utils
             return stream;
         }
 
-        internal static (string endpoint, string authKey) GetAccountInfo()
+        private static (string endpoint, string authKey) GetAccountInfo()
         {
             string authKey = ConfigurationManager.AppSettings["MasterKey"];
             string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
