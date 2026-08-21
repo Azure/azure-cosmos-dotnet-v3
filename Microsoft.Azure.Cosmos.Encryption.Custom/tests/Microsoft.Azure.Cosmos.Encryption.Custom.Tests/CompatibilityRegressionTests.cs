@@ -67,11 +67,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
         }
 
-        private sealed class KeyAccessEncryptor : Encryptor
+        private sealed class KeyAccessEncryptor : Encryptor, IDataEncryptionKeyAccessor
         {
             public readonly ReleasedStyleDataEncryptionKey Dek = new ();
 
-            public override Task<DataEncryptionKey> GetEncryptionKeyAsync(string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
+            public Task<DataEncryptionKey> GetEncryptionKeyAsync(string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
             {
                 Assert.AreEqual(DekId, dataEncryptionKeyId);
                 return Task.FromResult<DataEncryptionKey>(this.Dek);
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
         }
 
-        private sealed class OverpredictingDataEncryptionKey : DataEncryptionKey
+        private sealed class OverpredictingDataEncryptionKey : DataEncryptionKey, IDataEncryptionKeyBuffer
         {
             public override byte[] RawKey => null;
 
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 return (byte[])plainText.Clone();
             }
 
-            public override int EncryptData(
+            public int EncryptData(
                 byte[] plainText,
                 int plainTextOffset,
                 int plainTextLength,
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 return plainTextLength;
             }
 
-            public override int GetEncryptByteCount(int plainTextLength)
+            public int GetEncryptByteCount(int plainTextLength)
             {
                 return plainTextLength + 8;
             }
@@ -118,6 +118,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             public override byte[] DecryptData(byte[] cipherText)
             {
                 return (byte[])cipherText.Clone();
+            }
+
+            public int DecryptData(
+                byte[] cipherText,
+                int cipherTextOffset,
+                int cipherTextLength,
+                byte[] output,
+                int outputOffset)
+            {
+                Buffer.BlockCopy(cipherText, cipherTextOffset, output, outputOffset, cipherTextLength);
+                return cipherTextLength;
+            }
+
+            public int GetDecryptByteCount(int cipherTextLength)
+            {
+                return cipherTextLength;
             }
         }
 
@@ -325,7 +341,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None));
 
-            StringAssert.Contains(ex.Message, nameof(Encryptor.GetEncryptionKeyAsync));
+            StringAssert.Contains(ex.Message, "built-in encryption key accessor");
             Assert.AreEqual(0, encryptor.EncryptCalls, "Stream path must fail fast, not silently bypass the custom Encryptor");
         }
 
@@ -349,7 +365,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None));
 
-            StringAssert.Contains(ex.Message, nameof(Encryptor.GetEncryptionKeyAsync));
+            StringAssert.Contains(ex.Message, "built-in encryption key accessor");
         }
 
         [TestMethod]
@@ -373,7 +389,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                     requestOptions,
                     CancellationToken.None));
 
-            StringAssert.Contains(exception.Message, nameof(Encryptor.GetEncryptionKeyAsync));
+            StringAssert.Contains(exception.Message, "built-in encryption key accessor");
         }
 
         [TestMethod]

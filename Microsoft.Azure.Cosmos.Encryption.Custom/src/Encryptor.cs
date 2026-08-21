@@ -14,22 +14,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     public abstract class Encryptor
     {
         /// <summary>
-        /// Retrieve Data Encryption Key.
-        /// </summary>
-        /// <param name="dataEncryptionKeyId">Identifier of the data encryption key.</param>
-        /// <param name="encryptionAlgorithm">Identifier of the encryption algorithm.</param>
-        /// <param name="cancellationToken">Token for cancellation.</param>
-        /// <returns>Data Encryption Key, or <see langword="null"/> when direct key access is unavailable.</returns>
-        /// <remarks>
-        /// The default returns <see langword="null"/>, routing older implementations through
-        /// <see cref="EncryptAsync"/> and <see cref="DecryptAsync"/>. Override to enable direct-key paths.
-        /// </remarks>
-        public virtual Task<DataEncryptionKey> GetEncryptionKeyAsync(string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
-        {
-            return Task.FromResult<DataEncryptionKey>(null);
-        }
-
-        /// <summary>
         /// Encrypts the plainText using the key and algorithm provided.
         /// </summary>
         /// <param name="plainText">Plain text.</param>

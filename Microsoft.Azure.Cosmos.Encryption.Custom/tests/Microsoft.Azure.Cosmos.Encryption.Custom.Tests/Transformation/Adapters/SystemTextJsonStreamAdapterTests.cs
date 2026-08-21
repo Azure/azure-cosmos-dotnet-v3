@@ -242,7 +242,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             Stream encrypted = await CreateEncryptedPayloadAsync(adapter);
 
             Mock<Encryptor> failingEncryptor = new ();
-            failingEncryptor
+            failingEncryptor.As<IDataEncryptionKeyAccessor>()
                 .Setup(e => e.GetEncryptionKeyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new InvalidOperationException("key-unwrap failure"));
 
@@ -260,7 +260,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             Stream encrypted = await CreateEncryptedPayloadAsync(adapter);
 
             Mock<Encryptor> failingEncryptor = new ();
-            failingEncryptor
+            failingEncryptor.As<IDataEncryptionKeyAccessor>()
                 .Setup(e => e.GetEncryptionKeyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new InvalidOperationException("key-unwrap failure"));
 

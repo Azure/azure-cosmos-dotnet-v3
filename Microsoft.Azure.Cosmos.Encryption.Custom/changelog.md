@@ -22,7 +22,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#6009](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6009) Malformed encrypted metadata with a missing DEK id now preserves the underlying decrypt failure in `EncryptionException` instead of masking it with an `ArgumentNullException`.
 
 #### Updates
-- Existing custom `Encryptor` and `DataEncryptionKey` subclasses remain compatible with the new key-access and buffer APIs through virtual default implementations.
 - Stable builds depend on `Microsoft.Azure.Cosmos` `3.60.0` or later; preview builds retain `3.41.0-preview.0`.
 - [#4753](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4753), [#5418](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5418) Updates `Microsoft.Data.Encryption.Cryptography` to `2.0.0-pre015` — a major bump from the `0.2.0-pre` referenced by `1.0.0-preview07` — and moves the internal MDE crypto calls to their async equivalents; `System.Threading.Tasks.Extensions` moves to `4.6.3`. Consumers that reference MDE directly should align to the 2.0 line to avoid a version conflict.
 - [#4819](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4819) Removes the direct `Azure.Core` package reference; it is still supplied transitively via `Azure.Identity`.

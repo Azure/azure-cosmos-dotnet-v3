@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 #endif
 
-        private sealed class FixedKeyEncryptor : Encryptor
+        private sealed class FixedKeyEncryptor : Encryptor, IDataEncryptionKeyAccessor
         {
             private readonly DataEncryptionKey dek;
 
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 this.dek = dek;
             }
 
-            public override Task<DataEncryptionKey> GetEncryptionKeyAsync(string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
+            public Task<DataEncryptionKey> GetEncryptionKeyAsync(string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
             {
                 Assert.AreEqual(FixtureDekId, dataEncryptionKeyId);
                 return Task.FromResult(this.dek);

@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// This (and AeadAes256CbcHmac256EncryptionKey) implementation for Cosmos DB is same as the existing
     /// SQL client implementation with StyleCop related changes - also, we restrict to randomized encryption to start with.
     /// </summary>
-    internal class AeadAes256CbcHmac256Algorithm : DataEncryptionKey
+    internal class AeadAes256CbcHmac256Algorithm : DataEncryptionKey, IDataEncryptionKeyBuffer
     {
         internal const string AlgorithmNameConstant = @"AEAD_AES_256_CBC_HMAC_SHA256";
 
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// cell_blob = versionbyte + cell_tag + cell_iv + cell_ciphertext
         /// </summary>
         /// <returns>Returns the ciphertext corresponding to the plaintext.</returns>
-        public override int EncryptData(byte[] plainText, int plainTextOffset, int plainTextLength, byte[] output, int outputOffset)
+        public int EncryptData(byte[] plainText, int plainTextOffset, int plainTextLength, byte[] output, int outputOffset)
         {
             byte[] buffer = this.EncryptData(plainText.AsSpan(plainTextOffset, plainTextLength).ToArray());
 
@@ -450,7 +450,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return authenticationTag;
         }
 
-        public override int DecryptData(byte[] cipherText, int cipherTextOffset, int cipherTextLength, byte[] output, int outputOffset)
+        public int DecryptData(byte[] cipherText, int cipherTextOffset, int cipherTextLength, byte[] output, int outputOffset)
         {
             byte[] buffer = this.DecryptData(cipherText.AsSpan(cipherTextOffset, cipherTextLength).ToArray(), true);
 
@@ -463,13 +463,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return buffer.Length;
         }
 
-        public override int GetEncryptByteCount(int plainTextLength)
+        public int GetEncryptByteCount(int plainTextLength)
         {
             // Output buffer size = size of VersionByte + Authentication Tag + IV + cipher Text blocks.
             return sizeof(byte) + AuthenticationTagSizeInBytes + IvSizeInBytes + GetCipherTextLength(plainTextLength);
         }
 
-        public override int GetDecryptByteCount(int cipherTextLength)
+        public int GetDecryptByteCount(int cipherTextLength)
         {
             int value = cipherTextLength - (sizeof(byte) + AuthenticationTagSizeInBytes + IvSizeInBytes);
             if (value < BlockSizeInBytes)

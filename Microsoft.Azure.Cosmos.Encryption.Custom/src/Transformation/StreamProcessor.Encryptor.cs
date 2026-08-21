@@ -29,11 +29,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             using ArrayPoolManager arrayPoolManager = new ();
 
-            DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(
+            if (encryptor is not IDataEncryptionKeyAccessor keyAccessor)
+            {
+                throw new NotSupportedException(
+                    "Stream processing requires the built-in encryption key accessor.");
+            }
+
+            DataEncryptionKey encryptionKey = await keyAccessor.GetEncryptionKeyAsync(
                 encryptionOptions.DataEncryptionKeyId,
                 encryptionOptions.EncryptionAlgorithm,
-                cancellationToken) ?? throw new NotSupportedException(
-                    "Stream processing requires an Encryptor that overrides GetEncryptionKeyAsync.");
+                cancellationToken) ?? throw new InvalidOperationException(
+                    "The encryption key accessor returned null.");
 
             // Pre-encode the paths-to-encrypt as UTF-8 byte sequences so that we can match
             // against Utf8JsonReader tokens with ValueTextEquals (which correctly handles

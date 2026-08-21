@@ -170,7 +170,7 @@ namespace CompatMatrix
                 new CustomEncryptionKeyWrapMetadata("compat-matrix", GetMasterKeyId(WorkerRole)));
 
             Container plain = await CreateContainerAsync(database, ItemContainerId, "/PK");
-            Container encrypted = plain.WithEncryptor(new MatrixEncryptor(provider));
+            Container encrypted = plain.WithEncryptor(MatrixEncryptorFactory.Create(provider));
             int failures = 0;
             foreach (WriteScenario scenario in GetWriteScenarios())
             {
@@ -240,7 +240,7 @@ namespace CompatMatrix
             Container keyContainer = database.GetContainer(KeyContainerId);
             CosmosDataEncryptionKeyProvider provider = await CreateProviderAsync(database, keyContainer.Id);
             Container plain = database.GetContainer(ItemContainerId);
-            Container encrypted = plain.WithEncryptor(new MatrixEncryptor(provider));
+            Container encrypted = plain.WithEncryptor(MatrixEncryptorFactory.Create(provider));
 
             int failures = 0;
             foreach (ReadScenario scenario in GetReadScenarios(writer))

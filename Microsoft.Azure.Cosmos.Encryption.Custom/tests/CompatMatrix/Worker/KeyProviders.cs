@@ -104,14 +104,17 @@ namespace CompatMatrix
             return this.inner.EncryptAsync(plainText, dataEncryptionKeyId, encryptionAlgorithm, cancellationToken);
         }
 
-#if COMPAT_CURRENT
-        public override Task<Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey> GetEncryptionKeyAsync(
-            string dataEncryptionKeyId,
-            string encryptionAlgorithm,
-            CancellationToken cancellationToken = default)
+    }
+
+    internal static class MatrixEncryptorFactory
+    {
+        public static Encryptor Create(DataEncryptionKeyProvider provider)
         {
-            return this.inner.GetEncryptionKeyAsync(dataEncryptionKeyId, encryptionAlgorithm, cancellationToken);
-        }
+#if COMPAT_CURRENT
+            return new CosmosEncryptor(provider);
+#else
+            return new MatrixEncryptor(provider);
 #endif
+        }
     }
 }
