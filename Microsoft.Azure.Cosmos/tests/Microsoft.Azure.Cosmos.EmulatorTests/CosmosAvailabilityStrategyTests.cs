@@ -621,7 +621,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         if (isPreferredLocationsEmpty)
                         {
-                            itemRequestOptions.ExcludeRegions = new List<string>() { "East US" };
+                            itemRequestOptions.ExcludeRegions = new List<string>() { region3 };
                         }
 
                         ItemResponse<CosmosIntegrationTestObject> ir = await container.ReadItemAsync<CosmosIntegrationTestObject>(
@@ -648,7 +648,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         if (isPreferredLocationsEmpty)
                         {
-                            requestOptions.ExcludeRegions = new List<string>() { "East US" };
+                            requestOptions.ExcludeRegions = new List<string>() { region3 };
                         }
 
                         FeedIterator<CosmosIntegrationTestObject> queryIterator = container.GetItemQueryIterator<CosmosIntegrationTestObject>(
@@ -677,7 +677,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         
                         if (isPreferredLocationsEmpty)
                         {
-                            queryRequestOptions.ExcludeRegions = new List<string>() { "East US" };
+                            queryRequestOptions.ExcludeRegions = new List<string>() { region3 };
                         }
                         
                         FeedIterator<CosmosIntegrationTestObject> crossPartitionQueryIterator = container.GetItemQueryIterator<CosmosIntegrationTestObject>(
@@ -707,7 +707,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         
                         if (isPreferredLocationsEmpty)
                         {
-                            readManyRequestOptions.ExcludeRegions = new List<string>() { "East US" };
+                            readManyRequestOptions.ExcludeRegions = new List<string>() { region3 };
                         }
 
                         FeedResponse<CosmosIntegrationTestObject> readManyResponse = await container.ReadManyItemsAsync<CosmosIntegrationTestObject>(
@@ -1381,16 +1381,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                              condition:
                                  new FaultInjectionConditionBuilder()
                                      .WithRegion(region1)
-                                     .WithConnectionType(FaultInjectionConnectionType.Gateway)
-                                     .WithEndpoint(
-                                        new FaultInjectionEndpointBuilder(
-                                            MultiRegionSetupHelpers.dbName,
-                                            MultiRegionSetupHelpers.containerName,
-                                            feedRanges[0])
-                                        .WithIncludePrimary(true)
-                                        .WithReplicaCount(4)
-                                        .Build())
-                                    .Build(),
+                                     .WithOperationType(FaultInjectionOperationType.CreateItem)
+                                     .Build(),
                             result:
                                 FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.SendDelay)
                                     .WithDelay(TimeSpan.FromMilliseconds(8000))
@@ -1417,6 +1409,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
                 Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                ItemResponse<CosmosIntegrationTestObject> _ = await container.ReadItemAsync<CosmosIntegrationTestObject>("testId", new PartitionKey("pk"));
 
                 sendDelay.Enable();
 

@@ -866,12 +866,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </remarks>
         /// <param name="readConsistencyStrategy">The desired read consistency strategy for the client.</param>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        CosmosClientBuilder WithReadConsistencyStrategy(Cosmos.ReadConsistencyStrategy readConsistencyStrategy)
+        public CosmosClientBuilder WithReadConsistencyStrategy(Cosmos.ReadConsistencyStrategy readConsistencyStrategy)
         {
             this.clientOptions.ReadConsistencyStrategy = readConsistencyStrategy;
             return this;
