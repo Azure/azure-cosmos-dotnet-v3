@@ -1522,11 +1522,19 @@ namespace Microsoft.Azure.Cosmos
 
             this.cancellationTokenSource.Dispose();
 
-            if (this.StoreModel != null)
+            IStoreModelExtension storeModel = this.StoreModel;
+            if (storeModel != null)
             {
-                this.StoreModel.Dispose();
+                storeModel.Dispose();
                 this.StoreModel = null;
             }
+
+            if (this.GatewayStoreModel != null && !ReferenceEquals(this.GatewayStoreModel, storeModel))
+            {
+                this.GatewayStoreModel.Dispose();
+            }
+
+            this.GatewayStoreModel = null;
 
             if (this.storeClientFactory != null)
             {
