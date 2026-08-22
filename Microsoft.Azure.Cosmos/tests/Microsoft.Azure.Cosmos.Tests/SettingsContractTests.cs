@@ -131,6 +131,111 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void SourceContainerMaterializedViewMetadataSerializationTest()
+        {
+            const string sourceContainerJson = @"{
+                ""id"": ""source"",
+                ""materializedViews"": [
+                    {
+                        ""id"": ""view"",
+                        ""_rid"": ""viewRid"",
+                        ""containerType"": ""GlobalSecondaryIndex"",
+                        ""requiredPathsInPreviousImage"": [""/tenantId"", ""/value""],
+                        ""futureViewProperty"": ""preserved""
+                    }
+                ],
+                ""materializedViewsProperties"": {
+                    ""throughputBucketForBuild"": 7,
+                    ""futureBuildProperty"": true
+                }
+            }";
+
+            ContainerProperties containerProperties =
+                SettingsContractTests.CosmosDeserialize<ContainerProperties>(sourceContainerJson);
+
+            Assert.AreEqual(1, containerProperties.MaterializedViews.Count);
+            MaterializedViewProperties materializedView = containerProperties.MaterializedViews[0];
+            Assert.AreEqual("view", materializedView.Id);
+            Assert.AreEqual("viewRid", materializedView.ResourceId);
+            Assert.AreEqual("GlobalSecondaryIndex", materializedView.ContainerType);
+            CollectionAssert.AreEqual(
+                new[] { "/tenantId", "/value" },
+                materializedView.RequiredPathsInPreviousImage.ToArray());
+            Assert.AreEqual("preserved", (string)materializedView.AdditionalProperties["futureViewProperty"]);
+
+            Assert.IsNotNull(containerProperties.MaterializedViewsProperties);
+            Assert.AreEqual(7, containerProperties.MaterializedViewsProperties.ThroughputBucketForBuild);
+            Assert.AreEqual(
+                true,
+                (bool)containerProperties.MaterializedViewsProperties.AdditionalProperties["futureBuildProperty"]);
+
+            JObject roundTrip = JObject.Parse(SettingsContractTests.CosmosSerialize(containerProperties));
+            Assert.AreEqual("preserved", (string)roundTrip["materializedViews"][0]["futureViewProperty"]);
+            Assert.AreEqual(true, (bool)roundTrip["materializedViewsProperties"]["futureBuildProperty"]);
+
+            ContainerProperties minimalContainerProperties =
+                SettingsContractTests.CosmosDeserialize<ContainerProperties>(
+                    @"{""materializedViews"":[{""id"":""view"",""_rid"":""viewRid""}],""materializedViewsProperties"":{}}");
+            Assert.IsNull(minimalContainerProperties.MaterializedViews[0].ContainerType);
+            Assert.IsNull(minimalContainerProperties.MaterializedViews[0].RequiredPathsInPreviousImage);
+            Assert.IsNull(minimalContainerProperties.MaterializedViewsProperties.ThroughputBucketForBuild);
+        }
+
+        [TestMethod]
+        public void MaterializedViewContainerDefinitionSerializationTest()
+        {
+            const string materializedViewContainerJson = @"{
+                ""id"": ""view"",
+                ""materializedViewDefinition"": {
+                    ""sourceCollectionRid"": ""sourceRid"",
+                    ""sourceCollectionId"": ""source"",
+                    ""definition"": ""SELECT * FROM c"",
+                    ""apiSpecificDefinition"": ""{ \""pipeline\"": \""projection\"" }"",
+                    ""containerType"": ""GlobalSecondaryIndex"",
+                    ""status"": ""Active"",
+                    ""throughputBucketForBuild"": 11,
+                    ""futureDefinitionProperty"": 42
+                }
+            }";
+
+            ContainerProperties containerProperties =
+                SettingsContractTests.CosmosDeserialize<ContainerProperties>(materializedViewContainerJson);
+            Cosmos.MaterializedViewDefinition definition = containerProperties.MaterializedViewDefinition;
+
+            Assert.IsNotNull(definition);
+            Assert.AreEqual("sourceRid", definition.SourceContainerResourceId);
+            Assert.AreEqual("source", definition.SourceContainerId);
+            Assert.AreEqual("SELECT * FROM c", definition.Definition);
+            Assert.AreEqual(@"{ ""pipeline"": ""projection"" }", definition.ApiSpecificDefinition);
+            Assert.AreEqual("GlobalSecondaryIndex", definition.ContainerType);
+            Assert.AreEqual("Active", definition.Status);
+            Assert.AreEqual(11, definition.ThroughputBucketForBuild);
+            Assert.AreEqual(42, (int)definition.AdditionalProperties["futureDefinitionProperty"]);
+
+            JObject roundTrip = JObject.Parse(SettingsContractTests.CosmosSerialize(containerProperties));
+            Assert.AreEqual(42, (int)roundTrip["materializedViewDefinition"]["futureDefinitionProperty"]);
+        }
+
+        [TestMethod]
+        public void MaterializedViewMetadataIsAbsentByDefaultTest()
+        {
+            ContainerProperties containerProperties = new ContainerProperties("container", "/partitionKey");
+
+            Assert.IsNull(containerProperties.MaterializedViews);
+            Assert.IsNull(containerProperties.MaterializedViewsProperties);
+            Assert.IsNull(containerProperties.MaterializedViewDefinition);
+
+            JObject serialized = JObject.Parse(SettingsContractTests.CosmosSerialize(containerProperties));
+            Assert.IsNull(serialized["materializedViews"]);
+            Assert.IsNull(serialized["materializedViewsProperties"]);
+            Assert.IsNull(serialized["materializedViewDefinition"]);
+
+            SettingsContractTests.TypeAccessorGuard(typeof(Cosmos.MaterializedViewProperties));
+            SettingsContractTests.TypeAccessorGuard(typeof(Cosmos.MaterializedViewsProperties));
+            SettingsContractTests.TypeAccessorGuard(typeof(Cosmos.MaterializedViewDefinition));
+        }
+
+        [TestMethod]
         public void StoredProcedureDeserialzieTest()
         {
             string colId = "946ad017-14d9-4cee-8619-0cbc62414157";

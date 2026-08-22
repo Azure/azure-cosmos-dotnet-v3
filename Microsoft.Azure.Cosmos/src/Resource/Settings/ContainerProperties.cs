@@ -88,6 +88,33 @@ namespace Microsoft.Azure.Cosmos
         private FullTextPolicy fullTextPolicyInternal;
 
         /// <summary>
+        /// Gets the materialized views associated with this source container from the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The materialized views associated with this source container, or <see langword="null"/> when none are returned.
+        /// </value>
+        [JsonProperty(PropertyName = "materializedViews", NullValueHandling = NullValueHandling.Ignore)]
+        public IReadOnlyList<MaterializedViewProperties> MaterializedViews { get; internal set; }
+
+        /// <summary>
+        /// Gets the service-managed materialized view build properties for this source container.
+        /// </summary>
+        /// <value>
+        /// The materialized view build properties, or <see langword="null"/> when they are not returned.
+        /// </value>
+        [JsonProperty(PropertyName = "materializedViewsProperties", NullValueHandling = NullValueHandling.Ignore)]
+        public MaterializedViewsProperties MaterializedViewsProperties { get; internal set; }
+
+        /// <summary>
+        /// Gets the materialized view definition when this container is a materialized view.
+        /// </summary>
+        /// <value>
+        /// The materialized view definition, or <see langword="null"/> when this container is not a materialized view.
+        /// </value>
+        [JsonProperty(PropertyName = "materializedViewDefinition", NullValueHandling = NullValueHandling.Ignore)]
+        public MaterializedViewDefinition MaterializedViewDefinition { get; internal set; }
+
+        /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
