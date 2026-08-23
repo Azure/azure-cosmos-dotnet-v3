@@ -235,6 +235,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 BindingFlags.NonPublic);
             Assert.IsNotNull(materializedViewBuildPropertiesType);
             Assert.IsTrue(materializedViewBuildPropertiesType.IsNestedPrivate);
+            Assert.AreEqual(
+                0,
+                materializedViewBuildPropertiesType.GetProperties(
+                    BindingFlags.Instance | BindingFlags.Public).Length);
 
             string[] materializedViewPropertyNames =
             {

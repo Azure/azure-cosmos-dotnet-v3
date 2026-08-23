@@ -144,10 +144,10 @@ namespace Microsoft.Azure.Cosmos
         private sealed class MaterializedViewBuildProperties
         {
             [JsonProperty(PropertyName = "throughputBucketForBuild", NullValueHandling = NullValueHandling.Ignore)]
-            public int? ThroughputBucketForBuild { get; set; }
+            internal int? ThroughputBucketForBuild { get; set; }
 
             [JsonExtensionData]
-            public IDictionary<string, JToken> AdditionalProperties { get; set; }
+            internal IDictionary<string, JToken> AdditionalProperties { get; set; }
         }
 
         /// <summary>
