@@ -96,31 +96,18 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = "materializedViewDefinition", NullValueHandling = NullValueHandling.Ignore)]
         private MaterializedViewDefinition materializedViewDefinitionInternal;
 
-        /// <summary>
-        /// Gets the materialized views associated with this source container from the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// The materialized views associated with this source container, or <see langword="null"/> when none are returned.
-        /// </value>
         [JsonIgnore]
-        public IReadOnlyList<MaterializedViewProperties> MaterializedViews
+        internal IReadOnlyList<MaterializedViewProperties> MaterializedViews
         {
             get => this.materializedViewsInternal;
-            internal set => this.materializedViewsInternal = value;
+            set => this.materializedViewsInternal = value;
         }
 
-        /// <summary>
-        /// Gets the throughput bucket used by the Azure Cosmos DB service to build the materialized views
-        /// associated with this source container.
-        /// </summary>
-        /// <value>
-        /// The throughput bucket, or <see langword="null"/> when it is not returned.
-        /// </value>
         [JsonIgnore]
-        public int? MaterializedViewBuildThroughputBucket
+        internal int? MaterializedViewBuildThroughputBucket
         {
             get => this.materializedViewBuildPropertiesInternal?.ThroughputBucketForBuild;
-            internal set
+            set
             {
                 if (this.materializedViewBuildPropertiesInternal == null)
                 {
@@ -136,17 +123,11 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        /// <summary>
-        /// Gets the materialized view definition when this container is a materialized view.
-        /// </summary>
-        /// <value>
-        /// The materialized view definition, or <see langword="null"/> when this container is not a materialized view.
-        /// </value>
         [JsonIgnore]
-        public MaterializedViewDefinition MaterializedViewDefinition
+        internal MaterializedViewDefinition MaterializedViewDefinition
         {
             get => this.materializedViewDefinitionInternal;
-            internal set => this.materializedViewDefinitionInternal = value;
+            set => this.materializedViewDefinitionInternal = value;
         }
 
         /// <summary>

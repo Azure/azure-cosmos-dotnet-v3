@@ -226,8 +226,36 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(serialized["materializedViewsProperties"]);
             Assert.IsNull(serialized["materializedViewDefinition"]);
 
-            SettingsContractTests.TypeAccessorGuard(typeof(Cosmos.MaterializedViewProperties));
-            SettingsContractTests.TypeAccessorGuard(typeof(Cosmos.MaterializedViewDefinition));
+            Assert.IsFalse(typeof(Cosmos.MaterializedViewProperties).IsPublic);
+            Assert.IsFalse(typeof(Cosmos.MaterializedViewProperties).IsNestedPublic);
+            Assert.IsFalse(typeof(Cosmos.MaterializedViewDefinition).IsPublic);
+            Assert.IsFalse(typeof(Cosmos.MaterializedViewDefinition).IsNestedPublic);
+            Type materializedViewBuildPropertiesType = typeof(ContainerProperties).GetNestedType(
+                "MaterializedViewBuildProperties",
+                BindingFlags.NonPublic);
+            Assert.IsNotNull(materializedViewBuildPropertiesType);
+            Assert.IsTrue(materializedViewBuildPropertiesType.IsNestedPrivate);
+
+            string[] materializedViewPropertyNames =
+            {
+                "MaterializedViews",
+                "MaterializedViewBuildThroughputBucket",
+                "MaterializedViewDefinition",
+            };
+
+            foreach (string propertyName in materializedViewPropertyNames)
+            {
+                Assert.IsNull(
+                    typeof(ContainerProperties).GetProperty(
+                        propertyName,
+                        BindingFlags.Instance | BindingFlags.Public),
+                    $"{propertyName} must not be publicly accessible.");
+                Assert.IsNotNull(
+                    typeof(ContainerProperties).GetProperty(
+                        propertyName,
+                        BindingFlags.Instance | BindingFlags.NonPublic),
+                    $"{propertyName} must remain internally accessible.");
+            }
         }
 
         [TestMethod]
