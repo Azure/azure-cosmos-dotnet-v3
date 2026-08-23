@@ -93,20 +93,6 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = "materializedViewDefinition", NullValueHandling = NullValueHandling.Ignore)]
         private MaterializedViewDefinition materializedViewDefinitionInternal;
 
-        [JsonIgnore]
-        internal IReadOnlyList<MaterializedViewProperties> MaterializedViews
-        {
-            get => this.materializedViewsInternal;
-            set => this.materializedViewsInternal = value;
-        }
-
-        [JsonIgnore]
-        internal MaterializedViewDefinition MaterializedViewDefinition
-        {
-            get => this.materializedViewDefinitionInternal;
-            set => this.materializedViewDefinitionInternal = value;
-        }
-
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
@@ -391,6 +377,26 @@ namespace Microsoft.Azure.Cosmos
         {
             get => this.fullTextPolicyInternal;
             set => this.fullTextPolicyInternal = value;
+        }
+
+        /// <summary>
+        /// Gets or sets metadata for the materialized views associated with this source container.
+        /// </summary>
+        [JsonIgnore]
+        internal IReadOnlyList<MaterializedViewProperties> MaterializedViews
+        {
+            get => this.materializedViewsInternal;
+            set => this.materializedViewsInternal = value;
+        }
+
+        /// <summary>
+        /// Gets or sets the materialized view definition when this container is a materialized view.
+        /// </summary>
+        [JsonIgnore]
+        internal MaterializedViewDefinition MaterializedViewDefinition
+        {
+            get => this.materializedViewDefinitionInternal;
+            set => this.materializedViewDefinitionInternal = value;
         }
 
         /// <summary>
