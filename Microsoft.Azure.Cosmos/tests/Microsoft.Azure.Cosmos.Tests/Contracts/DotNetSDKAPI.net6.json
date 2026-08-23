@@ -2582,33 +2582,17 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.IndexingPolicy IndexingPolicy;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.IndexingPolicy get_IndexingPolicy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_IndexingPolicy(Microsoft.Azure.Cosmos.IndexingPolicy);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.MaterializedViewDefinition get_MaterializedViewDefinition()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Microsoft.Azure.Cosmos.MaterializedViewDefinition get_MaterializedViewDefinition()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.MaterializedViewDefinition get_MaterializedViewDefinition();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.MaterializedViewDefinition MaterializedViewDefinition[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"materializedViewDefinition\")]": {
+        "Microsoft.Azure.Cosmos.MaterializedViewDefinition MaterializedViewDefinition[Newtonsoft.Json.JsonIgnoreAttribute()]": {
           "Type": "Property",
           "Attributes": [
-            "JsonPropertyAttribute"
+            "JsonIgnoreAttribute"
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.MaterializedViewDefinition MaterializedViewDefinition;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.MaterializedViewDefinition get_MaterializedViewDefinition();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Microsoft.Azure.Cosmos.MaterializedViewsProperties get_MaterializedViewsProperties()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.MaterializedViewsProperties get_MaterializedViewsProperties();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Microsoft.Azure.Cosmos.MaterializedViewsProperties MaterializedViewsProperties[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"materializedViewsProperties\")]": {
-          "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.MaterializedViewsProperties MaterializedViewsProperties;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.MaterializedViewsProperties get_MaterializedViewsProperties();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.UniqueKeyPolicy get_UniqueKeyPolicy()": {
           "Type": "Method",
@@ -2634,17 +2618,15 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.VectorEmbeddingPolicy VectorEmbeddingPolicy;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.VectorEmbeddingPolicy get_VectorEmbeddingPolicy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_VectorEmbeddingPolicy(Microsoft.Azure.Cosmos.VectorEmbeddingPolicy);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.MaterializedViewProperties] get_MaterializedViews()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.MaterializedViewProperties] get_MaterializedViews()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.MaterializedViewProperties] get_MaterializedViews();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.MaterializedViewProperties] MaterializedViews[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"materializedViews\")]": {
+        "System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.MaterializedViewProperties] MaterializedViews[Newtonsoft.Json.JsonIgnoreAttribute()]": {
           "Type": "Property",
           "Attributes": [
-            "JsonPropertyAttribute"
+            "JsonIgnoreAttribute"
           ],
           "MethodInfo": "System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.MaterializedViewProperties] MaterializedViews;CanRead:True;CanWrite:True;System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.MaterializedViewProperties] get_MaterializedViews();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
@@ -2726,6 +2708,18 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "System.Nullable`1[System.Int32] get_DefaultTimeToLive();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.Int32] get_MaterializedViewBuildThroughputBucket()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[System.Int32] get_MaterializedViewBuildThroughputBucket();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.Int32] MaterializedViewBuildThroughputBucket[Newtonsoft.Json.JsonIgnoreAttribute()]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonIgnoreAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Int32] MaterializedViewBuildThroughputBucket;CanRead:True;CanWrite:True;System.Nullable`1[System.Int32] get_MaterializedViewBuildThroughputBucket();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"_etag\")]": {
           "Type": "Property",
@@ -7404,26 +7398,6 @@
             "JsonPropertyAttribute"
           ],
           "MethodInfo": "System.String ResourceId;CanRead:True;CanWrite:True;System.String get_ResourceId();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "Microsoft.Azure.Cosmos.MaterializedViewsProperties;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-      "Subclasses": {},
-      "Members": {
-        "System.Nullable`1[System.Int32] get_ThroughputBucketForBuild()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.Nullable`1[System.Int32] get_ThroughputBucketForBuild();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.Nullable`1[System.Int32] ThroughputBucketForBuild[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"throughputBucketForBuild\")]": {
-          "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
-          "MethodInfo": "System.Nullable`1[System.Int32] ThroughputBucketForBuild;CanRead:True;CanWrite:True;System.Nullable`1[System.Int32] get_ThroughputBucketForBuild();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}

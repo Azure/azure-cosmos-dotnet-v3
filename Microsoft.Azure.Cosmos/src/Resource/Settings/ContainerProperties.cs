@@ -87,23 +87,54 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = "fullTextPolicy", NullValueHandling = NullValueHandling.Ignore)]
         private FullTextPolicy fullTextPolicyInternal;
 
+        [JsonProperty(PropertyName = "materializedViews", NullValueHandling = NullValueHandling.Ignore)]
+        private IReadOnlyList<MaterializedViewProperties> materializedViewsInternal;
+
+        [JsonProperty(PropertyName = "materializedViewsProperties", NullValueHandling = NullValueHandling.Ignore)]
+        private MaterializedViewBuildProperties materializedViewBuildPropertiesInternal;
+
+        [JsonProperty(PropertyName = "materializedViewDefinition", NullValueHandling = NullValueHandling.Ignore)]
+        private MaterializedViewDefinition materializedViewDefinitionInternal;
+
         /// <summary>
         /// Gets the materialized views associated with this source container from the Azure Cosmos DB service.
         /// </summary>
         /// <value>
         /// The materialized views associated with this source container, or <see langword="null"/> when none are returned.
         /// </value>
-        [JsonProperty(PropertyName = "materializedViews", NullValueHandling = NullValueHandling.Ignore)]
-        public IReadOnlyList<MaterializedViewProperties> MaterializedViews { get; internal set; }
+        [JsonIgnore]
+        public IReadOnlyList<MaterializedViewProperties> MaterializedViews
+        {
+            get => this.materializedViewsInternal;
+            internal set => this.materializedViewsInternal = value;
+        }
 
         /// <summary>
-        /// Gets the service-managed materialized view build properties for this source container.
+        /// Gets the throughput bucket used by the Azure Cosmos DB service to build the materialized views
+        /// associated with this source container.
         /// </summary>
         /// <value>
-        /// The materialized view build properties, or <see langword="null"/> when they are not returned.
+        /// The throughput bucket, or <see langword="null"/> when it is not returned.
         /// </value>
-        [JsonProperty(PropertyName = "materializedViewsProperties", NullValueHandling = NullValueHandling.Ignore)]
-        public MaterializedViewsProperties MaterializedViewsProperties { get; internal set; }
+        [JsonIgnore]
+        public int? MaterializedViewBuildThroughputBucket
+        {
+            get => this.materializedViewBuildPropertiesInternal?.ThroughputBucketForBuild;
+            internal set
+            {
+                if (this.materializedViewBuildPropertiesInternal == null)
+                {
+                    if (!value.HasValue)
+                    {
+                        return;
+                    }
+
+                    this.materializedViewBuildPropertiesInternal = new MaterializedViewBuildProperties();
+                }
+
+                this.materializedViewBuildPropertiesInternal.ThroughputBucketForBuild = value;
+            }
+        }
 
         /// <summary>
         /// Gets the materialized view definition when this container is a materialized view.
@@ -111,8 +142,12 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The materialized view definition, or <see langword="null"/> when this container is not a materialized view.
         /// </value>
-        [JsonProperty(PropertyName = "materializedViewDefinition", NullValueHandling = NullValueHandling.Ignore)]
-        public MaterializedViewDefinition MaterializedViewDefinition { get; internal set; }
+        [JsonIgnore]
+        public MaterializedViewDefinition MaterializedViewDefinition
+        {
+            get => this.materializedViewDefinitionInternal;
+            internal set => this.materializedViewDefinitionInternal = value;
+        }
 
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 
@@ -124,6 +159,15 @@ namespace Microsoft.Azure.Cosmos
         private IReadOnlyList<IReadOnlyList<string>> partitionKeyPathTokens;
         private string id;
         private bool? isLastPartitionKeyPathId;
+
+        private sealed class MaterializedViewBuildProperties
+        {
+            [JsonProperty(PropertyName = "throughputBucketForBuild", NullValueHandling = NullValueHandling.Ignore)]
+            public int? ThroughputBucketForBuild { get; set; }
+
+            [JsonExtensionData]
+            public IDictionary<string, JToken> AdditionalProperties { get; set; }
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ContainerProperties"/> class for the Azure Cosmos DB service.

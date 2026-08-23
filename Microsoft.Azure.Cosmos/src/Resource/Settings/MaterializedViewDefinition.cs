@@ -33,9 +33,11 @@ namespace Microsoft.Azure.Cosmos
         public string SourceContainerId { get; internal set; }
 
         /// <summary>
-        /// Gets the materialized view definition.
+        /// Gets the query that defines how items from the source container are projected into the materialized view.
         /// </summary>
-        /// <value>The service-independent materialized view definition.</value>
+        /// <value>
+        /// The service-independent query definition used to build and maintain the materialized view.
+        /// </value>
         [JsonProperty(PropertyName = "definition", NullValueHandling = NullValueHandling.Ignore)]
         public string Definition { get; internal set; }
 

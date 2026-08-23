@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### <a name="unreleased"/> Unreleased
 
 #### Features Added
-- Materialized Views: Adds read-only materialized-view metadata to `ContainerProperties`, including source-container view listings and build properties, plus materialized-view definitions and service-managed status.
+- Materialized Views: Adds read-only materialized-view metadata to `ContainerProperties`, including source-container view listings and build throughput bucket, plus materialized-view definitions and service-managed status.
 - [5984](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5984) ReadConsistencyStrategy: Adds `ReadConsistencyStrategy` to the official (GA) package. The `ReadConsistencyStrategy` enum and the corresponding properties on `CosmosClientOptions`, `ItemRequestOptions`, `QueryRequestOptions`, `ChangeFeedRequestOptions`, `ReadManyRequestOptions`, and `CosmosClientBuilder.WithReadConsistencyStrategy` are now available in the public package (previously preview-only). This lets read and query operations request a read consistency strategy (for example `Eventual`, `Session`, `LatestCommitted`, or `GlobalStrong`) independent of the account's default consistency level.
 - [6059](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6059) DistributedTransaction (preview): Adds `DistributedTransactionResponse.ResponseMode`, which reports whether the coordinator applied `Standard` or `FastResponse` mode when processing the transaction. The value is parsed from the coordinator response and defaults to `Standard` when not reported.
 - [6053](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6053) VectorIndex Policy: Adds `QuantizerType` to the official (GA) package.

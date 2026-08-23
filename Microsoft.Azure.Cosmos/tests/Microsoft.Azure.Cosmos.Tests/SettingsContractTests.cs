@@ -163,11 +163,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 materializedView.RequiredPathsInPreviousImage.ToArray());
             Assert.AreEqual("preserved", (string)materializedView.AdditionalProperties["futureViewProperty"]);
 
-            Assert.IsNotNull(containerProperties.MaterializedViewsProperties);
-            Assert.AreEqual(7, containerProperties.MaterializedViewsProperties.ThroughputBucketForBuild);
-            Assert.AreEqual(
-                true,
-                (bool)containerProperties.MaterializedViewsProperties.AdditionalProperties["futureBuildProperty"]);
+            Assert.AreEqual(7, containerProperties.MaterializedViewBuildThroughputBucket);
 
             JObject roundTrip = JObject.Parse(SettingsContractTests.CosmosSerialize(containerProperties));
             Assert.AreEqual("preserved", (string)roundTrip["materializedViews"][0]["futureViewProperty"]);
@@ -178,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     @"{""materializedViews"":[{""id"":""view"",""_rid"":""viewRid""}],""materializedViewsProperties"":{}}");
             Assert.IsNull(minimalContainerProperties.MaterializedViews[0].ContainerType);
             Assert.IsNull(minimalContainerProperties.MaterializedViews[0].RequiredPathsInPreviousImage);
-            Assert.IsNull(minimalContainerProperties.MaterializedViewsProperties.ThroughputBucketForBuild);
+            Assert.IsNull(minimalContainerProperties.MaterializedViewBuildThroughputBucket);
         }
 
         [TestMethod]
@@ -222,7 +218,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ContainerProperties containerProperties = new ContainerProperties("container", "/partitionKey");
 
             Assert.IsNull(containerProperties.MaterializedViews);
-            Assert.IsNull(containerProperties.MaterializedViewsProperties);
+            Assert.IsNull(containerProperties.MaterializedViewBuildThroughputBucket);
             Assert.IsNull(containerProperties.MaterializedViewDefinition);
 
             JObject serialized = JObject.Parse(SettingsContractTests.CosmosSerialize(containerProperties));
@@ -231,7 +227,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(serialized["materializedViewDefinition"]);
 
             SettingsContractTests.TypeAccessorGuard(typeof(Cosmos.MaterializedViewProperties));
-            SettingsContractTests.TypeAccessorGuard(typeof(Cosmos.MaterializedViewsProperties));
             SettingsContractTests.TypeAccessorGuard(typeof(Cosmos.MaterializedViewDefinition));
         }
 
