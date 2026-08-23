@@ -90,9 +90,6 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = "materializedViews", NullValueHandling = NullValueHandling.Ignore)]
         private IReadOnlyList<MaterializedViewProperties> materializedViewsInternal;
 
-        [JsonProperty(PropertyName = "materializedViewsProperties", NullValueHandling = NullValueHandling.Ignore)]
-        private MaterializedViewBuildProperties materializedViewBuildPropertiesInternal;
-
         [JsonProperty(PropertyName = "materializedViewDefinition", NullValueHandling = NullValueHandling.Ignore)]
         private MaterializedViewDefinition materializedViewDefinitionInternal;
 
@@ -101,26 +98,6 @@ namespace Microsoft.Azure.Cosmos
         {
             get => this.materializedViewsInternal;
             set => this.materializedViewsInternal = value;
-        }
-
-        [JsonIgnore]
-        internal int? MaterializedViewBuildThroughputBucket
-        {
-            get => this.materializedViewBuildPropertiesInternal?.ThroughputBucketForBuild;
-            set
-            {
-                if (this.materializedViewBuildPropertiesInternal == null)
-                {
-                    if (!value.HasValue)
-                    {
-                        return;
-                    }
-
-                    this.materializedViewBuildPropertiesInternal = new MaterializedViewBuildProperties();
-                }
-
-                this.materializedViewBuildPropertiesInternal.ThroughputBucketForBuild = value;
-            }
         }
 
         [JsonIgnore]
@@ -140,15 +117,6 @@ namespace Microsoft.Azure.Cosmos
         private IReadOnlyList<IReadOnlyList<string>> partitionKeyPathTokens;
         private string id;
         private bool? isLastPartitionKeyPathId;
-
-        private sealed class MaterializedViewBuildProperties
-        {
-            [JsonProperty(PropertyName = "throughputBucketForBuild", NullValueHandling = NullValueHandling.Ignore)]
-            internal int? ThroughputBucketForBuild { get; set; }
-
-            [JsonExtensionData]
-            internal IDictionary<string, JToken> AdditionalProperties { get; set; }
-        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ContainerProperties"/> class for the Azure Cosmos DB service.

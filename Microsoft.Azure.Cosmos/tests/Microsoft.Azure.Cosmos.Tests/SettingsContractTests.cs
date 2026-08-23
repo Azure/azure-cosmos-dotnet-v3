@@ -144,9 +144,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                         ""futureViewProperty"": ""preserved""
                     }
                 ],
-                ""materializedViewsProperties"": {
-                    ""throughputBucketForBuild"": 7,
-                    ""futureBuildProperty"": true
+                ""futureContainerProperty"": {
+                    ""futureNestedProperty"": true
                 }
             }";
 
@@ -163,18 +162,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                 materializedView.RequiredPathsInPreviousImage.ToArray());
             Assert.AreEqual("preserved", (string)materializedView.AdditionalProperties["futureViewProperty"]);
 
-            Assert.AreEqual(7, containerProperties.MaterializedViewBuildThroughputBucket);
-
             JObject roundTrip = JObject.Parse(SettingsContractTests.CosmosSerialize(containerProperties));
             Assert.AreEqual("preserved", (string)roundTrip["materializedViews"][0]["futureViewProperty"]);
-            Assert.AreEqual(true, (bool)roundTrip["materializedViewsProperties"]["futureBuildProperty"]);
+            Assert.AreEqual(true, (bool)roundTrip["futureContainerProperty"]["futureNestedProperty"]);
 
             ContainerProperties minimalContainerProperties =
                 SettingsContractTests.CosmosDeserialize<ContainerProperties>(
-                    @"{""materializedViews"":[{""id"":""view"",""_rid"":""viewRid""}],""materializedViewsProperties"":{}}");
+                    @"{""materializedViews"":[{""id"":""view"",""_rid"":""viewRid""}]}");
             Assert.IsNull(minimalContainerProperties.MaterializedViews[0].ContainerType);
             Assert.IsNull(minimalContainerProperties.MaterializedViews[0].RequiredPathsInPreviousImage);
-            Assert.IsNull(minimalContainerProperties.MaterializedViewBuildThroughputBucket);
         }
 
         [TestMethod]
@@ -189,7 +185,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                     ""apiSpecificDefinition"": ""{ \""pipeline\"": \""projection\"" }"",
                     ""containerType"": ""GlobalSecondaryIndex"",
                     ""status"": ""Active"",
-                    ""throughputBucketForBuild"": 11,
                     ""futureDefinitionProperty"": 42
                 }
             }";
@@ -205,7 +200,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(@"{ ""pipeline"": ""projection"" }", definition.ApiSpecificDefinition);
             Assert.AreEqual("GlobalSecondaryIndex", definition.ContainerType);
             Assert.AreEqual("Active", definition.Status);
-            Assert.AreEqual(11, definition.ThroughputBucketForBuild);
             Assert.AreEqual(42, (int)definition.AdditionalProperties["futureDefinitionProperty"]);
 
             JObject roundTrip = JObject.Parse(SettingsContractTests.CosmosSerialize(containerProperties));
@@ -218,32 +212,19 @@ namespace Microsoft.Azure.Cosmos.Tests
             ContainerProperties containerProperties = new ContainerProperties("container", "/partitionKey");
 
             Assert.IsNull(containerProperties.MaterializedViews);
-            Assert.IsNull(containerProperties.MaterializedViewBuildThroughputBucket);
             Assert.IsNull(containerProperties.MaterializedViewDefinition);
 
             JObject serialized = JObject.Parse(SettingsContractTests.CosmosSerialize(containerProperties));
             Assert.IsNull(serialized["materializedViews"]);
-            Assert.IsNull(serialized["materializedViewsProperties"]);
             Assert.IsNull(serialized["materializedViewDefinition"]);
 
             Assert.IsFalse(typeof(Cosmos.MaterializedViewProperties).IsPublic);
             Assert.IsFalse(typeof(Cosmos.MaterializedViewProperties).IsNestedPublic);
             Assert.IsFalse(typeof(Cosmos.MaterializedViewDefinition).IsPublic);
             Assert.IsFalse(typeof(Cosmos.MaterializedViewDefinition).IsNestedPublic);
-            Type materializedViewBuildPropertiesType = typeof(ContainerProperties).GetNestedType(
-                "MaterializedViewBuildProperties",
-                BindingFlags.NonPublic);
-            Assert.IsNotNull(materializedViewBuildPropertiesType);
-            Assert.IsTrue(materializedViewBuildPropertiesType.IsNestedPrivate);
-            Assert.AreEqual(
-                0,
-                materializedViewBuildPropertiesType.GetProperties(
-                    BindingFlags.Instance | BindingFlags.Public).Length);
-
             string[] materializedViewPropertyNames =
             {
                 "MaterializedViews",
-                "MaterializedViewBuildThroughputBucket",
                 "MaterializedViewDefinition",
             };
 

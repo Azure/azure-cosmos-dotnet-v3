@@ -33,9 +33,6 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = "status", NullValueHandling = NullValueHandling.Ignore)]
         internal string Status { get; set; }
 
-        [JsonProperty(PropertyName = "throughputBucketForBuild", NullValueHandling = NullValueHandling.Ignore)]
-        internal int? ThroughputBucketForBuild { get; set; }
-
         [JsonExtensionData]
         internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
     }
