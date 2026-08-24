@@ -226,7 +226,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
         /// A range is skipped if any parent range (<see cref="PartitionKeyRange.Parents"/>) still has a
         /// lease - e.g. a split happened while the host was offline. The stale parent lease's own
         /// gone/split handling creates the child lease instead, carrying over the real continuation token.
-        /// Mirrors Java SDK's <c>PartitionSynchronizerImpl.createLeases</c>.
         /// </remarks>
         private async Task CreateLeasesAsync(IReadOnlyList<PartitionKeyRange> partitionKeyRanges)
         {
