@@ -121,8 +121,12 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the throughput bucket for a request.
         /// </summary>
         /// <remarks>
-        /// If <see cref="CosmosClientOptions.AllowBulkExecution"/> is set to true on CosmosClient,
-        /// <see cref="RequestOptions.ThroughputBucket"/> cannot be set in RequestOptions.
+        /// When <see cref="CosmosClientOptions.AllowBulkExecution"/> is set to true on the CosmosClient,
+        /// a request-level <see cref="RequestOptions.ThroughputBucket"/> is not supported for item point
+        /// operations (create, read, replace, upsert, delete, patch), because those operations are merged
+        /// into shared batches that cannot carry a per-operation bucket; setting it on such operations
+        /// throws an <see cref="System.InvalidOperationException"/>. Set <see cref="CosmosClientOptions.ThroughputBucket"/>
+        /// at the client level instead. All other operation types honor the request-level value.
         /// </remarks>
         /// <seealso href="https://aka.ms/cosmsodb-bucketing"/>
         public int? ThroughputBucket { get; set; }

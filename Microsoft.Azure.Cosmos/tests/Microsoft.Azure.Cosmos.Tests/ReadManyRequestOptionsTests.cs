@@ -15,9 +15,9 @@ namespace Microsoft.Azure.Cosmos.Tests
     /// two internal conversion helpers:
     ///
     ///   * <c>ConvertToQueryRequestOptions</c> — the legacy multi-id query path
-    ///     mapper. Copies 8 properties.
+    ///     mapper. Copies 9 properties.
     ///   * <c>ConvertToItemRequestOptions</c> — the PR #5905 single-physical-partition
-    ///     point-read fast path mapper. Copies 6 properties; deliberately omits
+    ///     point-read fast path mapper. Copies 7 properties; deliberately omits
     ///     <c>IfMatchEtag</c> / <c>IfNoneMatchEtag</c> because per-item ETags have no
     ///     coherent meaning at the ReadMany level (one ETag value cannot apply across
     ///     N (id, partitionKey) tuples). The legacy query path silently ignores those
@@ -59,7 +59,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 IfNoneMatchEtag = "if-none-match-distinct-value",
                 Properties = ExpectedProperties,
                 AddRequestHeaders = ExpectedAddRequestHeaders,
-                ExcludeRegions = ExpectedExcludeRegions
+                ExcludeRegions = ExpectedExcludeRegions,
+                ThroughputBucket = 4
             };
         }
 
@@ -88,6 +89,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "AddRequestHeaders delegate must transfer by reference.");
             CollectionAssert.AreEqual(ExpectedExcludeRegions, mapped.ExcludeRegions,
                 "ExcludeRegions must transfer with identical contents.");
+            Assert.AreEqual(4, mapped.ThroughputBucket,
+                "ThroughputBucket must transfer to the point-read path so bulk-disabled ReadMany fan-out sub-requests carry the bucket header.");
         }
 
         [TestMethod]
@@ -137,6 +140,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "AddRequestHeaders delegate must transfer by reference.");
             CollectionAssert.AreEqual(ExpectedExcludeRegions, mapped.ExcludeRegions,
                 "ExcludeRegions must transfer with identical contents.");
+            Assert.AreEqual(4, mapped.ThroughputBucket,
+                "ThroughputBucket must transfer to the multi-id query path so ReadMany fan-out sub-requests carry the bucket header.");
         }
 
         // ---------------------------------------------------------------------
@@ -162,6 +167,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             nameof(RequestOptions.Properties),
             nameof(RequestOptions.AddRequestHeaders),
             nameof(RequestOptions.ExcludeRegions),
+            nameof(RequestOptions.ThroughputBucket),
         };
 
         // Properties copied by ConvertToQueryRequestOptions but DELIBERATELY NOT
@@ -181,8 +187,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         // rather than discovering it through silent degradation. Mapping each of
         // these is a separate scope from PR #5905.
         //
-        // ThroughputBucket is now GA public (the #if PREVIEW gate on
-        // RequestOptions.cs was removed when the feature was promoted to GA);
+        // ThroughputBucket is now mapped by BOTH converters (see MappedOnBothMappers).
         // OperationMetricsOptions and NetworkMetricsOptions remain PREVIEW-only
         // public (#if PREVIEW on RequestOptions.cs). PREVIEW-only members exist as
         // inherited public members on PREVIEW CI builds and are invisible to
@@ -194,7 +199,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             nameof(RequestOptions.PriorityLevel),
             nameof(RequestOptions.CosmosThresholdOptions),
             nameof(RequestOptions.AvailabilityStrategy),
-            nameof(RequestOptions.ThroughputBucket),
             nameof(RequestOptions.OperationMetricsOptions),
             nameof(RequestOptions.NetworkMetricsOptions),
         };
