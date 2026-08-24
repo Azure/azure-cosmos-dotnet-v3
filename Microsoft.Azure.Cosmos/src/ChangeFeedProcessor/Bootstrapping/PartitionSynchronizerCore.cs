@@ -222,6 +222,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
         /// Same applies also to split partitions. We do not search for parent lease and take continuation token since this might end up
         /// of reprocessing all the events since the split.
         /// </summary>
+        /// <remarks>
+        /// A range is skipped if any parent range (<see cref="PartitionKeyRange.Parents"/>) still has a
+        /// lease - e.g. a split happened while the host was offline. The stale parent lease's own
+        /// gone/split handling creates the child lease instead, carrying over the real continuation token.
+        /// Mirrors Java SDK's <c>PartitionSynchronizerImpl.createLeases</c>.
+        /// </remarks>
         private async Task CreateLeasesAsync(IReadOnlyList<PartitionKeyRange> partitionKeyRanges)
         {
             // Get leases after getting ranges, to make sure that no other hosts checked in continuation token for split partition after we got leases.
@@ -235,6 +241,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
                 {
                     // Check if there is a PKRange based lease already
                     if (pkRangeBasedLeases.Contains(partitionKeyRange.Id))
+                    {
+                        continue;
+                    }
+
+                    // Skip if a parent range still has a lease (e.g. offline split) - the parent's own
+                    // gone/split handling will create this lease with the correct continuation token.
+                    if (partitionKeyRange.Parents != null
+                        && partitionKeyRange.Parents.Any(parentId => pkRangeBasedLeases.Contains(parentId)))
                     {
                         continue;
                     }

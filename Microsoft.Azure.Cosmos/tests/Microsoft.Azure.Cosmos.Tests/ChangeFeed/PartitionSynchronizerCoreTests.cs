@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
     using System.Text;
@@ -612,6 +613,67 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             leaseManager.Verify(m => m.CreateLeaseIfNotExistAsync(It.Is<PartitionKeyRange>(pkRange => pkRange.Id == resultingRanges[2].Id), It.IsAny<string>()), Times.Once);
             leaseManager.Verify(m => m.CreateLeaseIfNotExistAsync(It.IsAny<PartitionKeyRange>(), It.IsAny<string>()), Times.Exactly(1));
+        }
+
+        /// <summary>
+        /// Offline split: lease store has only stale parent lease "0"; PKRangeCache reports children
+        /// "1"/"2" with Parents=["0"]. CreateMissingLeasesAsync must skip "1"/"2" so the parent's own
+        /// split handling creates them with its real continuation token.
+        /// </summary>
+        [TestMethod]
+        public async Task CreateMissingLeases_StaleParentLeaseFromOfflineSplit_DoesNotCreateChildLeases()
+        {
+            Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
+                Mock.Of<ICosmosAuthorizationTokenProvider>(),
+                Mock.Of<Documents.IStoreModel>(),
+                new Mock<Common.CollectionCache>(false).Object,
+                this.endpointManager,
+                false,
+                false,
+                null);
+
+            List<Documents.PartitionKeyRange> resultingRanges = new List<Documents.PartitionKeyRange>()
+            {
+                new Documents.PartitionKeyRange(){ Id = "1", MinInclusive = "", MaxExclusive = "BB", Parents = new Collection<string> { "0" } },
+                new Documents.PartitionKeyRange(){ Id = "2", MinInclusive = "BB", MaxExclusive = "FF", Parents = new Collection<string> { "0" } },
+            };
+
+            pkRangeCache.Setup(p => p.TryGetOverlappingRangesAsync(
+                It.IsAny<string>(),
+                It.IsAny<Documents.Routing.Range<string>>(),
+                It.IsAny<ITrace>(),
+                false))
+                .ReturnsAsync(resultingRanges);
+
+            Mock<DocumentServiceLeaseManager> leaseManager = new Mock<DocumentServiceLeaseManager>();
+
+            // Stale parent lease "0" - host never saw the split.
+            List<DocumentServiceLease> existingLeases = new List<DocumentServiceLease>()
+            {
+                new DocumentServiceLeaseCore()
+                {
+                    LeaseToken = "0",
+                    Owner = null,
+                    ContinuationToken = "6"
+                }
+            };
+
+            Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
+            leaseContainer.Setup(c => c.GetAllLeasesAsync())
+                .ReturnsAsync(existingLeases);
+
+            PartitionSynchronizerCore partitionSynchronizerCore = new PartitionSynchronizerCore(
+                Mock.Of<ContainerInternal>(),
+                leaseContainer.Object,
+                leaseManager.Object,
+                1,
+                pkRangeCache.Object,
+                Guid.NewGuid().ToString());
+
+            await partitionSynchronizerCore.CreateMissingLeasesAsync();
+
+            // No lease should be created for either child - the parent owns that.
+            leaseManager.Verify(m => m.CreateLeaseIfNotExistAsync(It.IsAny<PartitionKeyRange>(), It.IsAny<string>()), Times.Never);
         }
     }
 }
