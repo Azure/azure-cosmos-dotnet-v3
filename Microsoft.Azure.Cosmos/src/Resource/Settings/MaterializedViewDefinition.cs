@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
         public string ContainerType { get; set; }
 
         /// <summary>
-        /// Gets or sets the service-managed materialized view status.
+        /// Gets or sets the optional service-managed materialized view status.
         /// </summary>
         [JsonProperty(PropertyName = "status", NullValueHandling = NullValueHandling.Ignore)]
         public string Status { get; set; }
