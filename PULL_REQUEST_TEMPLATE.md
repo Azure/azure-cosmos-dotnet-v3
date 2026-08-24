@@ -16,3 +16,15 @@ Please delete options that are not relevant.
 ## Closing issues
 
 To automatically close an issue: closes #IssueNumber
+
+## Changelog
+
+- [ ] I have added a changelog entry under `### Unreleased` in `changelog.md`
+  for the user-facing impact of this change.
+- [ ] No changelog entry is required because this PR is one of:
+  documentation-only, test-only, CI / build-only, or a pure internal refactor
+  with no observable customer impact.
+
+If the second box is checked, briefly justify here:
+
+>

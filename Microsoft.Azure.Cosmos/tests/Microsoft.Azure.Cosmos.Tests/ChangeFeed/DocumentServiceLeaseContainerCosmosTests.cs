@@ -4,15 +4,11 @@
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 {
-    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-    using Microsoft.Azure.Cosmos.Fluent;
-    using Microsoft.Azure.Cosmos.Tests;
-    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -73,13 +69,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
         }
 
-        private static Container GetMockedContainer(string containerName = "myColl")
+        private static Container GetMockedContainer()
         {
-            Headers headers = new Headers
-            {
-                ContinuationToken = string.Empty
-            };
-
             MockFeedResponse<DocumentServiceLeaseCore> cosmosFeedResponse = new MockFeedResponse<DocumentServiceLeaseCore>()
             {
                 Documents = DocumentServiceLeaseContainerCosmosTests.allLeases

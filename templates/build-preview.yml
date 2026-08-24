@@ -1,10 +1,22 @@
 # File: templates/build-preview.yml
+#
+# NOTE for callers: the `Arguments` parameter is forwarded verbatim to the
+# `dotnet test` invocations below. It MUST carry the standard TestCategory
+# exclusions (at minimum `TestCategory!=Quarantine & TestCategory!=Ignore`).
+# The `Preview Tests` job runs Microsoft.Azure.Cosmos.Tests on an agent that
+# does NOT install the Cosmos emulator (there is no emulator-setup.yml step),
+# so an empty/unfiltered value pulls in the quarantined, account-dependent
+# BinaryEncodingOverTheWireTests and fails the job on every run.
 
 parameters:
   BuildConfiguration: ''
   Arguments: ''
   VmImage: ''
   OS: 'Windows'
+  # Set to false for pipelines whose definition does not define the
+  # EMULATORMSIURL variable (see the note above the `Preview Encryption
+  # EmulatorTests` job below).
+  IncludeEmulatorTests: true
 
 jobs:
 
@@ -72,10 +84,54 @@ jobs:
       arguments: -p:Optimize=true -p:IsPreview=true;SdkProjectRef=true
       versioningScheme: OFF
 
+  # Parity check: build Microsoft.Azure.Cosmos.Encryption against main SDK
+  # source WITHOUT defining SDKPROJECTREF. This matches the exact preprocessor
+  # surface the shipped NuGet package is built with (PREVIEW on, SDKPROJECTREF
+  # off) while still linking against the latest SDK abstractions. Any new
+  # abstract member on Container under #if PREVIEW that lacks an unconditional
+  # override in EncryptionContainer will produce a CS0534 compile error here
+  # instead of a runtime TypeLoadException for customers after a future SDK
+  # NuGet release. See PR #5783 (SemanticRerankAsync) for a concrete example.
+  - task: DotNetCoreCLI@2
+    displayName: Build Microsoft.Azure.Cosmos.Encryption (NuGet-surface parity vs main SDK source)
+    inputs:
+      command: build
+      configuration: $(parameters.BuildConfiguration)
+      nugetConfigPath: NuGet.config
+      projects: Microsoft.Azure.Cosmos.Encryption/src/Microsoft.Azure.Cosmos.Encryption.csproj
+      arguments: -p:Optimize=true -p:IsPreview=true -p:SdkProjectRef=true -p:DefineSdkProjectRefSymbol=false
+      versioningScheme: OFF
+
+  # GA-surface parity check: build Microsoft.Azure.Cosmos.Encryption against
+  # main SDK source with IsPreview unset (so neither PREVIEW nor
+  # ENCRYPTIONPREVIEW is defined) and SDKPROJECTREF off. This matches the
+  # exact preprocessor surface the shipped GA NuGet is built with. The
+  # preview-only parity step above does NOT cover this surface because
+  # IsPreview=true defines ENCRYPTIONPREVIEW (Directory.Build.props), which
+  # pulls in #if ENCRYPTIONPREVIEW-gated overrides that do not ship in the
+  # GA NuGet. Any new abstract member promoted to GA on Container that lacks
+  # an unconditional (or non-ENCRYPTIONPREVIEW-gated) override in
+  # EncryptionContainer will produce a CS0534 here. See PR #5825 (FFCF GA
+  # promotion) for a concrete miss the preview-only parity build let through.
+  - task: DotNetCoreCLI@2
+    displayName: Build Microsoft.Azure.Cosmos.Encryption (GA NuGet-surface parity vs main SDK source)
+    inputs:
+      command: build
+      configuration: $(parameters.BuildConfiguration)
+      nugetConfigPath: NuGet.config
+      projects: Microsoft.Azure.Cosmos.Encryption/src/Microsoft.Azure.Cosmos.Encryption.csproj
+      arguments: -p:Optimize=true -p:SdkProjectRef=true -p:DefineSdkProjectRefSymbol=false
+      versioningScheme: OFF
+
+# This is the only job in this template that needs the Cosmos DB Emulator, and
+# therefore the only one that requires the pipeline definition to supply the
+# EMULATORMSIURL variable (it is set per-pipeline in the Azure DevOps UI, not in
+# this repo). Callers whose definition does not define it must pass
+# IncludeEmulatorTests: false, otherwise emulator-setup.yml fails on an empty URL.
 - job:
   displayName: Preview Encryption EmulatorTests ${{ parameters.BuildConfiguration }}
   timeoutInMinutes: 60
-  condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
+  condition: and(eq(${{ parameters.IncludeEmulatorTests }}, true), and(succeeded(), eq('${{ parameters.OS }}', 'Windows')))
   pool:
     name: 'OneES'
 
@@ -140,6 +196,31 @@ jobs:
       projects: Microsoft.Azure.Cosmos.sln 
       arguments: -p:Optimize=true -p:IsPreview=true;SdkProjectRef=true
       versioningScheme: OFF
+
+  # Parity check: build Microsoft.Azure.Cosmos.Encryption.Custom against main
+  # SDK source WITHOUT defining SDKPROJECTREF. This matches the exact
+  # preprocessor surface the shipped NuGet package is built with (PREVIEW on,
+  # SDKPROJECTREF off, so SDKPROJECTREF-gated overrides in EncryptionContainer
+  # are stripped) while still linking against the latest SDK abstractions from
+  # main. Any new abstract member on Container under #if PREVIEW that lacks
+  # an unconditional override in EncryptionContainer will produce a CS0534
+  # compile error here instead of a runtime TypeLoadException for customers
+  # after a future SDK NuGet release. See PR #5783 (SemanticRerankAsync).
+  - task: DotNetCoreCLI@2
+    displayName: Build Microsoft.Azure.Cosmos.Encryption.Custom (NuGet-surface parity vs main SDK source)
+    inputs:
+      command: build
+      configuration: $(parameters.BuildConfiguration)
+      nugetConfigPath: NuGet.config
+      projects: Microsoft.Azure.Cosmos.Encryption.Custom/src/Microsoft.Azure.Cosmos.Encryption.Custom.csproj
+      arguments: -p:Optimize=true -p:IsPreview=true -p:SdkProjectRef=true -p:DefineSdkProjectRefSymbol=false
+      versioningScheme: OFF
+
+  # Note: no GA NuGet-surface parity step for Encryption.Custom. The Custom
+  # csproj package-references Microsoft.Azure.Cosmos 3.41.0-preview.0
+  # unconditionally (no IsPreview-gated alternative reference), so the
+  # shipped Custom NuGet is always built against a preview SDK surface and
+  # has no GA NuGet surface to validate.
 
 - job:
   displayName: Preview Tests ${{ parameters.BuildConfiguration }}

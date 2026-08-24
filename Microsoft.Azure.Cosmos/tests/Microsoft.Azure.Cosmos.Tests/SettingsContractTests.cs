@@ -805,7 +805,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "ClientEncryptionPolicy",
                 "PartitionKeyPaths",
                 "VectorEmbeddingPolicy",
-                "FullTextPolicy");
+                "FullTextPolicy",
+                "ChangeFeedPolicy");
 #endif
 
             // Two equivalent definitions 
@@ -1155,6 +1156,80 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void EmbeddingSourceRoundTripSerialization()
+        {
+            const string embeddingPolicyJson = "{\"vectorEmbeddings\":[{\"path\":\"/embedding\",\"dataType\":\"float32\",\"dimensions\":1536,\"distanceFunction\":\"cosine\",\"embeddingSource\":{\"sourcePaths\":[\"/journal_title\",\"/title\",\"/toc_abstract\",\"/abstract\",\"/full_text\"],\"deploymentName\":\"text-embedding-3-small\",\"modelName\":\"text-embedding-3-small\",\"endpoint\":\"https://embedding-south-central.cognitiveservices.azure.com/\",\"authType\":\"ApiKey\"}},{\"path\":\"/embedding2\",\"dataType\":\"float32\",\"dimensions\":1536,\"distanceFunction\":\"cosine\",\"embeddingSource\":{\"sourcePaths\":[\"/title\"],\"deploymentName\":\"text-embedding-3-small\",\"modelName\":\"text-embedding-3-small\",\"endpoint\":\"https://embedding-south-central.cognitiveservices.azure.com/\",\"authType\":\"Entra\"}}]}";
+
+            Cosmos.VectorEmbeddingPolicy policy = JsonConvert.DeserializeObject<Cosmos.VectorEmbeddingPolicy>(embeddingPolicyJson);
+            Cosmos.EmbeddingSource source = policy.Embeddings[0].EmbeddingSource;
+            CollectionAssert.AreEqual(
+                new[] { "/journal_title", "/title", "/toc_abstract", "/abstract", "/full_text" },
+                source.SourcePaths.ToArray());
+            Assert.AreEqual("text-embedding-3-small", source.DeploymentName);
+            Assert.AreEqual("text-embedding-3-small", source.ModelName);
+            Assert.AreEqual("https://embedding-south-central.cognitiveservices.azure.com/", source.Endpoint);
+            Assert.AreEqual(Cosmos.EmbeddingAuthType.ApiKey, source.AuthType);
+            Assert.AreEqual(Cosmos.EmbeddingAuthType.Entra, policy.Embeddings[1].EmbeddingSource.AuthType);
+
+            string roundTripped = JsonConvert.SerializeObject(policy);
+            Assert.IsTrue(
+                JToken.DeepEquals(JObject.Parse(embeddingPolicyJson), JObject.Parse(roundTripped)),
+                $"Round-tripped JSON differs.\nExpected: {embeddingPolicyJson}\nActual:   {roundTripped}");
+        }
+
+        [TestMethod]
+        public void EmbeddingSourceValueEquality()
+        {
+            static Cosmos.EmbeddingSource Build(string deployment, Cosmos.EmbeddingAuthType auth)
+            {
+                return new()
+                {
+                    SourcePaths = new Collection<string> { "/title", "/abstract" },
+                    DeploymentName = deployment,
+                    ModelName = "text-embedding-3-small",
+                    Endpoint = "https://embedding.example.com/",
+                    AuthType = auth,
+                };
+            }
+
+            Cosmos.EmbeddingSource a = Build("text-embedding-3-small", Cosmos.EmbeddingAuthType.ApiKey);
+            Cosmos.EmbeddingSource b = Build("text-embedding-3-small", Cosmos.EmbeddingAuthType.ApiKey);
+
+            Assert.AreNotSame(a, b);
+            Assert.IsTrue(a.Equals(b));
+            Assert.IsTrue(a.Equals((object)b));
+            Assert.AreEqual(a.GetHashCode(), b.GetHashCode());
+
+            Cosmos.EmbeddingSource differentAuth = Build("text-embedding-3-small", Cosmos.EmbeddingAuthType.Entra);
+            Assert.IsFalse(a.Equals(differentAuth));
+
+            Cosmos.EmbeddingSource reorderedPaths = Build("text-embedding-3-small", Cosmos.EmbeddingAuthType.ApiKey);
+            reorderedPaths.SourcePaths = new Collection<string> { "/abstract", "/title" };
+            Assert.IsFalse(a.Equals(reorderedPaths));
+
+            Assert.IsFalse(a.Equals((Cosmos.EmbeddingSource)null));
+            Assert.IsFalse(a.Equals((object)null));
+
+            Cosmos.Embedding e1 = new Cosmos.Embedding()
+            {
+                Path = "/embedding",
+                DataType = Cosmos.VectorDataType.Float32,
+                DistanceFunction = Cosmos.DistanceFunction.Cosine,
+                Dimensions = 1536,
+                EmbeddingSource = a,
+            };
+            Cosmos.Embedding e2 = new Cosmos.Embedding()
+            {
+                Path = "/embedding",
+                DataType = Cosmos.VectorDataType.Float32,
+                DistanceFunction = Cosmos.DistanceFunction.Cosine,
+                Dimensions = 1536,
+                EmbeddingSource = b,
+            };
+            Assert.IsTrue(e1.Equals(e2));
+        }
+
+        [TestMethod]
         public void FullTextPolicySerialization()
         {
             ContainerProperties containerSettings = new ContainerProperties("TestContainer", "/pk");
@@ -1270,6 +1345,288 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(language, deserialized.Language,
                 $"Language mismatch after deserialization for: {language}");
         }
+
+        [TestMethod]
+        public void FullTextPathEqualsAndGetHashCode()
+        {
+            FullTextPath path1 = new FullTextPath
+            {
+                Path = "/text",
+                Language = "en-US",
+            };
+
+            FullTextPath path2 = new FullTextPath
+            {
+                Path = "/text",
+                Language = "en-US",
+            };
+
+            // Equal paths.
+            Assert.IsTrue(path1.Equals(path2));
+            Assert.AreEqual(path1.GetHashCode(), path2.GetHashCode());
+
+            // Different language.
+            FullTextPath path3 = new FullTextPath { Path = "/text", Language = "fr-FR" };
+            Assert.IsFalse(path1.Equals(path3));
+
+            // Different path.
+            FullTextPath path4 = new FullTextPath { Path = "/other", Language = "en-US" };
+            Assert.IsFalse(path1.Equals(path4));
+
+            // Null comparison.
+            Assert.IsFalse(path1.Equals(null));
+        }
+
+#if PREVIEW
+        [TestMethod]
+        public void FullTextPathEqualsWithNewFields()
+        {
+            FullTextPath path1 = new FullTextPath
+            {
+                Path = "/text",
+                Language = "en-US",
+                Tokenizer = "word",
+                Filters = new Collection<string> { "stop", "lowercase" },
+                StopWordListKind = "basic",
+                AddStopWords = new Collection<string> { "azure" },
+                RemoveStopWords = new Collection<string> { "the" },
+            };
+
+            FullTextPath path2 = new FullTextPath
+            {
+                Path = "/text",
+                Language = "en-US",
+                Tokenizer = "word",
+                Filters = new Collection<string> { "stop", "lowercase" },
+                StopWordListKind = "basic",
+                AddStopWords = new Collection<string> { "azure" },
+                RemoveStopWords = new Collection<string> { "the" },
+            };
+
+            // Fully equal.
+            Assert.IsTrue(path1.Equals(path2));
+            Assert.AreEqual(path1.GetHashCode(), path2.GetHashCode());
+
+            // Different tokenizer.
+            FullTextPath pathDiffTokenizer = new FullTextPath
+            {
+                Path = "/text",
+                Language = "en-US",
+                Tokenizer = "ngram",
+            };
+            Assert.IsFalse(path1.Equals(pathDiffTokenizer));
+
+            // Different filters.
+            FullTextPath pathDiffFilters = new FullTextPath
+            {
+                Path = "/text",
+                Language = "en-US",
+                Tokenizer = "word",
+                Filters = new Collection<string> { "stop", "stem" },
+                StopWordListKind = "basic",
+                AddStopWords = new Collection<string> { "azure" },
+                RemoveStopWords = new Collection<string> { "the" },
+            };
+            Assert.IsFalse(path1.Equals(pathDiffFilters));
+
+            // Different stopWordListKind.
+            FullTextPath pathDiffStopWordKind = new FullTextPath
+            {
+                Path = "/text",
+                Language = "en-US",
+                Tokenizer = "word",
+                Filters = new Collection<string> { "stop", "lowercase" },
+                StopWordListKind = "extended",
+                AddStopWords = new Collection<string> { "azure" },
+                RemoveStopWords = new Collection<string> { "the" },
+            };
+            Assert.IsFalse(path1.Equals(pathDiffStopWordKind));
+
+            // Different addStopWords.
+            FullTextPath pathDiffAddStopWords = new FullTextPath
+            {
+                Path = "/text",
+                Language = "en-US",
+                Tokenizer = "word",
+                Filters = new Collection<string> { "stop", "lowercase" },
+                StopWordListKind = "basic",
+                AddStopWords = new Collection<string> { "cosmos" },
+                RemoveStopWords = new Collection<string> { "the" },
+            };
+            Assert.IsFalse(path1.Equals(pathDiffAddStopWords));
+
+            // Different removeStopWords.
+            FullTextPath pathDiffRemoveStopWords = new FullTextPath
+            {
+                Path = "/text",
+                Language = "en-US",
+                Tokenizer = "word",
+                Filters = new Collection<string> { "stop", "lowercase" },
+                StopWordListKind = "basic",
+                AddStopWords = new Collection<string> { "azure" },
+                RemoveStopWords = new Collection<string> { "am" },
+            };
+            Assert.IsFalse(path1.Equals(pathDiffRemoveStopWords));
+
+            // Null collections vs empty - one has null, other has values.
+            FullTextPath pathNullCollections = new FullTextPath
+            {
+                Path = "/text",
+                Language = "en-US",
+                Tokenizer = "word",
+                StopWordListKind = "basic",
+            };
+            Assert.IsFalse(path1.Equals(pathNullCollections));
+        }
+
+        [TestMethod]
+        public void FullTextPolicyStandardPackageSerialization()
+        {
+            FullTextPolicy policy = new FullTextPolicy
+            {
+                Package = "standard",
+                DefaultSpec = new FullTextDefaultSpec
+                {
+                    Language = "en-US",
+                    Tokenizer = "word",
+                    Filters = new Collection<string> { "stop", "lowercase", "stem" },
+                    StopWordListKind = "basic",
+                    AddStopWords = new Collection<string> { "powerbi", "azure" },
+                    RemoveStopWords = new Collection<string> { "am", "is" },
+                },
+                FullTextPaths = new Collection<FullTextPath>
+                {
+                    new FullTextPath { Path = "/description" },
+                    new FullTextPath
+                    {
+                        Path = "/title",
+                        Tokenizer = "word",
+                        Filters = new Collection<string> { "stop", "lowercase" },
+                    },
+                    new FullTextPath
+                    {
+                        Path = "/tags",
+                        Language = "en-US",
+                        StopWordListKind = "extended",
+                        AddStopWords = new Collection<string> { "cosmos" },
+                    },
+                },
+            };
+
+            string serialized = CosmosSerialize(policy);
+            Assert.IsNotNull(serialized);
+            Assert.IsTrue(serialized.Contains("\"package\":\"standard\""));
+            Assert.IsTrue(serialized.Contains("\"defaultSpec\""));
+            Assert.IsTrue(serialized.Contains("\"tokenizer\":\"word\""));
+            Assert.IsTrue(serialized.Contains("\"filters\""));
+            Assert.IsTrue(serialized.Contains("\"stopWordListKind\":\"basic\""));
+            Assert.IsTrue(serialized.Contains("\"addStopWords\""));
+            Assert.IsTrue(serialized.Contains("\"removeStopWords\""));
+
+            FullTextPolicy deserialized = CosmosDeserialize<FullTextPolicy>(serialized);
+            Assert.IsNotNull(deserialized);
+            Assert.AreEqual("standard", deserialized.Package);
+            Assert.IsNotNull(deserialized.DefaultSpec);
+            Assert.AreEqual("en-US", deserialized.DefaultSpec.Language);
+            Assert.AreEqual("word", deserialized.DefaultSpec.Tokenizer);
+            Assert.AreEqual(3, deserialized.DefaultSpec.Filters.Count);
+            Assert.AreEqual("basic", deserialized.DefaultSpec.StopWordListKind);
+            Assert.AreEqual(2, deserialized.DefaultSpec.AddStopWords.Count);
+            Assert.AreEqual(2, deserialized.DefaultSpec.RemoveStopWords.Count);
+
+            Assert.AreEqual(3, deserialized.FullTextPaths.Count);
+
+            Assert.AreEqual("/description", deserialized.FullTextPaths[0].Path);
+            Assert.IsNull(deserialized.FullTextPaths[0].Tokenizer);
+
+            Assert.AreEqual("/title", deserialized.FullTextPaths[1].Path);
+            Assert.AreEqual("word", deserialized.FullTextPaths[1].Tokenizer);
+            Assert.AreEqual(2, deserialized.FullTextPaths[1].Filters.Count);
+
+            Assert.AreEqual("/tags", deserialized.FullTextPaths[2].Path);
+            Assert.AreEqual("en-US", deserialized.FullTextPaths[2].Language);
+            Assert.AreEqual("extended", deserialized.FullTextPaths[2].StopWordListKind);
+            Assert.AreEqual(1, deserialized.FullTextPaths[2].AddStopWords.Count);
+        }
+
+        [TestMethod]
+        public void FullTextPolicyStandardPackageRoundTripFromJson()
+        {
+            string json = @"{
+                ""package"": ""standard"",
+                ""defaultSpec"": {
+                    ""language"": ""en-US"",
+                    ""tokenizer"": ""word"",
+                    ""filters"": [""stop"", ""lowercase"", ""stem""],
+                    ""stopWordListKind"": ""basic"",
+                    ""addStopWords"": [""powerbi""],
+                    ""removeStopWords"": [""am""]
+                },
+                ""fullTextPaths"": [
+                    { ""path"": ""/description"" },
+                    { ""path"": ""/title"", ""tokenizer"": ""word"", ""filters"": [""stop"", ""lowercase""] },
+                    { ""path"": ""/tags"", ""language"": ""fr-FR"", ""stopWordListKind"": ""extended"" }
+                ]
+            }";
+
+            FullTextPolicy deserialized = CosmosDeserialize<FullTextPolicy>(json);
+            Assert.AreEqual("standard", deserialized.Package);
+            Assert.AreEqual("en-US", deserialized.DefaultSpec.Language);
+            Assert.AreEqual("word", deserialized.DefaultSpec.Tokenizer);
+            Assert.AreEqual(3, deserialized.DefaultSpec.Filters.Count);
+            Assert.AreEqual("basic", deserialized.DefaultSpec.StopWordListKind);
+            Assert.AreEqual(1, deserialized.DefaultSpec.AddStopWords.Count);
+            Assert.AreEqual(1, deserialized.DefaultSpec.RemoveStopWords.Count);
+
+            Assert.AreEqual(3, deserialized.FullTextPaths.Count);
+            Assert.AreEqual("/description", deserialized.FullTextPaths[0].Path);
+
+            Assert.AreEqual("word", deserialized.FullTextPaths[1].Tokenizer);
+            Assert.AreEqual(2, deserialized.FullTextPaths[1].Filters.Count);
+
+            Assert.AreEqual("fr-FR", deserialized.FullTextPaths[2].Language);
+            Assert.AreEqual("extended", deserialized.FullTextPaths[2].StopWordListKind);
+
+            // Round-trip
+            string reserialized = CosmosSerialize(deserialized);
+            FullTextPolicy roundTripped = CosmosDeserialize<FullTextPolicy>(reserialized);
+            Assert.AreEqual("standard", roundTripped.Package);
+            Assert.AreEqual("word", roundTripped.DefaultSpec.Tokenizer);
+            Assert.AreEqual(3, roundTripped.FullTextPaths.Count);
+        }
+
+        [TestMethod]
+        public void FullTextPolicyLegacyPackageSerialization()
+        {
+            FullTextPolicy policy = new FullTextPolicy
+            {
+                Package = "legacy",
+                DefaultLanguage = "en-US",
+                FullTextPaths = new Collection<FullTextPath>
+                {
+                    new FullTextPath
+                    {
+                        Path = "/text",
+                        Language = "en-US",
+                        StopWordListKind = "extended",
+                        AddStopWords = new Collection<string> { "cosmos" },
+                        RemoveStopWords = new Collection<string> { "the" },
+                    },
+                },
+            };
+
+            string serialized = CosmosSerialize(policy);
+            Assert.IsTrue(serialized.Contains("\"package\":\"legacy\""));
+            Assert.IsTrue(serialized.Contains("\"stopWordListKind\":\"extended\""));
+
+            FullTextPolicy deserialized = CosmosDeserialize<FullTextPolicy>(serialized);
+            Assert.AreEqual("legacy", deserialized.Package);
+            Assert.AreEqual("en-US", deserialized.DefaultLanguage);
+            Assert.AreEqual("extended", deserialized.FullTextPaths[0].StopWordListKind);
+            Assert.AreEqual(1, deserialized.FullTextPaths[0].AddStopWords.Count);
+            Assert.AreEqual(1, deserialized.FullTextPaths[0].RemoveStopWords.Count);
+        }
+#endif
 
         private static T CosmosDeserialize<T>(string payload)
         {

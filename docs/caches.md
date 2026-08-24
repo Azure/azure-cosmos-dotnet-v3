@@ -30,8 +30,8 @@ flowchart LR
         end
     end
     subgraph AddressCaches
-        GAC1[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/GatewayAddressCache.cs'>GatewayAddressCache/R1</a>]
-        GACN[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/GatewayAddressCache.cs'>GatewayAddressCache/RN</a>]
+        GAC1[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/main/Microsoft.Azure.Cosmos/src/Routing/GatewayAddressCache.cs'>GatewayAddressCache/R1</a>]
+        GACN[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/main/Microsoft.Azure.Cosmos/src/Routing/GatewayAddressCache.cs'>GatewayAddressCache/RN</a>]
 
         GAC1 --> |NonBlockingAsyncCache| CDBR1_GW
         GAC1 -.-> CDBR1_BE

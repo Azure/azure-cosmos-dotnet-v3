@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     using System.Linq;
     using System.Runtime.Serialization;
     using Microsoft.Azure.Cosmos.Spatial.Converters;
+    using Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
@@ -19,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     [DataContract]
     [JsonObject(MemberSerialization.OptIn)]
     [JsonConverter(typeof(GeometryJsonConverter))]
+    [System.Text.Json.Serialization.JsonConverter(typeof(GeometrySTJConverter))]
     public abstract class Geometry
     {
         /// <summary>

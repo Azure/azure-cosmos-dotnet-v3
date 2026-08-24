@@ -96,6 +96,7 @@ namespace Microsoft.Azure.Cosmos
 
         private IReadOnlyList<IReadOnlyList<string>> partitionKeyPathTokens;
         private string id;
+        private bool? isLastPartitionKeyPathId;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ContainerProperties"/> class for the Azure Cosmos DB service.
@@ -379,12 +380,7 @@ namespace Microsoft.Azure.Cosmos
         /// The change feed policy associated with the container.
         /// </value>
         [JsonIgnore]
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        ChangeFeedPolicy ChangeFeedPolicy
+        public ChangeFeedPolicy ChangeFeedPolicy
         {
             get
             {
@@ -711,6 +707,38 @@ namespace Microsoft.Azure.Cosmos
         internal string ResourceId { get; private set; }
 
         internal bool HasPartitionKey => this.PartitionKey != null;
+
+        /// <summary>
+        /// Gets a value indicating whether the last partition key path is "id".
+        /// This property is used to determine if the item's "id" field is part of the hierarchical partition key.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if the last partition key path is "id"; otherwise, <c>false</c>.
+        /// Returns <c>false</c> if the partition key is not defined or has no paths.
+        /// </value>
+        [JsonIgnore]
+        internal bool IsLastPartitionKeyPathId
+        {
+            get
+            {
+                if (this.isLastPartitionKeyPathId.HasValue)
+                {
+                    return this.isLastPartitionKeyPathId.Value;
+                }
+
+                IReadOnlyList<string> partitionKeyPaths = this.PartitionKey?.Paths;
+                if (partitionKeyPaths == null || partitionKeyPaths.Count <= 0)
+                {
+                    this.isLastPartitionKeyPathId = false;
+                    return this.isLastPartitionKeyPathId.Value;
+                }
+
+                string lastPartitionKeyPath = partitionKeyPaths[partitionKeyPaths.Count - 1];
+
+                this.isLastPartitionKeyPathId = string.Equals(lastPartitionKeyPath, "/id", StringComparison.Ordinal);
+                return this.isLastPartitionKeyPathId.Value;
+            }
+        }
 
         internal IReadOnlyList<IReadOnlyList<string>> PartitionKeyPathTokens
         {

@@ -995,7 +995,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
 
             FeedIterator<DecryptableItem> queryResponseIterator = encryptionContainer.GetItemQueryIterator<DecryptableItem>(query);
             FeedResponse<DecryptableItem> readDocsLazily = await queryResponseIterator.ReadNextAsync();
-            await ValidateLazyDecryptionResponse(readDocsLazily.GetEnumerator(), dek2);
+            try
+            {
+                await ValidateLazyDecryptionResponse(readDocsLazily.GetEnumerator(), dek2);
+            }
+            finally
+            {
+                if (readDocsLazily is IAsyncDisposable disposableResponse)
+                {
+                    await disposableResponse.DisposeAsync();
+                }
+            }
 
             // validate changeFeed handling
             FeedIterator<DecryptableItem> changeIterator = encryptionContainer.GetChangeFeedIterator<DecryptableItem>(
@@ -1005,14 +1015,24 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             while (changeIterator.HasMoreResults)
             {
                 readDocsLazily = await changeIterator.ReadNextAsync();
-                if (readDocsLazily.StatusCode == HttpStatusCode.NotModified)
+                try
                 {
-                    break;
-                }
+                    if (readDocsLazily.StatusCode == HttpStatusCode.NotModified)
+                    {
+                        break;
+                    }
 
-                if (readDocsLazily.Resource != null)
+                    if (readDocsLazily.Resource != null)
+                    {
+                        await ValidateLazyDecryptionResponse(readDocsLazily.GetEnumerator(), dek2);
+                    }
+                }
+                finally
                 {
-                    await ValidateLazyDecryptionResponse(readDocsLazily.GetEnumerator(), dek2);
+                    if (readDocsLazily is IAsyncDisposable disposableChangeFeedResponse)
+                    {
+                        await disposableChangeFeedResponse.DisposeAsync();
+                    }
                 }
             }
 
@@ -1038,7 +1058,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             await cfp.StopAsync();
 
             Assert.IsTrue(changeFeedReturnedDocs.Count >= 2);
-            await ValidateLazyDecryptionResponse(changeFeedReturnedDocs.GetEnumerator(), dek2);
+            try
+            {
+                await ValidateLazyDecryptionResponse(changeFeedReturnedDocs.GetEnumerator(), dek2);
+            }
+            finally
+            {
+                foreach (DecryptableItem item in changeFeedReturnedDocs)
+                {
+                    await item.DisposeAsync();
+                }
+            }
 
             encryptor.FailDecryption = false;
         }

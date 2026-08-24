@@ -38,12 +38,7 @@ namespace Microsoft.Azure.Cosmos
         /// The <see cref="ReadConsistencyStrategy.GlobalStrong"/> strategy is only valid
         /// for accounts configured with Strong consistency.
         /// </remarks>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        ReadConsistencyStrategy? ReadConsistencyStrategy
+        public ReadConsistencyStrategy? ReadConsistencyStrategy
         {
             get => this.BaseReadConsistencyStrategy;
             set => this.BaseReadConsistencyStrategy = value;
@@ -89,6 +84,26 @@ namespace Microsoft.Azure.Cosmos
                 SessionToken = this.SessionToken,
                 IfMatchEtag = this.IfMatchEtag,
                 IfNoneMatchEtag = this.IfNoneMatchEtag,
+                Properties = this.Properties,
+                AddRequestHeaders = this.AddRequestHeaders,
+                ExcludeRegions = this.ExcludeRegions
+            };
+        }
+
+        internal ItemRequestOptions ConvertToItemRequestOptions()
+        {
+            // Deliberately does NOT copy IfMatchEtag / IfNoneMatchEtag. Per-item ETags
+            // have no coherent meaning at the ReadMany level (a single ETag value cannot
+            // apply across N (id, partitionKey) tuples), and the legacy multi-id query
+            // path silently ignores them on the wire today. Mirroring that silent-ignore
+            // here keeps caller-observable behavior identical between the two execution
+            // branches and avoids a same-input/different-outcome footgun if the server
+            // ever begins honoring these headers on point reads.
+            return new ItemRequestOptions
+            {
+                ConsistencyLevel = this.ConsistencyLevel,
+                ReadConsistencyStrategy = this.ReadConsistencyStrategy,
+                SessionToken = this.SessionToken,
                 Properties = this.Properties,
                 AddRequestHeaders = this.AddRequestHeaders,
                 ExcludeRegions = this.ExcludeRegions

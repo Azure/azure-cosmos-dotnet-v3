@@ -95,5 +95,16 @@ namespace Microsoft.Azure.Cosmos.Tracing
             }
         }
 
+        /// <summary>
+        /// Per-operation state backing the Hedging Detection API surface (HedgingStarted /
+        /// GetRequestedRegions / GetRespondedRegions on <see cref="CosmosDiagnostics"/>).
+        /// </summary>
+        /// <remarks>
+        /// Lives on <see cref="TraceSummary"/> so that the entire trace tree for a single
+        /// operation shares one state instance. Populated at orchestrator dispatch sites
+        /// and response-handling sites; never serialized into the trace tree.
+        /// </remarks>
+        public HedgingDetectionState HedgingDetectionState { get; } = new HedgingDetectionState();
+
     }
 }

@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using Moq;
     using Newtonsoft.Json.Linq;
     using Microsoft.Azure.Cosmos.Encryption.Custom;
+    using Microsoft.Azure.Cosmos.Encryption.Custom.Tests;
     using TestDoc = TestCommon.TestDoc;
 
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -51,13 +52,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 PathsToEncrypt = new List<string>() { "/SensitiveStr", "/Invalid" }
             };
 
+            EncryptionItemRequestOptions requestOptions = RequestOptionsOverrideHelper.Create(encryptionOptionsWithInvalidPathToEncrypt, jsonProcessor);
+
             Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
-                    testDoc.ToStream(),
-                    LegacyEncryptionProcessorTests.mockEncryptor.Object,
-                    encryptionOptionsWithInvalidPathToEncrypt,
-                    jsonProcessor,
-                    new CosmosDiagnosticsContext(),
-                    CancellationToken.None);
+                testDoc.ToStream(),
+                LegacyEncryptionProcessorTests.mockEncryptor.Object,
+                requestOptions,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
 
             JObject encryptedDoc = EncryptionProcessor.BaseSerializer.FromStream<JObject>(encryptedStream);
 
@@ -124,11 +126,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         {
             TestDoc testDoc = TestDoc.Create();
 
+            EncryptionItemRequestOptions requestOptions = RequestOptionsOverrideHelper.Create(LegacyEncryptionProcessorTests.encryptionOptions, jsonProcessor);
+
             Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
                 testDoc.ToStream(),
                 LegacyEncryptionProcessorTests.mockEncryptor.Object,
-                LegacyEncryptionProcessorTests.encryptionOptions,
-                jsonProcessor,
+                requestOptions,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
@@ -166,11 +169,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         private static async Task<JObject> VerifyEncryptionSucceeded(TestDoc testDoc, JsonProcessor jsonProcessor)
         {
+            EncryptionItemRequestOptions requestOptions = RequestOptionsOverrideHelper.Create(LegacyEncryptionProcessorTests.encryptionOptions, jsonProcessor);
+
             Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
                 testDoc.ToStream(),
                 LegacyEncryptionProcessorTests.mockEncryptor.Object,
-                LegacyEncryptionProcessorTests.encryptionOptions,
-                jsonProcessor,
+                requestOptions,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 

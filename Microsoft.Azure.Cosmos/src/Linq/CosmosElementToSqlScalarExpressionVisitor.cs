@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Diagnostics;
+    using System.Runtime.CompilerServices;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.SqlObjects;
@@ -22,6 +23,14 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public SqlScalarExpression Visit(CosmosArray cosmosArray)
         {
+            // Recursive walk over a CosmosElement graph: guard against a
+            // hostile deeply-nested element exhausting the CLR stack. In
+            // practice this visitor is fed by client-constructed LINQ
+            // constants rather than server responses, but the one-line
+            // guard matches the defense-in-depth posture of the rest of
+            // the binary-JSON DoS hardening.
+            RuntimeHelpers.EnsureSufficientExecutionStack();
+
             List<SqlScalarExpression> items = new List<SqlScalarExpression>();
             foreach (CosmosElement item in cosmosArray)
             {
@@ -67,6 +76,9 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public SqlScalarExpression Visit(CosmosObject cosmosObject)
         {
+            // Recursive walk: see note on Visit(CosmosArray).
+            RuntimeHelpers.EnsureSufficientExecutionStack();
+
             List<SqlObjectProperty> properties = new List<SqlObjectProperty>();
             foreach (KeyValuePair<string, CosmosElement> prop in cosmosObject)
             {

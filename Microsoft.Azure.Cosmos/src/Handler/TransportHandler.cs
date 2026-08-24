@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -92,6 +93,15 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
+
+            // Hedging-Detection API: record the dispatched region + reason on the trace's
+            // HedgingDetectionState. This is the actual dispatch point for the operation
+            // (after ClientRetryPolicy.OnBeforeSendRequest has resolved the routing endpoint,
+            // before the wire send is invoked). Hedge arms set the reason to Hedging on
+            // Properties prior to entering this handler; retries set the reason to
+            // OperationRetry/RegionFailover via ClientRetryPolicy.OnBeforeSendRequest; all
+            // other first attempts default to Initial.
+            TransportHandler.AppendDispatchedRegion(request, serviceRequest, this.client.DocumentClient.GlobalEndpointManager);
 
             ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, request.Trace);
             serviceRequest.RequestContext.ClientRequestStatistics = clientSideRequestStatisticsTraceDatum;
@@ -182,6 +192,101 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Appends a <see cref="RequestedRegion"/> entry to the operation's
+        /// <see cref="HedgingDetectionState"/> at the dispatch point (after the routing
+        /// endpoint is resolved, before the wire send is invoked).
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The reason is read from <see cref="DocumentServiceRequest.Properties"/> under the
+        /// well-known key <see cref="HedgingDetectionState.DispatchReasonPropertyKey"/>, which
+        /// upstream sites (ClientRetryPolicy, CrossRegionHedgingAvailabilityStrategy) set to
+        /// signal why this particular dispatch is happening. Absence of the key implies a
+        /// first attempt and defaults to <see cref="RequestedRegionReason.Initial"/>. The key
+        /// is removed after consumption so that subsequent retries on the same request
+        /// re-default unless a new reason is set.
+        /// </para>
+        /// <para>
+        /// The region name is resolved from the routing endpoint via
+        /// <see cref="GlobalEndpointManager.GetLocation(Uri)"/> (DocumentServiceRequest's own
+        /// <c>RegionName</c> is not populated until later in the dispatch chain, by
+        /// <c>GatewayStoreModel</c> / <c>AddressResolver</c>).
+        /// </para>
+        /// </remarks>
+        internal static void AppendDispatchedRegion(
+            RequestMessage requestMessage,
+            DocumentServiceRequest serviceRequest,
+            GlobalEndpointManager globalEndpointManager)
+        {
+            if (requestMessage == null || serviceRequest == null)
+            {
+                return;
+            }
+
+            HedgingDetectionState state = requestMessage.Trace?.Summary?.HedgingDetectionState;
+            if (state == null)
+            {
+                return;
+            }
+
+            // Resolve reason from the property. The Remove is deferred until AFTER a
+            // successful AppendRequested so a failed region resolution (e.g. thin-client /
+            // PPCB endpoint not in GlobalEndpointManager's read/write maps; see F4 on
+            // PR #5868) does not silently swallow the dispatch-reason signal. If we removed
+            // the key here and then bailed at the region-resolution guard, any downstream
+            // re-dispatch on the same DocumentServiceRequest would default to Initial even
+            // though the upstream caller intended a different reason. Pins F5 review
+            // feedback on PR #5868.
+            RequestedRegionReason reason = RequestedRegionReason.Initial;
+            bool propertyPresent = false;
+            if (serviceRequest.Properties != null
+                && serviceRequest.Properties.TryGetValue(HedgingDetectionState.DispatchReasonPropertyKey, out object reasonObj)
+                && reasonObj is RequestedRegionReason resolvedReason)
+            {
+                reason = resolvedReason;
+                propertyPresent = true;
+            }
+
+            // Resolve region name from the routing endpoint URI.
+            string regionName = null;
+            Uri endpoint = serviceRequest.RequestContext?.LocationEndpointToRoute;
+            if (endpoint != null && globalEndpointManager != null)
+            {
+                regionName = globalEndpointManager.GetLocation(endpoint);
+            }
+
+            // Skip if we couldn't resolve a name; better empty than misleading "unknown".
+            // Leave Properties[KEY] in place so a re-dispatch can still consume it.
+            if (string.IsNullOrEmpty(regionName))
+            {
+                return;
+            }
+
+            state.AppendRequested(regionName, reason);
+
+            // Append succeeded — now safe to consume the signal so subsequent retries
+            // on the same DocumentServiceRequest re-default unless a new reason is set
+            // by an upstream site (ClientRetryPolicy or CrossRegionHedgingAvailabilityStrategy).
+            //
+            // Exception: when the reason is Hedging, LEAVE THE PROPERTY IN PLACE so that
+            // subsequent physical retries of this hedge arm (driven by ClientRetryPolicy
+            // on the same cloned RequestMessage — e.g. 410 Gone / 449 on the arm) remain
+            // tagged as Hedging. RequestMessage.Properties and the cached DSR's Properties
+            // are the same reference (see RequestMessage.ToDocumentServiceRequest), so
+            // removing the key here would drain it from RequestMessage.Properties too —
+            // and the retry-driven re-entry of ClientRetryPolicy.OnBeforeSendRequest
+            // would then see an empty slot and overwrite it with OperationRetry /
+            // RegionFailover, silently losing the hedge origin from the
+            // GetRequestedRegions() sequence. The preservation guard in
+            // ClientRetryPolicy.OnBeforeSendRequest (F3) relies on this key still being
+            // present at retry time. Pins F3 review feedback on PR #5868.
+            if (propertyPresent && reason != RequestedRegionReason.Hedging)
+            {
+                serviceRequest.Properties.Remove(HedgingDetectionState.DispatchReasonPropertyKey);
+            }
         }
     }
 }

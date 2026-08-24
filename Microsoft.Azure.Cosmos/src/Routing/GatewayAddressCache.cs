@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
@@ -48,6 +49,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly Protocol protocol;
         private readonly string protocolFilter;
         private readonly ICosmosAuthorizationTokenProvider tokenProvider;
+        private readonly AuthorizationTokenProvider authorizationTokenProvider;
         private readonly bool enableTcpConnectionEndpointRediscovery;
 
         private readonly SemaphoreSlim semaphore;
@@ -72,11 +74,13 @@ namespace Microsoft.Azure.Cosmos.Routing
             long suboptimalPartitionForceRefreshIntervalInSeconds = 600,
             bool enableTcpConnectionEndpointRediscovery = false,
             bool replicaAddressValidationEnabled = false,
-            bool enableAsyncCacheExceptionNoSharing = true)
+            bool enableAsyncCacheExceptionNoSharing = true,
+            AuthorizationTokenProvider authorizationTokenProvider = null)
         {
             this.addressEndpoint = new Uri(serviceEndpoint + "/" + Paths.AddressPathSegment);
             this.protocol = protocol;
             this.tokenProvider = tokenProvider;
+            this.authorizationTokenProvider = authorizationTokenProvider;
             this.serviceEndpoint = serviceEndpoint;
             this.serviceConfigReader = serviceConfigReader;
             this.serverPartitionAddressCache = new AsyncCacheNonBlocking<PartitionKeyRangeIdentity, PartitionAddressInformation>(enableAsyncCacheExceptionNoSharing);
@@ -301,7 +305,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     request.RequestContext.LastPartitionAddressInformationHashCode = addresses.GetHashCode();
                 }
 
-                int targetReplicaSetSize = this.serviceConfigReader.UserReplicationPolicy.MaxReplicaSetSize;
+                int targetReplicaSetSize = addresses.PartitionTargetReplicaSetSize
+                    ?? this.serviceConfigReader.UserReplicationPolicy.MaxReplicaSetSize;
                 if (addresses.AllAddresses.Count() < targetReplicaSetSize)
                 {
                     this.suboptimalServerPartitionTimestamps.TryAdd(partitionKeyRangeIdentity, DateTime.UtcNow);
@@ -447,10 +452,13 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceWarning("Failed to warm-up caches and open connections for the server addresses: {0} with exception: {1}. '{2}'",
-                    collectionRid,
-                    ex.Message,
-                    System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Warning))
+                {
+                    DefaultTrace.TraceWarning("Failed to warm-up caches and open connections for the server addresses: {0} with exception: {1}. '{2}'",
+                        collectionRid,
+                        ex.Message,
+                        System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                }
             }
         }
 
@@ -780,17 +788,51 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
                 }
 
-                using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(
-                    uri: targetEndpoint,
-                    additionalHeaders: headers,
-                    resourceType: resourceType,
-                    timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout,
-                    clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
-                    cancellationToken: default))
+                try
                 {
-                    DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
-                    GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
-                    return documentServiceResponse;
+                    using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(
+                        uri: targetEndpoint,
+                        additionalHeaders: headers,
+                        resourceType: resourceType,
+                        timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout,
+                        clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
+                        cancellationToken: default))
+                    {
+                        DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
+                        GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
+                        return documentServiceResponse;
+                    }
+                }
+                catch (DocumentClientException dce)
+                    when (AuthorizationTokenProviderTokenCredential.TryHandleRevocationException(
+                        this.authorizationTokenProvider, dce))
+                {
+                    DefaultTrace.TraceInformation(
+                        "GatewayAddressCache: AAD token revocation detected on master address resolution. Retrying.");
+
+                    headers.Set(HttpConstants.HttpHeaders.XDate, Rfc1123DateTimeCache.UtcNow());
+                    string retryToken = await this.tokenProvider.GetUserAuthorizationTokenAsync(
+                        resourceAddress,
+                        resourceTypeToSign,
+                        HttpConstants.HttpMethods.Get,
+                        headers,
+                        AuthorizationTokenType.PrimaryMasterKey,
+                        trace);
+
+                    headers.Set(HttpConstants.HttpHeaders.Authorization, retryToken);
+
+                    using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(
+                        uri: targetEndpoint,
+                        additionalHeaders: headers,
+                        resourceType: resourceType,
+                        timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout,
+                        clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
+                        cancellationToken: default))
+                    {
+                        DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
+                        GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
+                        return documentServiceResponse;
+                    }
                 }
             }
         }
@@ -886,17 +928,51 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
                 }
 
-                using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(
-                    uri: targetEndpoint,
-                    additionalHeaders: headers,
-                    resourceType: ResourceType.Document,
-                    timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout,
-                    clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
-                    cancellationToken: default))
+                try
                 {
-                    DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
-                    GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
-                    return documentServiceResponse;
+                    using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(
+                        uri: targetEndpoint,
+                        additionalHeaders: headers,
+                        resourceType: ResourceType.Document,
+                        timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout,
+                        clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
+                        cancellationToken: default))
+                    {
+                        DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
+                        GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
+                        return documentServiceResponse;
+                    }
+                }
+                catch (DocumentClientException dce)
+                    when (AuthorizationTokenProviderTokenCredential.TryHandleRevocationException(
+                        this.authorizationTokenProvider, dce))
+                {
+                    DefaultTrace.TraceInformation(
+                        "GatewayAddressCache: AAD token revocation detected on server address resolution. Retrying.");
+
+                    headers.Set(HttpConstants.HttpHeaders.XDate, Rfc1123DateTimeCache.UtcNow());
+                    string retryToken = await this.tokenProvider.GetUserAuthorizationTokenAsync(
+                        collectionRid,
+                        resourceTypeToSign,
+                        HttpConstants.HttpMethods.Get,
+                        headers,
+                        AuthorizationTokenType.PrimaryMasterKey,
+                        trace);
+
+                    headers.Set(HttpConstants.HttpHeaders.Authorization, retryToken);
+
+                    using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(
+                        uri: targetEndpoint,
+                        additionalHeaders: headers,
+                        resourceType: ResourceType.Document,
+                        timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout,
+                        clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
+                        cancellationToken: default))
+                    {
+                        DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
+                        GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
+                        return documentServiceResponse;
+                    }
                 }
             }
         }
@@ -941,9 +1017,15 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
             }
 
+            // Extract per-partition TargetReplicaSetSize from the first address
+            // (all addresses in a partition share the same TRSS value from the gateway).
+            // This flows through to AddressSelector.ResolveAddressesAsync which stashes it
+            // on RequestContext for CRSS scale-up detection.
+            int? partitionTargetReplicaSetSize = address.PartitionTargetReplicaSetSize;
+
             return Tuple.Create(
-                partitionKeyRangeIdentity,
-                new PartitionAddressInformation(addressInfosSorted, inNetworkRequest));
+               partitionKeyRangeIdentity,
+               new PartitionAddressInformation(addressInfosSorted, inNetworkRequest, partitionTargetReplicaSetSize));
         }
 
         private static IReadOnlyList<AddressInformation> GetSortedAddressInformation(IList<Address> addresses)
@@ -1040,10 +1122,13 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceWarning("Failed to fetch the server addresses for: {0} with exception: {1}. '{2}'",
-                    collectionRid,
-                    ex.Message,
-                    System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Warning))
+                {
+                    DefaultTrace.TraceWarning("Failed to fetch the server addresses for: {0} with exception: {1}. '{2}'",
+                        collectionRid,
+                        ex.Message,
+                        System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                }
 
                 return TryCatch<DocumentServiceResponse>.FromException(ex);
             }

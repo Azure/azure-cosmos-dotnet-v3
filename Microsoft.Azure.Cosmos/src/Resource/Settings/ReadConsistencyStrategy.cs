@@ -11,18 +11,13 @@ namespace Microsoft.Azure.Cosmos
     /// <remarks>
     /// <para>
     /// When set, <see cref="ReadConsistencyStrategy"/> takes precedence over <see cref="ConsistencyLevel"/>
-    /// for read and query operations. The strategy is honored in Direct connectivity mode.
+    /// for read and query operations.
     /// </para>
     /// <para>
     /// <see cref="GlobalStrong"/> is only valid for accounts configured with Strong consistency.
     /// </para>
     /// </remarks>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    enum ReadConsistencyStrategy
+    public enum ReadConsistencyStrategy
     {
         /// <summary>
         /// Eventual consistency - reads from a single random secondary replica.
@@ -48,6 +43,18 @@ namespace Microsoft.Azure.Cosmos
         /// Quorum read with GCLSN barrier - returns the latest version across all regions.
         /// Only valid for accounts configured with Strong consistency.
         /// </summary>
-        GlobalStrong = 4
+        GlobalStrong = 4,
+
+        /// <summary>
+        /// This strategy is designed for single-master accounts only.
+        /// In single-master accounts, each physical partition has a designated hub (primary) replica
+        /// in the write region. When a read encounters a 404/1002 (ReadSessionNotAvailable), the SDK
+        /// retries by routing the request to the partition-set level hub region using the
+        /// <c>x-ms-cosmos-hub-region-processing-only</c> header. If the hub replica is in a different
+        /// region than expected (403/3 WriteForbidden), the SDK discovers and retries on the actual hub.
+        /// Returns the latest committed version from the hub (write) region, ensuring reads
+        /// reflect the most recent writes regardless of which region the client is connected to.
+        /// </summary>
+        LastCommittedSingleWriteRegion = 5
     }
 }

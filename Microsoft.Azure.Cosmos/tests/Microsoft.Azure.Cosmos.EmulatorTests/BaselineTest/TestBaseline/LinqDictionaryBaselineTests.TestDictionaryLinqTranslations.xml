@@ -1,0 +1,332 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Any - children with Things]]></Description>
+      <Expression><![CDATA[query.Where(f => f.Children.Any(c => c.Things.Any()))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE EXISTS(
+        SELECT VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        JOIN (
+            SELECT VALUE EXISTS(
+                SELECT VALUE v0 
+                FROM c0 
+                JOIN v0 IN (
+                    SELECT VALUE ObjectToArray(c0["Things"])))) AS v1 
+                    WHERE v1)) AS v2 
+                    WHERE v2
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Any - children with key 'A']]></Description>
+      <Expression><![CDATA[query.Where(f => f.Children.Any(c => c.Things.Any(t => (t.Key == "A"))))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE EXISTS(
+        SELECT VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        JOIN (
+            SELECT VALUE EXISTS(
+                SELECT VALUE t0 
+                FROM c0 
+                JOIN t0 IN (
+                    SELECT VALUE ObjectToArray(c0["Things"])) 
+                    WHERE (t0["k"] = "A"))) AS v0 
+                    WHERE v0)) AS v1 
+                    WHERE v1
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Any - children with value predicate]]></Description>
+      <Expression><![CDATA[query.Where(f => f.Children.Any(c => c.Things.Any(t => (t.Value != null))))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE EXISTS(
+        SELECT VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        JOIN (
+            SELECT VALUE EXISTS(
+                SELECT VALUE t0 
+                FROM c0 
+                JOIN t0 IN (
+                    SELECT VALUE ObjectToArray(c0["Things"])) 
+                    WHERE (t0["v"] != null))) AS v0 
+                    WHERE v0)) AS v1 
+                    WHERE v1
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Any - families with children with Things -> Select FamilyId]]></Description>
+      <Expression><![CDATA[query.Where(f => f.Children.Any(c => c.Things.Any())).Select(f => f.FamilyId)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["FamilyId"] 
+FROM root 
+JOIN (
+    SELECT VALUE EXISTS(
+        SELECT VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        JOIN (
+            SELECT VALUE EXISTS(
+                SELECT VALUE v0 
+                FROM c0 
+                JOIN v0 IN (
+                    SELECT VALUE ObjectToArray(c0["Things"])))) AS v1 
+                    WHERE v1)) AS v2 
+                    WHERE v2
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany - children Things]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children.SelectMany(c => c.Things))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE c1 
+FROM root 
+JOIN c0 IN root["Children"] 
+JOIN c1 IN (
+    SELECT VALUE ObjectToArray(c0["Things"]))
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany - Things -> Select Key]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children.SelectMany(c => c.Things)).Select(t => t.Key)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE c1["k"] 
+FROM root 
+JOIN c0 IN root["Children"] 
+JOIN c1 IN (
+    SELECT VALUE ObjectToArray(c0["Things"]))
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany - Things -> Select Value]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children.SelectMany(c => c.Things)).Select(t => t.Value)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE c1["v"] 
+FROM root 
+JOIN c0 IN root["Children"] 
+JOIN c1 IN (
+    SELECT VALUE ObjectToArray(c0["Things"]))
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select - project FamilyId for families with Things]]></Description>
+      <Expression><![CDATA[query.Where(f => f.Children.Any(c => c.Things.Any(t => (t.Key == "A")))).Select(f => f.FamilyId)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["FamilyId"] 
+FROM root 
+JOIN (
+    SELECT VALUE EXISTS(
+        SELECT VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        JOIN (
+            SELECT VALUE EXISTS(
+                SELECT VALUE t0 
+                FROM c0 
+                JOIN t0 IN (
+                    SELECT VALUE ObjectToArray(c0["Things"])) 
+                    WHERE (t0["k"] = "A"))) AS v0 
+                    WHERE v0)) AS v1 
+                    WHERE v1
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where - filtered dictionary entries by Key, then Any]]></Description>
+      <Expression><![CDATA[query.Where(f => f.Children.Any(c => c.Things.Where(t => (t.Key == "A")).Any()))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE EXISTS(
+        SELECT VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        JOIN (
+            SELECT VALUE EXISTS(
+                SELECT VALUE t0 
+                FROM c0 
+                JOIN t0 IN (
+                    SELECT VALUE ObjectToArray(c0["Things"])) 
+                    WHERE (t0["k"] = "A"))) AS v0 
+                    WHERE v0)) AS v1 
+                    WHERE v1
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where - filtered dictionary entries by Value, then Any]]></Description>
+      <Expression><![CDATA[query.Where(f => f.Children.Any(c => c.Things.Where(t => (t.Value != null)).Any()))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE EXISTS(
+        SELECT VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        JOIN (
+            SELECT VALUE EXISTS(
+                SELECT VALUE t0 
+                FROM c0 
+                JOIN t0 IN (
+                    SELECT VALUE ObjectToArray(c0["Things"])) 
+                    WHERE (t0["v"] != null))) AS v0 
+                    WHERE v0)) AS v1 
+                    WHERE v1
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where(Any) -> OrderBy -> Take]]></Description>
+      <Expression><![CDATA[query.Where(f => f.Children.Any(c => c.Things.Any())).OrderBy(f => f.FamilyId).Take(5)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 5 VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE EXISTS(
+        SELECT VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        JOIN (
+            SELECT VALUE EXISTS(
+                SELECT VALUE v0 
+                FROM c0 
+                JOIN v0 IN (
+                    SELECT VALUE ObjectToArray(c0["Things"])))) AS v1 
+                    WHERE v1)) AS v2 
+                    WHERE v2 
+                    ORDER BY root["FamilyId"] ASC
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where(Any) -> OrderBy -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.Where(f => f.Children.Any(c => c.Things.Any())).OrderBy(f => f.FamilyId).Skip(1).Take(3)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE EXISTS(
+        SELECT VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        JOIN (
+            SELECT VALUE EXISTS(
+                SELECT VALUE v0 
+                FROM c0 
+                JOIN v0 IN (
+                    SELECT VALUE ObjectToArray(c0["Things"])))) AS v1 
+                    WHERE v1)) AS v2 
+                    WHERE v2 
+                    ORDER BY root["FamilyId"] ASC 
+                    OFFSET 1 LIMIT 3
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy with Things filter]]></Description>
+      <Expression><![CDATA[query.Where(f => f.Children.Any(c => c.Things.Any())).OrderBy(f => f.FamilyId).Select(f => f.FamilyId)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["FamilyId"] 
+FROM root 
+JOIN (
+    SELECT VALUE EXISTS(
+        SELECT VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        JOIN (
+            SELECT VALUE EXISTS(
+                SELECT VALUE v0 
+                FROM c0 
+                JOIN v0 IN (
+                    SELECT VALUE ObjectToArray(c0["Things"])))) AS v1 
+                    WHERE v1)) AS v2 
+                    WHERE v2 
+                    ORDER BY root["FamilyId"] ASC
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderByDescending with Things filter]]></Description>
+      <Expression><![CDATA[query.Where(f => f.Children.Any(c => c.Things.Any())).OrderByDescending(f => f.FamilyId).Select(f => f.FamilyId)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["FamilyId"] 
+FROM root 
+JOIN (
+    SELECT VALUE EXISTS(
+        SELECT VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        JOIN (
+            SELECT VALUE EXISTS(
+                SELECT VALUE v0 
+                FROM c0 
+                JOIN v0 IN (
+                    SELECT VALUE ObjectToArray(c0["Things"])))) AS v1 
+                    WHERE v1)) AS v2 
+                    WHERE v2 
+                    ORDER BY root["FamilyId"] DESC
+]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

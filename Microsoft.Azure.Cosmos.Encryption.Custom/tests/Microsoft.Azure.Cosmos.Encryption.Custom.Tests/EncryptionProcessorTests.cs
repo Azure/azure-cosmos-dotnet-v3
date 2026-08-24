@@ -92,36 +92,37 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
         }
 
-    [TestMethod]
-    public async Task Encrypt_NewtonsoftProcessor_Works()
-    {
-        TestDoc doc = TestDoc.Create();
-        EncryptionOptions opts = CreateMdeOptions();
-        
-        // Capture activities to validate scopes are created
-        List<Activity> capturedActivities = new List<Activity>();
-        using ActivityListener listener = new ActivityListener
+        [TestMethod]
+        public async Task Encrypt_NewtonsoftProcessor_Works()
         {
-            ShouldListenTo = (activitySource) => activitySource.Name == "Microsoft.Azure.Cosmos.Encryption.Custom",
-            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-            ActivityStarted = activity => { lock (capturedActivities) { capturedActivities.Add(activity); } }
-        };
-        ActivitySource.AddActivityListener(listener);
+            TestDoc doc = TestDoc.Create();
+            EncryptionOptions opts = CreateMdeOptions();
         
-        CosmosDiagnosticsContext diagEncrypt = CosmosDiagnosticsContext.Create(null);
-        Stream encrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, opts, JsonProcessor.Newtonsoft, diagEncrypt, CancellationToken.None);
+            // Capture activities to validate scopes are created
+            List<Activity> capturedActivities = new List<Activity>();
+            using ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = (activitySource) => activitySource.Name == "Microsoft.Azure.Cosmos.Encryption.Custom",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStarted = activity => { lock (capturedActivities) { capturedActivities.Add(activity); } }
+            };
+            ActivitySource.AddActivityListener(listener);
+        
+            CosmosDiagnosticsContext diagEncrypt = CosmosDiagnosticsContext.Create(null);
+            EncryptionItemRequestOptions encryptRequest = RequestOptionsOverrideHelper.Create(opts, JsonProcessor.Newtonsoft);
+            Stream encrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, encryptRequest, diagEncrypt, CancellationToken.None);
 
-        Assert.IsNotNull(encrypted);
-        encrypted.Dispose();
+            Assert.IsNotNull(encrypted);
+            encrypted.Dispose();
         
-        // Validate Newtonsoft encrypt scope was created
-        string expectedEncryptScope = CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + JsonProcessor.Newtonsoft;
-        lock (capturedActivities)
-        {
-            Assert.IsTrue(capturedActivities.Any(a => a.DisplayName == expectedEncryptScope),
-                $"Expected Newtonsoft encrypt scope '{expectedEncryptScope}' not found. Activities: {string.Join(", ", capturedActivities.Select(a => a.DisplayName))}");
+            // Validate Newtonsoft encrypt scope was created
+            string expectedEncryptScope = CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + JsonProcessor.Newtonsoft;
+            lock (capturedActivities)
+            {
+                Assert.IsTrue(capturedActivities.Any(a => a.DisplayName == expectedEncryptScope),
+                    $"Expected Newtonsoft encrypt scope '{expectedEncryptScope}' not found. Activities: {string.Join(", ", capturedActivities.Select(a => a.DisplayName))}");
+            }
         }
-    }
 
         [TestMethod]
         public async Task Decrypt_StreamSelection_FallbackWhenUnencrypted()
@@ -149,7 +150,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 #pragma warning restore CS0618
                 PathsToEncrypt = TestDoc.PathsToEncrypt,
             };
-            Stream legacyEncrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, legacy, JsonProcessor.Newtonsoft, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
+            EncryptionItemRequestOptions legacyRequestOptions = RequestOptionsOverrideHelper.Create(legacy, JsonProcessor.Newtonsoft);
+            Stream legacyEncrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, legacyRequestOptions, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
             legacyEncrypted.Position = 0;
 
             ItemRequestOptions opts = new() { Properties = new Dictionary<string, object> { { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Stream" } } };
@@ -177,7 +179,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 #pragma warning restore CS0618
                 PathsToEncrypt = TestDoc.PathsToEncrypt,
             };
-            Stream legacyEncrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, legacy, JsonProcessor.Newtonsoft, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
+            EncryptionItemRequestOptions legacyRequestOptions = RequestOptionsOverrideHelper.Create(legacy, JsonProcessor.Newtonsoft);
+            Stream legacyEncrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, legacyRequestOptions, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
             legacyEncrypted.Position = 0;
 
             ItemRequestOptions opts = new() { Properties = new Dictionary<string, object> { { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Stream" } } };
@@ -223,6 +226,110 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             {
                 Assert.IsTrue(ex.Message.IndexOf("not supported", StringComparison.OrdinalIgnoreCase) >= 0, $"Unexpected message: {ex.Message}");
             }
+        }
+
+        [TestMethod]
+        public async Task ConvertResponseToDecryptableItemsAsync_Stream_WhenSplitterThrowsMidFeed_PreservesOriginalException()
+        {
+            // Regression: if the splitter throws after yielding one or more documents (here, a partial
+            // feed: one complete document then a transport error), the StreamDecryptableItems held in the
+            // method's local list must be drained and the original exception rethrown unchanged - rather
+            // than abandoning the list (and its pooled buffers) or wrapping/swallowing the failure.
+            byte[] partialFeed = System.Text.Encoding.UTF8.GetBytes("{\"_count\":2,\"Documents\":[{\"id\":\"doc1\",\"pk\":\"pk\"},");
+            IOException sentinel = new ("simulated mid-feed transport error");
+
+            using ThrowAfterPrefixStream stream = new (partialFeed, sentinel);
+
+            Mock<CosmosSerializer> serializerMock = new ();
+
+            IOException thrown = await Assert.ThrowsExceptionAsync<IOException>(async () =>
+            {
+                _ = await EncryptionProcessor.ConvertResponseToDecryptableItemsAsync(
+                    stream,
+                    mockEncryptor.Object,
+                    serializerMock.Object,
+                    JsonProcessor.Stream,
+                    CancellationToken.None);
+            });
+
+            Assert.AreSame(sentinel, thrown, "Original exception identity must be preserved through the orphan-cleanup catch path.");
+        }
+
+        private sealed class ThrowAfterPrefixStream : Stream
+        {
+            private readonly byte[] prefix;
+            private readonly Exception toThrow;
+            private int position;
+
+            public ThrowAfterPrefixStream(byte[] prefix, Exception toThrow)
+            {
+                this.prefix = prefix ?? throw new ArgumentNullException(nameof(prefix));
+                this.toThrow = toThrow ?? throw new ArgumentNullException(nameof(toThrow));
+            }
+
+            public override bool CanRead => true;
+
+            public override bool CanSeek => false;
+
+            public override bool CanWrite => false;
+
+            public override long Length => throw new NotSupportedException();
+
+            public override long Position
+            {
+                get => this.position;
+                set => throw new NotSupportedException();
+            }
+
+            public override void Flush()
+            {
+            }
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                if (this.position >= this.prefix.Length)
+                {
+                    throw this.toThrow;
+                }
+
+                int available = this.prefix.Length - this.position;
+                int toCopy = Math.Min(available, count);
+                Buffer.BlockCopy(this.prefix, this.position, buffer, offset, toCopy);
+                this.position += toCopy;
+                return toCopy;
+            }
+
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                if (this.position >= this.prefix.Length)
+                {
+                    return Task.FromException<int>(this.toThrow);
+                }
+
+                return Task.FromResult(this.Read(buffer, offset, count));
+            }
+
+#if NET8_0_OR_GREATER
+            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                if (this.position >= this.prefix.Length)
+                {
+                    return ValueTask.FromException<int>(this.toThrow);
+                }
+
+                int available = this.prefix.Length - this.position;
+                int toCopy = Math.Min(available, buffer.Length);
+                this.prefix.AsSpan(this.position, toCopy).CopyTo(buffer.Span);
+                this.position += toCopy;
+                return new ValueTask<int>(toCopy);
+            }
+#endif
+
+            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+            public override void SetLength(long value) => throw new NotSupportedException();
+
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
         }
 #endif
     }

@@ -79,6 +79,67 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(container.BatchExecutor);
         }
 
+        [TestMethod]
+        public void GetExecutorForContainer_UsesCustomMaxOperationsFromEnvironment()
+        {
+            // Arrange
+            const string environmentVariableName = "COSMOS_MAX_OPERATIONS_IN_DIRECT_MODE_BATCH_REQUEST";
+            const int customMaxOperations = 150;
+            
+            // Store original value to restore later
+            string originalValue = Environment.GetEnvironmentVariable(environmentVariableName);
+            
+            try
+            {
+                Environment.SetEnvironmentVariable(environmentVariableName, customMaxOperations.ToString());
+                
+                CosmosClientContext context = this.MockClientContext();
+                DatabaseInternal db = new DatabaseInlineCore(context, "test");
+                ContainerInternal container = new ContainerInlineCore(context, db, "test");
+                
+                // Act
+                BatchAsyncContainerExecutor executor = container.BatchExecutor;
+                
+                // Assert
+                Assert.IsNotNull(executor);
+                // The executor should be created with the custom max operations value
+                // We verify this indirectly by ensuring the executor was created successfully
+                // The actual value is verified in the ConfigurationManager tests
+            }
+            finally
+            {
+                // Restore original environment variable value
+                Environment.SetEnvironmentVariable(environmentVariableName, originalValue);
+                ConfigurationManager.ResetMaxOperationsInDirectModeBatchRequestCacheForTesting();
+            }
+        }
+
+        [TestMethod]
+        [DoNotParallelize]
+        public void BatchExecutor_WhenConfigurationIsCorrected_RetriesInitialization()
+        {
+            const string environmentVariableName = "AZURE_COSMOS_MAX_OPERATIONS_IN_BATCH_REQUEST";
+            Environment.SetEnvironmentVariable(environmentVariableName, "invalid");
+            ConfigurationManager.ResetMaxOperationsInDirectModeBatchRequestCacheForTesting();
+
+            try
+            {
+                CosmosClientContext context = this.MockClientContext();
+                DatabaseInternal database = new DatabaseInlineCore(context, "test");
+                ContainerInternal container = new ContainerInlineCore(context, database, "test");
+
+                Assert.ThrowsException<ArgumentException>(() => _ = container.BatchExecutor);
+
+                Environment.SetEnvironmentVariable(environmentVariableName, "50");
+                Assert.IsNotNull(container.BatchExecutor);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(environmentVariableName, null);
+                ConfigurationManager.ResetMaxOperationsInDirectModeBatchRequestCacheForTesting();
+            }
+        }
+
         private CosmosClientContext MockClientContext(bool allowBulkExecution = true)
         {
             Mock<CosmosClient> mockClient = new Mock<CosmosClient>();

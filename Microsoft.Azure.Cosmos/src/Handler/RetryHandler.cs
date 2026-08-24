@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System;
     using System.Diagnostics;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Routing;
 
     /// <summary>
     /// Handler to wrap the pipeline into a retry mechanism defined by a <see cref="IDocumentClientRetryPolicy"/>
@@ -32,6 +33,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
             Debug.Assert(request.OnBeforeSendRequestActions == null, "Cosmos Request message only supports a single retry policy");
 #endif
             return Task.FromResult(retryPolicyInstance);
+        }
+
+        internal override GlobalPartitionEndpointManager GetGlobalPartitionEndpointManager()
+        {
+            return this.client.DocumentClient.PartitionKeyRangeLocation;
         }
     }
 }
