@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Initializes a new instance of the <see cref="MaterializedViewProperties"/> class.
         /// </summary>
-        [JsonConstructor]
         public MaterializedViewProperties()
         {
         }
