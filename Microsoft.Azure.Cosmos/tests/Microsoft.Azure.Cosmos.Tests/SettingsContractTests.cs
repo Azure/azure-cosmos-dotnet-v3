@@ -293,22 +293,22 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsFalse(typeof(Cosmos.MaterializedViewProperties).IsNestedPublic);
             Assert.IsFalse(typeof(Cosmos.MaterializedViewDefinition).IsPublic);
             Assert.IsFalse(typeof(Cosmos.MaterializedViewDefinition).IsNestedPublic);
-            Assert.AreEqual(
-                0,
-                typeof(Cosmos.MaterializedViewProperties).GetProperties(
-                    BindingFlags.Instance | BindingFlags.Public).Length);
-            Assert.AreEqual(
-                0,
-                typeof(Cosmos.MaterializedViewDefinition).GetProperties(
-                    BindingFlags.Instance | BindingFlags.Public).Length);
-            Assert.AreEqual(
-                0,
-                typeof(Cosmos.MaterializedViewProperties).GetConstructors(
-                    BindingFlags.Instance | BindingFlags.Public).Length);
-            Assert.AreEqual(
-                0,
-                typeof(Cosmos.MaterializedViewDefinition).GetConstructors(
-                    BindingFlags.Instance | BindingFlags.Public).Length);
+            SettingsContractTests.TypeAccessorGuard(
+                typeof(Cosmos.MaterializedViewProperties),
+                "Id",
+                "ResourceId",
+                "ContainerType",
+                "RequiredPathsInPreviousImage");
+            SettingsContractTests.TypeAccessorGuard(
+                typeof(Cosmos.MaterializedViewDefinition),
+                "SourceContainerResourceId",
+                "SourceContainerId",
+                "Definition",
+                "ApiSpecificDefinition",
+                "ContainerType",
+                "Status");
+            Assert.AreEqual(1, typeof(Cosmos.MaterializedViewProperties).GetConstructors().Length);
+            Assert.AreEqual(1, typeof(Cosmos.MaterializedViewDefinition).GetConstructors().Length);
 
             string[] materializedViewPropertyNames =
             {

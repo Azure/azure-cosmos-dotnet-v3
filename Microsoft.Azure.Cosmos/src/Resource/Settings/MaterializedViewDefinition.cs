@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
         /// Initializes a new instance of the <see cref="MaterializedViewDefinition"/> class.
         /// </summary>
         [JsonConstructor]
-        internal MaterializedViewDefinition()
+        public MaterializedViewDefinition()
         {
         }
 
@@ -25,42 +25,42 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the resource identifier of the source container.
         /// </summary>
         [JsonProperty(PropertyName = "sourceCollectionRid", NullValueHandling = NullValueHandling.Ignore)]
-        internal string SourceContainerResourceId { get; set; }
+        public string SourceContainerResourceId { get; set; }
 
         /// <summary>
         /// Gets or sets the identifier of the source container.
         /// </summary>
         [JsonProperty(PropertyName = "sourceCollectionId", NullValueHandling = NullValueHandling.Ignore)]
-        internal string SourceContainerId { get; set; }
+        public string SourceContainerId { get; set; }
 
         /// <summary>
         /// Gets or sets the query that defines the materialized view.
         /// </summary>
         [JsonProperty(PropertyName = "definition", NullValueHandling = NullValueHandling.Ignore)]
-        internal string Definition { get; set; }
+        public string Definition { get; set; }
 
         /// <summary>
         /// Gets or sets the optional API-specific materialized view definition.
         /// </summary>
         [JsonProperty(PropertyName = "apiSpecificDefinition", NullValueHandling = NullValueHandling.Ignore)]
-        internal string ApiSpecificDefinition { get; set; }
+        public string ApiSpecificDefinition { get; set; }
 
         /// <summary>
         /// Gets or sets the optional service-defined container type.
         /// </summary>
         [JsonProperty(PropertyName = "containerType", NullValueHandling = NullValueHandling.Ignore)]
-        internal string ContainerType { get; set; }
+        public string ContainerType { get; set; }
 
         /// <summary>
         /// Gets or sets the service-managed materialized view status.
         /// </summary>
         [JsonProperty(PropertyName = "status", NullValueHandling = NullValueHandling.Ignore)]
-        internal string Status { get; set; }
+        public string Status { get; set; }
 
         /// <summary>
         /// Gets additional values returned by the service that are not modeled by this SDK.
         /// </summary>
         [JsonExtensionData]
-        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+        public IDictionary<string, JToken> AdditionalProperties { get; private set; }
     }
 }

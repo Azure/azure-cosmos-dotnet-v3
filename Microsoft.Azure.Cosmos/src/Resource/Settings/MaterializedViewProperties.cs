@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
         /// Initializes a new instance of the <see cref="MaterializedViewProperties"/> class.
         /// </summary>
         [JsonConstructor]
-        internal MaterializedViewProperties()
+        public MaterializedViewProperties()
         {
         }
 
@@ -25,30 +25,30 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the identifier of the materialized view container.
         /// </summary>
         [JsonProperty(PropertyName = "id", NullValueHandling = NullValueHandling.Ignore)]
-        internal string Id { get; set; }
+        public string Id { get; set; }
 
         /// <summary>
         /// Gets or sets the resource identifier of the materialized view container.
         /// </summary>
         [JsonProperty(PropertyName = "_rid", NullValueHandling = NullValueHandling.Ignore)]
-        internal string ResourceId { get; set; }
+        public string ResourceId { get; set; }
 
         /// <summary>
         /// Gets or sets the optional service-defined container type.
         /// </summary>
         [JsonProperty(PropertyName = "containerType", NullValueHandling = NullValueHandling.Ignore)]
-        internal string ContainerType { get; set; }
+        public string ContainerType { get; set; }
 
         /// <summary>
         /// Gets or sets the optional item paths required in the previous image.
         /// </summary>
         [JsonProperty(PropertyName = "requiredPathsInPreviousImage", NullValueHandling = NullValueHandling.Ignore)]
-        internal IReadOnlyList<string> RequiredPathsInPreviousImage { get; set; }
+        public IReadOnlyList<string> RequiredPathsInPreviousImage { get; set; }
 
         /// <summary>
         /// Gets additional values returned by the service that are not modeled by this SDK.
         /// </summary>
         [JsonExtensionData]
-        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+        public IDictionary<string, JToken> AdditionalProperties { get; private set; }
     }
 }

@@ -283,6 +283,67 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         }
 
         [TestMethod]
+        public void ValidateContainerResponseFactoryMaterializedViewMetadata()
+        {
+            const string sourceContainerJson = @"{
+                ""id"": ""source"",
+                ""materializedViews"": [{
+                    ""id"": ""view"",
+                    ""_rid"": ""viewRid"",
+                    ""containerType"": ""GlobalSecondaryIndex"",
+                    ""requiredPathsInPreviousImage"": [""/tenantId""]
+                }]
+            }";
+            const string materializedViewContainerJson = @"{
+                ""id"": ""view"",
+                ""materializedViewDefinition"": {
+                    ""sourceCollectionRid"": ""sourceRid"",
+                    ""sourceCollectionId"": ""source"",
+                    ""definition"": ""SELECT * FROM c"",
+                    ""status"": ""Active""
+                }
+            }";
+
+            CosmosSerializerCore serializerCore = new CosmosSerializerCore(
+                new Mock<CosmosSerializer>().Object);
+            CosmosResponseFactoryInternal responseFactory = new CosmosResponseFactoryCore(serializerCore);
+            Container container = new Mock<Container>().Object;
+
+            ContainerResponse sourceResponse = responseFactory.CreateContainerResponse(
+                container,
+                CosmosJsonSerializerUnitTests.CreateResponse(sourceContainerJson));
+            Assert.AreEqual("source", sourceResponse.Resource.Id);
+            Assert.AreEqual(1, sourceResponse.Resource.MaterializedViews.Count);
+            Assert.AreEqual("view", sourceResponse.Resource.MaterializedViews[0].Id);
+            Assert.AreEqual("viewRid", sourceResponse.Resource.MaterializedViews[0].ResourceId);
+            Assert.AreEqual(
+                "GlobalSecondaryIndex",
+                sourceResponse.Resource.MaterializedViews[0].ContainerType);
+            CollectionAssert.AreEqual(
+                new[] { "/tenantId" },
+                new List<string>(sourceResponse.Resource.MaterializedViews[0].RequiredPathsInPreviousImage));
+            Assert.IsNull(sourceResponse.Resource.MaterializedViewDefinition);
+
+            ContainerResponse materializedViewResponse = responseFactory.CreateContainerResponse(
+                container,
+                CosmosJsonSerializerUnitTests.CreateResponse(materializedViewContainerJson));
+            Assert.AreEqual("view", materializedViewResponse.Resource.Id);
+            Assert.IsNull(materializedViewResponse.Resource.MaterializedViews);
+            Assert.AreEqual(
+                "sourceRid",
+                materializedViewResponse.Resource.MaterializedViewDefinition.SourceContainerResourceId);
+            Assert.AreEqual(
+                "source",
+                materializedViewResponse.Resource.MaterializedViewDefinition.SourceContainerId);
+            Assert.AreEqual(
+                "SELECT * FROM c",
+                materializedViewResponse.Resource.MaterializedViewDefinition.Definition);
+            Assert.AreEqual(
+                "Active",
+                materializedViewResponse.Resource.MaterializedViewDefinition.Status);
+        }
+
+        [TestMethod]
         public void ValidateSqlQuerySpecSerializerWithResumeFilter()
         {
             // Test serializing of different types
@@ -415,6 +476,14 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 Content = new MemoryStream()
             };
             return cosmosResponse;
+        }
+
+        private static ResponseMessage CreateResponse(string content)
+        {
+            return new ResponseMessage(statusCode: HttpStatusCode.OK)
+            {
+                Content = new MemoryStream(Encoding.UTF8.GetBytes(content))
+            };
         }
 
         private ResponseMessage CreateResponseWithContent()
