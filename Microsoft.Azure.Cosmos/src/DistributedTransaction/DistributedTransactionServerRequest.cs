@@ -13,16 +13,18 @@ namespace Microsoft.Azure.Cosmos
     internal class DistributedTransactionServerRequest
     {
         private readonly CosmosSerializerCore serializerCore;
+        private readonly bool tracksDispatch;
         private byte[] serializedBody;
 
         private DistributedTransactionServerRequest(
             IReadOnlyList<DistributedTransactionOperation> operations,
             CosmosSerializerCore serializerCore,
-            DistributedTransactionDispatchTracker dispatchTracker)
+            bool tracksDispatch)
         {
             this.Operations = operations ?? throw new ArgumentNullException(nameof(operations));
             this.serializerCore = serializerCore ?? throw new ArgumentNullException(nameof(serializerCore));
-            this.DispatchTracker = dispatchTracker;
+            this.tracksDispatch = tracksDispatch;
+            this.DispatchTracker = tracksDispatch ? new DistributedTransactionDispatchTracker() : null;
         }
 
         public IReadOnlyList<DistributedTransactionOperation> Operations { get; }
@@ -39,7 +41,7 @@ namespace Microsoft.Azure.Cosmos
         /// Tracks how the current <see cref="IdempotencyToken"/> has been dispatched, or null for a read
         /// transaction.
         /// </summary>
-        public DistributedTransactionDispatchTracker DispatchTracker { get; }
+        public DistributedTransactionDispatchTracker DispatchTracker { get; private set; }
 
         /// <summary>
         /// Assigns a fresh <see cref="Guid"/> to <see cref="IdempotencyToken"/> and returns it. Called for
@@ -51,8 +53,11 @@ namespace Microsoft.Azure.Cosmos
         {
             this.IdempotencyToken = Guid.NewGuid();
 
-            // Reset here rather than at the call sites so tracking cannot outlive the token it describes.
-            this.DispatchTracker?.ResetForNewToken();
+            // A tracker describes exactly one token, so the new token starts on its own instance.
+            if (this.tracksDispatch)
+            {
+                this.DispatchTracker = new DistributedTransactionDispatchTracker();
+            }
 
             return this.IdempotencyToken;
         }
@@ -61,12 +66,12 @@ namespace Microsoft.Azure.Cosmos
             IReadOnlyList<DistributedTransactionOperation> operations,
             CosmosSerializerCore serializerCore,
             CancellationToken cancellationToken,
-            DistributedTransactionDispatchTracker dispatchTracker = null)
+            bool tracksDispatch)
         {
             DistributedTransactionServerRequest request = new DistributedTransactionServerRequest(
                 operations,
                 serializerCore,
-                dispatchTracker);
+                tracksDispatch);
             await request.CreateBodyStreamAsync(cancellationToken);
             return request;
         }

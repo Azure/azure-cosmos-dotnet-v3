@@ -390,8 +390,8 @@ namespace Microsoft.Azure.Cosmos
                 string dispatchRegion = this.globalEndpointManager.GetLocation(
                     this.globalEndpointManager.ResolveServiceEndpoint(request));
 
-                // Resolving pinned its choice and cleared the index routing set above; restore it so this
-                // block only reads.
+                // ResolveServiceEndpoint mutates: it routes the request to whatever it picked, clearing
+                // the index set above. Restore it so this block only reads.
                 request.RequestContext.RouteToLocation(dispatchLocationIndex, usePreferredLocations: false);
 
                 DistributedTransactionDispatchTracker.StampDispatchHeaders(request, dispatchRegion);

@@ -1225,7 +1225,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
         [TestMethod]
         [Description("A durably aborted (452) retry resubmits under a new idempotency token, which has no dispatch history, so the next attempt starts from False on both signals.")]
-        public async Task ExecuteTransactionAsync_RetryAfterAbort_ResetsDispatchTracker()
+        public async Task ExecuteTransactionAsync_RetryAfterAbort_ReplacesDispatchTracker()
         {
             int callCount = 0;
             List<DistributedTransactionDispatchTracker> capturedTrackers = new List<DistributedTransactionDispatchTracker>();
@@ -1256,8 +1256,8 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 Assert.AreEqual(2, callCount, "A durably aborted retriable outcome must be retried.");
             }
 
-            Assert.AreSame(capturedTrackers[0], capturedTrackers[1],
-                "Tracking spans the whole commit, so both attempts must share one tracker.");
+            Assert.AreNotSame(capturedTrackers[0], capturedTrackers[1],
+                "Rotation starts the new token on its own tracker, so the attempts must not share one.");
             CollectionAssert.AreEqual(
                 new[] { (IsRetry: false, IsCrossRegionRedirect: false), (IsRetry: false, IsCrossRegionRedirect: false) },
                 signalsAtAttemptStart,
@@ -1266,7 +1266,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
         [TestMethod]
         [Description("A retriable non-aborted retry replays the SAME idempotency token, so both signals already earned under that token must still be reported on every later dispatch.")]
-        public async Task ExecuteTransactionAsync_RetryWithoutAbort_DoesNotResetDispatchTracker()
+        public async Task ExecuteTransactionAsync_RetryWithoutAbort_KeepsDispatchTracker()
         {
             int callCount = 0;
             List<DistributedTransactionDispatchTracker> capturedTrackers = new List<DistributedTransactionDispatchTracker>();
@@ -1295,7 +1295,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             }
 
             Assert.AreSame(capturedTrackers[0], capturedTrackers[1],
-                "Tracking spans the whole commit, so both attempts must share one tracker.");
+                "The token is replayed rather than rotated, so both attempts must share the tracker that describes it.");
             CollectionAssert.AreEqual(
                 new[] { (IsRetry: false, IsCrossRegionRedirect: false), (IsRetry: true, IsCrossRegionRedirect: true) },
                 signalsAtAttemptStart,
@@ -1308,8 +1308,8 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         /// </summary>
         /// <remarks>
         /// The crossing is simulated because the committer's contract is only that one tracker spans the
-        /// attempts and resets when the token rotates; deriving the signals from pinned endpoints is
-        /// <see cref="ClientRetryPolicyTests"/>' concern.
+        /// attempts of a single token and is replaced when the token rotates; deriving the signals from
+        /// pinned endpoints is <see cref="ClientRetryPolicyTests"/>' concern.
         /// </remarks>
         private static void DriveCrossRegionCrossingForAttempt(
             Action<RequestMessage> enricher,

@@ -56,7 +56,9 @@ namespace Microsoft.Azure.Cosmos
         {
             this.dispatchCount++;
 
-            // An unresolvable region cannot place this dispatch, but the dispatch itself still happened.
+            // A region goes unnamed when the endpoint is absent from the account topology: before the
+            // first account refresh populates it, or when endpoint discovery is disabled. The dispatch
+            // still happened, so it has to count.
             if (string.IsNullOrEmpty(regionName))
             {
                 this.hasUnresolvedDispatch = true;
@@ -78,14 +80,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.IsCrossRegionRedirect = true;
             }
-        }
-
-        internal void ResetForNewToken()
-        {
-            this.originalDispatchRegion = null;
-            this.dispatchCount = 0;
-            this.hasUnresolvedDispatch = false;
-            this.IsCrossRegionRedirect = false;
         }
 
         /// <summary>

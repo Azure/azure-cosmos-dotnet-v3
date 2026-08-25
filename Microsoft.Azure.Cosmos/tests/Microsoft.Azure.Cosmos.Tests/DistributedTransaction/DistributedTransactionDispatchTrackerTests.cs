@@ -13,9 +13,10 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
     /// for the <c>x-ms-cosmos-internal-is-dtx-retry</c> and
     /// <c>x-ms-cosmos-internal-is-dtx-cross-region-redirect</c> headers.
     ///
-    /// Three normative points a regression would silently break: the first dispatch of an idempotency
-    /// token reports neither signal, the cross-region signal is sticky for the lifetime of that token,
-    /// and both signals reset when the token rotates.
+    /// Two normative points a regression would silently break: the first dispatch of an idempotency
+    /// token reports neither signal, and the cross-region signal is sticky for the lifetime of that
+    /// token. Rotation starting a token on a fresh tracker is
+    /// <see cref="DistributedTransactionServerRequestTests"/>' concern.
     /// </summary>
     [TestClass]
     public class DistributedTransactionDispatchTrackerTests
@@ -148,63 +149,6 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             tracker.RecordDispatch(null);
             Assert.IsTrue(tracker.IsRetry);
-            Assert.IsFalse(tracker.IsCrossRegionRedirect);
-        }
-
-        [TestMethod]
-        public void ResetForNewToken_AfterCrossingBoundary_ClearsStickySignal()
-        {
-            DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
-
-            tracker.RecordDispatch(EastUs);
-            tracker.RecordDispatch(WestUs);
-            Assert.IsTrue(tracker.IsCrossRegionRedirect);
-
-            tracker.ResetForNewToken();
-
-            tracker.RecordDispatch(WestUs);
-            Assert.IsFalse(tracker.IsCrossRegionRedirect);
-        }
-
-        [TestMethod]
-        public void ResetForNewToken_ClearsRetrySignal()
-        {
-            DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
-
-            tracker.RecordDispatch(EastUs);
-            tracker.RecordDispatch(EastUs);
-            Assert.IsTrue(tracker.IsRetry);
-
-            tracker.ResetForNewToken();
-
-            tracker.RecordDispatch(EastUs);
-            Assert.IsFalse(tracker.IsRetry);
-        }
-
-        [TestMethod]
-        public void ResetForNewToken_ClearsOriginalDispatchRegion()
-        {
-            DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
-
-            tracker.RecordDispatch(EastUs);
-            tracker.ResetForNewToken();
-
-            // The new token has no record in any region, so this is a first dispatch, not a crossing.
-            tracker.RecordDispatch(WestUs);
-            Assert.IsFalse(tracker.IsCrossRegionRedirect);
-        }
-
-        [TestMethod]
-        public void ResetForNewToken_AfterUnresolvableDispatch_DoesNotChargeItToTheNewToken()
-        {
-            DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
-
-            tracker.RecordDispatch(null);
-            tracker.ResetForNewToken();
-
-            // The rotated token has never been dispatched anywhere, so the unnamed dispatch its
-            // predecessor made cannot make the new token's first dispatch a crossing.
-            tracker.RecordDispatch(EastUs);
             Assert.IsFalse(tracker.IsCrossRegionRedirect);
         }
 

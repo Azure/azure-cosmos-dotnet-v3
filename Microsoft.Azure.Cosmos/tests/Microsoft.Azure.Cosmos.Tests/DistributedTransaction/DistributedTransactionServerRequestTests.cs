@@ -23,7 +23,8 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionServerRequest request = await DistributedTransactionServerRequest.CreateAsync(
                 CreateTestOperations(),
                 MockCosmosUtil.Serializer,
-                CancellationToken.None);
+                CancellationToken.None,
+                tracksDispatch: false);
 
             using (MemoryStream stream1 = request.CreateBodyStream())
             using (MemoryStream stream2 = request.CreateBodyStream())
@@ -46,31 +47,36 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
-        [Description("Rotating the idempotency token resets the tracker, so sticky signals from the prior token cannot leak onto the new one.")]
-        public async Task RotateIdempotencyToken_ResetsDispatchTracker()
+        [Description("Rotating the idempotency token installs a fresh tracker, so sticky signals from the prior token cannot leak onto the new one.")]
+        public async Task RotateIdempotencyToken_ReplacesDispatchTracker()
         {
-            DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
             DistributedTransactionServerRequest request = await DistributedTransactionServerRequest.CreateAsync(
                 CreateTestOperations(),
                 MockCosmosUtil.Serializer,
                 CancellationToken.None,
-                tracker);
+                tracksDispatch: true);
 
-            Assert.AreSame(tracker, request.DispatchTracker);
-
-            request.RotateIdempotencyToken();
-            tracker.RecordDispatch("East US");
-            tracker.RecordDispatch("West US");
-            Assert.IsTrue(tracker.IsRetry, "Test precondition: the retry signal must be set before rotation.");
-            Assert.IsTrue(tracker.IsCrossRegionRedirect, "Test precondition: the redirect signal must be set before rotation.");
+            Assert.IsNotNull(request.DispatchTracker, "A write transaction carries a tracker from construction.");
 
             request.RotateIdempotencyToken();
 
+            DistributedTransactionDispatchTracker firstTokenTracker = request.DispatchTracker;
+            firstTokenTracker.RecordDispatch("East US");
+            firstTokenTracker.RecordDispatch("West US");
+            Assert.IsTrue(firstTokenTracker.IsRetry, "Test precondition: the retry signal must be set before rotation.");
+            Assert.IsTrue(firstTokenTracker.IsCrossRegionRedirect, "Test precondition: the redirect signal must be set before rotation.");
+
+            request.RotateIdempotencyToken();
+
+            Assert.AreNotSame(
+                firstTokenTracker,
+                request.DispatchTracker,
+                "A rotated token must not reuse the tracker that describes its predecessor.");
             Assert.IsFalse(
-                tracker.IsRetry,
+                request.DispatchTracker.IsRetry,
                 "A rotated token has never been dispatched, so the retry signal must not carry over.");
             Assert.IsFalse(
-                tracker.IsCrossRegionRedirect,
+                request.DispatchTracker.IsCrossRegionRedirect,
                 "A rotated token has no record in any region, so the redirect signal must not carry over.");
         }
 
@@ -81,7 +87,8 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionServerRequest request = await DistributedTransactionServerRequest.CreateAsync(
                 CreateTestOperations(),
                 MockCosmosUtil.Serializer,
-                CancellationToken.None);
+                CancellationToken.None,
+                tracksDispatch: false);
 
             Assert.IsNull(request.DispatchTracker);
 
