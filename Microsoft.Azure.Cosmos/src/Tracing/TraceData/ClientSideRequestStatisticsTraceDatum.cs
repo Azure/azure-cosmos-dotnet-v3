@@ -23,6 +23,14 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
         internal static readonly string HttpRequestRegionNameProperty = "regionName";
 
+        // Headers that change how the backend handles the request. Kept as a closed list so no
+        // credential-bearing or high-cardinality header reaches diagnostics by accident.
+        private static readonly string[] DiagnosticRequestHeaders = new string[]
+        {
+            DistributedTransactionConstants.IsDtxRetry,
+            DistributedTransactionConstants.IsDtxCrossRegionRedirect,
+        };
+
         private readonly object requestEndTimeLock = new object();
         private readonly Dictionary<string, AddressResolutionStatistics> endpointToAddressResolutionStats;
         private readonly List<StoreResponseStatistics> storeResponseStatistics;
@@ -353,6 +361,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             DateTime requestEndTimeUtc = DateTime.UtcNow;
             this.UpdateRequestEndTime(requestEndTimeUtc);
 
+            IReadOnlyList<KeyValuePair<string, string>> requestHeaders = ClientSideRequestStatisticsTraceDatum.CaptureRequestHeaders(request);
+
             lock (this.httpResponseStatistics)
             {
                 Uri locationEndpoint = request.RequestUri;
@@ -372,7 +382,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                                                            resourceType,
                                                                            response,
                                                                            exception: null,
-                                                                           region: Convert.ToString(regionName)));
+                                                                           region: Convert.ToString(regionName),
+                                                                           requestHeaders: requestHeaders));
             }
         }
 
@@ -383,6 +394,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         {
             DateTime requestEndTimeUtc = DateTime.UtcNow;
             this.UpdateRequestEndTime(requestEndTimeUtc);
+
+            IReadOnlyList<KeyValuePair<string, string>> requestHeaders = ClientSideRequestStatisticsTraceDatum.CaptureRequestHeaders(request);
 
             lock (this.httpResponseStatistics)
             {
@@ -404,8 +417,31 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                                                            resourceType,
                                                                            responseMessage: null,
                                                                            exception: exception,
-                                                                           region: Convert.ToString(regionName)));
+                                                                           region: Convert.ToString(regionName),
+                                                                           requestHeaders: requestHeaders));
             }
+        }
+
+        // Values are copied because the caller disposes the request once the response is read, while the
+        // trace outlives it. Returns null when nothing matches to keep the common path allocation free.
+        internal static IReadOnlyList<KeyValuePair<string, string>> CaptureRequestHeaders(HttpRequestMessage request)
+        {
+            List<KeyValuePair<string, string>> capturedHeaders = null;
+
+            foreach (string headerName in ClientSideRequestStatisticsTraceDatum.DiagnosticRequestHeaders)
+            {
+                if (request.Headers.TryGetValues(headerName, out IEnumerable<string> values))
+                {
+                    if (capturedHeaders == null)
+                    {
+                        capturedHeaders = new List<KeyValuePair<string, string>>(ClientSideRequestStatisticsTraceDatum.DiagnosticRequestHeaders.Length);
+                    }
+
+                    capturedHeaders.Add(new KeyValuePair<string, string>(headerName, string.Join(",", values)));
+                }
+            }
+
+            return capturedHeaders;
         }
 
         private DateTime UpdateRequestEndTime(DateTime requestEndTimeUtc)
@@ -507,7 +543,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 ResourceType resourceType,
                 HttpResponseMessage responseMessage,
                 Exception exception,
-                string region)
+                string region,
+                IReadOnlyList<KeyValuePair<string, string>> requestHeaders = null)
             {
                 this.RequestStartTime = requestStartTime;
                 this.Duration = requestEndTime - requestStartTime;
@@ -517,6 +554,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 this.HttpMethod = httpMethod;
                 this.RequestUri = requestUri;
                 this.Region = region;
+                this.RequestHeaders = requestHeaders;
                 this.ResponseContentLength = responseMessage?.Content?.Headers?.ContentLength;
                 if (responseMessage != null)
                 {
@@ -539,6 +577,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             public Uri RequestUri { get; }
             public string ActivityId { get; }
             public long? ResponseContentLength { get; }
+            public IReadOnlyList<KeyValuePair<string, string>> RequestHeaders { get; }
         }
     }
 }
