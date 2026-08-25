@@ -159,7 +159,7 @@
     },
     "benchmarkingToolsBranchName": {
       "type": "string",
-      "defaultValue": "master",
+      "defaultValue": "main",
       "metadata": {
         "description": "Specifies the GitHub branch for the benchmark tool source code repository"
       }
