@@ -251,6 +251,31 @@ namespace Microsoft.Azure.Cosmos
         }
 
 
+        [TestMethod]
+        [Owner("aavasthy")]
+        public void WillRouteToThinClient_TracksLiveRoutingDecision_ForDiagnosticsLabel()
+        {
+            ThinClientStoreModel storeModel = this.BuildStoreModel(
+                out GlobalEndpointManager endpointManager,
+                advertiseThinClientLocations: false);
+            DocumentServiceRequest request = CreateDocumentRequest(OperationType.Create);
+
+            // No thin-client locations advertised: the request is served by the inherited gateway path, so the
+            // transport diagnostics label must report GatewayStoreModel, not ThinClientStoreModel.
+            Assert.IsFalse(
+                storeModel.WillRouteToThinClient(request),
+                "Request served by the gateway fall-back must not be labelled as ThinClientStoreModel.");
+
+            // Service advertises (and probes healthy) thin-client locations on the next refresh.
+            TestUtils.EnableThinClientLocationsForTest(endpointManager);
+            TestUtils.MarkThinClientEndpointsHealthyForTest(endpointManager);
+
+            Assert.IsTrue(
+                storeModel.WillRouteToThinClient(request),
+                "Request dispatched through the thin-client proxy must be labelled as ThinClientStoreModel.");
+        }
+
+
         [DataTestMethod]
         [Owner("aavasthy")]
         [DataRow(false, false, false, DisplayName = "No thin locations + PPAF/PPCB off -> not resolved (fast path)")]

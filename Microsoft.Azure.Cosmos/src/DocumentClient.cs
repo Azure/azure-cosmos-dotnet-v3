@@ -179,6 +179,12 @@ namespace Microsoft.Azure.Cosmos
 
         internal bool isThinClientEnabled;
 
+        // Whether the account is currently advertising thin-client endpoints (as of the last account read).
+        // Combined with isThinClientEnabled (the client capability), this drives the F4 user-agent feature
+        // flag so it reflects whether the client is actually routing through the thin-client proxy. Updated
+        // dynamically on account refresh via GlobalEndpointManager.OnThinClientAvailabilityChanged.
+        internal volatile bool thinClientEndpointsAvailable;
+
         // Gateway has backoff/retry logic to hide transient errors.
         private RetryPolicy retryPolicy;
         private bool allowOverrideStrongerConsistency = false;
@@ -1200,6 +1206,12 @@ namespace Microsoft.Azure.Cosmos
                 _ = this.GlobalEndpointManager.RunThinClientProbeCycleAsync();
             }
 
+            // Seed the live thin-client availability from the first account read (already performed by
+            // InitializeGatewayConfigurationReaderAsync above) so the initial user agent's F4 flag reflects
+            // whether the service is currently advertising thin-client endpoints.
+            this.thinClientEndpointsAvailable = this.GlobalEndpointManager.HasThinClientReadLocations
+                || this.GlobalEndpointManager.HasThinClientWriteLocations;
+
             this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker |= this.ConnectionPolicy.EnablePartitionLevelFailover;
             this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
             this.InitializePartitionLevelFailoverWithDefaultHedging();
@@ -1582,6 +1594,7 @@ namespace Microsoft.Azure.Cosmos
             if (this.GlobalEndpointManager != null)
             {
                 this.GlobalEndpointManager.OnEnablePartitionLevelFailoverConfigChanged -= this.UpdatePartitionLevelFailoverConfigWithAccountRefresh;
+                this.GlobalEndpointManager.OnThinClientAvailabilityChanged -= this.UpdateThinClientUserAgentFeatures;
                 this.GlobalEndpointManager.Dispose();
                 this.GlobalEndpointManager = null;
             }
@@ -7096,6 +7109,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.GlobalEndpointManager.OnEnablePartitionLevelFailoverConfigChanged += this.UpdatePartitionLevelFailoverConfigWithAccountRefresh;
+            this.GlobalEndpointManager.OnThinClientAvailabilityChanged += this.UpdateThinClientUserAgentFeatures;
             this.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
         }
 
@@ -7131,7 +7145,7 @@ namespace Microsoft.Azure.Cosmos
                 featureFlag += (int)UserAgentFeatureFlags.PerPartitionCircuitBreaker;
             }
 
-            if (this.isThinClientEnabled)
+            if (this.isThinClientEnabled && this.thinClientEndpointsAvailable)
             {
                 featureFlag += (int)UserAgentFeatureFlags.ThinClient;
             }
@@ -7142,6 +7156,26 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return featureFlag == 0 ? string.Empty : $"F{featureFlag:X}";
+        }
+
+        /// <summary>
+        /// Re-emits the user-agent feature flags when the account's thin-client endpoint availability changes
+        /// on an account refresh, so the F4 flag reflects whether the client is currently routing through the
+        /// thin-client proxy. Self-guarded: a failure here must never disrupt the account-refresh loop.
+        /// </summary>
+        private void UpdateThinClientUserAgentFeatures(bool thinClientEndpointsAvailable)
+        {
+            try
+            {
+                this.thinClientEndpointsAvailable = thinClientEndpointsAvailable;
+                this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceWarning(
+                    "DocumentClient: Failed to update ThinClient user-agent features on availability change: {0}",
+                    ex.Message);
+            }
         }
 
         internal void InitializePartitionLevelFailoverWithDefaultHedging()
