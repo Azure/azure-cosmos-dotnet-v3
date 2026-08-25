@@ -447,6 +447,15 @@ namespace Microsoft.Azure.Cosmos.Tracing
                             stringBuilder.AppendLine($"{space}{space}ResourceType: {stat.ResourceType}");
                             stringBuilder.AppendLine($"{space}{space}HttpMethod: {stat.HttpMethod}");
 
+                            if (stat.RequestHeaders != null)
+                            {
+                                stringBuilder.AppendLine($"{space}{space}RequestHeaders");
+                                foreach (KeyValuePair<string, string> header in stat.RequestHeaders)
+                                {
+                                    stringBuilder.AppendLine($"{space}{space}{space}{header.Key}: {header.Value}");
+                                }
+                            }
+
                             if (stat.Exception != null)
                             {
                                 stringBuilder.AppendLine($"{space}{space}ExceptionType: {stat.Exception.GetType()}");
