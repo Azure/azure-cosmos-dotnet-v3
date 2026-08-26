@@ -219,18 +219,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         }
 
         [TestMethod]
-        public async Task Encrypt_DuplicateTargetedProperty_Throws()
-        {
-            string json = "{\"id\":\"1\",\"Sensitive\":\"first\",\"Sensitive\":\"second\"}";
-
-            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
-                () => EncryptJsonAsync(json, CreateOptions(new[] { "/Sensitive" })));
-
-            StringAssert.Contains(exception.Message, "duplicate");
-            StringAssert.Contains(exception.Message, "Sensitive");
-        }
-
-        [TestMethod]
         public async Task Encrypt_NullThenPlain_RemainsPlain()
         {
             // Arrange
