@@ -45,22 +45,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         }
 
         [TestMethod]
-        public void TryReadOverride_StringValue_ExactMatch_Succeeds()
-        {
-            RequestOptions ro = new ItemRequestOptions
-            {
-                Properties = new Dictionary<string, object>
-                {
-                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Stream" }
-                }
-            };
-
-            bool found = ro.TryReadJsonProcessorOverride(out JsonProcessor jp);
-            Assert.IsTrue(found);
-            Assert.AreEqual(JsonProcessor.Stream, jp);
-        }
-
-        [TestMethod]
         public void TryReadOverride_InvalidString_Ignored()
         {
             RequestOptions ro = new ItemRequestOptions
@@ -86,15 +70,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         }
 
         [TestMethod]
-        public void TryReadOverride_NoPropertiesDictionary_Default()
-        {
-            RequestOptions ro = new ItemRequestOptions(); // Properties remains null
-            bool found = ro.TryReadJsonProcessorOverride(out JsonProcessor jp);
-            Assert.IsFalse(found);
-            Assert.AreEqual(JsonProcessor.Newtonsoft, jp);
-        }
-
-        [TestMethod]
         public void TryReadOverride_MixedCaseKey_NotRecognized()
         {
             RequestOptions ro = new ItemRequestOptions
@@ -112,35 +87,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         }
 
         [TestMethod]
-        public void TryReadOverride_MismatchedKey_NotRecognized()
-        {
-            RequestOptions ro = new ItemRequestOptions
-            {
-                Properties = new Dictionary<string, object>
-                {
-                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey + "-extra", "Stream" }
-                }
-            };
-
-            bool found = ro.TryReadJsonProcessorOverride(out JsonProcessor jp);
-            Assert.IsFalse(found);
-            Assert.AreEqual(JsonProcessor.Newtonsoft, jp);
-        }
-
-        [TestMethod]
         public void GetJsonProcessor_NullRequestOptions_ReturnsSuppliedDefault()
         {
             RequestOptions roNull = null;
             JsonProcessor result = roNull.GetJsonProcessor(JsonProcessor.Stream);
             Assert.AreEqual(JsonProcessor.Stream, result);
-        }
-
-        [TestMethod]
-        public void GetJsonProcessor_NullRequestOptions_NoArg_ReturnsNewtonsoft()
-        {
-            RequestOptions roNull = null;
-            JsonProcessor result = roNull.GetJsonProcessor();
-            Assert.AreEqual(JsonProcessor.Newtonsoft, result);
         }
 
         [TestMethod]
@@ -159,11 +110,60 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         }
 
         [TestMethod]
-        public void GetJsonProcessor_NoOverride_ReturnsSuppliedDefault()
+        public void SelectAndSanitize_UsesCurrentValueWithoutMutatingCaller()
         {
-            RequestOptions ro = new ItemRequestOptions(); // Properties remains null
-            JsonProcessor result = ro.GetJsonProcessor(JsonProcessor.Stream);
-            Assert.AreEqual(JsonProcessor.Stream, result);
+            EncryptionItemRequestOptions requestOptions = new ()
+            {
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Stream" },
+                    { "unrelated", 123 },
+                },
+            };
+
+            EncryptionItemRequestOptions sanitized = requestOptions.SelectAndSanitizeJsonProcessor(
+                JsonProcessor.Newtonsoft,
+                out JsonProcessor firstProcessor,
+                out bool firstHasOverride);
+
+            Assert.IsTrue(firstHasOverride);
+            Assert.AreEqual(JsonProcessor.Stream, firstProcessor);
+            Assert.AreNotSame(requestOptions, sanitized);
+            Assert.IsTrue(requestOptions.Properties.ContainsKey(JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey));
+            Assert.IsFalse(sanitized.Properties.ContainsKey(JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey));
+            Assert.AreEqual(123, sanitized.Properties["unrelated"]);
+
+            requestOptions.Properties = new Dictionary<string, object>
+            {
+                { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Newtonsoft" },
+            };
+            requestOptions.SelectAndSanitizeJsonProcessor(
+                JsonProcessor.Stream,
+                out JsonProcessor secondProcessor,
+                out _);
+
+            Assert.AreEqual(JsonProcessor.Newtonsoft, secondProcessor);
+        }
+
+        [TestMethod]
+        public void SelectAndSanitize_NoHiddenProperty_ReturnsOriginalOptions()
+        {
+            ItemRequestOptions requestOptions = new ()
+            {
+                Properties = new Dictionary<string, object>
+                {
+                    { "unrelated", 123 },
+                },
+            };
+
+            ItemRequestOptions sanitized = requestOptions.SelectAndSanitizeJsonProcessor(
+                JsonProcessor.Stream,
+                out JsonProcessor processor,
+                out bool hasOverride);
+
+            Assert.AreSame(requestOptions, sanitized);
+            Assert.AreEqual(JsonProcessor.Stream, processor);
+            Assert.IsFalse(hasOverride);
         }
     }
 }

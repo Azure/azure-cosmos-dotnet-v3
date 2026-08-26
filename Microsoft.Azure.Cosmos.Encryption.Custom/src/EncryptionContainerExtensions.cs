@@ -55,8 +55,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// };
         /// ]]>
         /// </code>
-        /// The per-call override takes precedence over the container default. A strongly-typed surface for this
-        /// override is planned; until then the string form above is the supported per-call mechanism. Note that the
+        /// The per-call override takes precedence over the container default. Note that the
         /// LINQ entry points (<see cref="ToEncryptionFeedIterator{T}"/> and <see cref="ToEncryptionStreamIterator{T}"/>)
         /// honor only the container default and do not currently accept per-call options.
         /// </para>

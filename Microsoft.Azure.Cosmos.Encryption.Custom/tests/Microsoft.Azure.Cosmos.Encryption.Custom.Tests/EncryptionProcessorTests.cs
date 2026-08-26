@@ -135,6 +135,37 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsNull(ctxDec);
             Assert.AreEqual(0, result.Position);
         }
+
+        [TestMethod]
+        public async Task Decrypt_EmptyResponse_ReturnsUnchanged()
+        {
+            MemoryStream input = new ();
+
+            (Stream result, DecryptionContext context) = await EncryptionProcessor.DecryptAsync(
+                input,
+                mockEncryptor.Object,
+                CosmosDiagnosticsContext.Create(null),
+                requestOptions: null,
+                CancellationToken.None);
+
+            Assert.AreSame(input, result);
+            Assert.IsNull(context);
+        }
+
+        [TestMethod]
+        public async Task Decrypt_NullResponse_ReturnsNull()
+        {
+            (Stream result, DecryptionContext context) = await EncryptionProcessor.DecryptAsync(
+                input: null,
+                mockEncryptor.Object,
+                JsonProcessor.Newtonsoft,
+                legacyFallback: true,
+                CosmosDiagnosticsContext.Create(null),
+                CancellationToken.None);
+
+            Assert.IsNull(result);
+            Assert.IsNull(context);
+        }
 #endif
 
 #if NET8_0_OR_GREATER
@@ -165,6 +196,48 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             decrypted.Position = 0;
             TestDoc result = TestCommon.FromStream<TestDoc>(decrypted);
             Assert.AreEqual(doc, result);
+        }
+
+        [TestMethod]
+        public async Task Decrypt_LegacyAuthenticationFailure_IsNotSwallowed()
+        {
+            TestDoc doc = TestDoc.Create();
+            EncryptionOptions legacy = new()
+            {
+                DataEncryptionKeyId = DekId,
+#pragma warning disable CS0618
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
+#pragma warning restore CS0618
+                PathsToEncrypt = TestDoc.PathsToEncrypt,
+            };
+            using Stream encrypted = await EncryptionProcessor.EncryptAsync(
+                doc.ToStream(),
+                mockEncryptor.Object,
+                RequestOptionsOverrideHelper.Create(legacy, JsonProcessor.Newtonsoft),
+                CosmosDiagnosticsContext.Create(null),
+                CancellationToken.None);
+            JObject encryptedDocument = EncryptionProcessor.BaseSerializer.FromStream<JObject>(encrypted);
+            JObject encryptionProperties = (JObject)encryptedDocument[Constants.EncryptedInfo];
+            byte[] cipherText = encryptionProperties[Constants.EncryptedData].ToObject<byte[]>();
+            cipherText[cipherText.Length - 1] ^= 0x01;
+            encryptionProperties[Constants.EncryptedData] = Convert.ToBase64String(cipherText);
+
+            Exception failure = null;
+            try
+            {
+                await EncryptionProcessor.DecryptAsync(
+                    EncryptionProcessor.BaseSerializer.ToStream(encryptedDocument),
+                    mockEncryptor.Object,
+                    CosmosDiagnosticsContext.Create(null),
+                    requestOptions: null,
+                    CancellationToken.None);
+            }
+            catch (Exception exception)
+            {
+                failure = exception;
+            }
+
+            Assert.IsNotNull(failure);
         }
 
         [TestMethod]
@@ -334,4 +407,3 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 #endif
     }
 }
-
