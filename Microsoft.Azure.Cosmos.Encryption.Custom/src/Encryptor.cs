@@ -11,6 +11,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// Abstraction for performing client-side encryption.
     /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
+    /// <remarks>
+    /// Direct data-encryption-key access remains an internal capability. A public
+    /// <c>GetEncryptionKeyAsync</c> member existed only on unreleased builds and was not
+    /// part of the published 1.0.0-preview07 contract.
+    /// </remarks>
     public abstract class Encryptor
     {
         /// <summary>
