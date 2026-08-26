@@ -41,6 +41,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 requestOptions = this.SelectAndSanitize(
                     requestOptions,
+                    this.defaultJsonProcessor,
+                    storeSelectedProcessor: false,
                     out _,
                     out JsonProcessor? jsonProcessorOverride);
                 this.transactionalBatch = this.transactionalBatch.CreateItem(
@@ -61,8 +63,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Stream streamPayload,
             TransactionalBatchItemRequestOptions requestOptions = null)
         {
+            bool isEncryptedWrite = requestOptions is EncryptionTransactionalBatchItemRequestOptions
+            {
+                EncryptionOptions: not null,
+            };
             requestOptions = this.SelectAndSanitize(
                 requestOptions,
+                isEncryptedWrite ? JsonProcessor.Newtonsoft : this.defaultJsonProcessor,
+                storeSelectedProcessor: isEncryptedWrite,
                 out JsonProcessor jsonProcessor,
                 out JsonProcessor? jsonProcessorOverride);
 
@@ -96,6 +104,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             requestOptions = this.SelectAndSanitize(
                 requestOptions,
+                this.defaultJsonProcessor,
+                storeSelectedProcessor: false,
                 out _,
                 out JsonProcessor? jsonProcessorOverride);
             this.transactionalBatch = this.transactionalBatch.DeleteItem(
@@ -112,6 +122,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             requestOptions = this.SelectAndSanitize(
                 requestOptions,
+                this.defaultJsonProcessor,
+                storeSelectedProcessor: false,
                 out _,
                 out JsonProcessor? jsonProcessorOverride);
             this.transactionalBatch = this.transactionalBatch.ReadItem(
@@ -132,6 +144,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 requestOptions = this.SelectAndSanitize(
                     requestOptions,
+                    this.defaultJsonProcessor,
+                    storeSelectedProcessor: false,
                     out _,
                     out JsonProcessor? jsonProcessorOverride);
                 this.transactionalBatch = this.transactionalBatch.ReplaceItem(
@@ -155,8 +169,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Stream streamPayload,
             TransactionalBatchItemRequestOptions requestOptions = null)
         {
+            bool isEncryptedWrite = requestOptions is EncryptionTransactionalBatchItemRequestOptions
+            {
+                EncryptionOptions: not null,
+            };
             requestOptions = this.SelectAndSanitize(
                 requestOptions,
+                isEncryptedWrite ? JsonProcessor.Newtonsoft : this.defaultJsonProcessor,
+                storeSelectedProcessor: isEncryptedWrite,
                 out JsonProcessor jsonProcessor,
                 out JsonProcessor? jsonProcessorOverride);
 
@@ -194,6 +214,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 requestOptions = this.SelectAndSanitize(
                     requestOptions,
+                    this.defaultJsonProcessor,
+                    storeSelectedProcessor: false,
                     out _,
                     out JsonProcessor? jsonProcessorOverride);
                 this.transactionalBatch = this.transactionalBatch.UpsertItem(
@@ -214,8 +236,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Stream streamPayload,
             TransactionalBatchItemRequestOptions requestOptions = null)
         {
+            bool isEncryptedWrite = requestOptions is EncryptionTransactionalBatchItemRequestOptions
+            {
+                EncryptionOptions: not null,
+            };
             requestOptions = this.SelectAndSanitize(
                 requestOptions,
+                isEncryptedWrite ? JsonProcessor.Newtonsoft : this.defaultJsonProcessor,
+                storeSelectedProcessor: isEncryptedWrite,
                 out JsonProcessor jsonProcessor,
                 out JsonProcessor? jsonProcessorOverride);
 
@@ -320,14 +348,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         private TransactionalBatchItemRequestOptions SelectAndSanitize(
             TransactionalBatchItemRequestOptions requestOptions,
+            JsonProcessor defaultJsonProcessor,
+            bool storeSelectedProcessor,
             out JsonProcessor jsonProcessor,
             out JsonProcessor? jsonProcessorOverride)
         {
             requestOptions = requestOptions.SelectAndSanitizeJsonProcessor(
-                this.defaultJsonProcessor,
+                defaultJsonProcessor,
                 out jsonProcessor,
                 out bool hasOverride);
-            jsonProcessorOverride = hasOverride ? jsonProcessor : null;
+            jsonProcessorOverride = hasOverride || storeSelectedProcessor ? jsonProcessor : null;
             return requestOptions;
         }
 

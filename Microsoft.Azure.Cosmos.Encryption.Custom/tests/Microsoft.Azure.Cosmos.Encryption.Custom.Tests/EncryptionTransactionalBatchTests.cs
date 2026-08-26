@@ -79,16 +79,89 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 activity.DisplayName == CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream));
         }
 
+        [DataTestMethod]
+        [DataRow("Create")]
+        [DataRow("Replace")]
+        [DataRow("Upsert")]
+        public async Task EncryptedWrite_ContainerStreamDefault_UsesNewtonsoftForWriteAndResponse(string operation)
+        {
+            Mock<Encryptor> encryptor = TestEncryptorFactory.CreateLegacy("dekId");
+            Stream encryptedPayload = null;
+            EncryptionTransactionalBatch batch = CreateBatch(
+                setupOperation: inner =>
+                {
+                    switch (operation)
+                    {
+                        case "Create":
+                            inner.Setup(b => b.CreateItemStream(It.IsAny<Stream>(), It.IsAny<TransactionalBatchItemRequestOptions>()))
+                                .Callback<Stream, TransactionalBatchItemRequestOptions>((payload, _) => encryptedPayload = Copy(payload))
+                                .Returns(inner.Object);
+                            break;
+                        case "Replace":
+                            inner.Setup(b => b.ReplaceItemStream("id", It.IsAny<Stream>(), It.IsAny<TransactionalBatchItemRequestOptions>()))
+                                .Callback<string, Stream, TransactionalBatchItemRequestOptions>((_, payload, _) => encryptedPayload = Copy(payload))
+                                .Returns(inner.Object);
+                            break;
+                        case "Upsert":
+                            inner.Setup(b => b.UpsertItemStream(It.IsAny<Stream>(), It.IsAny<TransactionalBatchItemRequestOptions>()))
+                                .Callback<Stream, TransactionalBatchItemRequestOptions>((payload, _) => encryptedPayload = Copy(payload))
+                                .Returns(inner.Object);
+                            break;
+                    }
+                },
+                encryptor: encryptor.Object,
+                defaultJsonProcessor: JsonProcessor.Stream,
+                resultStreamFactory: _ => Copy(encryptedPayload));
+            EncryptionTransactionalBatchItemRequestOptions requestOptions = new ()
+            {
+                EncryptionOptions = new EncryptionOptions
+                {
+                    DataEncryptionKeyId = "dekId",
+#pragma warning disable CS0618
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+#pragma warning restore CS0618
+                    PathsToEncrypt = new[] { "/Sensitive" },
+                },
+            };
+            MemoryStream payload = new (Encoding.UTF8.GetBytes("{\"id\":\"doc1\",\"Sensitive\":\"secret\"}"));
+
+            switch (operation)
+            {
+                case "Create":
+                    batch.CreateItemStream(payload, requestOptions);
+                    break;
+                case "Replace":
+                    batch.ReplaceItemStream("id", payload, requestOptions);
+                    break;
+                case "Upsert":
+                    batch.UpsertItemStream(payload, requestOptions);
+                    break;
+            }
+
+            using TransactionalBatchResponse response = await batch.ExecuteAsync();
+            Assert.IsTrue(response.IsSuccessStatusCode);
+            encryptor.Verify(instance => instance.DecryptAsync(
+                It.IsAny<byte[]>(),
+                "dekId",
+                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
         private static EncryptionTransactionalBatch CreateBatch(
             System.Action<Mock<TransactionalBatch>> setupOperation,
-            int resultCount = 1)
+            int resultCount = 1,
+            Encryptor encryptor = null,
+            JsonProcessor defaultJsonProcessor = JsonProcessor.Newtonsoft,
+            System.Func<int, Stream> resultStreamFactory = null)
         {
             List<TransactionalBatchOperationResult> results = new ();
             for (int index = 0; index < resultCount; index++)
             {
                 Mock<TransactionalBatchOperationResult> result = new ();
                 result.SetupGet(r => r.ResourceStream)
-                    .Returns(new MemoryStream(Encoding.UTF8.GetBytes($"{{\"id\":\"doc{index}\"}}")));
+                    .Returns(() => resultStreamFactory?.Invoke(index)
+                        ?? new MemoryStream(Encoding.UTF8.GetBytes($"{{\"id\":\"doc{index}\"}}")));
                 result.SetupGet(r => r.StatusCode).Returns(HttpStatusCode.OK);
                 results.Add(result.Object);
             }
@@ -107,9 +180,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             return new EncryptionTransactionalBatch(
                 inner.Object,
-                Mock.Of<Encryptor>(),
+                encryptor ?? Mock.Of<Encryptor>(),
                 Mock.Of<CosmosSerializer>(),
-                JsonProcessor.Newtonsoft);
+                defaultJsonProcessor);
+        }
+
+        private static MemoryStream Copy(Stream source)
+        {
+            long position = source.Position;
+            source.Position = 0;
+            MemoryStream copy = new ();
+            source.CopyTo(copy);
+            source.Position = position;
+            copy.Position = 0;
+            return copy;
         }
 
         private static async Task<List<Activity>> ExecuteAndCaptureActivitiesAsync(
