@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
+    using System.Globalization;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -17,6 +18,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
     internal sealed class EncryptionCosmosClient : CosmosClient
     {
         internal static readonly SemaphoreSlim EncryptionKeyCacheSemaphore = new SemaphoreSlim(1, 1);
+
+        private static readonly TimeSpan BackgroundRefreshActivationThreshold = ReadActivationThresholdFromEnv();
 
         private readonly CosmosClient cosmosClient;
 
@@ -52,6 +55,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     EncryptionCosmosClient.EncryptionKeyCacheSemaphore.Release(1);
                 }
             }
+
+            // Activate the background refresh worker only when TTL >= 1 hour.
+            // For shorter TTLs, the overhead of background scanning is not justified.
+            if (keyCacheTimeToLive.Value >= BackgroundRefreshActivationThreshold)
+            {
+                this.CacheRefreshWorker = new PdekCacheRefreshWorker(this, keyCacheTimeToLive.Value);
+            }
         }
 
         public EncryptionKeyStoreProviderImpl EncryptionKeyStoreProviderImpl { get; }
@@ -65,6 +75,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override CosmosResponseFactory ResponseFactory => this.cosmosClient.ResponseFactory;
 
         public override Uri Endpoint => this.cosmosClient.Endpoint;
+
+        internal PdekCacheRefreshWorker CacheRefreshWorker { get; }
 
         public override async Task<DatabaseResponse> CreateDatabaseAsync(
             string id,
@@ -249,7 +261,25 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <inheritdoc/>
         protected override void Dispose(bool disposing)
         {
+            if (disposing)
+            {
+                this.CacheRefreshWorker?.Dispose();
+            }
+
             this.cosmosClient.Dispose();
+        }
+
+        private static TimeSpan ReadActivationThresholdFromEnv()
+        {
+            string value = Environment.GetEnvironmentVariable("COSMOS_PDEK_BG_REFRESH_MIN_TTL_SECONDS");
+            if (!string.IsNullOrWhiteSpace(value)
+                && double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double seconds)
+                && seconds > 0)
+            {
+                return TimeSpan.FromSeconds(seconds);
+            }
+
+            return TimeSpan.FromHours(1);
         }
 
         private async Task<ClientEncryptionKeyProperties> FetchClientEncryptionKeyPropertiesAsync(
