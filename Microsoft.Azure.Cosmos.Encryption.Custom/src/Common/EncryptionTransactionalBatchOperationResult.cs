@@ -10,16 +10,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
     internal sealed class EncryptionTransactionalBatchOperationResult : TransactionalBatchOperationResult
     {
-        private readonly Stream encryptionResourceStream;
         private readonly TransactionalBatchOperationResult response;
+        private Stream decryptedResourceStream;
 
-        public EncryptionTransactionalBatchOperationResult(TransactionalBatchOperationResult response, Stream encryptionResourceStream)
+        public EncryptionTransactionalBatchOperationResult(TransactionalBatchOperationResult response, Stream decryptedResourceStream)
         {
             this.response = response;
-            this.encryptionResourceStream = encryptionResourceStream;
+            this.decryptedResourceStream = decryptedResourceStream;
         }
 
-        public override Stream ResourceStream => this.encryptionResourceStream;
+        public override Stream ResourceStream => this.decryptedResourceStream;
 
         public override HttpStatusCode StatusCode => this.response.StatusCode;
 
@@ -28,5 +28,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public override string ETag => this.response.ETag;
 
         public override TimeSpan RetryAfter => this.response.RetryAfter;
+
+        internal void DisposeDecryptedResourceStream()
+        {
+            this.decryptedResourceStream?.Dispose();
+            this.decryptedResourceStream = null;
+        }
     }
 }

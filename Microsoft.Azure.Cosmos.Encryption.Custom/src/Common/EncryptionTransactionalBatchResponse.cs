@@ -69,7 +69,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 this.isDisposed = true;
 
-                this.response?.Dispose();
+                try
+                {
+                    this.DisposeDecryptedResourceStreams();
+                }
+                finally
+                {
+                    this.response?.Dispose();
+                }
+            }
+        }
+
+        private void DisposeDecryptedResourceStreams()
+        {
+            foreach (TransactionalBatchOperationResult result in this.results)
+            {
+                if (result is EncryptionTransactionalBatchOperationResult decryptedResult)
+                {
+                    decryptedResult.DisposeDecryptedResourceStream();
+                }
             }
         }
     }

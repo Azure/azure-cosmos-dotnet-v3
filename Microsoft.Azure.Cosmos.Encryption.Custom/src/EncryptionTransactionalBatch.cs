@@ -313,37 +313,50 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CancellationToken cancellationToken)
         {
             List<TransactionalBatchOperationResult> decryptedTransactionalBatchOperationResults = new ();
-            int operationIndex = 0;
-
-            foreach (TransactionalBatchOperationResult result in response)
-            {
-                if (response.IsSuccessStatusCode && result.ResourceStream != null)
-                {
-                    JsonProcessor jsonProcessor = operationIndex < this.operationJsonProcessorOverrides.Count
-                        ? this.operationJsonProcessorOverrides[operationIndex] ?? batchJsonProcessor
-                        : batchJsonProcessor;
-                    (Stream decryptedStream, _) = await EncryptionProcessor.DecryptAsync(
-                        result.ResourceStream,
-                        this.encryptor,
-                        jsonProcessor,
-                        legacyFallback: true,
-                        diagnosticsContext,
-                        cancellationToken);
-
-                    decryptedTransactionalBatchOperationResults.Add(new EncryptionTransactionalBatchOperationResult(result, decryptedStream));
-                }
-                else
-                {
-                    decryptedTransactionalBatchOperationResults.Add(result);
-                }
-
-                operationIndex++;
-            }
-
-            return new EncryptionTransactionalBatchResponse(
+            EncryptionTransactionalBatchResponse decryptedResponse = new (
                 decryptedTransactionalBatchOperationResults,
                 response,
                 this.cosmosSerializer);
+            int operationIndex = 0;
+
+            try
+            {
+                foreach (TransactionalBatchOperationResult result in response)
+                {
+                    Stream resourceStream = result.ResourceStream;
+                    if (response.IsSuccessStatusCode && resourceStream != null)
+                    {
+                        JsonProcessor jsonProcessor = operationIndex < this.operationJsonProcessorOverrides.Count
+                            ? this.operationJsonProcessorOverrides[operationIndex] ?? batchJsonProcessor
+                            : batchJsonProcessor;
+                        (Stream decryptedStream, _) = await EncryptionProcessor.DecryptAsync(
+                            resourceStream,
+                            this.encryptor,
+                            jsonProcessor,
+                            legacyFallback: true,
+                            diagnosticsContext,
+                            cancellationToken);
+
+                        decryptedTransactionalBatchOperationResults.Add(
+                            ReferenceEquals(resourceStream, decryptedStream)
+                                ? result
+                                : new EncryptionTransactionalBatchOperationResult(result, decryptedStream));
+                    }
+                    else
+                    {
+                        decryptedTransactionalBatchOperationResults.Add(result);
+                    }
+
+                    operationIndex++;
+                }
+
+                return decryptedResponse;
+            }
+            catch
+            {
+                decryptedResponse.Dispose();
+                throw;
+            }
         }
 
         private TransactionalBatchItemRequestOptions SelectAndSanitize(

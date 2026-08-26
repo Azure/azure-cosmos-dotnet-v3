@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#4766](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4766), [#5478](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5478) Adds a `net8.0` target with opt-in System.Text.Json stream processing. Newtonsoft remains the default and `netstandard2.0` consumers are unaffected.
 - [#5478](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5478) Adds asynchronous disposal for stream-backed `DecryptableItem` instances and feed pages so pooled plaintext buffers can be returned promptly.
 - [#5423](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5423) Adds `CosmosDataEncryptionKeyProvider.Initialize(Container)`.
-- [#5428](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5428) Adds optional distributed caching for wrapped DEK properties, configuration through `DekCacheOptions`, provider disposal, and cache-failure diagnostics. Raw DEK material remains process-local.
+- [#5428](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5428) Adds optional distributed caching for wrapped DEK properties through `CosmosDataEncryptionKeyProvider.CreateWithCacheOptions`, provider disposal, and cache-failure diagnostics. Raw DEK material remains process-local.
 
 #### Fixes
 - `EncryptableItem` create, replace, and upsert operations now preserve successful responses when content-on-write is disabled instead of dereferencing the absent response body.

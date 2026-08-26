@@ -8,6 +8,11 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.Custom.CosmosDataEncryptionKeyProvider Microsoft.Azure.Cosmos.Encryption.Custom.CosmosDataEncryptionKeyProvider.Create(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, Microsoft.Azure.Cosmos.Encryption.Custom.DekCacheOptions);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.Encryption.Custom.CosmosDataEncryptionKeyProvider Microsoft.Azure.Cosmos.Encryption.Custom.CosmosDataEncryptionKeyProvider.CreateWithCacheOptions(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, Microsoft.Azure.Cosmos.Encryption.Custom.DekCacheOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.Custom.CosmosDataEncryptionKeyProvider Microsoft.Azure.Cosmos.Encryption.Custom.CosmosDataEncryptionKeyProvider.CreateWithCacheOptions(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, Microsoft.Azure.Cosmos.Encryption.Custom.DekCacheOptions);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKeyContainer DataEncryptionKeyContainer": {
           "Type": "Property",
           "Attributes": [],
@@ -75,17 +80,12 @@
           ],
           "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])"
         },
-        "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan])[System.ObsoleteAttribute(\"EncryptionKeyWrapProvider is obsolete; migrate to CosmosDataEncryptionKeyProvider(EncryptionKeyStoreProvider, DekCacheOptions). To keep both providers during migration, use CosmosDataEncryptionKeyProvider.Create(EncryptionKeyWrapProvider, EncryptionKeyStoreProvider, DekCacheOptions).\")]": {
+        "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan])[System.ObsoleteAttribute(\"EncryptionKeyWrapProvider is obsolete; migrate to CosmosDataEncryptionKeyProvider(EncryptionKeyStoreProvider, TimeSpan?) or CosmosDataEncryptionKeyProvider.CreateWithCacheOptions(EncryptionKeyStoreProvider, DekCacheOptions). To keep both providers during migration, use CosmosDataEncryptionKeyProvider.Create(EncryptionKeyWrapProvider, EncryptionKeyStoreProvider, DekCacheOptions).\")]": {
           "Type": "Constructor",
           "Attributes": [
             "ObsoleteAttribute"
           ],
           "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan])"
-        },
-        "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, Microsoft.Azure.Cosmos.Encryption.Custom.DekCacheOptions)": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, Microsoft.Azure.Cosmos.Encryption.Custom.DekCacheOptions)"
         },
         "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])": {
           "Type": "Constructor",
@@ -387,6 +387,11 @@
               "Attributes": [],
               "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.Custom.CosmosDataEncryptionKeyProvider Microsoft.Azure.Cosmos.Encryption.Custom.CosmosDataEncryptionKeyProvider.Create(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, Microsoft.Azure.Cosmos.Encryption.Custom.DekCacheOptions);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
+            "Microsoft.Azure.Cosmos.Encryption.Custom.CosmosDataEncryptionKeyProvider Microsoft.Azure.Cosmos.Encryption.Custom.CosmosDataEncryptionKeyProvider.CreateWithCacheOptions(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, Microsoft.Azure.Cosmos.Encryption.Custom.DekCacheOptions)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.Custom.CosmosDataEncryptionKeyProvider Microsoft.Azure.Cosmos.Encryption.Custom.CosmosDataEncryptionKeyProvider.CreateWithCacheOptions(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, Microsoft.Azure.Cosmos.Encryption.Custom.DekCacheOptions);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
             "Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKeyContainer DataEncryptionKeyContainer": {
               "Type": "Property",
               "Attributes": [],
@@ -454,17 +459,12 @@
               ],
               "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])"
             },
-            "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan])[System.ObsoleteAttribute(\"EncryptionKeyWrapProvider is obsolete; migrate to CosmosDataEncryptionKeyProvider(EncryptionKeyStoreProvider, DekCacheOptions). To keep both providers during migration, use CosmosDataEncryptionKeyProvider.Create(EncryptionKeyWrapProvider, EncryptionKeyStoreProvider, DekCacheOptions).\")]": {
+            "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan])[System.ObsoleteAttribute(\"EncryptionKeyWrapProvider is obsolete; migrate to CosmosDataEncryptionKeyProvider(EncryptionKeyStoreProvider, TimeSpan?) or CosmosDataEncryptionKeyProvider.CreateWithCacheOptions(EncryptionKeyStoreProvider, DekCacheOptions). To keep both providers during migration, use CosmosDataEncryptionKeyProvider.Create(EncryptionKeyWrapProvider, EncryptionKeyStoreProvider, DekCacheOptions).\")]": {
               "Type": "Constructor",
               "Attributes": [
                 "ObsoleteAttribute"
               ],
               "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan])"
-            },
-            "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, Microsoft.Azure.Cosmos.Encryption.Custom.DekCacheOptions)": {
-              "Type": "Constructor",
-              "Attributes": [],
-              "MethodInfo": "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, Microsoft.Azure.Cosmos.Encryption.Custom.DekCacheOptions)"
             },
             "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])": {
               "Type": "Constructor",

@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using Microsoft.Azure.Cosmos.Encryption.Custom;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Moq.Protected;
 
     [TestClass]
     public class EncryptionTransactionalBatchTests
@@ -148,20 +149,79 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 Times.Once);
         }
 
+        [TestMethod]
+        public void Dispose_DisposesReplacementStreamAndInnerResponseOnce()
+        {
+            TrackingStream originalStream = new (Encoding.UTF8.GetBytes("{\"id\":\"doc1\"}"));
+            TrackingStream decryptedStream = new (Encoding.UTF8.GetBytes("{\"id\":\"doc1\",\"Sensitive\":\"secret\"}"));
+            Mock<TransactionalBatchOperationResult> originalResult = new ();
+            originalResult.SetupGet(result => result.ResourceStream).Returns(originalStream);
+            EncryptionTransactionalBatchOperationResult decryptedResult = new (originalResult.Object, decryptedStream);
+            int innerDisposeCount = 0;
+            Mock<TransactionalBatchResponse> innerResponse = new ();
+            innerResponse.Protected()
+                .Setup("Dispose", ItExpr.IsAny<bool>())
+                .Callback(() =>
+                {
+                    innerDisposeCount++;
+                    originalStream.Dispose();
+                });
+            EncryptionTransactionalBatchResponse response = new (
+                new[] { decryptedResult },
+                innerResponse.Object,
+                Mock.Of<CosmosSerializer>());
+
+            response.Dispose();
+            response.Dispose();
+
+            Assert.AreEqual(1, decryptedStream.DisposeCount);
+            Assert.AreEqual(1, originalStream.DisposeCount);
+            Assert.AreEqual(1, innerDisposeCount);
+        }
+
+        [TestMethod]
+        public async Task ExecuteAsync_WhenLaterResultDecryptionFails_DisposesInnerResponse()
+        {
+            Mock<Encryptor> encryptor = TestEncryptorFactory.CreateLegacy("dekId");
+            TrackingStream encryptedStream = await CreateTrackingEncryptedPayloadAsync(encryptor.Object);
+            MemoryStream malformedStream = new (Encoding.UTF8.GetBytes("{not-json"));
+            int innerDisposeCount = 0;
+            EncryptionTransactionalBatch batch = CreateBatch(
+                setupOperation: inner => inner
+                    .Setup(b => b.ReadItem(It.IsAny<string>(), It.IsAny<TransactionalBatchItemRequestOptions>()))
+                    .Returns(inner.Object),
+                resultCount: 2,
+                encryptor: encryptor.Object,
+                resultStreamFactory: index => index == 0 ? encryptedStream : malformedStream,
+                setupResponse: response => response.Protected()
+                    .Setup("Dispose", ItExpr.IsAny<bool>())
+                    .Callback(() => innerDisposeCount++));
+            batch.ReadItem("valid");
+            batch.ReadItem("invalid");
+
+            await Assert.ThrowsExceptionAsync<Newtonsoft.Json.JsonReaderException>(
+                () => batch.ExecuteAsync());
+
+            Assert.AreEqual(1, innerDisposeCount);
+            Assert.AreEqual(1, encryptedStream.DisposeCount);
+        }
+
         private static EncryptionTransactionalBatch CreateBatch(
             System.Action<Mock<TransactionalBatch>> setupOperation,
             int resultCount = 1,
             Encryptor encryptor = null,
             JsonProcessor defaultJsonProcessor = JsonProcessor.Newtonsoft,
-            System.Func<int, Stream> resultStreamFactory = null)
+            System.Func<int, Stream> resultStreamFactory = null,
+            System.Action<Mock<TransactionalBatchResponse>> setupResponse = null)
         {
             List<TransactionalBatchOperationResult> results = new ();
             for (int index = 0; index < resultCount; index++)
             {
+                int resultIndex = index;
                 Mock<TransactionalBatchOperationResult> result = new ();
                 result.SetupGet(r => r.ResourceStream)
-                    .Returns(() => resultStreamFactory?.Invoke(index)
-                        ?? new MemoryStream(Encoding.UTF8.GetBytes($"{{\"id\":\"doc{index}\"}}")));
+                    .Returns(() => resultStreamFactory?.Invoke(resultIndex)
+                        ?? new MemoryStream(Encoding.UTF8.GetBytes($"{{\"id\":\"doc{resultIndex}\"}}")));
                 result.SetupGet(r => r.StatusCode).Returns(HttpStatusCode.OK);
                 results.Add(result.Object);
             }
@@ -170,6 +230,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             response.SetupGet(r => r.IsSuccessStatusCode).Returns(true);
             response.Setup(r => r.GetEnumerator())
                 .Returns(() => results.GetEnumerator());
+            setupResponse?.Invoke(response);
 
             Mock<TransactionalBatch> inner = new ();
             setupOperation(inner);
@@ -183,6 +244,35 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 encryptor ?? Mock.Of<Encryptor>(),
                 Mock.Of<CosmosSerializer>(),
                 defaultJsonProcessor);
+        }
+
+        private static async Task<TrackingStream> CreateTrackingEncryptedPayloadAsync(Encryptor encryptor)
+        {
+            MemoryStream input = new (Encoding.UTF8.GetBytes("{\"id\":\"doc1\",\"Sensitive\":\"secret\"}"));
+            Stream encrypted = await EncryptionProcessor.EncryptAsync(
+                input,
+                encryptor,
+                new EncryptionOptions
+                {
+                    DataEncryptionKeyId = "dekId",
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                    PathsToEncrypt = new[] { "/Sensitive" },
+                },
+                JsonProcessor.Newtonsoft,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+
+            try
+            {
+                encrypted.Position = 0;
+                using MemoryStream buffer = new ();
+                await encrypted.CopyToAsync(buffer);
+                return new TrackingStream(buffer.ToArray());
+            }
+            finally
+            {
+                encrypted.Dispose();
+            }
         }
 
         private static MemoryStream Copy(Stream source)
@@ -210,6 +300,40 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             using TransactionalBatchResponse response = await execute();
             return activities;
+        }
+
+        private sealed class TrackingStream : MemoryStream
+        {
+            private bool disposed;
+
+            public TrackingStream(byte[] buffer)
+                : base(buffer)
+            {
+            }
+
+            public int DisposeCount { get; private set; }
+
+            public override ValueTask DisposeAsync()
+            {
+                if (!this.disposed)
+                {
+                    this.disposed = true;
+                    this.DisposeCount++;
+                }
+
+                return base.DisposeAsync();
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing && !this.disposed)
+                {
+                    this.disposed = true;
+                    this.DisposeCount++;
+                }
+
+                base.Dispose(disposing);
+            }
         }
     }
 }
