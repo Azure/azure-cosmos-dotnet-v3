@@ -343,6 +343,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             ArgumentNullException.ThrowIfNull(properties);
             _ = diagnosticsContext;
 
+            if (properties.EncryptionFormatVersion == EncryptionFormatVersion.AeAes)
+            {
+                throw new NotSupportedException(
+                    $"Documents encrypted with the legacy encryption algorithm (encryption format version: {EncryptionFormatVersion.AeAes}) are not supported by the Stream JSON processor. Use the Newtonsoft JSON processor to decrypt this document.");
+            }
+
             if (properties.EncryptionFormatVersion != EncryptionFormatVersion.Mde)
             {
                 throw new NotSupportedException($"Unknown encryption format version: {properties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
@@ -351,7 +357,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             int encryptedPathCount = properties.EncryptedPaths is ICollection<string> ec ? ec.Count : properties.EncryptedPaths.Count();
             using ArrayPoolManager arrayPoolManager = new (initialRentCapacity: (encryptedPathCount * 2) + 4);
 
-            DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(properties.DataEncryptionKeyId, properties.EncryptionAlgorithm, cancellationToken);
+            if (encryptor is not IDataEncryptionKeyAccessor keyAccessor)
+            {
+                throw new NotSupportedException(
+                    "Stream processing requires the built-in encryption key accessor.");
+            }
+
+            DataEncryptionKey encryptionKey = await keyAccessor.GetEncryptionKeyAsync(
+                properties.DataEncryptionKeyId,
+                properties.EncryptionAlgorithm,
+                cancellationToken) ?? throw new InvalidOperationException(
+                    "The encryption key accessor returned null.");
 
             List<string> pathsDecrypted = new (encryptedPathCount);
             using Utf8JsonWriter writer = new (outputBufferWriter);

@@ -671,12 +671,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         [ExpectedException(typeof(NotSupportedException))]
         public async Task UnsupportedJsonProcessor_ThrowsNotSupportedException()
         {
-            // This test validates that unsupported JsonProcessor values (e.g., Stream on net6.0/netstandard2.0)
-            // are properly rejected with a clear error message.
-            // We cast an int to JsonProcessor to simulate a value that doesn't exist on this platform.
             TestDoc testDoc = TestDoc.Create();
-
-            // Cast 99 to JsonProcessor - this simulates an unsupported/future processor value
             JsonProcessor unsupportedProcessor = (JsonProcessor)99;
 
             EncryptionItemRequestOptions options = new()
@@ -693,7 +688,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 }
             };
 
-            // This should throw NotSupportedException on all platforms for an unsupported processor value
             await encryptionContainer.CreateItemAsync(testDoc, new PartitionKey(testDoc.PK), options);
         }
 
@@ -2693,7 +2687,7 @@ cancellationToken) =>
         }
 
         // This class is same as CosmosEncryptor but copied so as to induce decryption failure easily for testing.
-        private class TestEncryptor : Encryptor
+        private class TestEncryptor : Encryptor, IDataEncryptionKeyAccessor
         {
             public DataEncryptionKeyProvider DataEncryptionKeyProvider { get; }
             public bool FailDecryption { get; set; }
@@ -2702,6 +2696,7 @@ cancellationToken) =>
 
             public TestEncryptor(DataEncryptionKeyProvider dataEncryptionKeyProvider)
             {
+                this.DataEncryptionKeyProvider = dataEncryptionKeyProvider;
                 this.encryptor = new CosmosEncryptor(dataEncryptionKeyProvider);
                 this.FailDecryption = false;
             }
@@ -2734,10 +2729,13 @@ cancellationToken) =>
                 return await this.encryptor.EncryptAsync(plainText, dataEncryptionKeyId, encryptionAlgorithm, cancellationToken);
             }
 
-            public override async Task<DataEncryptionKey> GetEncryptionKeyAsync(string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
+            public async Task<DataEncryptionKey> GetEncryptionKeyAsync(string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
             {
                 this.ThrowIfFail(dataEncryptionKeyId);
-                return await this.encryptor.GetEncryptionKeyAsync(dataEncryptionKeyId, encryptionAlgorithm, cancellationToken);
+                return await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync(
+                    dataEncryptionKeyId,
+                    encryptionAlgorithm,
+                    cancellationToken);
             }
         }
 
@@ -3139,4 +3137,3 @@ cancellationToken) =>
         #endregion
     }
 }
-

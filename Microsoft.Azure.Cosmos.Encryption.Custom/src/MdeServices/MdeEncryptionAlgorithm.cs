@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// <summary>
     /// Encryption Algorithm provided by MDE Encryption Package.
     /// </summary>
-    internal sealed class MdeEncryptionAlgorithm : DataEncryptionKey
+    internal sealed class MdeEncryptionAlgorithm : DataEncryptionKey, IDataEncryptionKeyBuffer
     {
         private const byte Version = 1;
 
@@ -129,22 +129,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return this.mdeAeadAes256CbcHmac256EncryptionAlgorithm.Decrypt(cipherText);
         }
 
-        public override int EncryptData(byte[] plainText, int plainTextOffset, int plainTextLength, byte[] output, int outputOffset)
+        public int EncryptData(byte[] plainText, int plainTextOffset, int plainTextLength, byte[] output, int outputOffset)
         {
             return this.mdeAeadAes256CbcHmac256EncryptionAlgorithm.Encrypt(plainText, plainTextOffset, plainTextLength, output, outputOffset);
         }
 
-        public override int DecryptData(byte[] cipherText, int cipherTextOffset, int cipherTextLength, byte[] output, int outputOffset)
+        public int DecryptData(byte[] cipherText, int cipherTextOffset, int cipherTextLength, byte[] output, int outputOffset)
         {
             return this.mdeAeadAes256CbcHmac256EncryptionAlgorithm.Decrypt(cipherText, cipherTextOffset, cipherTextLength, output, outputOffset);
         }
 
-        public override int GetEncryptByteCount(int plainTextLength)
+        public int GetEncryptByteCount(int plainTextLength)
         {
             return this.mdeAeadAes256CbcHmac256EncryptionAlgorithm.GetEncryptByteCount(plainTextLength);
         }
 
-        public override int GetDecryptByteCount(int cipherTextLength)
+        public int GetDecryptByteCount(int cipherTextLength)
         {
             return this.mdeAeadAes256CbcHmac256EncryptionAlgorithm.GetDecryptByteCount(cipherTextLength);
         }

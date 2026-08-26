@@ -25,10 +25,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             CancellationToken cancellationToken)
         {
             List<string> pathsEncrypted = new (encryptionOptions.PathsToEncrypt is ICollection<string> c ? c.Count : 0);
+            HashSet<string> encounteredEncryptedPaths = new (StringComparer.Ordinal);
 
             using ArrayPoolManager arrayPoolManager = new ();
 
-            DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionOptions.DataEncryptionKeyId, encryptionOptions.EncryptionAlgorithm, cancellationToken);
+            if (encryptor is not IDataEncryptionKeyAccessor keyAccessor)
+            {
+                throw new NotSupportedException(
+                    "Stream processing requires the built-in encryption key accessor.");
+            }
+
+            DataEncryptionKey encryptionKey = await keyAccessor.GetEncryptionKeyAsync(
+                encryptionOptions.DataEncryptionKeyId,
+                encryptionOptions.EncryptionAlgorithm,
+                cancellationToken) ?? throw new InvalidOperationException(
+                    "The encryption key accessor returned null.");
 
             // Pre-encode the paths-to-encrypt as UTF-8 byte sequences so that we can match
             // against Utf8JsonReader tokens with ValueTextEquals (which correctly handles
@@ -221,6 +232,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                                 if (matchedPath != null)
                                 {
+                                    if (!encounteredEncryptedPaths.Add(matchedPath))
+                                    {
+                                        throw new InvalidOperationException(
+                                            $"The input document contains a duplicate targeted property '{matchedPath.Substring(1)}'. Duplicate encrypted properties are not supported.");
+                                    }
+
                                     encryptPropertyName = matchedPath;
                                 }
                             }
