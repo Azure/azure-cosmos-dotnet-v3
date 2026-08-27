@@ -198,6 +198,7 @@ namespace Microsoft.Azure.Cosmos
         private bool enableCpuMonitor = DefaultEnableCpuMonitor;
         private int rntbdMaxConcurrentOpeningConnectionCount = 5;
         private string clientId;
+        private string clientIdHeaderValue;
 
         //Consistency
         private Documents.ConsistencyLevel? desiredConsistencyLevel;
@@ -791,6 +792,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.clientId = cosmosClientId;
+            this.clientIdHeaderValue = string.IsNullOrEmpty(cosmosClientId) ? Guid.NewGuid().ToString() : cosmosClientId;
             this.remoteCertificateValidationCallback = remoteCertificateValidationCallback;
             this.cosmosClientTelemetryOptions = cosmosClientTelemetryOptions ?? new CosmosClientTelemetryOptions();
 
@@ -1069,7 +1071,8 @@ namespace Microsoft.Azure.Cosmos
                 handler,
                 this.sendingRequest,
                 this.receivedResponse,
-                this.chaosInterceptor);
+                this.chaosInterceptor,
+                clientId: this.clientIdHeaderValue);
 
             // Loading VM Information (non blocking call and initialization won't fail if this call fails)
             VmMetadataApiHandler.TryInitialize(this.httpClient);
