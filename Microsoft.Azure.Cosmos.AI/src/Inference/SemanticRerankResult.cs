@@ -15,13 +15,7 @@ namespace Microsoft.Azure.Cosmos
     /// Represents the result of a semantic reranking operation, including rerank scores,
     /// latency, token usage, and HTTP response headers.
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-
-    class SemanticRerankResult
+    public class SemanticRerankResult
     {
         /// <summary>
         /// Gets the HTTP response headers associated with the rerank operation.
@@ -41,24 +35,24 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the token usage information for the rerank operation.
         /// </summary>
-        public Dictionary<string, object> TokenUseage { get; }
+        public Dictionary<string, object> TokenUsage { get; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SemanticRerankResult"/> class.
         /// </summary>
         /// <param name="rerankScores">The list of rerank scores.</param>
         /// <param name="latency">The latency information.</param>
-        /// <param name="tokenUseage">The token usage information.</param>
+        /// <param name="tokenUsage">The token usage information.</param>
         /// <param name="headers">The HTTP response headers.</param>
         private SemanticRerankResult(
             IReadOnlyList<RerankScore> rerankScores,
             Dictionary<string, object> latency,
-            Dictionary<string, object> tokenUseage,
+            Dictionary<string, object> tokenUsage,
             HttpResponseHeaders headers)
         {
             this.RerankScores = rerankScores;
             this.Latency = latency;
-            this.TokenUseage = tokenUseage;
+            this.TokenUsage = tokenUsage;
             this.Headers = headers;
         }
 

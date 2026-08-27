@@ -7,13 +7,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents the score assigned to a document after a reranking operation.
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-
-    class RerankScore
+    public class RerankScore
     {
         /// <summary>
         /// Gets the document content or identifier that was reranked.
