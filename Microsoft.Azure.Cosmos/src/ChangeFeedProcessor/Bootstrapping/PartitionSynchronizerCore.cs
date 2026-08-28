@@ -53,6 +53,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
                 FeedRangeEpk.FullRange.Range, 
                 NoOpTrace.Singleton, 
                 forceRefresh: false);
+            // A null result means the routing map could not be resolved (e.g. a transient 404 from the
+            // service, or a stale cache entry). Normalize it to empty here, mirroring the Java SDK's
+            // PartitionSynchronizerImpl#enumPartitionKeyRanges, so a caller never dereferences a null list.
+            // CreateLeasesAsync is a no-op for an empty list, so this is a safe, retryable no-op for this
+            // call; the next scheduled bootstrap/refresh cycle will pick up any missing leases once the
+            // routing map becomes resolvable again.
+            ranges ??= Array.Empty<PartitionKeyRange>();
             DefaultTrace.TraceInformation("Source collection: '{0}', {1} partition(s)", this.container.LinkUri, ranges.Count);
             await this.CreateLeasesAsync(ranges).ConfigureAwait(false);
         }
@@ -105,10 +112,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
                 ((FeedRangeEpk)feedRange).Range, 
                 NoOpTrace.Singleton, 
                 forceRefresh: true);
-            if (overlappingRanges.Count == 0)
+            if (overlappingRanges == null || overlappingRanges.Count == 0)
             {
                 DefaultTrace.TraceError("Lease {0} is gone but we failed to find at least one child range", leaseToken);
-                throw new InvalidOperationException();
+                throw new InvalidOperationException($"Lease {leaseToken} is gone but no overlapping ranges could be resolved for its split or merge.");
             }
 
             return lease switch
