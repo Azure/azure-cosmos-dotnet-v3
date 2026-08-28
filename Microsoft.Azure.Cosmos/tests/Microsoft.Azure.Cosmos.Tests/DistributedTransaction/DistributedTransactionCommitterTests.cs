@@ -2705,6 +2705,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         [DataRow("0:garbage", DisplayName = "valid prefix, unparseable token")]
         [DataRow("0:1#5 ", DisplayName = "trailing space, lands in lsn")]
         [DataRow("0:1#5 ,1:2#8", DisplayName = "space before separator, lands in lsn")]
+        [DataRow("0:1#5,1:2#8", DisplayName = "compound token")]
         public async Task ExecuteTransactionAsync_ThrowsOnMalformedUserSuppliedSessionToken(string malformedToken)
         {
             int dispatchCount = 0;
@@ -2867,88 +2868,6 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
-        [Description("Verifies that a compound collection-level session token is accepted and forwarded verbatim. This is compatibility tolerance matching ItemRequestOptions.SessionToken, not a supported round-trip: the coordinator returns a single '<partitionKeyRangeId>:<token>' pair per operation, so no response hands the caller a compound token.")]
-        public async Task ExecuteTransactionAsync_AcceptsCompoundUserSuppliedSessionToken()
-        {
-            const string compoundToken = "0:1#5,1:2#8";
-            byte[] capturedBody = null;
-
-            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
-            mockContext
-                .Setup(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<string>(),
-                    It.IsAny<ResourceType>(),
-                    It.IsAny<OperationType>(),
-                    It.IsAny<RequestOptions>(),
-                    It.IsAny<ContainerInternal>(),
-                    It.IsAny<Cosmos.PartitionKey?>(),
-                    It.IsAny<string>(),
-                    It.IsAny<Stream>(),
-                    It.IsAny<Action<RequestMessage>>(),
-                    It.IsAny<ITrace>(),
-                    It.IsAny<CancellationToken>()))
-                .Callback<string, ResourceType, OperationType, RequestOptions, ContainerInternal, Cosmos.PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
-                    (_, _, _, _, _, _, _, stream, _, _, _) =>
-                    {
-                        using MemoryStream copy = new MemoryStream();
-                        stream.CopyTo(copy);
-                        capturedBody = copy.ToArray();
-                    })
-                .ReturnsAsync(CreateSuccessResponseMessage(operationCount: 1));
-
-            List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
-            {
-                new DistributedTransactionOperation(
-                    OperationType.Create, 0, DatabaseName, ContainerName,
-                    new PartitionKey("pk1"), id: "doc1",
-                    requestOptions: new DistributedTransactionRequestOptions { SessionToken = compoundToken }),
-            };
-
-            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                operations, mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
-
-            await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
-
-            Assert.IsNotNull(capturedBody);
-            string bodyJson = Encoding.UTF8.GetString(capturedBody);
-            Assert.IsTrue(bodyJson.Contains($"\"sessionToken\":\"{compoundToken}\""),
-                $"The compound token must be forwarded verbatim. Body: {bodyJson}");
-        }
-
-        [TestMethod]
-        [Description("Verifies that every segment of a compound session token is validated, not just the first; a trailing malformed segment would otherwise reach the coordinator undetected.")]
-        public async Task ExecuteTransactionAsync_ThrowsOnMalformedSegmentOfCompoundUserSuppliedSessionToken()
-        {
-            int dispatchCount = 0;
-            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
-            this.SetupProcessResourceOperation(
-                mockContext,
-                () =>
-                {
-                    dispatchCount++;
-                    return Task.FromResult(CreateSuccessResponseMessage(operationCount: 1));
-                });
-
-            List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
-            {
-                new DistributedTransactionOperation(
-                    OperationType.Create, 0, DatabaseName, ContainerName,
-                    new PartitionKey("pk1"), id: "doc1",
-                    requestOptions: new DistributedTransactionRequestOptions { SessionToken = "0:1#5,1:garbage" }),
-            };
-
-            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                operations, mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
-
-            ArgumentException exception = await Assert.ThrowsExceptionAsync<ArgumentException>(
-                () => committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None));
-
-            Assert.IsTrue(exception.Message.Contains("1:garbage"),
-                $"Message must quote the offending segment. Message: {exception.Message}");
-            Assert.AreEqual(0, dispatchCount, "Nothing may be dispatched when a token segment is malformed.");
-        }
-
-        [TestMethod]
         [Description("Verifies that operations without a caller-supplied session token are unaffected by request-side validation.")]
         public async Task ExecuteTransactionAsync_DoesNotValidateAbsentUserSuppliedSessionToken()
         {
@@ -2976,11 +2895,8 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
-        [Description("Verifies that surrounding whitespace and empty segments are accepted, matching what SessionTokenHelper tolerates on the point-operation path. Rejecting them here would fail transactions for input that succeeds today on every other operation type.")]
-        [DataRow("0:1#5, 1:2#8", DisplayName = "space after separator, lands in range id")]
+        [Description("Verifies that leading whitespace in the range id remains accepted, matching SessionTokenHelper parsing used by point operations.")]
         [DataRow(" 0:1#5", DisplayName = "leading space, lands in range id")]
-        [DataRow("0:1#5,", DisplayName = "trailing separator, empty segment")]
-        [DataRow("0:1#5,,1:2#8", DisplayName = "repeated separator, empty segment")]
         public async Task ExecuteTransactionAsync_AcceptsSessionTokenShapesThePointOperationPathTolerates(string tolerantToken)
         {
             int dispatchCount = 0;
