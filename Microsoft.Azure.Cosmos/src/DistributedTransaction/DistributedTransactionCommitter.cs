@@ -98,9 +98,8 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken.ThrowIfCancellationRequested();
 
                 bool isReadTransaction = this.operationType == OperationType.Read;
-                ConsistencyLevel? effectiveConsistencyLevel = isReadTransaction
-                    ? await this.ResolveEffectiveConsistencyLevelAsync()
-                    : null;
+                // Resolve once per transaction; validation and retries use the same consistency level.
+                ConsistencyLevel? effectiveConsistencyLevel = await this.ResolveEffectiveConsistencyLevelAsync();
 
                 // Direct validates writes unconditionally and reads only under Session consistency.
                 if (!isReadTransaction || effectiveConsistencyLevel == ConsistencyLevel.Session)
@@ -475,11 +474,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Rejects malformed caller-supplied session token segments for writes and Session-consistent reads.
+        /// Rejects malformed caller-supplied session tokens for writes and Session-consistent reads.
         /// </summary>
-        /// <remarks>
-        /// Compound request tokens remain supported for point-operation compatibility; response tokens remain partition-local.
-        /// </remarks>
         private void ValidateUserSuppliedSessionTokens()
         {
             foreach (DistributedTransactionOperation operation in this.operations)
@@ -490,20 +486,16 @@ namespace Microsoft.Azure.Cosmos
                     continue;
                 }
 
-                // Match point-operation behavior by ignoring empty compound-token segments.
-                foreach (string segment in sessionToken.Split(SessionTokenHelper.CharArrayWithComma, StringSplitOptions.RemoveEmptyEntries))
+                if (DistributedTransactionCommitter.TryValidateSessionToken(sessionToken, out string _))
                 {
-                    if (DistributedTransactionCommitter.TryValidateSessionToken(segment, out string _))
-                    {
-                        continue;
-                    }
-
-                    throw new ArgumentException(
-                        $"Distributed transaction operation index {operation.OperationIndex} was given the session token " +
-                        $"'{FormatSessionTokenForMessage(sessionToken)}', which contains the segment '{FormatSessionTokenForMessage(segment)}'. Every segment must be a valid " +
-                        "'<partitionKeyRangeId>:<token>' pair. The transaction was not sent.",
-                        nameof(DistributedTransactionRequestOptions.SessionToken));
+                    continue;
                 }
+
+                throw new ArgumentException(
+                    $"Distributed transaction operation index {operation.OperationIndex} was given the session token " +
+                    $"'{FormatSessionTokenForMessage(sessionToken)}', which must be a single valid " +
+                    "'<partitionKeyRangeId>:<token>' pair. The transaction was not sent.",
+                    nameof(DistributedTransactionRequestOptions.SessionToken));
             }
         }
 
