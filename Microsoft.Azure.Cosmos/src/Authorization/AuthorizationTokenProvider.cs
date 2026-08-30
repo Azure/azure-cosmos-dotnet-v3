@@ -56,9 +56,9 @@ namespace Microsoft.Azure.Cosmos
                 verb,
                 AuthorizationTokenType.AadToken);
 
-            foreach (KeyValuePair<string, string> kvp in newHeaders)
+            foreach (string key in newHeaders.Keys())
             {
-                headersCollection.Add(kvp.Key, kvp.Value);
+                headersCollection.Add(key, newHeaders[key]);
             }
         }
 

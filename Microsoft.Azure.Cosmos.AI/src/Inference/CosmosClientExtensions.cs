@@ -7,7 +7,10 @@ namespace Microsoft.Azure.Cosmos.AI.Inference;
 using System.Runtime.CompilerServices;
 using Microsoft.Azure.Cosmos.Fluent;
 
-static class CosmosClientExtensions
+/// <summary>
+/// Extension methods for the <see cref="CosmosClient"/> class related to Semantic Inference.
+/// </summary>
+public static class CosmosClientExtensions
 {
     private static readonly ConditionalWeakTable<CosmosClient, InferenceService> inferenceServices = new ConditionalWeakTable<CosmosClient, InferenceService>();
     private static readonly ConditionalWeakTable<CosmosClient, InferenceConfigData> inferenceConfigData = new ConditionalWeakTable<CosmosClient, InferenceConfigData>();
