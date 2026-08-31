@@ -1214,15 +1214,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <remarks>
         /// If throughput bucket is also set at request level in <see cref="RequestOptions.ThroughputBucket"/>, that throughput bucket is used.
-        /// If <see cref="AllowBulkExecution"/> is set to true in CosmosClientOptions, throughput bucket can only be set at client level.
+        /// When <see cref="AllowBulkExecution"/> is set to true in CosmosClientOptions, a request-level throughput bucket is not
+        /// supported for item point operations (they are batched); set the throughput bucket at the client level instead.
         /// </remarks>
         /// <seealso href="https://aka.ms/cosmsodb-bucketing"/>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        int? ThroughputBucket { get; set; }
+        public int? ThroughputBucket { get; set; }
 
         internal IChaosInterceptorFactory ChaosInterceptorFactory { get; set; }
 
