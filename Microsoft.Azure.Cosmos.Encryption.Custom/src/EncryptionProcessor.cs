@@ -174,7 +174,55 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            return await MdeEncryptionProcessor.DecryptAsync(input, output, encryptor, diagnosticsContext, requestOptions, cancellationToken);
+            try
+            {
+                DecryptionContext context = await MdeEncryptionProcessor.DecryptAsync(
+                    input,
+                    output,
+                    encryptor,
+                    diagnosticsContext,
+                    requestOptions,
+                    cancellationToken);
+                if (context != null || !TryIsLegacyEncryptedDocument(input))
+                {
+                    return context;
+                }
+            }
+            catch (NotSupportedException)
+            {
+                input.Position = 0;
+                if (!TryIsLegacyEncryptedDocument(input))
+                {
+                    throw;
+                }
+            }
+
+            input.Position = 0;
+            Stream decrypted;
+            DecryptionContext legacyContext;
+            using (diagnosticsContext.CreateScope(
+                CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft))
+            {
+                (decrypted, legacyContext) = await DecryptAsync(
+                    input,
+                    encryptor,
+                    diagnosticsContext,
+                    cancellationToken);
+            }
+
+            try
+            {
+                await decrypted.CopyToAsync(output, 81920, cancellationToken);
+                output.Position = 0;
+                return legacyContext;
+            }
+            finally
+            {
+                if (!ReferenceEquals(input, decrypted))
+                {
+                    await decrypted.DisposeCompatAsync();
+                }
+            }
         }
 
         public static async Task<(Stream stream, DecryptionContext decryptableContext)> DecryptAsync(

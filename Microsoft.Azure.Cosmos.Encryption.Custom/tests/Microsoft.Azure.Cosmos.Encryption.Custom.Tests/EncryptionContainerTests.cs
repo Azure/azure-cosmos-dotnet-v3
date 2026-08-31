@@ -543,6 +543,123 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 activity.DisplayName == CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream));
         }
 
+        [TestMethod]
+        public async Task ReadItemStreamAsync_StreamSelection_DecryptsLegacyCiphertext()
+        {
+            const string dekId = "dekId";
+            Mock<Encryptor> legacyEncryptor = TestEncryptorFactory.CreateLegacy(dekId);
+            EncryptionContainer container = CreateEncryptionContainer(
+                this.innerContainerMock,
+                legacyEncryptor,
+                this.responseFactoryMock,
+                this.serializerMock);
+            TestCommon.TestDoc expected = TestCommon.TestDoc.Create("pk1");
+            Stream encryptedContent = await TestCommon.CreateLegacyEncryptedStreamAsync(
+                expected,
+                legacyEncryptor.Object,
+                dekId);
+            this.innerContainerMock
+                .Setup(c => c.ReadItemStreamAsync(
+                    expected.Id,
+                    new PartitionKey(expected.PK),
+                    It.IsAny<ItemRequestOptions>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ResponseMessage(HttpStatusCode.OK) { Content = encryptedContent });
+
+            using ResponseMessage response = await container.ReadItemStreamAsync(
+                expected.Id,
+                new PartitionKey(expected.PK),
+                new ItemRequestOptions
+                {
+                    Properties = CreateJsonProcessorPropertyBag(StreamProcessorName),
+                });
+
+            TestCommon.TestDoc actual = TestCommon.FromStream<TestCommon.TestDoc>(response.Content);
+            Assert.AreEqual(expected, actual);
+        }
+
+        [TestMethod]
+        public async Task ReadManyItemsStreamAsync_StreamDefault_DecryptsLegacyCiphertext()
+        {
+            const string dekId = "dekId";
+            Mock<Encryptor> legacyEncryptor = TestEncryptorFactory.CreateLegacy(dekId);
+            EncryptionContainer container = CreateEncryptionContainer(
+                this.innerContainerMock,
+                legacyEncryptor,
+                this.responseFactoryMock,
+                this.serializerMock);
+            container.UseStreamingJsonProcessingByDefault();
+            TestCommon.TestDoc expected = TestCommon.TestDoc.Create("pk1");
+            Stream encryptedContent = await TestCommon.CreateLegacyEncryptedFeedStreamAsync(
+                expected,
+                legacyEncryptor.Object,
+                dekId);
+            IReadOnlyList<(string id, PartitionKey partitionKey)> items = new[]
+            {
+                (expected.Id, new PartitionKey(expected.PK)),
+            };
+            this.innerContainerMock
+                .Setup(c => c.ReadManyItemsStreamAsync(
+                    items,
+                    null,
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ResponseMessage(HttpStatusCode.OK) { Content = encryptedContent });
+
+            using ResponseMessage response = await container.ReadManyItemsStreamAsync(items);
+
+            JObject feed = TestCommon.FromStream<JObject>(response.Content);
+            TestCommon.TestDoc actual = feed[Constants.DocumentsResourcePropertyName][0]
+                .ToObject<TestCommon.TestDoc>();
+            Assert.AreEqual(expected, actual);
+        }
+
+        [DataTestMethod]
+        [DataRow("Create")]
+        [DataRow("Replace")]
+        [DataRow("Upsert")]
+        public async Task LegacyWrite_ExplicitStream_FailsBeforeContainerWrite(string operation)
+        {
+            Mock<Encryptor> legacyEncryptor = TestEncryptorFactory.CreateLegacy("dekId");
+            EncryptionContainer container = CreateEncryptionContainer(
+                this.innerContainerMock,
+                legacyEncryptor,
+                this.responseFactoryMock,
+                this.serializerMock);
+            EncryptionItemRequestOptions requestOptions = new ()
+            {
+                EncryptionOptions = TestCommon.CreateLegacyEncryptionOptions("dekId"),
+                Properties = CreateJsonProcessorPropertyBag(StreamProcessorName),
+            };
+
+            NotSupportedException exception = await Assert.ThrowsExceptionAsync<NotSupportedException>(
+                () => ExecuteWriteAsync(container, operation, requestOptions));
+
+            StringAssert.Contains(exception.Message, nameof(JsonProcessor.Stream));
+            StringAssert.Contains(exception.Message, "AE AES encryption algorithm");
+            this.innerContainerMock.Verify(
+                inner => inner.CreateItemStreamAsync(
+                    It.IsAny<Stream>(),
+                    It.IsAny<PartitionKey>(),
+                    It.IsAny<ItemRequestOptions>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Never());
+            this.innerContainerMock.Verify(
+                inner => inner.ReplaceItemStreamAsync(
+                    It.IsAny<Stream>(),
+                    It.IsAny<string>(),
+                    It.IsAny<PartitionKey>(),
+                    It.IsAny<ItemRequestOptions>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Never());
+            this.innerContainerMock.Verify(
+                inner => inner.UpsertItemStreamAsync(
+                    It.IsAny<Stream>(),
+                    It.IsAny<PartitionKey>(),
+                    It.IsAny<ItemRequestOptions>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Never());
+        }
+
         [DataTestMethod]
         [DataRow("Create")]
         [DataRow("Replace")]

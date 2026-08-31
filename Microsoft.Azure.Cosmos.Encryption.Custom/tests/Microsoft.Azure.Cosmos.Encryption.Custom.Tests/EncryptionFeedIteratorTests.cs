@@ -104,6 +104,43 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
 #if NET8_0_OR_GREATER
         [TestMethod]
+        public async Task ReadNextAsync_StreamSelection_DecryptsLegacyCiphertext()
+        {
+            const string dekId = "dekId";
+            Mock<Encryptor> legacyEncryptor = TestEncryptorFactory.CreateLegacy(dekId);
+            TestCommon.TestDoc expected = TestCommon.TestDoc.Create();
+            Stream encryptedFeed = await TestCommon.CreateLegacyEncryptedFeedStreamAsync(
+                expected,
+                legacyEncryptor.Object,
+                dekId);
+            ResponseMessage response = new (HttpStatusCode.OK)
+            {
+                Content = encryptedFeed,
+            };
+            Mock<FeedIterator> innerIterator = new ();
+            innerIterator
+                .Setup(iterator => iterator.ReadNextAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(response);
+            EncryptionFeedIterator feedIterator = new (
+                innerIterator.Object,
+                legacyEncryptor.Object,
+                new ItemRequestOptions
+                {
+                    Properties = new Dictionary<string, object>
+                    {
+                        { JsonProcessorPropertyBagKey, StreamProcessorName },
+                    },
+                });
+
+            using ResponseMessage decrypted = await feedIterator.ReadNextAsync();
+
+            JObject payload = TestCommon.FromStream<JObject>(decrypted.Content);
+            TestCommon.TestDoc actual = payload[Constants.DocumentsResourcePropertyName][0]
+                .ToObject<TestCommon.TestDoc>();
+            Assert.AreEqual(expected, actual);
+        }
+
+        [TestMethod]
         public async Task ReadNextAsync_EmptyDocumentsArray_StreamAndNewtonsoftAgree()
         {
             JObject payload = new()

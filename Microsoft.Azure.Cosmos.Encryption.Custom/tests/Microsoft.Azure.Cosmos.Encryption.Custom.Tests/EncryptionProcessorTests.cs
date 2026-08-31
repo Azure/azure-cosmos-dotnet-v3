@@ -241,8 +241,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
-        public async Task DecryptProvidedOutput_StreamSelection_LegacyAlgorithm_Throws()
+        public async Task DecryptProvidedOutput_StreamSelection_LegacyAlgorithm_FallsBackToNewtonsoft()
         {
+            List<Activity> capturedActivities = new ();
+            using ActivityListener listener = new ()
+            {
+                ShouldListenTo = source => source.Name == "Microsoft.Azure.Cosmos.Encryption.Custom",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStarted = activity => capturedActivities.Add(activity),
+            };
+            ActivitySource.AddActivityListener(listener);
             TestDoc doc = TestDoc.Create();
             EncryptionOptions legacy = new()
             {
@@ -260,15 +268,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             CosmosDiagnosticsContext diag = CosmosDiagnosticsContext.Create(null);
             MemoryStream output = new();
 
-            NotSupportedException exception = await Assert.ThrowsExceptionAsync<NotSupportedException>(async () =>
-            {
-                await EncryptionProcessor.DecryptAsync(legacyEncrypted, output, mockEncryptor.Object, diag, opts, CancellationToken.None);
-            });
+            DecryptionContext context = await EncryptionProcessor.DecryptAsync(
+                legacyEncrypted,
+                output,
+                mockEncryptor.Object,
+                diag,
+                opts,
+                CancellationToken.None);
 
-            Assert.IsTrue(exception.Message.Contains("not supported"), $"Unexpected exception message: {exception.Message}");
-#pragma warning disable CS0618
-            Assert.IsTrue(exception.Message.Contains(CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized), $"Exception should mention the unsupported algorithm");
-#pragma warning restore CS0618
+            Assert.IsNotNull(context);
+            AssertLegacyDecryptionContext(context);
+            TestDoc actual = TestCommon.FromStream<TestDoc>(output);
+            Assert.AreEqual(doc, actual);
+            Assert.IsTrue(capturedActivities.Any(activity =>
+                activity.DisplayName == CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream));
+            Assert.IsTrue(capturedActivities.Any(activity =>
+                activity.DisplayName == CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft));
         }
 
         [TestMethod]
@@ -405,5 +420,39 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
         }
 #endif
+
+        [TestMethod]
+        public async Task DecryptProvidedOutput_Newtonsoft_LegacyAlgorithm_Succeeds()
+        {
+            TestDoc expected = TestDoc.Create();
+            using Stream encrypted = await TestCommon.CreateLegacyEncryptedStreamAsync(
+                expected,
+                mockEncryptor.Object,
+                DekId);
+            using MemoryStream output = new ();
+
+            DecryptionContext context = await EncryptionProcessor.DecryptAsync(
+                encrypted,
+                output,
+                mockEncryptor.Object,
+                new CosmosDiagnosticsContext(),
+                requestOptions: null,
+                CancellationToken.None);
+
+            Assert.IsNotNull(context);
+            AssertLegacyDecryptionContext(context);
+            TestDoc actual = TestCommon.FromStream<TestDoc>(output);
+            Assert.AreEqual(expected, actual);
+        }
+
+        private static void AssertLegacyDecryptionContext(DecryptionContext context)
+        {
+            Assert.AreEqual(1, context.DecryptionInfoList.Count);
+            DecryptionInfo decryptionInfo = context.DecryptionInfoList[0];
+            Assert.AreEqual(DekId, decryptionInfo.DataEncryptionKeyId);
+            CollectionAssert.AreEquivalent(
+                TestDoc.PathsToEncrypt,
+                decryptionInfo.PathsDecrypted.ToList());
+        }
     }
 }

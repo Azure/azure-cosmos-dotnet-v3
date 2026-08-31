@@ -606,8 +606,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         }
 
         [TestMethod]
-        [ExpectedException(typeof(NotSupportedException))]
-        public async Task ProvidedOutputDecrypt_StreamOverrideWithLegacyAlgorithm_Throws()
+        public async Task ProvidedOutputDecrypt_StreamOverrideWithLegacyAlgorithm_Succeeds()
         {
             TestItem testItem = new TestItem
             {
@@ -630,13 +629,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             using ResponseMessage readStream = await itemContainer.ReadItemStreamAsync(testItem.Id, new PartitionKey(testItem.PK));
             readStream.Content.Position = 0;
             MemoryStream output = new();
-            _ = await EncryptionProcessor.DecryptAsync(
+            DecryptionContext context = await EncryptionProcessor.DecryptAsync(
                 readStream.Content,
                 output,
                 encryptor,
                 new CosmosDiagnosticsContext(),
                 new ItemRequestOptions { Properties = new Dictionary<string, object> { { "encryption-json-processor", "Stream" } } },
                 CancellationToken.None);
+
+            Assert.IsNotNull(context);
+            Assert.AreEqual(0, output.Position);
+            TestItem actual = TestCommon.FromStream<TestItem>(output);
+            Assert.AreEqual(testItem.Id, actual.Id);
+            Assert.AreEqual(testItem.PK, actual.PK);
+            Assert.AreEqual(testItem.NonSensitive, actual.NonSensitive);
+            Assert.AreEqual(testItem.Sensitive, actual.Sensitive);
         }
 
         private class TestItem

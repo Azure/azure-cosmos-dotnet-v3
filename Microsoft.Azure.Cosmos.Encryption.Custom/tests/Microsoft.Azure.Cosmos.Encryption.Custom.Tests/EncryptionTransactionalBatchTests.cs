@@ -5,6 +5,7 @@
 #if NET8_0_OR_GREATER
 namespace Microsoft.Azure.Cosmos.Encryption.Tests
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
@@ -147,6 +148,101 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                 It.IsAny<CancellationToken>()),
                 Times.Once);
+        }
+
+        [TestMethod]
+        public async Task ReadItem_StreamSelection_DecryptsLegacyCiphertext()
+        {
+            const string dekId = "dekId";
+            Mock<Encryptor> legacyEncryptor = TestEncryptorFactory.CreateLegacy(dekId);
+            TestCommon.TestDoc expected = TestCommon.TestDoc.Create();
+            Stream encryptedContent = await TestCommon.CreateLegacyEncryptedStreamAsync(
+                expected,
+                legacyEncryptor.Object,
+                dekId);
+            EncryptionTransactionalBatch batch = CreateBatch(
+                setupOperation: inner => inner
+                    .Setup(b => b.ReadItem(
+                        expected.Id,
+                        It.IsAny<TransactionalBatchItemRequestOptions>()))
+                    .Returns(inner.Object),
+                encryptor: legacyEncryptor.Object,
+                resultStreamFactory: _ => encryptedContent);
+            batch.ReadItem(
+                expected.Id,
+                new TransactionalBatchItemRequestOptions
+                {
+                    Properties = new Dictionary<string, object>
+                    {
+                        { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Stream" },
+                    },
+                });
+
+            using TransactionalBatchResponse response = await batch.ExecuteAsync();
+
+            TestCommon.TestDoc actual = TestCommon.FromStream<TestCommon.TestDoc>(
+                response[0].ResourceStream);
+            Assert.AreEqual(expected, actual);
+        }
+
+        [DataTestMethod]
+        [DataRow("Create")]
+        [DataRow("Replace")]
+        [DataRow("Upsert")]
+        public void LegacyWrite_ExplicitStream_FailsBeforeBatchOperation(string operation)
+        {
+            Mock<TransactionalBatch> innerBatch = null;
+            EncryptionTransactionalBatch batch = CreateBatch(
+                setupOperation: inner => innerBatch = inner,
+                encryptor: TestEncryptorFactory.CreateLegacy("dekId").Object);
+            EncryptionTransactionalBatchItemRequestOptions requestOptions = new ()
+            {
+                EncryptionOptions = TestCommon.CreateLegacyEncryptionOptions("dekId"),
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Stream" },
+                },
+            };
+            MemoryStream payload = new (Encoding.UTF8.GetBytes("{\"id\":\"doc1\",\"SensitiveStr\":\"secret\"}"));
+
+            AggregateException exception = Assert.ThrowsException<AggregateException>(() =>
+            {
+                switch (operation)
+                {
+                    case "Create":
+                        batch.CreateItemStream(payload, requestOptions);
+                        break;
+                    case "Replace":
+                        batch.ReplaceItemStream("doc1", payload, requestOptions);
+                        break;
+                    case "Upsert":
+                        batch.UpsertItemStream(payload, requestOptions);
+                        break;
+                    default:
+                        Assert.Fail($"Unknown operation: {operation}");
+                        break;
+                }
+            });
+
+            Assert.IsInstanceOfType(exception.InnerException, typeof(NotSupportedException));
+            NotSupportedException notSupportedException = (NotSupportedException)exception.InnerException;
+            StringAssert.Contains(notSupportedException.Message, "AE AES encryption algorithm");
+            innerBatch.Verify(
+                inner => inner.CreateItemStream(
+                    It.IsAny<Stream>(),
+                    It.IsAny<TransactionalBatchItemRequestOptions>()),
+                Times.Never());
+            innerBatch.Verify(
+                inner => inner.ReplaceItemStream(
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<TransactionalBatchItemRequestOptions>()),
+                Times.Never());
+            innerBatch.Verify(
+                inner => inner.UpsertItemStream(
+                    It.IsAny<Stream>(),
+                    It.IsAny<TransactionalBatchItemRequestOptions>()),
+                Times.Never());
         }
 
         [TestMethod]
