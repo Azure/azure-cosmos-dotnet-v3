@@ -3629,6 +3629,169 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestMethod]
+        [TestCategory("MultiRegion")]
+        public async Task TestQueryPlanWithExcludeRegions_MultiRegionAccount()
+        {
+            // Excludes Central US (write/top-preferred region) to verify the gateway QueryPlan request honors ExcludeRegions.
+            const string centralUs = "Central US";
+            const string northCentralUs = "North Central US";
+            const string eastUs = "East US";
+            List<string> preferredRegions = new List<string> { centralUs, northCentralUs, eastUs };
+            List<string> excludeRegions = new List<string> { centralUs };
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                ApplicationPreferredRegions = preferredRegions,
+                Serializer = this.cosmosSystemTextJsonSerializer,
+            };
+
+            using CosmosClient queryPlanClient = new CosmosClient(this.connectionString, clientOptions);
+            Database queryPlanDatabase = queryPlanClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+            Container queryPlanContainer = queryPlanDatabase.GetContainer(MultiRegionSetupHelpers.containerName);
+
+            List<CosmosIntegrationTestObject> items = new List<CosmosIntegrationTestObject>();
+            string commonPk = "pk_queryplan_excl_test_" + Guid.NewGuid().ToString("N");
+
+            for (int i = 0; i < 5; i++)
+            {
+                items.Add(new CosmosIntegrationTestObject
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = commonPk,
+                    Other = $"Item_{i:D3}",
+                });
+            }
+
+            try
+            {
+                foreach (CosmosIntegrationTestObject item in items)
+                {
+                    await queryPlanContainer.CreateItemAsync(item, new PartitionKey(item.Pk));
+                }
+
+                // ORDER BY triggers a gateway QueryPlan request.
+                string query = "SELECT * FROM c WHERE c.pk = @pk ORDER BY c.other DESC";
+                QueryDefinition queryDef = new QueryDefinition(query).WithParameter("@pk", commonPk);
+                QueryRequestOptions queryRequestOptions = new QueryRequestOptions
+                {
+                    ExcludeRegions = excludeRegions,
+                };
+
+                FeedIterator<CosmosIntegrationTestObject> iterator = queryPlanContainer.GetItemQueryIterator<CosmosIntegrationTestObject>(
+                    queryDef,
+                    requestOptions: queryRequestOptions);
+
+                List<CosmosIntegrationTestObject> results = new List<CosmosIntegrationTestObject>();
+                int pageCount = 0;
+
+                while (iterator.HasMoreResults)
+                {
+                    FeedResponse<CosmosIntegrationTestObject> response = await iterator.ReadNextAsync();
+                    results.AddRange(response);
+                    pageCount++;
+
+                    string diagnostics = response.Diagnostics.ToString();
+
+                    // Only checks the QueryPlan's own request subtree, so the separate PartitionKeyRangeCache ExcludeRegions gap can't affect this assertion.
+                    CosmosItemIntegrationTests.AssertQueryPlanDidNotRouteToExcludedRegion(diagnostics, excludeRegions);
+                }
+
+                Assert.AreEqual(5, results.Count, "Should return all 5 items");
+            }
+            finally
+            {
+                foreach (CosmosIntegrationTestObject item in items)
+                {
+                    try
+                    {
+                        await queryPlanContainer.DeleteItemAsync<CosmosIntegrationTestObject>(item.Id, new PartitionKey(item.Pk));
+                    }
+                    catch { }
+                }
+            }
+        }
+
+        /// <summary>Asserts the gateway QueryPlan call (not PartitionKeyRangeCache calls) didn't route to an excluded region.</summary>
+        private static void AssertQueryPlanDidNotRouteToExcludedRegion(string diagnosticsJson, IReadOnlyList<string> excludeRegions)
+        {
+            using JsonDocument document = JsonDocument.Parse(diagnosticsJson);
+
+            List<string> queryPlanRequestHosts = new List<string>();
+            foreach (JsonElement createQueryPipelineNode in FindNodes(document.RootElement, name => name == "Create Query Pipeline"))
+            {
+                foreach (JsonElement requestInvokerNode in FindNodes(createQueryPipelineNode, name => name.Contains("RequestInvokerHandler")))
+                {
+                    CollectHostLikeStrings(requestInvokerNode, queryPlanRequestHosts);
+                }
+            }
+
+            foreach (string excludedRegion in excludeRegions)
+            {
+                string excludedHostFragment = excludedRegion.Replace(" ", string.Empty).ToLowerInvariant() + ".documents.azure.com";
+                foreach (string host in queryPlanRequestHosts)
+                {
+                    Assert.IsFalse(
+                        host.ToLowerInvariant().Contains(excludedHostFragment),
+                        $"Gateway QueryPlan request must not route to excluded region '{excludedRegion}' ('{excludedHostFragment}'). Found host: {host}. Full diagnostics: {diagnosticsJson}");
+                }
+            }
+        }
+
+        private static IEnumerable<JsonElement> FindNodes(JsonElement element, Func<string, bool> namePredicate)
+        {
+            if (element.ValueKind != JsonValueKind.Object)
+            {
+                yield break;
+            }
+
+            if (element.TryGetProperty("name", out JsonElement nameProp) &&
+                nameProp.ValueKind == JsonValueKind.String &&
+                namePredicate(nameProp.GetString() ?? string.Empty))
+            {
+                yield return element;
+            }
+
+            if (element.TryGetProperty("children", out JsonElement childrenProp) &&
+                childrenProp.ValueKind == JsonValueKind.Array)
+            {
+                foreach (JsonElement child in childrenProp.EnumerateArray())
+                {
+                    foreach (JsonElement match in FindNodes(child, namePredicate))
+                    {
+                        yield return match;
+                    }
+                }
+            }
+        }
+
+        private static void CollectHostLikeStrings(JsonElement element, List<string> results)
+        {
+            switch (element.ValueKind)
+            {
+                case JsonValueKind.Object:
+                    foreach (JsonProperty property in element.EnumerateObject())
+                    {
+                        CollectHostLikeStrings(property.Value, results);
+                    }
+                    break;
+                case JsonValueKind.Array:
+                    foreach (JsonElement item in element.EnumerateArray())
+                    {
+                        CollectHostLikeStrings(item, results);
+                    }
+                    break;
+                case JsonValueKind.String:
+                    string value = element.GetString();
+                    if (value != null && value.Contains(".documents.azure.com"))
+                    {
+                        results.Add(value);
+                    }
+                    break;
+            }
+        }
+
         private async Task TryCreateItems(List<CosmosIntegrationTestObject> testItems)
         {
             foreach (CosmosIntegrationTestObject item in testItems)
