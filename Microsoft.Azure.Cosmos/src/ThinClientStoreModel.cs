@@ -117,17 +117,21 @@ namespace Microsoft.Azure.Cosmos
                 return false;
             }
 
-            Uri resolved = this.endpointManager.ResolveThinClientEndpoint(request);
+            // Compute the candidate endpoint without pinning it onto the request (RouteToLocation). Pinning is
+            // owned by ClientRetryPolicy.OnBeforeSendRequest, which validates probe health before it commits an
+            // endpoint. Keeping this method side-effect-free means a failed probe here can never leave a proxy
+            // endpoint pinned for a request that then falls back to Gateway V1, and the diagnostics-label call
+            // (WillRouteToThinClient) can safely evaluate routability without mutating the request.
+            Uri candidate = this.endpointManager.GetThinClientEndpointCandidate(request);
 
-            // Per-region probe gate: route to the proxy only when this request's resolved regional endpoint has
-            // been confirmed healthy. An un-probed or failed region resolves to its gateway endpoint, which fails
-            // this check and transparently falls back to Gateway V1.
-            if (!this.endpointManager.IsProxyEndpointHealthy(resolved))
+            // Per-region probe gate: route to the proxy only when this request's candidate regional endpoint has
+            // been confirmed healthy. An un-probed or failed region falls back to Gateway V1.
+            if (!this.endpointManager.IsProxyEndpointHealthy(candidate))
             {
                 return false;
             }
 
-            thinClientEndpoint = resolved;
+            thinClientEndpoint = candidate;
             return true;
         }
 
