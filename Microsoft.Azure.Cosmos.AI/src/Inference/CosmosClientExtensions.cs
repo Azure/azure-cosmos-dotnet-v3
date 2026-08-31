@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.AI.Inference;
 
 using System.Runtime.CompilerServices;
-using Microsoft.Azure.Cosmos.Fluent;
 
 /// <summary>
 /// Extension methods for the <see cref="CosmosClient"/> class related to Semantic Inference.

@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.AI.Inference
     using System.Text.Json;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Collections;
     using global::Azure.Core;
 
 
