@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
@@ -80,13 +81,33 @@ namespace Microsoft.Azure.Cosmos
                 };
             }
 
+            IReadOnlyList<ISecondaryIndexMetadata> globalSecondaryIndexes = null;
+            if (this.clientContext.ClientOptions?.EnableSecondaryIndexLookupRouting == true)
+            {
+                try
+                {
+                    globalSecondaryIndexes = 
+                        await this.clientContext.SecondaryIndexMetadataCache.TryGetSecondaryIndexMetadataAsync(
+                            containerProperties.ResourceId, trace, cancellationToken: cancellationToken);
+                }
+                catch (CosmosException exception)
+                {
+                    trace.AddDatum("SecondaryIndexDiscovery.StatusCode", (int)exception.StatusCode);
+                }
+                catch (Exception exception) when (exception is not OperationCanceledException)
+                {
+                    trace.AddDatum("SecondaryIndexDiscovery.FailureType", exception.GetType().FullName);
+                }
+            }
+
             return new ContainerQueryProperties(
                 containerProperties.ResourceId,
                 effectivePartitionKeyRange,
                 containerProperties.PartitionKey,
                 containerProperties.VectorEmbeddingPolicy,
                 containerProperties.GeospatialConfig.GeospatialType,
-                this.documentClient.UseLengthAwareRangeComparer);
+                this.documentClient.UseLengthAwareRangeComparer,
+                globalSecondaryIndexes);
         }
 
         public override async Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(
