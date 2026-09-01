@@ -1750,10 +1750,10 @@ namespace Microsoft.Azure.Cosmos
         /// results.RerankScores.First().Score;
         /// 
         /// // get the latency information from the reranking operation
-        /// Dictonary<string, object. latencyInfo = results.Latency;
+        /// Dictionary<string, object> latencyInfo = results.Latency;
         /// 
         /// // get the token usage information from the reranking operation
-        /// Dictonary<string, object> tokenUseageInfo = results.TokenUseage;
+        /// Dictionary<string, object> tokenUsageInfo = results.TokenUsage;
         /// ]]>
         /// </code>
         /// </example>
