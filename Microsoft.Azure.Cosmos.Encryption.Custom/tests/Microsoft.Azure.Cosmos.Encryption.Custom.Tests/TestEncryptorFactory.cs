@@ -15,7 +15,55 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     /// </summary>
     internal static class TestEncryptorFactory
     {
-        public static Mock<Encryptor> CreateMde(string dekId, out Mock<DataEncryptionKey> dekMock)
+        /// <summary>
+        /// Concrete Encryptor that also implements IDataEncryptionKeyAccessor so it works
+        /// with the Stream processor without needing Moq interface projections on an internal type.
+        /// </summary>
+        internal sealed class MdeConcreteEncryptor : Encryptor, IDataEncryptionKeyAccessor
+        {
+            private readonly string dekId;
+            private readonly DataEncryptionKey dek;
+
+            public MdeConcreteEncryptor(string dekId, DataEncryptionKey dek)
+            {
+                this.dekId = dekId;
+                this.dek = dek;
+            }
+
+            public override Task<DataEncryptionKey> GetEncryptionKeyAsync(
+                string dataEncryptionKeyId,
+                string encryptionAlgorithm,
+                CancellationToken cancellationToken = default)
+            {
+                return dataEncryptionKeyId == this.dekId
+                    ? Task.FromResult(this.dek)
+                    : throw new InvalidOperationException("DEK not found");
+            }
+
+            public override Task<byte[]> EncryptAsync(
+                byte[] plainText,
+                string dataEncryptionKeyId,
+                string encryptionAlgorithm,
+                CancellationToken cancellationToken = default)
+            {
+                return dataEncryptionKeyId == this.dekId
+                    ? Task.FromResult(TestCommon.EncryptData(plainText))
+                    : throw new InvalidOperationException("DEK not found");
+            }
+
+            public override Task<byte[]> DecryptAsync(
+                byte[] cipherText,
+                string dataEncryptionKeyId,
+                string encryptionAlgorithm,
+                CancellationToken cancellationToken = default)
+            {
+                return dataEncryptionKeyId == this.dekId
+                    ? Task.FromResult(TestCommon.DecryptData(cipherText))
+                    : throw new InvalidOperationException("DEK not found");
+            }
+        }
+
+        public static MdeConcreteEncryptor CreateMde(string dekId, out Mock<DataEncryptionKey> dekMock)
         {
             Mock<DataEncryptionKey> localDek = new Mock<DataEncryptionKey>();
             localDek.SetupGet(d => d.EncryptionAlgorithm).Returns(CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized);
@@ -28,16 +76,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             localDek.Setup(d => d.DecryptData(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<byte[]>(), It.IsAny<int>()))
                 .Returns((byte[] input, int offset, int length, byte[] output, int outputOffset) => TestCommon.DecryptData(input, offset, length, output, outputOffset));
 
-            Mock<Encryptor> encryptor = new Mock<Encryptor>();
-            encryptor.Setup(e => e.GetEncryptionKeyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((string id, string algo, CancellationToken t) => id == dekId ? localDek.Object : throw new InvalidOperationException("DEK not found"));
-            encryptor.Setup(e => e.EncryptAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((byte[] plain, string id, string algo, CancellationToken t) => id == dekId ? TestCommon.EncryptData(plain) : throw new InvalidOperationException("DEK not found"));
-            encryptor.Setup(e => e.DecryptAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((byte[] cipher, string id, string algo, CancellationToken t) => id == dekId ? TestCommon.DecryptData(cipher) : throw new InvalidOperationException("DEK not found"));
-
             dekMock = localDek;
-            return encryptor;
+            return new MdeConcreteEncryptor(dekId, localDek.Object);
         }
 
         public static Mock<Encryptor> CreateLegacy(string dekId)

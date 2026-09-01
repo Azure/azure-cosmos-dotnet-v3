@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// Provides the default implementation for client-side encryption for Cosmos DB.
     /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
-    public sealed class CosmosEncryptor : Encryptor
+    public sealed class CosmosEncryptor : Encryptor, IDataEncryptionKeyAccessor
     {
         /// <summary>
         /// Gets Container for data encryption keys.
@@ -26,6 +26,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public CosmosEncryptor(DataEncryptionKeyProvider dataEncryptionKeyProvider)
         {
             this.DataEncryptionKeyProvider = dataEncryptionKeyProvider;
+        }
+
+        /// <inheritdoc/>
+        async Task<DataEncryptionKey> IDataEncryptionKeyAccessor.GetEncryptionKeyAsync(
+            string dataEncryptionKeyId,
+            string encryptionAlgorithm,
+            CancellationToken cancellationToken)
+        {
+            return await this.GetEncryptionKeyAsync(dataEncryptionKeyId, encryptionAlgorithm, cancellationToken);
         }
 
         /// <inheritdoc/>
