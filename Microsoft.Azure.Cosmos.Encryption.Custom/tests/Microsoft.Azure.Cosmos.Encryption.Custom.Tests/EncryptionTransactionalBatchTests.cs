@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [DataRow("Upsert")]
         public async Task EncryptedWrite_ContainerStreamDefault_UsesNewtonsoftForWriteAndResponse(string operation)
         {
-            Mock<Encryptor> encryptor = TestEncryptorFactory.CreateMde("dekId", out _);
+            var encryptor = TestEncryptorFactory.CreateMde("dekId", out _);
             Stream encryptedPayload = null;
             EncryptionTransactionalBatch batch = CreateBatch(
                 setupOperation: inner =>
@@ -222,7 +222,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [TestMethod]
         public async Task EncryptedWrite_ExplicitStream_UsesStreamForWriteAndResponse()
         {
-            Mock<Encryptor> encryptor = TestEncryptorFactory.CreateMde("dekId", out _);
+            var encryptor = TestEncryptorFactory.CreateMde("dekId", out _);
             Stream encryptedPayload = null;
             TransactionalBatchItemRequestOptions forwardedRequestOptions = null;
             EncryptionTransactionalBatch batch = CreateBatch(
@@ -503,7 +503,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [TestMethod]
         public async Task ExecuteAsync_WhenLaterResultDecryptionFails_DisposesInnerResponse()
         {
-            Mock<Encryptor> encryptor = TestEncryptorFactory.CreateMde("dekId", out _);
+            var encryptor = TestEncryptorFactory.CreateMde("dekId", out _);
             TrackingStream encryptedStream = await CreateTrackingEncryptedPayloadAsync(encryptor.Object);
             MemoryStream malformedStream = new (Encoding.UTF8.GetBytes("{not-json"));
             int innerDisposeCount = 0;
