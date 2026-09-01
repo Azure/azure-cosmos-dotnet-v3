@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Net;
@@ -55,8 +56,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             this.feedIteratorMock
                 .Setup(f => f.ReadNextAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedResponse);
+            QueryRequestOptions forwardedOptions = null;
             this.innerContainerMock
-                .Setup(c => c.GetItemQueryStreamIterator(queryDefinition, "token", requestOptions))
+                .Setup(c => c.GetItemQueryStreamIterator(
+                    queryDefinition,
+                    "token",
+                    It.IsAny<QueryRequestOptions>()))
+                .Callback<QueryDefinition, string, QueryRequestOptions>(
+                    (_, _, options) => forwardedOptions = options)
                 .Returns(this.feedIteratorMock.Object);
 
             FeedIterator iterator = this.encryptionContainer.GetItemQueryStreamIterator(
@@ -70,9 +77,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             ResponseMessage actualResponse = await iterator.ReadNextAsync();
 
             Assert.AreSame(expectedResponse, actualResponse);
+            AssertSanitizedRequestOptions(requestOptions, forwardedOptions);
 
             this.innerContainerMock.Verify(
-                c => c.GetItemQueryStreamIterator(queryDefinition, "token", requestOptions),
+                c => c.GetItemQueryStreamIterator(
+                    queryDefinition,
+                    "token",
+                    It.IsAny<QueryRequestOptions>()),
                 Times.Once);
             this.feedIteratorMock.Verify(
                 f => f.ReadNextAsync(It.IsAny<CancellationToken>()),
@@ -83,6 +94,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [DynamicData(nameof(GetSupportedJsonProcessorsData), DynamicDataSourceType.Method)]
         public async Task GetItemQueryIterator_ReturnsTypedEncryptionFeedIteratorAsync(string jsonProcessor)
         {
+#if NET8_0_OR_GREATER
+            this.encryptionContainer.UseStreamingJsonProcessingByDefault();
+#endif
             QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM c");
             QueryRequestOptions requestOptions = CreateRequestOptionsWithOverride(jsonProcessor);
             this.feedIteratorMock.SetupGet(f => f.HasMoreResults).Returns(true);
@@ -90,8 +104,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             this.feedIteratorMock
                 .Setup(f => f.ReadNextAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(responseMessage);
+            QueryRequestOptions forwardedOptions = null;
             this.innerContainerMock
-                .Setup(c => c.GetItemQueryStreamIterator(queryDefinition, "token", requestOptions))
+                .Setup(c => c.GetItemQueryStreamIterator(
+                    queryDefinition,
+                    "token",
+                    It.IsAny<QueryRequestOptions>()))
+                .Callback<QueryDefinition, string, QueryRequestOptions>(
+                    (_, _, options) => forwardedOptions = options)
                 .Returns(this.feedIteratorMock.Object);
 
             FeedIterator<DecryptableItem> typedIterator = this.encryptionContainer.GetItemQueryIterator<DecryptableItem>(
@@ -116,8 +136,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
 #endif
 
+            AssertSanitizedRequestOptions(requestOptions, forwardedOptions);
             this.innerContainerMock.Verify(
-                c => c.GetItemQueryStreamIterator(queryDefinition, "token", requestOptions),
+                c => c.GetItemQueryStreamIterator(
+                    queryDefinition,
+                    "token",
+                    It.IsAny<QueryRequestOptions>()),
                 Times.Once);
             this.feedIteratorMock.Verify(
                 f => f.ReadNextAsync(It.IsAny<CancellationToken>()),
@@ -154,11 +178,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [DynamicData(nameof(GetSupportedJsonProcessorsData), DynamicDataSourceType.Method)]
         public async Task GetChangeFeedIterator_ReturnsTypedEncryptionFeedIteratorAsync(string jsonProcessor)
         {
+#if NET8_0_OR_GREATER
+            this.encryptionContainer.UseStreamingJsonProcessingByDefault();
+#endif
             ChangeFeedStartFrom startFrom = ChangeFeedStartFrom.Beginning();
             ChangeFeedMode mode = ChangeFeedMode.Incremental;
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions
             {
-                Properties = CreateJsonProcessorPropertyBag(jsonProcessor)
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, jsonProcessor },
+                    { "unrelated", 42 },
+                },
             };
 
             this.feedIteratorMock.SetupGet(f => f.HasMoreResults).Returns(true);
@@ -166,8 +197,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             this.feedIteratorMock
                 .Setup(f => f.ReadNextAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(responseMessage);
+            ChangeFeedRequestOptions forwardedOptions = null;
             this.innerContainerMock
-                .Setup(c => c.GetChangeFeedStreamIterator(startFrom, mode, requestOptions))
+                .Setup(c => c.GetChangeFeedStreamIterator(
+                    startFrom,
+                    mode,
+                    It.IsAny<ChangeFeedRequestOptions>()))
+                .Callback<ChangeFeedStartFrom, ChangeFeedMode, ChangeFeedRequestOptions>(
+                    (_, _, options) => forwardedOptions = options)
                 .Returns(this.feedIteratorMock.Object);
 
             FeedIterator<DecryptableItem> typedIterator = this.encryptionContainer.GetChangeFeedIterator<DecryptableItem>(
@@ -192,8 +229,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
 #endif
 
+            AssertSanitizedRequestOptions(requestOptions, forwardedOptions);
             this.innerContainerMock.Verify(
-                c => c.GetChangeFeedStreamIterator(startFrom, mode, requestOptions),
+                c => c.GetChangeFeedStreamIterator(
+                    startFrom,
+                    mode,
+                    It.IsAny<ChangeFeedRequestOptions>()),
                 Times.Once);
             this.feedIteratorMock.Verify(
                 f => f.ReadNextAsync(It.IsAny<CancellationToken>()),
@@ -300,8 +341,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 .Setup(f => f.ReadNextAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedResponse);
 
+            QueryRequestOptions forwardedOptions = null;
             this.innerContainerMock
-                .Setup(c => c.GetItemQueryStreamIterator(queryDefinition, "token", requestOptions))
+                .Setup(c => c.GetItemQueryStreamIterator(
+                    queryDefinition,
+                    "token",
+                    It.IsAny<QueryRequestOptions>()))
+                .Callback<QueryDefinition, string, QueryRequestOptions>(
+                    (_, _, options) => forwardedOptions = options)
                 .Returns(this.feedIteratorMock.Object);
 
             Mock<FeedResponse<JObject>> feedResponseMock = new Mock<FeedResponse<JObject>>();
@@ -317,6 +364,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             FeedResponse<JObject> actualResponse = await typedIterator.ReadNextAsync();
 
             Assert.AreSame(feedResponseMock.Object, actualResponse);
+            AssertSanitizedRequestOptions(requestOptions, forwardedOptions);
 
             this.responseFactoryMock.Verify(
                 f => f.CreateItemFeedResponse<JObject>(expectedResponse),
@@ -446,6 +494,601 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 #endif
 
+        [DataTestMethod]
+        [DataRow("Create")]
+        [DataRow("Replace")]
+        [DataRow("Upsert")]
+        [DataRow("Read")]
+        [DataRow("Delete")]
+        public async Task PointStreamOperations_SanitizeRequestOptionsWithoutMutatingCaller(string operation)
+        {
+            ItemRequestOptions requestOptions = new ()
+            {
+                IfMatchEtag = "etag",
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, NewtonsoftProcessorName },
+                    { "unrelated", 42 },
+                },
+            };
+            ItemRequestOptions forwardedOptions = null;
+            ResponseMessage innerResponse = new (operation == "Create" ? HttpStatusCode.Created : HttpStatusCode.OK);
+            this.innerContainerMock
+                .Setup(c => c.CreateItemStreamAsync(
+                    It.IsAny<Stream>(),
+                    It.IsAny<PartitionKey>(),
+                    It.IsAny<ItemRequestOptions>(),
+                    It.IsAny<CancellationToken>()))
+                .Callback<Stream, PartitionKey, ItemRequestOptions, CancellationToken>(
+                    (_, _, options, _) => forwardedOptions = options)
+                .ReturnsAsync(innerResponse);
+            this.innerContainerMock
+                .Setup(c => c.ReplaceItemStreamAsync(
+                    It.IsAny<Stream>(),
+                    It.IsAny<string>(),
+                    It.IsAny<PartitionKey>(),
+                    It.IsAny<ItemRequestOptions>(),
+                    It.IsAny<CancellationToken>()))
+                .Callback<Stream, string, PartitionKey, ItemRequestOptions, CancellationToken>(
+                    (_, _, _, options, _) => forwardedOptions = options)
+                .ReturnsAsync(innerResponse);
+            this.innerContainerMock
+                .Setup(c => c.UpsertItemStreamAsync(
+                    It.IsAny<Stream>(),
+                    It.IsAny<PartitionKey>(),
+                    It.IsAny<ItemRequestOptions>(),
+                    It.IsAny<CancellationToken>()))
+                .Callback<Stream, PartitionKey, ItemRequestOptions, CancellationToken>(
+                    (_, _, options, _) => forwardedOptions = options)
+                .ReturnsAsync(innerResponse);
+            this.innerContainerMock
+                .Setup(c => c.ReadItemStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<PartitionKey>(),
+                    It.IsAny<ItemRequestOptions>(),
+                    It.IsAny<CancellationToken>()))
+                .Callback<string, PartitionKey, ItemRequestOptions, CancellationToken>(
+                    (_, _, options, _) => forwardedOptions = options)
+                .ReturnsAsync(innerResponse);
+            this.innerContainerMock
+                .Setup(c => c.DeleteItemStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<PartitionKey>(),
+                    It.IsAny<ItemRequestOptions>(),
+                    It.IsAny<CancellationToken>()))
+                .Callback<string, PartitionKey, ItemRequestOptions, CancellationToken>(
+                    (_, _, options, _) => forwardedOptions = options)
+                .ReturnsAsync(innerResponse);
+
+            using ResponseMessage response = operation switch
+            {
+                "Create" => await this.encryptionContainer.CreateItemStreamAsync(
+                    CreateItemStream(),
+                    new PartitionKey("pk1"),
+                    requestOptions),
+                "Replace" => await this.encryptionContainer.ReplaceItemStreamAsync(
+                    CreateItemStream(),
+                    "doc1",
+                    new PartitionKey("pk1"),
+                    requestOptions),
+                "Upsert" => await this.encryptionContainer.UpsertItemStreamAsync(
+                    CreateItemStream(),
+                    new PartitionKey("pk1"),
+                    requestOptions),
+                "Read" => await this.encryptionContainer.ReadItemStreamAsync(
+                    "doc1",
+                    new PartitionKey("pk1"),
+                    requestOptions),
+                "Delete" => await this.encryptionContainer.DeleteItemStreamAsync(
+                    "doc1",
+                    new PartitionKey("pk1"),
+                    requestOptions),
+                _ => throw new AssertFailedException($"Unknown operation: {operation}"),
+            };
+
+            Assert.AreSame(innerResponse, response);
+            Assert.AreEqual("etag", forwardedOptions.IfMatchEtag);
+            AssertSanitizedRequestOptions(requestOptions, forwardedOptions);
+        }
+
+        [DataTestMethod]
+        [DataRow("Create")]
+        [DataRow("Replace")]
+        [DataRow("Upsert")]
+        [DataRow("Delete")]
+        public async Task UnencryptedTypedOperations_SanitizeRequestOptionsWithoutChangingDispatch(string operation)
+        {
+            JObject item = JObject.Parse("{\"id\":\"doc1\"}");
+            ItemRequestOptions requestOptions = new ()
+            {
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, NewtonsoftProcessorName },
+                    { "unrelated", 42 },
+                },
+            };
+            ItemRequestOptions forwardedOptions = null;
+            ItemResponse<JObject> innerResponse = Mock.Of<ItemResponse<JObject>>();
+            this.innerContainerMock
+                .Setup(c => c.CreateItemAsync(
+                    item,
+                    It.IsAny<PartitionKey?>(),
+                    It.IsAny<ItemRequestOptions>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns<JObject, PartitionKey?, ItemRequestOptions, CancellationToken>(
+                    (_, _, options, _) =>
+                    {
+                        forwardedOptions = options;
+                        return Task.FromResult(innerResponse);
+                    });
+            this.innerContainerMock
+                .Setup(c => c.ReplaceItemAsync(
+                    item,
+                    "doc1",
+                    It.IsAny<PartitionKey?>(),
+                    It.IsAny<ItemRequestOptions>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns<JObject, string, PartitionKey?, ItemRequestOptions, CancellationToken>(
+                    (_, _, _, options, _) =>
+                    {
+                        forwardedOptions = options;
+                        return Task.FromResult(innerResponse);
+                    });
+            this.innerContainerMock
+                .Setup(c => c.UpsertItemAsync(
+                    item,
+                    It.IsAny<PartitionKey?>(),
+                    It.IsAny<ItemRequestOptions>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns<JObject, PartitionKey?, ItemRequestOptions, CancellationToken>(
+                    (_, _, options, _) =>
+                    {
+                        forwardedOptions = options;
+                        return Task.FromResult(innerResponse);
+                    });
+            this.innerContainerMock
+                .Setup(c => c.DeleteItemAsync<JObject>(
+                    "doc1",
+                    It.IsAny<PartitionKey>(),
+                    It.IsAny<ItemRequestOptions>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns<string, PartitionKey, ItemRequestOptions, CancellationToken>(
+                    (_, _, options, _) =>
+                    {
+                        forwardedOptions = options;
+                        return Task.FromResult(innerResponse);
+                    });
+
+            ItemResponse<JObject> response = operation switch
+            {
+                "Create" => await this.encryptionContainer.CreateItemAsync(
+                    item,
+                    new PartitionKey("pk1"),
+                    requestOptions),
+                "Replace" => await this.encryptionContainer.ReplaceItemAsync(
+                    item,
+                    "doc1",
+                    new PartitionKey("pk1"),
+                    requestOptions),
+                "Upsert" => await this.encryptionContainer.UpsertItemAsync(
+                    item,
+                    new PartitionKey("pk1"),
+                    requestOptions),
+                "Delete" => await this.encryptionContainer.DeleteItemAsync<JObject>(
+                    "doc1",
+                    new PartitionKey("pk1"),
+                    requestOptions),
+                _ => throw new AssertFailedException($"Unknown operation: {operation}"),
+            };
+
+            Assert.AreSame(innerResponse, response);
+            AssertSanitizedRequestOptions(requestOptions, forwardedOptions);
+        }
+
+#if NET8_0_OR_GREATER
+        [DataTestMethod]
+        [DataRow("Create", false, "Newtonsoft")]
+        [DataRow("Replace", false, "Newtonsoft")]
+        [DataRow("Upsert", false, "Newtonsoft")]
+        [DataRow("Create", true, "Stream")]
+        [DataRow("Replace", true, "Stream")]
+        [DataRow("Upsert", true, "Stream")]
+        public async Task EncryptedWrites_DefaultToNewtonsoft_AndHonorPerRequestOverride(
+            string operation,
+            bool useStreamOverride,
+            string expectedProcessor)
+        {
+            Mock<Encryptor> mdeEncryptor = TestEncryptorFactory.CreateMde("dekId", out _);
+            EncryptionContainer container = CreateEncryptionContainer(
+                this.innerContainerMock,
+                mdeEncryptor,
+                this.responseFactoryMock,
+                this.serializerMock);
+            container.UseStreamingJsonProcessingByDefault();
+
+            EncryptionItemRequestOptions requestOptions = CreateEncryptedWriteOptions();
+            if (useStreamOverride)
+            {
+                requestOptions.Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, StreamProcessorName },
+                    { "unrelated", 42 },
+                };
+            }
+
+            ItemRequestOptions forwardedOptions = null;
+            this.SetupNullContentWriteResponses(options => forwardedOptions = options);
+            List<Activity> activities = new ();
+            using ActivityListener listener = CreateActivityListener(activities);
+
+            using ResponseMessage response = await ExecuteWriteAsync(
+                container,
+                operation,
+                requestOptions);
+
+            Assert.IsTrue(response.IsSuccessStatusCode);
+            Assert.IsTrue(activities.Any(activity =>
+                activity.DisplayName == CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + expectedProcessor));
+            if (useStreamOverride)
+            {
+                AssertSanitizedRequestOptions(requestOptions, forwardedOptions);
+            }
+            else
+            {
+                Assert.AreSame(requestOptions, forwardedOptions);
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(null, "Stream")]
+        [DataRow("Newtonsoft", "Newtonsoft")]
+        public async Task ReadItemStreamAsync_UsesConfiguredDefaultUnlessRequestOverrides(
+            string requestProcessor,
+            string expectedProcessor)
+        {
+            this.encryptionContainer.UseStreamingJsonProcessingByDefault();
+            ItemRequestOptions requestOptions = requestProcessor == null
+                ? null
+                : new ItemRequestOptions
+                {
+                    Properties = new Dictionary<string, object>
+                    {
+                        { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, requestProcessor },
+                        { "unrelated", 42 },
+                    },
+                };
+            ItemRequestOptions forwardedOptions = null;
+            this.innerContainerMock
+                .Setup(c => c.ReadItemStreamAsync(
+                    "doc1",
+                    new PartitionKey("pk1"),
+                    It.IsAny<ItemRequestOptions>(),
+                    It.IsAny<CancellationToken>()))
+                .Callback<string, PartitionKey, ItemRequestOptions, CancellationToken>(
+                    (_, _, options, _) => forwardedOptions = options)
+                .ReturnsAsync(CreateOkResponse("{\"id\":\"doc1\"}"));
+            List<Activity> activities = new ();
+            using ActivityListener listener = CreateActivityListener(activities);
+
+            using ResponseMessage response = await this.encryptionContainer.ReadItemStreamAsync(
+                "doc1",
+                new PartitionKey("pk1"),
+                requestOptions);
+
+            Assert.IsTrue(activities.Any(activity =>
+                activity.DisplayName == CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + expectedProcessor));
+            if (requestOptions == null)
+            {
+                Assert.IsNull(forwardedOptions);
+            }
+            else
+            {
+                AssertSanitizedRequestOptions(requestOptions, forwardedOptions);
+            }
+        }
+#endif
+
+        [TestMethod]
+        public async Task ReadManyItemsStreamAsync_SanitizesOptionsAndPreservesErrorResponses()
+        {
+            IReadOnlyList<(string id, PartitionKey partitionKey)> items = new[]
+            {
+                ("doc1", new PartitionKey("pk1")),
+            };
+            ReadManyRequestOptions requestOptions = new ()
+            {
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, NewtonsoftProcessorName },
+                    { "unrelated", 42 },
+                },
+            };
+            ReadManyRequestOptions forwardedOptions = null;
+            ResponseMessage innerResponse = new (HttpStatusCode.TooManyRequests)
+            {
+                Content = new MemoryStream(Encoding.UTF8.GetBytes("{\"message\":\"throttled\"}")),
+            };
+            this.innerContainerMock
+                .Setup(c => c.ReadManyItemsStreamAsync(
+                    items,
+                    It.IsAny<ReadManyRequestOptions>(),
+                    It.IsAny<CancellationToken>()))
+                .Callback<IReadOnlyList<(string id, PartitionKey partitionKey)>, ReadManyRequestOptions, CancellationToken>(
+                    (_, options, _) => forwardedOptions = options)
+                .ReturnsAsync(innerResponse);
+
+            ResponseMessage response = await this.encryptionContainer.ReadManyItemsStreamAsync(
+                items,
+                requestOptions);
+
+            Assert.AreSame(innerResponse, response);
+            Assert.AreEqual("{\"message\":\"throttled\"}", TestCommon.FromStream<JToken>(response.Content).ToString(Newtonsoft.Json.Formatting.None));
+            AssertSanitizedRequestOptions(requestOptions, forwardedOptions);
+        }
+
+        [TestMethod]
+        public async Task ReadManyItemsStreamAsync_NullContent_ReturnsOriginalResponse()
+        {
+            IReadOnlyList<(string id, PartitionKey partitionKey)> items = new[]
+            {
+                ("doc1", new PartitionKey("pk1")),
+            };
+            ResponseMessage innerResponse = new (HttpStatusCode.OK);
+            this.innerContainerMock
+                .Setup(c => c.ReadManyItemsStreamAsync(
+                    items,
+                    null,
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(innerResponse);
+
+            ResponseMessage response = await this.encryptionContainer.ReadManyItemsStreamAsync(items);
+
+            Assert.AreSame(innerResponse, response);
+            Assert.IsNull(response.Content);
+        }
+
+        [DataTestMethod]
+        [DataRow("StreamDefinition")]
+        [DataRow("StreamText")]
+        [DataRow("StreamFeedRange")]
+        [DataRow("TypedDefinition")]
+        [DataRow("TypedText")]
+        [DataRow("TypedFeedRange")]
+        public void QueryIteratorOverloads_SanitizeRequestOptionsWithoutMutatingCaller(string operation)
+        {
+            QueryDefinition queryDefinition = new ("SELECT * FROM c");
+            FeedRange feedRange = Mock.Of<FeedRange>();
+            QueryRequestOptions requestOptions = CreateRequestOptionsWithOverride(NewtonsoftProcessorName);
+            QueryRequestOptions forwardedOptions = null;
+            this.innerContainerMock
+                .Setup(c => c.GetItemQueryStreamIterator(
+                    queryDefinition,
+                    "token",
+                    It.IsAny<QueryRequestOptions>()))
+                .Callback<QueryDefinition, string, QueryRequestOptions>(
+                    (_, _, options) => forwardedOptions = options)
+                .Returns(this.feedIteratorMock.Object);
+            this.innerContainerMock
+                .Setup(c => c.GetItemQueryStreamIterator(
+                    "SELECT * FROM c",
+                    "token",
+                    It.IsAny<QueryRequestOptions>()))
+                .Callback<string, string, QueryRequestOptions>(
+                    (_, _, options) => forwardedOptions = options)
+                .Returns(this.feedIteratorMock.Object);
+            this.innerContainerMock
+                .Setup(c => c.GetItemQueryStreamIterator(
+                    feedRange,
+                    queryDefinition,
+                    "token",
+                    It.IsAny<QueryRequestOptions>()))
+                .Callback<FeedRange, QueryDefinition, string, QueryRequestOptions>(
+                    (_, _, _, options) => forwardedOptions = options)
+                .Returns(this.feedIteratorMock.Object);
+
+            object iterator = operation switch
+            {
+                "StreamDefinition" => this.encryptionContainer.GetItemQueryStreamIterator(
+                    queryDefinition,
+                    "token",
+                    requestOptions),
+                "StreamText" => this.encryptionContainer.GetItemQueryStreamIterator(
+                    "SELECT * FROM c",
+                    "token",
+                    requestOptions),
+                "StreamFeedRange" => this.encryptionContainer.GetItemQueryStreamIterator(
+                    feedRange,
+                    queryDefinition,
+                    "token",
+                    requestOptions),
+                "TypedDefinition" => this.encryptionContainer.GetItemQueryIterator<JObject>(
+                    queryDefinition,
+                    "token",
+                    requestOptions),
+                "TypedText" => this.encryptionContainer.GetItemQueryIterator<JObject>(
+                    "SELECT * FROM c",
+                    "token",
+                    requestOptions),
+                "TypedFeedRange" => this.encryptionContainer.GetItemQueryIterator<JObject>(
+                    feedRange,
+                    queryDefinition,
+                    "token",
+                    requestOptions),
+                _ => throw new AssertFailedException($"Unknown operation: {operation}"),
+            };
+
+            Assert.IsNotNull(iterator);
+            AssertSanitizedRequestOptions(requestOptions, forwardedOptions);
+        }
+
+        [TestMethod]
+        public void GetChangeFeedStreamIterator_SanitizesRequestOptionsWithoutMutatingCaller()
+        {
+            ChangeFeedStartFrom startFrom = ChangeFeedStartFrom.Beginning();
+            ChangeFeedMode mode = ChangeFeedMode.Incremental;
+            ChangeFeedRequestOptions requestOptions = new ()
+            {
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, NewtonsoftProcessorName },
+                    { "unrelated", 42 },
+                },
+            };
+            ChangeFeedRequestOptions forwardedOptions = null;
+            this.innerContainerMock
+                .Setup(c => c.GetChangeFeedStreamIterator(
+                    startFrom,
+                    mode,
+                    It.IsAny<ChangeFeedRequestOptions>()))
+                .Callback<ChangeFeedStartFrom, ChangeFeedMode, ChangeFeedRequestOptions>(
+                    (_, _, options) => forwardedOptions = options)
+                .Returns(this.feedIteratorMock.Object);
+
+            FeedIterator iterator = this.encryptionContainer.GetChangeFeedStreamIterator(
+                startFrom,
+                mode,
+                requestOptions);
+
+            Assert.IsInstanceOfType(iterator, typeof(EncryptionFeedIterator));
+            AssertSanitizedRequestOptions(requestOptions, forwardedOptions);
+        }
+
+#if NET8_0_OR_GREATER
+        [TestMethod]
+        public void GetItemLinqQueryable_SanitizesAndCarriesOverrideThroughDerivedQueries()
+        {
+            this.encryptionContainer.UseStreamingJsonProcessingByDefault();
+            QueryRequestOptions requestOptions = CreateRequestOptionsWithOverride(NewtonsoftProcessorName);
+            QueryRequestOptions forwardedOptions = null;
+            IOrderedQueryable<int> innerQuery = new[] { 1, 2 }.AsQueryable().OrderBy(value => value);
+            this.innerContainerMock
+                .Setup(c => c.GetItemLinqQueryable<int>(
+                    false,
+                    "token",
+                    It.IsAny<QueryRequestOptions>(),
+                    null))
+                .Returns<bool, string, QueryRequestOptions, CosmosLinqSerializerOptions>(
+                    (_, _, options, _) =>
+                    {
+                        forwardedOptions = options;
+                        return innerQuery;
+                    });
+
+            IOrderedQueryable<int> query = this.encryptionContainer.GetItemLinqQueryable<int>(
+                allowSynchronousQueryExecution: false,
+                continuationToken: "token",
+                requestOptions: requestOptions);
+            IQueryable<int> filteredQuery = query.Where(value => value > 1);
+            Assert.AreSame(innerQuery, query);
+            AssertSanitizedRequestOptions(requestOptions, forwardedOptions);
+
+            requestOptions.Properties = CreateJsonProcessorPropertyBag(StreamProcessorName);
+
+            Assert.AreEqual(JsonProcessor.Newtonsoft, this.encryptionContainer.ResolveLinqJsonProcessor(query));
+            Assert.AreEqual(JsonProcessor.Newtonsoft, this.encryptionContainer.ResolveLinqJsonProcessor(filteredQuery));
+        }
+
+        [TestMethod]
+        public async Task ChangeFeedStreamProcessor_UsesConfiguredDefault()
+        {
+            this.encryptionContainer.UseStreamingJsonProcessingByDefault();
+            Container.ChangeFeedStreamHandler capturedHandler = null;
+            this.innerContainerMock
+                .Setup(c => c.GetChangeFeedProcessorBuilder(
+                    "processor",
+                    It.IsAny<Container.ChangeFeedStreamHandler>()))
+                .Callback<string, Container.ChangeFeedStreamHandler>(
+                    (_, handler) => capturedHandler = handler)
+                .Returns((ChangeFeedProcessorBuilder)null);
+            Stream deliveredChanges = null;
+            Container.ChangeFeedStreamHandler handler = (_, changes, _) =>
+            {
+                deliveredChanges = changes;
+                return Task.CompletedTask;
+            };
+            this.encryptionContainer.GetChangeFeedProcessorBuilder("processor", handler);
+            using Stream changes = new MemoryStream(Encoding.UTF8.GetBytes(CreateFeedPayload()));
+
+            await capturedHandler(
+                Mock.Of<ChangeFeedProcessorContext>(),
+                changes,
+                CancellationToken.None);
+
+            Assert.AreSame(changes, deliveredChanges);
+        }
+
+#endif
+
+        [DataTestMethod]
+        [DataRow("Create")]
+        [DataRow("Replace")]
+        [DataRow("Upsert")]
+        public async Task EncryptableItem_ContentResponseDisabled_PreservesSuccessfulWrite(string operation)
+        {
+            EncryptionItemRequestOptions requestOptions = new ()
+            {
+                EnableContentResponseOnWrite = false,
+                EncryptionOptions = new EncryptionOptions
+                {
+                    DataEncryptionKeyId = "dekId",
+#pragma warning disable CS0618
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+#pragma warning restore CS0618
+                    PathsToEncrypt = Array.Empty<string>(),
+                },
+            };
+            HttpStatusCode statusCode = operation == "Create"
+                ? HttpStatusCode.Created
+                : HttpStatusCode.OK;
+            ResponseMessage innerResponse = new (statusCode);
+            this.innerContainerMock
+                .Setup(c => c.CreateItemStreamAsync(
+                    It.IsAny<Stream>(),
+                    new PartitionKey("pk1"),
+                    requestOptions,
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(innerResponse);
+            this.innerContainerMock
+                .Setup(c => c.ReplaceItemStreamAsync(
+                    It.IsAny<Stream>(),
+                    "doc1",
+                    new PartitionKey("pk1"),
+                    requestOptions,
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(innerResponse);
+            this.innerContainerMock
+                .Setup(c => c.UpsertItemStreamAsync(
+                    It.IsAny<Stream>(),
+                    new PartitionKey("pk1"),
+                    requestOptions,
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(innerResponse);
+            EncryptableItemStream item = new (
+                new MemoryStream(Encoding.UTF8.GetBytes("{\"id\":\"doc1\",\"pk\":\"pk1\"}")));
+
+            ItemResponse<EncryptableItemStream> response = operation switch
+            {
+                "Create" => await this.encryptionContainer.CreateItemAsync(
+                    item,
+                    new PartitionKey("pk1"),
+                    requestOptions),
+                "Replace" => await this.encryptionContainer.ReplaceItemAsync(
+                    item,
+                    "doc1",
+                    new PartitionKey("pk1"),
+                    requestOptions),
+                "Upsert" => await this.encryptionContainer.UpsertItemAsync(
+                    item,
+                    new PartitionKey("pk1"),
+                    requestOptions),
+                _ => throw new AssertFailedException($"Unknown operation: {operation}"),
+            };
+
+            Assert.AreEqual(statusCode, response.StatusCode);
+            Assert.AreSame(item, response.Resource);
+            Assert.ThrowsException<InvalidOperationException>(() => _ = item.DecryptableItem);
+        }
+
         private static EncryptionContainer CreateEncryptionContainer(
             out Mock<Container> innerContainerMock,
             out Mock<Encryptor> encryptorMock,
@@ -499,7 +1142,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         {
             return new QueryRequestOptions
             {
-                Properties = CreateJsonProcessorPropertyBag(jsonProcessor)
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, jsonProcessor },
+                    { "unrelated", 42 },
+                },
             };
         }
 
@@ -509,6 +1156,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             {
                 { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, jsonProcessor }
             };
+        }
+
+        private static void AssertSanitizedRequestOptions(
+            RequestOptions callerOptions,
+            RequestOptions forwardedOptions)
+        {
+            Assert.IsNotNull(forwardedOptions);
+            Assert.AreNotSame(callerOptions, forwardedOptions);
+            Assert.IsTrue(callerOptions.Properties.ContainsKey(
+                JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey));
+            Assert.IsFalse(forwardedOptions.Properties.ContainsKey(
+                JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey));
+            Assert.AreEqual(42, forwardedOptions.Properties["unrelated"]);
         }
 
         public static IEnumerable<object[]> GetSupportedJsonProcessorsData()
@@ -523,5 +1183,96 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         {
             return "{\"Documents\":[{\"id\":\"doc1\"}]}";
         }
+
+        private static MemoryStream CreateItemStream()
+        {
+            return new MemoryStream(Encoding.UTF8.GetBytes("{\"id\":\"doc1\",\"Sensitive\":\"secret\"}"));
+        }
+
+        private static EncryptionItemRequestOptions CreateEncryptedWriteOptions()
+        {
+            return new EncryptionItemRequestOptions
+            {
+                EncryptionOptions = new EncryptionOptions
+                {
+                    DataEncryptionKeyId = "dekId",
+#pragma warning disable CS0618
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+#pragma warning restore CS0618
+                    PathsToEncrypt = new[] { "/Sensitive" },
+                },
+            };
+        }
+
+        private static Task<ResponseMessage> ExecuteWriteAsync(
+            EncryptionContainer container,
+            string operation,
+            EncryptionItemRequestOptions requestOptions)
+        {
+            return operation switch
+            {
+                "Create" => container.CreateItemStreamAsync(
+                    CreateItemStream(),
+                    new PartitionKey("pk1"),
+                    requestOptions),
+                "Replace" => container.ReplaceItemStreamAsync(
+                    CreateItemStream(),
+                    "doc1",
+                    new PartitionKey("pk1"),
+                    requestOptions),
+                "Upsert" => container.UpsertItemStreamAsync(
+                    CreateItemStream(),
+                    new PartitionKey("pk1"),
+                    requestOptions),
+                _ => throw new AssertFailedException($"Unknown operation: {operation}"),
+            };
+        }
+
+        private void SetupNullContentWriteResponses(Action<ItemRequestOptions> captureOptions)
+        {
+            this.innerContainerMock
+                .Setup(inner => inner.CreateItemStreamAsync(
+                    It.IsAny<Stream>(),
+                    It.IsAny<PartitionKey>(),
+                    It.IsAny<ItemRequestOptions>(),
+                    It.IsAny<CancellationToken>()))
+                .Callback<Stream, PartitionKey, ItemRequestOptions, CancellationToken>(
+                    (_, _, options, _) => captureOptions(options))
+                .ReturnsAsync(new ResponseMessage(HttpStatusCode.Created));
+            this.innerContainerMock
+                .Setup(inner => inner.ReplaceItemStreamAsync(
+                    It.IsAny<Stream>(),
+                    It.IsAny<string>(),
+                    It.IsAny<PartitionKey>(),
+                    It.IsAny<ItemRequestOptions>(),
+                    It.IsAny<CancellationToken>()))
+                .Callback<Stream, string, PartitionKey, ItemRequestOptions, CancellationToken>(
+                    (_, _, _, options, _) => captureOptions(options))
+                .ReturnsAsync(new ResponseMessage(HttpStatusCode.OK));
+            this.innerContainerMock
+                .Setup(inner => inner.UpsertItemStreamAsync(
+                    It.IsAny<Stream>(),
+                    It.IsAny<PartitionKey>(),
+                    It.IsAny<ItemRequestOptions>(),
+                    It.IsAny<CancellationToken>()))
+                .Callback<Stream, PartitionKey, ItemRequestOptions, CancellationToken>(
+                    (_, _, options, _) => captureOptions(options))
+                .ReturnsAsync(new ResponseMessage(HttpStatusCode.OK));
+        }
+
+#if NET8_0_OR_GREATER
+        private static ActivityListener CreateActivityListener(List<Activity> activities)
+        {
+            ActivityListener listener = new ()
+            {
+                ShouldListenTo = source => source.Name == "Microsoft.Azure.Cosmos.Encryption.Custom",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStopped = activity => activities.Add(activity),
+            };
+            ActivitySource.AddActivityListener(listener);
+            return listener;
+        }
+#endif
+
     }
 }
