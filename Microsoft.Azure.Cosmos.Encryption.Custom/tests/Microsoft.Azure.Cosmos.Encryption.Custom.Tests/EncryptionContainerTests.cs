@@ -698,10 +698,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             bool useStreamOverride,
             string expectedProcessor)
         {
-            Mock<Encryptor> mdeEncryptor = TestEncryptorFactory.CreateMde("dekId", out _);
+            var mdeEncryptor = TestEncryptorFactory.CreateMde("dekId", out _);
             EncryptionContainer container = CreateEncryptionContainer(
                 this.innerContainerMock,
-                mdeEncryptor,
+                mdeEncryptor.Object,
                 this.responseFactoryMock,
                 this.serializerMock);
             container.UseStreamingJsonProcessingByDefault();
@@ -1100,12 +1100,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             responseFactoryMock = new Mock<CosmosResponseFactory>();
             serializerMock = new Mock<CosmosSerializer>();
 
-            return CreateEncryptionContainer(innerContainerMock, encryptorMock, responseFactoryMock, serializerMock);
+            return CreateEncryptionContainer(innerContainerMock, encryptorMock.Object, responseFactoryMock, serializerMock);
         }
 
         private static EncryptionContainer CreateEncryptionContainer(
             Mock<Container> innerContainerMock,
-            Mock<Encryptor> encryptorMock,
+            Encryptor encryptor,
             Mock<CosmosResponseFactory> responseFactoryMock,
             Mock<CosmosSerializer> serializerMock)
         {
@@ -1125,7 +1125,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             innerContainerMock.SetupGet(c => c.Database).Returns(databaseMock.Object);
             innerContainerMock.SetupGet(c => c.Id).Returns("test-container");
 
-            return new EncryptionContainer(innerContainerMock.Object, encryptorMock.Object);
+            return new EncryptionContainer(innerContainerMock.Object, encryptor);
         }
 
         private static ResponseMessage CreateOkResponse(string payload)
