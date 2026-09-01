@@ -534,6 +534,87 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         }
 
         [TestMethod]
+        [Owner("nalutripician")]
+        public async Task Refresh_WhenBackgroundRefreshFailsAndTracingDisabled_ShouldStillObserveTheTaskException()
+        {
+            // Regression for #6067: Refresh() is fire-and-forget, so the OnlyOnFaulted continuation
+            // is the only thing that observes the faulted background-refresh task. When the
+            // task.Exception access was moved behind DiagnosticsHandlerHelper.ShouldTrace(Verbose)
+            // (off by default in production) the exception was never observed and surfaced later
+            // through TaskScheduler.UnobservedTaskException.
+            SourceLevels originalLevel = DefaultTrace.TraceSource.Switch.Level;
+            const string sentinelMessage = "Regression6067BackgroundRefreshFailure";
+            List<Exception> unobserved = new List<Exception>();
+            void OnUnobserved(object sender, UnobservedTaskExceptionEventArgs e)
+            {
+                // Other tests running in the same process can also leak unobserved
+                // exceptions, so only count the one this test deliberately produced.
+                if (e.Exception.Flatten().InnerExceptions.Any(inner => inner.Message == sentinelMessage))
+                {
+                    lock (unobserved)
+                    {
+                        unobserved.Add(e.Exception);
+                    }
+                }
+            }
+
+            TaskScheduler.UnobservedTaskException += OnUnobserved;
+            try
+            {
+                // Force the production default (no verbose sink) deterministically.
+                DefaultTrace.TraceSource.Switch.Level = SourceLevels.Off;
+
+                AsyncCacheNonBlocking<string, string> asyncCache = new (enableAsyncCacheExceptionNoSharing: false);
+
+                Assert.AreEqual(
+                    "value1",
+                    await asyncCache.GetAsync("key", (_) => Task.FromResult("value1"), (_) => false));
+
+                TaskCompletionSource<bool> refreshStarted = new (TaskCreationOptions.RunContinuationsAsynchronously);
+
+                asyncCache.Refresh(
+                    "key",
+                    async (_) =>
+                    {
+                        await Task.Yield();
+                        refreshStarted.TrySetResult(true);
+                        throw new Exception(sentinelMessage);
+                    });
+
+                // Wait for the fire-and-forget refresh to actually fail before forcing a
+                // collection, otherwise the assertion below races the thread pool.
+                Assert.IsTrue(
+                    await Task.WhenAny(refreshStarted.Task, Task.Delay(TimeSpan.FromSeconds(30))) == refreshStarted.Task,
+                    "The background refresh delegate never ran.");
+
+                // Give the faulted task's continuation time to run.
+                await Task.Delay(TimeSpan.FromSeconds(1));
+
+                asyncCache = null;
+
+                for (int i = 0; i < 3; i++)
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    GC.Collect();
+                }
+
+                lock (unobserved)
+                {
+                    Assert.AreEqual(
+                        0,
+                        unobserved.Count,
+                        "A failed background address refresh must not surface as an unobserved task exception.");
+                }
+            }
+            finally
+            {
+                TaskScheduler.UnobservedTaskException -= OnUnobserved;
+                DefaultTrace.TraceSource.Switch.Level = originalLevel;
+            }
+        }
+
+        [TestMethod]
         [DataRow(true)]
         [DataRow(false)]
         public async Task ValidateCacheGetAsyncExceptionPostProcessing(bool enabled)
