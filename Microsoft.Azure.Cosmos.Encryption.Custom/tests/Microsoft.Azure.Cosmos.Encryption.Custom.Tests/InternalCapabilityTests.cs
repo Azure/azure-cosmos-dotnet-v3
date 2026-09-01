@@ -273,14 +273,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             public int LastPlainTextLength { get; private set; }
 
-            public override Task<DataEncryptionKey> GetEncryptionKeyAsync(
-                string dataEncryptionKeyId,
-                string encryptionAlgorithm,
-                CancellationToken cancellationToken = default)
-            {
-                throw new NotSupportedException("Direct key access is not supported.");
-            }
-
             public override Task<byte[]> EncryptAsync(
                 byte[] plainText,
                 string dataEncryptionKeyId,
@@ -327,7 +319,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         {
             public ArrayOnlyKey Key { get; } = new ();
 
-            public override Task<DataEncryptionKey> GetEncryptionKeyAsync(
+            public Task<DataEncryptionKey> GetEncryptionKeyAsync(
                 string dataEncryptionKeyId,
                 string encryptionAlgorithm,
                 CancellationToken cancellationToken = default)
@@ -361,35 +353,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 return TestCommon.DecryptData(cipherText);
             }
 
-            public override int EncryptData(
-                byte[] plainText,
-                int plainTextOffset,
-                int plainTextLength,
-                byte[] output,
-                int outputOffset)
-            {
-                throw new AssertFailedException("The optional buffer capability is not implemented.");
-            }
-
-            public override int GetEncryptByteCount(int plainTextLength)
-            {
-                throw new AssertFailedException("The optional buffer capability is not implemented.");
-            }
-
-            public override int DecryptData(
-                byte[] cipherText,
-                int cipherTextOffset,
-                int cipherTextLength,
-                byte[] output,
-                int outputOffset)
-            {
-                throw new AssertFailedException("The optional buffer capability is not implemented.");
-            }
-
-            public override int GetDecryptByteCount(int cipherTextLength)
-            {
-                throw new AssertFailedException("The optional buffer capability is not implemented.");
-            }
         }
 
         private sealed class OverpredictingBufferKey : DataEncryptionKey, IDataEncryptionKeyBuffer
@@ -415,7 +378,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 throw new AssertFailedException("The buffer capability should be preferred.");
             }
 
-            public override int EncryptData(
+            public int EncryptData(
                 byte[] plainText,
                 int plainTextOffset,
                 int plainTextLength,
@@ -426,12 +389,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 return plainTextLength;
             }
 
-            public override int GetEncryptByteCount(int plainTextLength)
+            public int GetEncryptByteCount(int plainTextLength)
             {
                 return plainTextLength + 8;
             }
 
-            public override int DecryptData(
+            public int DecryptData(
                 byte[] cipherText,
                 int cipherTextOffset,
                 int cipherTextLength,
@@ -442,7 +405,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 return cipherTextLength;
             }
 
-            public override int GetDecryptByteCount(int cipherTextLength)
+            public int GetDecryptByteCount(int cipherTextLength)
             {
                 return this.underpredictDecrypt ? cipherTextLength - 1 : cipherTextLength + 8;
             }

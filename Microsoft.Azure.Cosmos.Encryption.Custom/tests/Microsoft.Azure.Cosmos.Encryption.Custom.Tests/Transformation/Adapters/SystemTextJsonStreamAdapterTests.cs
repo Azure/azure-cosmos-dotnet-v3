@@ -402,7 +402,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
 
         private sealed class FailingKeyAccessEncryptor : Encryptor, IDataEncryptionKeyAccessor
         {
-            public override Task<DataEncryptionKey> GetEncryptionKeyAsync(
+            public Task<DataEncryptionKey> GetEncryptionKeyAsync(
                 string dataEncryptionKeyId,
                 string encryptionAlgorithm,
                 CancellationToken cancellationToken = default)

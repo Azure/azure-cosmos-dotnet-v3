@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             public Encryptor Object => this;
 
-            public override Task<DataEncryptionKey> GetEncryptionKeyAsync(
+            public Task<DataEncryptionKey> GetEncryptionKeyAsync(
                 string dataEncryptionKeyId,
                 string encryptionAlgorithm,
                 CancellationToken cancellationToken = default)
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 return TestCommon.EncryptData(plainText);
             }
 
-            public override int EncryptData(
+            public int EncryptData(
                 byte[] plainText,
                 int plainTextOffset,
                 int plainTextLength,
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 return TestCommon.EncryptData(plainText, plainTextOffset, plainTextLength, output, outputOffset);
             }
 
-            public override int GetEncryptByteCount(int plainTextLength)
+            public int GetEncryptByteCount(int plainTextLength)
             {
                 return plainTextLength;
             }
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 return TestCommon.DecryptData(cipherText);
             }
 
-            public override int DecryptData(
+            public int DecryptData(
                 byte[] cipherText,
                 int cipherTextOffset,
                 int cipherTextLength,
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 return TestCommon.DecryptData(cipherText, cipherTextOffset, cipherTextLength, output, outputOffset);
             }
 
-            public override int GetDecryptByteCount(int cipherTextLength)
+            public int GetDecryptByteCount(int cipherTextLength)
             {
                 return cipherTextLength;
             }
