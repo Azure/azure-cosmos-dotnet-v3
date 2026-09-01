@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
     using Microsoft.Azure.Cosmos.Encryption.Custom;
     using Microsoft.Azure.Cosmos.Encryption.Tests; // TestEncryptorFactory & TestCommon
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
 
     /// <summary>
     /// Additional coverage for scenarios explicitly requested: large payloads, corrupted payload (assert existing coverage), concurrency and cancellation.
@@ -26,13 +25,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
     public class StreamProcessorConcurrencyAndCancellationTests
     {
         private const string DekId = "dekId";
-        private static Encryptor mockEncryptor;
+        private static TestEncryptorFactory.MdeConcreteEncryptor mockEncryptor;
 
         [ClassInitialize]
         public static void Init(TestContext ctx)
         {
             _ = ctx;
-            mockEncryptor = TestEncryptorFactory.CreateMde(DekId, out _);
+            mockEncryptor = TestEncryptorFactory.CreateMde(DekId);
         }
 
         private static EncryptionOptions CreateEncryptionOptions(IEnumerable<string> paths)
@@ -66,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
                 Stream encrypted = await EncryptionProcessor.EncryptAsync(
                     TestCommon.ToStream(doc),
-                    mockEncryptor,
+                    mockEncryptor.Object,
                     requestOptions,
                     new CosmosDiagnosticsContext(),
                     CancellationToken.None);
@@ -74,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 // Decrypt using streaming path explicitly.
                 (Stream decryptedStream, DecryptionContext ctx) = await EncryptionProcessor.DecryptAsync(
                     encrypted,
-                    mockEncryptor,
+                    mockEncryptor.Object,
                     new CosmosDiagnosticsContext(),
                     RequestOptionsOverrideHelper.Create(JsonProcessor.Stream),
                     CancellationToken.None);
@@ -108,8 +107,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                     var doc = new { id = Guid.NewGuid().ToString(), Large = large, P1 = i.ToString(), P2 = (i * 2).ToString() };
                     EncryptionOptions options = CreateEncryptionOptions(new[] { "/Large", "/P1", "/P2" });
                     EncryptionItemRequestOptions requestOptions = RequestOptionsOverrideHelper.Create(options, JsonProcessor.Stream);
-                    Stream encrypted = await EncryptionProcessor.EncryptAsync(TestCommon.ToStream(doc), mockEncryptor, requestOptions, new CosmosDiagnosticsContext(), CancellationToken.None);
-                    (Stream decrypted, DecryptionContext ctx) = await EncryptionProcessor.DecryptAsync(encrypted, mockEncryptor, new CosmosDiagnosticsContext(), RequestOptionsOverrideHelper.Create(JsonProcessor.Stream), CancellationToken.None);
+                    Stream encrypted = await EncryptionProcessor.EncryptAsync(TestCommon.ToStream(doc), mockEncryptor.Object, requestOptions, new CosmosDiagnosticsContext(), CancellationToken.None);
+                    (Stream decrypted, DecryptionContext ctx) = await EncryptionProcessor.DecryptAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), RequestOptionsOverrideHelper.Create(JsonProcessor.Stream), CancellationToken.None);
                     decrypted.Position = 0;
                     using JsonDocument jd = JsonDocument.Parse(decrypted);
                     JsonElement root = jd.RootElement;
@@ -135,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             using CancellationTokenSource cts = new();
             EncryptionOptions options = CreateEncryptionOptions(new[] { "/Large" });
             EncryptionItemRequestOptions requestOptions = RequestOptionsOverrideHelper.Create(options, JsonProcessor.Stream);
-            Task encryptTask = EncryptionProcessor.EncryptAsync(slow, mockEncryptor, requestOptions, new CosmosDiagnosticsContext(), cts.Token);
+            Task encryptTask = EncryptionProcessor.EncryptAsync(slow, mockEncryptor.Object, requestOptions, new CosmosDiagnosticsContext(), cts.Token);
             cts.CancelAfter(5); // cancel shortly after start
 
             try
@@ -157,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             var doc = new { id = Guid.NewGuid().ToString(), Large = large };
             EncryptionOptions options = CreateEncryptionOptions(new[] { "/Large" });
             EncryptionItemRequestOptions requestOptions = RequestOptionsOverrideHelper.Create(options, JsonProcessor.Stream);
-            Stream encrypted = await EncryptionProcessor.EncryptAsync(TestCommon.ToStream(doc), mockEncryptor, requestOptions, new CosmosDiagnosticsContext(), CancellationToken.None);
+            Stream encrypted = await EncryptionProcessor.EncryptAsync(TestCommon.ToStream(doc), mockEncryptor.Object, requestOptions, new CosmosDiagnosticsContext(), CancellationToken.None);
 
             // Wrap encrypted stream in slow stream (must be seekable; we copy bytes)
             byte[] bytes;
@@ -180,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             using CancellationTokenSource cts = new();
             Task<(Stream, DecryptionContext)> decryptTask = EncryptionProcessor.DecryptAsync(
                 slow,
-                mockEncryptor,
+                mockEncryptor.Object,
                 new CosmosDiagnosticsContext(),
                 RequestOptionsOverrideHelper.Create(JsonProcessor.Stream),
                 cts.Token);

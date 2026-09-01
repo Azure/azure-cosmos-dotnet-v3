@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
     using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
     using Microsoft.Azure.Cosmos.Encryption.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
@@ -21,14 +20,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
     public class NewtonsoftAdapterTests
     {
         private const string DekId = "dek-id";
-        private static Encryptor mockEncryptor = null!;
+        private static TestEncryptorFactory.MdeConcreteEncryptor mockEncryptor = null!;
         private static EncryptionOptions defaultOptions = null!;
 
         [ClassInitialize]
         public static void ClassInitialize(TestContext context)
         {
             _ = context;
-            mockEncryptor = TestEncryptorFactory.CreateMde(DekId, out _);
+            mockEncryptor = TestEncryptorFactory.CreateMde(DekId);
             defaultOptions = new EncryptionOptions
             {
                 DataEncryptionKeyId = DekId,
@@ -45,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             NewtonsoftAdapter adapter = new (new MdeJObjectEncryptionProcessor());
             using Stream input = TestCommon.ToStream(new { id = "1", Sensitive = "secret" });
 
-            Stream encrypted = await adapter.EncryptAsync(input, mockEncryptor, defaultOptions, CancellationToken.None);
+            Stream encrypted = await adapter.EncryptAsync(input, mockEncryptor.Object, defaultOptions, CancellationToken.None);
             JObject result = Read(encrypted);
 
             Assert.IsTrue(result.TryGetValue(Constants.EncryptedInfo, out JToken ei), "Expected encrypted metadata");
@@ -61,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             using MemoryStream output = new ();
 
             await Assert.ThrowsExceptionAsync<NotSupportedException>(
-                () => adapter.EncryptAsync(input, output, mockEncryptor, defaultOptions, JsonProcessor.Newtonsoft, CancellationToken.None));
+                () => adapter.EncryptAsync(input, output, mockEncryptor.Object, defaultOptions, JsonProcessor.Newtonsoft, CancellationToken.None));
         }
 
         [TestMethod]
@@ -71,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             using MemoryStream input = new (Encoding.UTF8.GetBytes("{\"id\":\"1\"}"));
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
 
-            (Stream result, DecryptionContext context) = await adapter.DecryptAsync(input, mockEncryptor, diagnostics, CancellationToken.None);
+            (Stream result, DecryptionContext context) = await adapter.DecryptAsync(input, mockEncryptor.Object, diagnostics, CancellationToken.None);
 
             Assert.AreSame(input, result);
             Assert.IsNull(context);
@@ -100,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             using MemoryStream input = new (Encoding.UTF8.GetBytes(legacyDoc.ToString(Formatting.None)));
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
 
-            (Stream result, DecryptionContext context) = await adapter.DecryptAsync(input, mockEncryptor, diagnostics, CancellationToken.None);
+            (Stream result, DecryptionContext context) = await adapter.DecryptAsync(input, mockEncryptor.Object, diagnostics, CancellationToken.None);
 
             Assert.AreSame(input, result);
             Assert.IsNull(context);
@@ -115,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
 
             using MemoryStream output = new ();
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
-            DecryptionContext context = await adapter.DecryptAsync(encrypted, output, mockEncryptor, diagnostics, CancellationToken.None);
+            DecryptionContext context = await adapter.DecryptAsync(encrypted, output, mockEncryptor.Object, diagnostics, CancellationToken.None);
 
             Assert.IsNotNull(context);
 
@@ -131,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             Stream encrypted = await CreateEncryptedPayloadAsync(adapter);
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
 
-            (Stream decryptedStream, DecryptionContext context) = await adapter.DecryptAsync(encrypted, mockEncryptor, diagnostics, CancellationToken.None);
+            (Stream decryptedStream, DecryptionContext context) = await adapter.DecryptAsync(encrypted, mockEncryptor.Object, diagnostics, CancellationToken.None);
 
             Assert.IsNotNull(context);
             Assert.AreNotSame(encrypted, decryptedStream);
@@ -145,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
         private static async Task<Stream> CreateEncryptedPayloadAsync(NewtonsoftAdapter adapter)
         {
             using Stream input = TestCommon.ToStream(new { id = "1", Sensitive = "secret" });
-            Stream encrypted = await adapter.EncryptAsync(input, mockEncryptor, defaultOptions, CancellationToken.None);
+            Stream encrypted = await adapter.EncryptAsync(input, mockEncryptor.Object, defaultOptions, CancellationToken.None);
             encrypted.Position = 0;
             return encrypted;
         }

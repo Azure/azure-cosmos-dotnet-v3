@@ -12,11 +12,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         {
             if (encryptionKey is not IDataEncryptionKeyBuffer bufferEncryptionKey)
             {
-                return EncryptLegacy(encryptionKey, typeMarker, plainText, plainTextLength);
+                return EncryptWithPublicArray(encryptionKey, typeMarker, plainText, plainTextLength);
             }
 
             int encryptByteCount = bufferEncryptionKey.GetEncryptByteCount(plainTextLength);
-            int encryptedTextLength = encryptByteCount + 1;
+            if (encryptByteCount < 0)
+            {
+                throw new InvalidOperationException($"{nameof(IDataEncryptionKeyBuffer.GetEncryptByteCount)} returned a negative length.");
+            }
+
+            int encryptedTextLength = checked(encryptByteCount + 1);
 
             byte[] encryptedText = new byte[encryptedTextLength];
 
@@ -54,12 +59,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         {
             if (encryptionKey is not IDataEncryptionKeyBuffer bufferEncryptionKey)
             {
-                byte[] legacyEncryptedText = EncryptLegacy(encryptionKey, typeMarker, plainText, plainTextLength);
-                return (legacyEncryptedText, legacyEncryptedText.Length);
+                byte[] arrayEncryptedText = EncryptWithPublicArray(encryptionKey, typeMarker, plainText, plainTextLength);
+                return (arrayEncryptedText, arrayEncryptedText.Length);
             }
 
             int encryptByteCount = bufferEncryptionKey.GetEncryptByteCount(plainTextLength);
-            int encryptedTextLength = encryptByteCount + 1;
+            if (encryptByteCount < 0)
+            {
+                throw new InvalidOperationException($"{nameof(IDataEncryptionKeyBuffer.GetEncryptByteCount)} returned a negative length.");
+            }
+
+            int encryptedTextLength = checked(encryptByteCount + 1);
 
             byte[] encryptedText = arrayPoolManager.Rent(encryptedTextLength);
 
@@ -85,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             return (encryptedText, encryptedLength + 1);
         }
 
-        private static byte[] EncryptLegacy(DataEncryptionKey encryptionKey, TypeMarker typeMarker, byte[] plainText, int plainTextLength)
+        private static byte[] EncryptWithPublicArray(DataEncryptionKey encryptionKey, TypeMarker typeMarker, byte[] plainText, int plainTextLength)
         {
             byte[] exactPlainText = new byte[plainTextLength];
             Buffer.BlockCopy(plainText, 0, exactPlainText, 0, plainTextLength);
@@ -103,10 +113,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         {
             if (encryptionKey is not IDataEncryptionKeyBuffer bufferEncryptionKey)
             {
-                return DecryptLegacy(encryptionKey, cipherText, cipherTextLength);
+                return DecryptWithPublicArray(encryptionKey, cipherText, cipherTextLength);
             }
 
             int plainTextLength = bufferEncryptionKey.GetDecryptByteCount(cipherTextLength - 1);
+            if (plainTextLength < 0)
+            {
+                throw new InvalidOperationException($"{nameof(IDataEncryptionKeyBuffer.GetDecryptByteCount)} returned a negative length.");
+            }
+
             byte[] plainText = arrayPoolManager.Rent(plainTextLength);
 
             int decryptedLength = bufferEncryptionKey.DecryptData(
@@ -121,10 +136,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 throw new InvalidOperationException($"{nameof(DataEncryptionKey)} returned null plainText from {nameof(DataEncryptionKey.DecryptData)}.");
             }
 
+            if (decryptedLength > plainTextLength)
+            {
+                throw new InvalidOperationException($"{nameof(DataEncryptionKey)} wrote more plainText than {nameof(IDataEncryptionKeyBuffer.GetDecryptByteCount)} predicted.");
+            }
+
             return (plainText, decryptedLength);
         }
 
-        private static (byte[] plainText, int plainTextLength) DecryptLegacy(
+        private static (byte[] plainText, int plainTextLength) DecryptWithPublicArray(
             DataEncryptionKey encryptionKey,
             byte[] cipherText,
             int cipherTextLength)

@@ -14,20 +14,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
     using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
     using Microsoft.Azure.Cosmos.Encryption.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
 
     [TestClass]
     public class SystemTextJsonSystemTextJsonStreamAdapterTests
     {
         private const string DekId = "dek-id";
-        private static Encryptor mockEncryptor = null!;
+        private static TestEncryptorFactory.MdeConcreteEncryptor mockEncryptor = null!;
         private static EncryptionOptions defaultOptions = null!;
 
         [ClassInitialize]
         public static void ClassInitialize(TestContext context)
         {
             _ = context;
-            mockEncryptor = TestEncryptorFactory.CreateMde(DekId, out _);
+            mockEncryptor = TestEncryptorFactory.CreateMde(DekId);
             defaultOptions = new EncryptionOptions
             {
                 DataEncryptionKeyId = DekId,
@@ -44,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             SystemTextJsonStreamAdapter adapter = new (new StreamProcessor());
             using Stream input = TestCommon.ToStream(new { id = "1", Sensitive = "secret" });
 
-            Stream encrypted = await adapter.EncryptAsync(input, mockEncryptor, defaultOptions, CancellationToken.None);
+            Stream encrypted = await adapter.EncryptAsync(input, mockEncryptor.Object, defaultOptions, CancellationToken.None);
             using JsonDocument doc = JsonDocument.Parse(encrypted, new JsonDocumentOptions { AllowTrailingCommas = true });
 
             Assert.IsTrue(doc.RootElement.TryGetProperty(Constants.EncryptedInfo, out JsonElement ei));
@@ -58,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             using Stream input = TestCommon.ToStream(new { id = "1", Sensitive = "secret" });
             using MemoryStream output = new ();
 
-            await adapter.EncryptAsync(input, output, mockEncryptor, defaultOptions, JsonProcessor.Stream, CancellationToken.None);
+            await adapter.EncryptAsync(input, output, mockEncryptor.Object, defaultOptions, JsonProcessor.Stream, CancellationToken.None);
 
             output.Position = 0;
             using JsonDocument doc = JsonDocument.Parse(output);
@@ -82,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             };
 
             await Assert.ThrowsExceptionAsync<NotSupportedException>(
-                () => adapter.EncryptAsync(input, output, mockEncryptor, wrongOptions, JsonProcessor.Newtonsoft, CancellationToken.None));
+                () => adapter.EncryptAsync(input, output, mockEncryptor.Object, wrongOptions, JsonProcessor.Newtonsoft, CancellationToken.None));
         }
 
         [TestMethod]
@@ -92,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             using MemoryStream input = new (Encoding.UTF8.GetBytes("{\"id\":\"1\"}"));
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
 
-            (Stream result, DecryptionContext context) = await adapter.DecryptAsync(input, mockEncryptor, diagnostics, CancellationToken.None);
+            (Stream result, DecryptionContext context) = await adapter.DecryptAsync(input, mockEncryptor.Object, diagnostics, CancellationToken.None);
 
             Assert.AreSame(input, result);
             Assert.IsNull(context);
@@ -117,12 +116,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
 
             (Stream streamResult, DecryptionContext streamContext) = await streamAdapter.DecryptAsync(
                 streamInput,
-                mockEncryptor,
+                mockEncryptor.Object,
                 diagnostics,
                 CancellationToken.None);
             (Stream newtonsoftResult, DecryptionContext newtonsoftContext) = await newtonsoftAdapter.DecryptAsync(
                 newtonsoftInput,
-                mockEncryptor,
+                mockEncryptor.Object,
                 diagnostics,
                 CancellationToken.None);
 
@@ -147,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             Stream encrypted = await CreateEncryptedPayloadAsync(adapter);
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
 
-            (Stream decrypted, DecryptionContext context) = await adapter.DecryptAsync(encrypted, mockEncryptor, diagnostics, CancellationToken.None);
+            (Stream decrypted, DecryptionContext context) = await adapter.DecryptAsync(encrypted, mockEncryptor.Object, diagnostics, CancellationToken.None);
 
             Assert.IsNotNull(context);
             Assert.AreNotSame(encrypted, decrypted);
@@ -165,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             Stream encrypted = await CreateEncryptedPayloadAsync(adapter);
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
 
-            (Stream output, DecryptionContext context) = await adapter.DecryptAsync(encrypted, mockEncryptor, diagnostics, CancellationToken.None);
+            (Stream output, DecryptionContext context) = await adapter.DecryptAsync(encrypted, mockEncryptor.Object, diagnostics, CancellationToken.None);
 
             Assert.IsNotNull(context);
             Assert.IsFalse(encrypted.CanRead, "Input stream should be disposed after a successful decrypt.");
@@ -180,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
             using MemoryStream output = new ();
 
-            DecryptionContext context = await adapter.DecryptAsync(encrypted, output, mockEncryptor, diagnostics, CancellationToken.None);
+            DecryptionContext context = await adapter.DecryptAsync(encrypted, output, mockEncryptor.Object, diagnostics, CancellationToken.None);
 
             Assert.IsNotNull(context);
             output.Position = 0;
@@ -202,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             using MemoryStream output = new ();
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
 
-            DecryptionContext context = await adapter.DecryptAsync(input, output, mockEncryptor, diagnostics, CancellationToken.None);
+            DecryptionContext context = await adapter.DecryptAsync(input, output, mockEncryptor.Object, diagnostics, CancellationToken.None);
 
             Assert.IsNull(context, "Context should be null for non-encrypted payload");
             Assert.AreEqual(0, input.Position, "Input should be reset to position 0");
@@ -226,7 +225,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
                 CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
 
                 DecryptionContext context = await adapter.DecryptAsync(
-                    input, output, mockEncryptor, diagnostics, CancellationToken.None);
+                    input, output, mockEncryptor.Object, diagnostics, CancellationToken.None);
 
                 Assert.IsNull(context, $"Iteration {i}: Context should be null");
             }
@@ -277,7 +276,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
                 CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
 
                 (Stream decrypted, DecryptionContext context) = await adapter.DecryptAsync(
-                    encrypted, mockEncryptor, diagnostics, CancellationToken.None);
+                    encrypted, mockEncryptor.Object, diagnostics, CancellationToken.None);
 
                 Assert.IsNotNull(context, $"Iteration {i}: Context should not be null");
                 using (decrypted)
@@ -298,11 +297,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
 
             object original = new { id = "1", Sensitive = "secret-value", NonSensitive = 42 };
             using Stream plaintextIn = TestCommon.ToStream(original);
-            using Stream encrypted = await adapter.EncryptAsync(plaintextIn, mockEncryptor, defaultOptions, CancellationToken.None);
+            using Stream encrypted = await adapter.EncryptAsync(plaintextIn, mockEncryptor.Object, defaultOptions, CancellationToken.None);
             encrypted.Position = 0;
 
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
-            (Stream decrypted, DecryptionContext context) = await adapter.DecryptAsync(encrypted, mockEncryptor, diagnostics, CancellationToken.None);
+            (Stream decrypted, DecryptionContext context) = await adapter.DecryptAsync(encrypted, mockEncryptor.Object, diagnostics, CancellationToken.None);
             using (decrypted)
             {
                 Assert.IsNotNull(context);
@@ -321,7 +320,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
 
             await Assert.ThrowsExceptionAsync<ArgumentException>(
-                async () => await adapter.DecryptAsync(input, mockEncryptor, diagnostics, CancellationToken.None));
+                async () => await adapter.DecryptAsync(input, mockEncryptor.Object, diagnostics, CancellationToken.None));
         }
 
         private sealed class NonSeekableReadOnlyStream : Stream
@@ -372,7 +371,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
 
             NotSupportedException exception = await Assert.ThrowsExceptionAsync<NotSupportedException>(async () =>
             {
-                await adapter.DecryptAsync(input, mockEncryptor, diagnostics, CancellationToken.None);
+                await adapter.DecryptAsync(input, mockEncryptor.Object, diagnostics, CancellationToken.None);
             });
 
             Assert.IsTrue(exception.Message.Contains("not supported"), $"Unexpected exception message: {exception.Message}");
@@ -384,7 +383,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
         private static async Task<Stream> CreateEncryptedPayloadAsync(SystemTextJsonStreamAdapter adapter)
         {
             using Stream input = TestCommon.ToStream(new { id = "1", Sensitive = "secret" });
-            Stream encrypted = await adapter.EncryptAsync(input, mockEncryptor, defaultOptions, CancellationToken.None);
+            Stream encrypted = await adapter.EncryptAsync(input, mockEncryptor.Object, defaultOptions, CancellationToken.None);
             encrypted.Position = 0;
             return encrypted;
         }
@@ -403,16 +402,31 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
 
         private sealed class FailingKeyAccessEncryptor : Encryptor, IDataEncryptionKeyAccessor
         {
-            public override Task<DataEncryptionKey> GetEncryptionKeyAsync(string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
+            public override Task<DataEncryptionKey> GetEncryptionKeyAsync(
+                string dataEncryptionKeyId,
+                string encryptionAlgorithm,
+                CancellationToken cancellationToken = default)
             {
                 throw new InvalidOperationException("key-unwrap failure");
             }
 
-            public override Task<byte[]> EncryptAsync(byte[] plainText, string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
-                => throw new NotSupportedException();
+            public override Task<byte[]> EncryptAsync(
+                byte[] plainText,
+                string dataEncryptionKeyId,
+                string encryptionAlgorithm,
+                CancellationToken cancellationToken = default)
+            {
+                throw new NotSupportedException();
+            }
 
-            public override Task<byte[]> DecryptAsync(byte[] cipherText, string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
-                => throw new NotSupportedException();
+            public override Task<byte[]> DecryptAsync(
+                byte[] cipherText,
+                string dataEncryptionKeyId,
+                string encryptionAlgorithm,
+                CancellationToken cancellationToken = default)
+            {
+                throw new NotSupportedException();
+            }
         }
     }
 }

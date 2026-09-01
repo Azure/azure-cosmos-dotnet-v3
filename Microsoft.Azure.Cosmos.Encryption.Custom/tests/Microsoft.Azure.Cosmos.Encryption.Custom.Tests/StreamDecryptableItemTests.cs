@@ -288,11 +288,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             };
 
             using MemoryStream encryptedBuffer = new ();
-            Encryptor mdeEncryptor = TestEncryptorFactory.CreateMde(dekId, out _);
+            TestEncryptorFactory.MdeConcreteEncryptor mdeEncryptor = TestEncryptorFactory.CreateMde(dekId);
             await EncryptionProcessor.EncryptAsync(
                 originalDoc.ToStream(),
                 encryptedBuffer,
-                mdeEncryptor,
+                mdeEncryptor.Object,
                 encryptionOptions,
                 JsonProcessor.Stream,
                 new CosmosDiagnosticsContext(),
@@ -310,7 +310,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             };
             ActivitySource.AddActivityListener(listener);
 
-            await using StreamDecryptableItem streamItem = new (new MemoryStream(encryptedBytes), mdeEncryptor, cosmosSerializer);
+            await using StreamDecryptableItem streamItem = new (new MemoryStream(encryptedBytes), mdeEncryptor.Object, cosmosSerializer);
 
             (TestDoc result, DecryptionContext ctx) = await streamItem.GetItemAsync<TestDoc>();
 
@@ -950,7 +950,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 PathsToEncrypt = TestDoc.PathsToEncrypt,
             };
 
-            Encryptor mdeEncryptor = TestEncryptorFactory.CreateMde(dekId, out _);
+            TestEncryptorFactory.MdeConcreteEncryptor mdeEncryptor = TestEncryptorFactory.CreateMde(dekId);
             PooledMemoryStream encryptedInput = new ();
             StreamDecryptableItem item = null;
 
@@ -960,7 +960,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 await EncryptionProcessor.EncryptAsync(
                     plaintextInput,
                     encryptedInput,
-                    mdeEncryptor,
+                    mdeEncryptor.Object,
                     encryptionOptions,
                     JsonProcessor.Stream,
                     new CosmosDiagnosticsContext(),
@@ -993,7 +993,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                     })
                     .Throws(serializerFailure);
 
-                item = new StreamDecryptableItem(encryptedInput, mdeEncryptor, serializer.Object);
+                item = new StreamDecryptableItem(encryptedInput, mdeEncryptor.Object, serializer.Object);
 
                 EncryptionException exception = await Assert.ThrowsExceptionAsync<EncryptionException>(
                     () => item.GetItemAsync<TestDoc>());

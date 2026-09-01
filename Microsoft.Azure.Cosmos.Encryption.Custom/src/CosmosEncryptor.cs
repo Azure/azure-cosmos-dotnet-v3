@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             string encryptionAlgorithm,
             CancellationToken cancellationToken)
         {
-            return await this.GetEncryptionKeyAsync(dataEncryptionKeyId, encryptionAlgorithm, cancellationToken);
+            return await this.FetchEncryptionKeyAsync(dataEncryptionKeyId, encryptionAlgorithm, cancellationToken);
         }
 
         /// <inheritdoc/>
@@ -42,6 +42,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             string dataEncryptionKeyId,
             string encryptionAlgorithm,
             CancellationToken cancellationToken = default)
+        {
+            return await this.FetchEncryptionKeyAsync(dataEncryptionKeyId, encryptionAlgorithm, cancellationToken);
+        }
+
+        private async Task<DataEncryptionKey> FetchEncryptionKeyAsync(
+            string dataEncryptionKeyId,
+            string encryptionAlgorithm,
+            CancellationToken cancellationToken)
         {
             DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync(
                 dataEncryptionKeyId,
@@ -57,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             string encryptionAlgorithm,
             CancellationToken cancellationToken = default)
         {
-            DataEncryptionKey dek = await this.GetEncryptionKeyAsync(dataEncryptionKeyId, encryptionAlgorithm, cancellationToken);
+            DataEncryptionKey dek = await this.FetchEncryptionKeyAsync(dataEncryptionKeyId, encryptionAlgorithm, cancellationToken);
 
             return dek.EncryptData(plainText);
         }
@@ -69,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             string encryptionAlgorithm,
             CancellationToken cancellationToken = default)
         {
-            DataEncryptionKey dek = await this.GetEncryptionKeyAsync(dataEncryptionKeyId, encryptionAlgorithm, cancellationToken);
+            DataEncryptionKey dek = await this.FetchEncryptionKeyAsync(dataEncryptionKeyId, encryptionAlgorithm, cancellationToken);
 
             return dek.DecryptData(cipherText);
         }

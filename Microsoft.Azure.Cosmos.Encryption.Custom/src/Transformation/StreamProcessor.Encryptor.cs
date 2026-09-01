@@ -30,15 +30,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             if (encryptor is not IDataEncryptionKeyAccessor keyAccessor)
             {
-                throw new NotSupportedException(
-                    "Stream processing requires the built-in encryption key accessor.");
+                await EncryptWithPublicArraysAsync(
+                    inputStream,
+                    outputStream,
+                    encryptor,
+                    encryptionOptions,
+                    cancellationToken);
+                return;
             }
 
             DataEncryptionKey encryptionKey = await keyAccessor.GetEncryptionKeyAsync(
                 encryptionOptions.DataEncryptionKeyId,
                 encryptionOptions.EncryptionAlgorithm,
                 cancellationToken) ?? throw new InvalidOperationException(
-                    "The encryption key accessor returned null.");
+                    $"{nameof(IDataEncryptionKeyAccessor)} returned null {nameof(DataEncryptionKey)}.");
 
             // Pre-encode the paths-to-encrypt as UTF-8 byte sequences so that we can match
             // against Utf8JsonReader tokens with ValueTextEquals (which correctly handles
@@ -326,6 +331,31 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                 pathsEncrypted.Add(encryptPropertyName);
                 return encryptedBytes.AsSpan(0, encryptedBytesCount);
+            }
+        }
+
+        private static async Task EncryptWithPublicArraysAsync(
+            Stream inputStream,
+            Stream outputStream,
+            Encryptor encryptor,
+            EncryptionOptions encryptionOptions,
+            CancellationToken cancellationToken)
+        {
+            MdeJObjectEncryptionProcessor processor = new ();
+            Stream encryptedStream = await processor.EncryptAsync(
+                inputStream,
+                encryptor,
+                encryptionOptions,
+                cancellationToken);
+
+            try
+            {
+                await encryptedStream.CopyToAsync(outputStream, cancellationToken);
+                outputStream.Position = 0;
+            }
+            finally
+            {
+                await encryptedStream.DisposeCompatAsync();
             }
         }
 

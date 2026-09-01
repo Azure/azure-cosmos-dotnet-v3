@@ -44,13 +44,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             using ArrayPoolManager arrayPoolManager = new ();
 
-            DataEncryptionKey encryptionKey = encryptor is IDataEncryptionKeyAccessor keyAccessor
-                ? await keyAccessor.GetEncryptionKeyAsync(
+            bool useDataEncryptionKeyDirectly = encryptor is IDataEncryptionKeyAccessor;
+            DataEncryptionKey encryptionKey = useDataEncryptionKeyDirectly
+                ? await ((IDataEncryptionKeyAccessor)encryptor).GetEncryptionKeyAsync(
                     encryptionOptions.DataEncryptionKeyId,
                     encryptionOptions.EncryptionAlgorithm,
-                    token)
+                    token) ?? throw new InvalidOperationException($"{nameof(IDataEncryptionKeyAccessor)} returned null {nameof(DataEncryptionKey)}.")
                 : null;
-            bool useDataEncryptionKeyDirectly = encryptionKey != null;
 
             foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
             {
@@ -111,13 +111,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             using ArrayPoolManager arrayPoolManager = new ();
             using ArrayPoolManager<char> charPoolManager = new ();
 
-            DataEncryptionKey encryptionKey = encryptor is IDataEncryptionKeyAccessor keyAccessor
-                ? await keyAccessor.GetEncryptionKeyAsync(
+            bool useDataEncryptionKeyDirectly = encryptor is IDataEncryptionKeyAccessor;
+            DataEncryptionKey encryptionKey = useDataEncryptionKeyDirectly
+                ? await ((IDataEncryptionKeyAccessor)encryptor).GetEncryptionKeyAsync(
                     encryptionProperties.DataEncryptionKeyId,
                     encryptionProperties.EncryptionAlgorithm,
-                    cancellationToken)
+                    cancellationToken) ?? throw new InvalidOperationException($"{nameof(IDataEncryptionKeyAccessor)} returned null {nameof(DataEncryptionKey)}.")
                 : null;
-            bool useDataEncryptionKeyDirectly = encryptionKey != null;
 
             List<string> pathsDecrypted = new (encryptionProperties.EncryptedPaths.Count());
 

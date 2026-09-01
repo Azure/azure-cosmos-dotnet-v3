@@ -30,9 +30,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
     public class StreamProcessorDecryptorTests
     {
         private const string DekId = "dekId";
-        private static Encryptor mockEncryptor;
-        private static Mock<DataEncryptionKey> mockDek;
-
+        private static TestEncryptorFactory.MdeConcreteEncryptor mockEncryptor;
         private static readonly JsonSerializerOptions SystemTextOptions = new()
         {
             AllowTrailingCommas = true,
@@ -46,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             // Force multiple resizes / leftover path with small initial buffer size
             PooledStreamConfiguration.SetConfiguration(new PooledStreamConfiguration { StreamProcessorBufferSize = 8 });
 
-            mockEncryptor = TestEncryptorFactory.CreateMde(DekId, out mockDek);
+            mockEncryptor = TestEncryptorFactory.CreateMde(DekId);
         }
 
     private static EncryptionOptions CreateOptions(IEnumerable<string> paths)
@@ -63,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         {
             Stream input = TestCommon.ToStream(doc);
             MemoryStream encryptedStream = new();
-            await EncryptionProcessor.EncryptAsync(input, encryptedStream, mockEncryptor, options, JsonProcessor.Stream, new CosmosDiagnosticsContext(), CancellationToken.None);
+            await EncryptionProcessor.EncryptAsync(input, encryptedStream, mockEncryptor.Object, options, JsonProcessor.Stream, new CosmosDiagnosticsContext(), CancellationToken.None);
             encryptedStream.Position = 0;
 
             // get properties via System.Text.Json to assert later
@@ -79,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         {
             using MemoryStream input = new(Encoding.UTF8.GetBytes(json));
             MemoryStream encryptedStream = new();
-            await EncryptionProcessor.EncryptAsync(input, encryptedStream, mockEncryptor, options, JsonProcessor.Stream, new CosmosDiagnosticsContext(), CancellationToken.None);
+            await EncryptionProcessor.EncryptAsync(input, encryptedStream, mockEncryptor.Object, options, JsonProcessor.Stream, new CosmosDiagnosticsContext(), CancellationToken.None);
             encryptedStream.Position = 0;
             using JsonDocument jd = JsonDocument.Parse(encryptedStream, new JsonDocumentOptions { AllowTrailingCommas = true });
             JsonElement ei = jd.RootElement.GetProperty(Constants.EncryptedInfo);
@@ -91,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         private static async Task<JsonDocument> DecryptToJsonAsync(MemoryStream encrypted, EncryptionProperties props)
         {
             MemoryStream output = new();
-            await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+            await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
             output.Position = 0;
             return JsonDocument.Parse(output);
         }
@@ -118,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
             // Act
             MemoryStream output = new();
-            DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+            DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
 
             // Assert
             output.Position = 0;
@@ -158,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             using MemoryStream output = new();
             try
             {
-                await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor, options, JsonProcessor.Stream, new CosmosDiagnosticsContext(), CancellationToken.None);
+                await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, JsonProcessor.Stream, new CosmosDiagnosticsContext(), CancellationToken.None);
                 Assert.Fail("Expected InvalidOperationException when encrypting a document that already contains a top-level _ei.");
             }
             catch (InvalidOperationException ex)
@@ -297,12 +295,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             await using MemoryStream newtonsoftInput = new (Encoding.UTF8.GetBytes(json));
             Stream newtonsoftEncrypted = await newtonsoftAdapter.EncryptAsync(
                 newtonsoftInput,
-                mockEncryptor,
+                mockEncryptor.Object,
                 options,
                 CancellationToken.None);
             (Stream newtonsoftDecrypted, DecryptionContext context) = await newtonsoftAdapter.DecryptAsync(
                 newtonsoftEncrypted,
-                mockEncryptor,
+                mockEncryptor.Object,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
@@ -363,7 +361,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                 byte[] doubleBytes = BitConverter.GetBytes(value);
                 StreamProcessor sp = new StreamProcessor { Encryptor = new AlwaysPlaintextMdeEncryptor(doubleBytes) };
                 MemoryStream output = new();
-                _ = await sp.DecryptStreamAsync(forged, output, mockEncryptor, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+                _ = await sp.DecryptStreamAsync(forged, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
 
                 output.Position = 0;
                 using JsonDocument outDoc = JsonDocument.Parse(output);
@@ -429,7 +427,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
             // Act
             MemoryStream output = new();
-            _ = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+            _ = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
             output.Position = 0;
             using JsonDocument jd = JsonDocument.Parse(output);
             // Assert
@@ -448,7 +446,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             EncryptionProperties invalid = new EncryptionProperties(999, props.EncryptionAlgorithm, props.DataEncryptionKeyId, null, props.EncryptedPaths);
             // Act + Assert
             MemoryStream output = new();
-            await Assert.ThrowsExceptionAsync<NotSupportedException>(() => new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor, invalid, new CosmosDiagnosticsContext(), CancellationToken.None));
+            await Assert.ThrowsExceptionAsync<NotSupportedException>(() => new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, invalid, new CosmosDiagnosticsContext(), CancellationToken.None));
         }
 
         [TestMethod]
@@ -468,7 +466,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             MemoryStream corruptedStream = new(Encoding.UTF8.GetBytes(jsonText));
             // Act + Assert
             MemoryStream output = new();
-            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => new StreamProcessor().DecryptStreamAsync(corruptedStream, output, mockEncryptor, props, new CosmosDiagnosticsContext(), CancellationToken.None));
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => new StreamProcessor().DecryptStreamAsync(corruptedStream, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None));
         }
 
         [TestMethod]
@@ -499,7 +497,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             {
                 // Act
                 MemoryStream output = new();
-                DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+                DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
                 output.Position = 0;
                 using JsonDocument jd = JsonDocument.Parse(output, new JsonDocumentOptions { AllowTrailingCommas = true });
                 JsonElement root = jd.RootElement;
@@ -535,7 +533,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
             (Stream decrypted, DecryptionContext context) = await EncryptionProcessor.DecryptAsync(
                 input,
-                mockEncryptor,
+                mockEncryptor.Object,
                 JsonProcessor.Stream,
                 legacyFallback: false,
                 new CosmosDiagnosticsContext(),
@@ -573,7 +571,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
             // Act
             MemoryStream output = new();
-            DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+            DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
 
             // Assert
             output.Position = 0;
@@ -630,7 +628,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             // Use custom encryptor that returns empty plaintext for Null marker
             StreamProcessor sp = new StreamProcessor { Encryptor = new NullMarkerMdeEncryptor() };
             MemoryStream output = new();
-            DecryptionContext ctx = await sp.DecryptStreamAsync(forged, output, mockEncryptor, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+            DecryptionContext ctx = await sp.DecryptStreamAsync(forged, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
             // Assert
             output.Position = 0;
             using JsonDocument outDoc = JsonDocument.Parse(output);
@@ -658,7 +656,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
             // Act + Assert
             MemoryStream output = new();
-            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor, badProps, new CosmosDiagnosticsContext(), CancellationToken.None));
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, badProps, new CosmosDiagnosticsContext(), CancellationToken.None));
         }
 
         [TestMethod]
@@ -683,7 +681,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
             // Act
             MemoryStream output = new();
-            DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(mutated, output, mockEncryptor, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+            DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(mutated, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
 
             // Assert: value remains number and path is not recorded as decrypted
             output.Position = 0;
@@ -723,7 +721,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             // Use a bypass encryptor to return raw bytes that are not valid JSON, exercising the default branch (WriteRawValue)
             StreamProcessor sp = new StreamProcessor { Encryptor = new AlwaysPlaintextMdeEncryptor("NOT_JSON") };
             MemoryStream output = new();
-            _ = await sp.DecryptStreamAsync(forged, output, mockEncryptor, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+            _ = await sp.DecryptStreamAsync(forged, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
             output.Position = 0;
 
             // Assert: output is not valid JSON due to raw invalid token insertion
@@ -771,7 +769,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             MemoryStream output = new();
             try
             {
-                await sp.DecryptStreamAsync(forged, output, mockEncryptor, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+                await sp.DecryptStreamAsync(forged, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
                 Assert.Fail("Expected exception due to invalid bigint serializer input");
             }
             catch (Exception ex)
@@ -849,7 +847,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                         try
                         {
                             using MemoryStream output = new();
-                            _ = await sp.DecryptStreamAsync(forged, output, mockEncryptor, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+                            _ = await sp.DecryptStreamAsync(forged, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
                             successes++;
                         }
                         catch
@@ -890,7 +888,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                 using MemoryStream output = new();
                 try
                 {
-                    _ = await sp.DecryptStreamAsync(forged, output, mockEncryptor, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+                    _ = await sp.DecryptStreamAsync(forged, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
                     successes++;
                 }
                 catch
@@ -1038,7 +1036,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             using MemoryStream feedStream = new(Encoding.UTF8.GetBytes(feedJson));
             await new StreamProcessor().DecryptJsonArrayStreamInPlaceAsync(
                 feedStream,
-                mockEncryptor,
+                mockEncryptor.Object,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None).ConfigureAwait(false);
 
@@ -1101,7 +1099,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
                 await processor.DecryptJsonArrayStreamInPlaceAsync(
                     input,
-                    mockEncryptor,
+                    mockEncryptor.Object,
                     diagnostics,
                     CancellationToken.None).ConfigureAwait(false);
 
@@ -1137,7 +1135,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             DecryptionContext context = await new StreamProcessor().DecryptStreamAsync(
                 input,
                 output,
-                mockEncryptor,
+                mockEncryptor.Object,
                 props,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
@@ -1180,7 +1178,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             try
             {
                 DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(
-                    trickleInput, output, mockEncryptor, props,
+                    trickleInput, output, mockEncryptor.Object, props,
                     new CosmosDiagnosticsContext(), cts.Token);
 
                 // Verify decryption succeeded
@@ -1389,7 +1387,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
 
             using RentArrayBufferWriter bw = new ();
-            DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, bw, mockEncryptor, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+            DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, bw, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
 
             Assert.IsNotNull(ctx);
             Assert.IsTrue(bw.BytesWritten > 0);
@@ -1408,10 +1406,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             CosmosDiagnosticsContext diag = new ();
             EncryptionProperties anyProps = new (EncryptionFormatVersion.Mde, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized, "k", null, System.Array.Empty<string>());
 
-            await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => new StreamProcessor().DecryptStreamAsync(null, bw, mockEncryptor, anyProps, diag, default));
-            await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => new StreamProcessor().DecryptStreamAsync(input, (System.Buffers.IBufferWriter<byte>)null, mockEncryptor, anyProps, diag, default));
+            await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => new StreamProcessor().DecryptStreamAsync(null, bw, mockEncryptor.Object, anyProps, diag, default));
+            await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => new StreamProcessor().DecryptStreamAsync(input, (System.Buffers.IBufferWriter<byte>)null, mockEncryptor.Object, anyProps, diag, default));
             await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => new StreamProcessor().DecryptStreamAsync(input, bw, null, anyProps, diag, default));
-            await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => new StreamProcessor().DecryptStreamAsync(input, bw, mockEncryptor, null, diag, default));
+            await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => new StreamProcessor().DecryptStreamAsync(input, bw, mockEncryptor.Object, null, diag, default));
         }
 
         [TestMethod]
@@ -1428,7 +1426,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
 
             MemoryStream output = new();
-            DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+            DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
 
             output.Position = 0;
             using JsonDocument jd = JsonDocument.Parse(output);

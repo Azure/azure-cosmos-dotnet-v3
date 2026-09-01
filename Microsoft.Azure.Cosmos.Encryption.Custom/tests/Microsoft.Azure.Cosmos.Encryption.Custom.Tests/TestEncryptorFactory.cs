@@ -10,8 +10,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using Moq;
 
     /// <summary>
-    /// Shared helper for creating mock Encryptor (and DataEncryptionKey for MDE) instances used in tests.
-    /// Reduces repetitive Moq setup code across test classes.
+    /// Shared helper for creating Encryptor instances used in tests.
     /// </summary>
     internal static class TestEncryptorFactory
     {
@@ -29,6 +28,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 this.dekId = dekId;
                 this.dek = dek;
             }
+
+            public Encryptor Object => this;
 
             public override Task<DataEncryptionKey> GetEncryptionKeyAsync(
                 string dataEncryptionKeyId,
@@ -63,21 +64,56 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
         }
 
-        public static MdeConcreteEncryptor CreateMde(string dekId, out Mock<DataEncryptionKey> dekMock)
+        private sealed class MdeConcreteDataEncryptionKey : DataEncryptionKey, IDataEncryptionKeyBuffer
         {
-            Mock<DataEncryptionKey> localDek = new Mock<DataEncryptionKey>();
-            localDek.SetupGet(d => d.EncryptionAlgorithm).Returns(CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized);
-            localDek.Setup(d => d.GetEncryptByteCount(It.IsAny<int>())).Returns<int>(i => i);
-            localDek.Setup(d => d.GetDecryptByteCount(It.IsAny<int>())).Returns<int>(i => i);
-            localDek.Setup(d => d.EncryptData(It.IsAny<byte[]>())).Returns<byte[]>(b => TestCommon.EncryptData(b));
-            localDek.Setup(d => d.EncryptData(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<byte[]>(), It.IsAny<int>()))
-                .Returns((byte[] input, int offset, int length, byte[] output, int outputOffset) => TestCommon.EncryptData(input, offset, length, output, outputOffset));
-            localDek.Setup(d => d.DecryptData(It.IsAny<byte[]>())).Returns<byte[]>(b => TestCommon.DecryptData(b));
-            localDek.Setup(d => d.DecryptData(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<byte[]>(), It.IsAny<int>()))
-                .Returns((byte[] input, int offset, int length, byte[] output, int outputOffset) => TestCommon.DecryptData(input, offset, length, output, outputOffset));
+            public override byte[] RawKey => null;
 
-            dekMock = localDek;
-            return new MdeConcreteEncryptor(dekId, localDek.Object);
+            public override string EncryptionAlgorithm => CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized;
+
+            public override byte[] EncryptData(byte[] plainText)
+            {
+                return TestCommon.EncryptData(plainText);
+            }
+
+            public override int EncryptData(
+                byte[] plainText,
+                int plainTextOffset,
+                int plainTextLength,
+                byte[] output,
+                int outputOffset)
+            {
+                return TestCommon.EncryptData(plainText, plainTextOffset, plainTextLength, output, outputOffset);
+            }
+
+            public override int GetEncryptByteCount(int plainTextLength)
+            {
+                return plainTextLength;
+            }
+
+            public override byte[] DecryptData(byte[] cipherText)
+            {
+                return TestCommon.DecryptData(cipherText);
+            }
+
+            public override int DecryptData(
+                byte[] cipherText,
+                int cipherTextOffset,
+                int cipherTextLength,
+                byte[] output,
+                int outputOffset)
+            {
+                return TestCommon.DecryptData(cipherText, cipherTextOffset, cipherTextLength, output, outputOffset);
+            }
+
+            public override int GetDecryptByteCount(int cipherTextLength)
+            {
+                return cipherTextLength;
+            }
+        }
+
+        public static MdeConcreteEncryptor CreateMde(string dekId)
+        {
+            return new MdeConcreteEncryptor(dekId, new MdeConcreteDataEncryptionKey());
         }
 
         public static Mock<Encryptor> CreateLegacy(string dekId)
