@@ -141,18 +141,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [TestMethod]
         public async Task Decrypt_StreamSelection_LegacyAlgorithm_FallsBackToNewtonsoft()
         {
-            TestDoc doc = TestDoc.Create();
-            EncryptionOptions legacy = new()
+            List<Activity> capturedActivities = new ();
+            using ActivityListener listener = new ()
             {
-                DataEncryptionKeyId = DekId,
-#pragma warning disable CS0618
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-#pragma warning restore CS0618
-                PathsToEncrypt = TestDoc.PathsToEncrypt,
+                ShouldListenTo = source => source.Name == "Microsoft.Azure.Cosmos.Encryption.Custom",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStarted = activity => capturedActivities.Add(activity),
             };
-            EncryptionItemRequestOptions legacyRequestOptions = RequestOptionsOverrideHelper.Create(legacy, JsonProcessor.Newtonsoft);
-            Stream legacyEncrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, legacyRequestOptions, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
-            legacyEncrypted.Position = 0;
+            ActivitySource.AddActivityListener(listener);
+            TestDoc doc = TestDoc.Create();
+            using Stream legacyEncrypted = await TestCommon.CreateLegacyEncryptedStreamAsync(
+                doc,
+                mockEncryptor.Object,
+                DekId);
 
             ItemRequestOptions opts = new() { Properties = new Dictionary<string, object> { { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Stream" } } };
             CosmosDiagnosticsContext diag = CosmosDiagnosticsContext.Create(null);
@@ -162,56 +163,94 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             Assert.IsNotNull(decrypted);
             Assert.IsNotNull(context);
-            decrypted.Position = 0;
+            Assert.AreEqual(0, decrypted.Position);
+            Assert.IsFalse(legacyEncrypted.CanRead);
             TestDoc result = TestCommon.FromStream<TestDoc>(decrypted);
             Assert.AreEqual(doc, result);
+            Assert.IsTrue(capturedActivities.Any(activity =>
+                activity.DisplayName == CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream));
+            Assert.IsTrue(capturedActivities.Any(activity =>
+                activity.DisplayName == CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft));
         }
 
         [TestMethod]
-        public async Task DecryptProvidedOutput_StreamSelection_LegacyAlgorithm_Throws()
+        public async Task DecryptProvidedOutput_StreamSelection_LegacyAlgorithm_FallsBackToNewtonsoft()
         {
-            TestDoc doc = TestDoc.Create();
-            EncryptionOptions legacy = new()
+            List<Activity> capturedActivities = new ();
+            using ActivityListener listener = new ()
             {
-                DataEncryptionKeyId = DekId,
-#pragma warning disable CS0618
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-#pragma warning restore CS0618
-                PathsToEncrypt = TestDoc.PathsToEncrypt,
+                ShouldListenTo = source => source.Name == "Microsoft.Azure.Cosmos.Encryption.Custom",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStarted = activity => capturedActivities.Add(activity),
             };
-            EncryptionItemRequestOptions legacyRequestOptions = RequestOptionsOverrideHelper.Create(legacy, JsonProcessor.Newtonsoft);
-            Stream legacyEncrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, legacyRequestOptions, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
-            legacyEncrypted.Position = 0;
+            ActivitySource.AddActivityListener(listener);
+            TestDoc doc = TestDoc.Create();
+            using Stream legacyEncrypted = await TestCommon.CreateLegacyEncryptedStreamAsync(
+                doc,
+                mockEncryptor.Object,
+                DekId);
 
             ItemRequestOptions opts = new() { Properties = new Dictionary<string, object> { { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Stream" } } };
             CosmosDiagnosticsContext diag = CosmosDiagnosticsContext.Create(null);
             MemoryStream output = new();
 
-            NotSupportedException exception = await Assert.ThrowsExceptionAsync<NotSupportedException>(async () =>
-            {
-                await EncryptionProcessor.DecryptAsync(legacyEncrypted, output, mockEncryptor.Object, diag, opts, CancellationToken.None);
-            });
+            DecryptionContext context = await EncryptionProcessor.DecryptAsync(
+                legacyEncrypted,
+                output,
+                mockEncryptor.Object,
+                diag,
+                opts,
+                CancellationToken.None);
 
-            Assert.IsTrue(exception.Message.Contains("not supported"), $"Unexpected exception message: {exception.Message}");
-#pragma warning disable CS0618
-            Assert.IsTrue(exception.Message.Contains(CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized), $"Exception should mention the unsupported algorithm");
-#pragma warning restore CS0618
+            Assert.IsNotNull(context);
+            AssertLegacyDecryptionContext(context);
+            Assert.AreEqual(0, output.Position);
+            Assert.IsFalse(legacyEncrypted.CanRead);
+            TestDoc actual = TestCommon.FromStream<TestDoc>(output);
+            Assert.AreEqual(doc, actual);
+            Assert.IsTrue(capturedActivities.Any(activity =>
+                activity.DisplayName == CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream));
+            Assert.IsTrue(capturedActivities.Any(activity =>
+                activity.DisplayName == CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft));
+        }
+
+        [TestMethod]
+        public async Task DecryptCore_StreamSelection_LegacyAlgorithm_ParsesNewtonsoftOnce()
+        {
+            TestDoc expected = TestDoc.Create();
+            using Stream encrypted = await TestCommon.CreateLegacyEncryptedStreamAsync(
+                expected,
+                mockEncryptor.Object,
+                DekId);
+            using SingleSynchronousReadPassStream input = new (((MemoryStream)encrypted).ToArray());
+
+            (Stream decrypted, DecryptionContext context) = await EncryptionProcessor.DecryptAsync(
+                input,
+                mockEncryptor.Object,
+                JsonProcessor.Stream,
+                legacyFallback: true,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+
+            using (decrypted)
+            {
+                Assert.IsNotNull(context);
+                AssertLegacyDecryptionContext(context);
+                Assert.AreEqual(0, decrypted.Position);
+                Assert.AreEqual(expected, TestCommon.FromStream<TestDoc>(decrypted));
+            }
+
+            Assert.IsFalse(input.CanRead);
         }
 
         [TestMethod]
         public async Task Encrypt_LegacyAlgorithm_StreamProcessor_Throws()
         {
             TestDoc doc = TestDoc.Create();
+            Mock<Encryptor> encryptor = new ();
             EncryptionItemRequestOptions ro = new() 
             { 
-                EncryptionOptions = new()
-                {
-                    DataEncryptionKeyId = DekId,
-#pragma warning disable CS0618
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-#pragma warning restore CS0618
-                    PathsToEncrypt = TestDoc.PathsToEncrypt,
-                },
+                EncryptionOptions = TestCommon.CreateLegacyEncryptionOptions(DekId),
                 Properties = new Dictionary<string, object> { { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Stream" } } 
             };
 
@@ -219,13 +258,50 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             try
             {
-                await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, ro, diag, CancellationToken.None);
+                await EncryptionProcessor.EncryptAsync(doc.ToStream(), encryptor.Object, ro, diag, CancellationToken.None);
                 Assert.Fail("Expected NotSupportedException for legacy algorithm with Stream processor override.");
             }
             catch (NotSupportedException ex)
             {
                 Assert.IsTrue(ex.Message.IndexOf("not supported", StringComparison.OrdinalIgnoreCase) >= 0, $"Unexpected message: {ex.Message}");
             }
+
+            encryptor.Verify(
+                e => e.EncryptAsync(
+                    It.IsAny<byte[]>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Never);
+        }
+
+        [TestMethod]
+        public async Task EncryptProvidedOutput_LegacyAlgorithm_StreamProcessor_ThrowsBeforeDispatch()
+        {
+            using Stream input = TestDoc.Create().ToStream();
+            using MemoryStream output = new ();
+            Mock<Encryptor> encryptor = new ();
+
+            await Assert.ThrowsExceptionAsync<NotSupportedException>(
+                async () => await EncryptionProcessor.EncryptAsync(
+                    input,
+                    output,
+                    encryptor.Object,
+                    TestCommon.CreateLegacyEncryptionOptions(DekId),
+                    JsonProcessor.Stream,
+                    new CosmosDiagnosticsContext(),
+                    CancellationToken.None));
+
+            encryptor.Verify(
+                e => e.EncryptAsync(
+                    It.IsAny<byte[]>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Never);
+            Assert.AreEqual(0, input.Position);
+            Assert.AreEqual(0, output.Length);
+            Assert.IsTrue(input.CanRead);
         }
 
         [TestMethod]
@@ -331,7 +407,137 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
         }
+
+        private sealed class SingleSynchronousReadPassStream : MemoryStream
+        {
+            private readonly byte[] content;
+            private bool synchronousPassCompleted;
+            private bool synchronousReadReachedEnd;
+
+            public SingleSynchronousReadPassStream(byte[] buffer)
+                : base(buffer)
+            {
+                this.content = buffer;
+            }
+
+            public override long Position
+            {
+                get => base.Position;
+                set
+                {
+                    if (value == 0 && base.Position != 0 && this.synchronousReadReachedEnd)
+                    {
+                        this.synchronousPassCompleted = true;
+                    }
+
+                    base.Position = value;
+                }
+            }
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                this.ThrowIfSynchronousPassCompleted();
+                int read = base.Read(buffer, offset, count);
+                this.synchronousReadReachedEnd |= base.Position == base.Length;
+                return read;
+            }
+
+            public override int Read(Span<byte> buffer)
+            {
+                this.ThrowIfSynchronousPassCompleted();
+                int read = base.Read(buffer);
+                this.synchronousReadReachedEnd |= base.Position == base.Length;
+                return read;
+            }
+
+            public override Task<int> ReadAsync(
+                byte[] buffer,
+                int offset,
+                int count,
+                CancellationToken cancellationToken)
+            {
+                int read = this.ReadForAsync(buffer.AsSpan(offset, count));
+                return Task.FromResult(read);
+            }
+
+            public override ValueTask<int> ReadAsync(
+                Memory<byte> buffer,
+                CancellationToken cancellationToken = default)
+            {
+                return new ValueTask<int>(this.ReadForAsync(buffer.Span));
+            }
+
+            private int ReadForAsync(Span<byte> buffer)
+            {
+                int read = Math.Min(buffer.Length, checked((int)(base.Length - base.Position)));
+                this.content.AsSpan(checked((int)base.Position), read).CopyTo(buffer);
+                base.Position += read;
+                return read;
+            }
+
+            private void ThrowIfSynchronousPassCompleted()
+            {
+                if (this.synchronousPassCompleted)
+                {
+                    throw new InvalidOperationException("Legacy fallback parsed the input stream more than once.");
+                }
+            }
+        }
 #endif
+
+        [TestMethod]
+        public async Task DecryptProvidedOutput_Newtonsoft_LegacyAlgorithm_Succeeds()
+        {
+            TestDoc expected = TestDoc.Create();
+            using Stream encrypted = await TestCommon.CreateLegacyEncryptedStreamAsync(
+                expected,
+                mockEncryptor.Object,
+                DekId);
+            using MemoryStream output = new ();
+
+            DecryptionContext context = await EncryptionProcessor.DecryptAsync(
+                encrypted,
+                output,
+                mockEncryptor.Object,
+                new CosmosDiagnosticsContext(),
+                requestOptions: null,
+                CancellationToken.None);
+
+            Assert.IsNotNull(context);
+            AssertLegacyDecryptionContext(context);
+            Assert.AreEqual(0, output.Position);
+            Assert.IsFalse(encrypted.CanRead);
+            TestDoc actual = TestCommon.FromStream<TestDoc>(output);
+            Assert.AreEqual(expected, actual);
+        }
+
+        [TestMethod]
+        public async Task DecryptProvidedOutput_NullInput_ReturnsNullWithoutChangingOutput()
+        {
+            using MemoryStream output = new (new byte[] { 1, 2, 3 });
+            output.Position = 1;
+
+            DecryptionContext context = await EncryptionProcessor.DecryptAsync(
+                input: null,
+                output,
+                mockEncryptor.Object,
+                new CosmosDiagnosticsContext(),
+                requestOptions: null,
+                CancellationToken.None);
+
+            Assert.IsNull(context);
+            Assert.AreEqual(1, output.Position);
+            Assert.AreEqual(3, output.Length);
+        }
+
+        private static void AssertLegacyDecryptionContext(DecryptionContext context)
+        {
+            Assert.AreEqual(1, context.DecryptionInfoList.Count);
+            DecryptionInfo decryptionInfo = context.DecryptionInfoList[0];
+            Assert.AreEqual(DekId, decryptionInfo.DataEncryptionKeyId);
+            CollectionAssert.AreEquivalent(
+                TestDoc.PathsToEncrypt,
+                decryptionInfo.PathsDecrypted.ToList());
+        }
     }
 }
-
