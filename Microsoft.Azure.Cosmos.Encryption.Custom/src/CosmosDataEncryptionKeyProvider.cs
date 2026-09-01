@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// </summary>
         /// <param name="encryptionKeyWrapProvider">A provider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption</param>
         /// <param name="dekPropertiesTimeToLive">Time to live for DEK properties before having to refresh.</param>
-        [Obsolete("EncryptionKeyWrapProvider is obsolete; migrate to CosmosDataEncryptionKeyProvider(EncryptionKeyStoreProvider, DekCacheOptions). To keep both providers during migration, use CosmosDataEncryptionKeyProvider.Create(EncryptionKeyWrapProvider, EncryptionKeyStoreProvider, DekCacheOptions).")]
+        [Obsolete("EncryptionKeyWrapProvider is obsolete; migrate to CosmosDataEncryptionKeyProvider(EncryptionKeyStoreProvider, TimeSpan?) or CosmosDataEncryptionKeyProvider.Create(EncryptionKeyStoreProvider, DekCacheOptions). To keep both providers during migration, use CosmosDataEncryptionKeyProvider.Create(EncryptionKeyWrapProvider, EncryptionKeyStoreProvider, DekCacheOptions).")]
         public CosmosDataEncryptionKeyProvider(
             EncryptionKeyWrapProvider encryptionKeyWrapProvider,
             TimeSpan? dekPropertiesTimeToLive = null)
@@ -92,30 +92,33 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public CosmosDataEncryptionKeyProvider(
             EncryptionKeyStoreProvider encryptionKeyStoreProvider,
             TimeSpan? dekPropertiesTimeToLive = null)
-            : this(encryptionKeyStoreProvider, dekPropertiesTimeToLive == null ? null : new DekCacheOptions { DekPropertiesTimeToLive = dekPropertiesTimeToLive })
+            : this(
+                encryptionKeyStoreProvider,
+                dekPropertiesTimeToLive == null ? null : new DekCacheOptions { DekPropertiesTimeToLive = dekPropertiesTimeToLive },
+                useFactoryGuard: true)
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CosmosDataEncryptionKeyProvider"/> class with optional distributed cache support via a <see cref="DekCacheOptions"/> bag.
+        /// Creates a new <see cref="CosmosDataEncryptionKeyProvider"/> with optional distributed-cache support.
         /// </summary>
         /// <param name="encryptionKeyStoreProvider">MDE <see cref="EncryptionKeyStoreProvider"/> for wrapping / unwrapping services.</param>
-        /// <param name="dekCacheOptions">Optional cache configuration; pass <see langword="null"/> to use defaults equivalent to the no-distributed-cache constructor.</param>
+        /// <param name="dekCacheOptions">Optional cache configuration; pass <see langword="null"/> to use defaults.</param>
+        /// <returns>A provider that must still be initialized with a DEK container before use.</returns>
         /// <remarks>
         /// When supplying <see cref="DekCacheOptions.DistributedCache"/>, ensure the cache infrastructure
         /// is configured with encryption in transit (TLS) and encryption at rest. The cache stores
         /// wrapped (encrypted) DEK properties including key metadata. Raw DEK material is never written
         /// to the distributed cache.
         /// </remarks>
-        public CosmosDataEncryptionKeyProvider(
+        public static CosmosDataEncryptionKeyProvider Create(
             EncryptionKeyStoreProvider encryptionKeyStoreProvider,
             DekCacheOptions dekCacheOptions)
         {
-            this.EncryptionKeyStoreProvider = encryptionKeyStoreProvider ?? throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
-            this.MdeKeyWrapProvider = new MdeKeyWrapProvider(encryptionKeyStoreProvider);
-            this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
-            this.DekCache = NewDekCache(dekCacheOptions);
-            this.InitializeProtectedDataEncryptionKeyTimeToLive();
+            return new CosmosDataEncryptionKeyProvider(
+                encryptionKeyStoreProvider ?? throw new ArgumentNullException(nameof(encryptionKeyStoreProvider)),
+                dekCacheOptions,
+                useFactoryGuard: true);
         }
 
         /// <summary>
@@ -149,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="encryptionKeyWrapProvider">Legacy wrap provider; only used for documents written with the legacy algorithm.</param>
         /// <param name="encryptionKeyStoreProvider">MDE <see cref="EncryptionKeyStoreProvider"/> for wrapping / unwrapping.</param>
         /// <param name="dekCacheOptions">Optional cache configuration; pass <see langword="null"/> to use defaults.</param>
-        /// <returns>A fully-initialized <see cref="CosmosDataEncryptionKeyProvider"/>.</returns>
+        /// <returns>A provider that must still be initialized with a DEK container before use.</returns>
 #pragma warning disable CS0618 // EncryptionKeyWrapProvider is obsolete; surfaced here only for hybrid back-compat callers (e.g. ALE).
         public static CosmosDataEncryptionKeyProvider Create(
             EncryptionKeyWrapProvider encryptionKeyWrapProvider,
@@ -170,12 +173,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return new CosmosDataEncryptionKeyProvider(encryptionKeyWrapProvider, encryptionKeyStoreProvider, dekCacheOptions, useFactoryGuard: true);
         }
 
+        private CosmosDataEncryptionKeyProvider(
+            EncryptionKeyStoreProvider encryptionKeyStoreProvider,
+            DekCacheOptions dekCacheOptions,
+            bool useFactoryGuard)
+        {
+            _ = useFactoryGuard;
+            this.EncryptionKeyStoreProvider = encryptionKeyStoreProvider;
+            this.MdeKeyWrapProvider = new MdeKeyWrapProvider(encryptionKeyStoreProvider);
+            this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
+            this.DekCache = NewDekCache(dekCacheOptions);
+            this.InitializeProtectedDataEncryptionKeyTimeToLive();
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CosmosDataEncryptionKeyProvider"/> class with both an
         /// <see cref="EncryptionKeyWrapProvider"/> (legacy algorithm path) and an
         /// <see cref="EncryptionKeyStoreProvider"/> (MDE path), plus optional distributed-cache support via
         /// <see cref="DekCacheOptions"/>. Private to avoid overload ambiguity with the public
-        /// <c>(EncryptionKeyWrapProvider, EncryptionKeyStoreProvider, TimeSpan?)</c> obsolete ctor; reachable via <see cref="Create"/>.
+        /// <c>(EncryptionKeyWrapProvider, EncryptionKeyStoreProvider, TimeSpan?)</c> obsolete ctor; reachable via
+        /// <see cref="Create(EncryptionKeyWrapProvider, EncryptionKeyStoreProvider, DekCacheOptions)"/>.
         /// </summary>
 #pragma warning disable CS0618
         private CosmosDataEncryptionKeyProvider(

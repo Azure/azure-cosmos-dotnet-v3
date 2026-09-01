@@ -13,9 +13,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
     using Moq;
 
     /// <summary>
-    /// Tests for the public <see cref="CosmosDataEncryptionKeyProvider"/> constructor surface:
-    /// the three legacy ctors (WrapProvider, StoreProvider, dual) plus the canonical
-    /// <see cref="DekCacheOptions"/> overload.
+    /// Tests for the public <see cref="CosmosDataEncryptionKeyProvider"/> construction surface:
+    /// the three legacy constructors plus the <see cref="DekCacheOptions"/> factories.
     /// </summary>
     [TestClass]
     public class CosmosDataEncryptionKeyProviderConstructorTests
@@ -160,18 +159,47 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             Assert.IsNotNull(provider.DekCache);
         }
 
+        [TestMethod]
+        public void DualProviderWithOptions_FactorySetsBothProviders()
+        {
+            TestKeyWrapProvider wrapProvider = new TestKeyWrapProvider();
+            TestEncryptionKeyStoreProvider storeProvider = new TestEncryptionKeyStoreProvider();
+
+            CosmosDataEncryptionKeyProvider provider = CosmosDataEncryptionKeyProvider.Create(
+                wrapProvider,
+                storeProvider,
+                new DekCacheOptions());
+
+            Assert.AreSame(wrapProvider, provider.EncryptionKeyWrapProvider);
+            Assert.AreSame(storeProvider, provider.EncryptionKeyStoreProvider);
+            Assert.IsNotNull(provider.DekCache);
+        }
+
 #pragma warning restore CS0618
 
         #endregion
 
-        #region DekCacheOptions overload (canonical distributed-cache configuration)
+        #region DekCacheOptions factory (canonical distributed-cache configuration)
+
+        [TestMethod]
+        public void StoreProvider_NullSecondArgument_UsesTimeSpanOverload()
+        {
+            TestEncryptionKeyStoreProvider storeProvider = new TestEncryptionKeyStoreProvider();
+
+            CosmosDataEncryptionKeyProvider provider = new CosmosDataEncryptionKeyProvider(
+                storeProvider,
+                null);
+
+            Assert.AreSame(storeProvider, provider.EncryptionKeyStoreProvider);
+            Assert.IsNotNull(provider.DekCache);
+        }
 
         [TestMethod]
         public void StoreProviderWithOptions_NullOptions_UsesDefaults()
         {
             TestEncryptionKeyStoreProvider storeProvider = new TestEncryptionKeyStoreProvider();
 
-            CosmosDataEncryptionKeyProvider provider = new CosmosDataEncryptionKeyProvider(
+            CosmosDataEncryptionKeyProvider provider = CosmosDataEncryptionKeyProvider.Create(
                 storeProvider,
                 dekCacheOptions: null);
 
@@ -185,7 +213,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             TestEncryptionKeyStoreProvider storeProvider = new TestEncryptionKeyStoreProvider();
             InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
 
-            CosmosDataEncryptionKeyProvider provider = new CosmosDataEncryptionKeyProvider(
+            CosmosDataEncryptionKeyProvider provider = CosmosDataEncryptionKeyProvider.Create(
                 storeProvider,
                 new DekCacheOptions
                 {
@@ -207,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         public void StoreProviderWithOptions_NullProvider_ThrowsArgumentNullException()
         {
             ArgumentNullException ex = Assert.ThrowsException<ArgumentNullException>(() =>
-                new CosmosDataEncryptionKeyProvider(
+                CosmosDataEncryptionKeyProvider.Create(
                     encryptionKeyStoreProvider: null,
                     dekCacheOptions: new DekCacheOptions()));
 
@@ -223,7 +251,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             // Validation lives in DekCache: distributedCache without a prefix is rejected so
             // multiple providers sharing one cache cannot silently collide.
             ArgumentException ex = Assert.ThrowsException<ArgumentNullException>(() =>
-                new CosmosDataEncryptionKeyProvider(
+                CosmosDataEncryptionKeyProvider.Create(
                     storeProvider,
                     new DekCacheOptions
                     {
@@ -243,7 +271,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             TestEncryptionKeyStoreProvider storeProvider = new TestEncryptionKeyStoreProvider();
 
             // Leaving DistributedCache null disables L2 and uses only the in-memory cache.
-            CosmosDataEncryptionKeyProvider provider = new CosmosDataEncryptionKeyProvider(
+            CosmosDataEncryptionKeyProvider provider = CosmosDataEncryptionKeyProvider.Create(
                 storeProvider,
                 new DekCacheOptions
                 {
@@ -259,7 +287,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             // A non-null DistributedCache options bag enables L2, so Cache becomes required.
             ArgumentNullException ex = Assert.ThrowsException<ArgumentNullException>(() =>
-                new CosmosDataEncryptionKeyProvider(
+                CosmosDataEncryptionKeyProvider.Create(
                     storeProvider,
                     new DekCacheOptions
                     {
@@ -282,7 +310,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             // EntryLifetime is now nested under DistributedCacheOptions, so leaving DistributedCache
             // null means there is no L2 configuration to validate.
-            CosmosDataEncryptionKeyProvider provider = new CosmosDataEncryptionKeyProvider(
+            CosmosDataEncryptionKeyProvider provider = CosmosDataEncryptionKeyProvider.Create(
                 storeProvider,
                 new DekCacheOptions
                 {
@@ -301,7 +329,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
 
             ArgumentOutOfRangeException ex = Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
-                new CosmosDataEncryptionKeyProvider(
+                CosmosDataEncryptionKeyProvider.Create(
                     storeProvider,
                     new DekCacheOptions
                     {
@@ -327,7 +355,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
             TestEncryptionKeyStoreProvider storeProvider = new TestEncryptionKeyStoreProvider();
 
-            CosmosDataEncryptionKeyProvider provider = new CosmosDataEncryptionKeyProvider(
+            CosmosDataEncryptionKeyProvider provider = CosmosDataEncryptionKeyProvider.Create(
                 storeProvider,
                 new DekCacheOptions
                 {
@@ -396,7 +424,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                     It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new InvalidOperationException("Cache unavailable"));
 
-            CosmosDataEncryptionKeyProvider provider = new CosmosDataEncryptionKeyProvider(
+            CosmosDataEncryptionKeyProvider provider = CosmosDataEncryptionKeyProvider.Create(
                 storeProvider,
                 new DekCacheOptions
                 {

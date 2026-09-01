@@ -37,15 +37,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return await this.FetchEncryptionKeyAsync(dataEncryptionKeyId, encryptionAlgorithm, cancellationToken);
         }
 
-        /// <inheritdoc/>
-        public override async Task<DataEncryptionKey> GetEncryptionKeyAsync(
-            string dataEncryptionKeyId,
-            string encryptionAlgorithm,
-            CancellationToken cancellationToken = default)
-        {
-            return await this.FetchEncryptionKeyAsync(dataEncryptionKeyId, encryptionAlgorithm, cancellationToken);
-        }
-
         private async Task<DataEncryptionKey> FetchEncryptionKeyAsync(
             string dataEncryptionKeyId,
             string encryptionAlgorithm,
