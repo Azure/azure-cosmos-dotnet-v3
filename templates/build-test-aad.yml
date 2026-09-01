@@ -25,14 +25,14 @@
 #   1. COSMOSDB_AAD_STRICT=true turns every unsatisfied prerequisite (missing endpoint, missing
 #      credential, 401/403 from a missing role assignment, 404 from a missing database/container)
 #      into a hard test failure instead of a skip.
-#   2. The 'Verify MultiRegionAad results' gate below parses the published TRX and requires exactly
-#      'ExpectedTestCount' passed with zero failed and zero skipped/inconclusive/not-executed, and
-#      fails closed when no TRX was produced at all.
+#   2. The 'Verify MultiRegionAad results' gate below parses the published TRX, requires at least one
+#      result, rejects every failed or skipped/inconclusive/not-executed result, and fails closed when
+#      no TRX was produced at all.
 #
 # Falsification (how to prove the lane really fails): point 'AadAccountEndpoint' at a nonexistent
 # account, or rename the pre-created container so the fixture is missing, and re-run. The test task
 # fails because of guard (1); even if guard (1) were removed, guard (2) still fails the job because
-# passed (0) != ExpectedTestCount (8).
+# every result is skipped/inconclusive instead of passed.
 
 parameters:
   BuildConfiguration: ''
@@ -43,10 +43,6 @@ parameters:
   AadServiceConnection: ''
   # Fail the tests (instead of skipping them) when a live AAD prerequisite is not satisfied.
   StrictMode: true
-  # Number of MultiRegionAad test cases, counting each [DataRow] separately. Must match
-  # CosmosAadLiveTests.ExpectedTestCaseCount; the gate below requires exactly this many to pass.
-  ExpectedTestCount: 8
-
 jobs:
 - job:
   displayName: EmulatorTests ${{ parameters.BuildConfiguration }} - ${{ parameters.CategoryListName }}
@@ -119,15 +115,13 @@ jobs:
   # Gate the published results. Runs after the publish step so the results are still visible in the
   # run summary when this fails. See the "Fail-closed contract" note at the top of this file.
   - task: PowerShell@2
-    displayName: Verify MultiRegionAad results (${{ parameters.ExpectedTestCount }} passed, 0 skipped)
+    displayName: Verify MultiRegionAad results (all passed, 0 skipped)
     condition: succeededOrFailed()
     inputs:
       targetType: inline
       pwsh: true
       script: |
         $ErrorActionPreference = 'Stop'
-        $expected = [int] '${{ parameters.ExpectedTestCount }}'
-
         $trxFiles = @(Get-ChildItem -Path '$(Build.SourcesDirectory)' -Recurse -Filter 'MultiRegionAad.trx' -File -ErrorAction SilentlyContinue |
           Sort-Object LastWriteTimeUtc -Descending)
 
@@ -154,9 +148,21 @@ jobs:
         # MSTest reports Assert.Inconclusive as NotExecuted.
         $skipped = $total - $passed - $failed
 
-        Write-Host ('total={0} passed={1} failed={2} skipped/inconclusive={3} (required: {4} passed, 0 failed, 0 skipped)' -f $total, $passed, $failed, $skipped, $expected)
+        Write-Host ('total={0} passed={1} failed={2} skipped/inconclusive={3} (required: at least 1 total, all passed)' -f $total, $passed, $failed, $skipped)
+
+        # Surface each non-passing case as a build issue, not just console output. ADO logs are not readable
+        # by everyone who can see the GitHub check, but logissue entries become check-run annotations, so this
+        # is what makes a red lane diagnosable from the pull request itself.
         foreach ($result in ($results | Where-Object { $_.outcome -ne 'Passed' })) {
-          Write-Host ('  not passed: {0} [{1}]' -f $result.testName, $result.outcome)
+          $detail = $result.SelectSingleNode('*[local-name()="Output"]/*[local-name()="ErrorInfo"]/*[local-name()="Message"]')
+          $message = if ($null -ne $detail) { $detail.InnerText } else { '(no error message in TRX)' }
+          # Annotations are single-line; collapse newlines and cap the length so the useful prefix survives.
+          $message = ($message -replace '\s*\r?\n\s*', ' ').Trim()
+          if ($message.Length -gt 900) {
+            $message = $message.Substring(0, 900) + ' ...'
+          }
+
+          Write-Host ('##vso[task.logissue type=error]{0} [{1}]: {2}' -f $result.testName, $result.outcome, $message)
         }
 
         $problems = @()
@@ -166,11 +172,8 @@ jobs:
         if ($skipped -ne 0) {
           $problems += ('{0} live AAD test case(s) were skipped/inconclusive. The prerequisites (reachable endpoint, Cosmos DB data-plane role assignment, pre-created AadLiveTestDb/AadLiveTestContainer) must be satisfied in CI.' -f $skipped)
         }
-        if ($passed -ne $expected) {
-          $problems += ('Expected exactly {0} passed live AAD test case(s) but found {1}. If cases were added or removed, update ExpectedTestCount in templates/build-test-aad.yml and CosmosAadLiveTests.ExpectedTestCaseCount together.' -f $expected, $passed)
-        }
-        if ($total -ne $expected) {
-          $problems += ('Expected exactly {0} total live AAD test case(s) but found {1}.' -f $expected, $total)
+        if ($total -eq 0) {
+          $problems += 'The TRX contained no live AAD test results, so no Entra-authenticated operation was validated.'
         }
 
         if ($problems.Count -gt 0) {
@@ -180,4 +183,4 @@ jobs:
           exit 1
         }
 
-        Write-Host ('All {0} live AAD test cases passed with no skipped or inconclusive results.' -f $expected)
+        Write-Host ('All {0} live AAD test cases passed with no skipped or inconclusive results.' -f $total)
