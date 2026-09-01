@@ -477,7 +477,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         #region Dynamic Injection Rate
 
         [TestMethod]
-        [Owner("nalutripician")]
+        [Owner("kundadebdatta")]
         [Description("Tests that the rule injection rate is seeded from the server error result")]
         public void FaultInjectionRule_InjectionRate_DefaultsToServerErrorResultRate()
         {
@@ -487,7 +487,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         }
 
         [TestMethod]
-        [Owner("nalutripician")]
+        [Owner("kundadebdatta")]
         [Description("Tests that the rule injection rate is seeded from the custom server error result")]
         public void FaultInjectionRule_InjectionRate_DefaultsToCustomServerErrorResultRate()
         {
@@ -503,7 +503,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         }
 
         [TestMethod]
-        [Owner("nalutripician")]
+        [Owner("kundadebdatta")]
         [Description("Tests that connection error rules report the default injection rate")]
         public void FaultInjectionRule_InjectionRate_ConnectionErrorDefaultsToOne()
         {
@@ -525,7 +525,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         }
 
         [TestMethod]
-        [Owner("nalutripician")]
+        [Owner("kundadebdatta")]
         [Description("Tests that SetInjectionRate updates the rate reported by the rule")]
         public void FaultInjectionRule_SetInjectionRate_UpdatesRate()
         {
@@ -539,7 +539,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         }
 
         [TestMethod]
-        [Owner("nalutripician")]
+        [Owner("kundadebdatta")]
         [Description("Tests that SetInjectionRate rejects rates outside of (0, 1] and leaves the rate unchanged")]
         public void FaultInjectionRule_SetInjectionRate_InvalidRate_Throws()
         {
@@ -553,7 +553,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         }
 
         [TestMethod]
-        [Owner("nalutripician")]
+        [Owner("kundadebdatta")]
         [Description("Tests that SetInjectionRate propagates to the effective rule already registered with a client")]
         public void FaultInjectionRule_SetInjectionRate_PropagatesToEffectiveRule()
         {
@@ -567,7 +567,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         }
 
         [TestMethod]
-        [Owner("nalutripician")]
+        [Owner("kundadebdatta")]
         [Description("Tests that a rate set before client registration is replayed onto the effective rule")]
         public void FaultInjectionRule_SetInjectionRate_BeforeRegistration_IsReplayed()
         {
