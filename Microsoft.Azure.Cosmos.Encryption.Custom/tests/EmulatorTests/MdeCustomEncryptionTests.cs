@@ -606,8 +606,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         }
 
         [TestMethod]
-        [ExpectedException(typeof(NotSupportedException))]
-        public async Task ProvidedOutputDecrypt_StreamOverrideWithLegacyAlgorithm_Throws()
+        public async Task ProvidedOutputDecrypt_StreamOverrideWithLegacyAlgorithm_FallsBackToNewtonsoft()
         {
             TestItem testItem = new TestItem
             {
@@ -628,15 +627,29 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
 
             // Get raw encrypted (legacy algorithm) payload without automatic decrypt.
             using ResponseMessage readStream = await itemContainer.ReadItemStreamAsync(testItem.Id, new PartitionKey(testItem.PK));
+            Assert.IsTrue(readStream.IsSuccessStatusCode);
             readStream.Content.Position = 0;
             MemoryStream output = new();
-            _ = await EncryptionProcessor.DecryptAsync(
+            DecryptionContext context = await EncryptionProcessor.DecryptAsync(
                 readStream.Content,
                 output,
                 encryptor,
                 new CosmosDiagnosticsContext(),
                 new ItemRequestOptions { Properties = new Dictionary<string, object> { { "encryption-json-processor", "Stream" } } },
                 CancellationToken.None);
+
+            Assert.IsNotNull(context);
+            Assert.AreEqual(0, output.Position);
+            JObject decryptedDocument;
+            using (StreamReader reader = new(output))
+            using (JsonTextReader jsonReader = new(reader))
+            {
+                decryptedDocument = JObject.Load(jsonReader);
+            }
+
+            Assert.AreEqual(testItem.NonSensitive, decryptedDocument[nameof(TestItem.NonSensitive)].Value<string>());
+            Assert.AreEqual(testItem.Sensitive, decryptedDocument[nameof(TestItem.Sensitive)].Value<string>());
+            Assert.IsNull(decryptedDocument["_ei"]);
         }
 
         private class TestItem
@@ -3139,4 +3152,3 @@ cancellationToken) =>
         #endregion
     }
 }
-
