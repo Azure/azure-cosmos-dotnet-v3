@@ -229,9 +229,16 @@ namespace Microsoft.Azure.Cosmos
                     .ContinueWith(
                         task =>
                         {
+                            // The exception must be observed unconditionally. Nothing awaits
+                            // backgroundRefreshTask, so if this continuation never reads
+                            // task.Exception the faulted task is surfaced later through
+                            // TaskScheduler.UnobservedTaskException. Read it first, then decide
+                            // whether the trace sink actually wants the (more expensive) message.
+                            AggregateException backgroundRefreshException = task.Exception;
+
                             if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Verbose))
                             {
-                                DefaultTrace.TraceVerbose("Failed to refresh addresses in the background with exception: {0}", task.Exception.Message);
+                                DefaultTrace.TraceVerbose("Failed to refresh addresses in the background with exception: {0}", backgroundRefreshException.Message);
                             }
                         },
                         TaskContinuationOptions.OnlyOnFaulted);
