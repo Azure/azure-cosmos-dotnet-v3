@@ -30,6 +30,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         private static Encryptor CreateFixtureEncryptor()
         {
+            return new FixedKeyEncryptor(CreateFixtureDataEncryptionKey());
+        }
+
+        private static Encryptor CreatePublicFixtureEncryptor()
+        {
+            return new PublicFixedKeyEncryptor(CreateFixtureDataEncryptionKey());
+        }
+
+        private static DataEncryptionKey CreateFixtureDataEncryptionKey()
+        {
             byte[] rawKey = new byte[32];
             for (int i = 0; i < rawKey.Length; i++)
             {
@@ -37,8 +47,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
 
             Microsoft.Data.Encryption.Cryptography.PlaintextDataEncryptionKey plainDek = new (FixtureDekId, rawKey);
-            MdeEncryptionAlgorithm mdeAlgorithm = new (rawKey, plainDek, Data.Encryption.Cryptography.EncryptionType.Randomized);
-            return new FixedKeyEncryptor(mdeAlgorithm);
+            return new MdeEncryptionAlgorithm(rawKey, plainDek, Data.Encryption.Cryptography.EncryptionType.Randomized);
         }
 
 #if NET8_0_OR_GREATER
@@ -84,6 +93,32 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
         }
 
+        private sealed class PublicFixedKeyEncryptor : Encryptor
+        {
+            private readonly DataEncryptionKey dek;
+
+            public PublicFixedKeyEncryptor(DataEncryptionKey dek)
+            {
+                this.dek = dek;
+            }
+
+            public override Task<DataEncryptionKey> GetEncryptionKeyAsync(string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
+            {
+                throw new NotSupportedException("Direct key access is not supported.");
+            }
+
+            public override Task<byte[]> EncryptAsync(byte[] plainText, string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
+            {
+                return Task.FromResult(this.dek.EncryptData(plainText));
+            }
+
+            public override Task<byte[]> DecryptAsync(byte[] cipherText, string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
+            {
+                Assert.AreEqual(FixtureDekId, dataEncryptionKeyId);
+                return Task.FromResult(this.dek.DecryptData(cipherText));
+            }
+        }
+
         [TestMethod]
         public async Task Fixture_DecryptsWithNewtonsoftProcessor()
         {
@@ -106,6 +141,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         public async Task Fixture_DecryptsWithStreamProcessor()
         {
             Encryptor encryptor = CreateFixtureEncryptor();
+            MemoryStream encrypted = new (Convert.FromBase64String(FixtureEncryptedDocBase64));
+
+            (Stream decrypted, DecryptionContext context) = await DecryptStreamAsync(
+                encrypted,
+                encryptor,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+
+            Assert.IsNotNull(context, "fixture document must be recognized as encrypted");
+            AssertFixtureContent(new StreamReader(decrypted).ReadToEnd());
+        }
+
+        [TestMethod]
+        public async Task Fixture_DecryptsWithStreamProcessorPublicFallback()
+        {
+            Encryptor encryptor = CreatePublicFixtureEncryptor();
             MemoryStream encrypted = new (Convert.FromBase64String(FixtureEncryptedDocBase64));
 
             (Stream decrypted, DecryptionContext context) = await DecryptStreamAsync(
