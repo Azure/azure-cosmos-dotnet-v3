@@ -168,6 +168,75 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsNull(decryptionContext);
         }
 
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task DecryptJObject_MissingOrNullAlgorithm_ReturnsPlaintextUnchanged(bool explicitNull)
+        {
+            TestDoc expected = TestDoc.Create();
+            JObject document = CreateDocumentWithMissingAlgorithm(expected, explicitNull);
+            JObject original = (JObject)document.DeepClone();
+            Mock<Encryptor> encryptor = new (MockBehavior.Strict);
+
+            (JObject decrypted, DecryptionContext context) = await EncryptionProcessor.DecryptAsync(
+                document,
+                encryptor.Object,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+
+            Assert.AreSame(document, decrypted);
+            Assert.IsNull(context);
+            Assert.IsTrue(JToken.DeepEquals(original, decrypted));
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task DecryptableItemCore_MissingOrNullAlgorithm_ReturnsPlaintextUnchanged(bool explicitNull)
+        {
+            TestDoc expected = TestDoc.Create();
+            JObject document = CreateDocumentWithMissingAlgorithm(expected, explicitNull);
+            JObject original = (JObject)document.DeepClone();
+            Mock<Encryptor> encryptor = new (MockBehavior.Strict);
+            Mock<CosmosSerializer> serializer = new (MockBehavior.Strict);
+            serializer
+                .Setup(s => s.FromStream<TestDoc>(It.IsAny<Stream>()))
+                .Returns((Stream stream) => TestCommon.FromStream<TestDoc>(stream));
+            DecryptableItemCore decryptableItem = new (
+                document,
+                encryptor.Object,
+                serializer.Object);
+
+            (TestDoc actual, DecryptionContext context) = await decryptableItem.GetItemAsync<TestDoc>();
+
+            Assert.AreEqual(expected, actual);
+            Assert.IsNull(context);
+            Assert.IsTrue(JToken.DeepEquals(original, document));
+        }
+
+        [TestMethod]
+        public async Task DecryptJObject_PresentUnknownAlgorithm_FailsClosed()
+        {
+            TestDoc expected = TestDoc.Create();
+            JObject document = JObject.FromObject(expected);
+            document[Constants.EncryptedInfo] = new JObject
+            {
+                [Constants.EncryptionFormatVersion] = EncryptionFormatVersion.Mde,
+                [Constants.EncryptionAlgorithm] = "future-algorithm",
+                [Constants.EncryptionDekId] = LegacyEncryptionProcessorTests.dekId,
+                [Constants.EncryptedPaths] = new JArray(),
+            };
+
+            NotSupportedException exception = await Assert.ThrowsExceptionAsync<NotSupportedException>(
+                async () => await EncryptionProcessor.DecryptAsync(
+                    document,
+                    new Mock<Encryptor>(MockBehavior.Strict).Object,
+                    new CosmosDiagnosticsContext(),
+                    CancellationToken.None));
+
+            StringAssert.Contains(exception.Message, "future-algorithm");
+        }
+
         [TestMethod]
         public async Task DecryptableItemCore_CorruptLegacyMetadataWithoutDekId_PreservesFailure()
         {
@@ -248,6 +317,24 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.AreEqual(
                 jsonProcessor == JsonProcessor.Newtonsoft ? encryptedStream.Length : 0,
                 encryptedStream.Position);
+        }
+
+        private static JObject CreateDocumentWithMissingAlgorithm(TestDoc testDoc, bool explicitNull)
+        {
+            JObject encryptionProperties = new ()
+            {
+                [Constants.EncryptionFormatVersion] = EncryptionFormatVersion.Mde,
+                [Constants.EncryptionDekId] = LegacyEncryptionProcessorTests.dekId,
+                [Constants.EncryptedPaths] = new JArray(),
+            };
+            if (explicitNull)
+            {
+                encryptionProperties[Constants.EncryptionAlgorithm] = JValue.CreateNull();
+            }
+
+            JObject document = JObject.FromObject(testDoc);
+            document[Constants.EncryptedInfo] = encryptionProperties;
+            return document;
         }
 
         private static async Task<JObject> VerifyEncryptionSucceeded(TestDoc testDoc)

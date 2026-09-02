@@ -322,7 +322,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             JObject encryptionPropertiesJObj = RetrieveEncryptionProperties(document);
 
-            if (encryptionPropertiesJObj == null)
+            if (encryptionPropertiesJObj == null ||
+                IsEncryptionAlgorithmMissing(encryptionPropertiesJObj))
             {
                 return (document, null);
             }
