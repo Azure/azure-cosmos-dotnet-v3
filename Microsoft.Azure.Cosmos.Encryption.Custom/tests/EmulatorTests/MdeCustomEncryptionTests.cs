@@ -33,7 +33,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         private static readonly EncryptionKeyWrapMetadata metadata2 = new(name: "metadata2", value: masterKeyUri2.ToString());
         private const string dekId = "mydek";
         private const string legacydekId = "mylegacydek";
+        private const int ExpectedLegacyFormatVersion = 2;
+        private const int ExpectedMdeFormatVersion = 3;
         private const string LegacyPreview07Algorithm = "AEAes256CbcHmacSha256Randomized";
+        private const string ExpectedMdeAlgorithm = "MdeAeadAes256CbcHmac256Randomized";
         private const string LegacyPreview07PackageSha256 = "121AA0ED2A518D1F791992AC4E6A90B8E3A16A9BEDE4CB719F6156CF384398F8";
         private const string LegacyPreview07AssemblySha256 = "064FE92B0CC610B3F6CB5E290DA3DFA231643FADB7DC974D01FFDE8D9AEBA3AC";
         private const string LegacyPreview07FixtureSha256 = "FE4196FFD23DF3192A9369EF634CAED32CE3624F9ECA129255A008BA73CAE699";
@@ -1153,12 +1156,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         {
             JObject encryptionInfo = raw[Constants.EncryptedInfo] as JObject;
             Assert.IsNotNull(encryptionInfo);
+            Assert.AreEqual(5, encryptionInfo.Properties().Count());
             AssertExactToken(
-                new JValue(EncryptionFormatVersion.Mde),
+                new JValue(ExpectedMdeFormatVersion),
                 encryptionInfo[Constants.EncryptionFormatVersion],
                 Constants.EncryptionFormatVersion);
             AssertExactToken(
-                new JValue(CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized),
+                new JValue(ExpectedMdeAlgorithm),
                 encryptionInfo[Constants.EncryptionAlgorithm],
                 Constants.EncryptionAlgorithm);
             AssertExactToken(
@@ -1289,6 +1293,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             JObject encryptionInfo = (JObject)legacyItem[Constants.EncryptedInfo];
             JArray encryptedPaths = (JArray)fixture["encryptedPaths"];
 
+            Assert.AreEqual(5, encryptionInfo.Properties().Count());
             AssertExactToken(
                 new JValue(LegacyPreview07Algorithm),
                 dataEncryptionKey["encryptionAlgorithm"],
@@ -1296,7 +1301,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             Assert.IsTrue(
                 Convert.FromBase64String(dataEncryptionKey["wrappedDataEncryptionKey"].Value<string>()).Length > 0);
             AssertExactToken(
-                new JValue(EncryptionFormatVersion.AeAes),
+                new JValue(ExpectedLegacyFormatVersion),
                 encryptionInfo[Constants.EncryptionFormatVersion],
                 Constants.EncryptionFormatVersion);
             AssertExactToken(
