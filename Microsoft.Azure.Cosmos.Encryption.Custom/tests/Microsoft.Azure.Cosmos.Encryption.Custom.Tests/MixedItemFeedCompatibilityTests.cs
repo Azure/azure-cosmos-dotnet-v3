@@ -23,11 +23,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using Newtonsoft.Json.Linq;
 
     /// <summary>
-    /// Oracle: each public item/feed reader must decrypt every supported stored format without
-    /// substituting processors, must preserve every unencrypted JSON token byte-for-byte, and
-    /// opposite-processor rewrites must remain MDE-v3 and reread identically through both readers.
-    /// Unsupported algorithms must fail explicitly, and typed change-feed processor routing must
-    /// honor the container's selected processor just like stream change-feed routing.
+    /// Oracle: every item/feed surface must return semantically identical JSON for every supported
+    /// stored format. Raw Stream-processor surfaces must additionally preserve untouched JSON token
+    /// lexemes and must fall back per legacy object rather than downgrading the page. Newtonsoft and
+    /// typed/JObject surfaces may canonicalize JSON formatting. Opposite-processor rewrites must
+    /// remain MDE-v3, preserve id/partition key and semantic values, and reread through both readers.
+    /// A present unknown encryption algorithm must fail before key access or fallback.
+    /// These assertions are the frozen RED contract; production must adapt without weakening them.
     /// </summary>
     [TestClass]
     public class MixedItemFeedCompatibilityTests
@@ -53,19 +55,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [DataTestMethod]
         [DynamicData(nameof(GetReaderProcessors), DynamicDataSourceType.Method)]
-        public async Task QueryTypedAndStreamPages_DecryptHeterogeneousContainer(string processorName)
+        public async Task QueryTypedPage_DecryptsHeterogeneousContainerSemantically(string processorName)
         {
             CompatibilityFixture[] fixtures = CreateFixtures();
             ContainerHarness harness = CreateHarness(fixtures);
-            QueryRequestOptions options = CreateQueryOptions(processorName);
 
             FeedResponse<FixtureDocument> typedPage = await harness.Container
                 .GetItemQueryIterator<FixtureDocument>(
                     new QueryDefinition("SELECT * FROM c ORDER BY c.id"),
-                    requestOptions: options)
+                    requestOptions: CreateQueryOptions(processorName))
                 .ReadNextAsync();
 
-            AssertMatrix(typedPage.Resource, fixtures);
+            AssertSemanticMatrix(typedPage.Resource, fixtures);
+        }
+
+        [DataTestMethod]
+        [DynamicData(nameof(GetReaderProcessors), DynamicDataSourceType.Method)]
+        public async Task QueryStreamPage_DecryptsHeterogeneousContainer(string processorName)
+        {
+            CompatibilityFixture[] fixtures = CreateFixtures();
+            ContainerHarness harness = CreateHarness(fixtures);
 
             using ResponseMessage streamPage = await harness.Container
                 .GetItemQueryStreamIterator(
@@ -73,12 +82,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                     requestOptions: CreateQueryOptions(processorName))
                 .ReadNextAsync();
 
-            AssertMatrix(ReadFeedDocuments(streamPage.Content), fixtures);
+            AssertMatrix(
+                ReadFeedDocuments(streamPage.Content),
+                fixtures,
+                preserveRawTokens: RequiresRawTokenPreservation(processorName));
         }
 
         [DataTestMethod]
         [DynamicData(nameof(GetReaderProcessors), DynamicDataSourceType.Method)]
-        public async Task ReadManyTypedAndStreamResponses_DecryptHeterogeneousContainer(string processorName)
+        public async Task ReadManyTypedResponse_DecryptsHeterogeneousContainerSemantically(string processorName)
         {
             CompatibilityFixture[] fixtures = CreateFixtures();
             ContainerHarness harness = CreateHarness(fixtures);
@@ -89,12 +101,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             FeedResponse<FixtureDocument> typedResponse = await harness.Container.ReadManyItemsAsync<FixtureDocument>(
                 items,
                 CreateReadManyOptions(processorName));
-            AssertMatrix(typedResponse.Resource, fixtures);
+            AssertSemanticMatrix(typedResponse.Resource, fixtures);
+        }
+
+        [DataTestMethod]
+        [DynamicData(nameof(GetReaderProcessors), DynamicDataSourceType.Method)]
+        public async Task ReadManyStreamResponse_DecryptsHeterogeneousContainer(string processorName)
+        {
+            CompatibilityFixture[] fixtures = CreateFixtures();
+            ContainerHarness harness = CreateHarness(fixtures);
+            IReadOnlyList<(string id, PartitionKey partitionKey)> items = fixtures
+                .Select(fixture => (fixture.Id, new PartitionKey(PartitionKeyValue)))
+                .ToArray();
 
             using ResponseMessage streamResponse = await harness.Container.ReadManyItemsStreamAsync(
                 items,
                 CreateReadManyOptions(processorName));
-            AssertMatrix(ReadFeedDocuments(streamResponse.Content), fixtures);
+            AssertMatrix(
+                ReadFeedDocuments(streamResponse.Content),
+                fixtures,
+                preserveRawTokens: RequiresRawTokenPreservation(processorName));
         }
 
         [TestMethod]
@@ -157,7 +183,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                     materialized.Add(document);
                 }
 
-                AssertMatrix(materialized, fixtures);
+                AssertMatrix(
+                    materialized,
+                    fixtures,
+                    preserveRawTokens: RequiresRawTokenPreservation(processorName));
             }
             finally
             {
@@ -183,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                     requestOptions: CreateQueryOptions(JsonProcessor.Stream.ToString()))
                 .ReadNextAsync();
 
-            AssertMatrix(ReadFeedDocuments(response.Content), fixtures);
+            AssertMatrix(ReadFeedDocuments(response.Content), fixtures, preserveRawTokens: true);
         }
 #endif
 
@@ -221,7 +250,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             using MemoryStream changeFeed = CreateFeedStream(fixtures);
             await capturedHandler(Mock.Of<ChangeFeedProcessorContext>(), changeFeed, CancellationToken.None);
 
-            AssertMatrix(delivered, fixtures);
+            AssertMatrix(
+                delivered,
+                fixtures,
+                preserveRawTokens: RequiresRawTokenPreservation(processorName));
         }
 
 #if NET8_0_OR_GREATER
@@ -242,7 +274,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 sourceProcessorName,
                 encryptor,
                 serializer);
-            AssertPlaintext(materialized, sourceFixture);
+            AssertPlaintext(materialized, sourceFixture, preserveRawTokens: true);
 
             ContainerHarness harness = CreateHarness(Array.Empty<CompatibilityFixture>(), encryptor, serializer);
             string storedRewrite = null;
@@ -268,8 +300,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 new PartitionKey(PartitionKeyValue),
                 CreateEncryptedWriteOptions(targetProcessorName));
 
-            AssertPlaintext(new FixtureDocument(await ReadToEndAsync(rewriteResponse.Content)), sourceFixture);
-            AssertMdeV3Storage(storedRewrite, sourceFixture);
+            bool targetPreservesRawTokens = RequiresRawTokenPreservation(targetProcessorName);
+            AssertPlaintext(
+                new FixtureDocument(await ReadToEndAsync(rewriteResponse.Content)),
+                sourceFixture,
+                preserveRawTokens: targetPreservesRawTokens);
+            AssertMdeV3Storage(storedRewrite, sourceFixture, targetPreservesRawTokens);
             Assert.IsTrue(
                 activities.Any(activity =>
                     activity.DisplayName ==
@@ -299,21 +335,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                     sourceFixture.Id,
                     new PartitionKey(PartitionKeyValue),
                     CreateItemOptions(readerProcessorName));
-                AssertPlaintext(new FixtureDocument(await ReadToEndAsync(reread.Content)), sourceFixture);
+                FixtureDocument rereadDocument = new (await ReadToEndAsync(reread.Content));
+                AssertPlaintext(rereadDocument, sourceFixture, preserveRawTokens: false);
+                if (RequiresRawTokenPreservation(readerProcessorName))
+                {
+                    AssertUntouchedRawTokensEqual(storedRewrite, rereadDocument.RawJson);
+                }
             }
         }
 
         [TestMethod]
-        public async Task ChangeFeedTypedProcessor_UsesConfiguredStreamProcessor()
+        public async Task ChangeFeedTypedProcessor_DecryptsMaterializedDocumentsSemantically()
         {
-            // Production gap: typed change-feed processor overloads accept JObject callbacks from
-            // the inner container and always create DecryptableItemCore / use JObject decryption.
-            // They have no request-options surface and do not consult DefaultJsonProcessor, so the
-            // Stream processor cannot currently be selected without changing production routing.
+            // Typed change-feed callbacks receive materialized JObject values and expose no
+            // request-options or processor-selection surface. Stream selection is not applicable.
             CompatibilityFixture fixture = CreateFixtures()
                 .Single(candidate => candidate.Name == "mde-stream");
             ContainerHarness harness = CreateHarness(Array.Empty<CompatibilityFixture>());
-            harness.Container.UseStreamingJsonProcessingByDefault();
             Container.ChangesHandler<JObject> capturedHandler = null;
             harness.Inner
                 .Setup(container => container.GetChangeFeedProcessorBuilder(
@@ -338,7 +376,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             (FixtureDocument document, DecryptionContext _) = await delivered
                 .Single()
                 .GetItemAsync<FixtureDocument>();
-            AssertPlaintext(document, fixture);
+            AssertPlaintext(document, fixture, preserveRawTokens: false);
         }
 #endif
 
@@ -553,23 +591,33 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             };
         }
 
-        // Query pages, read-many responses, and stream change-feed callbacks all converge on
-        // DeserializeAndDecryptResponseAsync. The API-specific tests above verify routing into
-        // that shared array path; this one assertion matrix intentionally avoids a Cartesian copy.
-        private static void AssertMatrix(
+        private static void AssertSemanticMatrix(
             IEnumerable<FixtureDocument> actualDocuments,
             IReadOnlyCollection<CompatibilityFixture> fixtures)
+        {
+            AssertMatrix(actualDocuments, fixtures, preserveRawTokens: false);
+        }
+
+        // Query stream pages, read-many stream responses, and stream change-feed callbacks converge
+        // on the shared array decryptor. API-specific tests verify routing; assertions stay shared.
+        private static void AssertMatrix(
+            IEnumerable<FixtureDocument> actualDocuments,
+            IReadOnlyCollection<CompatibilityFixture> fixtures,
+            bool preserveRawTokens)
         {
             FixtureDocument[] actual = actualDocuments.ToArray();
             Assert.AreEqual(fixtures.Count, actual.Length);
             foreach (CompatibilityFixture fixture in fixtures)
             {
                 FixtureDocument document = actual.Single(candidate => candidate.Id == fixture.Id);
-                AssertPlaintext(document, fixture);
+                AssertPlaintext(document, fixture, preserveRawTokens);
             }
         }
 
-        private static void AssertPlaintext(FixtureDocument document, CompatibilityFixture fixture)
+        private static void AssertPlaintext(
+            FixtureDocument document,
+            CompatibilityFixture fixture,
+            bool preserveRawTokens)
         {
             Assert.IsTrue(
                 JToken.DeepEquals(
@@ -579,22 +627,35 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             using JsonDocument json = JsonDocument.Parse(document.RawJson);
             JsonElement root = json.RootElement;
+            Assert.AreEqual(6, root.EnumerateObject().Count(), fixture.Name);
             Assert.AreEqual(fixture.Id, root.GetProperty("id").GetString(), fixture.Name);
             Assert.AreEqual(PartitionKeyValue, root.GetProperty("PK").GetString(), fixture.Name);
             Assert.AreEqual("exact secret", root.GetProperty("Sensitive").GetString(), fixture.Name);
+            Assert.AreEqual(JsonValueKind.Number, root.GetProperty("HighPrecision").ValueKind, fixture.Name);
             Assert.AreEqual(9007199254740993L, root.GetProperty("HighPrecision").GetInt64(), fixture.Name);
-            Assert.AreEqual(
-                fixture.ExpectedTrailingZeroToken,
-                root.GetProperty("TrailingZero").GetRawText(),
-                fixture.Name);
-            Assert.AreEqual(
-                fixture.ExpectedExponentToken,
-                root.GetProperty("Exponent").GetRawText(),
-                fixture.Name);
+            Assert.AreEqual(JsonValueKind.Number, root.GetProperty("TrailingZero").ValueKind, fixture.Name);
+            Assert.AreEqual(123.4500m, root.GetProperty("TrailingZero").GetDecimal(), fixture.Name);
+            Assert.AreEqual(JsonValueKind.Number, root.GetProperty("Exponent").ValueKind, fixture.Name);
+            Assert.AreEqual(6.02E+23, root.GetProperty("Exponent").GetDouble(), 0.0, fixture.Name);
             Assert.IsFalse(root.TryGetProperty(Constants.EncryptedInfo, out _), fixture.Name);
+
+            if (preserveRawTokens)
+            {
+                Assert.AreEqual(
+                    fixture.ExpectedTrailingZeroToken,
+                    root.GetProperty("TrailingZero").GetRawText(),
+                    fixture.Name);
+                Assert.AreEqual(
+                    fixture.ExpectedExponentToken,
+                    root.GetProperty("Exponent").GetRawText(),
+                    fixture.Name);
+            }
         }
 
-        private static void AssertMdeV3Storage(string storedJson, CompatibilityFixture sourceFixture)
+        private static void AssertMdeV3Storage(
+            string storedJson,
+            CompatibilityFixture sourceFixture,
+            bool preserveRawTokens)
         {
             JObject stored = JObject.Parse(storedJson);
             Assert.AreEqual(sourceFixture.Id, stored["id"]?.Value<string>());
@@ -606,12 +667,37 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsNotNull(stored["Sensitive"]?.Value<string>());
             Assert.AreNotEqual("exact secret", stored["Sensitive"]?.Value<string>());
             StringAssert.Contains(storedJson, "\"HighPrecision\":9007199254740993");
-            StringAssert.Contains(
-                storedJson,
-                $"\"TrailingZero\":{sourceFixture.ExpectedTrailingZeroToken}");
-            StringAssert.Contains(
-                storedJson,
-                $"\"Exponent\":{sourceFixture.ExpectedExponentToken}");
+            Assert.AreEqual(123.4500m, stored["TrailingZero"].Value<decimal>());
+            Assert.AreEqual(6.02E+23, stored["Exponent"].Value<double>(), 0.0);
+            if (preserveRawTokens)
+            {
+                StringAssert.Contains(
+                    storedJson,
+                    $"\"TrailingZero\":{sourceFixture.ExpectedTrailingZeroToken}");
+                StringAssert.Contains(
+                    storedJson,
+                    $"\"Exponent\":{sourceFixture.ExpectedExponentToken}");
+            }
+        }
+
+        private static void AssertUntouchedRawTokensEqual(string storedJson, string rereadJson)
+        {
+            using JsonDocument stored = JsonDocument.Parse(storedJson);
+            using JsonDocument reread = JsonDocument.Parse(rereadJson);
+            Assert.AreEqual(
+                stored.RootElement.GetProperty("HighPrecision").GetRawText(),
+                reread.RootElement.GetProperty("HighPrecision").GetRawText());
+            Assert.AreEqual(
+                stored.RootElement.GetProperty("TrailingZero").GetRawText(),
+                reread.RootElement.GetProperty("TrailingZero").GetRawText());
+            Assert.AreEqual(
+                stored.RootElement.GetProperty("Exponent").GetRawText(),
+                reread.RootElement.GetProperty("Exponent").GetRawText());
+        }
+
+        private static bool RequiresRawTokenPreservation(string processorName)
+        {
+            return string.Equals(processorName, "Stream", StringComparison.Ordinal);
         }
 
         private static IReadOnlyList<FixtureDocument> ReadFeedDocuments(Stream content)
