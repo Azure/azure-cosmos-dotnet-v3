@@ -76,6 +76,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 metadata.Select(candidate => candidate.Rid).ToArray());
             ISecondaryIndexMetadata gsiA = metadata.Single(candidate => candidate.Rid == GsiARid);
             ISecondaryIndexMetadata gsiB = metadata.Single(candidate => candidate.Rid == GsiBRid);
+            Assert.AreEqual(GsiARid, gsiA.Id);
             Assert.AreEqual(SourceRid, gsiA.SourceCollectionRid);
             Assert.AreEqual("/_id", gsiA.IncludedProperties["/id"]);
             Assert.AreEqual("/region", gsiA.IncludedProperties["/region"]);

@@ -12,6 +12,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
     /// </summary>
     internal interface ISecondaryIndexMetadata
     {
+        /// <summary>Gets the identifier of the secondary index container.</summary>
+        string Id { get; }
+
         /// <summary>Gets the resource identifier of the secondary index.</summary>
         string Rid { get; }
 

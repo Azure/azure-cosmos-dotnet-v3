@@ -176,6 +176,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             ContainerProperties source)
         {
             if (!IsMaterializedViewForSource(candidate, source)
+                || string.IsNullOrWhiteSpace(candidate.Id)
                 || string.IsNullOrWhiteSpace(candidate.ResourceId)
                 || candidate.PartitionKey == null
                 || candidate.IndexingPolicy == null
@@ -187,6 +188,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
 
             // MV secondaryIndexesMetadata does not expose synchronization consistency; current MV-backed indexes are Eventual.
             return new SecondaryIndexMetadata(
+                candidate.Id,
                 candidate.ResourceId,
                 source.ResourceId,
                 Clone(candidate.PartitionKey),

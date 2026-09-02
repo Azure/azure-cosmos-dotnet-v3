@@ -130,6 +130,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         {
             return new SecondaryIndexMetadata(
                 rid,
+                rid,
                 "sourceRid",
                 new PartitionKeyDefinition(),
                 new IndexingPolicy(),

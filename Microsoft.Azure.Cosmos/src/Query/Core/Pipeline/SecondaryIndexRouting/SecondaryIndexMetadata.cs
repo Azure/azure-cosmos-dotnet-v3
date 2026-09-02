@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
     internal sealed class SecondaryIndexMetadata : ISecondaryIndexMetadata
     {
         public SecondaryIndexMetadata(
+            string id,
             string rid,
             string sourceCollectionRid,
             PartitionKeyDefinition partitionKey,
@@ -18,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             IReadOnlyDictionary<string, string> includedProperties,
             ConsistencyLevel consistency)
         {
+            this.Id = string.IsNullOrWhiteSpace(id) ? throw new ArgumentNullException(nameof(id)) : id;
             this.Rid = string.IsNullOrWhiteSpace(rid) ? throw new ArgumentNullException(nameof(rid)) : rid;
             this.SourceCollectionRid = string.IsNullOrWhiteSpace(sourceCollectionRid) ? throw new ArgumentNullException(nameof(sourceCollectionRid)) : sourceCollectionRid;
             this.PartitionKey = partitionKey ?? throw new ArgumentNullException(nameof(partitionKey));
@@ -25,6 +27,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             this.IncludedProperties = includedProperties ?? throw new ArgumentNullException(nameof(includedProperties));
             this.Consistency = consistency;
         }
+
+        public string Id { get; }
 
         public string Rid { get; }
 
