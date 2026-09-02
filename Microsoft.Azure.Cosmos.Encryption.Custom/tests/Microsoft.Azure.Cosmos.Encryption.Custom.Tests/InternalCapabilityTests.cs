@@ -337,7 +337,78 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             await Assert.ThrowsExceptionAsync<OperationCanceledException>(
                 () => EncryptAsync(JsonProcessor.Stream, encryptor, cancellation.Token));
 
-            Assert.AreEqual(1, encryptor.EncryptCalls);
+            Assert.AreEqual(0, encryptor.EncryptCalls);
+        }
+
+        [DataTestMethod]
+        [DataRow("{\"id\":\"1\",\"Plain\":5}", DisplayName = "Encrypt configured path absent")]
+        [DataRow("{\"id\":\"1\",\"Sensitive\":null,\"Plain\":5}", DisplayName = "Encrypt configured path null")]
+        public async Task PublicFallbackStream_PreCanceledEncrypt_WithNoEncryptableValue_ThrowsWithoutCryptoOrOutput(
+            string document)
+        {
+            PublicArrayEncryptor encryptor = new (ignoreCancellation: true);
+            using MemoryStream output = new ();
+            using CancellationTokenSource cancellation = new ();
+            cancellation.Cancel();
+
+            await AssertCanceledAsync(
+                () => EncryptToOutputAsync(
+                    document,
+                    output,
+                    encryptor,
+                    cancellation.Token),
+                cancellation.Token);
+
+            Assert.AreEqual(0, encryptor.EncryptCalls);
+            Assert.AreEqual(0, encryptor.DecryptCalls);
+            Assert.AreEqual(0, output.Length);
+        }
+
+        [DataTestMethod]
+        [DataRow("{\"id\":\"1\",\"Plain\":5}", DisplayName = "Decrypt configured path absent")]
+        [DataRow("{\"id\":\"1\",\"Sensitive\":null,\"Plain\":5}", DisplayName = "Decrypt configured path null")]
+        public async Task PublicFallbackStream_PreCanceledDecrypt_WithNoEncryptedValue_ThrowsWithoutCryptoOrOutput(
+            string document)
+        {
+            byte[] encryptedDocument = await CreateEncryptedDocumentAsync(document);
+            PublicArrayEncryptor encryptor = new (ignoreCancellation: true);
+            using CancellationIgnoringMemoryStream input = new (encryptedDocument);
+            Stream decrypted = null;
+            using CancellationTokenSource cancellation = new ();
+            cancellation.Cancel();
+
+            try
+            {
+                await AssertCanceledAsync(
+                    async () => (decrypted, _) = await DecryptFromStreamAsync(
+                        input,
+                        encryptor,
+                        cancellation.Token),
+                    cancellation.Token);
+            }
+            finally
+            {
+                decrypted?.Dispose();
+            }
+
+            Assert.AreEqual(0, encryptor.EncryptCalls);
+            Assert.AreEqual(0, encryptor.DecryptCalls);
+            Assert.IsNull(decrypted);
+        }
+
+        [TestMethod]
+        public async Task PublicFallbackStream_PreCanceledEncrypt_WhenEncryptorIgnoresCancellation_ThrowsWithoutOutput()
+        {
+            PublicArrayEncryptor encryptor = new (ignoreCancellation: true);
+            using MemoryStream output = new ();
+            using CancellationTokenSource cancellation = new ();
+            cancellation.Cancel();
+
+            await AssertCanceledAsync(
+                () => EncryptToOutputAsync(Document, output, encryptor, cancellation.Token),
+                cancellation.Token);
+
+            Assert.AreEqual(0, output.Length);
         }
 
         [TestMethod]
@@ -496,6 +567,67 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
 #if NET8_0_OR_GREATER
+        private static async Task<byte[]> CreateEncryptedDocumentAsync(string document)
+        {
+            using Stream encrypted = await EncryptAsync(
+                JsonProcessor.Stream,
+                new ArrayKeyAccessorEncryptor(),
+                CancellationToken.None,
+                document);
+            return Encoding.UTF8.GetBytes(await ReadToEndAsync(encrypted));
+        }
+
+        private static async Task AssertCanceledAsync(
+            Func<Task> operation,
+            CancellationToken expectedCancellationToken)
+        {
+            try
+            {
+                await operation();
+                Assert.Fail("Expected the operation to observe the caller's cancellation token.");
+            }
+            catch (OperationCanceledException exception)
+            {
+                Assert.AreEqual(expectedCancellationToken, exception.CancellationToken);
+            }
+        }
+
+        private static async Task EncryptToOutputAsync(
+            string document,
+            Stream output,
+            Encryptor encryptor,
+            CancellationToken cancellationToken)
+        {
+            using Stream input = ToStream(document);
+            await EncryptionProcessor.EncryptAsync(
+                input,
+                output,
+                encryptor,
+                new EncryptionOptions
+                {
+                    DataEncryptionKeyId = DekId,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                    PathsToEncrypt = new List<string> { "/Sensitive" },
+                },
+                JsonProcessor.Stream,
+                new CosmosDiagnosticsContext(),
+                cancellationToken);
+        }
+
+        private static Task<(Stream, DecryptionContext)> DecryptFromStreamAsync(
+            Stream input,
+            Encryptor encryptor,
+            CancellationToken cancellationToken)
+        {
+            return EncryptionProcessor.DecryptAsync(
+                input,
+                encryptor,
+                JsonProcessor.Stream,
+                legacyFallback: false,
+                new CosmosDiagnosticsContext(),
+                cancellationToken);
+        }
+
         private static async Task AssertPublicFallbackInputReadCancellationAsync(
             Task operation,
             CancellationBlockingStream input,
@@ -550,6 +682,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         private class PublicArrayEncryptor : Encryptor
         {
+            private readonly bool ignoreCancellation;
+
+            public PublicArrayEncryptor(bool ignoreCancellation = false)
+            {
+                this.ignoreCancellation = ignoreCancellation;
+            }
+
             public int EncryptCalls { get; private set; }
 
             public int DecryptCalls { get; private set; }
@@ -572,7 +711,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             {
                 this.EncryptCalls++;
                 this.LastPlainTextLength = plainText.Length;
-                cancellationToken.ThrowIfCancellationRequested();
+                if (!this.ignoreCancellation)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
+
                 return Task.FromResult(TestCommon.EncryptData(plainText));
             }
 
@@ -583,12 +726,31 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 CancellationToken cancellationToken = default)
             {
                 this.DecryptCalls++;
-                cancellationToken.ThrowIfCancellationRequested();
+                if (!this.ignoreCancellation)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
+
                 return Task.FromResult(TestCommon.DecryptData(cipherText));
             }
         }
 
 #if NET8_0_OR_GREATER
+        private sealed class CancellationIgnoringMemoryStream : MemoryStream
+        {
+            public CancellationIgnoringMemoryStream(byte[] buffer)
+                : base(buffer, writable: false)
+            {
+            }
+
+            public override ValueTask<int> ReadAsync(
+                Memory<byte> buffer,
+                CancellationToken cancellationToken = default)
+            {
+                return base.ReadAsync(buffer, CancellationToken.None);
+            }
+        }
+
         private sealed class CancellationBlockingStream : MemoryStream
         {
             private readonly int blockAfterPositionResetCount;

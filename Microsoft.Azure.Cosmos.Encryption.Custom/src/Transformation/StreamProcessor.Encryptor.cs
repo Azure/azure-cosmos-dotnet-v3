@@ -34,10 +34,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 encryptionOptions.EncryptionAlgorithm,
                 this.Encryptor,
                 cancellationToken).ConfigureAwait(false);
-            CancellationToken streamReadCancellationToken =
-                cryptoOperationAdapter.UsesPublicEncryptor && cancellationToken.IsCancellationRequested
-                    ? CancellationToken.None
-                    : cancellationToken;
+            if (cryptoOperationAdapter.UsesPublicEncryptor)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
 
             // Pre-encode the paths-to-encrypt as UTF-8 byte sequences so that we can match
             // against Utf8JsonReader tokens with ValueTextEquals (which correctly handles
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             {
                 while (!isFinalBlock)
                 {
-                    int dataLength = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), streamReadCancellationToken);
+                    int dataLength = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
                     int dataSize = dataLength + leftOver;
                     isFinalBlock = dataLength == 0;
 

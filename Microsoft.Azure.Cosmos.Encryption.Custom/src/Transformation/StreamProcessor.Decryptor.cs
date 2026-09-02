@@ -357,10 +357,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 properties.EncryptionAlgorithm,
                 this.Encryptor,
                 cancellationToken).ConfigureAwait(false);
-            CancellationToken streamReadCancellationToken =
-                cryptoOperationAdapter.UsesPublicEncryptor && cancellationToken.IsCancellationRequested
-                    ? CancellationToken.None
-                    : cancellationToken;
+            if (cryptoOperationAdapter.UsesPublicEncryptor)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
 
             List<string> pathsDecrypted = new (encryptedPathCount);
             using Utf8JsonWriter writer = new (outputBufferWriter);
@@ -383,7 +383,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             while (!isFinalBlock)
             {
-                int dataLength = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), streamReadCancellationToken);
+                int dataLength = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
                 int dataSize = dataLength + leftOver;
                 isFinalBlock = dataLength == 0;
 
