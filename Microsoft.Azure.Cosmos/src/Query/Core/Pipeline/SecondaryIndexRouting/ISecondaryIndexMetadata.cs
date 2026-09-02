@@ -5,7 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
 {
     using System.Collections.Generic;
-    using Microsoft.Azure.Documents;
+    using PartitionKeyDefinition = Microsoft.Azure.Documents.PartitionKeyDefinition;
 
     /// <summary>
     /// Describes metadata for a secondary index.
@@ -22,12 +22,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
         PartitionKeyDefinition PartitionKey { get; }
 
         /// <summary>Gets the secondary index indexing policy.</summary>
-        Cosmos.IndexingPolicy IndexingPolicy { get; }
+        IndexingPolicy IndexingPolicy { get; }
 
         /// <summary>Gets the mapping from source paths to projected secondary index paths.</summary>
         IReadOnlyDictionary<string, string> IncludedProperties { get; }
 
         /// <summary>Gets the consistency level of the secondary index.</summary>
-        Cosmos.ConsistencyLevel Consistency { get; }
+        ConsistencyLevel Consistency { get; }
     }
 }

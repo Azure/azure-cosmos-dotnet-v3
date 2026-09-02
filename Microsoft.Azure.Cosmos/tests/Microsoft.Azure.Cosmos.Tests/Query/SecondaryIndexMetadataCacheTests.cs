@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using PartitionKeyDefinition = Microsoft.Azure.Documents.PartitionKeyDefinition;
 
     [TestClass]
     public class SecondaryIndexMetadataCacheTests
@@ -130,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             return new SecondaryIndexMetadata(
                 rid,
                 "sourceRid",
-                new Documents.PartitionKeyDefinition(),
+                new PartitionKeyDefinition(),
                 new IndexingPolicy(),
                 new Dictionary<string, string>(),
                 ConsistencyLevel.Eventual);

@@ -11,10 +11,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Parser;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
+    using DocumentClientException = Microsoft.Azure.Documents.DocumentClientException;
+    using HttpConstants = Microsoft.Azure.Documents.HttpConstants;
+    using TraceLevel = Microsoft.Azure.Cosmos.Tracing.TraceLevel;
 
     /// <summary>
     /// Discovers secondary indexes from collection metadata and normalizes them to
@@ -42,10 +45,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                 throw new ArgumentNullException(nameof(sourceCollectionRid));
             }
 
-            using ITrace discoveryTrace = 
-                (trace ?? NoOpTrace.Singleton).StartChild("CollectionMetadataSecondaryIndexDiscovery", TraceComponent.Query, Tracing.TraceLevel.Info);
+            using ITrace discoveryTrace = (trace ?? NoOpTrace.Singleton).StartChild(
+                "CollectionMetadataSecondaryIndexDiscovery",
+                TraceComponent.Query,
+                TraceLevel.Info);
 
-            Routing.ClientCollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync(discoveryTrace);
+            ClientCollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync(discoveryTrace);
             ContainerProperties source = await ResolveByRidAsync(collectionCache, sourceCollectionRid, discoveryTrace, cancellationToken);
             IReadOnlyList<MaterializedViewProperties> mvReferences = source.MaterializedViews;
             if (mvReferences == null || mvReferences.Count == 0)
@@ -80,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
         }
 
         private static async Task<ContainerProperties> ResolveByRidAsync(
-            Routing.ClientCollectionCache collectionCache,
+            ClientCollectionCache collectionCache,
             string collectionRid,
             ITrace trace,
             CancellationToken cancellationToken)
@@ -88,9 +93,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             try
             {
                 return await collectionCache.ResolveByRidAsync(
-                    HttpConstants.Versions.CurrentVersion, 
-                    collectionRid, trace, 
-                    clientSideRequestStatistics: null, 
+                    HttpConstants.Versions.CurrentVersion,
+                    collectionRid,
+                    trace,
+                    clientSideRequestStatistics: null,
                     cancellationToken);
             }
             catch (DocumentClientException exception)
@@ -103,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             ContainerProperties candidate,
             ContainerProperties source)
         {
-            Cosmos.MaterializedViewDefinition definition = candidate?.MaterializedViewDefinition;
+            MaterializedViewDefinition definition = candidate?.MaterializedViewDefinition;
             return definition != null
                 && IsGlobalSecondaryIndexContainerType(definition.ContainerType)
                 && source != null
@@ -112,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
         }
 
         internal static bool TryGetIncludedProperties(
-            Cosmos.MaterializedViewDefinition definition,
+            MaterializedViewDefinition definition,
             ContainerProperties source,
             out IReadOnlyDictionary<string, string> includedProperties)
         {
@@ -120,11 +126,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             if (string.IsNullOrWhiteSpace(definition?.Definition)
                 || source == null
                 || !SqlQueryParser.TryParse(definition.Definition, out SqlQuery query))
-            {
-                return false;
-            }
-
-            if (query.WhereClause != null)
             {
                 return false;
             }
@@ -178,18 +179,27 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                 || string.IsNullOrWhiteSpace(candidate.ResourceId)
                 || candidate.PartitionKey == null
                 || candidate.IndexingPolicy == null
+                || IsFilteredMaterializedView(candidate.MaterializedViewDefinition)
                 || !TryGetIncludedProperties(candidate.MaterializedViewDefinition, source, out IReadOnlyDictionary<string, string> includedProperties))
             {
                 return null;
             }
 
+            // MV metadata does not expose synchronization consistency; current MV-backed indexes are Eventual.
             return new SecondaryIndexMetadata(
                 candidate.ResourceId,
                 source.ResourceId,
                 Clone(candidate.PartitionKey),
                 Clone(candidate.IndexingPolicy),
                 includedProperties,
-                Cosmos.ConsistencyLevel.Eventual);
+                ConsistencyLevel.Eventual);
+        }
+
+        internal static bool IsFilteredMaterializedView(MaterializedViewDefinition definition)
+        {
+            return !string.IsNullOrWhiteSpace(definition?.Definition)
+                && SqlQueryParser.TryParse(definition.Definition, out SqlQuery query)
+                && query.WhereClause != null;
         }
 
         private static bool IsGlobalSecondaryIndexContainerType(string containerType)
@@ -203,9 +213,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             return JsonConvert.DeserializeObject<T>(JsonConvert.SerializeObject(value));
         }
 
-        private static bool TryGetSourcePath(
-            SqlScalarExpression expression,
-            out string sourcePath)
+        private static bool TryGetSourcePath(SqlScalarExpression expression, out string sourcePath)
         {
             List<string> segments = new List<string>();
             while (expression != null)

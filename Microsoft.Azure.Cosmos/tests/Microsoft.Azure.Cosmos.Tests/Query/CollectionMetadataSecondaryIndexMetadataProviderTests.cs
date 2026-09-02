@@ -13,8 +13,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using IClientSideRequestStatistics = Microsoft.Azure.Documents.IClientSideRequestStatistics;
+    using ResourceId = Microsoft.Azure.Documents.ResourceId;
+    using ServerStoreModel = Microsoft.Azure.Documents.ServerStoreModel;
 
     [TestClass]
     public class CollectionMetadataSecondaryIndexMetadataProviderTests
@@ -77,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             Assert.AreEqual(SourceRid, gsiA.SourceCollectionRid);
             Assert.AreEqual("/_id", gsiA.IncludedProperties["/id"]);
             Assert.AreEqual("/region", gsiA.IncludedProperties["/region"]);
-            Assert.AreEqual(Microsoft.Azure.Cosmos.ConsistencyLevel.Eventual, gsiA.Consistency);
+            Assert.AreEqual(ConsistencyLevel.Eventual, gsiA.Consistency);
             Assert.AreEqual("/category", gsiB.IncludedProperties["/category"]);
 
             collections[GsiARid].PartitionKey.Paths[0] = "/changed";
@@ -85,6 +87,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 "/region",
                 gsiA.PartitionKey.Paths[0].ToString(),
                 "Normalized metadata must not retain mutable collection metadata references.");
+            collections[GsiARid].IndexingPolicy.IncludedPaths[0].Path = "/changed";
+            Assert.AreEqual(
+                "/*",
+                gsiA.IndexingPolicy.IncludedPaths[0].Path,
+                "Normalized metadata must not retain mutable indexing policy references.");
         }
 
         [TestMethod]
@@ -174,6 +181,87 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             Assert.AreEqual(EligibleRid, metadata[0].Rid);
         }
 
+        [DataTestMethod]
+        [DataRow("SELECT c.id AS _id FROM c", "/id", "/_id")]
+        [DataRow("SELECT c['category'] FROM c", "/category", "/category")]
+        [DataRow("SELECT c.address.zip AS postalCode FROM c", "/address/zip", "/postalCode")]
+        [DataRow("SELECT c['address']['zip'] AS postalCode FROM c", "/address/zip", "/postalCode")]
+        [DataRow("SELECT c.address['zip'] FROM c", "/address/zip", "/zip")]
+        public void TryGetIncludedPropertiesMapsPropertyPaths(
+            string query,
+            string sourcePath,
+            string projectedPath)
+        {
+            bool succeeded = CollectionMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
+                CreateMaterializedViewDefinition(query),
+                CreateSource(),
+                out IReadOnlyDictionary<string, string> includedProperties);
+
+            Assert.IsTrue(succeeded);
+            Assert.AreEqual(1, includedProperties.Count);
+            Assert.AreEqual(projectedPath, includedProperties[sourcePath]);
+        }
+
+        [TestMethod]
+        public void TryGetIncludedPropertiesMapsWildcardAndPartitionKey()
+        {
+            bool succeeded = CollectionMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
+                CreateMaterializedViewDefinition("SELECT * FROM c"),
+                CreateSource(),
+                out IReadOnlyDictionary<string, string> includedProperties);
+
+            Assert.IsTrue(succeeded);
+            Assert.AreEqual("/*", includedProperties["/*"]);
+            Assert.AreEqual("/tenantId", includedProperties["/tenantId"]);
+        }
+
+        [DataTestMethod]
+        [DataRow(null)]
+        [DataRow("")]
+        [DataRow("not a query")]
+        [DataRow("SELECT VALUE c.id FROM c")]
+        [DataRow("SELECT c FROM c")]
+        [DataRow("SELECT c.value + 1 AS value FROM c")]
+        public void TryGetIncludedPropertiesRejectsUnsupportedDefinitions(string query)
+        {
+            bool succeeded = CollectionMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
+                CreateMaterializedViewDefinition(query),
+                CreateSource(),
+                out IReadOnlyDictionary<string, string> includedProperties);
+
+            Assert.IsFalse(succeeded);
+            Assert.IsNull(includedProperties);
+        }
+
+        [TestMethod]
+        public void TryGetIncludedPropertiesRejectsMissingInputs()
+        {
+            Assert.IsFalse(CollectionMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
+                definition: null,
+                CreateSource(),
+                out IReadOnlyDictionary<string, string> missingDefinitionProperties));
+            Assert.IsNull(missingDefinitionProperties);
+
+            Assert.IsFalse(CollectionMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
+                CreateMaterializedViewDefinition("SELECT * FROM c"),
+                source: null,
+                out IReadOnlyDictionary<string, string> missingSourceProperties));
+            Assert.IsNull(missingSourceProperties);
+        }
+
+        [DataTestMethod]
+        [DataRow("SELECT * FROM c", false)]
+        [DataRow("SELECT * FROM c WHERE c.enabled = true", true)]
+        [DataRow(null, false)]
+        [DataRow("not a query", false)]
+        public void IsFilteredMaterializedViewIdentifiesWhereClause(string query, bool expected)
+        {
+            Assert.AreEqual(
+                expected,
+                CollectionMetadataSecondaryIndexMetadataProvider.IsFilteredMaterializedView(
+                    CreateMaterializedViewDefinition(query)));
+        }
+
         private static ContainerProperties CreateSource()
         {
             ContainerProperties source = ContainerProperties.CreateWithResourceId(SourceRid);
@@ -190,7 +278,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             ContainerProperties candidate = ContainerProperties.CreateWithResourceId(rid);
             candidate.Id = rid;
             candidate.PartitionKey = new ContainerProperties(rid, partitionKeyPath).PartitionKey;
-            candidate.MaterializedViewDefinition = new Microsoft.Azure.Cosmos.MaterializedViewDefinition
+            candidate.MaterializedViewDefinition = new MaterializedViewDefinition
                 {
                     SourceContainerId = "source",
                     SourceContainerResourceId = SourceRid,
@@ -198,8 +286,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                     ContainerType = CollectionMetadataSecondaryIndexMetadataProvider.GlobalSecondaryIndexContainerType,
                 };
 
-            candidate.IndexingPolicy.IncludedPaths.Add(new Microsoft.Azure.Cosmos.IncludedPath { Path = "/*" });
+            candidate.IndexingPolicy.IncludedPaths.Add(new IncludedPath { Path = "/*" });
             return candidate;
+        }
+
+        private static MaterializedViewDefinition CreateMaterializedViewDefinition(string query)
+        {
+            return new MaterializedViewDefinition
+            {
+                Definition = query,
+            };
         }
 
         private sealed class ProviderTestContext : IDisposable

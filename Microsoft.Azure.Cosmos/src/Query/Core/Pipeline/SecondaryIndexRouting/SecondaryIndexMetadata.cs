@@ -6,8 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using Microsoft.Azure.Documents;
+    using PartitionKeyDefinition = Microsoft.Azure.Documents.PartitionKeyDefinition;
 
     internal sealed class SecondaryIndexMetadata : ISecondaryIndexMetadata
     {
@@ -15,9 +14,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             string rid,
             string sourceCollectionRid,
             PartitionKeyDefinition partitionKey,
-            Cosmos.IndexingPolicy indexingPolicy,
+            IndexingPolicy indexingPolicy,
             IReadOnlyDictionary<string, string> includedProperties,
-            Cosmos.ConsistencyLevel consistency)
+            ConsistencyLevel consistency)
         {
             this.Rid = string.IsNullOrWhiteSpace(rid) ? throw new ArgumentNullException(nameof(rid)) : rid;
             this.SourceCollectionRid = string.IsNullOrWhiteSpace(sourceCollectionRid) ? throw new ArgumentNullException(nameof(sourceCollectionRid)) : sourceCollectionRid;
@@ -33,10 +32,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
 
         public PartitionKeyDefinition PartitionKey { get; }
 
-        public Cosmos.IndexingPolicy IndexingPolicy { get; }
+        public IndexingPolicy IndexingPolicy { get; }
 
         public IReadOnlyDictionary<string, string> IncludedProperties { get; }
 
-        public Cosmos.ConsistencyLevel Consistency { get; }
+        public ConsistencyLevel Consistency { get; }
     }
 }
