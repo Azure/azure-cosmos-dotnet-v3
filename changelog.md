@@ -51,6 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Other Changes
 
+- [6097](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6097) ClientId: Adds an SDK-generated `x-ms-client-id` header, carrying a stable per-`CosmosClient` identifier, to every HTTP request the SDK issues — gateway data-plane, metadata, and control-plane (including database account reads), thin-client requests, and automatically retried and cross-region hedged requests. This lets the service correlate all requests originating from the same client. Direct-mode (TCP) requests are unaffected, as the RNTBD protocol has no client-id token.
 - [6063](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6063) Query: Reduces backend over-fetch for cross-partition `ORDER BY` queries that use `TOP`, `LIMIT`, or `OFFSET`/`LIMIT` by lowering the per-partition page size from 5x each partition's proportional share of the requested document count to 2x, which reduces query latency and backend load without changing results. Workloads with a heavily skewed sort key may see additional round trips; the previous behavior can be restored by setting the environment variable `AZURE_COSMOS_PAGE_SIZE_FACTOR_FOR_TOP=5`.
 - [5991](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5991) TargetReplicaSetSize : Updated address cache logic to use partition-specific target replica set size when available, falling back to the user replication policy value.
 
