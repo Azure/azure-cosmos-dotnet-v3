@@ -17,7 +17,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         private readonly Encryptor encryptor;
         private readonly CosmosSerializer cosmosSerializer;
         private readonly JsonProcessor defaultJsonProcessor;
-        private readonly List<JsonProcessor?> operationJsonProcessorOverrides = new ();
+        private readonly object operationStateLock = new ();
+        private List<JsonProcessor?> operationJsonProcessorOverrides = new ();
         private TransactionalBatch transactionalBatch;
 
         public EncryptionTransactionalBatch(
@@ -45,10 +46,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     storeSelectedProcessor: false,
                     out _,
                     out JsonProcessor? jsonProcessorOverride);
-                this.transactionalBatch = this.transactionalBatch.CreateItem(
-                    item,
-                    requestOptions);
-                this.operationJsonProcessorOverrides.Add(jsonProcessorOverride);
+                lock (this.operationStateLock)
+                {
+                    this.transactionalBatch = this.transactionalBatch.CreateItem(
+                        item,
+                        requestOptions);
+                    this.operationJsonProcessorOverrides.Add(jsonProcessorOverride);
+                }
 
                 return this;
             }
@@ -90,10 +94,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 }
             }
 
-            this.transactionalBatch = this.transactionalBatch.CreateItemStream(
-                streamPayload,
-                requestOptions);
-            this.operationJsonProcessorOverrides.Add(jsonProcessorOverride);
+            lock (this.operationStateLock)
+            {
+                this.transactionalBatch = this.transactionalBatch.CreateItemStream(
+                    streamPayload,
+                    requestOptions);
+                this.operationJsonProcessorOverrides.Add(jsonProcessorOverride);
+            }
 
             return this;
         }
@@ -108,10 +115,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 storeSelectedProcessor: false,
                 out _,
                 out JsonProcessor? jsonProcessorOverride);
-            this.transactionalBatch = this.transactionalBatch.DeleteItem(
-                id,
-                requestOptions);
-            this.operationJsonProcessorOverrides.Add(jsonProcessorOverride);
+            lock (this.operationStateLock)
+            {
+                this.transactionalBatch = this.transactionalBatch.DeleteItem(
+                    id,
+                    requestOptions);
+                this.operationJsonProcessorOverrides.Add(jsonProcessorOverride);
+            }
 
             return this;
         }
@@ -126,10 +136,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 storeSelectedProcessor: false,
                 out _,
                 out JsonProcessor? jsonProcessorOverride);
-            this.transactionalBatch = this.transactionalBatch.ReadItem(
-                id,
-                requestOptions);
-            this.operationJsonProcessorOverrides.Add(jsonProcessorOverride);
+            lock (this.operationStateLock)
+            {
+                this.transactionalBatch = this.transactionalBatch.ReadItem(
+                    id,
+                    requestOptions);
+                this.operationJsonProcessorOverrides.Add(jsonProcessorOverride);
+            }
 
             return this;
         }
@@ -148,11 +161,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     storeSelectedProcessor: false,
                     out _,
                     out JsonProcessor? jsonProcessorOverride);
-                this.transactionalBatch = this.transactionalBatch.ReplaceItem(
-                    id,
-                    item,
-                    requestOptions);
-                this.operationJsonProcessorOverrides.Add(jsonProcessorOverride);
+                lock (this.operationStateLock)
+                {
+                    this.transactionalBatch = this.transactionalBatch.ReplaceItem(
+                        id,
+                        item,
+                        requestOptions);
+                    this.operationJsonProcessorOverrides.Add(jsonProcessorOverride);
+                }
 
                 return this;
             }
@@ -196,11 +212,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 }
             }
 
-            this.transactionalBatch = this.transactionalBatch.ReplaceItemStream(
-                id,
-                streamPayload,
-                requestOptions);
-            this.operationJsonProcessorOverrides.Add(jsonProcessorOverride);
+            lock (this.operationStateLock)
+            {
+                this.transactionalBatch = this.transactionalBatch.ReplaceItemStream(
+                    id,
+                    streamPayload,
+                    requestOptions);
+                this.operationJsonProcessorOverrides.Add(jsonProcessorOverride);
+            }
 
             return this;
         }
@@ -218,10 +237,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     storeSelectedProcessor: false,
                     out _,
                     out JsonProcessor? jsonProcessorOverride);
-                this.transactionalBatch = this.transactionalBatch.UpsertItem(
-                    item,
-                    requestOptions);
-                this.operationJsonProcessorOverrides.Add(jsonProcessorOverride);
+                lock (this.operationStateLock)
+                {
+                    this.transactionalBatch = this.transactionalBatch.UpsertItem(
+                        item,
+                        requestOptions);
+                    this.operationJsonProcessorOverrides.Add(jsonProcessorOverride);
+                }
 
                 return this;
             }
@@ -263,10 +285,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 }
             }
 
-            this.transactionalBatch = this.transactionalBatch.UpsertItemStream(
-                streamPayload,
-                requestOptions);
-            this.operationJsonProcessorOverrides.Add(jsonProcessorOverride);
+            lock (this.operationStateLock)
+            {
+                this.transactionalBatch = this.transactionalBatch.UpsertItemStream(
+                    streamPayload,
+                    requestOptions);
+                this.operationJsonProcessorOverrides.Add(jsonProcessorOverride);
+            }
 
             return this;
         }
@@ -277,10 +302,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(options: null);
             using (diagnosticsContext.CreateScope("TransactionalBatch.ExecuteAsync"))
             {
-                TransactionalBatchResponse response = await this.transactionalBatch.ExecuteAsync(cancellationToken);
+                Task<TransactionalBatchResponse> executeTask;
+                List<JsonProcessor?> operationJsonProcessorOverrides;
+                lock (this.operationStateLock)
+                {
+                    operationJsonProcessorOverrides = this.operationJsonProcessorOverrides;
+                    this.operationJsonProcessorOverrides = new List<JsonProcessor?>();
+                    executeTask = this.transactionalBatch.ExecuteAsync(cancellationToken);
+                }
+
+                TransactionalBatchResponse response = await executeTask;
                 return await this.DecryptTransactionalBatchResponseAsync(
                     response,
                     this.defaultJsonProcessor,
+                    operationJsonProcessorOverrides,
                     diagnosticsContext,
                     cancellationToken);
             }
@@ -299,10 +334,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(options: null);
             using (diagnosticsContext.CreateScope("TransactionalBatch.ExecuteAsync.WithRequestOptions"))
             {
-                TransactionalBatchResponse response = await this.transactionalBatch.ExecuteAsync(requestOptions, cancellationToken);
+                Task<TransactionalBatchResponse> executeTask;
+                List<JsonProcessor?> operationJsonProcessorOverrides;
+                lock (this.operationStateLock)
+                {
+                    operationJsonProcessorOverrides = this.operationJsonProcessorOverrides;
+                    this.operationJsonProcessorOverrides = new List<JsonProcessor?>();
+                    executeTask = this.transactionalBatch.ExecuteAsync(requestOptions, cancellationToken);
+                }
+
+                TransactionalBatchResponse response = await executeTask;
                 return await this.DecryptTransactionalBatchResponseAsync(
                     response,
                     jsonProcessor,
+                    operationJsonProcessorOverrides,
                     diagnosticsContext,
                     cancellationToken);
             }
@@ -311,6 +356,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         private async Task<TransactionalBatchResponse> DecryptTransactionalBatchResponseAsync(
             TransactionalBatchResponse response,
             JsonProcessor batchJsonProcessor,
+            IReadOnlyList<JsonProcessor?> operationJsonProcessorOverrides,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -323,7 +369,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             try
             {
-                int operationCount = this.operationJsonProcessorOverrides.Count;
+                int operationCount = operationJsonProcessorOverrides.Count;
                 if (response.Count != operationCount)
                 {
                     throw CreateResultCountMismatchException(operationCount, response.Count);
@@ -339,7 +385,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     Stream resourceStream = result.ResourceStream;
                     if (response.IsSuccessStatusCode && resourceStream != null)
                     {
-                        JsonProcessor jsonProcessor = this.operationJsonProcessorOverrides[operationIndex] ?? batchJsonProcessor;
+                        JsonProcessor jsonProcessor = operationJsonProcessorOverrides[operationIndex] ?? batchJsonProcessor;
                         Stream decryptedStream;
                         if (jsonProcessor == JsonProcessor.Newtonsoft)
                         {

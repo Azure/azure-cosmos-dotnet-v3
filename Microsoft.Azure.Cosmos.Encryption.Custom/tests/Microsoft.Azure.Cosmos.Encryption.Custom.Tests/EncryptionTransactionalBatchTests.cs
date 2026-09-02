@@ -6,6 +6,7 @@
 namespace Microsoft.Azure.Cosmos.Encryption.Tests
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
@@ -109,6 +110,206 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey));
             Assert.AreEqual("Stream", requestOptions.Properties[
                 JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey]);
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task ExecuteAsync_ReusedBatchUsesOnlyCurrentExecutionMetadata(bool useRequestOptions)
+        {
+            Mock<TransactionalBatchResponse> firstResponse = CreateResponse();
+            Mock<TransactionalBatchResponse> secondResponse = CreateResponse();
+            Mock<TransactionalBatch> inner = new ();
+            inner.Setup(b => b.ReadItem(
+                    It.IsAny<string>(),
+                    It.IsAny<TransactionalBatchItemRequestOptions>()))
+                .Returns(inner.Object);
+            if (useRequestOptions)
+            {
+                inner.SetupSequence(b => b.ExecuteAsync(
+                        It.IsAny<TransactionalBatchRequestOptions>(),
+                        It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(firstResponse.Object)
+                    .ReturnsAsync(secondResponse.Object);
+            }
+            else
+            {
+                inner.SetupSequence(b => b.ExecuteAsync(It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(firstResponse.Object)
+                    .ReturnsAsync(secondResponse.Object);
+            }
+
+            EncryptionTransactionalBatch batch = CreateBatch(inner);
+            batch.ReadItem("stream", CreateItemOptions(JsonProcessor.Stream));
+            List<Activity> firstActivities = await ExecuteAndCaptureActivitiesAsync(
+                () => ExecuteAsync(batch, useRequestOptions));
+
+            batch.ReadItem("newtonsoft", CreateItemOptions(JsonProcessor.Newtonsoft));
+            List<Activity> secondActivities = await ExecuteAndCaptureActivitiesAsync(
+                () => ExecuteAsync(batch, useRequestOptions));
+
+            Assert.AreEqual(1, firstActivities.Count(activity =>
+                activity.DisplayName == CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream));
+            Assert.AreEqual(1, secondActivities.Count(activity =>
+                activity.DisplayName == CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft));
+        }
+
+        [TestMethod]
+        public async Task ExecuteAsync_FailureBeforeInnerDelegationRetainsMetadata()
+        {
+            Mock<TransactionalBatchResponse> response = CreateResponse();
+            Mock<TransactionalBatch> inner = new ();
+            inner.Setup(b => b.ReadItem(
+                    "stream",
+                    It.IsAny<TransactionalBatchItemRequestOptions>()))
+                .Returns(inner.Object);
+            inner.Setup(b => b.ExecuteAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(response.Object);
+            EncryptionTransactionalBatch batch = CreateBatch(inner);
+            batch.ReadItem("stream", CreateItemOptions(JsonProcessor.Stream));
+            TransactionalBatchRequestOptions requestOptions = new ()
+            {
+                Properties = new ThrowingReadOnlyDictionary(
+                    JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey,
+                    JsonProcessor.Newtonsoft),
+            };
+
+            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => batch.ExecuteAsync(requestOptions));
+
+            Assert.AreEqual("Enumeration failed.", exception.Message);
+            inner.Verify(
+                b => b.ExecuteAsync(
+                    It.IsAny<TransactionalBatchRequestOptions>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Never());
+            List<Activity> activities = await ExecuteAndCaptureActivitiesAsync(() => batch.ExecuteAsync());
+            Assert.AreEqual(1, activities.Count(activity =>
+                activity.DisplayName == CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream));
+        }
+
+        [TestMethod]
+        public async Task ExecuteAsync_CancellationAfterDelegationConsumesMetadata()
+        {
+            Mock<TransactionalBatchResponse> response = CreateResponse();
+            Mock<TransactionalBatch> inner = new ();
+            inner.Setup(b => b.ReadItem(
+                    It.IsAny<string>(),
+                    It.IsAny<TransactionalBatchItemRequestOptions>()))
+                .Returns(inner.Object);
+            inner.SetupSequence(b => b.ExecuteAsync(It.IsAny<CancellationToken>()))
+                .Returns(Task.FromCanceled<TransactionalBatchResponse>(new CancellationToken(canceled: true)))
+                .ReturnsAsync(response.Object);
+            EncryptionTransactionalBatch batch = CreateBatch(inner);
+            batch.ReadItem("cancelled", CreateItemOptions(JsonProcessor.Stream));
+
+            await Assert.ThrowsExceptionAsync<TaskCanceledException>(() => batch.ExecuteAsync());
+
+            batch.ReadItem("next", CreateItemOptions(JsonProcessor.Newtonsoft));
+            List<Activity> activities = await ExecuteAndCaptureActivitiesAsync(() => batch.ExecuteAsync());
+            Assert.AreEqual(1, activities.Count(activity =>
+                activity.DisplayName == CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft));
+        }
+
+        [TestMethod]
+        public async Task ExecuteAsync_ThrownExceptionAfterDelegationConsumesMetadata()
+        {
+            Mock<TransactionalBatchResponse> response = CreateResponse();
+            Mock<TransactionalBatch> inner = new ();
+            inner.Setup(b => b.ReadItem(
+                    It.IsAny<string>(),
+                    It.IsAny<TransactionalBatchItemRequestOptions>()))
+                .Returns(inner.Object);
+            inner.SetupSequence(b => b.ExecuteAsync(It.IsAny<CancellationToken>()))
+                .Throws(new InvalidOperationException("Inner execution failed."))
+                .ReturnsAsync(response.Object);
+            EncryptionTransactionalBatch batch = CreateBatch(inner);
+            batch.ReadItem("failed", CreateItemOptions(JsonProcessor.Stream));
+
+            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => batch.ExecuteAsync());
+
+            Assert.AreEqual("Inner execution failed.", exception.Message);
+            batch.ReadItem("next", CreateItemOptions(JsonProcessor.Newtonsoft));
+            List<Activity> activities = await ExecuteAndCaptureActivitiesAsync(() => batch.ExecuteAsync());
+            Assert.AreEqual(1, activities.Count(activity =>
+                activity.DisplayName == CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft));
+        }
+
+        [TestMethod]
+        public async Task ExecuteAsync_FailedServiceResponseConsumesMetadata()
+        {
+            Mock<TransactionalBatchResponse> failedResponse = CreateResponse(isSuccessStatusCode: false);
+            Mock<TransactionalBatchResponse> successfulResponse = CreateResponse();
+            Mock<TransactionalBatch> inner = new ();
+            inner.Setup(b => b.ReadItem(
+                    It.IsAny<string>(),
+                    It.IsAny<TransactionalBatchItemRequestOptions>()))
+                .Returns(inner.Object);
+            inner.SetupSequence(b => b.ExecuteAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(failedResponse.Object)
+                .ReturnsAsync(successfulResponse.Object);
+            EncryptionTransactionalBatch batch = CreateBatch(inner);
+            batch.ReadItem("failed", CreateItemOptions(JsonProcessor.Stream));
+
+            using (TransactionalBatchResponse response = await batch.ExecuteAsync())
+            {
+                Assert.IsFalse(response.IsSuccessStatusCode);
+            }
+
+            batch.ReadItem("next", CreateItemOptions(JsonProcessor.Newtonsoft));
+            List<Activity> activities = await ExecuteAndCaptureActivitiesAsync(() => batch.ExecuteAsync());
+            Assert.AreEqual(1, activities.Count(activity =>
+                activity.DisplayName == CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft));
+        }
+
+        [TestMethod]
+        public async Task ExecuteAsync_OverlappingAdditionBelongsToNextExecution()
+        {
+            Mock<TransactionalBatchResponse> firstResponse = CreateResponse();
+            Mock<TransactionalBatchResponse> secondResponse = CreateResponse();
+            TaskCompletionSource<TransactionalBatchResponse> firstExecution = new (
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<bool> delegated = new (
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            int executionCount = 0;
+            Mock<TransactionalBatch> inner = new ();
+            inner.Setup(b => b.ReadItem(
+                    It.IsAny<string>(),
+                    It.IsAny<TransactionalBatchItemRequestOptions>()))
+                .Returns(inner.Object);
+            inner.Setup(b => b.ExecuteAsync(It.IsAny<CancellationToken>()))
+                .Returns(() =>
+                {
+                    if (Interlocked.Increment(ref executionCount) == 1)
+                    {
+                        delegated.SetResult(true);
+                        return firstExecution.Task;
+                    }
+
+                    return Task.FromResult(secondResponse.Object);
+                });
+            EncryptionTransactionalBatch batch = CreateBatch(inner);
+            List<Activity> activities = new ();
+            using ActivityListener listener = CreateActivityListener(activities);
+
+            batch.ReadItem("first", CreateItemOptions(JsonProcessor.Stream));
+            Task<TransactionalBatchResponse> firstTask = batch.ExecuteAsync();
+            await delegated.Task;
+            batch.ReadItem("second", CreateItemOptions(JsonProcessor.Newtonsoft));
+            firstExecution.SetResult(firstResponse.Object);
+            using (await firstTask)
+            {
+            }
+
+            using (await batch.ExecuteAsync())
+            {
+            }
+
+            Assert.AreEqual(1, activities.Count(activity =>
+                activity.DisplayName == CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream));
+            Assert.AreEqual(1, activities.Count(activity =>
+                activity.DisplayName == CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft));
         }
 
         [TestMethod]
@@ -483,14 +684,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             int resultCount)
         {
             int innerDisposeCount = 0;
-            EncryptionTransactionalBatch batch = CreateBatch(
-                setupOperation: inner => inner
-                    .Setup(b => b.ReadItem("id", It.IsAny<TransactionalBatchItemRequestOptions>()))
-                    .Returns(inner.Object),
+            Mock<TransactionalBatchResponse> mismatchedResponse = CreateResponse(
                 resultCount: resultCount,
                 setupResponse: response => response.Protected()
                     .Setup("Dispose", ItExpr.IsAny<bool>())
                     .Callback(() => innerDisposeCount++));
+            Mock<TransactionalBatchResponse> successfulResponse = CreateResponse();
+            Mock<TransactionalBatch> inner = new ();
+            inner.Setup(b => b.ReadItem(
+                    It.IsAny<string>(),
+                    It.IsAny<TransactionalBatchItemRequestOptions>()))
+                .Returns(inner.Object);
+            inner.SetupSequence(b => b.ExecuteAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(mismatchedResponse.Object)
+                .ReturnsAsync(successfulResponse.Object);
+            EncryptionTransactionalBatch batch = CreateBatch(inner);
             batch.ReadItem("id");
 
             InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
@@ -498,21 +706,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             StringAssert.Contains(exception.Message, $"{resultCount} operation results for 1 operations");
             Assert.AreEqual(1, innerDisposeCount);
+
+            batch.ReadItem("next");
+            using TransactionalBatchResponse response = await batch.ExecuteAsync();
+            Assert.AreEqual(1, response.Count);
         }
 
         [TestMethod]
-        public async Task ExecuteAsync_WhenLaterResultDecryptionFails_DisposesInnerResponse()
+        public async Task ExecuteAsync_WhenLaterResultDecryptionFails_ConsumesMetadataAndDisposesInnerResponse()
         {
             var encryptor = TestEncryptorFactory.CreateMde("dekId", out _);
             TrackingStream encryptedStream = await CreateTrackingEncryptedPayloadAsync(encryptor.Object);
             MemoryStream malformedStream = new (Encoding.UTF8.GetBytes("{not-json"));
             int innerDisposeCount = 0;
-            EncryptionTransactionalBatch batch = CreateBatch(
-                setupOperation: inner => inner
-                    .Setup(b => b.ReadItem(It.IsAny<string>(), It.IsAny<TransactionalBatchItemRequestOptions>()))
-                    .Returns(inner.Object),
+            Mock<TransactionalBatchResponse> failedResponse = CreateResponse(
                 resultCount: 2,
-                encryptor: encryptor.Object,
                 resultStreamFactory: index => index == 0 ? encryptedStream : malformedStream,
                 setupResponse: response => response.Protected()
                     .Setup("Dispose", ItExpr.IsAny<bool>())
@@ -521,6 +729,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                         innerDisposeCount++;
                         throw new IOException("cleanup failure");
                     }));
+            Mock<TransactionalBatchResponse> successfulResponse = CreateResponse();
+            Mock<TransactionalBatch> inner = new ();
+            inner.Setup(b => b.ReadItem(
+                    It.IsAny<string>(),
+                    It.IsAny<TransactionalBatchItemRequestOptions>()))
+                .Returns(inner.Object);
+            inner.SetupSequence(b => b.ExecuteAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(failedResponse.Object)
+                .ReturnsAsync(successfulResponse.Object);
+            EncryptionTransactionalBatch batch = CreateBatch(inner, encryptor.Object);
             batch.ReadItem("valid");
             batch.ReadItem("invalid");
 
@@ -531,6 +749,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             StringAssert.Contains(exception.Message, "Invalid JavaScript");
             Assert.AreEqual(1, innerDisposeCount);
             Assert.AreEqual(1, encryptedStream.DisposeCount);
+
+            batch.ReadItem("next", CreateItemOptions(JsonProcessor.Newtonsoft));
+            using TransactionalBatchResponse response = await batch.ExecuteAsync();
+            Assert.AreEqual(1, response.Count);
+        }
+
+        private static EncryptionTransactionalBatch CreateBatch(
+            Mock<TransactionalBatch> inner,
+            Encryptor encryptor = null,
+            JsonProcessor defaultJsonProcessor = JsonProcessor.Newtonsoft)
+        {
+            return new EncryptionTransactionalBatch(
+                inner.Object,
+                encryptor ?? Mock.Of<Encryptor>(),
+                Mock.Of<CosmosSerializer>(),
+                defaultJsonProcessor);
         }
 
         private static EncryptionTransactionalBatch CreateBatch(
@@ -542,24 +776,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             System.Action<Mock<TransactionalBatchResponse>> setupResponse = null,
             System.Action<TransactionalBatchRequestOptions> onExecuteWithOptions = null)
         {
-            List<TransactionalBatchOperationResult> results = new ();
-            for (int index = 0; index < resultCount; index++)
-            {
-                int resultIndex = index;
-                Mock<TransactionalBatchOperationResult> result = new ();
-                result.SetupGet(r => r.ResourceStream)
-                    .Returns(() => resultStreamFactory?.Invoke(resultIndex)
-                        ?? new MemoryStream(Encoding.UTF8.GetBytes($"{{\"id\":\"doc{resultIndex}\"}}")));
-                result.SetupGet(r => r.StatusCode).Returns(HttpStatusCode.OK);
-                results.Add(result.Object);
-            }
-
-            Mock<TransactionalBatchResponse> response = new ();
-            response.SetupGet(r => r.IsSuccessStatusCode).Returns(true);
-            response.SetupGet(r => r.Count).Returns(results.Count);
-            response.Setup(r => r.GetEnumerator())
-                .Returns(() => results.GetEnumerator());
-            setupResponse?.Invoke(response);
+            Mock<TransactionalBatchResponse> response = CreateResponse(
+                resultCount,
+                resultStreamFactory: resultStreamFactory,
+                setupResponse: setupResponse);
 
             Mock<TransactionalBatch> inner = new ();
             setupOperation(inner);
@@ -575,6 +795,56 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 encryptor ?? Mock.Of<Encryptor>(),
                 Mock.Of<CosmosSerializer>(),
                 defaultJsonProcessor);
+        }
+
+        private static Mock<TransactionalBatchResponse> CreateResponse(
+            int resultCount = 1,
+            bool isSuccessStatusCode = true,
+            System.Func<int, Stream> resultStreamFactory = null,
+            System.Action<Mock<TransactionalBatchResponse>> setupResponse = null)
+        {
+            List<TransactionalBatchOperationResult> results = new ();
+            for (int index = 0; index < resultCount; index++)
+            {
+                int resultIndex = index;
+                Mock<TransactionalBatchOperationResult> result = new ();
+                result.SetupGet(r => r.ResourceStream)
+                    .Returns(() => resultStreamFactory?.Invoke(resultIndex)
+                        ?? new MemoryStream(Encoding.UTF8.GetBytes($"{{\"id\":\"doc{resultIndex}\"}}")));
+                result.SetupGet(r => r.StatusCode)
+                    .Returns(isSuccessStatusCode ? HttpStatusCode.OK : HttpStatusCode.BadRequest);
+                results.Add(result.Object);
+            }
+
+            Mock<TransactionalBatchResponse> response = new ();
+            response.SetupGet(r => r.IsSuccessStatusCode).Returns(isSuccessStatusCode);
+            response.SetupGet(r => r.StatusCode)
+                .Returns(isSuccessStatusCode ? HttpStatusCode.OK : HttpStatusCode.BadRequest);
+            response.SetupGet(r => r.Count).Returns(results.Count);
+            response.Setup(r => r.GetEnumerator())
+                .Returns(() => results.GetEnumerator());
+            setupResponse?.Invoke(response);
+            return response;
+        }
+
+        private static TransactionalBatchItemRequestOptions CreateItemOptions(JsonProcessor jsonProcessor)
+        {
+            return new TransactionalBatchItemRequestOptions
+            {
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, jsonProcessor },
+                },
+            };
+        }
+
+        private static Task<TransactionalBatchResponse> ExecuteAsync(
+            EncryptionTransactionalBatch batch,
+            bool useRequestOptions)
+        {
+            return useRequestOptions
+                ? batch.ExecuteAsync(new TransactionalBatchRequestOptions())
+                : batch.ExecuteAsync();
         }
 
         private static EncryptionOptions CreateLegacyEncryptionOptions(string dekId)
@@ -647,16 +917,59 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             System.Func<Task<TransactionalBatchResponse>> execute)
         {
             List<Activity> activities = new ();
-            using ActivityListener listener = new ()
+            using ActivityListener listener = CreateActivityListener(activities);
+
+            using TransactionalBatchResponse response = await execute();
+            return activities;
+        }
+
+        private static ActivityListener CreateActivityListener(List<Activity> activities)
+        {
+            ActivityListener listener = new ()
             {
                 ShouldListenTo = source => source.Name == "Microsoft.Azure.Cosmos.Encryption.Custom",
                 Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
                 ActivityStarted = activity => activities.Add(activity),
             };
             ActivitySource.AddActivityListener(listener);
+            return listener;
+        }
 
-            using TransactionalBatchResponse response = await execute();
-            return activities;
+        private sealed class ThrowingReadOnlyDictionary : IReadOnlyDictionary<string, object>
+        {
+            private readonly string key;
+            private readonly object value;
+
+            public ThrowingReadOnlyDictionary(string key, object value)
+            {
+                this.key = key;
+                this.value = value;
+            }
+
+            public object this[string key] => key == this.key
+                ? this.value
+                : throw new KeyNotFoundException();
+
+            public IEnumerable<string> Keys => new[] { this.key };
+
+            public IEnumerable<object> Values => new[] { this.value };
+
+            public int Count => 1;
+
+            public bool ContainsKey(string key) => key == this.key;
+
+            public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
+            {
+                throw new InvalidOperationException("Enumeration failed.");
+            }
+
+            public bool TryGetValue(string key, out object value)
+            {
+                value = key == this.key ? this.value : null;
+                return key == this.key;
+            }
+
+            IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
         }
 
         private sealed class TrackingStream : MemoryStream
