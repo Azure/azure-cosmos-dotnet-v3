@@ -1,0 +1,11 @@
+{
+  "packageId": "Microsoft.Azure.Cosmos.Encryption.Custom",
+  "packageVersion": "1.0.0-preview07",
+  "packageSha256": "121AA0ED2A518D1F791992AC4E6A90B8E3A16A9BEDE4CB719F6156CF384398F8",
+  "netstandard20AssemblySha256": "064FE92B0CC610B3F6CB5E290DA3DFA231643FADB7DC974D01FFDE8D9AEBA3AC",
+  "fixtureSha256": "FE4196FFD23DF3192A9369EF634CAED32CE3624F9ECA129255A008BA73CAE699",
+  "fixtureFile": "LegacyPreview07PointOperationFixture.json",
+  "generatorProject": "..\\..\\Fixtures\\LegacyPreview07PointFixtureGenerator\\LegacyPreview07PointFixtureGenerator.csproj",
+  "generation": "The hash-pinned released package created the AEAD DEK and encrypted item through its Newtonsoft point-operation pipeline against the local Cosmos emulator. The generator then point-read the raw key and item through the unencrypted containers, removed only emulator-owned _rid/_self/_etag/_attachments/_ts fields, verified an exact released-package self-read, and wrote this immutable fixture.",
+  "generatedUtc": "2026-09-02T16:31:13Z"
+}

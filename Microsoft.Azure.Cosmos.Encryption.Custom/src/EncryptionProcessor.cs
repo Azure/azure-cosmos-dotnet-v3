@@ -41,7 +41,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Encryptor encryptor,
             EncryptionItemRequestOptions requestOptions,
             CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            bool replacePlaintextEncryptionMetadata = false)
         {
             return EncryptAsync(
                 input,
@@ -49,7 +50,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 requestOptions.EncryptionOptions,
                 requestOptions.GetJsonProcessor(),
                 diagnosticsContext,
-                cancellationToken);
+                cancellationToken,
+                replacePlaintextEncryptionMetadata);
         }
 
         public static Task<Stream> EncryptAsync(
@@ -65,7 +67,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 requestOptions.EncryptionOptions,
                 requestOptions.GetJsonProcessor(),
                 diagnosticsContext,
-                cancellationToken);
+                cancellationToken,
+                replacePlaintextEncryptionMetadata: false);
         }
 
 #if NET8_0_OR_GREATER
@@ -466,7 +469,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             EncryptionOptions encryptionOptions,
             JsonProcessor jsonProcessor,
             CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            bool replacePlaintextEncryptionMetadata)
         {
             ValidateInputForEncrypt(
                 input,
@@ -478,10 +482,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 return input;
             }
+
 #pragma warning disable CS0618 // Type or member is obsolete
             return encryptionOptions.EncryptionAlgorithm switch
             {
-                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized => await MdeEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, jsonProcessor, diagnosticsContext, cancellationToken),
+                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized => await MdeEncryptionProcessor.EncryptAsync(
+                    input,
+                    encryptor,
+                    encryptionOptions,
+                    jsonProcessor,
+                    diagnosticsContext,
+                    cancellationToken,
+                    replacePlaintextEncryptionMetadata),
                 CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized => await AeAesEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, cancellationToken),
                 _ => throw new NotSupportedException($"Encryption Algorithm : {encryptionOptions.EncryptionAlgorithm} is not supported."),
             };
