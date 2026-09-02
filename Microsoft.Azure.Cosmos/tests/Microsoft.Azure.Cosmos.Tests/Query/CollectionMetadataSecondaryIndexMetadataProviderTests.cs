@@ -190,6 +190,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         [DataRow("SELECT c.address.zip AS postalCode FROM c", "/address/zip", "/postalCode")]
         [DataRow("SELECT c['address']['zip'] AS postalCode FROM c", "/address/zip", "/postalCode")]
         [DataRow("SELECT c.address['zip'] FROM c", "/address/zip", "/zip")]
+        [DataRow("SELECT item.id FROM ROOT item", "/id", "/id")]
+        [DataRow("SELECT item.id FROM c AS item", "/id", "/id")]
         public void TryGetIncludedPropertiesMapsPropertyPaths(
             string query,
             string sourcePath,
@@ -222,6 +224,36 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         }
 
         [TestMethod]
+        public void TryGetIncludedPropertiesMapsSpecialCharacterProperties()
+        {
+            bool succeeded = CollectionMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
+                CreateMaterializedViewDefinition(
+                    "SELECT c[\"a/b\"], c[\"a~1b\"] FROM c"),
+                CreateSource(),
+                out IReadOnlyDictionary<string, string> includedProperties);
+
+            Assert.IsTrue(succeeded);
+            Assert.AreEqual(2, includedProperties.Count);
+            Assert.AreEqual("/\"a/b\"", includedProperties["/\"a/b\""]);
+            Assert.AreEqual("/\"a~1b\"", includedProperties["/\"a~1b\""]);
+        }
+
+        [TestMethod]
+        public void TryGetIncludedPropertiesDistinguishesPropertyFromNestedPath()
+        {
+            bool succeeded = CollectionMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
+                CreateMaterializedViewDefinition(
+                    "SELECT c[\"a/b\"], c.a.b FROM c"),
+                CreateSource(),
+                out IReadOnlyDictionary<string, string> includedProperties);
+
+            Assert.IsTrue(succeeded);
+            Assert.AreEqual(2, includedProperties.Count);
+            Assert.AreEqual("/\"a/b\"", includedProperties["/\"a/b\""]);
+            Assert.AreEqual("/b", includedProperties["/a/b"]);
+        }
+
+        [TestMethod]
         public void TryGetIncludedPropertiesMapsWildcardAndPartitionKey()
         {
             bool succeeded = CollectionMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
@@ -241,6 +273,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         [DataRow("SELECT VALUE c.id FROM c")]
         [DataRow("SELECT c FROM c")]
         [DataRow("SELECT c.value + 1 AS value FROM c")]
+        [DataRow("SELECT UPPER(c.name) AS name FROM c")]
+        [DataRow("SELECT udf.normalize(c.name) AS name FROM c")]
+        [DataRow("SELECT COUNT(1) AS count FROM c")]
+        [DataRow("SELECT c.id, UPPER(c.name) AS name FROM c")]
+        [DataRow("SELECT c.id FROM c JOIN child IN c.children")]
+        [DataRow("SELECT child.id FROM c JOIN child IN c.children")]
+        [DataRow("SELECT item.id FROM item IN c.items")]
+        [DataRow("SELECT item.id FROM (SELECT * FROM c) item")]
+        [DataRow("SELECT other.id FROM c")]
         public void TryGetIncludedPropertiesRejectsUnsupportedDefinitions(string query)
         {
             bool succeeded = CollectionMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(

@@ -116,7 +116,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                 && string.Equals(definition.SourceContainerResourceId, source.ResourceId, StringComparison.Ordinal)
                 && string.Equals(definition.SourceContainerId, source.Id, StringComparison.Ordinal);
         }
-
+       
+        // Query parsing logic is not exhaustive. This is intended to cover MVP scenarios, which intentionally limits possible defintion queries.
         internal static bool TryGetIncludedProperties(
             MaterializedViewDefinition definition,
             ContainerProperties source,
@@ -126,6 +127,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             if (string.IsNullOrWhiteSpace(definition?.Definition)
                 || source == null
                 || !SqlQueryParser.TryParse(definition.Definition, out SqlQuery query))
+            {
+                return false;
+            }
+
+            if (!TryGetRootCollectionIdentifier(query.FromClause, out string rootCollectionIdentifier))
             {
                 return false;
             }
@@ -150,16 +156,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
 
             foreach (SqlSelectItem item in selectList.Items)
             {
-                if (!TryGetSourcePath(item.Expression, out string sourcePath))
+                if (!TryGetSourcePathSegments(
+                    item.Expression,
+                    rootCollectionIdentifier,
+                    out IReadOnlyList<string> sourcePathSegments))
                 {
-                    continue;
+                    return false;
                 }
 
-                string projectedProperty = item.Alias?.Value ?? GetLastPathSegment(sourcePath);
-                if (!string.IsNullOrEmpty(projectedProperty))
+                string sourcePath = ToCanonicalPath(sourcePathSegments);
+                string projectedProperty = item.Alias?.Value ?? sourcePathSegments[sourcePathSegments.Count - 1];
+                if (string.IsNullOrEmpty(projectedProperty))
                 {
-                    projections[sourcePath] = $"/{projectedProperty}";
+                    return false;
                 }
+
+                projections[sourcePath] = ToCanonicalPath(new[] { projectedProperty });
             }
 
             if (projections.Count == 0)
@@ -215,7 +227,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             return JsonConvert.DeserializeObject<T>(JsonConvert.SerializeObject(value));
         }
 
-        private static bool TryGetSourcePath(SqlScalarExpression expression, out string sourcePath)
+        private static bool TryGetRootCollectionIdentifier(
+            SqlFromClause fromClause,
+            out string rootCollectionIdentifier)
+        {
+            rootCollectionIdentifier = null;
+            if (fromClause?.Expression is not SqlAliasedCollectionExpression aliasedCollection
+                || aliasedCollection.Collection is not SqlInputPathCollection inputPathCollection
+                || inputPathCollection.RelativePath != null)
+            {
+                return false;
+            }
+
+            rootCollectionIdentifier = aliasedCollection.Alias?.Value ?? inputPathCollection.Input.Value;
+            return !string.IsNullOrEmpty(rootCollectionIdentifier);
+        }
+
+        private static bool TryGetSourcePathSegments(
+            SqlScalarExpression expression,
+            string rootCollectionIdentifier,
+            out IReadOnlyList<string> sourcePathSegments)
         {
             List<string> segments = new List<string>();
             while (expression != null)
@@ -235,26 +266,38 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                         break;
 
                     default:
-                        sourcePath = null;
+                        sourcePathSegments = null;
                         return false;
                 }
             }
 
             if (segments.Count < 2)
             {
-                sourcePath = null;
+                sourcePathSegments = null;
                 return false;
             }
 
             segments.Reverse();
-            sourcePath = "/" + string.Join("/", segments.Skip(1));
+            if (!string.Equals(segments[0], rootCollectionIdentifier, StringComparison.Ordinal))
+            {
+                sourcePathSegments = null;
+                return false;
+            }
+
+            sourcePathSegments = segments.Skip(1).ToArray();
             return true;
         }
 
-        private static string GetLastPathSegment(string path)
+        private static string ToCanonicalPath(IEnumerable<string> segments)
         {
-            int separator = path.LastIndexOf('/');
-            return separator >= 0 && separator < path.Length - 1 ? path.Substring(separator + 1) : null;
+            return "/" + string.Join("/", segments.Select(ToCanonicalPathSegment));
+        }
+
+        private static string ToCanonicalPathSegment(string segment)
+        {
+            return segment.All(character => char.IsLetterOrDigit(character) || character == '_')
+                ? segment
+                : JsonConvert.ToString(segment);
         }
     }
 }
