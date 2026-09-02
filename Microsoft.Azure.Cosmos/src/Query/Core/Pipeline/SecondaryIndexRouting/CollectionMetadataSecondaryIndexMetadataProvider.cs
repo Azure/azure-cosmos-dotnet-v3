@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
     using TraceLevel = Microsoft.Azure.Cosmos.Tracing.TraceLevel;
 
     /// <summary>
-    /// Discovers secondary indexes from collection metadata and normalizes them to
+    /// Discovers secondary indexes from collection secondaryIndexesMetadata and normalizes them to
     /// the provider-neutral query-routing contract.
     /// </summary>
     internal sealed class CollectionMetadataSecondaryIndexMetadataProvider : ISecondaryIndexMetadataProvider
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                 return Array.Empty<ISecondaryIndexMetadata>();
             }
 
-            List<ISecondaryIndexMetadata> metadata = new List<ISecondaryIndexMetadata>();
+            List<ISecondaryIndexMetadata> secondaryIndexesMetadata = new List<ISecondaryIndexMetadata>();
             HashSet<string> discoveredRids = new HashSet<string>(StringComparer.Ordinal);
             foreach (MaterializedViewProperties mvReference in mvReferences
                 .Where(mvReference =>
@@ -73,15 +73,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                 }
 
                 ContainerProperties candidate = await ResolveByRidAsync(collectionCache, mvReference.ResourceId, discoveryTrace, cancellationToken);
-                SecondaryIndexMetadata normalized = TryCreateMetadata(candidate, source);
-                if (normalized != null)
+                SecondaryIndexMetadata secondaryIndexMetadata = TryCreateMetadata(candidate, source);
+                if (secondaryIndexMetadata != null)
                 {
-                    metadata.Add(normalized);
+                    secondaryIndexesMetadata.Add(secondaryIndexMetadata);
                 }
             }
 
-            discoveryTrace.AddDatum("SecondaryIndexDiscovery.CandidateCount", metadata.Count);
-            return metadata.AsReadOnly();
+            discoveryTrace.AddDatum("SecondaryIndexDiscovery.CandidateCount", secondaryIndexesMetadata.Count);
+            return secondaryIndexesMetadata.AsReadOnly();
         }
 
         private static async Task<ContainerProperties> ResolveByRidAsync(
@@ -113,8 +113,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             return definition != null
                 && IsGlobalSecondaryIndexContainerType(definition.ContainerType)
                 && source != null
-                && (string.Equals(definition.SourceContainerResourceId, source.ResourceId, StringComparison.Ordinal)
-                    || string.Equals(definition.SourceContainerId, source.Id, StringComparison.Ordinal));
+                && string.Equals(definition.SourceContainerResourceId, source.ResourceId, StringComparison.Ordinal)
+                && string.Equals(definition.SourceContainerId, source.Id, StringComparison.Ordinal);
         }
 
         internal static bool TryGetIncludedProperties(
@@ -185,7 +185,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                 return null;
             }
 
-            // MV metadata does not expose synchronization consistency; current MV-backed indexes are Eventual.
+            // MV secondaryIndexesMetadata does not expose synchronization consistency; current MV-backed indexes are Eventual.
             return new SecondaryIndexMetadata(
                 candidate.ResourceId,
                 source.ResourceId,

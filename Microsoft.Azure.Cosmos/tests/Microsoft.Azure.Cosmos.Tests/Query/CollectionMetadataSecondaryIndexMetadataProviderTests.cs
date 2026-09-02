@@ -181,6 +181,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             Assert.AreEqual(EligibleRid, metadata[0].Rid);
         }
 
+        #region TryGetIncludedProperties Tests
+
         [DataTestMethod]
         [DataRow("SELECT c.id AS _id FROM c", "/id", "/_id")]
         [DataRow("SELECT c['category'] FROM c", "/category", "/category")]
@@ -200,6 +202,22 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             Assert.IsTrue(succeeded);
             Assert.AreEqual(1, includedProperties.Count);
             Assert.AreEqual(projectedPath, includedProperties[sourcePath]);
+        }
+
+        [TestMethod]
+        public void TryGetIncludedPropertiesMapsMultiplePropertyPaths()
+        {
+            bool succeeded = CollectionMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
+                CreateMaterializedViewDefinition(
+                    "SELECT c.id AS _id, c.region, c.address.zip AS postalCode FROM c"),
+                CreateSource(),
+                out IReadOnlyDictionary<string, string> includedProperties);
+
+            Assert.IsTrue(succeeded);
+            Assert.AreEqual(3, includedProperties.Count);
+            Assert.AreEqual("/_id", includedProperties["/id"]);
+            Assert.AreEqual("/region", includedProperties["/region"]);
+            Assert.AreEqual("/postalCode", includedProperties["/address/zip"]);
         }
 
         [TestMethod]
@@ -248,6 +266,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 out IReadOnlyDictionary<string, string> missingSourceProperties));
             Assert.IsNull(missingSourceProperties);
         }
+
+        #endregion TryGetIncludedProperties Tests
 
         [DataTestMethod]
         [DataRow("SELECT * FROM c", false)]
