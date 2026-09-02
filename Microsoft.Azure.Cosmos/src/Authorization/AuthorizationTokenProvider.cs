@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Globalization;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -36,6 +37,30 @@ namespace Microsoft.Azure.Cosmos
             Uri requestAddress,
             string verb,
             AuthorizationTokenType tokenType);
+
+        /// <summary>
+        /// Helper method for Microsoft.Azure.Cosmos.AI so that it doesn't require internal types from the Direct package.
+        /// </summary>
+        /// <remarks>
+        /// Virtual for mocking purposes.
+        /// </remarks>
+        public virtual async ValueTask AddAadAuthorizationHeadersAsync(
+            IDictionary<string, string> headersCollection,
+            Uri requestAddress,
+            string verb)
+        {
+            INameValueCollection newHeaders = new RequestNameValueCollection();
+            await this.AddAuthorizationHeaderAsync(
+                newHeaders,
+                requestAddress,
+                verb,
+                AuthorizationTokenType.AadToken);
+
+            foreach (string key in newHeaders.Keys())
+            {
+                headersCollection.Add(key, newHeaders[key]);
+            }
+        }
 
         public abstract ValueTask<(string token, string payload)> GetUserAuthorizationAsync(
             string resourceAddress,

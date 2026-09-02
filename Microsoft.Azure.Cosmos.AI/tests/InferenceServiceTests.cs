@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Tests
+namespace Microsoft.Azure.Cosmos.AI.Inference.Tests
 {
     using System;
     using System.Collections.Generic;
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Mock<AuthorizationTokenProvider> mockAuth = InferenceServiceTests.CreateMockAuthorizationTokenProvider();
 
-            using InferenceService service = new InferenceService(mockHandler, TestEndpoint, mockAuth.Object);
+            InferenceService service = new InferenceService(mockHandler, TestEndpoint, mockAuth.Object);
 
             CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(
                 () => service.SemanticRerankAsync(
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Mock<AuthorizationTokenProvider> mockAuth = InferenceServiceTests.CreateMockAuthorizationTokenProvider();
 
-            using InferenceService service = new InferenceService(mockHandler, TestEndpoint, mockAuth.Object);
+            InferenceService service = new InferenceService(mockHandler, TestEndpoint, mockAuth.Object);
 
             CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(
                 () => service.SemanticRerankAsync(
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Mock<AuthorizationTokenProvider> mockAuth = InferenceServiceTests.CreateMockAuthorizationTokenProvider();
 
-            using InferenceService service = new InferenceService(mockHandler, TestEndpoint, mockAuth.Object);
+            InferenceService service = new InferenceService(mockHandler, TestEndpoint, mockAuth.Object);
 
             SemanticRerankResult result = await service.SemanticRerankAsync(
                 rerankContext: "test query",
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Mock<AuthorizationTokenProvider> mockAuth = InferenceServiceTests.CreateMockAuthorizationTokenProvider();
 
-            using InferenceService service = new InferenceService(delayedHandler, TestEndpoint, mockAuth.Object);
+            InferenceService service = new InferenceService(delayedHandler, TestEndpoint, mockAuth.Object);
 
             CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(
                 () => service.SemanticRerankAsync(
@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Mock<AuthorizationTokenProvider> mockAuth = InferenceServiceTests.CreateMockAuthorizationTokenProvider();
 
-            using InferenceService service = new InferenceService(delayedHandler, TestEndpoint, mockAuth.Object);
+            InferenceService service = new InferenceService(delayedHandler, TestEndpoint, mockAuth.Object);
             using CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(200));
 
             try
@@ -151,11 +151,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         private static Mock<AuthorizationTokenProvider> CreateMockAuthorizationTokenProvider()
         {
             Mock<AuthorizationTokenProvider> mockAuth = new Mock<AuthorizationTokenProvider>();
-            mockAuth.Setup(a => a.AddAuthorizationHeaderAsync(
-                    It.IsAny<INameValueCollection>(),
+            mockAuth.Setup(a => a.AddAadAuthorizationHeadersAsync(
+                    It.IsAny<IDictionary<string, string>>(),
                     It.IsAny<Uri>(),
-                    It.IsAny<string>(),
-                    It.IsAny<AuthorizationTokenType>()))
+                    It.IsAny<string>()))
                 .Returns(new ValueTask());
             return mockAuth;
         }

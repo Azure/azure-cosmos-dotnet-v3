@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [5976](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5976) Direct: The `GenerateEmbeddings` query plan rewrite (`embeddingParameterMap`) that was present in Direct 3.43.2 is not included in Direct 3.44.0. Queries using `GenerateEmbeddings` in Direct mode may produce different query plans. This exclusion was intentional for this release branch.
 - [6037](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6037) Distributed Transactions (preview): Renamed `DistributedTransaction.CommitTransactionAsync` to `ExecuteTransactionAsync` to reflect that, in Fast Response mode, the call executes the transaction and may return before the terminal commit/abort outcome. 
+- [6099](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6099) Semantic Reranking support is removed from `Microsoft.Azure.Cosmos` package, and instead supported through the `EnableSemanticReranking()` extension method in the new `Microsoft.Azure.Cosmos.AI` package.
 
 #### Bugs Fixed
 

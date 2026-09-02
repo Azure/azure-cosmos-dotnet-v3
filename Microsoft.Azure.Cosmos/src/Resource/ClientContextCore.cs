@@ -35,7 +35,6 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly string userAgent;
         private bool isDisposed = false;
-        private InferenceService inferenceService = null;
 
         private ClientContextCore(
             CosmosClient client,
@@ -478,32 +477,6 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        /// <inheritdoc/>
-        internal override async Task<SemanticRerankResult> SemanticRerankAsync(
-            string rerankContext,
-            IEnumerable<string> documents,
-            IDictionary<string, object> options = null,
-            CancellationToken cancellationToken = default)
-        {
-            InferenceService inferenceService = this.GetOrCreateInferenceService();
-            return await inferenceService.SemanticRerankAsync(rerankContext, documents, options, cancellationToken);
-        }
-
-        /// <inheritdoc/>
-        internal override InferenceService GetOrCreateInferenceService()
-        {
-            if (this.inferenceService == null)
-            {
-                // Double check locking to avoid unnecessary locks
-                lock (this)
-                {
-                    this.inferenceService ??= new InferenceService(this.client);
-                }
-            }
-
-            return this.inferenceService;
-        }
-
         public override void Dispose()
         {
             this.Dispose(true);
@@ -521,7 +494,6 @@ namespace Microsoft.Azure.Cosmos
                 {
                     this.batchExecutorCache.Dispose();
                     this.DocumentClient.Dispose();
-                    this.inferenceService?.Dispose();
                 }
 
                 this.isDisposed = true;
