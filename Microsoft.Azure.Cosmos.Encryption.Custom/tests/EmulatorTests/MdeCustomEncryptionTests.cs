@@ -346,6 +346,101 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             Assert.AreEqual(testItem.Sensitive, finalReadBaseline.Resource.Sensitive);
         }
 
+        [DataTestMethod]
+        [DataRow((int)JsonProcessor.Newtonsoft)]
+        [DataRow((int)JsonProcessor.Stream)]
+        public async Task GradualMigration_PlaintextItem_ReadsUnchangedThenMigratesToMdeV3(int jsonProcessorValue)
+        {
+            JsonProcessor jsonProcessor = (JsonProcessor)jsonProcessorValue;
+            TestItem expected = new ()
+            {
+                Id = Guid.NewGuid().ToString(),
+                PK = Guid.NewGuid().ToString(),
+                NonSensitive = "gradual-migration-plain",
+                Sensitive = "gradual-migration-secret",
+            };
+            PartitionKey partitionKey = new (expected.PK);
+            ItemRequestOptions readOptions = jsonProcessor == JsonProcessor.Newtonsoft
+                ? null
+                : new ItemRequestOptions
+                {
+                    Properties = new Dictionary<string, object>
+                    {
+                        { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, jsonProcessor },
+                    },
+                };
+
+            ItemResponse<TestItem> plaintextCreate = await itemContainer.CreateItemAsync(
+                expected,
+                partitionKey);
+            Assert.AreEqual(HttpStatusCode.Created, plaintextCreate.StatusCode);
+
+            using (ResponseMessage rawPlaintextResponse = await itemContainer.ReadItemStreamAsync(
+                expected.Id,
+                partitionKey))
+            {
+                Assert.IsTrue(rawPlaintextResponse.IsSuccessStatusCode);
+                JObject rawPlaintext = EncryptionProcessor.BaseSerializer.FromStream<JObject>(
+                    rawPlaintextResponse.Content);
+                Assert.IsNull(rawPlaintext[Constants.EncryptedInfo]);
+                Assert.AreEqual(expected.Sensitive, rawPlaintext[nameof(TestItem.Sensitive)].Value<string>());
+            }
+
+            ItemResponse<TestItem> plaintextRead = await encryptionContainer.ReadItemAsync<TestItem>(
+                expected.Id,
+                partitionKey,
+                readOptions);
+            AssertTestItem(expected, plaintextRead.Resource);
+
+            EncryptionItemRequestOptions encryptionOptions = CreateEncryptionItemRequestOptions(
+                dekProperties.Id,
+                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                jsonProcessor);
+            ItemResponse<TestItem> encryptedReplace = await encryptionContainer.ReplaceItemAsync(
+                plaintextRead.Resource,
+                expected.Id,
+                partitionKey,
+                encryptionOptions);
+            Assert.AreEqual(HttpStatusCode.OK, encryptedReplace.StatusCode);
+            AssertTestItem(expected, encryptedReplace.Resource);
+
+            using (ResponseMessage rawEncryptedResponse = await itemContainer.ReadItemStreamAsync(
+                expected.Id,
+                partitionKey))
+            {
+                Assert.IsTrue(rawEncryptedResponse.IsSuccessStatusCode);
+                JObject rawEncrypted = EncryptionProcessor.BaseSerializer.FromStream<JObject>(
+                    rawEncryptedResponse.Content);
+                JToken encryptedSensitive = rawEncrypted[nameof(TestItem.Sensitive)];
+                Assert.IsNotNull(encryptedSensitive);
+                Assert.AreEqual(JTokenType.String, encryptedSensitive.Type);
+                Assert.AreNotEqual(expected.Sensitive, encryptedSensitive.Value<string>());
+                Assert.IsTrue(Convert.FromBase64String(encryptedSensitive.Value<string>()).Length > 0);
+                Assert.AreEqual(expected.NonSensitive, rawEncrypted[nameof(TestItem.NonSensitive)].Value<string>());
+
+                JObject encryptionMetadata = rawEncrypted[Constants.EncryptedInfo] as JObject;
+                Assert.IsNotNull(encryptionMetadata);
+                Assert.AreEqual(
+                    EncryptionFormatVersion.Mde,
+                    encryptionMetadata[Constants.EncryptionFormatVersion].Value<int>());
+                Assert.AreEqual(
+                    CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                    encryptionMetadata[Constants.EncryptionAlgorithm].Value<string>());
+                Assert.AreEqual(
+                    dekProperties.Id,
+                    encryptionMetadata[Constants.EncryptionDekId].Value<string>());
+                CollectionAssert.AreEquivalent(
+                    new[] { "/Sensitive" },
+                    encryptionMetadata[Constants.EncryptedPaths].Values<string>().ToArray());
+            }
+
+            ItemResponse<TestItem> encryptedRead = await encryptionContainer.ReadItemAsync<TestItem>(
+                expected.Id,
+                partitionKey,
+                readOptions);
+            AssertTestItem(expected, encryptedRead.Resource);
+        }
+
         [TestMethod]
         public async Task StreamProcessor_EndToEnd_RoundTrip()
         {
@@ -658,6 +753,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             public string PK { get; set; }
             public string NonSensitive { get; set; }
             public string Sensitive { get; set; }
+        }
+
+        private static void AssertTestItem(TestItem expected, TestItem actual)
+        {
+            Assert.IsNotNull(actual);
+            Assert.AreEqual(expected.Id, actual.Id);
+            Assert.AreEqual(expected.PK, actual.PK);
+            Assert.AreEqual(expected.NonSensitive, actual.NonSensitive);
+            Assert.AreEqual(expected.Sensitive, actual.Sensitive);
         }
 #endif
 

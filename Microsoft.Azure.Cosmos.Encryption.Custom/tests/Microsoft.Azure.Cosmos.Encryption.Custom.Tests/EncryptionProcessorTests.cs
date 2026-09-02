@@ -244,6 +244,67 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
+        public async Task DecryptCore_StreamSelection_PlaintextDoesNotUseNewtonsoftProbe()
+        {
+            byte[] plaintext = System.Text.Encoding.UTF8.GetBytes(
+                "{\"id\":\"id1\",\"pk\":\"pk1\",\"NonSensitive\":\"value\"}");
+            using SynchronousReadTrackingStream input = new (plaintext);
+
+            (Stream decrypted, DecryptionContext context) = await EncryptionProcessor.DecryptAsync(
+                input,
+                mockEncryptor.Object,
+                JsonProcessor.Stream,
+                legacyFallback: true,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+
+            Assert.AreSame(input, decrypted);
+            Assert.IsNull(context);
+            Assert.AreEqual(0, decrypted.Position);
+            Assert.AreEqual(0, input.SynchronousReadCount);
+            CollectionAssert.AreEqual(plaintext, input.ToArray());
+        }
+
+        [TestMethod]
+        public async Task DecryptProvidedOutput_StreamSelection_LegacyAlgorithm_RejectsNonSeekableOutputBeforeDecrypt()
+        {
+            Mock<Encryptor> encryptor = TestEncryptorFactory.CreateLegacy(DekId);
+            using Stream encrypted = await TestCommon.CreateLegacyEncryptedStreamAsync(
+                TestDoc.Create(),
+                encryptor.Object,
+                DekId);
+            encryptor.ResetCalls();
+            using NonSeekableWriteTrackingStream output = new ();
+
+            ArgumentException exception = await Assert.ThrowsExceptionAsync<ArgumentException>(
+                async () => await EncryptionProcessor.DecryptAsync(
+                    encrypted,
+                    output,
+                    encryptor.Object,
+                    new CosmosDiagnosticsContext(),
+                    new ItemRequestOptions
+                    {
+                        Properties = new Dictionary<string, object>
+                        {
+                            { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Stream },
+                        },
+                    },
+                    CancellationToken.None));
+
+            Assert.AreEqual("output", exception.ParamName);
+            Assert.AreEqual(0, output.BytesWritten);
+            encryptor.Verify(
+                e => e.DecryptAsync(
+                    It.IsAny<byte[]>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Never);
+            Assert.IsTrue(encrypted.CanRead);
+            Assert.AreEqual(0, encrypted.Position);
+        }
+
+        [TestMethod]
         public async Task Encrypt_LegacyAlgorithm_StreamProcessor_Throws()
         {
             TestDoc doc = TestDoc.Create();
@@ -483,7 +544,237 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 }
             }
         }
+
+        private sealed class SynchronousReadTrackingStream : MemoryStream
+        {
+            private readonly byte[] content;
+
+            public SynchronousReadTrackingStream(byte[] buffer)
+                : base(buffer)
+            {
+                this.content = buffer;
+            }
+
+            public int SynchronousReadCount { get; private set; }
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                this.SynchronousReadCount++;
+                return base.Read(buffer, offset, count);
+            }
+
+            public override int Read(Span<byte> buffer)
+            {
+                this.SynchronousReadCount++;
+                return base.Read(buffer);
+            }
+
+            public override Task<int> ReadAsync(
+                byte[] buffer,
+                int offset,
+                int count,
+                CancellationToken cancellationToken)
+            {
+                return Task.FromResult(this.ReadForAsync(buffer.AsSpan(offset, count)));
+            }
+
+            public override ValueTask<int> ReadAsync(
+                Memory<byte> buffer,
+                CancellationToken cancellationToken = default)
+            {
+                return new ValueTask<int>(this.ReadForAsync(buffer.Span));
+            }
+
+            private int ReadForAsync(Span<byte> buffer)
+            {
+                int read = Math.Min(buffer.Length, checked((int)(base.Length - base.Position)));
+                this.content.AsSpan(checked((int)base.Position), read).CopyTo(buffer);
+                base.Position += read;
+                return read;
+            }
+        }
+
+        private sealed class NonSeekableWriteTrackingStream : Stream
+        {
+            private readonly MemoryStream inner = new ();
+
+            public int BytesWritten => checked((int)this.inner.Length);
+
+            public override bool CanRead => false;
+
+            public override bool CanSeek => false;
+
+            public override bool CanWrite => true;
+
+            public override long Length => this.inner.Length;
+
+            public override long Position
+            {
+                get => throw new NotSupportedException();
+                set => throw new NotSupportedException();
+            }
+
+            public override void Flush()
+            {
+                this.inner.Flush();
+            }
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                throw new NotSupportedException();
+            }
+
+            public override long Seek(long offset, SeekOrigin origin)
+            {
+                throw new NotSupportedException();
+            }
+
+            public override void SetLength(long value)
+            {
+                throw new NotSupportedException();
+            }
+
+            public override void Write(byte[] buffer, int offset, int count)
+            {
+                this.inner.Write(buffer, offset, count);
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    this.inner.Dispose();
+                }
+
+                base.Dispose(disposing);
+            }
+        }
 #endif
+
+        [TestMethod]
+        public async Task Decrypt_UnsupportedJsonProcessorWithLegacyCiphertext_Throws()
+        {
+            using Stream encrypted = await TestCommon.CreateLegacyEncryptedStreamAsync(
+                TestDoc.Create(),
+                mockEncryptor.Object,
+                DekId);
+            ItemRequestOptions requestOptions = new ()
+            {
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, (JsonProcessor)99 },
+                },
+            };
+
+            NotSupportedException exception = await Assert.ThrowsExceptionAsync<NotSupportedException>(
+                async () => await EncryptionProcessor.DecryptAsync(
+                    encrypted,
+                    mockEncryptor.Object,
+                    new CosmosDiagnosticsContext(),
+                    requestOptions,
+                    CancellationToken.None));
+
+            StringAssert.Contains(exception.Message, "JsonProcessor");
+            Assert.IsTrue(encrypted.CanRead);
+            Assert.AreEqual(0, encrypted.Position);
+        }
+
+        [TestMethod]
+        public async Task DecryptProvidedOutput_UnsupportedJsonProcessorWithLegacyCiphertext_ThrowsWithoutWriting()
+        {
+            using Stream encrypted = await TestCommon.CreateLegacyEncryptedStreamAsync(
+                TestDoc.Create(),
+                mockEncryptor.Object,
+                DekId);
+            using MemoryStream output = new ();
+            ItemRequestOptions requestOptions = new ()
+            {
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, (JsonProcessor)99 },
+                },
+            };
+
+            NotSupportedException exception = await Assert.ThrowsExceptionAsync<NotSupportedException>(
+                async () => await EncryptionProcessor.DecryptAsync(
+                    encrypted,
+                    output,
+                    mockEncryptor.Object,
+                    new CosmosDiagnosticsContext(),
+                    requestOptions,
+                    CancellationToken.None));
+
+            StringAssert.Contains(exception.Message, "JsonProcessor");
+            Assert.AreEqual(0, output.Length);
+            Assert.IsTrue(encrypted.CanRead);
+            Assert.AreEqual(0, encrypted.Position);
+        }
+
+        [TestMethod]
+        public async Task DecryptProvidedOutput_Newtonsoft_RewindsInputBeforeParsing()
+        {
+            TestDoc expected = TestDoc.Create();
+            using Stream encrypted = await TestCommon.CreateLegacyEncryptedStreamAsync(
+                expected,
+                mockEncryptor.Object,
+                DekId);
+            encrypted.Position = encrypted.Length;
+            using MemoryStream output = new ();
+
+            DecryptionContext context = await EncryptionProcessor.DecryptAsync(
+                encrypted,
+                output,
+                mockEncryptor.Object,
+                new CosmosDiagnosticsContext(),
+                requestOptions: null,
+                CancellationToken.None);
+
+            Assert.IsNotNull(context);
+            AssertLegacyDecryptionContext(context);
+            Assert.AreEqual(0, output.Position);
+            Assert.AreEqual(expected, TestCommon.FromStream<TestDoc>(output));
+        }
+
+        [TestMethod]
+        [DynamicData(nameof(SupportedJsonProcessors))]
+        public async Task Decrypt_MissingAlgorithmMetadata_ReturnsInputUnchanged(int jsonProcessorValue)
+        {
+            byte[] plaintext = System.Text.Encoding.UTF8.GetBytes(
+                "{\"id\":\"id1\",\"Sensitive\":\"plaintext\",\"_ei\":{\"_ef\":3,\"_en\":\"dekId\",\"_ep\":[\"/Sensitive\"]}}");
+            using MemoryStream input = new (plaintext);
+
+            (Stream decrypted, DecryptionContext context) = await EncryptionProcessor.DecryptAsync(
+                input,
+                mockEncryptor.Object,
+                new CosmosDiagnosticsContext(),
+                RequestOptionsOverrideHelper.Create((JsonProcessor)jsonProcessorValue),
+                CancellationToken.None);
+
+            Assert.AreSame(input, decrypted);
+            Assert.IsNull(context);
+            Assert.AreEqual(0, decrypted.Position);
+            CollectionAssert.AreEqual(plaintext, input.ToArray());
+        }
+
+        [TestMethod]
+        [DynamicData(nameof(SupportedJsonProcessors))]
+        public async Task Decrypt_PresentUnknownAlgorithmMetadata_FailsClosed(int jsonProcessorValue)
+        {
+            byte[] payload = System.Text.Encoding.UTF8.GetBytes(
+                "{\"id\":\"id1\",\"Sensitive\":\"ciphertext\",\"_ei\":{\"_ef\":3,\"_ea\":\"future-algorithm\",\"_en\":\"dekId\",\"_ep\":[\"/Sensitive\"]}}");
+            using MemoryStream input = new (payload);
+
+            NotSupportedException exception = await Assert.ThrowsExceptionAsync<NotSupportedException>(
+                async () => await EncryptionProcessor.DecryptAsync(
+                    input,
+                    mockEncryptor.Object,
+                    new CosmosDiagnosticsContext(),
+                    RequestOptionsOverrideHelper.Create((JsonProcessor)jsonProcessorValue),
+                    CancellationToken.None));
+
+            StringAssert.Contains(exception.Message, "future-algorithm");
+            Assert.IsTrue(input.CanRead);
+        }
 
         [TestMethod]
         public async Task DecryptProvidedOutput_Newtonsoft_LegacyAlgorithm_Succeeds()
@@ -528,6 +819,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsNull(context);
             Assert.AreEqual(1, output.Position);
             Assert.AreEqual(3, output.Length);
+        }
+
+        public static IEnumerable<object[]> SupportedJsonProcessors
+        {
+            get
+            {
+                yield return new object[] { (int)JsonProcessor.Newtonsoft };
+#if NET8_0_OR_GREATER
+                yield return new object[] { (int)JsonProcessor.Stream };
+#endif
+            }
         }
 
         private static void AssertLegacyDecryptionContext(DecryptionContext context)
