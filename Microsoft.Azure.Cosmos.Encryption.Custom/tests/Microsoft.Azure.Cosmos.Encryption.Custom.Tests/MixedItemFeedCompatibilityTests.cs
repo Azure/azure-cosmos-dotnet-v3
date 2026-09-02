@@ -214,6 +214,84 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             AssertMatrix(ReadFeedDocuments(response.Content), fixtures, preserveRawTokens: true);
         }
+
+        [TestMethod]
+        public async Task QueryStreamPage_MultipleLegacyObjects_PreserveOrderAndPerObjectRawTokens()
+        {
+            // Oracle: each legacy object falls back independently. The surrounding plaintext and
+            // current-MDE objects retain their original raw tokens and array position.
+            CompatibilityFixture[] baseFixtures = CreateFixtures();
+            CompatibilityFixture legacy = baseFixtures.Single(fixture => fixture.Name == "legacy-aead");
+            CompatibilityFixture plaintext = baseFixtures.Single(fixture => fixture.Name == "plaintext");
+            CompatibilityFixture currentMde = baseFixtures.Single(fixture => fixture.Name == "mde-stream");
+            CompatibilityFixture[] orderedFixtures =
+            {
+                CloneFixture(legacy, "legacy-first"),
+                CloneFixture(plaintext, "plaintext-second"),
+                CloneFixture(legacy, "legacy-third"),
+                CloneFixture(currentMde, "mde-fourth"),
+            };
+            ContainerHarness harness = CreateHarness(orderedFixtures);
+
+            using ResponseMessage response = await harness.Container
+                .GetItemQueryStreamIterator(
+                    new QueryDefinition("SELECT * FROM c"),
+                    requestOptions: CreateQueryOptions(JsonProcessor.Stream.ToString()))
+                .ReadNextAsync();
+
+            IReadOnlyList<FixtureDocument> actual = ReadFeedDocuments(response.Content);
+            CollectionAssert.AreEqual(
+                orderedFixtures.Select(fixture => fixture.Id).ToArray(),
+                actual.Select(document => document.Id).ToArray());
+            AssertMatrix(actual, orderedFixtures, preserveRawTokens: true);
+        }
+
+        [TestMethod]
+        public async Task QueryStreamPage_UnknownAlgorithmAfterValidObjects_DoesNotPublishPartialOutputOrAccessKey()
+        {
+            // Oracle: work accumulated before an invalid object is not caller-visible. Unknown
+            // algorithms fail before key access, and the original response bytes remain intact.
+            CompatibilityFixture[] baseFixtures = CreateFixtures();
+            CompatibilityFixture legacy = CloneFixture(
+                baseFixtures.Single(fixture => fixture.Name == "legacy-aead"),
+                "legacy-after-error");
+            CompatibilityFixture currentMde = CloneFixture(
+                baseFixtures.Single(fixture => fixture.Name == "mde-stream"),
+                "mde-before-error");
+            CompatibilityFixture unknownAlgorithm = WithUnknownAlgorithm(
+                baseFixtures.Single(fixture => fixture.Name == "mde-stream"),
+                "unknown-middle");
+            CompatibilityFixture[] fixtures = { currentMde, unknownAlgorithm, legacy };
+            FixedKeyEncryptor encryptor = new ();
+            ContainerHarness harness = CreateHarness(Array.Empty<CompatibilityFixture>(), encryptor);
+            using MemoryStream responseContent = CreateFeedStream(fixtures);
+            byte[] originalResponseBytes = responseContent.ToArray();
+            using ResponseMessage innerResponse = new (HttpStatusCode.OK)
+            {
+                Content = responseContent,
+            };
+            Mock<FeedIterator> innerIterator = new ();
+            innerIterator
+                .Setup(iterator => iterator.ReadNextAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(innerResponse);
+            harness.Inner
+                .Setup(container => container.GetItemQueryStreamIterator(
+                    It.IsAny<QueryDefinition>(),
+                    It.IsAny<string>(),
+                    It.IsAny<QueryRequestOptions>()))
+                .Returns(innerIterator.Object);
+
+            FeedIterator iterator = harness.Container.GetItemQueryStreamIterator(
+                new QueryDefinition("SELECT * FROM c"),
+                requestOptions: CreateQueryOptions(JsonProcessor.Stream.ToString()));
+
+            NotSupportedException exception = await Assert.ThrowsExceptionAsync<NotSupportedException>(
+                () => iterator.ReadNextAsync());
+
+            StringAssert.Contains(exception.Message, "UnknownEncryptionAlgorithm");
+            Assert.AreEqual(0, encryptor.GetKeyAccessCount("UnknownEncryptionAlgorithm"));
+            CollectionAssert.AreEqual(originalResponseBytes, responseContent.ToArray());
+        }
 #endif
 
         [DataTestMethod]
@@ -495,6 +573,31 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 expectedPlaintext.Replace("mixed-1", id),
                 expectedTrailingZeroToken,
                 expectedExponentToken);
+        }
+
+        private static CompatibilityFixture CloneFixture(CompatibilityFixture source, string id)
+        {
+            return new CompatibilityFixture(
+                source.Name,
+                id,
+                source.RawStoredJson.Replace(source.Id, id),
+                source.ExpectedPlaintext.Replace(source.Id, id),
+                source.ExpectedTrailingZeroToken,
+                source.ExpectedExponentToken);
+        }
+
+        private static CompatibilityFixture WithUnknownAlgorithm(CompatibilityFixture source, string id)
+        {
+            CompatibilityFixture clone = CloneFixture(source, id);
+            JObject storedDocument = JObject.Parse(clone.RawStoredJson);
+            storedDocument[Constants.EncryptedInfo]["_ea"] = "UnknownEncryptionAlgorithm";
+            return new CompatibilityFixture(
+                "unknown-algorithm",
+                clone.Id,
+                storedDocument.ToString(Formatting.None),
+                clone.ExpectedPlaintext,
+                clone.ExpectedTrailingZeroToken,
+                clone.ExpectedExponentToken);
         }
 
         private static string DecodeFixture(string base64)
@@ -842,6 +945,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         {
             private readonly DataEncryptionKey legacyKey;
             private readonly DataEncryptionKey mdeKey;
+            private readonly List<string> keyAccessAlgorithms = new ();
 
             public FixedKeyEncryptor()
             {
@@ -868,7 +972,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 CancellationToken cancellationToken = default)
             {
                 Assert.AreEqual(DekId, dataEncryptionKeyId);
+                this.keyAccessAlgorithms.Add(encryptionAlgorithm);
                 return Task.FromResult(this.mdeKey);
+            }
+
+            public int GetKeyAccessCount(string encryptionAlgorithm)
+            {
+                return this.keyAccessAlgorithms.Count(
+                    candidate => string.Equals(candidate, encryptionAlgorithm, StringComparison.Ordinal));
             }
 
             public override Task<byte[]> EncryptAsync(
