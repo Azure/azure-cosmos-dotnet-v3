@@ -8931,15 +8931,15 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Headers Headers;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.Headers get_Headers();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Collections.Generic.Dictionary`2[System.String,System.Object] get_Properties()": {
+        "System.Collections.Concurrent.ConcurrentDictionary`2[System.String,System.Object] get_Properties()": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Collections.Generic.Dictionary`2[System.String,System.Object] get_Properties();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.Collections.Concurrent.ConcurrentDictionary`2[System.String,System.Object] get_Properties();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Collections.Generic.Dictionary`2[System.String,System.Object] Properties": {
+        "System.Collections.Concurrent.ConcurrentDictionary`2[System.String,System.Object] Properties": {
           "Type": "Property",
           "Attributes": [],
-          "MethodInfo": "System.Collections.Generic.Dictionary`2[System.String,System.Object] Properties;CanRead:True;CanWrite:False;System.Collections.Generic.Dictionary`2[System.String,System.Object] get_Properties();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.Collections.Concurrent.ConcurrentDictionary`2[System.String,System.Object] Properties;CanRead:True;CanWrite:False;System.Collections.Concurrent.ConcurrentDictionary`2[System.String,System.Object] get_Properties();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.IO.Stream Content": {
           "Type": "Property",

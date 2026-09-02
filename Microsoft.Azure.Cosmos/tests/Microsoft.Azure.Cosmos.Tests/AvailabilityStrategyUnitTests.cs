@@ -1,6 +1,7 @@
 ﻿namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.IO;
@@ -88,6 +89,8 @@
             httpRequest.ContainerId = "testcontainer";
             httpRequest.DatabaseId = "testdb";
             httpRequest.Content = Stream.Null;
+            object sharedPropertyValue = new object();
+            httpRequest.Properties["shared"] = sharedPropertyValue;
 
             using (CloneableStream clonedBody = await StreamExtension.AsClonableStreamAsync(httpRequest.Content))
             {
@@ -101,7 +104,30 @@
                 Assert.AreEqual(httpRequest.UseGatewayMode, clone.UseGatewayMode);
                 Assert.AreEqual(httpRequest.ContainerId, clone.ContainerId);
                 Assert.AreEqual(httpRequest.DatabaseId, clone.DatabaseId);
+                Assert.AreNotSame(httpRequest.Properties, clone.Properties);
+                Assert.AreSame(sharedPropertyValue, clone.Properties["shared"]);
+
+                clone.Properties["clone-only"] = true;
+                Assert.IsFalse(httpRequest.Properties.ContainsKey("clone-only"));
             }
+        }
+
+        [TestMethod]
+        public void RequestMessagePropertiesSupportConcurrentMutation()
+        {
+            using RequestMessage request = AvailabilityStrategyUnitTests.CreateReadRequest();
+            const int PropertyCount = 1000;
+
+            Parallel.For(
+                0,
+                PropertyCount,
+                index => request.Properties[$"property-{index}"] = index);
+
+            Assert.IsInstanceOfType(request.Properties, typeof(ConcurrentDictionary<string, object>));
+            Assert.AreEqual(PropertyCount, request.Properties.Count);
+
+            using DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
+            Assert.AreSame(request.Properties, serviceRequest.Properties);
         }
 
         [TestMethod]
@@ -785,13 +811,11 @@
                 "Flag must be false initially.");
 
             // 2. Simulate original request Properties with the shared context
-            Dictionary<string, object> originalProperties = new Dictionary<string, object>
-            {
-                { CrossRegionAvailabilityContext.PropertyKey, sharedContext }
-            };
+            ConcurrentDictionary<string, object> originalProperties = new ConcurrentDictionary<string, object>();
+            originalProperties[CrossRegionAvailabilityContext.PropertyKey] = sharedContext;
 
             // 3. Simulate RequestMessage.Clone() — shallow copy of Properties
-            Dictionary<string, object> clonedProperties = new Dictionary<string, object>(originalProperties);
+            ConcurrentDictionary<string, object> clonedProperties = new ConcurrentDictionary<string, object>(originalProperties);
 
             // 4. Verify both dictionaries reference the SAME context instance
             Assert.IsTrue(clonedProperties.TryGetValue(CrossRegionAvailabilityContext.PropertyKey, out object clonedObj));
