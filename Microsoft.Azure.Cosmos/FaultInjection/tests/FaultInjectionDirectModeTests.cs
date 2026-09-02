@@ -1405,6 +1405,100 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
         [TestMethod]
         [Timeout(Timeout)]
+        [Owner("kundadebdatta")]
+        [Description("Tests that SetInjectionRate changes the rate honored by an already registered client")]
+        public async Task FaultInjectionServerErrorRule_DynamicInjectionRateTest()
+        {
+            string dynamicRateRuleId = "dynamicRateRule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule dynamicRateRule = new FaultInjectionRuleBuilder(
+                id: dynamicRateRuleId,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithOperationType(FaultInjectionOperationType.ReadItem)
+                        .Build(),
+                result:
+                    // See FaultInjectionServerErrorRule_InjectionRateTest for why TooManyRequests is used here.
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.TooManyRequests)
+                        .WithInjectionRate(1)
+                        .WithTimes(1)
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(5))
+                .Build();
+            dynamicRateRule.Disable();
+
+            try
+            {
+                FaultInjector faultInjector = new FaultInjector(new List<FaultInjectionRule> { dynamicRateRule });
+
+                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+                {
+                    ConsistencyLevel = ConsistencyLevel.Session,
+                    FaultInjector = faultInjector,
+                    Serializer = this.serializer,
+                    MaxRetryAttemptsOnRateLimitedRequests = 0,
+                };
+
+                this.fiClient = new CosmosClient(
+                    this.connectionString,
+                    cosmosClientOptions);
+                this.fiDatabase = this.fiClient.GetDatabase(this.database.Id);
+                this.fiContainer = this.fiDatabase.GetContainer(this.container.Id);
+
+                dynamicRateRule.Enable();
+
+                await ReadBatchAsync(this.fiContainer, 100);
+
+                long fullRateHitCount = dynamicRateRule.GetHitCount();
+                Assert.AreEqual(
+                    100,
+                    fullRateHitCount,
+                    $"A rate of 1 should inject into every read. {Describe(dynamicRateRule)}");
+
+                // The client is already built and running; this is the behavior under test.
+                dynamicRateRule.SetInjectionRate(0.5);
+
+                await ReadBatchAsync(this.fiContainer, 100);
+
+                long halfRateHitCount = dynamicRateRule.GetHitCount() - fullRateHitCount;
+
+                //50% injection rate over 100 requests is Binomial(100, 0.5): mean 50, standard deviation 5.
+                //[30, 70] is +/- 4 standard deviations, so a passing run is not a coin flip while a rate change
+                //that never reached the live client (which would inject 100 times) is still caught.
+                Assert.IsTrue(
+                    halfRateHitCount >= 30,
+                    $"Injection rate too low after SetInjectionRate. Batch hits: {halfRateHitCount}. {Describe(dynamicRateRule)}");
+                Assert.IsTrue(
+                    halfRateHitCount <= 70,
+                    $"Injection rate too high after SetInjectionRate. Batch hits: {halfRateHitCount}. {Describe(dynamicRateRule)}");
+            }
+            finally
+            {
+                dynamicRateRule.Disable();
+            }
+        }
+
+        private static async Task ReadBatchAsync(Container container, int requestCount)
+        {
+            for (int i = 0; i < requestCount; i++)
+            {
+                try
+                {
+                    ItemResponse<FaultInjectionTestObject> response =
+                        await container.ReadItemAsync<FaultInjectionTestObject>(
+                            "testId",
+                            new PartitionKey("pk"));
+
+                    Assert.IsNotNull(response);
+                }
+                catch (Exception)
+                {
+                    //ignore
+                }
+            }
+        }
+
+        [TestMethod]
+        [Timeout(Timeout)]
         [Owner("nalutripician")]
         [Description("Tests fault injection connection error rules")]
 

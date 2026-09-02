@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Breaking Changes
 
 #### Bugs Fixed
+- [#6103](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6103) InjectionRate: Fixes `WithInjectionRate` accepting `double.NaN`, which silently caused the rule to be applied to every matching request instead of being rejected as out of range
+- [#6103](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6103) InjectionRate: Fixes the `ArgumentOutOfRangeException` thrown by `WithInjectionRate` reporting the validation message as its `ParamName`
+- [#6103](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6103) FaultInjectionRule: Fixes `ToString` throwing a `NullReferenceException` for rules built without an explicit endpoint
 
 #### Other Changes
 

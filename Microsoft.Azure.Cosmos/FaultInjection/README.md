@@ -151,7 +151,7 @@ Some properties of a `FaultInjectionRule` can be changed after the rule has been
 | `SetInjectionRate(double)` | Changes how often the fault is injected, in the range `(0, 1]`. Use `Disable()` for 0%. |
 | `GetInjectionRate()` | Returns the rate currently in effect. |
 
-Both take effect on the next request evaluated by the rule. `SetInjectionRate` may also be called before the client is created; the value is carried over when the rule is registered.
+The mutating methods take effect on the next request evaluated by the rule. `SetInjectionRate` may also be called before the client is created; the value is carried over when the rule is registered.
 
 ```c#
 FaultInjectionRule rule = new FaultInjectionRuleBuilder(
@@ -177,8 +177,9 @@ rule.SetInjectionRate(0.5); // ramp to 50%, same client, same rule
 rule.Disable(); // stop injecting entirely
 ```
 
-> **Note:** `SetInjectionRate` only affects server error and custom server error rules. Connection error rules use `WithThreshold` instead, which is fixed at build time; calling `SetInjectionRate` on such a rule is a no-op.
+> **Note:** Only server error and custom server error rules have an injection rate. Connection error rules use `WithThreshold` instead, which is fixed at build time; calling `SetInjectionRate` on such a rule throws `InvalidOperationException`. Filter by result type when driving a mixed set of rules.
 
+> **Note:** A `FaultInjectionRule` binds to a single client. If the same rule instance is passed to two `CosmosClient`s, `SetInjectionRate`, `Enable`, `Disable` and `GetHitCount` only reach the most recently created one.
 
 ### `FaultInjector`
 

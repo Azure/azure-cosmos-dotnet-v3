@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
 
-    internal class FaultInjectionServerErrorRule : IFaultInjectionRuleInternal
+    internal class FaultInjectionServerErrorRule : IFaultInjectionRuleInternal, IFaultInjectionRateAdjustable
     {
         private const string FautInjecitonId = "FaultInjectionId";
 

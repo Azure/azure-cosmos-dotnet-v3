@@ -17,10 +17,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly bool includePrimary;
         private readonly int replicaCount;
 
+        // PartitionKey.None rather than default(PartitionKey), whose null InternalKey makes ToString() throw.
         internal static FaultInjectionEndpoint Empty = new FaultInjectionEndpoint(
             string.Empty, 
             string.Empty, 
-            new FeedRangePartitionKey(new PartitionKey()), false, 0);
+            new FeedRangePartitionKey(PartitionKey.None), false, 0);
 
         /// <summary>
         /// Creates a <see cref="FaultInjectionEndpoint"/>.

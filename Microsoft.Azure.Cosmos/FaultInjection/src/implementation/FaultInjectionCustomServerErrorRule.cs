@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     /// <summary>
     /// Internal rule for custom server error injection.
     /// </summary>
-    internal class FaultInjectionCustomServerErrorRule : IFaultInjectionRuleInternal
+    internal class FaultInjectionCustomServerErrorRule : IFaultInjectionRuleInternal, IFaultInjectionRateAdjustable
     {
         private const string FautInjecitonId = "FaultInjectionId";
 
