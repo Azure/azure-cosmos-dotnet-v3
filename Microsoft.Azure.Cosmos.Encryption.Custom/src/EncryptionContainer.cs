@@ -1109,7 +1109,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return this.ResponseFactory.CreateItemFeedResponse<T>(responseMessage);
         }
 
-#if ENCRYPTIONPREVIEW || SDKPROJECTREF
+#if !SDKPROJECTREF || ENCRYPTIONPREVIEW
         public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
             CancellationToken cancellationToken = default)
