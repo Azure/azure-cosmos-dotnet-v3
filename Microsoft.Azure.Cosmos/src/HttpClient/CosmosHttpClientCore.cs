@@ -27,6 +27,13 @@ namespace Microsoft.Azure.Cosmos
     {
         private const string FautInjecitonId = "FaultInjectionId";
 
+        // SDK-generated header carrying a stable per-client identifier. It is applied to the
+        // HttpClient's default request headers so every HTTP request issued by this client
+        // (gateway data-plane, metadata, control-plane, thin-client outer requests, retries,
+        // and hedged requests) carries it. Direct-mode (RNTBD) requests do not carry it, since
+        // the RNTBD contract has no client-id token.
+        internal const string ClientIdHeaderName = "x-ms-client-id";
+
         private readonly HttpClient httpClient;
         private readonly ICommunicationEventSource eventSource;
         private readonly IChaosInterceptor chaosInterceptor;
@@ -56,7 +63,8 @@ namespace Microsoft.Azure.Cosmos
             HttpMessageHandler httpMessageHandler,
             EventHandler<SendingRequestEventArgs> sendingRequestEventArgs,
             EventHandler<ReceivedResponseEventArgs> receivedResponseEventArgs,
-            IChaosInterceptor faultInjectionchaosInterceptor = null)
+            IChaosInterceptor faultInjectionchaosInterceptor = null,
+            string clientId = null)
         {
             if (connectionPolicy == null)
             {
@@ -79,7 +87,8 @@ namespace Microsoft.Azure.Cosmos
                     requestTimeout: connectionPolicy.RequestTimeout,
                     userAgentContainer: connectionPolicy.UserAgentContainer,
                     apiType: apiType,
-                    eventSource: eventSource);
+                    eventSource: eventSource,
+                    clientId: clientId);
             }
 
             if (httpMessageHandler == null)
@@ -108,7 +117,8 @@ namespace Microsoft.Azure.Cosmos
                 userAgentContainer: connectionPolicy.UserAgentContainer,
                 apiType: apiType,
                 eventSource: eventSource,
-                chaosInterceptor: faultInjectionchaosInterceptor);
+                chaosInterceptor: faultInjectionchaosInterceptor,
+                clientId: clientId);
         }
 
         public static HttpMessageHandler CreateHttpClientHandler(
@@ -287,7 +297,8 @@ namespace Microsoft.Azure.Cosmos
             UserAgentContainer userAgentContainer,
             ApiType apiType,
             ICommunicationEventSource eventSource,
-            IChaosInterceptor chaosInterceptor = null)
+            IChaosInterceptor chaosInterceptor = null,
+            string clientId = null)
         {
             if (httpClient == null)
             {
@@ -311,6 +322,12 @@ namespace Microsoft.Azure.Cosmos
                 Headers.SDKSUPPORTEDCAPABILITIES);
 
             httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Accept, RuntimeConstants.MediaTypes.Json);
+
+            if (!string.IsNullOrEmpty(clientId)
+                && !httpClient.DefaultRequestHeaders.Contains(CosmosHttpClientCore.ClientIdHeaderName))
+            {
+                httpClient.DefaultRequestHeaders.Add(CosmosHttpClientCore.ClientIdHeaderName, clientId);
+            }
 
             return new CosmosHttpClientCore(
                 httpClient,
