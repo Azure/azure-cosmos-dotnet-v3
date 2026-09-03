@@ -27,13 +27,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         {
             JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
             if (replacePlaintextEncryptionMetadata &&
-                itemJObj[Constants.EncryptedInfo] is JObject encryptionProperties)
+                itemJObj[Constants.EncryptedInfo] is JToken encryptionInfo &&
+                (encryptionInfo.Type == JTokenType.Null ||
+                    (encryptionInfo is JObject encryptionProperties &&
+                        (encryptionProperties.Property(Constants.EncryptionAlgorithm) is not JProperty encryptionAlgorithm ||
+                            encryptionAlgorithm.Value.Type == JTokenType.Null))))
             {
-                JProperty encryptionAlgorithm = encryptionProperties.Property(Constants.EncryptionAlgorithm);
-                if (encryptionAlgorithm == null || encryptionAlgorithm.Value.Type == JTokenType.Null)
-                {
-                    itemJObj.Remove(Constants.EncryptedInfo);
-                }
+                itemJObj.Remove(Constants.EncryptedInfo);
             }
 
             Stream result = await this.EncryptAsync(itemJObj, encryptor, encryptionOptions, token);
