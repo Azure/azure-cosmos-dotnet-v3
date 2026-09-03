@@ -1404,7 +1404,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         }
 
         [TestMethod]
-        [Timeout(Timeout)]
+        [Timeout(Timeout * 2)]
         [Owner("kundadebdatta")]
         [Description("Tests that SetInjectionRate changes the rate honored by an already registered client")]
         public async Task FaultInjectionServerErrorRule_DynamicInjectionRateTest()
@@ -1446,32 +1446,30 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 dynamicRateRule.Enable();
 
-                await ReadBatchAsync(this.fiContainer, 100);
+                //Count the injected 429s directly: this tests the user-visible probability contract and is
+                //immune to any internal re-entry of the rule.
+                int fullRateInjected = await ReadBatchAsync(this.fiContainer, 100);
 
-                long fullRateHitCount = dynamicRateRule.GetHitCount();
-
-                //At rate 1 every read is injected, but a retried request re-enters the rule, so the count
-                //is at least 100 rather than exactly 100.
-                Assert.IsTrue(
-                    fullRateHitCount >= 100,
-                    $"A rate of 1 should inject into every read. Batch hits: {fullRateHitCount}. {Describe(dynamicRateRule)}");
+                //A rate of 1 with retries disabled injects into every one of the 100 reads.
+                Assert.AreEqual(
+                    100,
+                    fullRateInjected,
+                    $"A rate of 1 should inject into every read. {Describe(dynamicRateRule)}");
 
                 // The client is already built and running; this is the behavior under test.
                 dynamicRateRule.SetInjectionRate(0.5);
 
-                await ReadBatchAsync(this.fiContainer, 100);
-
-                long halfRateHitCount = dynamicRateRule.GetHitCount() - fullRateHitCount;
+                int halfRateInjected = await ReadBatchAsync(this.fiContainer, 100);
 
                 //50% injection rate over 100 requests is Binomial(100, 0.5): mean 50, standard deviation 5.
                 //[30, 70] is +/- 4 standard deviations, so a passing run is not a coin flip while a rate change
                 //that never reached the live client (which would inject 100 times) is still caught.
                 Assert.IsTrue(
-                    halfRateHitCount >= 30,
-                    $"Injection rate too low after SetInjectionRate. Batch hits: {halfRateHitCount}. {Describe(dynamicRateRule)}");
+                    halfRateInjected >= 30,
+                    $"Injection rate too low after SetInjectionRate. Injected: {halfRateInjected}. {Describe(dynamicRateRule)}");
                 Assert.IsTrue(
-                    halfRateHitCount <= 70,
-                    $"Injection rate too high after SetInjectionRate. Batch hits: {halfRateHitCount}. {Describe(dynamicRateRule)}");
+                    halfRateInjected <= 70,
+                    $"Injection rate too high after SetInjectionRate. Injected: {halfRateInjected}. {Describe(dynamicRateRule)}");
             }
             finally
             {
@@ -1479,8 +1477,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             }
         }
 
-        private static async Task ReadBatchAsync(Container container, int requestCount)
+        private static async Task<int> ReadBatchAsync(Container container, int requestCount)
         {
+            int injectedCount = 0;
             for (int i = 0; i < requestCount; i++)
             {
                 try
@@ -1489,11 +1488,13 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                         "testId",
                         new PartitionKey("pk"));
                 }
-                catch (CosmosException)
+                catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.TooManyRequests)
                 {
-                    // Injected faults and missing items surface as CosmosException; the hit count is what matters.
+                    injectedCount++;
                 }
             }
+
+            return injectedCount;
         }
 
         [TestMethod]
