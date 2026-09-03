@@ -14,8 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Breaking Changes
 
 #### Bugs Fixed
-- [#6103](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6103) InjectionRate: Fixes `WithInjectionRate` accepting `double.NaN`, which silently caused the rule to be applied to every matching request instead of being rejected as out of range
+- [#6103](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6103) InjectionRate: Fixes `WithInjectionRate`, `WithThreshold` and the `FaultInjectionServerErrorResult` constructor accepting `double.NaN`, which silently caused a server error rule to be applied to every matching request (and a connection error rule to never fire) instead of being rejected as out of range
 - [#6103](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6103) InjectionRate: Fixes the `ArgumentOutOfRangeException` thrown by `WithInjectionRate` reporting the validation message as its `ParamName`
+- [#6103](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6103) InjectionRate: Fixes `ConnectionDelay` server error rules ignoring their configured injection rate and always injecting on every matching request
+- [#6103](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6103) FaultInjectionRule: Fixes a race where `SetInjectionRate`, `Enable` or `Disable` called while a rule was being registered with a client could be dropped, leaving the rule at a rate or state different from the one reported
 - [#6103](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6103) FaultInjectionRule: Fixes `ToString` throwing a `NullReferenceException` for rules built without an explicit endpoint
 
 #### Other Changes

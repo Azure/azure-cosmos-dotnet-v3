@@ -34,6 +34,15 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             this.times = times;
             this.delay = delay;
             this.suppressServiceRequests = suppressServiceRequests;
+
+            // Negated so that double.NaN, which compares false against every bound, is rejected.
+            if (!(injectionRate > 0 && injectionRate <= 1))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(injectionRate),
+                    $"Argument '{nameof(injectionRate)}' must be within the range (0, 1].");
+            }
+
             this.injectionRate = injectionRate;
         }
 

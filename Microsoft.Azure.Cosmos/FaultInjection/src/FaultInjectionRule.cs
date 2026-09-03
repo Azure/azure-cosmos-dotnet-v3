@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Threading;
 
     /// <summary>
@@ -18,6 +19,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly TimeSpan duration;
         private readonly TimeSpan startDelay;
         private readonly int hitLimit;
+
+        // Guards the mutable rule state (enabled, injectionRate) and its publication to effectiveRule
+        // so a runtime update and the effective rule being bound cannot interleave and drop each other.
+        private readonly object syncRoot = new object();
         private volatile bool enabled;
         private double injectionRate;
         private volatile IFaultInjectionRuleInternal? effectiveRule;
@@ -52,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             {
                 FaultInjectionServerErrorResult serverErrorResult => serverErrorResult.GetInjectionRate(),
                 FaultInjectionCustomServerErrorResult customServerErrorResult => customServerErrorResult.GetInjectionRate(),
-                _ => 1,
+                _ => 1d,
             };
         }
 
@@ -128,9 +133,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// </summary>
         public void Disable()
         {
-            this.enabled = false;
-
-            this.effectiveRule?.Disable();
+            lock (this.syncRoot)
+            {
+                this.enabled = false;
+                this.effectiveRule?.Disable();
+            }
         }
 
         /// <summary>
@@ -138,9 +145,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// </summary>
         public void Enable()
         {
-            this.enabled = true;
-
-            this.effectiveRule?.Enable();
+            lock (this.syncRoot)
+            {
+                this.enabled = true;
+                this.effectiveRule?.Enable();
+            }
         }
 
         /// <summary>
@@ -169,14 +178,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <exception cref="InvalidOperationException">Thrown when the rule does not have an injection rate.</exception>
         public void SetInjectionRate(double injectionRate)
         {
-            if (this.result is not FaultInjectionServerErrorResult
-                && this.result is not FaultInjectionCustomServerErrorResult)
-            {
-                throw new InvalidOperationException(
-                    $"'{nameof(SetInjectionRate)}' is only supported for server error and custom server error rules. "
-                    + $"Rule '{this.id}' uses a '{this.result.GetType().Name}', which has no injection rate.");
-            }
-
+            // Validate the argument before the rule state, so an invalid rate is reported even on a
+            // rule type that also cannot accept one.
             // Negated so that double.NaN, which compares false against every bound, is rejected.
             if (!(injectionRate > 0 && injectionRate <= 1))
             {
@@ -185,9 +188,19 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     $"Argument '{nameof(injectionRate)}' must be within the range (0, 1].");
             }
 
-            Volatile.Write(ref this.injectionRate, injectionRate);
+            if (this.result is not FaultInjectionServerErrorResult
+                && this.result is not FaultInjectionCustomServerErrorResult)
+            {
+                throw new InvalidOperationException(
+                    $"'{nameof(SetInjectionRate)}' is only supported for server error and custom server error rules. "
+                    + $"Rule '{this.id}' uses a '{this.result.GetType().Name}', which has no injection rate.");
+            }
 
-            FaultInjectionRule.ApplyInjectionRate(this.effectiveRule, injectionRate);
+            lock (this.syncRoot)
+            {
+                Volatile.Write(ref this.injectionRate, injectionRate);
+                FaultInjectionRule.ApplyInjectionRate(this.effectiveRule, injectionRate);
+            }
         }
 
         /// <summary>
@@ -223,11 +236,24 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <param name="effectiveRule">the effective fault injection rule.</param>
         internal void SetEffectiveFaultInjectionRule(IFaultInjectionRuleInternal effectiveRule)
         {
-            this.effectiveRule = effectiveRule;
+            // Rule processing is asynchronous, so an enable/disable or rate change made between the
+            // effective rule being built and it being bound here would otherwise be lost. Replaying
+            // the current state under the lock closes that window.
+            lock (this.syncRoot)
+            {
+                this.effectiveRule = effectiveRule;
 
-            // Rule processing is asynchronous, so a rate set between the effective rule being built
-            // and it being bound here would otherwise be lost.
-            FaultInjectionRule.ApplyInjectionRate(effectiveRule, Volatile.Read(ref this.injectionRate));
+                if (this.enabled)
+                {
+                    effectiveRule.Enable();
+                }
+                else
+                {
+                    effectiveRule.Disable();
+                }
+
+                FaultInjectionRule.ApplyInjectionRate(effectiveRule, Volatile.Read(ref this.injectionRate));
+            }
         }
 
         private static void ApplyInjectionRate(IFaultInjectionRuleInternal? effectiveRule, double injectionRate)
@@ -245,7 +271,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         public override string ToString()
         {
             return string.Format(
-                "FaultInjectionRule{{ id: {0}, result: {1}, condition: {2}, duration: {3}, startDelay: {4}, hitlimit: {5}, enabled: {6}, injectionRate: {7}}}",
+                CultureInfo.InvariantCulture,
+                "FaultInjectionRule{{ id: {0}, result: {1}, condition: {2}, duration: {3}, startDelay: {4}, hitlimit: {5}, enabled: {6}, effectiveInjectionRate: {7}}}",
                 this.id,
                 this.result,
                 this.condition,

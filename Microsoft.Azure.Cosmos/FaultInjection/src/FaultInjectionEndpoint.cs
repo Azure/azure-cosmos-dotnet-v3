@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly int replicaCount;
 
         // PartitionKey.None rather than default(PartitionKey), whose null InternalKey makes ToString() throw.
-        internal static FaultInjectionEndpoint Empty = new FaultInjectionEndpoint(
+        internal static readonly FaultInjectionEndpoint Empty = new FaultInjectionEndpoint(
             string.Empty, 
             string.Empty, 
             new FeedRangePartitionKey(PartitionKey.None), false, 0);

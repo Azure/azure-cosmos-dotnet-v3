@@ -160,6 +160,20 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         }
 
         [TestMethod]
+        [Owner("kundadebdatta")]
+        [Description("Tests that the public server error result constructor rejects a NaN injection rate")]
+        public void ServerErrorResult_NaNInjectionRate_Throws()
+        {
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+                new FaultInjectionServerErrorResult(
+                    FaultInjectionServerErrorType.Gone,
+                    times: 0,
+                    delay: TimeSpan.Zero,
+                    suppressServiceRequests: false,
+                    injectionRate: double.NaN));
+        }
+
+        [TestMethod]
         [Owner("nalutripician")]
         [Description("Tests injection rate of exactly 1 succeeds")]
         public void ServerErrorResultBuilder_InjectionRateExactlyOne_Succeeds()
@@ -445,6 +459,17 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 .WithInterval(TimeSpan.FromSeconds(-1)));
         }
 
+        [TestMethod]
+        [Owner("kundadebdatta")]
+        [Description("Tests connection error result threshold of NaN throws")]
+        public void ConnectionErrorResultBuilder_ThresholdNaN_Throws()
+        {
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+                new FaultInjectionConnectionErrorResultBuilder(
+                    FaultInjectionConnectionErrorType.ReceiveStreamClosed)
+                .WithThreshold(double.NaN));
+        }
+
         #endregion
 
         #region FaultInjectionCustomServerErrorResultBuilder Validation
@@ -640,7 +665,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             FaultInjectionRule rule = CreateServerErrorRule(1);
             rule.SetInjectionRate(0.4);
 
-            StringAssert.Contains(rule.ToString(), "injectionRate: 0.4");
+            StringAssert.Contains(rule.ToString(), "effectiveInjectionRate: 0.4");
         }
 
         private static FaultInjectionRule CreateServerErrorRule(double injectionRate)
