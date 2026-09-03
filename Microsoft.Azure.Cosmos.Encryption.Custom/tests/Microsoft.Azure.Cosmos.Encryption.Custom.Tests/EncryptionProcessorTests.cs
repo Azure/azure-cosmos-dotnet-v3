@@ -758,6 +758,45 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [TestMethod]
         [DynamicData(nameof(SupportedJsonProcessors))]
+        public async Task Decrypt_NullEncryptionMetadata_ReturnsInputUnchanged(int jsonProcessorValue)
+        {
+            JsonProcessor jsonProcessor = (JsonProcessor)jsonProcessorValue;
+            byte[] plaintext = System.Text.Encoding.UTF8.GetBytes(
+                "{\"id\":\"id1\",\"PK\":\"pk\",\"Sensitive\":\"plaintext\",\"_ei\":null}");
+            using MemoryStream input = new (plaintext);
+            RequestOptions requestOptions = jsonProcessor == JsonProcessor.Newtonsoft
+                ? null
+                : RequestOptionsOverrideHelper.Create(jsonProcessor);
+
+            (Stream decrypted, DecryptionContext context) = await EncryptionProcessor.DecryptAsync(
+                input,
+                mockEncryptor.Object,
+                new CosmosDiagnosticsContext(),
+                requestOptions,
+                CancellationToken.None);
+
+            Assert.AreSame(input, decrypted);
+            Assert.IsNull(context);
+            Assert.AreEqual(0, decrypted.Position);
+            CollectionAssert.AreEqual(plaintext, input.ToArray());
+        }
+
+        [TestMethod]
+        public async Task Encrypt_NullEncryptionMetadataReplacement_Newtonsoft_ProducesCurrentMde()
+        {
+            await AssertNullEncryptionMetadataReplacementProducesCurrentMdeAsync(JsonProcessor.Newtonsoft);
+        }
+
+#if NET8_0_OR_GREATER
+        [TestMethod]
+        public async Task Encrypt_NullEncryptionMetadataReplacement_Stream_ProducesCurrentMde()
+        {
+            await AssertNullEncryptionMetadataReplacementProducesCurrentMdeAsync(JsonProcessor.Stream);
+        }
+#endif
+
+        [TestMethod]
+        [DynamicData(nameof(SupportedJsonProcessors))]
         public async Task Decrypt_PresentUnknownAlgorithmMetadata_FailsClosed(int jsonProcessorValue)
         {
             byte[] payload = System.Text.Encoding.UTF8.GetBytes(
@@ -830,6 +869,66 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 yield return new object[] { (int)JsonProcessor.Stream };
 #endif
             }
+        }
+
+        private static async Task AssertNullEncryptionMetadataReplacementProducesCurrentMdeAsync(
+            JsonProcessor jsonProcessor)
+        {
+            byte[] plaintext = System.Text.Encoding.UTF8.GetBytes(
+                "{\"id\":\"id1\",\"PK\":\"pk\",\"_ei\":null,\"NonSensitive\":{\"n\":1},\"Sensitive\":\"plaintext\"}");
+            using MemoryStream input = new (plaintext);
+            EncryptionItemRequestOptions requestOptions = new ()
+            {
+                EncryptionOptions = new EncryptionOptions
+                {
+                    DataEncryptionKeyId = DekId,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                    PathsToEncrypt = new[] { "/Sensitive" },
+                },
+            };
+#if NET8_0_OR_GREATER
+            if (jsonProcessor == JsonProcessor.Stream)
+            {
+                requestOptions.Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Stream },
+                };
+            }
+#endif
+
+            using Stream encrypted = await EncryptionProcessor.EncryptAsync(
+                input,
+                mockEncryptor.Object,
+                requestOptions,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None,
+                replacePlaintextEncryptionMetadata: true);
+            JObject document = EncryptionProcessor.BaseSerializer.FromStream<JObject>(encrypted);
+
+            Assert.AreEqual("id1", document["id"].Value<string>());
+            Assert.AreEqual("pk", document["PK"].Value<string>());
+            Assert.IsTrue(JToken.DeepEquals(
+                JObject.Parse("{\"n\":1}"),
+                document["NonSensitive"]));
+            Assert.AreEqual(JTokenType.String, document["Sensitive"].Type);
+            Assert.AreNotEqual("plaintext", document["Sensitive"].Value<string>());
+            Assert.IsTrue(Convert.FromBase64String(document["Sensitive"].Value<string>()).Length > 0);
+
+            Assert.AreEqual(
+                1,
+                document.Properties().Count(property => property.Name == Constants.EncryptedInfo));
+            JObject encryptionInfo = document[Constants.EncryptedInfo] as JObject;
+            Assert.IsNotNull(encryptionInfo);
+            Assert.AreEqual(5, encryptionInfo.Properties().Count());
+            Assert.AreEqual(3, encryptionInfo[Constants.EncryptionFormatVersion].Value<int>());
+            Assert.AreEqual(
+                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                encryptionInfo[Constants.EncryptionAlgorithm].Value<string>());
+            Assert.AreEqual(DekId, encryptionInfo[Constants.EncryptionDekId].Value<string>());
+            CollectionAssert.AreEqual(
+                new[] { "/Sensitive" },
+                encryptionInfo[Constants.EncryptedPaths].Values<string>().ToArray());
+            Assert.AreEqual(JTokenType.Null, encryptionInfo[Constants.EncryptedData].Type);
         }
 
         private static void AssertLegacyDecryptionContext(DecryptionContext context)
