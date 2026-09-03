@@ -24,11 +24,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     {
         private const string ContainerPartitionKeyPath = "/id";
 
-        // ProtectedDataEncryptionKey rejects TimeSpan.MaxValue, so use ~100 years to model the
-        // upstream "cache forever" semantics that the EncryptionKeyStoreProvider exposes via a
-        // null DataEncryptionKeyCacheTimeToLive.
-        private static readonly TimeSpan EffectivelyForeverTimeToLive = TimeSpan.FromDays(36500);
-
         private readonly DataEncryptionKeyContainerCore dataEncryptionKeyContainerCore;
 
         private Container container;
@@ -203,14 +198,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
 
         /// <summary>
-        /// Mirrors <see cref="EncryptionKeyStoreProvider.DataEncryptionKeyCacheTimeToLive"/> onto
-        /// the static <see cref="ProtectedDataEncryptionKey.TimeToLive"/>. Process-global mutation;
-        /// shared across providers.
+        /// Captures the per-instance Protected Data Encryption key cache lifetime from
+        /// <see cref="EncryptionKeyStoreProvider.DataEncryptionKeyCacheTimeToLive"/> for use by fetch/create paths.
         /// </summary>
+        /// <remarks>
+        /// The MDE SDK scopes the Protected Data Encryption key cache — and thus the lifetime of decrypted key
+        /// material — per <see cref="EncryptionKeyStoreProvider"/> instance. This method captures the cache lifetime
+        /// for this provider instance only, so one provider's configuration does not affect another in the same
+        /// process (for example in multi-tenant hosts that construct one provider per tenant). Relies on the MDE SDK
+        /// build whose key caches are per-<see cref="EncryptionKeyStoreProvider"/> instance.
+        /// </remarks>
         private void InitializeProtectedDataEncryptionKeyTimeToLive()
         {
             this.PdekCacheTimeToLive = this.EncryptionKeyStoreProvider.DataEncryptionKeyCacheTimeToLive;
-            ProtectedDataEncryptionKey.TimeToLive = this.PdekCacheTimeToLive ?? EffectivelyForeverTimeToLive;
         }
 
         /// <summary>
