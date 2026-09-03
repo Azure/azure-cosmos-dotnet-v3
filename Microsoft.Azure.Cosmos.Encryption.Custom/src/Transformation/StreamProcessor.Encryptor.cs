@@ -39,6 +39,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 cancellationToken.ThrowIfCancellationRequested();
             }
 
+            using PooledMemoryStream publicFallbackOutput = cryptoOperationAdapter.UsesPublicEncryptor
+                ? new PooledMemoryStream()
+                : null;
+            Stream encryptionOutput = publicFallbackOutput ?? outputStream;
+
             // Pre-encode the paths-to-encrypt as UTF-8 byte sequences so that we can match
             // against Utf8JsonReader tokens with ValueTextEquals (which correctly handles
             // JSON escape sequences), without allocating a new string per property name.
@@ -47,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             // preserved for the pathsEncrypted output list.
             (byte[] nameBytes, string fullPath)[] encryptedPathsTable = BuildEncryptedPathsTable(encryptionOptions.PathsToEncrypt);
 
-            using Utf8JsonWriter writer = new (outputStream);
+            using Utf8JsonWriter writer = new (encryptionOutput);
 
             byte[] buffer = arrayPoolManager.Rent(PooledStreamConfiguration.Current.StreamProcessorBufferSize);
 
@@ -131,6 +136,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             writer.WriteEndObject();
 
             writer.Flush();
+
+            if (publicFallbackOutput != null)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (publicFallbackOutput.TryGetBuffer(out ArraySegment<byte> encryptedDocument) &&
+                    encryptedDocument.Count > 0)
+                {
+                    await outputStream.WriteAsync(
+                        encryptedDocument.Array.AsMemory(
+                            encryptedDocument.Offset,
+                            encryptedDocument.Count),
+                        CancellationToken.None).ConfigureAwait(false);
+                }
+            }
+
             outputStream.Position = 0;
 
             long TransformEncryptBuffer(ReadOnlySpan<byte> buffer)

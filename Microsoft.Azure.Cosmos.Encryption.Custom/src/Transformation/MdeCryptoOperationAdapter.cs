@@ -117,6 +117,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             byte[] plainText,
             int plainTextLength)
         {
+            this.cancellationToken.ThrowIfCancellationRequested();
+
             byte[] exactPlainText = new byte[plainTextLength];
             Buffer.BlockCopy(plainText, 0, exactPlainText, 0, plainTextLength);
 
@@ -134,13 +136,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 return Task.FromException<MdeCryptoResult>(exception);
             }
 
-            return CompleteEncryptionAsync(encryptTask, typeMarker);
+            if (encryptTask == null)
+            {
+                return Task.FromException<MdeCryptoResult>(
+                    new InvalidOperationException($"{nameof(Encryptor)} returned a null task from {nameof(Encryptor.EncryptAsync)}."));
+            }
+
+            return CompleteEncryptionAsync(encryptTask, typeMarker, this.cancellationToken);
         }
 
         private Task<MdeCryptoResult> DecryptWithPublicEncryptorAsync(
             byte[] cipherTextWithTypeMarker,
             int cipherTextLength)
         {
+            this.cancellationToken.ThrowIfCancellationRequested();
+
             byte[] exactCipherText = new byte[cipherTextLength - 1];
             Buffer.BlockCopy(cipherTextWithTypeMarker, 1, exactCipherText, 0, exactCipherText.Length);
 
@@ -158,17 +168,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 return Task.FromException<MdeCryptoResult>(exception);
             }
 
-            return CompleteDecryptionAsync(decryptTask);
+            if (decryptTask == null)
+            {
+                return Task.FromException<MdeCryptoResult>(
+                    new InvalidOperationException($"{nameof(Encryptor)} returned a null task from {nameof(Encryptor.DecryptAsync)}."));
+            }
+
+            return CompleteDecryptionAsync(decryptTask, this.cancellationToken);
         }
 
         private static async Task<MdeCryptoResult> CompleteEncryptionAsync(
             Task<byte[]> encryptTask,
-            TypeMarker typeMarker)
+            TypeMarker typeMarker,
+            CancellationToken cancellationToken)
         {
 #pragma warning disable VSTHRD003 // The task is supplied by the caller's Encryptor implementation and is always awaited asynchronously.
-            byte[] cipherText = await encryptTask.ConfigureAwait(false) ?? throw new InvalidOperationException(
+            byte[] cipherText = await encryptTask.WaitAsync(cancellationToken).ConfigureAwait(false) ?? throw new InvalidOperationException(
                 $"{nameof(Encryptor)} returned null cipherText from {nameof(Encryptor.EncryptAsync)}.");
 #pragma warning restore VSTHRD003
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             byte[] cipherTextWithTypeMarker = new byte[checked(cipherText.Length + 1)];
             cipherTextWithTypeMarker[0] = (byte)typeMarker;
@@ -176,12 +195,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             return new MdeCryptoResult(cipherTextWithTypeMarker, cipherTextWithTypeMarker.Length);
         }
 
-        private static async Task<MdeCryptoResult> CompleteDecryptionAsync(Task<byte[]> decryptTask)
+        private static async Task<MdeCryptoResult> CompleteDecryptionAsync(
+            Task<byte[]> decryptTask,
+            CancellationToken cancellationToken)
         {
 #pragma warning disable VSTHRD003 // The task is supplied by the caller's Encryptor implementation and is always awaited asynchronously.
-            byte[] plainText = await decryptTask.ConfigureAwait(false) ?? throw new InvalidOperationException(
+            byte[] plainText = await decryptTask.WaitAsync(cancellationToken).ConfigureAwait(false) ?? throw new InvalidOperationException(
                 $"{nameof(Encryptor)} returned null plainText from {nameof(Encryptor.DecryptAsync)}.");
 #pragma warning restore VSTHRD003
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             return new MdeCryptoResult(plainText, plainText.Length);
         }

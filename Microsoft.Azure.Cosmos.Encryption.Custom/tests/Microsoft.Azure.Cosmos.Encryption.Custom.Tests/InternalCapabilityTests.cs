@@ -412,6 +412,136 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
+        public async Task PublicFallbackStream_CancellationDuringNonCooperatingEncrypt_StopsWaiting()
+        {
+            NonCooperatingBlockingEncryptor encryptor = new (blockEncrypt: true);
+            using Stream input = ToStream(Document);
+            using MemoryStream output = new ();
+            using CancellationTokenSource cancellation = new ();
+
+            Task operation = EncryptionProcessor.EncryptAsync(
+                input,
+                output,
+                encryptor,
+                new EncryptionOptions
+                {
+                    DataEncryptionKeyId = DekId,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                    PathsToEncrypt = new List<string> { "/Sensitive" },
+                },
+                JsonProcessor.Stream,
+                new CosmosDiagnosticsContext(),
+                cancellation.Token);
+
+            await encryptor.OperationStarted.WaitAsync(TimeSpan.FromSeconds(5));
+            cancellation.Cancel();
+
+            try
+            {
+                await AssertCanceledAsync(
+                    async () => await operation.WaitAsync(TimeSpan.FromSeconds(5)),
+                    cancellation.Token);
+            }
+            finally
+            {
+                encryptor.Release();
+            }
+
+            Assert.AreEqual(0, output.Length);
+        }
+
+        [TestMethod]
+        public async Task PublicFallbackStream_CancellationDuringNonCooperatingDecrypt_StopsWaiting()
+        {
+            using Stream encrypted = await EncryptAsync(
+                JsonProcessor.Stream,
+                new ArrayKeyAccessorEncryptor(),
+                CancellationToken.None);
+            NonCooperatingBlockingEncryptor encryptor = new (blockEncrypt: false);
+            using MemoryStream output = new ();
+            using CancellationTokenSource cancellation = new ();
+
+            Task operation = EncryptionProcessor.DecryptAsync(
+                encrypted,
+                output,
+                encryptor,
+                new CosmosDiagnosticsContext(),
+                RequestOptionsOverrideHelper.Create(JsonProcessor.Stream),
+                cancellation.Token);
+
+            await encryptor.OperationStarted.WaitAsync(TimeSpan.FromSeconds(5));
+            cancellation.Cancel();
+
+            try
+            {
+                await AssertCanceledAsync(
+                    async () => await operation.WaitAsync(TimeSpan.FromSeconds(5)),
+                    cancellation.Token);
+            }
+            finally
+            {
+                encryptor.Release();
+            }
+
+            Assert.AreEqual(0, output.Length);
+        }
+
+        [DataTestMethod]
+        [DataRow(true, "null task")]
+        [DataRow(false, "null cipherText")]
+        public async Task PublicFallbackStream_NullEncryptResult_ThrowsClearErrorWithoutOutput(
+            bool returnNullTask,
+            string expectedMessage)
+        {
+            using Stream input = ToStream(Document);
+            using MemoryStream output = new ();
+
+            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => EncryptionProcessor.EncryptAsync(
+                    input,
+                    output,
+                    new NullReturningEncryptor(returnNullTask),
+                    new EncryptionOptions
+                    {
+                        DataEncryptionKeyId = DekId,
+                        EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                        PathsToEncrypt = new List<string> { "/Sensitive" },
+                    },
+                    JsonProcessor.Stream,
+                    new CosmosDiagnosticsContext(),
+                    CancellationToken.None));
+
+            StringAssert.Contains(exception.Message, expectedMessage);
+            Assert.AreEqual(0, output.Length);
+        }
+
+        [DataTestMethod]
+        [DataRow(true, "null task")]
+        [DataRow(false, "null plainText")]
+        public async Task PublicFallbackStream_NullDecryptResult_ThrowsClearErrorWithoutOutput(
+            bool returnNullTask,
+            string expectedMessage)
+        {
+            using Stream encrypted = await EncryptAsync(
+                JsonProcessor.Stream,
+                new ArrayKeyAccessorEncryptor(),
+                CancellationToken.None);
+            using MemoryStream output = new ();
+
+            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => EncryptionProcessor.DecryptAsync(
+                    encrypted,
+                    output,
+                    new NullReturningEncryptor(returnNullTask),
+                    new CosmosDiagnosticsContext(),
+                    RequestOptionsOverrideHelper.Create(JsonProcessor.Stream),
+                    CancellationToken.None));
+
+            StringAssert.Contains(exception.Message, expectedMessage);
+            Assert.AreEqual(0, output.Length);
+        }
+
+        [TestMethod]
         public async Task EncryptorWithoutAccessor_StreamDecryptableItem_UsesPublicArrays()
         {
             PublicArrayEncryptor encryptor = new ();
@@ -736,6 +866,105 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
 #if NET8_0_OR_GREATER
+        private sealed class NullReturningEncryptor : Encryptor
+        {
+            private readonly bool returnNullTask;
+
+            public NullReturningEncryptor(bool returnNullTask)
+            {
+                this.returnNullTask = returnNullTask;
+            }
+
+            public override Task<DataEncryptionKey> GetEncryptionKeyAsync(
+                string dataEncryptionKeyId,
+                string encryptionAlgorithm,
+                CancellationToken cancellationToken = default)
+            {
+                throw new NotSupportedException("Direct key access is not supported.");
+            }
+
+            public override Task<byte[]> EncryptAsync(
+                byte[] plainText,
+                string dataEncryptionKeyId,
+                string encryptionAlgorithm,
+                CancellationToken cancellationToken = default)
+            {
+                return this.returnNullTask
+                    ? null
+                    : Task.FromResult<byte[]>(null);
+            }
+
+            public override Task<byte[]> DecryptAsync(
+                byte[] cipherText,
+                string dataEncryptionKeyId,
+                string encryptionAlgorithm,
+                CancellationToken cancellationToken = default)
+            {
+                return this.returnNullTask
+                    ? null
+                    : Task.FromResult<byte[]>(null);
+            }
+        }
+
+        private sealed class NonCooperatingBlockingEncryptor : Encryptor
+        {
+            private readonly bool blockEncrypt;
+            private readonly TaskCompletionSource<bool> operationStarted = new (
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            private readonly TaskCompletionSource<bool> release = new (
+                TaskCreationOptions.RunContinuationsAsynchronously);
+
+            public NonCooperatingBlockingEncryptor(bool blockEncrypt)
+            {
+                this.blockEncrypt = blockEncrypt;
+            }
+
+            public Task OperationStarted => this.operationStarted.Task;
+
+            public void Release()
+            {
+                this.release.TrySetResult(true);
+            }
+
+            public override Task<DataEncryptionKey> GetEncryptionKeyAsync(
+                string dataEncryptionKeyId,
+                string encryptionAlgorithm,
+                CancellationToken cancellationToken = default)
+            {
+                throw new NotSupportedException("Direct key access is not supported.");
+            }
+
+            public override async Task<byte[]> EncryptAsync(
+                byte[] plainText,
+                string dataEncryptionKeyId,
+                string encryptionAlgorithm,
+                CancellationToken cancellationToken = default)
+            {
+                if (this.blockEncrypt)
+                {
+                    this.operationStarted.TrySetResult(true);
+                    await this.release.Task.ConfigureAwait(false);
+                }
+
+                return TestCommon.EncryptData(plainText);
+            }
+
+            public override async Task<byte[]> DecryptAsync(
+                byte[] cipherText,
+                string dataEncryptionKeyId,
+                string encryptionAlgorithm,
+                CancellationToken cancellationToken = default)
+            {
+                if (!this.blockEncrypt)
+                {
+                    this.operationStarted.TrySetResult(true);
+                    await this.release.Task.ConfigureAwait(false);
+                }
+
+                return TestCommon.DecryptData(cipherText);
+            }
+        }
+
         private sealed class CancellationIgnoringMemoryStream : MemoryStream
         {
             public CancellationIgnoringMemoryStream(byte[] buffer)
