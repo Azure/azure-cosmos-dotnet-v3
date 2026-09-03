@@ -68,7 +68,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.AreEqual(HttpStatusCode.Gone, response.StatusCode);
             Assert.AreEqual(SubStatusCodes.PartitionKeyRangeGone, response.Headers.SubStatusCode);
-            Assert.AreSame(dce, requestMessage.Properties[nameof(DocumentClientException)]);
 
             if (trace is Cosmos.Tracing.Trace rootLevelTrace)
             {

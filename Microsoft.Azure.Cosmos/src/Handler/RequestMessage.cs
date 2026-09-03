@@ -5,7 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Concurrent;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Globalization;
     using System.IO;
@@ -77,13 +77,13 @@ namespace Microsoft.Azure.Cosmos
             string requestUriString,
             ITrace trace,
             Headers headers,
-            ConcurrentDictionary<string, object> properties)
+            Dictionary<string, object> properties)
         {
             this.Method = method;
             this.RequestUriString = requestUriString;
             this.Trace = trace ?? throw new ArgumentNullException(nameof(trace));
             this.headers = new Lazy<Headers>(() => headers);
-            this.properties = new Lazy<ConcurrentDictionary<string, object>>(() => properties);
+            this.properties = new Lazy<Dictionary<string, object>>(() => properties);
         }
 
         /// <summary>
@@ -166,9 +166,9 @@ namespace Microsoft.Azure.Cosmos
         /// Request properties Per request context available to handlers. 
         /// These will not be automatically included into the wire.
         /// </summary>
-        public virtual ConcurrentDictionary<string, object> Properties => this.properties.Value;
+        public virtual Dictionary<string, object> Properties => this.properties.Value;
 
-        private readonly Lazy<ConcurrentDictionary<string, object>> properties = new Lazy<ConcurrentDictionary<string, object>>(RequestMessage.CreateDictionary);
+        private readonly Lazy<Dictionary<string, object>> properties = new Lazy<Dictionary<string, object>>(RequestMessage.CreateDictionary);
 
         private readonly Lazy<Headers> headers = new Lazy<Headers>(RequestMessage.CreateHeaders);
 
@@ -325,7 +325,7 @@ namespace Microsoft.Azure.Cosmos
                 this.RequestUriString,
                 newTrace,
                 this.Headers.Clone(),
-                new ConcurrentDictionary<string, object>(this.Properties));
+                new Dictionary<string, object>(this.Properties));
 
             if (this.Content != null && cloneContent != null)
             {
@@ -355,9 +355,9 @@ namespace Microsoft.Azure.Cosmos
             return clone;
         }
 
-        private static ConcurrentDictionary<string, object> CreateDictionary()
+        private static Dictionary<string, object> CreateDictionary()
         {
-            return new ConcurrentDictionary<string, object>(concurrencyLevel: 1, capacity: 1);
+            return new Dictionary<string, object>();
         }
 
         private static Headers CreateHeaders()

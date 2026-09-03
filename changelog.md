@@ -28,7 +28,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Breaking Changes
 
-- [6086](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6086) Request Pipeline: `RequestMessage.Properties` now returns a `ConcurrentDictionary<string, object>` instead of a `Dictionary<string, object>`, allowing custom handlers to safely add, update, and remove request properties concurrently. Applications that override `RequestMessage.Properties`, assign it to a `Dictionary<string, object>` variable, or call `Dictionary`-specific APIs such as `Add` or `Remove` must update to `ConcurrentDictionary<string, object>` and use the indexer, `TryAdd`, or `TryRemove` as appropriate.
 - [5976](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5976) Direct: The `GenerateEmbeddings` query plan rewrite (`embeddingParameterMap`) that was present in Direct 3.43.2 is not included in Direct 3.44.0. Queries using `GenerateEmbeddings` in Direct mode may produce different query plans. This exclusion was intentional for this release branch.
 - [6037](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6037) Distributed Transactions (preview): Renamed `DistributedTransaction.CommitTransactionAsync` to `ExecuteTransactionAsync` to reflect that, in Fast Response mode, the call executes the transaction and may return before the terminal commit/abort outcome. 
 
