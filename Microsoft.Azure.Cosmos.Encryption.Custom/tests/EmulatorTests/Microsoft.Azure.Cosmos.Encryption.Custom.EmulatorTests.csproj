@@ -53,6 +53,10 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.Encryption.Custom.csproj" />
   </ItemGroup>
+
+  <ItemGroup Condition=" '$(SdkProjectRef)' == 'True' ">
+    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" PrivateAssets="All" />
+  </ItemGroup>
 	
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
