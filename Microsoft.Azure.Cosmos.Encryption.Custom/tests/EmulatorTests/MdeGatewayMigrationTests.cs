@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
     [TestClass]
     public sealed class MdeGatewayMigrationTests
     {
-        internal static GatewayMigrationTestFixture Fixture { get; } = new ();
+        internal static GatewayMigrationTestFixture Fixture { get; } = new();
 
         [ClassInitialize]
         public static async Task ClassInitialize(TestContext context)

@@ -60,7 +60,7 @@ namespace LegacyPreview07PointFixtureGenerator
             VerifyHash(typeof(EncryptionContainerExtensions).Assembly.Location, ExpectedAssemblySha256, "loaded assembly");
 
             string databaseId = "legacy-preview07-fixture-" + Guid.NewGuid().ToString("N");
-            using CosmosClient client = new (
+            using CosmosClient client = new(
                 endpoint,
                 key,
                 new CosmosClientOptions
@@ -75,7 +75,7 @@ namespace LegacyPreview07PointFixtureGenerator
                 Container keyContainer = await database.CreateContainerAsync("keys", "/id", 400);
                 Container itemContainer = await database.CreateContainerAsync("items", "/PK", 400);
 #pragma warning disable CS0618
-                CosmosDataEncryptionKeyProvider provider = new (
+                CosmosDataEncryptionKeyProvider provider = new(
                     new FixtureKeyWrapProvider(),
                     new FixtureKeyStoreProvider(),
                     TimeSpan.FromMinutes(5));
@@ -118,7 +118,7 @@ namespace LegacyPreview07PointFixtureGenerator
                     throw new InvalidOperationException("Released-package self-read did not reproduce the exact plaintext.");
                 }
 
-                JObject fixture = new ()
+                JObject fixture = new()
                 {
                     ["dataEncryptionKey"] = rawDek,
                     ["legacyItem"] = rawItem,
@@ -186,13 +186,13 @@ namespace LegacyPreview07PointFixtureGenerator
 
         private static IReadOnlyDictionary<string, string> ParseArguments(IEnumerable<string> args)
         {
-            Dictionary<string, string> parsed = new (StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, string> parsed = new(StringComparer.OrdinalIgnoreCase);
             foreach (string argument in args)
             {
                 int separator = argument.IndexOf('=');
                 if (argument.StartsWith("--", StringComparison.Ordinal) && separator > 2)
                 {
-                    parsed[argument.Substring(2, separator - 2)] = argument.Substring(separator + 1);
+                    parsed[argument[2..separator]] = argument[(separator + 1)..];
                 }
             }
 
@@ -346,7 +346,7 @@ namespace LegacyPreview07PointFixtureGenerator
 
         private static int GetShift(string value)
         {
-            return (value?.Sum(character => (int)character) ?? 0) % 31 + 1;
+            return ((value?.Sum(character => (int)character) ?? 0) % 31) + 1;
         }
     }
 }
