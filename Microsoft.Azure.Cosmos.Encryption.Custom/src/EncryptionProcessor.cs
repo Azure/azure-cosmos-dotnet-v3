@@ -257,7 +257,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// Else input stream will be disposed, and a new stream is returned.
         /// In case of an exception, input stream won't be disposed, but position will be end of stream.
         /// </remarks>
-        internal static async Task<Stream> EncryptAsync(
+        private static async Task<Stream> EncryptAsync(
             Stream input,
             Encryptor encryptor,
             EncryptionOptions encryptionOptions,

@@ -87,8 +87,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     streamPayload = EncryptionProcessor.EncryptAsync(
                         streamPayload,
                         this.encryptor,
-                        encryptionItemRequestOptions.EncryptionOptions,
-                        jsonProcessor,
+                        CreateProcessorPinnedRequestOptions(
+                            encryptionItemRequestOptions.EncryptionOptions,
+                            jsonProcessor),
                         diagnosticsContext,
                         cancellationToken: default).Result;
                 }
@@ -205,8 +206,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     streamPayload = EncryptionProcessor.EncryptAsync(
                         streamPayload,
                         this.encryptor,
-                        encryptionItemRequestOptions.EncryptionOptions,
-                        jsonProcessor,
+                        CreateProcessorPinnedRequestOptions(
+                            encryptionItemRequestOptions.EncryptionOptions,
+                            jsonProcessor),
                         diagnosticsContext,
                         cancellationToken: default).Result;
                 }
@@ -278,8 +280,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     streamPayload = EncryptionProcessor.EncryptAsync(
                         streamPayload,
                         this.encryptor,
-                        encryptionItemRequestOptions.EncryptionOptions,
-                        jsonProcessor,
+                        CreateProcessorPinnedRequestOptions(
+                            encryptionItemRequestOptions.EncryptionOptions,
+                            jsonProcessor),
                         diagnosticsContext,
                         cancellationToken: default).Result;
                 }
@@ -483,6 +486,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             sanitizedOptions.Properties = properties.Count == 0 ? null : properties;
             return sanitizedOptions;
+        }
+
+        private static EncryptionTransactionalBatchItemRequestOptions CreateProcessorPinnedRequestOptions(
+            EncryptionOptions encryptionOptions,
+            JsonProcessor jsonProcessor)
+        {
+            return new EncryptionTransactionalBatchItemRequestOptions
+            {
+                EncryptionOptions = encryptionOptions,
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, jsonProcessor },
+                },
+            };
         }
 
         public override TransactionalBatch PatchItem(

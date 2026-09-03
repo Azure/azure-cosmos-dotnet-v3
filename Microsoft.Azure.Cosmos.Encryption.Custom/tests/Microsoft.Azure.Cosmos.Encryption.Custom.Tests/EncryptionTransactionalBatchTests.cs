@@ -356,7 +356,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [DataRow("Upsert")]
         public async Task EncryptedWrite_ContainerStreamDefault_UsesNewtonsoftForWriteAndResponse(string operation)
         {
-            var encryptor = TestEncryptorFactory.CreateMde("dekId", out _);
+            Mock<Encryptor> encryptor = CreateMdeEncryptor("dekId");
             Stream encryptedPayload = null;
             EncryptionTransactionalBatch batch = CreateBatch(
                 setupOperation: inner =>
@@ -423,7 +423,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [TestMethod]
         public async Task EncryptedWrite_ExplicitStream_UsesStreamForWriteAndResponse()
         {
-            var encryptor = TestEncryptorFactory.CreateMde("dekId", out _);
+            Mock<Encryptor> encryptor = CreateMdeEncryptor("dekId");
             Stream encryptedPayload = null;
             TransactionalBatchItemRequestOptions forwardedRequestOptions = null;
             EncryptionTransactionalBatch batch = CreateBatch(
@@ -715,7 +715,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [TestMethod]
         public async Task ExecuteAsync_WhenLaterResultDecryptionFails_ConsumesMetadataAndDisposesInnerResponse()
         {
-            var encryptor = TestEncryptorFactory.CreateMde("dekId", out _);
+            Mock<Encryptor> encryptor = CreateMdeEncryptor("dekId");
             TrackingStream encryptedStream = await CreateTrackingEncryptedPayloadAsync(encryptor.Object);
             MemoryStream malformedStream = new (Encoding.UTF8.GetBytes("{not-json"));
             int innerDisposeCount = 0;
@@ -765,6 +765,59 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 encryptor ?? Mock.Of<Encryptor>(),
                 Mock.Of<CosmosSerializer>(),
                 defaultJsonProcessor);
+        }
+
+        private static Mock<Encryptor> CreateMdeEncryptor(string dekId)
+        {
+            Mock<DataEncryptionKey> dataEncryptionKey = new ();
+            dataEncryptionKey.SetupGet(key => key.EncryptionAlgorithm)
+                .Returns(CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized);
+            dataEncryptionKey.Setup(key => key.GetEncryptByteCount(It.IsAny<int>()))
+                .Returns<int>(length => length);
+            dataEncryptionKey.Setup(key => key.GetDecryptByteCount(It.IsAny<int>()))
+                .Returns<int>(length => length);
+            dataEncryptionKey.Setup(key => key.EncryptData(It.IsAny<byte[]>()))
+                .Returns<byte[]>(TestCommon.EncryptData);
+            dataEncryptionKey.Setup(key => key.EncryptData(
+                    It.IsAny<byte[]>(),
+                    It.IsAny<int>(),
+                    It.IsAny<int>(),
+                    It.IsAny<byte[]>(),
+                    It.IsAny<int>()))
+                .Returns((byte[] input, int offset, int length, byte[] output, int outputOffset) =>
+                    TestCommon.EncryptData(input, offset, length, output, outputOffset));
+            dataEncryptionKey.Setup(key => key.DecryptData(It.IsAny<byte[]>()))
+                .Returns<byte[]>(TestCommon.DecryptData);
+            dataEncryptionKey.Setup(key => key.DecryptData(
+                    It.IsAny<byte[]>(),
+                    It.IsAny<int>(),
+                    It.IsAny<int>(),
+                    It.IsAny<byte[]>(),
+                    It.IsAny<int>()))
+                .Returns((byte[] input, int offset, int length, byte[] output, int outputOffset) =>
+                    TestCommon.DecryptData(input, offset, length, output, outputOffset));
+
+            Mock<Encryptor> encryptor = new ();
+            encryptor.Setup(instance => instance.GetEncryptionKeyAsync(
+                    dekId,
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(dataEncryptionKey.Object);
+            encryptor.Setup(instance => instance.EncryptAsync(
+                    It.IsAny<byte[]>(),
+                    dekId,
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync((byte[] plaintext, string _, string _, CancellationToken _) =>
+                    TestCommon.EncryptData(plaintext));
+            encryptor.Setup(instance => instance.DecryptAsync(
+                    It.IsAny<byte[]>(),
+                    dekId,
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync((byte[] ciphertext, string _, string _, CancellationToken _) =>
+                    TestCommon.DecryptData(ciphertext));
+            return encryptor;
         }
 
         private static EncryptionTransactionalBatch CreateBatch(
@@ -867,8 +920,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             return await EncryptionProcessor.EncryptAsync(
                 document.ToStream(),
                 encryptor,
-                CreateLegacyEncryptionOptions(dekId),
-                JsonProcessor.Newtonsoft,
+                new EncryptionTransactionalBatchItemRequestOptions
+                {
+                    EncryptionOptions = CreateLegacyEncryptionOptions(dekId),
+                },
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
         }
@@ -879,13 +934,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Stream encrypted = await EncryptionProcessor.EncryptAsync(
                 input,
                 encryptor,
-                new EncryptionOptions
+                new EncryptionTransactionalBatchItemRequestOptions
                 {
-                    DataEncryptionKeyId = "dekId",
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
-                    PathsToEncrypt = new[] { "/Sensitive" },
+                    EncryptionOptions = new EncryptionOptions
+                    {
+                        DataEncryptionKeyId = "dekId",
+                        EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                        PathsToEncrypt = new[] { "/Sensitive" },
+                    },
                 },
-                JsonProcessor.Newtonsoft,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
