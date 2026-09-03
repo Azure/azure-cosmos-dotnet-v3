@@ -144,8 +144,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// Creates a new <see cref="CosmosDataEncryptionKeyProvider"/> that supports both an
         /// <see cref="EncryptionKeyWrapProvider"/> (legacy algorithm path) and an
         /// <see cref="EncryptionKeyStoreProvider"/> (MDE path), with optional distributed-cache
-        /// support via <see cref="DekCacheOptions"/>. Use this factory for hybrid callers
-        /// (e.g. consumers that still need the legacy algorithm during migration) that want
+        /// support via <see cref="DekCacheOptions"/>. Use this factory for callers that still need
+        /// the legacy algorithm during migration and want
         /// the distributed-cache feature; constructor overloading with the obsolete dual-provider
         /// ctor is intentionally avoided to prevent <c>null</c>-literal overload ambiguity.
         /// </summary>
@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="encryptionKeyStoreProvider">MDE <see cref="EncryptionKeyStoreProvider"/> for wrapping / unwrapping.</param>
         /// <param name="dekCacheOptions">Optional cache configuration; pass <see langword="null"/> to use defaults.</param>
         /// <returns>A provider that must still be initialized with a DEK container before use.</returns>
-#pragma warning disable CS0618 // EncryptionKeyWrapProvider is obsolete; surfaced here only for hybrid back-compat callers (e.g. ALE).
+#pragma warning disable CS0618 // EncryptionKeyWrapProvider is obsolete; surfaced here for hybrid back-compat callers.
         public static CosmosDataEncryptionKeyProvider Create(
             EncryptionKeyWrapProvider encryptionKeyWrapProvider,
             EncryptionKeyStoreProvider encryptionKeyStoreProvider,

@@ -113,14 +113,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         public static MdeConcreteEncryptor CreateMde(string dekId)
         {
-            return CreateMde(dekId, out _);
-        }
-
-        public static MdeConcreteEncryptor CreateMde(string dekId, out DataEncryptionKey dataEncryptionKey)
-        {
-            MdeConcreteDataEncryptionKey dek = new ();
-            dataEncryptionKey = dek;
-            return new MdeConcreteEncryptor(dekId, dek);
+            return new MdeConcreteEncryptor(dekId, new MdeConcreteDataEncryptionKey());
         }
 
         public static Mock<Encryptor> CreateLegacy(string dekId)

@@ -5,19 +5,29 @@
 namespace Microsoft.Azure.Cosmos.Encryption.Tests
 {
     using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Encryption.Custom;
+    using Microsoft.Azure.Cosmos.Tests.Contracts;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class ReleasedSubclassCompatibilityTests
     {
+        private const string Preview07ContractFileName = "DotNetSDKEncryptionCustomAPI.preview07.json";
+        private const string Preview07FixtureAssemblyName = "Microsoft.Azure.Cosmos.Encryption.Custom.Preview07Compatibility";
+        private const string Preview07ProbeTypeName = Preview07FixtureAssemblyName + ".Preview07CompatibilityProbe";
+
         [TestMethod]
-        public async Task Preview07StyleEncryptor_RemainsConcreteAndCallable()
+        public async Task Preview07CompiledSubclasses_LoadAndRunAgainstCurrentAssembly()
         {
-            Encryptor encryptor = new Preview07StyleEncryptor();
+            Encryptor encryptor = (Encryptor)InvokePreview07Probe("CreateEncryptor");
+            DataEncryptionKey key = (DataEncryptionKey)InvokePreview07Probe("CreateDataEncryptionKey");
             byte[] plainText = new byte[] { 1, 2, 3, 4 };
 
             byte[] cipherText = await encryptor.EncryptAsync(
@@ -32,24 +42,82 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 CancellationToken.None);
 
             CollectionAssert.AreEqual(plainText, roundTrip);
-        }
 
-        [TestMethod]
-        public void Preview07StyleDataEncryptionKey_RemainsConcreteAndCallable()
-        {
-            DataEncryptionKey key = new Preview07StyleDataEncryptionKey();
-            byte[] plainText = new byte[] { 1, 2, 3, 4 };
-
-            byte[] cipherText = key.EncryptData(plainText);
-            byte[] roundTrip = key.DecryptData(cipherText);
+            cipherText = key.EncryptData(plainText);
+            roundTrip = key.DecryptData(cipherText);
 
             CollectionAssert.AreEqual(plainText, roundTrip);
         }
 
         [TestMethod]
-        public void UnpublishedMembers_AreAbsentFromPublicSurface()
+        public void Preview07CompiledConstructors_RunAgainstCurrentAssembly()
+        {
+            CosmosDataEncryptionKeyProvider defaultProvider =
+                (CosmosDataEncryptionKeyProvider)InvokePreview07Probe("CreateStoreProviderWithDefault");
+            CosmosDataEncryptionKeyProvider nullProvider =
+                (CosmosDataEncryptionKeyProvider)InvokePreview07Probe("CreateStoreProviderWithNull");
+            CosmosDataEncryptionKeyProvider timeSpanProvider =
+                (CosmosDataEncryptionKeyProvider)InvokePreview07Probe("CreateStoreProviderWithTimeSpan");
+            CosmosDataEncryptionKeyProvider wrapProvider =
+                (CosmosDataEncryptionKeyProvider)InvokePreview07Probe("CreateWrapProvider");
+            CosmosDataEncryptionKeyProvider hybridProvider =
+                (CosmosDataEncryptionKeyProvider)InvokePreview07Probe("CreateHybridProvider");
+
+            Assert.IsNotNull(defaultProvider.EncryptionKeyStoreProvider);
+            Assert.IsNotNull(nullProvider.EncryptionKeyStoreProvider);
+            Assert.IsNotNull(timeSpanProvider.EncryptionKeyStoreProvider);
+            Assert.IsNotNull(wrapProvider.EncryptionKeyWrapProvider);
+            Assert.IsNotNull(hybridProvider.EncryptionKeyWrapProvider);
+            Assert.IsNotNull(hybridProvider.EncryptionKeyStoreProvider);
+        }
+
+        [TestMethod]
+        public void Preview07Contract_RemainsACompatibleSubset()
+        {
+            string releasedJson = File.ReadAllText(
+                Path.Combine(AppContext.BaseDirectory, "Contracts", Preview07ContractFileName));
+            string currentJson = ContractEnforcement.GetCurrentContract(
+                "Microsoft.Azure.Cosmos.Encryption.Custom");
+
+            IReadOnlyDictionary<string, HashSet<string>> releasedTypes = FlattenContract(releasedJson);
+            IReadOnlyDictionary<string, HashSet<string>> currentTypes = FlattenContract(currentJson);
+
+            foreach (KeyValuePair<string, HashSet<string>> releasedType in releasedTypes)
+            {
+                Assert.IsTrue(
+                    currentTypes.TryGetValue(releasedType.Key, out HashSet<string> currentMembers),
+                    $"Released public type is missing or incompatible: {releasedType.Key}");
+
+                foreach (string releasedMember in releasedType.Value)
+                {
+                    Assert.IsTrue(
+                        currentMembers.Contains(releasedMember),
+                        $"Released public member is missing or incompatible: {releasedType.Key} :: {releasedMember}");
+                }
+            }
+        }
+
+        [TestMethod]
+        public void Preview07AbstractSurface_IsExactAndUnpublishedMembersAreAbsent()
         {
             BindingFlags publicInstanceDeclared = BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
+
+            CollectionAssert.AreEquivalent(
+                new[]
+                {
+                    "DecryptAsync(Byte[], String, String, CancellationToken)",
+                    "EncryptAsync(Byte[], String, String, CancellationToken)",
+                },
+                GetDeclaredAbstractMethodSignatures(typeof(Encryptor)));
+            CollectionAssert.AreEquivalent(
+                new[]
+                {
+                    "DecryptData(Byte[])",
+                    "EncryptData(Byte[])",
+                    "get_EncryptionAlgorithm()",
+                    "get_RawKey()",
+                },
+                GetDeclaredAbstractMethodSignatures(typeof(DataEncryptionKey)));
 
             Assert.IsNull(typeof(Encryptor).GetMethod("GetEncryptionKeyAsync", publicInstanceDeclared));
             Assert.IsNull(typeof(CosmosEncryptor).GetMethod("GetEncryptionKeyAsync", publicInstanceDeclared));
@@ -71,49 +139,58 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                     modifiers: null));
         }
 
-        private sealed class Preview07StyleEncryptor : Encryptor
+        private static object InvokePreview07Probe(string methodName)
         {
-            public override Task<byte[]> EncryptAsync(
-                byte[] plainText,
-                string dataEncryptionKeyId,
-                string encryptionAlgorithm,
-                CancellationToken cancellationToken = default)
-            {
-                return Task.FromResult(Transform(plainText));
-            }
+            string assemblyPath = Path.Combine(
+                AppContext.BaseDirectory,
+                Preview07FixtureAssemblyName + ".dll");
+            Assembly fixtureAssembly = Assembly.LoadFrom(assemblyPath);
+            Type probeType = fixtureAssembly.GetType(Preview07ProbeTypeName, throwOnError: true);
+            MethodInfo method = probeType.GetMethod(methodName, BindingFlags.Public | BindingFlags.Static);
+            Assert.IsNotNull(method);
+            return method.Invoke(null, null);
+        }
 
-            public override Task<byte[]> DecryptAsync(
-                byte[] cipherText,
-                string dataEncryptionKeyId,
-                string encryptionAlgorithm,
-                CancellationToken cancellationToken = default)
+        private static IReadOnlyDictionary<string, HashSet<string>> FlattenContract(string json)
+        {
+            Dictionary<string, HashSet<string>> types = new Dictionary<string, HashSet<string>>();
+            AddTypes((JObject)JObject.Parse(json)["Subclasses"], types);
+            return types;
+        }
+
+        private static void AddTypes(
+            JObject typeMap,
+            IDictionary<string, HashSet<string>> types)
+        {
+            foreach (JProperty typeProperty in typeMap.Properties())
             {
-                return Task.FromResult(Transform(cipherText));
+                JObject type = (JObject)typeProperty.Value;
+                if (!types.TryGetValue(typeProperty.Name, out HashSet<string> members))
+                {
+                    members = new HashSet<string>(StringComparer.Ordinal);
+                    types.Add(typeProperty.Name, members);
+                }
+
+                JObject memberMap = (JObject)type["Members"];
+                foreach (JProperty memberProperty in memberMap.Properties())
+                {
+                    JObject metadata = (JObject)memberProperty.Value;
+                    members.Add($"{metadata["Type"]}|{metadata["MethodInfo"]}");
+                }
+
+                AddTypes((JObject)type["Subclasses"], types);
+                AddTypes((JObject)type["NestedTypes"], types);
             }
         }
 
-        private sealed class Preview07StyleDataEncryptionKey : DataEncryptionKey
+        private static string[] GetDeclaredAbstractMethodSignatures(Type type)
         {
-            public override byte[] RawKey => null;
-
-            public override string EncryptionAlgorithm => "preview07-compatible";
-
-            public override byte[] EncryptData(byte[] plainText)
-            {
-                return Transform(plainText);
-            }
-
-            public override byte[] DecryptData(byte[] cipherText)
-            {
-                return Transform(cipherText);
-            }
-        }
-
-        private static byte[] Transform(byte[] input)
-        {
-            byte[] transformed = (byte[])input.Clone();
-            Array.Reverse(transformed);
-            return transformed;
+            return type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                .Where(method => method.IsAbstract)
+                .Select(method =>
+                    $"{method.Name}({string.Join(", ", method.GetParameters().Select(parameter => parameter.ParameterType.Name))})")
+                .OrderBy(signature => signature, StringComparer.Ordinal)
+                .ToArray();
         }
     }
 }

@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 {
     using System;
+    using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Encryption.Tests;
@@ -97,6 +98,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             Assert.IsNotNull(provider.DekCache);
         }
 
+        [TestMethod]
+        public void StoreProviderOnly_ReleasedConstructorIsNotObsolete()
+        {
+            ConstructorInfo constructor = typeof(CosmosDataEncryptionKeyProvider).GetConstructor(
+                new[] { typeof(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider), typeof(TimeSpan?) });
+
+            Assert.IsNotNull(constructor);
+            Assert.IsNull(constructor.GetCustomAttribute<ObsoleteAttribute>());
+        }
+
         #endregion
 
         #region Dual-provider (EncryptionKeyWrapProvider + EncryptionKeyStoreProvider) constructor
@@ -160,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         }
 
         [TestMethod]
-        public void DualProviderWithOptions_FactorySetsBothProviders()
+        public async Task DualProviderWithOptions_FactoryRoutesToBothProviders()
         {
             TestKeyWrapProvider wrapProvider = new TestKeyWrapProvider();
             TestEncryptionKeyStoreProvider storeProvider = new TestEncryptionKeyStoreProvider();
@@ -173,6 +184,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             Assert.AreSame(wrapProvider, provider.EncryptionKeyWrapProvider);
             Assert.AreSame(storeProvider, provider.EncryptionKeyStoreProvider);
             Assert.IsNotNull(provider.DekCache);
+
+            byte[] key = new byte[] { 1, 2, 3 };
+            EncryptionKeyWrapMetadata metadata = new EncryptionKeyWrapMetadata(
+                "test",
+                "test",
+                "RSA-OAEP",
+                "test");
+
+            await provider.EncryptionKeyWrapProvider.WrapKeyAsync(
+                key,
+                metadata,
+                CancellationToken.None);
+            provider.EncryptionKeyStoreProvider.WrapKey(
+                "test",
+                Microsoft.Data.Encryption.Cryptography.KeyEncryptionKeyAlgorithm.RSA_OAEP,
+                key);
+
+            Assert.AreEqual(1, wrapProvider.WrapCalls);
+            Assert.AreEqual(1, storeProvider.WrapCalls);
         }
 
 #pragma warning restore CS0618
@@ -192,6 +222,56 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             Assert.AreSame(storeProvider, provider.EncryptionKeyStoreProvider);
             Assert.IsNotNull(provider.DekCache);
+        }
+
+        [TestMethod]
+        public void StoreProvider_DefaultSecondArgument_UsesTimeSpanOverload()
+        {
+            TestEncryptionKeyStoreProvider storeProvider = new TestEncryptionKeyStoreProvider();
+
+            CosmosDataEncryptionKeyProvider provider = new CosmosDataEncryptionKeyProvider(
+                storeProvider,
+                default);
+
+            Assert.AreSame(storeProvider, provider.EncryptionKeyStoreProvider);
+            Assert.IsNotNull(provider.DekCache);
+        }
+
+        [TestMethod]
+        public void StoreProviderFactory_NullAndDefaultOptions_ResolveUnambiguously()
+        {
+            TestEncryptionKeyStoreProvider storeProvider = new TestEncryptionKeyStoreProvider();
+
+            CosmosDataEncryptionKeyProvider nullOptions = CosmosDataEncryptionKeyProvider.Create(
+                storeProvider,
+                null);
+            CosmosDataEncryptionKeyProvider defaultOptions = CosmosDataEncryptionKeyProvider.Create(
+                storeProvider,
+                default);
+
+            Assert.AreSame(storeProvider, nullOptions.EncryptionKeyStoreProvider);
+            Assert.AreSame(storeProvider, defaultOptions.EncryptionKeyStoreProvider);
+        }
+
+        [TestMethod]
+        public void DualProviderFactory_NullAndDefaultOptions_ResolveUnambiguously()
+        {
+            TestKeyWrapProvider wrapProvider = new TestKeyWrapProvider();
+            TestEncryptionKeyStoreProvider storeProvider = new TestEncryptionKeyStoreProvider();
+
+            CosmosDataEncryptionKeyProvider nullOptions = CosmosDataEncryptionKeyProvider.Create(
+                wrapProvider,
+                storeProvider,
+                null);
+            CosmosDataEncryptionKeyProvider defaultOptions = CosmosDataEncryptionKeyProvider.Create(
+                wrapProvider,
+                storeProvider,
+                default);
+
+            Assert.AreSame(wrapProvider, nullOptions.EncryptionKeyWrapProvider);
+            Assert.AreSame(storeProvider, nullOptions.EncryptionKeyStoreProvider);
+            Assert.AreSame(wrapProvider, defaultOptions.EncryptionKeyWrapProvider);
+            Assert.AreSame(storeProvider, defaultOptions.EncryptionKeyStoreProvider);
         }
 
         [TestMethod]
@@ -540,6 +620,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 #pragma warning disable CS0618 // Type or member is obsolete
         private class TestKeyWrapProvider : EncryptionKeyWrapProvider
         {
+            public int WrapCalls { get; private set; }
+
             public override Task<EncryptionKeyUnwrapResult> UnwrapKeyAsync(
                 byte[] wrappedKey,
                 EncryptionKeyWrapMetadata metadata,
@@ -553,6 +635,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 EncryptionKeyWrapMetadata metadata,
                 CancellationToken cancellationToken)
             {
+                this.WrapCalls++;
                 return Task.FromResult(new EncryptionKeyWrapResult(key, metadata));
             }
         }
