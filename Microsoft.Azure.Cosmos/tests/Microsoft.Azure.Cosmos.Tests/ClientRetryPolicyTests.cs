@@ -362,6 +362,178 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             }
         }
 
+        /// <summary>
+        /// Regression test for https://github.com/Azure/azure-cosmos-dotnet-v3/issues/6014.
+        /// A cross-region hedge arm that is cancelled before it is dispatched never runs
+        /// OnBeforeSendRequest, so ClientRetryPolicy's internal request reference stays null. With
+        /// Per-Partition Automatic Failover (PPAF) / Partition-Level Circuit Breaker (PPCB) enabled,
+        /// the OperationCanceledException branch of ShouldRetryAsync must not forward that null into
+        /// the partition-failover check (which previously threw ArgumentNullException). The cancellation
+        /// must simply not be retried, so it can surface as CosmosOperationCanceledException upstream.
+        /// </summary>
+        [TestMethod]
+        public void CosmosOperationCancelledBeforeDispatch_WithPartitionFailover_DoesNotThrowArgumentNullException()
+        {
+            const bool enableEndpointDiscovery = true;
+
+            // enablePartitionLevelFailover: true builds a real GlobalPartitionEndpointManagerCore with both
+            // PPAF and PPCB enabled (see Initialize), which is exactly the account configuration that opens
+            // the partition-failover gate that used to throw on a null request.
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enablePartitionLevelFailover: true);
+
+            ClientRetryPolicy retryPolicy = new(
+                globalEndpointManager: endpointManager,
+                partitionKeyRangeLocationCache: this.partitionKeyRangeLocationCache,
+                retryOptions: new RetryOptions(),
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isThinClientEnabled: false);
+
+            OperationCanceledException operationCancelledException = new(message: "Operation was cancelled before dispatch.");
+
+            // Intentionally DO NOT call retryPolicy.OnBeforeSendRequest(...) so the internal request reference
+            // stays null, mirroring a hedge arm cancelled before it was ever dispatched. Read-vs-write is
+            // genuinely indistinguishable here because no request was ever recorded, so this is a single,
+            // non-parameterized case. Before the fix this threw ArgumentNullException("request") from
+            // GlobalPartitionEndpointManagerCore, so the null guard is the specific regression under test.
+            ShouldRetryResult shouldRetryResult = null;
+            try
+            {
+                shouldRetryResult = retryPolicy
+                    .ShouldRetryAsync(operationCancelledException, new CancellationToken())
+                    .GetAwaiter()
+                    .GetResult();
+            }
+            catch (ArgumentNullException ex)
+            {
+                // Pre-fix behavior: the null internal request was forwarded into the partition-failover check,
+                // which threw ArgumentNullException("request") instead of letting the cancellation flow through.
+                Assert.Fail($"Regression #6014: a cancellation before dispatch must not throw ArgumentNullException. {ex}");
+            }
+
+            Assert.IsFalse(
+                shouldRetryResult.ShouldRetry,
+                "A cancellation before dispatch must not be retried, so it can surface as CosmosOperationCanceledException upstream.");
+
+            // TODO (#6014 follow-up): ClientRetryPolicy only decides here that the cancellation is not retried; the
+            // conversion of the OperationCanceledException into CosmosOperationCanceledException happens in the
+            // cross-region hedging layer, which is not exercised by this unit test. Proving the caller observes a
+            // CosmosOperationCanceledException end-to-end would require standing up the full hedging pipeline.
+        }
+
+        /// <summary>
+        /// Companion to <see cref="CosmosOperationCancelledBeforeDispatch_WithPartitionFailover_DoesNotThrowArgumentNullException"/>
+        /// covering the POST-dispatch branch of the same guard (see issue #6014). Here the request IS dispatched
+        /// (OnBeforeSendRequest runs, so ClientRetryPolicy's internal request reference is non-null) before the
+        /// operation is cancelled. With Per-Partition Automatic Failover (PPAF) / Partition-Level Circuit Breaker
+        /// (PPCB) enabled, the OperationCanceledException branch of ShouldRetryAsync walks the partition-failover
+        /// bookkeeping path with a real request; it must complete gracefully (no throw), must not ask the caller
+        /// to retry a cancellation, and - once the failover threshold is met - must actually record the partition
+        /// failover. That last assertion is what pins the guard's TRUE (non-null) branch: to make the failover
+        /// bookkeeping observable the test drives the full requestThreshold (10 read / 5 write) of cancellations
+        /// and reflects on the resulting PartitionKeyRangeFailoverInfo, so an inverted guard
+        /// (documentServiceRequest == null &amp;&amp;) - which would skip the bookkeeping for a non-null request and
+        /// leave the failover info null - fails the test. Unlike the pre-dispatch case, read-vs-write is meaningfully
+        /// distinct here because a concrete request is recorded, so the case is parameterized.
+        /// </summary>
+        [TestMethod]
+        [DataRow(true, DisplayName = "Read request cancelled after dispatch (PPAF/PPCB enabled).")]
+        [DataRow(false, DisplayName = "Write request cancelled after dispatch (PPAF/PPCB enabled).")]
+        public void CosmosOperationCancelledAfterDispatch_WithPartitionFailover_HandledGracefully(
+            bool isReadRequest)
+        {
+            const bool enableEndpointDiscovery = true;
+            const string suffix = "-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF";
+            int requestThreshold = isReadRequest ? 10 : 5;
+
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enablePartitionLevelFailover: true);
+
+            ReadOnlyCollection<Uri> readLocations = endpointManager.ReadEndpoints;
+
+            // Build a real, dispatchable request with a resolved partition key range so the partition-failover
+            // eligibility check does not early-return. This resolved state (plus OnBeforeSendRequest below) is the
+            // key difference from the pre-dispatch test, and is what drives execution into the null-guarded branch
+            // with a non-null request.
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest, isMasterResourceType: false);
+            request.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange()
+            {
+                Id = "0",
+                MinInclusive = "3F" + suffix,
+                MaxExclusive = "5F" + suffix,
+            };
+
+            ClientRetryPolicy retryPolicy = new(
+                globalEndpointManager: endpointManager,
+                partitionKeyRangeLocationCache: this.partitionKeyRangeLocationCache,
+                retryOptions: new RetryOptions(),
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isThinClientEnabled: false);
+
+            OperationCanceledException operationCancelledException = new(message: "Operation was cancelled after dispatch.");
+
+            // The failover bookkeeping has not run yet, so there is no failover info recorded for this partition
+            // key range. This is the baseline the post-dispatch branch is expected to change.
+            Assert.IsNull(
+                ClientRetryPolicyTests.GetPartitionKeyRangeFailoverInfoUsingReflection(
+                    this.partitionKeyRangeLocationCache,
+                    request.RequestContext.ResolvedPartitionKeyRange,
+                    isReadOnlyOrMultiMasterWriteRequest: isReadRequest));
+
+            // Drive the full partition-failover threshold with a DISPATCHED request. OnBeforeSendRequest records the
+            // request on every iteration, so this.documentServiceRequest is non-null and the guard's true branch runs
+            // the real IncrementRequestFailureCounterAndCheckIfPartitionCanFailover bookkeeping instead of
+            // short-circuiting. None of these iterations may throw ArgumentNullException (issue #6014).
+            ShouldRetryResult shouldRetryResult = null;
+            try
+            {
+                for (int i = 0; i < requestThreshold; i++)
+                {
+                    retryPolicy.OnBeforeSendRequest(request);
+                    shouldRetryResult = retryPolicy
+                        .ShouldRetryAsync(operationCancelledException, new CancellationToken())
+                        .GetAwaiter()
+                        .GetResult();
+                }
+
+                shouldRetryResult = retryPolicy
+                    .ShouldRetryAsync(operationCancelledException, new CancellationToken())
+                    .GetAwaiter()
+                    .GetResult();
+            }
+            catch (ArgumentNullException ex)
+            {
+                Assert.Fail($"Regression #6014: a cancellation after dispatch must not throw ArgumentNullException (isReadRequest={isReadRequest}). {ex}");
+            }
+
+            // A cancellation must never be retried, regardless of how many times it is observed.
+            Assert.IsFalse(
+                shouldRetryResult.ShouldRetry,
+                $"A cancellation after dispatch must not be retried (isReadRequest={isReadRequest}).");
+
+            // Pin the guard's non-null (true) branch via its observable side effect: once the failover threshold is
+            // met, the dispatched-request bookkeeping marks the partition as failed over to the next region. If the
+            // null guard were inverted (documentServiceRequest == null &&), the non-null request would skip this
+            // branch and the failover info would stay null - so this assertion, not the ShouldRetry check above, is
+            // what distinguishes the true branch actually running from it being short-circuited.
+            GlobalPartitionEndpointManagerCore.PartitionKeyRangeFailoverInfo partitionKeyRangeFailoverInfo =
+                ClientRetryPolicyTests.GetPartitionKeyRangeFailoverInfoUsingReflection(
+                    this.partitionKeyRangeLocationCache,
+                    request.RequestContext.ResolvedPartitionKeyRange,
+                    isReadOnlyOrMultiMasterWriteRequest: isReadRequest);
+
+            Assert.IsNotNull(
+                partitionKeyRangeFailoverInfo,
+                $"The dispatched-request bookkeeping branch must record a partition failover once the threshold is met (isReadRequest={isReadRequest}).");
+            Assert.AreEqual(partitionKeyRangeFailoverInfo.Current, readLocations[1]);
+        }
+
         [TestMethod]
         public async Task ClientRetryPolicy_Retry_SingleMaster_Read_PreferredLocationsAsync()
         {
@@ -704,6 +876,105 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
 #if !INTERNAL
+        /// <summary>
+        /// Issue #6091: a LastCommittedSingleWriteRegion read on a replica must read the hub override on retry
+        /// after a 403/WriteForbidden (no hedging, no prior 404/1002) instead of looping on the same replica.
+        /// </summary>
+        [TestMethod]
+        [Owner("aavasthy")]
+        public async Task ClientRetryPolicy_LastCommittedSingleWriteRegion_ReadOnReplica_RoutesToHubOnRetryAfter403()
+        {
+            string originalHubRegionFlag = Environment.GetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled);
+            Environment.SetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled, "True");
+
+            try
+            {
+                const bool enableEndpointDiscovery = true;
+
+                // Single write region account (hub = location1). Application region is the replica
+                // (location2) — preferred list is ordered replica-first to mirror the repro.
+                using GlobalEndpointManager endpointManager = this.Initialize(
+                    useMultipleWriteLocations: false,
+                    enableEndpointDiscovery: enableEndpointDiscovery,
+                    isPreferredLocationsListEmpty: false,
+                    enforceSingleMasterSingleWriteLocation: true,
+                    preferedRegionListOverride: new List<string> { "location2", "location1" }.AsReadOnly());
+
+                // Deliberately DISABLE per-partition failover and circuit breaker on the cache manager
+                // to prove hub region discovery is independent of PPAF (see issue open question 1).
+                GlobalPartitionEndpointManagerCore cacheManager = new GlobalPartitionEndpointManagerCore(
+                    endpointManager,
+                    isPartitionLevelFailoverEnabled: false,
+                    isPartitionLevelCircuitBreakerEnabled: false);
+
+                PartitionKeyRange pkRange = new PartitionKeyRange { Id = "0", MinInclusive = "", MaxExclusive = "FF" };
+
+                ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                    endpointManager,
+                    cacheManager,
+                    new RetryOptions(),
+                    enableEndpointDiscovery,
+                    isThinClientEnabled: false);
+
+                DocumentServiceRequest request = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+                request.RequestContext.ResolvedPartitionKeyRange = pkRange;
+
+                // Simulate RequestInvokerHandler setting the hub-region header up-front for
+                // LastCommittedSingleWriteRegion reads — before ClientRetryPolicy ever sees the request.
+                request.Headers[HubRegionHeader] = bool.TrueString;
+
+                // Attempt 1: routes to the replica (application/preferred region), not the hub.
+                retryPolicy.OnBeforeSendRequest(request);
+                Uri firstAttemptEndpoint = request.RequestContext.LocationEndpointToRoute;
+                Assert.AreEqual(
+                    ClientRetryPolicyTests.Location2Endpoint,
+                    firstAttemptEndpoint,
+                    "Attempt 1 must route to the replica (application region), not the hub.");
+
+                // The replica rejects a request that must be processed in the hub region → 403/WriteForbidden.
+                // There is NO prior 404/1002 (sessionTokenRetryCount stays 0) and NO hedging.
+                DocumentClientException writeForbidden = new DocumentClientException(
+                    message: "403/3 WriteForbidden from replica",
+                    innerException: null,
+                    statusCode: HttpStatusCode.Forbidden,
+                    substatusCode: SubStatusCodes.WriteForbidden,
+                    requestUri: firstAttemptEndpoint,
+                    responseHeaders: new DictionaryNameValueCollection());
+
+                ShouldRetryResult shouldRetry = await retryPolicy.ShouldRetryAsync(writeForbidden, CancellationToken.None);
+                Assert.IsTrue(shouldRetry.ShouldRetry, "Should retry after 403/3 WriteForbidden.");
+
+                // The failure path must have recorded a hub region override for the partition.
+                DocumentServiceRequest probe = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+                probe.RequestContext.ResolvedPartitionKeyRange = pkRange;
+                probe.Headers[HubRegionHeader] = bool.TrueString;
+                Assert.IsTrue(
+                    cacheManager.TryAddPartitionLevelLocationOverride(probe, checkHubRegionOverrideInCache: true),
+                    "The 403/3 must have recorded a hub region partition override in the cache.");
+                Assert.AreEqual(
+                    ClientRetryPolicyTests.Location1Endpoint,
+                    probe.RequestContext.LocationEndpointToRoute,
+                    "The recorded override must point at the hub (location1).");
+
+                // Attempt 2 (the assertion that fails WITHOUT the fix): dispatch must consult the hub
+                // override and route to the hub, converging the retry loop instead of hanging on the replica.
+                retryPolicy.OnBeforeSendRequest(request);
+                Assert.AreEqual(
+                    ClientRetryPolicyTests.Location1Endpoint,
+                    request.RequestContext.LocationEndpointToRoute,
+                    "Attempt 2 must route to the hub (location1) by reading the recorded override. " +
+                    "Before the fix it re-routed to the replica (location2), causing an unbounded hang.");
+                Assert.AreNotEqual(
+                    firstAttemptEndpoint,
+                    request.RequestContext.LocationEndpointToRoute,
+                    "The endpoint actually used must change between attempts so the retry loop can converge.");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled, originalHubRegionFlag);
+            }
+        }
+
         /// <summary>
         /// Hub reassignment: after R1 populates the cache with hub A,
         /// a subsequent request that escalates to the header-bearing retry and receives 403/3 from

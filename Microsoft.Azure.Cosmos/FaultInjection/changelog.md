@@ -9,12 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 - [#6004](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6004) RetryWith: Adds `RetryWith` (HTTP 449) server error injection support for Gateway mode
+- [#6103](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6103) FaultInjectionRule: Adds `GetInjectionRate` and `SetInjectionRate` so the injection rate of a server error rule can be changed at runtime, without recreating the rule or the client
 
 #### Breaking Changes
+- [#6103](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6103) FaultInjectionServerErrorResult: The public constructor now throws `ArgumentOutOfRangeException` when the injection rate is outside `(0, 1]`; previously out-of-range values were accepted and silently misbehaved. Use `FaultInjectionRule.Disable()` instead of a rate of 0
 
 #### Bugs Fixed
+- [#6103](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6103) InjectionRate: Fixes `WithInjectionRate`, `WithThreshold` and the `FaultInjectionServerErrorResult` / `FaultInjectionConnectionErrorResult` constructors accepting `double.NaN`, which silently caused a server error rule to be applied to every matching request (and a connection error rule to never fire) instead of being rejected as out of range
+- [#6103](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6103) InjectionRate: Fixes the `ArgumentOutOfRangeException` thrown by `WithInjectionRate` reporting the validation message as its `ParamName`
+- [#6103](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6103) InjectionRate: Fixes `ConnectionDelay` server error rules ignoring their configured injection rate and always injecting on every matching request
+- [#6103](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6103) FaultInjectionRule: Fixes a race where `SetInjectionRate`, `Enable` or `Disable` called while a rule was being registered with a client could be dropped, leaving the rule at a rate or state different from the one reported
+- [#6103](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6103) FaultInjectionRule: Fixes the rule hit limit being exceeded under concurrent requests, and `GetHitCountDetails` never counting past 1 per operation type
+- [#6103](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6103) FaultInjectionRule: Fixes `ToString` throwing a `NullReferenceException` for rules built without an explicit endpoint
 
 #### Other Changes
+- [#6103](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6103) FaultInjectionRule: Formats `ToString` output with the invariant culture and reports the live rate as `effectiveInjectionRate`
 
 ### <a name="1.0.0-beta.1"/> [1.0.0-beta.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.FaultInjection/1.0.0-beta.1) - 2026-04-30
 

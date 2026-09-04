@@ -181,7 +181,14 @@ namespace Microsoft.Azure.Cosmos
                     this.failoverRetryCount,
                     this.locationEndpoint?.ToString() ?? string.Empty);
 
-                if (this.partitionKeyRangeLocationCache.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
+                // A request that is cancelled before it is dispatched (for example a losing cross-region
+                // hedge arm whose token is cancelled at the top of the retry loop) never runs
+                // OnBeforeSendRequest, so this.documentServiceRequest is null. With no dispatched request
+                // there is no resolved partition or location to attribute a failure to, so skip the
+                // partition-failover bookkeeping and let the cancellation surface as
+                // CosmosOperationCanceledException instead of throwing ArgumentNullException. See issue #6014.
+                if (this.documentServiceRequest != null
+                    && this.partitionKeyRangeLocationCache.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
                         this.documentServiceRequest))
                 {
                     // In the event of a (ppaf + write operation) or (ppcb + read or multi-master write operation) getting timed
@@ -258,6 +265,17 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="request">The request being sent to the service.</param>
         public void OnBeforeSendRequest(DocumentServiceRequest request)
         {
+            // OnBeforeSendRequest is the only place this.documentServiceRequest is assigned. The
+            // OperationCanceledException guard in ShouldRetryAsync (and the other documentServiceRequest
+            // null checks in this class) rely on that reference only ever transitioning from null to
+            // non-null, never regressing back to null. Every production caller dispatches a fully
+            // constructed request, so make that an explicit contract here and fail fast on null instead
+            // of silently storing it and re-introducing the null downstream. See issue #6014 / PR #6016.
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
             this.isDtxRequest = DistributedTransactionConstants.IsDistributedTransactionRequest(
                 request.OperationType,
                 request.ResourceType);
@@ -319,9 +337,14 @@ namespace Microsoft.Azure.Cosmos
             bool hubHeaderFlagSet = this.addHubRegionProcessingOnlyHeader
                 || this.crossRegionAvailabilityContext?.ShouldAddHubRegionProcessingOnlyHeader == true;
 
+            // The last term catches the header already set by ReadConsistencyStrategy.LastCommittedSingleWriteRegion,
+            // where neither flag above is set. It matches the signal TryMarkEndpointUnavailableForPartitionKeyRange
+            // uses, so dispatch reads the hub override the failure path records. Evaluated last to short-circuit.
             if (this.isHubRegionProcessingEnabled
                 && request.IsReadOnlyRequest
-                && (this.sessionTokenRetryCount > 0 || hubHeaderFlagSet))
+                && (this.sessionTokenRetryCount > 0
+                    || hubHeaderFlagSet
+                    || GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request)))
             {
                 bool pkRangeLocationCacheHit = this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(
                     request, checkHubRegionOverrideInCache: true);
@@ -448,10 +471,21 @@ namespace Microsoft.Azure.Cosmos
                     this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
                     this.documentServiceRequest?.ResourceAddress ?? string.Empty);
 
+                // Do not mark the endpoint unavailable when the 408 is synthesized by
+                // ConsistencyWriter for barrier throttling (substatus 21013).
+                //
+                // Flow: Replica returns 429 during write barrier → ConsistencyWriter
+                // (in the Direct transport layer) converts it to a 408 with substatus
+                // 21013 (Server_WriteBarrierThrottled) as an early-yield signal → SDK
+                // receives 408/21013 here. This is NOT a connectivity failure, and
+                // marking the endpoint unavailable would trigger unnecessary cross-region
+                // failover.
+                //
                 // For DTX commits, a 408 from the coordinator means "transaction in-progress" — NOT
                 // an endpoint reachability problem. Marking the endpoint unavailable here would poison
                 // routing for non-DTX traffic sharing the same partition-key-range cache.
-                if (!this.isDtxRequest)
+                if (subStatusCode != SubStatusCodes.Server_WriteBarrierThrottled
+                    && !this.isDtxRequest)
                 {
                     // Mark the partition key range as unavailable to retry future request on a new region.
                     this.TryMarkEndpointUnavailableForPkRange(shouldMarkEndpointUnavailableForPkRange: false);

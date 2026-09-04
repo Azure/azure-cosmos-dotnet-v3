@@ -5,6 +5,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
+    using System.Threading;
 
     /// <summary>
     /// Fault Injector Rule
@@ -17,8 +19,13 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly TimeSpan duration;
         private readonly TimeSpan startDelay;
         private readonly int hitLimit;
+
+        // Guards the mutable rule state (enabled, injectionRate) and its publication to effectiveRule
+        // so a runtime update and the effective rule being bound cannot interleave and drop each other.
+        private readonly object syncRoot = new object();
         private volatile bool enabled;
-        private IFaultInjectionRuleInternal? effectiveRule;
+        private double injectionRate;
+        private volatile IFaultInjectionRuleInternal? effectiveRule;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FaultInjectionRule"/> class.
@@ -46,11 +53,21 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             this.startDelay = startDelay;
             this.hitLimit = hitLimit;
             this.enabled = enabled;
+            this.injectionRate = this.result switch
+            {
+                FaultInjectionServerErrorResult serverErrorResult => serverErrorResult.GetInjectionRate(),
+                FaultInjectionCustomServerErrorResult customServerErrorResult => customServerErrorResult.GetInjectionRate(),
+                _ => 1d,
+            };
         }
 
         /// <summary>
         /// The fault injection result.
         /// </summary>
+        /// <remarks>
+        /// The returned result carries the values the rule was built with. It is not updated by
+        /// <see cref="SetInjectionRate"/>; use <see cref="GetInjectionRate"/> for the rate in effect.
+        /// </remarks>
         /// <returns>the <see cref="IFaultInjectionResult"/>.</returns>
         public IFaultInjectionResult GetResult()
         {
@@ -116,9 +133,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// </summary>
         public void Disable()
         {
-            this.enabled = false;
-
-            this.effectiveRule?.Disable();
+            lock (this.syncRoot)
+            {
+                this.enabled = false;
+                this.effectiveRule?.Disable();
+            }
         }
 
         /// <summary>
@@ -126,9 +145,62 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// </summary>
         public void Enable()
         {
-            this.enabled = true;
+            lock (this.syncRoot)
+            {
+                this.enabled = true;
+                this.effectiveRule?.Enable();
+            }
+        }
 
-            this.effectiveRule?.Enable();
+        /// <summary>
+        /// Gets the injection rate of the fault injection rule, which is the probability that the
+        /// fault is injected into a request that already matches the rule's condition.
+        /// Connection error rules have no injection rate and always report 1; they use the connection
+        /// threshold configured through <c>WithThreshold</c> instead.
+        /// </summary>
+        /// <returns>the injection rate, in the range (0, 1].</returns>
+        public double GetInjectionRate()
+        {
+            return Volatile.Read(ref this.injectionRate);
+        }
+
+        /// <summary>
+        /// Updates the injection rate of the fault injection rule. Like <see cref="Enable"/> and
+        /// <see cref="Disable"/>, this can be called at any time, including after the rule has been
+        /// registered with a <see cref="CosmosClient"/>. The new rate takes effect on the next
+        /// request evaluated by the rule.
+        /// Only server error and custom server error rules have an injection rate. Calling this on a
+        /// connection error rule throws, because such rules use the connection threshold configured
+        /// through <c>WithThreshold</c>, which is fixed when the rule is built.
+        /// </summary>
+        /// <param name="injectionRate">the new injection rate, in the range (0, 1].</param>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when injectionRate is not within the valid range, or is not a number.</exception>
+        /// <exception cref="InvalidOperationException">Thrown when the rule does not have an injection rate.</exception>
+        public void SetInjectionRate(double injectionRate)
+        {
+            // Validate the argument before the rule state, so an invalid rate is reported even on a
+            // rule type that also cannot accept one.
+            // Negated so that double.NaN, which compares false against every bound, is rejected.
+            if (!(injectionRate > 0 && injectionRate <= 1))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(injectionRate),
+                    $"Argument '{nameof(injectionRate)}' must be within the range (0, 1].");
+            }
+
+            if (this.result is not FaultInjectionServerErrorResult
+                && this.result is not FaultInjectionCustomServerErrorResult)
+            {
+                throw new InvalidOperationException(
+                    $"'{nameof(SetInjectionRate)}' is only supported for server error and custom server error rules. "
+                    + $"Rule '{this.id}' uses a '{this.result.GetType().Name}', which has no injection rate.");
+            }
+
+            lock (this.syncRoot)
+            {
+                Volatile.Write(ref this.injectionRate, injectionRate);
+                FaultInjectionRule.ApplyInjectionRate(this.effectiveRule, injectionRate);
+            }
         }
 
         /// <summary>
@@ -164,7 +236,32 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <param name="effectiveRule">the effective fault injection rule.</param>
         internal void SetEffectiveFaultInjectionRule(IFaultInjectionRuleInternal effectiveRule)
         {
-            this.effectiveRule = effectiveRule;
+            // Rule processing is asynchronous, so an enable/disable or rate change made between the
+            // effective rule being built and it being bound here would otherwise be lost. Replaying
+            // the current state under the lock closes that window.
+            lock (this.syncRoot)
+            {
+                this.effectiveRule = effectiveRule;
+
+                if (this.enabled)
+                {
+                    effectiveRule.Enable();
+                }
+                else
+                {
+                    effectiveRule.Disable();
+                }
+
+                FaultInjectionRule.ApplyInjectionRate(effectiveRule, Volatile.Read(ref this.injectionRate));
+            }
+        }
+
+        private static void ApplyInjectionRate(IFaultInjectionRuleInternal? effectiveRule, double injectionRate)
+        {
+            if (effectiveRule is IFaultInjectionRateAdjustable rateAdjustableRule)
+            {
+                rateAdjustableRule.SetInjectionRate(injectionRate);
+            }
         }
 
         /// <summary>
@@ -174,14 +271,16 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         public override string ToString()
         {
             return string.Format(
-                "FaultInjectionRule{{ id: {0}, result: {1}, condition: {2}, duration: {3}, startDelay: {4}, hitlimit: {5}, enabled: {6}}}",
+                CultureInfo.InvariantCulture,
+                "FaultInjectionRule{{ id: {0}, result: {1}, condition: {2}, duration: {3}, startDelay: {4}, hitlimit: {5}, enabled: {6}, effectiveInjectionRate: {7}}}",
                 this.id,
                 this.result,
                 this.condition,
                 this.duration,
                 this.startDelay,
                 this.hitLimit,
-                this.enabled);
+                this.enabled,
+                this.GetInjectionRate());
         }
     }
 }
