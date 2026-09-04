@@ -9,6 +9,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -18,23 +20,56 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     {
         private readonly DocumentServiceLeaseUpdater leaseUpdater;
         private readonly ConcurrentDictionary<string, DocumentServiceLease> container;
+        private readonly ContainerInternal monitoredContainer;
 
         public DocumentServiceLeaseManagerInMemory(
             DocumentServiceLeaseUpdater leaseUpdater,
             ConcurrentDictionary<string, DocumentServiceLease> container)
+            : this(leaseUpdater, container, monitoredContainer: null)
+        {
+        }
+
+        public DocumentServiceLeaseManagerInMemory(
+            DocumentServiceLeaseUpdater leaseUpdater,
+            ConcurrentDictionary<string, DocumentServiceLease> container,
+            ContainerInternal monitoredContainer)
         {
             this.leaseUpdater = leaseUpdater;
             this.container = container;
+            this.monitoredContainer = monitoredContainer;
         }
 
-        public override Task<DocumentServiceLease> AcquireAsync(DocumentServiceLease lease)
+        public override async Task<DocumentServiceLease> AcquireAsync(DocumentServiceLease lease)
         {
             if (lease == null)
             {
                 throw new ArgumentNullException(nameof(lease));
             }
 
-            return this.leaseUpdater.UpdateLeaseAsync(
+            // Older/rehydrated leases (e.g. restored from previously persisted in-memory lease
+            // state) may not carry a FeedRange. Backfill it here, mirroring
+            // DocumentServiceLeaseManagerCosmos.AcquireAsync, while the lease's
+            // PartitionKeyRangeId can still be resolved from the routing map cache (i.e. before
+            // any split/merge makes that range id unresolvable).
+            if (lease.FeedRange == null && this.monitoredContainer != null)
+            {
+                string containerRid = await this.monitoredContainer.GetCachedRIDAsync(
+                    forceRefresh: false,
+                    NoOpTrace.Singleton,
+                    cancellationToken: default);
+                PartitionKeyRangeCache partitionKeyRangeCache = await this.monitoredContainer.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
+                PartitionKeyRange partitionKeyRange = await partitionKeyRangeCache.TryGetPartitionKeyRangeByIdAsync(
+                    containerRid,
+                    lease.CurrentLeaseToken,
+                    NoOpTrace.Singleton);
+
+                if (partitionKeyRange != null)
+                {
+                    lease.FeedRange = new FeedRangeEpk(partitionKeyRange.ToRange());
+                }
+            }
+
+            return await this.leaseUpdater.UpdateLeaseAsync(
                 lease,
                 lease.Id,
                 Cosmos.PartitionKey.Null,
