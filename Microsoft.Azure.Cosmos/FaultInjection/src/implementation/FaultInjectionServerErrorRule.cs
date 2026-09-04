@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
 
-    internal class FaultInjectionServerErrorRule : IFaultInjectionRuleInternal
+    internal class FaultInjectionServerErrorRule : IFaultInjectionRuleInternal, IFaultInjectionRateAdjustable
     {
         private const string FautInjecitonId = "FaultInjectionId";
 
@@ -68,8 +68,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 return false;
             }
 
-            long evaluationCount = this.evaluationCount + 1;
-            Interlocked.Increment(ref this.evaluationCount);
+            long evaluationCount = Interlocked.Increment(ref this.evaluationCount);
             bool withinHitLimit = this.hitLimit == 0 || evaluationCount <= this.hitLimit;
             if (!withinHitLimit)
             {
@@ -88,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 this.hitCountDetails.AddOrUpdate(
                     key, 
                     1L, 
-                    (k, v) => v ++);
+                    (k, v) => v + 1);
 
                 return true;
             }
@@ -115,8 +114,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 return false;
             }
 
-            long evaluationCount = this.evaluationCount + 1;
-            Interlocked.Increment(ref this.evaluationCount);
+            long evaluationCount = Interlocked.Increment(ref this.evaluationCount);
             bool withinHitLimit = this.hitLimit == 0 || evaluationCount <= this.hitLimit;
             if (!withinHitLimit)
             {
@@ -135,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 this.hitCountDetails.AddOrUpdate(
                     key,
                     1L,
-                    (k, v) => v++);
+                    (k, v) => v + 1);
 
                 return true;
             }
@@ -163,10 +161,13 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 return false;
             }
 
-            long evaluationCount = this.evaluationCount + 1;
-            Interlocked.Increment(ref this.evaluationCount);
+            long evaluationCount = Interlocked.Increment(ref this.evaluationCount);
             bool withinHitLimit = this.hitLimit == 0 || evaluationCount <= this.hitLimit;
             if (!withinHitLimit)
+            {
+                return false;
+            }
+            else if (Random.Shared.NextDouble() > this.result.GetInjectionRate())
             {
                 return false;
             }
@@ -179,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 this.hitCountDetails.AddOrUpdate(
                     key,
                     1L,
-                    (k, v) => v++);
+                    (k, v) => v + 1);
 
                 return true;
             }
@@ -250,6 +251,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         public void Enable()
         {
             this.enabled = true;
+        }
+
+        public void SetInjectionRate(double injectionRate)
+        {
+            this.result.SetInjectionRate(injectionRate);
         }
 
         public List<Uri> GetAddresses()

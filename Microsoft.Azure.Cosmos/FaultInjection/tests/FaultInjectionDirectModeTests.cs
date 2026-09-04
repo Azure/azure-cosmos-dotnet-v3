@@ -1404,6 +1404,100 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         }
 
         [TestMethod]
+        [Timeout(Timeout * 2)]
+        [Owner("kundadebdatta")]
+        [Description("Tests that SetInjectionRate changes the rate honored by an already registered client")]
+        public async Task FaultInjectionServerErrorRule_DynamicInjectionRateTest()
+        {
+            string dynamicRateRuleId = "dynamicRateRule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule dynamicRateRule = new FaultInjectionRuleBuilder(
+                id: dynamicRateRuleId,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithOperationType(FaultInjectionOperationType.ReadItem)
+                        .Build(),
+                result:
+                    // See FaultInjectionServerErrorRule_InjectionRateTest for why TooManyRequests is used here.
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.TooManyRequests)
+                        .WithInjectionRate(1)
+                        .WithTimes(1)
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(5))
+                .Build();
+            dynamicRateRule.Disable();
+
+            try
+            {
+                FaultInjector faultInjector = new FaultInjector(new List<FaultInjectionRule> { dynamicRateRule });
+
+                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+                {
+                    ConsistencyLevel = ConsistencyLevel.Session,
+                    FaultInjector = faultInjector,
+                    Serializer = this.serializer,
+                    MaxRetryAttemptsOnRateLimitedRequests = 0,
+                };
+
+                this.fiClient = new CosmosClient(
+                    this.connectionString,
+                    cosmosClientOptions);
+                this.fiDatabase = this.fiClient.GetDatabase(this.database.Id);
+                this.fiContainer = this.fiDatabase.GetContainer(this.container.Id);
+
+                dynamicRateRule.Enable();
+
+                //Count the injected 429s directly: this tests the user-visible probability contract and is
+                //immune to any internal re-entry of the rule.
+                int fullRateInjected = await ReadBatchAsync(this.fiContainer, 100);
+
+                //A rate of 1 with retries disabled injects into every one of the 100 reads.
+                Assert.AreEqual(
+                    100,
+                    fullRateInjected,
+                    $"A rate of 1 should inject into every read. {Describe(dynamicRateRule)}");
+
+                // The client is already built and running; this is the behavior under test.
+                dynamicRateRule.SetInjectionRate(0.5);
+
+                int halfRateInjected = await ReadBatchAsync(this.fiContainer, 100);
+
+                //50% injection rate over 100 requests is Binomial(100, 0.5): mean 50, standard deviation 5.
+                //[30, 70] is +/- 4 standard deviations, so a passing run is not a coin flip while a rate change
+                //that never reached the live client (which would inject 100 times) is still caught.
+                Assert.IsTrue(
+                    halfRateInjected >= 30,
+                    $"Injection rate too low after SetInjectionRate. Injected: {halfRateInjected}. {Describe(dynamicRateRule)}");
+                Assert.IsTrue(
+                    halfRateInjected <= 70,
+                    $"Injection rate too high after SetInjectionRate. Injected: {halfRateInjected}. {Describe(dynamicRateRule)}");
+            }
+            finally
+            {
+                dynamicRateRule.Disable();
+            }
+        }
+
+        private static async Task<int> ReadBatchAsync(Container container, int requestCount)
+        {
+            int injectedCount = 0;
+            for (int i = 0; i < requestCount; i++)
+            {
+                try
+                {
+                    await container.ReadItemAsync<FaultInjectionTestObject>(
+                        "testId",
+                        new PartitionKey("pk"));
+                }
+                catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.TooManyRequests)
+                {
+                    injectedCount++;
+                }
+            }
+
+            return injectedCount;
+        }
+
+        [TestMethod]
         [Timeout(Timeout)]
         [Owner("nalutripician")]
         [Description("Tests fault injection connection error rules")]
