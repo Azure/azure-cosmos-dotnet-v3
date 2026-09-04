@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
 {
     using System.Collections.Generic;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
 
@@ -16,7 +17,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             PartitionKeyDefinition partitionKeyDefinition,
             Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy,
             Cosmos.GeospatialType geospatialType,
-            bool useLengthAwareRangeComparer)
+            bool useLengthAwareRangeComparer,
+            IReadOnlyList<ISecondaryIndexMetadata> globalSecondaryIndexes = null)
         {
             this.ResourceId = resourceId;
             this.EffectiveRangesForPartitionKey = effectivePartitionKeyRanges;
@@ -24,6 +26,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             this.VectorEmbeddingPolicy = vectorEmbeddingPolicy;
             this.GeospatialType = geospatialType;
             this.UseLengthAwareRangeComparer = useLengthAwareRangeComparer;
+            this.GlobalSecondaryIndexes = globalSecondaryIndexes;
         }
 
         public string ResourceId { get; }
@@ -38,5 +41,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
 
         public Cosmos.GeospatialType GeospatialType { get; }
         public bool UseLengthAwareRangeComparer { get; }
+
+        public IReadOnlyList<ISecondaryIndexMetadata> GlobalSecondaryIndexes { get; }
     }
 }

@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Telemetry;
@@ -28,6 +29,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly BatchAsyncContainerExecutorCache batchExecutorCache;
         private readonly CosmosClient client;
         private readonly DocumentClient documentClient;
+        private readonly ISecondaryIndexMetadataCache secondaryIndexMetadataCache;
         private readonly CosmosSerializerCore serializerCore;
         private readonly CosmosResponseFactoryInternal responseFactory;
         private readonly RequestInvokerHandler requestHandler;
@@ -55,6 +57,9 @@ namespace Microsoft.Azure.Cosmos
             this.documentClient = documentClient;
             this.userAgent = userAgent;
             this.batchExecutorCache = batchExecutorCache;
+
+            ISecondaryIndexMetadataProvider secondaryIndexMetadataProvider = new CollectionMetadataSecondaryIndexMetadataProvider(documentClient);
+            this.secondaryIndexMetadataCache = new SecondaryIndexMetadataCache(secondaryIndexMetadataProvider, clientOptions.EnableAsyncCacheExceptionNoSharing);
         }
 
         internal static CosmosClientContext Create(
@@ -162,6 +167,8 @@ namespace Microsoft.Azure.Cosmos
         internal override CosmosClient Client => this.ThrowIfDisposed(this.client);
 
         internal override DocumentClient DocumentClient => this.ThrowIfDisposed(this.documentClient);
+
+        internal override ISecondaryIndexMetadataCache SecondaryIndexMetadataCache => this.ThrowIfDisposed(this.secondaryIndexMetadataCache);
 
         internal override CosmosSerializerCore SerializerCore => this.ThrowIfDisposed(this.serializerCore);
 
