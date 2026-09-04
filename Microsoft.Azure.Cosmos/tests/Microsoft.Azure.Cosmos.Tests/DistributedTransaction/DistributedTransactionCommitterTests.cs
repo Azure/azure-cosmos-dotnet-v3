@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             string storedToken = sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName));
             Assert.AreEqual(expectedToken, storedToken,
-                "Session token should be assembled as {pkRangeId}:{lsn} and merged into SessionContainer after a successful DTC commit.");
+                "Session token should be recorded in the SessionContainer after a successful DTC commit.");
         }
 
         [TestMethod]
@@ -387,6 +387,58 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
+        [Description("An unresolvable account consistency level still merges tokens and does not surface token failures")]
+        public async Task ExecuteTransactionAsync_MergesSessionTokens_WhenAccountConsistencyIsUnresolvable()
+        {
+            const string expectedToken = "0:1#14#4=9";
+
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                new UnresolvableConsistencyDocumentClient { sessionContainer = sessionContainer },
+                responseContent: BuildDtcResponseJson(
+                    new[] { (statusCode: 200, subStatusCode: (int?)null, sessionToken: "1#14#4=9", partitionKeyRangeId: "0") }),
+                statusCode: HttpStatusCode.OK);
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                this.CreateOperations(1), mockContext.Object, OperationType.CommitDistributedTransaction);
+
+            await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+
+            Assert.AreEqual(
+                expectedToken,
+                sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName)),
+                "A transient account read failure must not degrade a session client to eventual consistency.");
+        }
+
+        [TestMethod]
+        [Description("An unresolvable account consistency level traces a malformed token rather than throwing")]
+        public async Task ExecuteTransactionAsync_DoesNotThrowOnMalformedToken_WhenAccountConsistencyIsUnresolvable()
+        {
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                new UnresolvableConsistencyDocumentClient { sessionContainer = sessionContainer },
+                responseContent: BuildDtcResponseJson(
+                    new[] { (statusCode: 201, subStatusCode: (int?)null, sessionToken: "1#9#4=8#5=7", partitionKeyRangeId: (string)null) },
+                    prefixRangeLessTokens: false),
+                statusCode: HttpStatusCode.OK);
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                this.CreateOperations(1), mockContext.Object, OperationType.CommitDistributedTransaction);
+
+            DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+
+            Assert.IsNotNull(
+                response,
+                "Token failures are surfaced only when the account is known to be session consistent, so an unknown level must trace instead of throw.");
+
+            Assert.IsTrue(
+                string.IsNullOrEmpty(sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName))),
+                "A malformed token must never be recorded, regardless of the resolved consistency level.");
+        }
+
+        [TestMethod]
         [Description("Capture is not gated on consistency: tokens are merged on a non-session account, matching point-operation behavior")]
         public async Task ExecuteTransactionAsync_MergesSessionTokens_OnNonSessionAccount()
         {
@@ -437,22 +489,22 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
-        [Description("When session token is LSN-only and partitionKeyRangeId is present, the token is assembled as {pkRangeId}:{lsn}")]
-        public async Task ExecuteTransactionAsync_AssemblesSessionToken_WhenPartitionKeyRangeIdIsPresent()
+        [Description("When session token is LSN-only, the malformed token is surfaced even when partitionKeyRangeId is present")]
+        public async Task ExecuteTransactionAsync_ThrowsOnLsnOnlySessionToken_WhenPartitionKeyRangeIdIsPresent()
         {
             const string lsnOnly = "1#9#4=8#5=7";
             const string pkRangeId = "0";
-            const string expectedToken = "0:1#9#4=8#5=7";
-
             SessionContainer sessionContainer = new SessionContainer("testhost");
 
             string responseJson = BuildDtcResponseJson(
-                new[] { (statusCode: 201, subStatusCode: (int?)null, sessionToken: lsnOnly, partitionKeyRangeId: pkRangeId) });
+                new[] { (statusCode: 201, subStatusCode: (int?)null, sessionToken: lsnOnly, partitionKeyRangeId: pkRangeId) },
+                prefixRangeLessTokens: false);
 
             Mock<CosmosClientContext> mockContext = this.CreateMockContext(
                 sessionContainer,
                 responseContent: responseJson,
-                statusCode: HttpStatusCode.OK);
+                statusCode: HttpStatusCode.OK,
+                accountConsistencyLevel: Cosmos.ConsistencyLevel.Session);
 
             List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
             {
@@ -468,11 +520,12 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 operations, mockContext.Object, OperationType.CommitDistributedTransaction);
 
-            await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None));
 
-            string storedToken = sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName));
-            Assert.AreEqual(expectedToken, storedToken,
-                "Session token should be assembled as {pkRangeId}:{lsn} when partitionKeyRangeId is present.");
+            StringAssert.Contains(exception.Message, lsnOnly);
+            Assert.IsTrue(string.IsNullOrEmpty(sessionContainer.GetSessionToken(
+                DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName))));
         }
 
         [TestMethod]
@@ -656,8 +709,8 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
-        [Description("m9: When an operation result has no partitionKeyRangeId, FromJson emits a TraceWarning " +
-                     "so the skip is observable in diagnostic traces.")]
+        [Description("m9: When an operation result carries a session token with no partitionKeyRangeId, the capture path " +
+                     "emits a TraceWarning under non-Session consistency so the skip is observable in diagnostic traces.")]
         public async Task ExecuteTransactionAsync_EmitsTraceWarning_WhenPartitionKeyRangeIdIsAbsent()
         {
             const string lsnOnly = "1#9#4=8#5=7";
@@ -712,7 +765,405 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
 
         [TestMethod]
-        [Description("When SetSessionToken throws, the exception is swallowed and ExecuteTransactionAsync still returns the response rather than rethrowing")]
+        [Description("A malformed token on a retriable response must not surface: the retry loop has not yet decided " +
+                     "the outcome, so throwing would pre-empt a retry that could still succeed.")]
+        public async Task ExecuteTransactionAsync_DoesNotThrowOnMalformedToken_WhileTheResponseIsStillRetriable()
+        {
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: null,
+                statusCode: HttpStatusCode.OK,
+                accountConsistencyLevel: Cosmos.ConsistencyLevel.Session);
+
+            int attempts = 0;
+            this.SetupProcessResourceOperation(
+                mockContext,
+                () =>
+                {
+                    attempts++;
+
+                    // The retriable attempt carries a malformed token; the terminal attempt is clean.
+                    if (attempts == 1)
+                    {
+                        string retriableJson = @"{""isRetriable"":true,""operationResponses"":[{""index"":0,""statusCode"":200,""sessionToken"":""malformed""}]}";
+                        return Task.FromResult(new ResponseMessage((HttpStatusCode)StatusCodes.TransactionAborted)
+                        {
+                            Content = new MemoryStream(Encoding.UTF8.GetBytes(retriableJson))
+                        });
+                    }
+
+                    string successJson = BuildDtcResponseJson(
+                        new[] { (statusCode: 200, subStatusCode: (int?)null, sessionToken: "1#3#4=2", partitionKeyRangeId: "0") });
+
+                    return Task.FromResult(new ResponseMessage(HttpStatusCode.OK)
+                    {
+                        Content = new MemoryStream(Encoding.UTF8.GetBytes(successJson))
+                    });
+                });
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                this.CreateOperations(1), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
+
+            DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+
+            Assert.AreEqual(2, attempts, "The retriable attempt must be retried rather than aborted by a token failure.");
+            Assert.IsTrue(response.IsSuccessStatusCode, "The retry succeeded, so the caller sees the successful response.");
+        }
+
+        [TestMethod]
+        [Description("A success envelope that also reports isRetriable is never retried, so it is the outcome the " +
+                     "caller receives and a malformed token on it must surface rather than be traced as unsettled.")]
+        public async Task ExecuteTransactionAsync_ThrowsOnMalformedToken_WhenSuccessEnvelopeAlsoReportsRetriable()
+        {
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: null,
+                statusCode: HttpStatusCode.OK,
+                accountConsistencyLevel: Cosmos.ConsistencyLevel.Session);
+
+            int attempts = 0;
+            this.SetupProcessResourceOperation(
+                mockContext,
+                () =>
+                {
+                    attempts++;
+
+                    string json = @"{""isRetriable"":true,""operationResponses"":[{""index"":0,""statusCode"":200,""sessionToken"":""malformed""}]}";
+                    return Task.FromResult(new ResponseMessage(HttpStatusCode.OK)
+                    {
+                        Content = new MemoryStream(Encoding.UTF8.GetBytes(json))
+                    });
+                });
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                this.CreateOperations(1), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
+
+            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None),
+                "A success status ends the retry loop regardless of isRetriable, so the token failure is settled.");
+
+            Assert.AreEqual(1, attempts, "A success envelope is terminal, so it must not be retried.");
+            StringAssert.Contains(exception.Message, "malformed",
+                "The message must include the offending value so it can be diagnosed.");
+
+            Assert.IsTrue(
+                string.IsNullOrEmpty(sessionContainer.GetSessionToken(
+                    DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName))),
+                "A malformed token must never reach the session container.");
+        }
+
+        [TestMethod]
+        [Description("A malformed token on a NotModified operation surfaces. NotModified is captured on the point " +
+                     "operation path, so dropping it here would be the same silent degradation on a read transaction.")]
+        public async Task ExecuteTransactionAsync_ThrowsOnMalformedToken_WhenOperationIsNotModified()
+        {
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: BuildDtcResponseJson(
+                    new[] { (statusCode: 304, subStatusCode: (int?)null, sessionToken: "malformed", partitionKeyRangeId: (string)null) },
+                    prefixRangeLessTokens: false),
+                statusCode: HttpStatusCode.OK,
+                accountConsistencyLevel: Cosmos.ConsistencyLevel.Session);
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                this.CreateOperations(1), mockContext.Object, OperationType.CommitDistributedTransaction);
+
+            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None),
+                "A NotModified operation still observed replica progress, so its token must not be dropped silently.");
+
+            StringAssert.Contains(exception.Message, "malformed",
+                "The message must include the offending value so it can be diagnosed.");
+        }
+
+        [TestMethod]
+        [Description("A read transaction never commits, so a malformed token on a read must not tell the caller the " +
+                     "transaction was committed.")]
+        public async Task ExecuteTransactionAsync_ReportsReadOutcome_WhenMalformedTokenSurfacesOnARead()
+        {
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: null,
+                statusCode: HttpStatusCode.OK,
+                accountConsistencyLevel: Cosmos.ConsistencyLevel.Session);
+
+            this.SetupProcessResourceOperation(
+                mockContext,
+                () => Task.FromResult(new ResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new MemoryStream(Encoding.UTF8.GetBytes(BuildDtcResponseJson(
+                        new[] { (statusCode: 200, subStatusCode: (int?)null, sessionToken: "malformed", partitionKeyRangeId: (string)null) },
+                        prefixRangeLessTokens: false)))
+                }));
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                this.CreateOperations(1), mockContext.Object, OperationType.Read);
+
+            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None));
+
+            StringAssert.Contains(exception.Message, "read transaction completed successfully",
+                "A read transaction must be described as completed, not committed.");
+            Assert.IsFalse(exception.Message.Contains("was committed"),
+                "A read transaction never commits, so the commit wording must not appear.");
+        }
+
+        [DataTestMethod]
+        [Description("A malformed session token on a committed operation under Session consistency surfaces to the caller " +
+                     "instead of silently degrading the collection to eventual consistency.")]
+        [DataRow("1#9#4=8#5=7", null, "1#9#4=8#5=7", "missing the partitionKeyRangeId prefix", DisplayName = "bare LSN with no partitionKeyRangeId to prefix it")]
+        [DataRow("5", null, "5", "missing the partitionKeyRangeId prefix", DisplayName = "bare number with no partitionKeyRangeId to prefix it")]
+        [DataRow("garbage", "0", "garbage", "could not be parsed", DisplayName = "unparsable token alongside a valid partitionKeyRangeId")]
+        [DataRow("0:garbage", null, "0:garbage", "could not be parsed", DisplayName = "valid partitionKeyRangeId with an unparsable LSN segment")]
+        [DataRow("0:1#5,1:1#7", null, "0:1#5,1:1#7", "could not be parsed", DisplayName = "compound multi-partition token in a partition-local slot")]
+        public async Task ExecuteTransactionAsync_ThrowsOnMalformedToken_WhenCommittedUnderSessionConsistency(
+            string sessionToken,
+            string partitionKeyRangeId,
+            string expectedTokenInMessage,
+            string expectedReason)
+        {
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: BuildDtcResponseJson(
+                    new[] { (statusCode: 201, subStatusCode: (int?)null, sessionToken, partitionKeyRangeId) },
+                    prefixRangeLessTokens: false),
+                statusCode: HttpStatusCode.OK,
+                accountConsistencyLevel: Cosmos.ConsistencyLevel.Session);
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                this.CreateOperations(1), mockContext.Object, OperationType.CommitDistributedTransaction);
+
+            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None),
+                "A malformed token on a committed operation under Session consistency must surface.");
+
+            StringAssert.Contains(exception.Message, "index 0",
+                "The message must identify which operation carried the malformed token.");
+            StringAssert.Contains(exception.Message, expectedTokenInMessage,
+                "The message must include the offending value so it can be diagnosed.");
+            StringAssert.Contains(exception.Message, expectedReason,
+                "The message must state why the token could not be recorded, not a fixed reason.");
+            StringAssert.Contains(exception.Message, DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName),
+                "The message must name the collection whose progress was lost.");
+            StringAssert.Contains(exception.Message, "should not be retried",
+                "The message must state the transaction already committed so callers do not double-apply it.");
+
+            Assert.IsTrue(
+                string.IsNullOrEmpty(sessionContainer.GetSessionToken(
+                    DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName))),
+                "A malformed token must never reach the session container.");
+        }
+
+        [TestMethod]
+        [Description("When several operations carry malformed tokens, the failure surfaces on the first one and names that index.")]
+        public async Task ExecuteTransactionAsync_ThrowsOnFirstMalformedToken_WhenSeveralAreMalformed()
+        {
+            const string container0 = "Container0";
+            const string container1 = "Container1";
+            const string container2 = "Container2";
+
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: BuildDtcResponseJson(new[]
+                {
+                    (statusCode: 200, subStatusCode: (int?)null, sessionToken: "1#3#4=2", partitionKeyRangeId: "0"),
+                    (statusCode: 200, subStatusCode: (int?)null, sessionToken: "malformedfirst", partitionKeyRangeId: (string)null),
+                    (statusCode: 200, subStatusCode: (int?)null, sessionToken: "malformedsecond", partitionKeyRangeId: (string)null)
+                }),
+                statusCode: HttpStatusCode.OK,
+                accountConsistencyLevel: Cosmos.ConsistencyLevel.Session);
+
+            // Distinct collections so that the token recorded before the failure and the tokens skipped
+            // after it occupy separate session container slots.
+            List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Create, operationIndex: 0,
+                    DatabaseName, container0, new PartitionKey("pk0"), id: "doc0"),
+                new DistributedTransactionOperation(
+                    OperationType.Create, operationIndex: 1,
+                    DatabaseName, container1, new PartitionKey("pk1"), id: "doc1"),
+                new DistributedTransactionOperation(
+                    OperationType.Create, operationIndex: 2,
+                    DatabaseName, container2, new PartitionKey("pk2"), id: "doc2"),
+            };
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                operations, mockContext.Object, OperationType.CommitDistributedTransaction);
+
+            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None));
+
+            StringAssert.Contains(exception.Message, "index 1",
+                "The failure must name the first malformed operation.");
+            StringAssert.Contains(exception.Message, "malformedfirst");
+            Assert.IsFalse(exception.Message.Contains("malformedsecond"),
+                "Validation must stop at the first malformed token rather than accumulating every failure.");
+
+            Assert.AreEqual(
+                "0:1#3#4=2",
+                sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, container0)),
+                "Operations validated before the failure keep the progress they already recorded.");
+
+            Assert.IsTrue(
+                string.IsNullOrEmpty(sessionContainer.GetSessionToken(
+                    DistributedTransactionConstants.GetCollectionFullName(DatabaseName, container1))),
+                "The collection carrying the first malformed token must not be recorded.");
+
+            Assert.IsTrue(
+                string.IsNullOrEmpty(sessionContainer.GetSessionToken(
+                    DistributedTransactionConstants.GetCollectionFullName(DatabaseName, container2))),
+                "Validation stops at the first failure, so collections after it are never reached.");
+        }
+
+        [DataTestMethod]
+        [Description("Under a non-Session effective consistency a malformed token carries no guarantee the caller relies on, " +
+                     "so it is traced and skipped while its siblings still merge.")]
+        [DataRow(Cosmos.ConsistencyLevel.Strong, DisplayName = "Strong")]
+        [DataRow(Cosmos.ConsistencyLevel.BoundedStaleness, DisplayName = "BoundedStaleness")]
+        [DataRow(Cosmos.ConsistencyLevel.ConsistentPrefix, DisplayName = "ConsistentPrefix")]
+        [DataRow(Cosmos.ConsistencyLevel.Eventual, DisplayName = "Eventual")]
+        public async Task ExecuteTransactionAsync_SkipsMalformedToken_UnderNonSessionConsistency(
+            Cosmos.ConsistencyLevel accountConsistencyLevel)
+        {
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: BuildDtcResponseJson(new[]
+                {
+                    (statusCode: 200, subStatusCode: (int?)null, sessionToken: "malformed", partitionKeyRangeId: (string)null),
+                    (statusCode: 200, subStatusCode: (int?)null, sessionToken: "1#3#4=2", partitionKeyRangeId: "1")
+                }),
+                statusCode: HttpStatusCode.OK,
+                accountConsistencyLevel: accountConsistencyLevel);
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                this.CreateOperations(2), mockContext.Object, OperationType.CommitDistributedTransaction);
+
+            DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.AreEqual(
+                "1:1#3#4=2",
+                sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName)),
+                "A malformed token must not prevent its siblings from recording their progress.");
+        }
+
+        [DataTestMethod]
+        [Description("A malformed token on an operation the server already failed must never replace the server's error: " +
+                     "the caller still receives the status they need to act on.")]
+        [DataRow(409, HttpStatusCode.Conflict, DisplayName = "409 Conflict")]
+        [DataRow(412, HttpStatusCode.PreconditionFailed, DisplayName = "412 PreconditionFailed")]
+        public async Task ExecuteTransactionAsync_SkipsMalformedToken_WhenOperationFailedUnderSessionConsistency(
+            int operationStatusCode,
+            HttpStatusCode envelopeStatusCode)
+        {
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: BuildDtcResponseJson(
+                    new[] { (operationStatusCode, subStatusCode: (int?)null, sessionToken: "malformed", partitionKeyRangeId: (string)null) }),
+                statusCode: envelopeStatusCode,
+                accountConsistencyLevel: Cosmos.ConsistencyLevel.Session);
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                this.CreateOperations(1), mockContext.Object, OperationType.CommitDistributedTransaction);
+
+            DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+
+            Assert.AreEqual(envelopeStatusCode, response.StatusCode,
+                "The server's error must reach the caller rather than being masked by a token-validation failure.");
+        }
+
+        [DataTestMethod]
+        [Description("Effective consistency is the client override when one is set, and the account default otherwise: " +
+                     "the same precedence the point-operation path applies.")]
+        [DataRow(Cosmos.ConsistencyLevel.Eventual, Cosmos.ConsistencyLevel.Session, true,
+            DisplayName = "client override to Session on an Eventual account surfaces the failure")]
+        [DataRow(Cosmos.ConsistencyLevel.Session, Cosmos.ConsistencyLevel.Eventual, false,
+            DisplayName = "client override to Eventual on a Session account suppresses the failure")]
+        public async Task ExecuteTransactionAsync_UsesClientConsistencyOverride_ToGradeMalformedTokens(
+            Cosmos.ConsistencyLevel accountConsistencyLevel,
+            Cosmos.ConsistencyLevel clientConsistencyOverride,
+            bool expectThrow)
+        {
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: BuildDtcResponseJson(
+                    new[] { (statusCode: 200, subStatusCode: (int?)null, sessionToken: "malformed", partitionKeyRangeId: (string)null) }),
+                statusCode: HttpStatusCode.OK,
+                accountConsistencyLevel: accountConsistencyLevel);
+
+            mockContext
+                .Setup(c => c.ClientOptions)
+                .Returns(new CosmosClientOptions { ConsistencyLevel = clientConsistencyOverride });
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                this.CreateOperations(1), mockContext.Object, OperationType.CommitDistributedTransaction);
+
+            if (expectThrow)
+            {
+                await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                    () => committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None),
+                    "The client override, not the account default, decides whether the failure surfaces.");
+            }
+            else
+            {
+                DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        [Description("A SetSessionToken failure and a malformed token cost the caller the same guarantee, so they are graded " +
+                     "by one policy: both surface on a committed operation under Session consistency.")]
+        public async Task ExecuteTransactionAsync_SurfacesSetSessionTokenException_WhenCommittedUnderSessionConsistency()
+        {
+            Mock<ISessionContainer> mockSessionContainer = new Mock<ISessionContainer>();
+            mockSessionContainer
+                .Setup(s => s.SetSessionToken(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<INameValueCollection>()))
+                .Throws(new InvalidOperationException("simulated SetSessionToken failure"));
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                mockSessionContainer.Object,
+                responseContent: BuildDtcResponseJson(
+                    new[] { (statusCode: 201, subStatusCode: (int?)null, sessionToken: "1#9#4=8#5=7", partitionKeyRangeId: "0") }),
+                statusCode: HttpStatusCode.OK,
+                accountConsistencyLevel: Cosmos.ConsistencyLevel.Session);
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                this.CreateOperations(1), mockContext.Object, OperationType.CommitDistributedTransaction);
+
+            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None));
+
+            StringAssert.Contains(exception.Message, "index 0");
+            Assert.IsNotNull(exception.InnerException,
+                "The originating failure must be preserved so the cause is diagnosable.");
+            StringAssert.Contains(exception.InnerException.Message, "simulated SetSessionToken failure");
+        }
+
+        [TestMethod]
+        [Description("When SetSessionToken throws under a non-Session effective consistency, the exception is swallowed and ExecuteTransactionAsync still returns the response rather than rethrowing")]
         public async Task ExecuteTransactionAsync_SwallowsSetSessionTokenException()
         {
             const string lsnOnly = "1#9#4=8#5=7";
@@ -2171,6 +2622,76 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 $"token2 must appear in request body. Body: {bodyJson}");
         }
 
+        [TestMethod]
+        [Description("Verifies that capture stops at the first malformed token: tokens recorded before it survive, and later operations' valid tokens are deliberately not recorded. The session guarantee is already broken at that point, so a partially advanced token would read no more correctly than the abandoned one.")]
+        public async Task ExecuteTransactionAsync_ThrowsAtFirstMalformedToken_AndDoesNotRecordLaterTokens()
+        {
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: BuildDtcResponseJson(
+                    new[]
+                    {
+                        (statusCode: 201, sessionToken: "0:1#5"),
+                        (statusCode: 201, sessionToken: "not-a-token"),
+                        (statusCode: 201, sessionToken: "2:1#9"),
+                    }),
+                statusCode: HttpStatusCode.OK,
+                accountConsistencyLevel: Cosmos.ConsistencyLevel.Session);
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                this.CreateOperations(3), mockContext.Object, OperationType.CommitDistributedTransaction);
+
+            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None));
+
+            StringAssert.Contains(exception.Message, "index 1",
+                "The first malformed token must be the one reported.");
+
+            string recorded = sessionContainer.GetSessionToken(
+                DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName));
+
+            StringAssert.Contains(recorded, "0:1#5",
+                "A token already recorded before the failure must not be rolled back.");
+            Assert.IsFalse(recorded.Contains("2:1#9"),
+                "Capture must stop at the first malformed token; a later operation's token is deliberately abandoned.");
+        }
+
+        [TestMethod]
+        [Description("Verifies that a malformed token is only traced when another operation failed. A failure anywhere " +
+                     "rolls the transaction back, so no operation left a durable write to read back, and throwing would " +
+                     "replace the server's own actionable error with a bookkeeping exception.")]
+        public async Task ExecuteTransactionAsync_TracesMalformedToken_WhenAnotherOperationFailed()
+        {
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: BuildDtcResponseJson(
+                    new[]
+                    {
+                        // Conflict rolls the transaction back, so the sibling's write is not durable.
+                        (statusCode: 409, sessionToken: "bad-on-conflict"),
+                        (statusCode: 201, sessionToken: "bad-on-success"),
+                    }),
+                statusCode: HttpStatusCode.OK,
+                accountConsistencyLevel: Cosmos.ConsistencyLevel.Session);
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                this.CreateOperations(2), mockContext.Object, OperationType.CommitDistributedTransaction);
+
+            DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.Conflict, response[0].StatusCode,
+                "The server's own error must reach the caller rather than being masked by a token failure.");
+
+            Assert.IsTrue(
+                string.IsNullOrEmpty(sessionContainer.GetSessionToken(
+                    DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName))),
+                "A malformed token must never reach the session container.");
+        }
+
         // ─── Diagnostics ──────────────────────────────────────────────────────────
 
         [TestMethod]
@@ -2295,8 +2816,11 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 operations.Select(o => (o.statusCode, o.subStatusCode, o.sessionToken, partitionKeyRangeId: (string)null)).ToArray());
         }
 
+        // The server returns tokens in '<partitionKeyRangeId>:<token>' form. Test cases pass the range id
+        // separately for readability, so it is prefixed here unless a case is exercising a malformed token.
         private static string BuildDtcResponseJson(
-            (int statusCode, int? subStatusCode, string sessionToken, string partitionKeyRangeId)[] operations)
+            (int statusCode, int? subStatusCode, string sessionToken, string partitionKeyRangeId)[] operations,
+            bool prefixRangeLessTokens = true)
         {
             StringBuilder sb = new StringBuilder();
             sb.Append(@"{""operationResponses"":[");
@@ -2313,9 +2837,19 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     sb.Append($@",""substatuscode"":{operations[i].subStatusCode.Value}");
                 }
 
-                if (operations[i].sessionToken != null)
+                string sessionToken = operations[i].sessionToken;
+                if (prefixRangeLessTokens
+                    && !string.IsNullOrEmpty(sessionToken)
+                    && !sessionToken.Contains(":")
+                    && !string.IsNullOrWhiteSpace(operations[i].partitionKeyRangeId)
+                    && SessionTokenHelper.TryParse(sessionToken, out string _, out ISessionToken _))
                 {
-                    sb.Append($@",""{DistributedTransactionSerializer.SessionToken}"":""{operations[i].sessionToken}""");
+                    sessionToken = operations[i].partitionKeyRangeId + ":" + sessionToken;
+                }
+
+                if (sessionToken != null)
+                {
+                    sb.Append($@",""{DistributedTransactionSerializer.SessionToken}"":""{sessionToken}""");
                 }
 
                 if (operations[i].partitionKeyRangeId != null)
@@ -2348,6 +2882,14 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 ? new MockDocumentClient(accountConsistencyLevel.Value) { sessionContainer = sessionContainer }
                 : new MockDocumentClient { sessionContainer = sessionContainer };
 
+            return this.CreateMockContext(documentClient, responseContent, statusCode);
+        }
+
+        private Mock<CosmosClientContext> CreateMockContext(
+            MockDocumentClient documentClient,
+            string responseContent,
+            HttpStatusCode statusCode)
+        {
             ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId(CollectionResourceId);
             containerProperties.Id = "TestContainerId";
             containerProperties.PartitionKeyPath = "/pk";
@@ -2605,6 +3147,18 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             ResponseMessage message = new ResponseMessage(statusCode);
             message.Headers.SubStatusCodeLiteral = subStatusCode.ToString();
             return message;
+        }
+
+        /// <summary>
+        /// A <see cref="MockDocumentClient"/> whose account consistency level cannot be resolved,
+        /// standing in for a transient failure of the gateway account read.
+        /// </summary>
+        private sealed class UnresolvableConsistencyDocumentClient : MockDocumentClient
+        {
+            internal override Task<Cosmos.ConsistencyLevel> GetDefaultConsistencyLevelAsync()
+            {
+                throw new InvalidOperationException("Simulated account read failure.");
+            }
         }
 
         /// <summary>
