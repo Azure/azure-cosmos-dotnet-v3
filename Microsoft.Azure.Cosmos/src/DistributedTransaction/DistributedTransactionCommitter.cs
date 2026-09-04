@@ -104,7 +104,9 @@ namespace Microsoft.Azure.Cosmos
                 DistributedTransactionServerRequest serverRequest = await DistributedTransactionServerRequest.CreateAsync(
                     this.operations,
                     this.clientContext.SerializerCore,
-                    cancellationToken);
+                    cancellationToken,
+                    // Read transactions hold no commit state, so replaying one is harmless.
+                    tracksDispatch: this.operationType == OperationType.CommitDistributedTransaction);
 
                 return await this.ExecuteCommitWithRetryAsync(serverRequest, trace, cancellationToken);
             }
@@ -274,6 +276,13 @@ namespace Microsoft.Azure.Cosmos
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.OperationType, requestMessage.OperationType.ToOperationTypeString());
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.ResourceType, requestMessage.ResourceType.ToResourceTypeString());
             requestMessage.UseGatewayMode = true;
+
+            // ClientRetryPolicy can re-dispatch this message to another write region without returning
+            // here, so the tracker rides along and the headers are stamped per dispatch.
+            if (serverRequest.DispatchTracker != null)
+            {
+                requestMessage.Properties[DistributedTransactionDispatchTracker.PropertyKey] = serverRequest.DispatchTracker;
+            }
         }
 
         internal static void MergeSessionTokens(
