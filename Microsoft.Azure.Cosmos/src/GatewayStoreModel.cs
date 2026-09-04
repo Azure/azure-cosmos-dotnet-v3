@@ -365,40 +365,6 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        /// <summary>
-        /// Determines whether a session token applies to a request, given the consistency in effect
-        /// and the request's write/multi-master characteristics.
-        /// </summary>
-        /// <param name="defaultConsistencyLevel">The account's default consistency level.</param>
-        /// <param name="requestConsistencyLevel">
-        /// The raw per-request consistency header value, or null/empty when the request does not
-        /// override consistency. Only read and batch requests may override it.
-        /// </param>
-        /// <param name="isReadOrBatchRequest">Whether the request is read-only or a batch.</param>
-        /// <param name="isMultiMasterEnabled">Whether the request can use multiple write locations.</param>
-        /// <remarks>
-        /// Takes scalars rather than a <see cref="DocumentServiceRequest"/> so callers that have no
-        /// request to hand can share this policy instead of duplicating it.
-        /// </remarks>
-        internal static bool IsSessionTokenApplicable(
-            ConsistencyLevel defaultConsistencyLevel,
-            string requestConsistencyLevel,
-            bool isReadOrBatchRequest,
-            bool isMultiMasterEnabled)
-        {
-            // Only read requests can have their consistency modified
-            bool requestHasConsistencySet = !string.IsNullOrEmpty(requestConsistencyLevel) && isReadOrBatchRequest;
-
-            bool sessionConsistencyApplies =
-                (!requestHasConsistencySet && defaultConsistencyLevel == ConsistencyLevel.Session) ||
-                (requestHasConsistencySet
-                    && string.Equals(requestConsistencyLevel, GatewayStoreModel.sessionConsistencyAsString, StringComparison.OrdinalIgnoreCase));
-
-            // Only apply the session token in case of session consistency and the request is read only or read/write on multimaster
-            return sessionConsistencyApplies
-                && (isReadOrBatchRequest || isMultiMasterEnabled);
-        }
-
         internal static async Task ApplySessionTokenAsync(
             DocumentServiceRequest request,
             ConsistencyLevel defaultConsistencyLevel,
@@ -430,13 +396,22 @@ namespace Microsoft.Azure.Cosmos
                 return; // User is explicitly controlling the session.
             }
 
-            if (!GatewayStoreModel.IsSessionTokenApplicable(
-                defaultConsistencyLevel: defaultConsistencyLevel,
-                requestConsistencyLevel: request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel],
-                isReadOrBatchRequest: request.IsReadOnlyRequest || request.OperationType == OperationType.Batch,
-                isMultiMasterEnabled: globalEndpointManager.CanUseMultipleWriteLocations(request)))
+            string requestConsistencyLevel = request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel];
+            bool isReadOrBatchRequest = request.IsReadOnlyRequest || request.OperationType == OperationType.Batch;
+            bool requestHasConsistencySet = !string.IsNullOrEmpty(requestConsistencyLevel) && isReadOrBatchRequest; // Only read requests can have their consistency modified
+
+            bool sessionConsistencyApplies =
+                (!requestHasConsistencySet && defaultConsistencyLevel == ConsistencyLevel.Session) ||
+                (requestHasConsistencySet
+                    && string.Equals(requestConsistencyLevel, GatewayStoreModel.sessionConsistencyAsString, StringComparison.OrdinalIgnoreCase));
+
+            bool isMultiMasterEnabledForRequest = globalEndpointManager.CanUseMultipleWriteLocations(request);
+
+            if (!sessionConsistencyApplies
+                || (!isReadOrBatchRequest
+                    && !isMultiMasterEnabledForRequest))
             {
-                return;
+                return; // Only apply the session token in case of session consistency and the request is read only or read/write on multimaster
             }
 
             (bool isSuccess, string sessionToken) = await GatewayStoreModel.TryResolveSessionTokenAsync(
