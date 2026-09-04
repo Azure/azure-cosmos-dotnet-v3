@@ -96,6 +96,17 @@ namespace Microsoft.Azure.Cosmos
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
+
+                bool isReadTransaction = this.operationType == OperationType.Read;
+                // Resolve once per transaction; validation and retries use the same consistency level.
+                ConsistencyLevel? effectiveConsistencyLevel = await this.ResolveEffectiveConsistencyLevelAsync();
+
+                // Direct validates writes unconditionally and reads only under Session consistency.
+                if (!isReadTransaction || effectiveConsistencyLevel == ConsistencyLevel.Session)
+                {
+                    this.ValidateUserSuppliedSessionTokens();
+                }
+
                 await DistributedTransactionCommitterUtils.ResolveCollectionRidsAsync(
                     this.operations,
                     this.clientContext,
@@ -105,9 +116,6 @@ namespace Microsoft.Azure.Cosmos
                     this.operations,
                     this.clientContext.SerializerCore,
                     cancellationToken);
-
-                // Resolve once per transaction; retries use the same consistency level.
-                ConsistencyLevel? effectiveConsistencyLevel = await this.ResolveEffectiveConsistencyLevelAsync();
 
                 return await this.ExecuteCommitWithRetryAsync(serverRequest, effectiveConsistencyLevel, trace, cancellationToken);
             }
@@ -468,6 +476,39 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Rejects malformed caller-supplied session tokens for writes and Session-consistent reads.
+        /// </summary>
+        private void ValidateUserSuppliedSessionTokens()
+        {
+            foreach (DistributedTransactionOperation operation in this.operations)
+            {
+                string sessionToken = operation?.SessionToken;
+                if (string.IsNullOrEmpty(sessionToken))
+                {
+                    continue;
+                }
+
+                if (DistributedTransactionCommitter.TryValidateSessionToken(sessionToken, out string _))
+                {
+                    continue;
+                }
+
+                throw new ArgumentException(
+                    $"Distributed transaction operation index {operation.OperationIndex} was given the session token " +
+                    $"'{FormatSessionTokenForMessage(sessionToken)}', which must be a single valid " +
+                    "'<partitionKeyRangeId>:<token>' pair. The transaction was not sent.",
+                    nameof(DistributedTransactionRequestOptions.SessionToken));
+            }
+        }
+
+        private static string FormatSessionTokenForMessage(string sessionToken)
+        {
+            return TruncateForLog(sessionToken)
+                .Replace("\r", "\\r")
+                .Replace("\n", "\\n");
         }
 
         /// <summary>
