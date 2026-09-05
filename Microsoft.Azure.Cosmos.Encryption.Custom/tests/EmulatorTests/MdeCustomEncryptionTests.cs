@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Security.Cryptography;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -32,6 +33,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         private static readonly EncryptionKeyWrapMetadata metadata2 = new(name: "metadata2", value: masterKeyUri2.ToString());
         private const string dekId = "mydek";
         private const string legacydekId = "mylegacydek";
+        private const int ExpectedLegacyFormatVersion = 2;
+        private const int ExpectedMdeFormatVersion = 3;
+        private const string LegacyPreview07Algorithm = "AEAes256CbcHmacSha256Randomized";
+        private const string ExpectedMdeAlgorithm = "MdeAeadAes256CbcHmac256Randomized";
+        private const string LegacyPreview07PackageSha256 = "121AA0ED2A518D1F791992AC4E6A90B8E3A16A9BEDE4CB719F6156CF384398F8";
+        private const string LegacyPreview07AssemblySha256 = "064FE92B0CC610B3F6CB5E290DA3DFA231643FADB7DC974D01FFDE8D9AEBA3AC";
+        private const string LegacyPreview07FixtureSha256 = "FE4196FFD23DF3192A9369EF634CAED32CE3624F9ECA129255A008BA73CAE699";
         private static CosmosClient client;
         private static Database database;
         private static DataEncryptionKeyProperties dekProperties;
@@ -43,6 +51,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         private static TestEncryptionKeyStoreProvider testKeyStoreProvider;
         private static CosmosDataEncryptionKeyProvider dekProvider;
         private static TestEncryptor encryptor;
+        private static GatewayMigrationTestFixture MigrationFixture => MdeGatewayMigrationTests.Fixture;
+        private static Database migrationDatabase => MigrationFixture.Database;
+        private static DataEncryptionKeyProperties migrationDekProperties => MigrationFixture.DekProperties;
+        private static Container migrationItemContainer => MigrationFixture.ItemContainer;
+        private static Container migrationEncryptionContainer => MigrationFixture.EncryptionContainer;
+        private static Container migrationKeyContainer => MigrationFixture.KeyContainer;
+        private static EncryptionKeyStoreProvider migrationKeyStoreProvider => MigrationFixture.KeyStoreProvider;
+        private static Encryptor migrationEncryptor => MigrationFixture.Encryptor;
 
 
         private static TestKeyWrapProvider legacytestKeyWrapProvider;
@@ -57,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         {
             _ = context;
 
-            client = TestCommon.CreateCosmosClient();
+            client = CreateSharedClient();
             database = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
             keyContainer = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id", 400);
             itemContainer = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/PK", 400);
@@ -83,6 +99,42 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             }
 
             client?.Dispose();
+        }
+
+        internal static CosmosClient CreateSharedClient()
+        {
+            return TestCommon.CreateCosmosClient();
+        }
+
+        internal static async Task InitializeGatewayMigrationFixtureAsync(
+            GatewayMigrationTestFixture fixture)
+        {
+            fixture.Client = MdeGatewayMigrationTests.CreateMigrationClient();
+            fixture.Database = await fixture.Client.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            fixture.KeyContainer = await fixture.Database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id", 400);
+            fixture.ItemContainer = await fixture.Database.CreateContainerAsync(Guid.NewGuid().ToString(), "/PK", 400);
+            fixture.KeyStoreProvider = new TestEncryptionKeyStoreProvider();
+#pragma warning disable CS0618
+            CosmosDataEncryptionKeyProvider migrationDekProvider = new (
+                new TestKeyWrapProvider(),
+                fixture.KeyStoreProvider);
+#pragma warning restore CS0618
+            await migrationDekProvider.InitializeAsync(fixture.Database, fixture.KeyContainer.Id);
+            fixture.DekProperties = await CreateDekAsync(migrationDekProvider, dekId);
+            fixture.Encryptor = new TestEncryptor(migrationDekProvider);
+            fixture.EncryptionContainer = fixture.ItemContainer.WithEncryptor(fixture.Encryptor);
+        }
+
+        internal static async Task CleanupGatewayMigrationFixtureAsync(
+            GatewayMigrationTestFixture fixture)
+        {
+            if (fixture.Database != null)
+            {
+                using (await fixture.Database.DeleteStreamAsync()) { }
+            }
+
+            fixture.Client?.Dispose();
+            fixture.Reset();
         }
 
         [TestMethod]
@@ -346,6 +398,101 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             Assert.AreEqual(testItem.Sensitive, finalReadBaseline.Resource.Sensitive);
         }
 
+        [DataTestMethod]
+        [DataRow((int)JsonProcessor.Newtonsoft)]
+        [DataRow((int)JsonProcessor.Stream)]
+        public async Task GradualMigration_PlaintextItem_ReadsUnchangedThenMigratesToMdeV3(int jsonProcessorValue)
+        {
+            JsonProcessor jsonProcessor = (JsonProcessor)jsonProcessorValue;
+            TestItem expected = new ()
+            {
+                Id = Guid.NewGuid().ToString(),
+                PK = Guid.NewGuid().ToString(),
+                NonSensitive = "gradual-migration-plain",
+                Sensitive = "gradual-migration-secret",
+            };
+            PartitionKey partitionKey = new (expected.PK);
+            ItemRequestOptions readOptions = jsonProcessor == JsonProcessor.Newtonsoft
+                ? null
+                : new ItemRequestOptions
+                {
+                    Properties = new Dictionary<string, object>
+                    {
+                        { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, jsonProcessor },
+                    },
+                };
+
+            ItemResponse<TestItem> plaintextCreate = await itemContainer.CreateItemAsync(
+                expected,
+                partitionKey);
+            Assert.AreEqual(HttpStatusCode.Created, plaintextCreate.StatusCode);
+
+            using (ResponseMessage rawPlaintextResponse = await itemContainer.ReadItemStreamAsync(
+                expected.Id,
+                partitionKey))
+            {
+                Assert.IsTrue(rawPlaintextResponse.IsSuccessStatusCode);
+                JObject rawPlaintext = EncryptionProcessor.BaseSerializer.FromStream<JObject>(
+                    rawPlaintextResponse.Content);
+                Assert.IsNull(rawPlaintext[Constants.EncryptedInfo]);
+                Assert.AreEqual(expected.Sensitive, rawPlaintext[nameof(TestItem.Sensitive)].Value<string>());
+            }
+
+            ItemResponse<TestItem> plaintextRead = await encryptionContainer.ReadItemAsync<TestItem>(
+                expected.Id,
+                partitionKey,
+                readOptions);
+            AssertTestItem(expected, plaintextRead.Resource);
+
+            EncryptionItemRequestOptions encryptionOptions = CreateEncryptionItemRequestOptions(
+                dekProperties.Id,
+                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                jsonProcessor);
+            ItemResponse<TestItem> encryptedReplace = await encryptionContainer.ReplaceItemAsync(
+                plaintextRead.Resource,
+                expected.Id,
+                partitionKey,
+                encryptionOptions);
+            Assert.AreEqual(HttpStatusCode.OK, encryptedReplace.StatusCode);
+            AssertTestItem(expected, encryptedReplace.Resource);
+
+            using (ResponseMessage rawEncryptedResponse = await itemContainer.ReadItemStreamAsync(
+                expected.Id,
+                partitionKey))
+            {
+                Assert.IsTrue(rawEncryptedResponse.IsSuccessStatusCode);
+                JObject rawEncrypted = EncryptionProcessor.BaseSerializer.FromStream<JObject>(
+                    rawEncryptedResponse.Content);
+                JToken encryptedSensitive = rawEncrypted[nameof(TestItem.Sensitive)];
+                Assert.IsNotNull(encryptedSensitive);
+                Assert.AreEqual(JTokenType.String, encryptedSensitive.Type);
+                Assert.AreNotEqual(expected.Sensitive, encryptedSensitive.Value<string>());
+                Assert.IsTrue(Convert.FromBase64String(encryptedSensitive.Value<string>()).Length > 0);
+                Assert.AreEqual(expected.NonSensitive, rawEncrypted[nameof(TestItem.NonSensitive)].Value<string>());
+
+                JObject encryptionMetadata = rawEncrypted[Constants.EncryptedInfo] as JObject;
+                Assert.IsNotNull(encryptionMetadata);
+                Assert.AreEqual(
+                    EncryptionFormatVersion.Mde,
+                    encryptionMetadata[Constants.EncryptionFormatVersion].Value<int>());
+                Assert.AreEqual(
+                    CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                    encryptionMetadata[Constants.EncryptionAlgorithm].Value<string>());
+                Assert.AreEqual(
+                    dekProperties.Id,
+                    encryptionMetadata[Constants.EncryptionDekId].Value<string>());
+                CollectionAssert.AreEquivalent(
+                    new[] { "/Sensitive" },
+                    encryptionMetadata[Constants.EncryptedPaths].Values<string>().ToArray());
+            }
+
+            ItemResponse<TestItem> encryptedRead = await encryptionContainer.ReadItemAsync<TestItem>(
+                expected.Id,
+                partitionKey,
+                readOptions);
+            AssertTestItem(expected, encryptedRead.Resource);
+        }
+
         [TestMethod]
         public async Task StreamProcessor_EndToEnd_RoundTrip()
         {
@@ -606,8 +753,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         }
 
         [TestMethod]
-        [ExpectedException(typeof(NotSupportedException))]
-        public async Task ProvidedOutputDecrypt_StreamOverrideWithLegacyAlgorithm_Throws()
+        public async Task ProvidedOutputDecrypt_StreamOverrideWithLegacyAlgorithm_FallsBackToNewtonsoft()
         {
             TestItem testItem = new TestItem
             {
@@ -628,15 +774,29 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
 
             // Get raw encrypted (legacy algorithm) payload without automatic decrypt.
             using ResponseMessage readStream = await itemContainer.ReadItemStreamAsync(testItem.Id, new PartitionKey(testItem.PK));
+            Assert.IsTrue(readStream.IsSuccessStatusCode);
             readStream.Content.Position = 0;
             MemoryStream output = new();
-            _ = await EncryptionProcessor.DecryptAsync(
+            DecryptionContext context = await EncryptionProcessor.DecryptAsync(
                 readStream.Content,
                 output,
                 encryptor,
                 new CosmosDiagnosticsContext(),
                 new ItemRequestOptions { Properties = new Dictionary<string, object> { { "encryption-json-processor", "Stream" } } },
                 CancellationToken.None);
+
+            Assert.IsNotNull(context);
+            Assert.AreEqual(0, output.Position);
+            JObject decryptedDocument;
+            using (StreamReader reader = new(output))
+            using (JsonTextReader jsonReader = new(reader))
+            {
+                decryptedDocument = JObject.Load(jsonReader);
+            }
+
+            Assert.AreEqual(testItem.NonSensitive, decryptedDocument[nameof(TestItem.NonSensitive)].Value<string>());
+            Assert.AreEqual(testItem.Sensitive, decryptedDocument[nameof(TestItem.Sensitive)].Value<string>());
+            Assert.IsNull(decryptedDocument["_ei"]);
         }
 
         private class TestItem
@@ -646,7 +806,743 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             public string NonSensitive { get; set; }
             public string Sensitive { get; set; }
         }
+
+        private static void AssertTestItem(TestItem expected, TestItem actual)
+        {
+            Assert.IsNotNull(actual);
+            Assert.AreEqual(expected.Id, actual.Id);
+            Assert.AreEqual(expected.PK, actual.PK);
+            Assert.AreEqual(expected.NonSensitive, actual.NonSensitive);
+            Assert.AreEqual(expected.Sensitive, actual.Sensitive);
+        }
 #endif
+
+        internal static async Task PointMigration_HistoricalPreview07LegacyCiphertext_RewritesAsCurrentMde(
+            int readerProcessorValue,
+            int writerProcessorValue)
+        {
+            JsonProcessor readerProcessor = (JsonProcessor)readerProcessorValue;
+            JsonProcessor writerProcessor = (JsonProcessor)writerProcessorValue;
+            JObject fixture = LoadLegacyPreview07Fixture();
+            JObject expected = (JObject)fixture["plaintext"].DeepClone();
+            JObject rawLegacy = (JObject)fixture["legacyItem"].DeepClone();
+            string itemId = rawLegacy["id"].Value<string>();
+            JArray encryptedPaths = (JArray)fixture["encryptedPaths"].DeepClone();
+            Container migrationContainer = await CreateLegacyPreview07MigrationContainerAsync(fixture);
+            PartitionKey partitionKey = new (expected["PK"].Value<string>());
+
+            await AssertPointEncryptionRejectsExistingMetadataAsync(
+                rawLegacy,
+                writerProcessor,
+                encryptedPaths);
+            await migrationItemContainer.UpsertItemAsync(rawLegacy, partitionKey);
+
+            ItemResponse<JObject> legacyRead = await migrationContainer.ReadItemAsync<JObject>(
+                itemId,
+                partitionKey,
+                CreateMigrationReadOptions(readerProcessor));
+            AssertExactUserDocument(expected, legacyRead.Resource);
+
+            JObject rewrite = CloneWithoutServiceProperties(legacyRead.Resource);
+            ItemResponse<JObject> migrated = await migrationContainer.UpsertItemAsync(
+                rewrite,
+                partitionKey,
+                CreateMigrationEncryptionOptions(writerProcessor, encryptedPaths));
+            Assert.AreEqual(HttpStatusCode.OK, migrated.StatusCode);
+            AssertExactUserDocument(expected, migrated.Resource);
+
+            JObject rawMde = await ReadRawItemAsync(itemId, partitionKey);
+            AssertRawCurrentMde(rawMde, expected, encryptedPaths);
+            await AssertRereadsWithBothProcessorsAsync(migrationContainer, itemId, partitionKey, expected);
+        }
+
+        internal static async Task PointMigration_PlaintextMetadataVariants_ReadUnchangedThenRewriteAsCurrentMde(
+            string plaintextState,
+            int readerProcessorValue,
+            int writerProcessorValue)
+        {
+            JsonProcessor readerProcessor = (JsonProcessor)readerProcessorValue;
+            JsonProcessor writerProcessor = (JsonProcessor)writerProcessorValue;
+            JObject fixture = LoadLegacyPreview07Fixture();
+            JArray encryptedPaths = (JArray)fixture["encryptedPaths"].DeepClone();
+            string itemId = CreateMigrationItemId(plaintextState, readerProcessor, writerProcessor);
+            JObject plaintext = (JObject)fixture["plaintext"].DeepClone();
+            plaintext["id"] = itemId;
+            JObject storedPlaintext = CreatePlaintextMigrationState(
+                plaintext,
+                plaintextState);
+            PartitionKey partitionKey = new (storedPlaintext["PK"].Value<string>());
+
+            await migrationItemContainer.UpsertItemAsync(storedPlaintext, partitionKey);
+            JObject expectedInitialRead = CloneWithoutServiceProperties(
+                await ReadRawItemAsync(itemId, partitionKey));
+            JObject expectedAfterMigration = (JObject)expectedInitialRead.DeepClone();
+            expectedAfterMigration.Remove(Constants.EncryptedInfo);
+
+            ItemResponse<JObject> plaintextRead = await migrationEncryptionContainer.ReadItemAsync<JObject>(
+                itemId,
+                partitionKey,
+                CreateMigrationReadOptions(readerProcessor));
+            AssertExactUserDocument(expectedInitialRead, plaintextRead.Resource);
+
+            JObject rewrite = CloneWithoutServiceProperties(plaintextRead.Resource);
+            ItemResponse<JObject> migrated = await migrationEncryptionContainer.UpsertItemAsync(
+                rewrite,
+                partitionKey,
+                CreateMigrationEncryptionOptions(writerProcessor, encryptedPaths));
+            Assert.AreEqual(HttpStatusCode.OK, migrated.StatusCode);
+            AssertExactUserDocument(expectedAfterMigration, migrated.Resource);
+
+            JObject rawMde = await ReadRawItemAsync(itemId, partitionKey);
+            AssertRawCurrentMde(rawMde, expectedAfterMigration, encryptedPaths);
+            await AssertRereadsWithBothProcessorsAsync(
+                migrationEncryptionContainer,
+                itemId,
+                partitionKey,
+                expectedAfterMigration);
+        }
+
+        internal static async Task PointMigration_NullEncryptionMetadata_ReadsUnchangedThenTypedWriteRewritesAsCurrentMde(
+            string operation,
+            int readerProcessorValue,
+            int writerProcessorValue)
+        {
+            JsonProcessor readerProcessor = (JsonProcessor)readerProcessorValue;
+            JsonProcessor writerProcessor = (JsonProcessor)writerProcessorValue;
+            JObject fixture = LoadLegacyPreview07Fixture();
+            JArray encryptedPaths = (JArray)fixture["encryptedPaths"].DeepClone();
+            string itemId = CreateMigrationItemId(
+                $"null-ei-{operation}",
+                readerProcessor,
+                writerProcessor);
+            JObject plaintext = (JObject)fixture["plaintext"].DeepClone();
+            plaintext["id"] = itemId;
+            JObject storedPlaintext = CreatePlaintextMigrationState(plaintext, "null-ei");
+            PartitionKey partitionKey = new (storedPlaintext["PK"].Value<string>());
+
+            await migrationItemContainer.UpsertItemAsync(storedPlaintext, partitionKey);
+            JObject expectedInitialRead = CloneWithoutServiceProperties(
+                await ReadRawItemAsync(itemId, partitionKey));
+            ItemResponse<JObject> plaintextRead = await migrationEncryptionContainer.ReadItemAsync<JObject>(
+                itemId,
+                partitionKey,
+                CreateMigrationReadOptions(readerProcessor));
+            AssertExactUserDocument(expectedInitialRead, plaintextRead.Resource);
+            Assert.AreEqual(
+                JTokenType.Null,
+                plaintextRead.Resource[Constants.EncryptedInfo].Type);
+
+            JObject expectedAfterMigration = (JObject)expectedInitialRead.DeepClone();
+            expectedAfterMigration.Remove(Constants.EncryptedInfo);
+            JObject rewrite = CloneWithoutServiceProperties(plaintextRead.Resource);
+            ItemResponse<JObject> migrated = await ExecuteTypedMigrationWriteAsync(
+                operation,
+                rewrite,
+                itemId,
+                partitionKey,
+                CreateMigrationEncryptionOptions(writerProcessor, encryptedPaths));
+            Assert.AreEqual(
+                operation == "Create" ? HttpStatusCode.Created : HttpStatusCode.OK,
+                migrated.StatusCode);
+            AssertExactUserDocument(expectedAfterMigration, migrated.Resource);
+
+            JObject rawMde = await ReadRawItemAsync(itemId, partitionKey);
+            AssertRawCurrentMde(rawMde, expectedAfterMigration, encryptedPaths);
+            await AssertRereadsWithBothProcessorsAsync(
+                migrationEncryptionContainer,
+                itemId,
+                partitionKey,
+                expectedAfterMigration);
+        }
+
+        internal static async Task PointMigration_PresentUnknownAlgorithm_FailsClosedWithoutMigration(
+            int readerProcessorValue)
+        {
+            JsonProcessor readerProcessor = (JsonProcessor)readerProcessorValue;
+            JObject fixture = LoadLegacyPreview07Fixture();
+            JObject stored = (JObject)fixture["plaintext"].DeepClone();
+            string itemId = CreateMigrationItemId("unknown", readerProcessor, readerProcessor);
+            stored["id"] = itemId;
+            stored[Constants.EncryptedInfo] = new JObject
+            {
+                [Constants.EncryptionFormatVersion] = EncryptionFormatVersion.Mde,
+                [Constants.EncryptionAlgorithm] = "future-point-migration-algorithm",
+                [Constants.EncryptionDekId] = migrationDekProperties.Id,
+                [Constants.EncryptedPaths] = new JArray(),
+            };
+            PartitionKey partitionKey = new (stored["PK"].Value<string>());
+
+            await migrationItemContainer.UpsertItemAsync(stored, partitionKey);
+            JObject rawBefore = CloneWithoutServiceProperties(
+                await ReadRawItemAsync(itemId, partitionKey));
+
+            NotSupportedException exception = await Assert.ThrowsExceptionAsync<NotSupportedException>(
+                async () => await migrationEncryptionContainer.ReadItemAsync<JObject>(
+                    itemId,
+                    partitionKey,
+                    CreateMigrationReadOptions(readerProcessor)));
+
+            StringAssert.Contains(exception.Message, "future-point-migration-algorithm");
+            CountingRequestHandler requestHandler = new ();
+            using CosmosClient trackedClient = TestCommon.CreateCosmosClient(
+                builder => builder
+                    .WithConnectionModeGateway()
+                    .AddCustomHandlers(requestHandler));
+            Container trackedContainer = trackedClient
+                .GetDatabase(migrationDatabase.Id)
+                .GetContainer(migrationItemContainer.Id)
+                .WithEncryptor(migrationEncryptor);
+            EncryptionItemRequestOptions requestOptions = CreateMigrationEncryptionOptions(
+                readerProcessor,
+                (JArray)fixture["encryptedPaths"].DeepClone());
+            requestHandler.Reset();
+
+            if (readerProcessor == JsonProcessor.Newtonsoft)
+            {
+                await Assert.ThrowsExceptionAsync<ArgumentException>(
+                    async () => await trackedContainer.UpsertItemAsync(
+                        stored,
+                        partitionKey,
+                        requestOptions));
+            }
+#if NET8_0_OR_GREATER
+            else
+            {
+                await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                    async () => await trackedContainer.UpsertItemAsync(
+                        stored,
+                        partitionKey,
+                        requestOptions));
+            }
+#endif
+
+            Assert.AreEqual(0, requestHandler.RequestCount);
+            JObject rawAfter = CloneWithoutServiceProperties(
+                await ReadRawItemAsync(itemId, partitionKey));
+            AssertExactToken(rawBefore, rawAfter, "unknown-algorithm raw storage");
+            AssertExactToken(
+                new JValue("future-point-migration-algorithm"),
+                rawAfter[Constants.EncryptedInfo][Constants.EncryptionAlgorithm],
+                Constants.EncryptionAlgorithm);
+            AssertExactToken(stored["Sensitive"], rawAfter["Sensitive"], "Sensitive");
+        }
+
+#if NET8_0_OR_GREATER
+        internal static async Task PointWrite_LegacyAlgorithmWithStreamProcessor_RejectsBeforeNetworkDispatch()
+        {
+            CountingRequestHandler requestHandler = new ();
+            using CosmosClient trackedClient = TestCommon.CreateCosmosClient(
+                builder => builder
+                    .WithConnectionModeGateway()
+                    .AddCustomHandlers(requestHandler));
+            Container trackedContainer = trackedClient
+                .GetDatabase(migrationDatabase.Id)
+                .GetContainer(migrationItemContainer.Id)
+                .WithEncryptor(migrationEncryptor);
+            JObject fixture = LoadLegacyPreview07Fixture();
+            JObject plaintext = (JObject)fixture["plaintext"].DeepClone();
+            plaintext["id"] = CreateMigrationItemId(
+                "legacy-write",
+                JsonProcessor.Stream,
+                JsonProcessor.Stream);
+            PartitionKey partitionKey = new (plaintext["PK"].Value<string>());
+            using Stream input = EncryptionProcessor.BaseSerializer.ToStream(plaintext);
+            EncryptionItemRequestOptions requestOptions = CreateMigrationEncryptionOptions(
+                JsonProcessor.Stream,
+                (JArray)fixture["encryptedPaths"].DeepClone());
+#pragma warning disable CS0618
+            requestOptions.EncryptionOptions.EncryptionAlgorithm =
+                CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized;
+#pragma warning restore CS0618
+            requestHandler.Reset();
+
+            await Assert.ThrowsExceptionAsync<NotSupportedException>(
+                async () => await trackedContainer.UpsertItemStreamAsync(
+                    input,
+                    partitionKey,
+                    requestOptions));
+
+            Assert.AreEqual(0, requestHandler.RequestCount);
+            Assert.AreEqual(0, input.Position);
+        }
+#endif
+
+        public static IEnumerable<object[]> MigrationProcessorPairs
+        {
+            get
+            {
+                foreach (object[] reader in MigrationProcessors)
+                {
+                    foreach (object[] writer in MigrationProcessors)
+                    {
+                        yield return new[] { reader[0], writer[0] };
+                    }
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> PlaintextMigrationRows
+        {
+            get
+            {
+                foreach (string state in new[] { "no-ei", "missing-ea", "null-ea" })
+                {
+                    foreach (object[] processors in MigrationProcessorPairs)
+                    {
+                        yield return new[] { state, processors[0], processors[1] };
+                    }
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> NullEncryptionMetadataMigrationRows
+        {
+            get
+            {
+                foreach (string operation in new[] { "Create", "Replace", "Upsert" })
+                {
+                    foreach (object[] processors in MigrationProcessorPairs)
+                    {
+                        yield return new[] { operation, processors[0], processors[1] };
+                    }
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> MigrationProcessors
+        {
+            get
+            {
+                yield return new object[] { (int)JsonProcessor.Newtonsoft };
+#if NET8_0_OR_GREATER
+                yield return new object[] { (int)JsonProcessor.Stream };
+#endif
+            }
+        }
+
+        private static async Task<Container> CreateLegacyPreview07MigrationContainerAsync(JObject fixture)
+        {
+            JObject dataEncryptionKey = (JObject)fixture["dataEncryptionKey"].DeepClone();
+            string fixtureDekId = dataEncryptionKey["id"].Value<string>();
+            await migrationKeyContainer.UpsertItemAsync(
+                dataEncryptionKey,
+                new PartitionKey(fixtureDekId));
+#pragma warning disable CS0618
+            CosmosDataEncryptionKeyProvider fixtureProvider = new (
+                new LegacyPreview07KeyWrapProvider(),
+                migrationKeyStoreProvider);
+#pragma warning restore CS0618
+            await fixtureProvider.InitializeAsync(migrationDatabase, migrationKeyContainer.Id);
+            return migrationItemContainer.WithEncryptor(new TestEncryptor(fixtureProvider));
+        }
+
+        private static JObject CreatePlaintextMigrationState(
+            JObject plaintext,
+            string state)
+        {
+            JObject result = (JObject)plaintext.DeepClone();
+            if (state == "no-ei")
+            {
+                return result;
+            }
+
+            if (state == "null-ei")
+            {
+                result[Constants.EncryptedInfo] = JValue.CreateNull();
+                return result;
+            }
+
+            JObject encryptionInfo = new ()
+            {
+                [Constants.EncryptionFormatVersion] = EncryptionFormatVersion.Mde,
+                [Constants.EncryptionDekId] = migrationDekProperties.Id,
+                [Constants.EncryptedPaths] = new JArray(),
+            };
+            if (state == "null-ea")
+            {
+                encryptionInfo[Constants.EncryptionAlgorithm] = JValue.CreateNull();
+            }
+            else if (state != "missing-ea")
+            {
+                throw new ArgumentOutOfRangeException(nameof(state), state, "Unknown plaintext migration state.");
+            }
+
+            result[Constants.EncryptedInfo] = encryptionInfo;
+            return result;
+        }
+
+        private static EncryptionItemRequestOptions CreateMigrationEncryptionOptions(
+            JsonProcessor processor,
+            JArray encryptedPaths)
+        {
+            EncryptionItemRequestOptions requestOptions = new ()
+            {
+                EncryptionOptions = new EncryptionOptions
+                {
+                    DataEncryptionKeyId = migrationDekProperties.Id,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                    PathsToEncrypt = encryptedPaths.Values<string>().ToList(),
+                },
+            };
+            if (processor != JsonProcessor.Newtonsoft)
+            {
+                requestOptions.Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, processor.ToString() },
+                };
+            }
+
+            return requestOptions;
+        }
+
+        private static ItemRequestOptions CreateMigrationReadOptions(JsonProcessor processor)
+        {
+            if (processor == JsonProcessor.Newtonsoft)
+            {
+                return null;
+            }
+
+            return new ItemRequestOptions
+            {
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, processor.ToString() },
+                },
+            };
+        }
+
+        private static async Task<JObject> ReadRawItemAsync(
+            string itemId,
+            PartitionKey partitionKey)
+        {
+            using ResponseMessage response = await migrationItemContainer.ReadItemStreamAsync(
+                itemId,
+                partitionKey);
+            Assert.IsTrue(response.IsSuccessStatusCode, response.ErrorMessage);
+            return EncryptionProcessor.BaseSerializer.FromStream<JObject>(response.Content);
+        }
+
+        private static async Task<ItemResponse<JObject>> ExecuteTypedMigrationWriteAsync(
+            string operation,
+            JObject document,
+            string itemId,
+            PartitionKey partitionKey,
+            EncryptionItemRequestOptions requestOptions)
+        {
+            switch (operation)
+            {
+                case "Create":
+                    await migrationItemContainer.DeleteItemAsync<JObject>(itemId, partitionKey);
+                    return await migrationEncryptionContainer.CreateItemAsync(
+                        document,
+                        partitionKey,
+                        requestOptions);
+                case "Replace":
+                    return await migrationEncryptionContainer.ReplaceItemAsync(
+                        document,
+                        itemId,
+                        partitionKey,
+                        requestOptions);
+                case "Upsert":
+                    return await migrationEncryptionContainer.UpsertItemAsync(
+                        document,
+                        partitionKey,
+                        requestOptions);
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(operation),
+                        operation,
+                        "Unknown typed migration operation.");
+            }
+        }
+
+        private static async Task AssertRereadsWithBothProcessorsAsync(
+            Container container,
+            string itemId,
+            PartitionKey partitionKey,
+            JObject expected)
+        {
+            foreach (object[] processorRow in MigrationProcessors)
+            {
+                JsonProcessor processor = (JsonProcessor)(int)processorRow[0];
+                ItemResponse<JObject> reread = await container.ReadItemAsync<JObject>(
+                    itemId,
+                    partitionKey,
+                    CreateMigrationReadOptions(processor));
+                AssertExactUserDocument(expected, reread.Resource);
+            }
+        }
+
+        private static async Task AssertPointEncryptionRejectsExistingMetadataAsync(
+            JObject document,
+            JsonProcessor processor,
+            JArray encryptedPaths)
+        {
+            using Stream input = EncryptionProcessor.BaseSerializer.ToStream(document);
+            EncryptionItemRequestOptions requestOptions = CreateMigrationEncryptionOptions(
+                processor,
+                encryptedPaths);
+
+            if (processor == JsonProcessor.Newtonsoft)
+            {
+                await Assert.ThrowsExceptionAsync<ArgumentException>(
+                    async () => await EncryptionProcessor.EncryptAsync(
+                        input,
+                        migrationEncryptor,
+                        requestOptions,
+                        new CosmosDiagnosticsContext(),
+                        CancellationToken.None));
+            }
+#if NET8_0_OR_GREATER
+            else
+            {
+                await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                    async () => await EncryptionProcessor.EncryptAsync(
+                        input,
+                        migrationEncryptor,
+                        requestOptions,
+                        new CosmosDiagnosticsContext(),
+                        CancellationToken.None));
+            }
+#endif
+        }
+
+        private static void AssertRawCurrentMde(
+            JObject raw,
+            JObject expectedPlaintext,
+            JArray encryptedPaths)
+        {
+            JObject encryptionInfo = raw[Constants.EncryptedInfo] as JObject;
+            Assert.IsNotNull(encryptionInfo);
+            Assert.AreEqual(5, encryptionInfo.Properties().Count());
+            AssertExactToken(
+                new JValue(ExpectedMdeFormatVersion),
+                encryptionInfo[Constants.EncryptionFormatVersion],
+                Constants.EncryptionFormatVersion);
+            AssertExactToken(
+                new JValue(ExpectedMdeAlgorithm),
+                encryptionInfo[Constants.EncryptionAlgorithm],
+                Constants.EncryptionAlgorithm);
+            AssertExactToken(
+                new JValue(migrationDekProperties.Id),
+                encryptionInfo[Constants.EncryptionDekId],
+                Constants.EncryptionDekId);
+            AssertExactToken(
+                encryptedPaths,
+                encryptionInfo[Constants.EncryptedPaths],
+                Constants.EncryptedPaths);
+            Assert.AreEqual(JTokenType.Null, encryptionInfo[Constants.EncryptedData].Type);
+
+            foreach (string propertyName in new[] { "id", "PK", "NonSensitive", "PlainEscaped" })
+            {
+                AssertExactToken(
+                    expectedPlaintext[propertyName],
+                    raw[propertyName],
+                    propertyName);
+            }
+
+            foreach (string path in encryptedPaths.Values<string>())
+            {
+                string propertyName = path.Substring(1);
+                JToken ciphertext = raw[propertyName];
+                Assert.IsNotNull(ciphertext, propertyName);
+                Assert.AreEqual(JTokenType.String, ciphertext.Type, propertyName);
+                Assert.IsFalse(
+                    JToken.DeepEquals(expectedPlaintext[propertyName], ciphertext),
+                    propertyName);
+                Assert.IsTrue(
+                    Convert.FromBase64String(ciphertext.Value<string>()).Length > 0,
+                    propertyName);
+            }
+        }
+
+        private static void AssertExactUserDocument(
+            JObject expected,
+            JObject actual)
+        {
+            AssertExactToken(
+                expected,
+                CloneWithoutServiceProperties(actual),
+                "user document");
+        }
+
+        private static void AssertExactToken(
+            JToken expected,
+            JToken actual,
+            string path)
+        {
+            Assert.IsNotNull(expected, $"Expected token is missing at {path}.");
+            Assert.IsNotNull(actual, $"Actual token is missing at {path}.");
+            Assert.AreEqual(expected.Type, actual.Type, $"Token type changed at {path}.");
+            Assert.IsTrue(
+                JToken.DeepEquals(expected, actual),
+                $"Token changed at {path}. Expected={expected.ToString(Formatting.None)} Actual={actual.ToString(Formatting.None)}");
+
+            if (expected is JObject expectedObject)
+            {
+                foreach (JProperty property in expectedObject.Properties())
+                {
+                    AssertExactToken(
+                        property.Value,
+                        actual[property.Name],
+                        path + "/" + property.Name);
+                }
+            }
+            else if (expected is JArray expectedArray)
+            {
+                JArray actualArray = (JArray)actual;
+                Assert.AreEqual(expectedArray.Count, actualArray.Count, path);
+                for (int i = 0; i < expectedArray.Count; i++)
+                {
+                    AssertExactToken(
+                        expectedArray[i],
+                        actualArray[i],
+                        path + "/" + i);
+                }
+            }
+        }
+
+        private static JObject CloneWithoutServiceProperties(JObject document)
+        {
+            JObject clone = (JObject)document.DeepClone();
+            foreach (string propertyName in new[] { "_rid", "_self", "_etag", "_attachments", "_ts" })
+            {
+                clone.Remove(propertyName);
+            }
+
+            return clone;
+        }
+
+        private static JObject LoadLegacyPreview07Fixture()
+        {
+            string fixtureDirectory = Path.Combine(AppContext.BaseDirectory, "Fixtures");
+            string fixturePath = Path.Combine(
+                fixtureDirectory,
+                "LegacyPreview07PointOperationFixture.json");
+            string provenancePath = Path.Combine(
+                fixtureDirectory,
+                "LegacyPreview07PointOperationFixture.provenance.json");
+            JObject provenance = JObject.Parse(File.ReadAllText(provenancePath));
+            Assert.AreEqual(
+                "Microsoft.Azure.Cosmos.Encryption.Custom",
+                provenance["packageId"].Value<string>());
+            Assert.AreEqual(
+                "1.0.0-preview07",
+                provenance["packageVersion"].Value<string>());
+            Assert.AreEqual(
+                LegacyPreview07PackageSha256,
+                provenance["packageSha256"].Value<string>());
+            Assert.AreEqual(
+                LegacyPreview07AssemblySha256,
+                provenance["netstandard20AssemblySha256"].Value<string>());
+            Assert.AreEqual(
+                LegacyPreview07FixtureSha256,
+                provenance["fixtureSha256"].Value<string>());
+            using SHA256 sha256 = SHA256.Create();
+            string fixtureHash = Convert.ToHexString(
+                sha256.ComputeHash(File.ReadAllBytes(fixturePath)));
+            Assert.AreEqual(
+                LegacyPreview07FixtureSha256,
+                fixtureHash);
+
+            JObject fixture = JObject.Parse(File.ReadAllText(fixturePath));
+            JObject dataEncryptionKey = (JObject)fixture["dataEncryptionKey"];
+            JObject legacyItem = (JObject)fixture["legacyItem"];
+            JObject encryptionInfo = (JObject)legacyItem[Constants.EncryptedInfo];
+            JArray encryptedPaths = (JArray)fixture["encryptedPaths"];
+
+            Assert.AreEqual(5, encryptionInfo.Properties().Count());
+            AssertExactToken(
+                new JValue(LegacyPreview07Algorithm),
+                dataEncryptionKey["encryptionAlgorithm"],
+                "dataEncryptionKey/encryptionAlgorithm");
+            Assert.IsTrue(
+                Convert.FromBase64String(dataEncryptionKey["wrappedDataEncryptionKey"].Value<string>()).Length > 0);
+            AssertExactToken(
+                new JValue(ExpectedLegacyFormatVersion),
+                encryptionInfo[Constants.EncryptionFormatVersion],
+                Constants.EncryptionFormatVersion);
+            AssertExactToken(
+                new JValue(LegacyPreview07Algorithm),
+                encryptionInfo[Constants.EncryptionAlgorithm],
+                Constants.EncryptionAlgorithm);
+            AssertExactToken(
+                dataEncryptionKey["id"],
+                encryptionInfo[Constants.EncryptionDekId],
+                Constants.EncryptionDekId);
+            AssertExactToken(
+                encryptedPaths,
+                encryptionInfo[Constants.EncryptedPaths],
+                Constants.EncryptedPaths);
+            Assert.IsTrue(
+                Convert.FromBase64String(encryptionInfo[Constants.EncryptedData].Value<string>()).Length > 0);
+            foreach (string path in encryptedPaths.Values<string>())
+            {
+                Assert.IsNull(legacyItem[path.Substring(1)], path);
+            }
+
+            return fixture;
+        }
+
+        private static string CreateMigrationItemId(
+            string state,
+            JsonProcessor reader,
+            JsonProcessor writer)
+        {
+            return $"point-migration-{state}-{reader}-{writer}-{Guid.NewGuid():N}";
+        }
+
+#pragma warning disable CS0618
+        private sealed class LegacyPreview07KeyWrapProvider : EncryptionKeyWrapProvider
+        {
+            public override Task<EncryptionKeyUnwrapResult> UnwrapKeyAsync(
+                byte[] wrappedKey,
+                EncryptionKeyWrapMetadata metadata,
+                CancellationToken cancellationToken)
+            {
+                int shift = GetFixtureKeyShift(metadata?.Value);
+                return Task.FromResult(new EncryptionKeyUnwrapResult(
+                    wrappedKey.Select(value => unchecked((byte)(value - shift))).ToArray(),
+                    TimeSpan.FromMinutes(5)));
+            }
+
+            public override Task<EncryptionKeyWrapResult> WrapKeyAsync(
+                byte[] key,
+                EncryptionKeyWrapMetadata metadata,
+                CancellationToken cancellationToken)
+            {
+                int shift = GetFixtureKeyShift(metadata?.Value);
+                return Task.FromResult(new EncryptionKeyWrapResult(
+                    key.Select(value => unchecked((byte)(value + shift))).ToArray(),
+                    metadata));
+            }
+
+            private static int GetFixtureKeyShift(string value)
+            {
+                return (value?.Sum(character => (int)character) ?? 0) % 31 + 1;
+            }
+        }
+#pragma warning restore CS0618
+
+        private sealed class CountingRequestHandler : RequestHandler
+        {
+            private int requestCount;
+
+            public int RequestCount => Volatile.Read(ref this.requestCount);
+
+            public void Reset()
+            {
+                Interlocked.Exchange(ref this.requestCount, 0);
+            }
+
+            public override Task<ResponseMessage> SendAsync(
+                RequestMessage request,
+                CancellationToken cancellationToken)
+            {
+                Interlocked.Increment(ref this.requestCount);
+                return base.SendAsync(request, cancellationToken);
+            }
+        }
 
         private static EncryptionItemRequestOptions CreateEncryptionItemRequestOptions(string dekId, string encryptionAlgorithm, JsonProcessor jsonProcessor)
         {
@@ -3139,4 +4035,3 @@ cancellationToken) =>
         #endregion
     }
 }
-

@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     : (string)encryptedInfoObject.GetValue(Constants.EncryptionDekId);
 
                 throw new EncryptionException(
-                    dataEncryptionKeyId,
+                    dataEncryptionKeyId ?? string.Empty,
                     this.decryptableContent.ToString(),
                     exception);
             }

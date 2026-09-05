@@ -22,9 +22,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             Stream input,
             Encryptor encryptor,
             EncryptionOptions encryptionOptions,
-            CancellationToken token)
+            CancellationToken token,
+            bool replacePlaintextEncryptionMetadata)
         {
             JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
+            if (replacePlaintextEncryptionMetadata &&
+                itemJObj[Constants.EncryptedInfo] is JToken encryptionInfo &&
+                (encryptionInfo.Type == JTokenType.Null ||
+                    (encryptionInfo is JObject encryptionProperties &&
+                        (encryptionProperties.Property(Constants.EncryptionAlgorithm) is not JProperty encryptionAlgorithm ||
+                            encryptionAlgorithm.Value.Type == JTokenType.Null))))
+            {
+                itemJObj.Remove(Constants.EncryptedInfo);
+            }
 
             Stream result = await this.EncryptAsync(itemJObj, encryptor, encryptionOptions, token);
 
