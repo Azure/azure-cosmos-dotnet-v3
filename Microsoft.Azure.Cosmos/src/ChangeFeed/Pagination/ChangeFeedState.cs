@@ -30,5 +30,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
         public static ChangeFeedState Time(DateTime time) => new ChangeFeedStateTime(time);
 
         public static ChangeFeedState Continuation(CosmosElement continuation) => new ChangeFeedStateContinuation(continuation);
+
+        public static ChangeFeedState ContinuationAndStartTime(CosmosElement continuation, DateTime startTime) => new ChangeFeedStateContinuationAndStartTime(continuation, startTime);
     }
 }
