@@ -578,7 +578,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return new EncryptionTransactionalBatch(
                 this.container.CreateTransactionalBatch(partitionKey),
                 this.Encryptor,
-                this.CosmosSerializer);
+                this.CosmosSerializer,
+                this.DefaultJsonProcessor);
         }
 
         public override Task<ContainerResponse> DeleteContainerAsync(
