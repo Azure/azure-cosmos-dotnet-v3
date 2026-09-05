@@ -14,20 +14,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
     using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
     using Microsoft.Azure.Cosmos.Encryption.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
 
     [TestClass]
     public class SystemTextJsonSystemTextJsonStreamAdapterTests
     {
         private const string DekId = "dek-id";
-        private static Mock<Encryptor> mockEncryptor = null!;
+        private static TestEncryptorFactory.MdeConcreteEncryptor mockEncryptor = null!;
         private static EncryptionOptions defaultOptions = null!;
 
         [ClassInitialize]
         public static void ClassInitialize(TestContext context)
         {
             _ = context;
-            mockEncryptor = TestEncryptorFactory.CreateMde(DekId, out _);
+            mockEncryptor = TestEncryptorFactory.CreateMde(DekId);
             defaultOptions = new EncryptionOptions
             {
                 DataEncryptionKeyId = DekId,
@@ -241,15 +240,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             SystemTextJsonStreamAdapter adapter = new (new StreamProcessor());
             Stream encrypted = await CreateEncryptedPayloadAsync(adapter);
 
-            Mock<Encryptor> failingEncryptor = new ();
-            failingEncryptor
-                .Setup(e => e.GetEncryptionKeyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new InvalidOperationException("key-unwrap failure"));
-
+            FailingKeyAccessEncryptor failingEncryptor = new ();
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
 
             InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
-                async () => await adapter.DecryptAsync(encrypted, failingEncryptor.Object, diagnostics, CancellationToken.None));
+                async () => await adapter.DecryptAsync(encrypted, failingEncryptor, diagnostics, CancellationToken.None));
             Assert.AreEqual("key-unwrap failure", ex.Message);
         }
 
@@ -259,16 +254,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             SystemTextJsonStreamAdapter adapter = new (new StreamProcessor());
             Stream encrypted = await CreateEncryptedPayloadAsync(adapter);
 
-            Mock<Encryptor> failingEncryptor = new ();
-            failingEncryptor
-                .Setup(e => e.GetEncryptionKeyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new InvalidOperationException("key-unwrap failure"));
-
+            FailingKeyAccessEncryptor failingEncryptor = new ();
             using MemoryStream output = new ();
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
 
             InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
-                async () => await adapter.DecryptAsync(encrypted, output, failingEncryptor.Object, diagnostics, CancellationToken.None));
+                async () => await adapter.DecryptAsync(encrypted, output, failingEncryptor, diagnostics, CancellationToken.None));
             Assert.AreEqual("key-unwrap failure", ex.Message);
         }
 
@@ -407,6 +398,35 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
                 encryptedData: null,
                 encryptedPaths: new[] { "/Sensitive" });
 #pragma warning restore CS0618
+        }
+
+        private sealed class FailingKeyAccessEncryptor : Encryptor, IDataEncryptionKeyAccessor
+        {
+            public Task<DataEncryptionKey> GetEncryptionKeyAsync(
+                string dataEncryptionKeyId,
+                string encryptionAlgorithm,
+                CancellationToken cancellationToken = default)
+            {
+                throw new InvalidOperationException("key-unwrap failure");
+            }
+
+            public override Task<byte[]> EncryptAsync(
+                byte[] plainText,
+                string dataEncryptionKeyId,
+                string encryptionAlgorithm,
+                CancellationToken cancellationToken = default)
+            {
+                throw new NotSupportedException();
+            }
+
+            public override Task<byte[]> DecryptAsync(
+                byte[] cipherText,
+                string dataEncryptionKeyId,
+                string encryptionAlgorithm,
+                CancellationToken cancellationToken = default)
+            {
+                throw new NotSupportedException();
+            }
         }
     }
 }

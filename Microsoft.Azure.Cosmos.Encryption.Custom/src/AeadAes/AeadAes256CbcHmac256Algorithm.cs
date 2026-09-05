@@ -155,27 +155,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// Encryption Algorithm
         /// cell_iv = HMAC_SHA-2-256(iv_key, cell_data) truncated to 128 bits
         /// cell_ciphertext = AES-CBC-256(enc_key, cell_iv, cell_data) with PKCS7 padding.
-        /// cell_tag = HMAC_SHA-2-256(mac_key, versionbyte + cell_iv + cell_ciphertext + versionbyte_length)
-        /// cell_blob = versionbyte + cell_tag + cell_iv + cell_ciphertext
-        /// </summary>
-        /// <returns>Returns the ciphertext corresponding to the plaintext.</returns>
-        public override int EncryptData(byte[] plainText, int plainTextOffset, int plainTextLength, byte[] output, int outputOffset)
-        {
-            byte[] buffer = this.EncryptData(plainText.AsSpan(plainTextOffset, plainTextLength).ToArray());
-
-            if (buffer.Length > output.Length - outputOffset)
-            {
-                throw new ArgumentOutOfRangeException($"Output buffer is shorter than required {buffer.Length} bytes.");
-            }
-
-            buffer.CopyTo(output, outputOffset);
-            return buffer.Length;
-        }
-
-        /// <summary>
-        /// Encryption Algorithm
-        /// cell_iv = HMAC_SHA-2-256(iv_key, cell_data) truncated to 128 bits
-        /// cell_ciphertext = AES-CBC-256(enc_key, cell_iv, cell_data) with PKCS7 padding.
         /// (optional) cell_tag = HMAC_SHA-2-256(mac_key, versionbyte + cell_iv + cell_ciphertext + versionbyte_length)
         /// cell_blob = versionbyte + [cell_tag] + cell_iv + cell_ciphertext
         /// </summary>
@@ -208,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             int ivStartIndex = hmacStartIndex + authenticationTagLen;
             int cipherStartIndex = ivStartIndex + BlockSizeInBytes; // this is where hmac starts.
 
-            int outputBufSize = this.GetEncryptByteCount(plainText.Length) - (hasAuthenticationTag ? 0 : authenticationTagLen);
+            int outputBufSize = GetEncryptByteCount(plainText.Length) - (hasAuthenticationTag ? 0 : authenticationTagLen);
             byte[] outBuffer = new byte[outputBufSize];
 
             // Store the version and IV rightaway
@@ -450,34 +429,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return authenticationTag;
         }
 
-        public override int DecryptData(byte[] cipherText, int cipherTextOffset, int cipherTextLength, byte[] output, int outputOffset)
-        {
-            byte[] buffer = this.DecryptData(cipherText.AsSpan(cipherTextOffset, cipherTextLength).ToArray(), true);
-
-            if (buffer.Length > output.Length - outputOffset)
-            {
-                throw new ArgumentOutOfRangeException($"Output buffer is shorter than required {buffer.Length} bytes");
-            }
-
-            buffer.CopyTo(output, outputOffset);
-            return buffer.Length;
-        }
-
-        public override int GetEncryptByteCount(int plainTextLength)
+        private static int GetEncryptByteCount(int plainTextLength)
         {
             // Output buffer size = size of VersionByte + Authentication Tag + IV + cipher Text blocks.
             return sizeof(byte) + AuthenticationTagSizeInBytes + IvSizeInBytes + GetCipherTextLength(plainTextLength);
-        }
-
-        public override int GetDecryptByteCount(int cipherTextLength)
-        {
-            int value = cipherTextLength - (sizeof(byte) + AuthenticationTagSizeInBytes + IvSizeInBytes);
-            if (value < BlockSizeInBytes)
-            {
-                throw new ArgumentOutOfRangeException(nameof(cipherTextLength), $"Cipher text length is too short.");
-            }
-
-            return value;
         }
 
         private static int GetCipherTextLength(int inputSize)
