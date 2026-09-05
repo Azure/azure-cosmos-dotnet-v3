@@ -2,9 +2,17 @@
 
 export OSSProjectRef=True
 export RESULTS_PK=test_runs
-# PL is set per-mode inside the loop below:
-#   Direct           -> 18  (baseline; higher values regress Direct P99)
-#   ThinClient/Gateway -> 75 (needed to saturate HTTP transport)
+# PL=18 is used for all three modes so latency numbers are directly comparable.
+# Reasoning:
+#   - Direct (rntbd, multiplexed TCP): 18 stays under the per-conn request cap;
+#     higher values queue in the SDK and inflate P99.
+#   - ThinClient (HTTP/2, one multiplexed conn): 18 streams sits well under the
+#     server's SETTINGS_MAX_CONCURRENT_STREAMS window, so no stream contention.
+#   - Gateway (HTTP/1.1, conn-per-request): 18 needs only 18 HTTP conns from the
+#     pool (limit is 500), so no pool exhaustion.
+# Throughput ceiling per mode is a separate experiment and should be run at each
+# mode's own saturation PL, not mixed into this latency-comparison loop.
+export PL=18
 
 #These must be configured
 export ACCOUNT_ENDPOINT=
@@ -29,19 +37,16 @@ do
         export THINCLIENT_ENABLED=true
         export GATEWAYMODE_ENABLED=false
         export DIRECTMODE_ENABLED=false
-        export PL=75
     elif [ $mode -eq 1 ]; then
         echo "Running in GATEWAY mode"
         export THINCLIENT_ENABLED=false
         export GATEWAYMODE_ENABLED=true
         export DIRECTMODE_ENABLED=false
-        export PL=75
     else
         echo "Running in DIRECT mode"
         export THINCLIENT_ENABLED=false
         export GATEWAYMODE_ENABLED=false
         export DIRECTMODE_ENABLED=true
-        export PL=18
     fi
 
     # Query operations take a long time
