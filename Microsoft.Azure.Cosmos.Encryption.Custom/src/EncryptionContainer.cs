@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Linq.Expressions;
+    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Newtonsoft.Json.Linq;
@@ -15,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     internal sealed class EncryptionContainer : Container
     {
         private readonly Container container;
+        private readonly ConditionalWeakTable<object, LinqJsonProcessorSelection> linqJsonProcessorSelections = new ();
 
         internal JsonProcessor DefaultJsonProcessor { get; private set; } = JsonProcessor.Newtonsoft;
 
@@ -55,6 +58,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             ArgumentValidation.ThrowIfNull(item);
 
+            requestOptions = requestOptions.SelectAndSanitizeJsonProcessor(
+                JsonProcessor.Newtonsoft,
+                out JsonProcessor jsonProcessor,
+                out _);
+
             if (requestOptions is not EncryptionItemRequestOptions encryptionItemRequestOptions ||
                 encryptionItemRequestOptions.EncryptionOptions == null)
             {
@@ -83,15 +91,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                             streamPayload,
                             partitionKey.Value,
                             requestOptions,
+                            jsonProcessor,
                             decryptResponse: false,
                             diagnosticsContext,
                             cancellationToken);
                     }
 
-                    encryptableItem.SetDecryptableItem(
-                        EncryptionProcessor.BaseSerializer.FromStream<JObject>(responseMessage.Content),
-                        this.Encryptor,
-                        this.CosmosSerializer);
+                    this.SetDecryptableItemIfContentAvailable(encryptableItem, responseMessage);
 
                     return new EncryptionItemResponse<T>(
                         responseMessage,
@@ -105,6 +111,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                             itemStream,
                             partitionKey.Value,
                             requestOptions,
+                            jsonProcessor,
                             decryptResponse: true,
                             diagnosticsContext,
                             cancellationToken);
@@ -126,10 +133,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateScope("CreateItemStream"))
             {
+                requestOptions = requestOptions.SelectAndSanitizeJsonProcessor(
+                    JsonProcessor.Newtonsoft,
+                    out JsonProcessor jsonProcessor,
+                    out _);
+
                 return await this.CreateItemHelperAsync(
                     streamPayload,
                     partitionKey,
                     requestOptions,
+                    jsonProcessor,
                     decryptResponse: true,
                     diagnosticsContext,
                     cancellationToken);
@@ -140,6 +153,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Stream streamPayload,
             PartitionKey partitionKey,
             ItemRequestOptions requestOptions,
+            JsonProcessor jsonProcessor,
             bool decryptResponse,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
@@ -154,10 +168,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     cancellationToken);
             }
 
+            EncryptionItemRequestOptions processorOptions =
+                encryptionItemRequestOptions.CreateJsonProcessorRequestOptions(jsonProcessor);
             streamPayload = await EncryptionProcessor.EncryptAsync(
                 streamPayload,
                 this.Encryptor,
-                encryptionItemRequestOptions,
+                processorOptions,
                 diagnosticsContext,
                 cancellationToken);
 
@@ -173,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     responseMessage.Content,
                     this.Encryptor,
                     diagnosticsContext,
-                    requestOptions,
+                    processorOptions,
                     cancellationToken);
             }
 
@@ -186,6 +202,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
+            requestOptions = requestOptions.SelectAndSanitizeJsonProcessor(
+                JsonProcessor.Newtonsoft,
+                out _,
+                out _);
             return this.container.DeleteItemAsync<T>(
                 id,
                 partitionKey,
@@ -199,6 +219,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
+            requestOptions = requestOptions.SelectAndSanitizeJsonProcessor(
+                JsonProcessor.Newtonsoft,
+                out _,
+                out _);
             return this.container.DeleteItemStreamAsync(
                 id,
                 partitionKey,
@@ -276,6 +300,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
+            requestOptions = requestOptions.SelectAndSanitizeJsonProcessor(
+                this.DefaultJsonProcessor,
+                out JsonProcessor jsonProcessor,
+                out _);
+
             ResponseMessage responseMessage = await this.container.ReadItemStreamAsync(
                 id,
                 partitionKey,
@@ -284,11 +313,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             if (decryptResponse)
             {
+                ItemRequestOptions processorOptions = (requestOptions ?? new ItemRequestOptions())
+                    .CreateJsonProcessorRequestOptions(jsonProcessor);
                 (responseMessage.Content, _) = await EncryptionProcessor.DecryptAsync(
                     responseMessage.Content,
                     this.Encryptor,
                     diagnosticsContext,
-                    requestOptions,
+                    processorOptions,
                     cancellationToken);
             }
 
@@ -304,6 +335,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             ArgumentValidation.ThrowIfNull(id);
             ArgumentValidation.ThrowIfNull(item);
+
+            requestOptions = requestOptions.SelectAndSanitizeJsonProcessor(
+                JsonProcessor.Newtonsoft,
+                out JsonProcessor jsonProcessor,
+                out _);
 
             if (requestOptions is not EncryptionItemRequestOptions encryptionItemRequestOptions ||
                 encryptionItemRequestOptions.EncryptionOptions == null)
@@ -335,15 +371,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                             id,
                             partitionKey.Value,
                             requestOptions,
+                            jsonProcessor,
                             decryptResponse: false,
                             diagnosticsContext,
                             cancellationToken);
                     }
 
-                    encryptableItem.SetDecryptableItem(
-                        EncryptionProcessor.BaseSerializer.FromStream<JObject>(responseMessage.Content),
-                        this.Encryptor,
-                        this.CosmosSerializer);
+                    this.SetDecryptableItemIfContentAvailable(encryptableItem, responseMessage);
 
                     return new EncryptionItemResponse<T>(
                         responseMessage,
@@ -358,6 +392,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                             id,
                             partitionKey.Value,
                             requestOptions,
+                            jsonProcessor,
                             decryptResponse: true,
                             diagnosticsContext,
                             cancellationToken);
@@ -381,11 +416,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateScope("ReplaceItemStream"))
             {
+                requestOptions = requestOptions.SelectAndSanitizeJsonProcessor(
+                    JsonProcessor.Newtonsoft,
+                    out JsonProcessor jsonProcessor,
+                    out _);
+
                 return await this.ReplaceItemHelperAsync(
                     streamPayload,
                     id,
                     partitionKey,
                     requestOptions,
+                    jsonProcessor,
                     decryptResponse: true,
                     diagnosticsContext,
                     cancellationToken);
@@ -397,6 +438,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             string id,
             PartitionKey partitionKey,
             ItemRequestOptions requestOptions,
+            JsonProcessor jsonProcessor,
             bool decryptResponse,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
@@ -412,10 +454,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     cancellationToken);
             }
 
+            EncryptionItemRequestOptions processorOptions =
+                encryptionItemRequestOptions.CreateJsonProcessorRequestOptions(jsonProcessor);
             streamPayload = await EncryptionProcessor.EncryptAsync(
                 streamPayload,
                 this.Encryptor,
-                encryptionItemRequestOptions,
+                processorOptions,
                 diagnosticsContext,
                 cancellationToken);
 
@@ -432,7 +476,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     responseMessage.Content,
                     this.Encryptor,
                     diagnosticsContext,
-                    requestOptions,
+                    processorOptions,
                     cancellationToken);
             }
 
@@ -446,6 +490,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CancellationToken cancellationToken = default)
         {
             ArgumentValidation.ThrowIfNull(item);
+
+            requestOptions = requestOptions.SelectAndSanitizeJsonProcessor(
+                JsonProcessor.Newtonsoft,
+                out JsonProcessor jsonProcessor,
+                out _);
 
             if (requestOptions is not EncryptionItemRequestOptions encryptionItemRequestOptions ||
                 encryptionItemRequestOptions.EncryptionOptions == null)
@@ -475,15 +524,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                             streamPayload,
                             partitionKey.Value,
                             requestOptions,
+                            jsonProcessor,
                             decryptResponse: false,
                             diagnosticsContext,
                             cancellationToken);
                     }
 
-                    encryptableItem.SetDecryptableItem(
-                        EncryptionProcessor.BaseSerializer.FromStream<JObject>(responseMessage.Content),
-                        this.Encryptor,
-                        this.CosmosSerializer);
+                    this.SetDecryptableItemIfContentAvailable(encryptableItem, responseMessage);
 
                     return new EncryptionItemResponse<T>(
                         responseMessage,
@@ -497,6 +544,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                             itemStream,
                             partitionKey.Value,
                             requestOptions,
+                            jsonProcessor,
                             decryptResponse: true,
                             diagnosticsContext,
                             cancellationToken);
@@ -518,10 +566,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateScope("UpsertItemStream"))
             {
+                requestOptions = requestOptions.SelectAndSanitizeJsonProcessor(
+                    JsonProcessor.Newtonsoft,
+                    out JsonProcessor jsonProcessor,
+                    out _);
+
                 return await this.UpsertItemHelperAsync(
                     streamPayload,
                     partitionKey,
                     requestOptions,
+                    jsonProcessor,
                     decryptResponse: true,
                     diagnosticsContext,
                     cancellationToken);
@@ -532,6 +586,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Stream streamPayload,
             PartitionKey partitionKey,
             ItemRequestOptions requestOptions,
+            JsonProcessor jsonProcessor,
             bool decryptResponse,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
@@ -546,10 +601,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     cancellationToken);
             }
 
+            EncryptionItemRequestOptions processorOptions =
+                encryptionItemRequestOptions.CreateJsonProcessorRequestOptions(jsonProcessor);
             streamPayload = await EncryptionProcessor.EncryptAsync(
                 streamPayload,
                 this.Encryptor,
-                encryptionItemRequestOptions,
+                processorOptions,
                 diagnosticsContext,
                 cancellationToken);
 
@@ -565,7 +622,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     responseMessage.Content,
                     this.Encryptor,
                     diagnosticsContext,
-                    requestOptions,
+                    processorOptions,
                     cancellationToken);
             }
 
@@ -616,11 +673,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             QueryRequestOptions requestOptions = null,
             CosmosLinqSerializerOptions linqSerializerOptions = null)
         {
-            return this.container.GetItemLinqQueryable<T>(
+            requestOptions = requestOptions.SelectAndSanitizeJsonProcessor(
+                this.DefaultJsonProcessor,
+                out JsonProcessor jsonProcessor,
+                out _);
+
+            IOrderedQueryable<T> query = this.container.GetItemLinqQueryable<T>(
                 allowSynchronousQueryExecution,
                 continuationToken,
                 requestOptions,
                 linqSerializerOptions);
+
+            this.linqJsonProcessorSelections.GetValue(
+                query,
+                _ => new LinqJsonProcessorSelection()).JsonProcessor = jsonProcessor;
+            this.linqJsonProcessorSelections.GetValue(
+                query.Expression,
+                _ => new LinqJsonProcessorSelection()).JsonProcessor = jsonProcessor;
+
+            return query;
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
@@ -628,15 +699,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
+            requestOptions = requestOptions.SelectAndSanitizeJsonProcessor(
+                this.DefaultJsonProcessor,
+                out JsonProcessor jsonProcessor,
+                out _);
+
             return new EncryptionFeedIterator<T>(
-                (EncryptionFeedIterator)this.GetItemQueryStreamIterator(
-                    queryDefinition,
-                    continuationToken,
-                    requestOptions),
+                new EncryptionFeedIterator(
+                    this.container.GetItemQueryStreamIterator(
+                        queryDefinition,
+                        continuationToken,
+                        requestOptions),
+                    this.Encryptor,
+                    jsonProcessor),
                 this.ResponseFactory,
                 this.Encryptor,
                 this.CosmosSerializer,
-                requestOptions.GetJsonProcessor(this.DefaultJsonProcessor));
+                jsonProcessor);
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
@@ -644,15 +723,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
+            requestOptions = requestOptions.SelectAndSanitizeJsonProcessor(
+                this.DefaultJsonProcessor,
+                out JsonProcessor jsonProcessor,
+                out _);
+
             return new EncryptionFeedIterator<T>(
-                (EncryptionFeedIterator)this.GetItemQueryStreamIterator(
-                    queryText,
-                    continuationToken,
-                    requestOptions),
+                new EncryptionFeedIterator(
+                    this.container.GetItemQueryStreamIterator(
+                        queryText,
+                        continuationToken,
+                        requestOptions),
+                    this.Encryptor,
+                    jsonProcessor),
                 this.ResponseFactory,
                 this.Encryptor,
                 this.CosmosSerializer,
-                requestOptions.GetJsonProcessor(this.DefaultJsonProcessor));
+                jsonProcessor);
         }
 
         public override Task<ContainerResponse> ReadContainerAsync(
@@ -726,13 +813,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
+            requestOptions = requestOptions.SelectAndSanitizeJsonProcessor(
+                this.DefaultJsonProcessor,
+                out JsonProcessor jsonProcessor,
+                out _);
+
             return new EncryptionFeedIterator(
                 this.container.GetItemQueryStreamIterator(
                     queryDefinition,
                     continuationToken,
                     requestOptions),
                 this.Encryptor,
-                requestOptions.GetJsonProcessor(this.DefaultJsonProcessor));
+                jsonProcessor);
         }
 
         public override FeedIterator GetItemQueryStreamIterator(
@@ -740,13 +832,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
+            requestOptions = requestOptions.SelectAndSanitizeJsonProcessor(
+                this.DefaultJsonProcessor,
+                out JsonProcessor jsonProcessor,
+                out _);
+
             return new EncryptionFeedIterator(
                 this.container.GetItemQueryStreamIterator(
                     queryText,
                     continuationToken,
                     requestOptions),
                 this.Encryptor,
-                requestOptions.GetJsonProcessor(this.DefaultJsonProcessor));
+                jsonProcessor);
         }
 
         public override Task<ThroughputResponse> ReplaceThroughputAsync(
@@ -772,6 +869,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             string continuationToken,
             QueryRequestOptions requestOptions = null)
         {
+            requestOptions = requestOptions.SelectAndSanitizeJsonProcessor(
+                this.DefaultJsonProcessor,
+                out JsonProcessor jsonProcessor,
+                out _);
+
             return new EncryptionFeedIterator(
                 this.container.GetItemQueryStreamIterator(
                     feedRange,
@@ -779,7 +881,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     continuationToken,
                     requestOptions),
                 this.Encryptor,
-                requestOptions.GetJsonProcessor(this.DefaultJsonProcessor));
+                jsonProcessor);
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
@@ -788,16 +890,24 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
+            requestOptions = requestOptions.SelectAndSanitizeJsonProcessor(
+                this.DefaultJsonProcessor,
+                out JsonProcessor jsonProcessor,
+                out _);
+
             return new EncryptionFeedIterator<T>(
-                (EncryptionFeedIterator)this.GetItemQueryStreamIterator(
-                    feedRange,
-                    queryDefinition,
-                    continuationToken,
-                    requestOptions),
+                new EncryptionFeedIterator(
+                    this.container.GetItemQueryStreamIterator(
+                        feedRange,
+                        queryDefinition,
+                        continuationToken,
+                        requestOptions),
+                    this.Encryptor,
+                    jsonProcessor),
                 this.ResponseFactory,
                 this.Encryptor,
                 this.CosmosSerializer,
-                requestOptions.GetJsonProcessor(this.DefaultJsonProcessor));
+                jsonProcessor);
         }
 
         public override ChangeFeedEstimator GetChangeFeedEstimator(
@@ -812,13 +922,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
+            changeFeedRequestOptions = changeFeedRequestOptions.SelectAndSanitizeJsonProcessor(
+                this.DefaultJsonProcessor,
+                out JsonProcessor jsonProcessor,
+                out _);
+
             return new EncryptionFeedIterator(
                 this.container.GetChangeFeedStreamIterator(
                     changeFeedStartFrom,
                     changeFeedMode,
                     changeFeedRequestOptions),
                 this.Encryptor,
-                changeFeedRequestOptions.GetJsonProcessor(this.DefaultJsonProcessor));
+                jsonProcessor);
         }
 
         public override FeedIterator<T> GetChangeFeedIterator<T>(
@@ -826,15 +941,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
+            changeFeedRequestOptions = changeFeedRequestOptions.SelectAndSanitizeJsonProcessor(
+                this.DefaultJsonProcessor,
+                out JsonProcessor jsonProcessor,
+                out _);
+
             return new EncryptionFeedIterator<T>(
-                (EncryptionFeedIterator)this.GetChangeFeedStreamIterator(
-                    changeFeedStartFrom,
-                    changeFeedMode,
-                    changeFeedRequestOptions),
+                new EncryptionFeedIterator(
+                    this.container.GetChangeFeedStreamIterator(
+                        changeFeedStartFrom,
+                        changeFeedMode,
+                        changeFeedRequestOptions),
+                    this.Encryptor,
+                    jsonProcessor),
                 this.ResponseFactory,
                 this.Encryptor,
                 this.CosmosSerializer,
-                changeFeedRequestOptions.GetJsonProcessor(this.DefaultJsonProcessor));
+                jsonProcessor);
         }
 
         public override Task<ItemResponse<T>> PatchItemAsync<T>(
@@ -986,12 +1109,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return this.ResponseFactory.CreateItemFeedResponse<T>(responseMessage);
         }
 
+#if !SDKPROJECTREF || ENCRYPTIONPREVIEW
         public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
             CancellationToken cancellationToken = default)
         {
             return this.container.GetPartitionKeyRangesAsync(feedRange, cancellationToken);
         }
+#endif
 
         public override Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
                Cosmos.PartitionKey partitionKey,
@@ -1026,14 +1151,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
 #if NET8_0_OR_GREATER
         /// <summary>
-        /// Sets <c>JsonProcessor.Stream</c> as the default for subsequent encryption operations on this container.
+        /// Sets <c>JsonProcessor.Stream</c> as the default for subsequent response decryption on this container.
         /// </summary>
         /// <remarks>
         /// <para>
         /// This is a one-way, configure-once-before-use switch. It should be set during container setup,
-        /// before any encryption-aware operation (read/query/change-feed) is issued on the container instance.
+        /// before any encryption-aware read/query/change-feed operation is issued on the container instance.
         /// Per-call <c>RequestOptions.Properties["encryption-json-processor"]</c> overrides remain effective
-        /// after this call and can route individual operations back through the Newtonsoft path.
+        /// after this call and can route individual operations back through Newtonsoft.
+        /// Writes continue to use Newtonsoft unless their request options explicitly select another processor.
         /// </para>
         /// <para>
         /// Mutating the default while iterators are in flight has undefined behavior — per-operation
@@ -1066,15 +1192,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
            ReadManyRequestOptions readManyRequestOptions = null,
            CancellationToken cancellationToken = default)
         {
+            readManyRequestOptions = readManyRequestOptions.SelectAndSanitizeJsonProcessor(
+                this.DefaultJsonProcessor,
+                out JsonProcessor jsonProcessor,
+                out _);
+
             ResponseMessage responseMessage = await this.container.ReadManyItemsStreamAsync(
                 items,
                 readManyRequestOptions,
                 cancellationToken);
 
+            if (!responseMessage.IsSuccessStatusCode || responseMessage.Content == null)
+            {
+                return responseMessage;
+            }
+
             Stream decryptedContent = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
                 responseMessage.Content,
                 this.Encryptor,
-                readManyRequestOptions.GetJsonProcessor(this.DefaultJsonProcessor),
+                jsonProcessor,
                 cancellationToken);
 
             return new DecryptedResponseMessage(responseMessage, decryptedContent);
@@ -1116,6 +1252,79 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             return decryptItems;
+        }
+
+        internal JsonProcessor ResolveLinqJsonProcessor<T>(IQueryable<T> query)
+        {
+            if (this.linqJsonProcessorSelections.TryGetValue(query, out LinqJsonProcessorSelection directSelection))
+            {
+                return directSelection.JsonProcessor;
+            }
+
+            LinqJsonProcessorExpressionVisitor visitor = new (this.linqJsonProcessorSelections);
+            visitor.Visit(query.Expression);
+            return visitor.Selection?.JsonProcessor ?? this.DefaultJsonProcessor;
+        }
+
+        private void SetDecryptableItemIfContentAvailable(
+            EncryptableItem encryptableItem,
+            ResponseMessage responseMessage)
+        {
+            if (responseMessage.Content == null)
+            {
+                return;
+            }
+
+            encryptableItem.SetDecryptableItem(
+                EncryptionProcessor.BaseSerializer.FromStream<JObject>(responseMessage.Content),
+                this.Encryptor,
+                this.CosmosSerializer);
+        }
+
+        private sealed class LinqJsonProcessorSelection
+        {
+            internal JsonProcessor JsonProcessor { get; set; }
+        }
+
+        private sealed class LinqJsonProcessorExpressionVisitor : ExpressionVisitor
+        {
+            private readonly ConditionalWeakTable<object, LinqJsonProcessorSelection> selections;
+
+            internal LinqJsonProcessorExpressionVisitor(
+                ConditionalWeakTable<object, LinqJsonProcessorSelection> selections)
+            {
+                this.selections = selections;
+            }
+
+            internal LinqJsonProcessorSelection Selection { get; private set; }
+
+            public override Expression Visit(Expression node)
+            {
+                if (this.Selection != null || node == null)
+                {
+                    return node;
+                }
+
+                if (this.selections.TryGetValue(node, out LinqJsonProcessorSelection expressionSelection))
+                {
+                    this.Selection = expressionSelection;
+                    return node;
+                }
+
+                return base.Visit(node);
+            }
+
+            protected override Expression VisitConstant(ConstantExpression node)
+            {
+                if (node.Value != null &&
+                    this.selections.TryGetValue(node.Value, out LinqJsonProcessorSelection processorSelection))
+                {
+                    this.Selection = processorSelection;
+                    return node;
+                }
+
+                return base.VisitConstant(node);
+            }
         }
     }
 }

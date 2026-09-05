@@ -484,20 +484,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Encryptor encryptor,
             CancellationToken cancellationToken)
         {
-            try
-            {
-                return await MdeEncryptionProcessor.DecryptJsonArrayStreamInPlaceAsync(
-                    content,
-                    encryptor,
-                    CosmosDiagnosticsContext.Create(null),
-                    cancellationToken);
-            }
-            catch (NotSupportedException)
-            {
-                content.Position = 0;
-
-                return await DecryptJsonArrayNewtonsoftAsync(content, encryptor, cancellationToken);
-            }
+            return await MdeEncryptionProcessor.DecryptJsonArrayStreamInPlaceAsync(
+                content,
+                encryptor,
+                CosmosDiagnosticsContext.Create(null),
+                cancellationToken);
         }
 #endif
 

@@ -102,6 +102,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.AreSame(response, result);
         }
 
+        [DataTestMethod]
+        [DynamicData(nameof(GetSupportedJsonProcessorsData), DynamicDataSourceType.Method)]
+        public async Task ReadNextAsync_SuccessfulResponseWithoutContent_ReturnsOriginalResponseMessage(string jsonProcessor)
+        {
+            ResponseMessage response = new (HttpStatusCode.OK);
+            Mock<FeedIterator> innerIterator = new ();
+            innerIterator
+                .Setup(iterator => iterator.ReadNextAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(response);
+            EncryptionFeedIterator feedIterator = this.CreateFeedIterator(innerIterator.Object, jsonProcessor);
+
+            ResponseMessage result = await feedIterator.ReadNextAsync();
+
+            Assert.AreSame(response, result);
+            Assert.IsNull(result.Content);
+        }
+
 #if NET8_0_OR_GREATER
         [TestMethod]
         public async Task ReadNextAsync_EmptyDocumentsArray_StreamAndNewtonsoftAgree()
