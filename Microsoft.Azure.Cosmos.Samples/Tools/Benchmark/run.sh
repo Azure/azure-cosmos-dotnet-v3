@@ -60,14 +60,21 @@ MODE_FLAGS="--isthinclientenabled=${THINCLIENT_ENABLED:-false} \
     # ---------- 1) ALWAYS RUN THESE 10 WORKLOADS ----------
 for WORKLOAD_NAME in \
   CreateItemV3BenchmarkOperation \
+  InsertV3BenchmarkOperation \
   ReadItemV3BenchmarkOperation \
-  DeleteItemV3BenchmarkOperation
+  ReadStreamExistsV3BenchmarkOperation \
+  ReplaceItemV3BenchmarkOperation \
+  ReplaceItemStreamV3BenchmarkOperation \
+  UpsertItemV3BenchmarkOperation \
+  UpsertItemStreamV3BenchmarkOperation \
+  DeleteItemV3BenchmarkOperation \
+  DeleteItemStreamV3BenchmarkOperation
 do
   dotnet run -c Release \
             -- -n 2000000 \
             -w $WORKLOAD_NAME \
             $MODE_FLAGS \
-            --pl 75 \
+            --pl $PL \
             -e $ACCOUNT_ENDPOINT \
             $AUTH_FLAGS \
             --enablelatencypercentiles \
