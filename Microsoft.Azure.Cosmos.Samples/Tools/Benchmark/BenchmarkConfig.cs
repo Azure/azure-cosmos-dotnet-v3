@@ -246,6 +246,12 @@ namespace CosmosBenchmark
                 ApplicationName = this.GetUserAgentPrefix(),
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
+                // Pass through the CLI value (nullable) for all modes. When null the SDK
+                // picks its own default. Do NOT hardcode a low value here: for Direct
+                // mode forcing a small MaxTcpConnectionsPerEndpoint (e.g. 200) caps the
+                // TCP connection pool and drives up P99 latency under high parallelism.
+                // For Gateway / ThinClient this setting is a no-op (HTTP transport),
+                // so pass-through does not regress those modes either.
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
                 ConnectionMode = (this.IsThinClientEnabled || this.IsGatewayModeEnabled) ? Microsoft.Azure.Cosmos.ConnectionMode.Gateway: Microsoft.Azure.Cosmos.ConnectionMode.Direct,
                 CosmosClientTelemetryOptions = new Microsoft.Azure.Cosmos.CosmosClientTelemetryOptions()
@@ -253,6 +259,11 @@ namespace CosmosBenchmark
                     DisableSendingMetricsToService = !this.EnableTelemetry,
                     DisableDistributedTracing = !this.EnableDistributedTracing
                 },
+                // GatewayModeMaxConnectionLimit sizes the HTTP connection pool used by
+                // Gateway / ThinClient for data-plane and by Direct for metadata only.
+                // 500 is well above defaults; harmless for Direct data-plane latency
+                // and required for Gateway / ThinClient to sustain high parallelism.
+                GatewayModeMaxConnectionLimit = 500
             };
 
             if (!string.IsNullOrEmpty(this.ApplicationPreferredRegions))
