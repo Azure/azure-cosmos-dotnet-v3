@@ -5,6 +5,8 @@
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2" + AssemblyKeys.MoqPublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.AI" + AssemblyKeys.ProductPublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.AI.Tests" + AssemblyKeys.TestPublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.FaultInjection" + AssemblyKeys.ProductPublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.FaultInjection" + AssemblyKeys.TestPublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.FaultInjection.Tests" + AssemblyKeys.ProductPublicKey)]

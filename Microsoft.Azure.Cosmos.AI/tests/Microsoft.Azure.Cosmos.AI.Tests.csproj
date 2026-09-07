@@ -1,0 +1,42 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Platform>AnyCPU</Platform>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <RootNamespace>Microsoft.Azure.Cosmos.AI.Tests</RootNamespace>
+    <LangVersion>$(LangVersion)</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <SignAssembly>true</SignAssembly>
+    <DelaySign>true</DelaySign>
+    <AssemblyOriginatorKeyFile>..\..\testkey.snk</AssemblyOriginatorKeyFile>
+
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentAssertions" Version="5.10.3" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="Moq" Version="4.8.3" />
+    <PackageReference Include="MSTest.TestAdapter" Version="3.7.3" />
+    <PackageReference Include="MSTest.TestFramework" Version="3.7.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="3.44.0" />
+		<PackageReference Include="Microsoft.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
+    <PackageReference Include="coverlet.msbuild" Version="2.8.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\src\Microsoft.Azure.Cosmos.AI.csproj" />
+  </ItemGroup>  
+
+  <PropertyGroup>
+  </PropertyGroup>
+  
+</Project>

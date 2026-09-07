@@ -2,18 +2,12 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.AI.Inference
 {
     /// <summary>
     /// Represents the score assigned to a document after a reranking operation.
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-
-    class RerankScore
+    public class RerankScore
     {
         /// <summary>
         /// Gets the document content or identifier that was reranked.
