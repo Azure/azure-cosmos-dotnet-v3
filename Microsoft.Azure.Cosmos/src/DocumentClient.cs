@@ -7911,7 +7911,24 @@ namespace Microsoft.Azure.Cosmos
 
             public IDocumentClientRetryPolicy GetRequestPolicy()
             {
-                return new RenameCollectionAwareClientRetryPolicy(this.sessionContainer, this.collectionCache, this.retryPolicy.GetRequestPolicy());
+                return new RenameCollectionAwareClientRetryPolicy(
+                    this.sessionContainer,
+                    this.collectionCache,
+                    this.retryPolicy.GetRequestPolicy());
+            }
+
+            public IDocumentClientRetryPolicy GetRequestPolicy(
+                DistributedTransactionDispatchTracker distributedTransactionDispatchTracker)
+            {
+                if (distributedTransactionDispatchTracker == null)
+                {
+                    throw new ArgumentNullException(nameof(distributedTransactionDispatchTracker));
+                }
+
+                return new RenameCollectionAwareClientRetryPolicy(
+                    this.sessionContainer,
+                    this.collectionCache,
+                    this.retryPolicy.GetRequestPolicy(distributedTransactionDispatchTracker));
             }
         }
 

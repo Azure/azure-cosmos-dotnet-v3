@@ -23,6 +23,19 @@ namespace Microsoft.Azure.Cosmos.Tests
     public class RetryHandlerTests
     {
         private static readonly Uri TestUri = new Uri("https://dummy.documents.azure.com:443/dbs");
+
+        private sealed class RetryPolicyFactoryDocumentClient : MockDocumentClient
+        {
+            private readonly IRetryPolicyFactory retryPolicyFactory;
+
+            public RetryPolicyFactoryDocumentClient(IRetryPolicyFactory retryPolicyFactory)
+            {
+                this.retryPolicyFactory = retryPolicyFactory;
+            }
+
+            internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => this.retryPolicyFactory;
+        }
+
         [TestMethod]
         public async Task ValidateQueryPlanDoesNotThrowExceptionForOverlappingRanges()
         {
@@ -313,6 +326,61 @@ namespace Microsoft.Azure.Cosmos.Tests
             requestMessage.OperationType = OperationType.Read;
             await invoker.SendAsync(requestMessage, new CancellationToken());
             Assert.AreEqual(expectedHandlerCalls, handlerCalls);
+        }
+
+        [TestMethod]
+        public async Task GetRetryPolicyAsync_RequestWithoutDispatchTracker_UsesDefaultFactoryOverload()
+        {
+            Mock<IDocumentClientRetryPolicy> retryPolicy = new();
+            Mock<IRetryPolicyFactory> retryPolicyFactory = new();
+            retryPolicyFactory.Setup(factory => factory.GetRequestPolicy()).Returns(retryPolicy.Object);
+
+            using DocumentClient documentClient = new RetryPolicyFactoryDocumentClient(retryPolicyFactory.Object);
+            using CosmosClient client = new CosmosClient(
+                RetryHandlerTests.TestUri.OriginalString,
+                MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey,
+                new CosmosClientOptions(),
+                documentClient);
+
+            RetryHandler retryHandler = new(client);
+
+            IDocumentClientRetryPolicy actual = await retryHandler.GetRetryPolicyAsync(new RequestMessage());
+
+            Assert.AreSame(retryPolicy.Object, actual);
+            retryPolicyFactory.Verify(factory => factory.GetRequestPolicy(), Times.Once);
+            retryPolicyFactory.Verify(
+                factory => factory.GetRequestPolicy(It.IsAny<DistributedTransactionDispatchTracker>()),
+                Times.Never);
+        }
+
+        [TestMethod]
+        public async Task GetRetryPolicyAsync_RequestWithDispatchTracker_UsesDtxFactoryOverload()
+        {
+            DistributedTransactionDispatchTracker dispatchTracker = new();
+            Mock<IDocumentClientRetryPolicy> retryPolicy = new();
+            Mock<IRetryPolicyFactory> retryPolicyFactory = new();
+            retryPolicyFactory
+                .Setup(factory => factory.GetRequestPolicy(dispatchTracker))
+                .Returns(retryPolicy.Object);
+
+            using DocumentClient documentClient = new RetryPolicyFactoryDocumentClient(retryPolicyFactory.Object);
+            using CosmosClient client = new CosmosClient(
+                RetryHandlerTests.TestUri.OriginalString,
+                MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey,
+                new CosmosClientOptions(),
+                documentClient);
+
+            RetryHandler retryHandler = new(client);
+            RequestMessage request = new RequestMessage
+            {
+                DistributedTransactionDispatchTracker = dispatchTracker
+            };
+
+            IDocumentClientRetryPolicy actual = await retryHandler.GetRetryPolicyAsync(request);
+
+            Assert.AreSame(retryPolicy.Object, actual);
+            retryPolicyFactory.Verify(factory => factory.GetRequestPolicy(dispatchTracker), Times.Once);
+            retryPolicyFactory.Verify(factory => factory.GetRequestPolicy(), Times.Never);
         }
 
         [TestMethod]

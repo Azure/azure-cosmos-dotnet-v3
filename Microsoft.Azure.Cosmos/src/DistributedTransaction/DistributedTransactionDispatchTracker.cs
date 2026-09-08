@@ -17,14 +17,9 @@ namespace Microsoft.Azure.Cosmos
     /// write region within a single commit attempt, and the committer replays the same token through a new
     /// policy on any retriable non-abort response, so policy-local state would reset while the token lives
     /// on and under-report both signals.
-    ///
-    /// The tracker owns and synchronizes its mutable state. The Properties dictionary only carries the
-    /// tracker reference; callers mutate dispatch state exclusively through this type.
     /// </remarks>
     internal sealed class DistributedTransactionDispatchTracker
     {
-        internal const string PropertyKey = "DistributedTransactionDispatchTracker";
-
         private readonly object stateLock = new object();
         private string originalDispatchRegion;
         private int dispatchCount;
@@ -106,19 +101,16 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Stamps both headers when <paramref name="request"/> carries a tracker; read transactions carry
-        /// none and omit the headers entirely.
+        /// Stamps both headers for the next dispatch.
         /// </summary>
-        internal static void StampDispatchHeaders(DocumentServiceRequest request, string regionName)
+        internal void StampDispatchHeaders(DocumentServiceRequest request, string regionName)
         {
-            if (request?.Properties == null
-                || !request.Properties.TryGetValue(DistributedTransactionDispatchTracker.PropertyKey, out object trackerObject)
-                || trackerObject is not DistributedTransactionDispatchTracker tracker)
+            if (request == null)
             {
                 return;
             }
 
-            (bool IsRetry, bool IsCrossRegionRedirect) dispatchSignals = tracker.RecordDispatch(regionName);
+            (bool IsRetry, bool IsCrossRegionRedirect) dispatchSignals = this.RecordDispatch(regionName);
 
             request.Headers[DistributedTransactionConstants.IsDtxRetry] =
                 dispatchSignals.IsRetry ? bool.TrueString : bool.FalseString;

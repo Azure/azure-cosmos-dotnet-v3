@@ -2995,6 +2995,37 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         // request without returning to DistributedTransactionCommitter.
 
         [TestMethod]
+        public void DistributedTransactionDispatchTracker_IsRequiredByDtxOverloads()
+        {
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: false);
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy
+            {
+                EnableEndpointDiscovery = true,
+            };
+
+            RetryPolicy retryPolicyFactory = new RetryPolicy(
+                endpointManager,
+                connectionPolicy,
+                this.partitionKeyRangeLocationCache,
+                isThinClientEnabled: false);
+
+            Assert.ThrowsException<ArgumentNullException>(
+                () => retryPolicyFactory.GetRequestPolicy(distributedTransactionDispatchTracker: null));
+            Assert.ThrowsException<ArgumentNullException>(
+                () => new ClientRetryPolicy(
+                    endpointManager,
+                    this.partitionKeyRangeLocationCache,
+                    new RetryOptions(),
+                    enableEndpointDiscovery: true,
+                    isThinClientEnabled: false,
+                    distributedTransactionDispatchTracker: null));
+        }
+
+        [TestMethod]
         [Description("The first dispatch of an idempotency token reports neither signal, and a re-dispatch that stays in the same write region is a retry but not a cross-region redirect.")]
         public void OnBeforeSendRequest_DistributedTransactionWrite_ReportsRetryWithoutRedirectWhileRegionIsUnchanged()
         {
@@ -3003,14 +3034,16 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 enableEndpointDiscovery: true,
                 isPreferredLocationsListEmpty: false);
 
+            DistributedTransactionDispatchTracker dispatchTracker = new();
             ClientRetryPolicy retryPolicy = new(
                 endpointManager,
                 this.partitionKeyRangeLocationCache,
                 new RetryOptions(),
                 enableEndpointDiscovery: true,
-                isThinClientEnabled: false);
+                isThinClientEnabled: false,
+                distributedTransactionDispatchTracker: dispatchTracker);
 
-            using DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequestWithDispatchTracker();
+            using DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
 
             retryPolicy.OnBeforeSendRequest(request);
             ClientRetryPolicyTests.AssertDispatchHeaders(request, bool.FalseString, bool.FalseString);
@@ -3032,14 +3065,16 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 enableEndpointDiscovery: true,
                 isPreferredLocationsListEmpty: false);
 
+            DistributedTransactionDispatchTracker dispatchTracker = new();
             ClientRetryPolicy retryPolicy = new(
                 endpointManager,
                 this.partitionKeyRangeLocationCache,
                 new RetryOptions(),
                 enableEndpointDiscovery: true,
-                isThinClientEnabled: false);
+                isThinClientEnabled: false,
+                distributedTransactionDispatchTracker: dispatchTracker);
 
-            using DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequestWithDispatchTracker();
+            using DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
 
             retryPolicy.OnBeforeSendRequest(request);
             string firstRegion = ClientRetryPolicyTests.ResolveDispatchRegion(endpointManager, request);
@@ -3114,14 +3149,16 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 isPreferredLocationsListEmpty: false,
                 enforceSingleMasterSingleWriteLocation: true);
 
+            DistributedTransactionDispatchTracker dispatchTracker = new();
             ClientRetryPolicy retryPolicy = new(
                 endpointManager,
                 this.partitionKeyRangeLocationCache,
                 new RetryOptions(),
                 enableEndpointDiscovery: true,
-                isThinClientEnabled: false);
+                isThinClientEnabled: false,
+                distributedTransactionDispatchTracker: dispatchTracker);
 
-            using DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequestWithDispatchTracker();
+            using DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
 
             retryPolicy.OnBeforeSendRequest(request);
 
@@ -3161,14 +3198,16 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 isPreferredLocationsListEmpty: false,
                 configuredEndpointOverride: ClientRetryPolicyTests.NonTopologyEndpoint);
 
+            DistributedTransactionDispatchTracker dispatchTracker = new();
             ClientRetryPolicy retryPolicy = new(
                 endpointManager,
                 this.partitionKeyRangeLocationCache,
                 new RetryOptions(),
                 enableEndpointDiscovery: false,
-                isThinClientEnabled: false);
+                isThinClientEnabled: false,
+                distributedTransactionDispatchTracker: dispatchTracker);
 
-            using DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequestWithDispatchTracker();
+            using DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
 
             retryPolicy.OnBeforeSendRequest(request);
 
@@ -3202,14 +3241,16 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 isPreferredLocationsListEmpty: false,
                 configuredEndpointOverride: ClientRetryPolicyTests.NonTopologyEndpoint);
 
+            DistributedTransactionDispatchTracker dispatchTracker = new();
             ClientRetryPolicy retryPolicy = new(
                 endpointManager,
                 this.partitionKeyRangeLocationCache,
                 new RetryOptions(),
                 enableEndpointDiscovery: true,
-                isThinClientEnabled: false);
+                isThinClientEnabled: false,
+                distributedTransactionDispatchTracker: dispatchTracker);
 
-            using DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequestWithDispatchTracker();
+            using DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
 
             retryPolicy.OnBeforeSendRequest(request);
 
@@ -3243,14 +3284,16 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 enableEndpointDiscovery: true,
                 isPreferredLocationsListEmpty: false);
 
-            using DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequestWithDispatchTracker();
+            DistributedTransactionDispatchTracker dispatchTracker = new();
+            using DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
 
             ClientRetryPolicy firstAttemptPolicy = new(
                 endpointManager,
                 this.partitionKeyRangeLocationCache,
                 new RetryOptions(),
                 enableEndpointDiscovery: true,
-                isThinClientEnabled: false);
+                isThinClientEnabled: false,
+                distributedTransactionDispatchTracker: dispatchTracker);
 
             firstAttemptPolicy.OnBeforeSendRequest(request);
             string firstRegion = ClientRetryPolicyTests.ResolveDispatchRegion(endpointManager, request);
@@ -3275,7 +3318,8 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 this.partitionKeyRangeLocationCache,
                 new RetryOptions(),
                 enableEndpointDiscovery: true,
-                isThinClientEnabled: false);
+                isThinClientEnabled: false,
+                distributedTransactionDispatchTracker: dispatchTracker);
 
             // Overwrite the wire state with what a policy-scoped design would have produced, so the
             // assertion below can only pass if the new policy re-derived both signals from the token.
@@ -3299,14 +3343,16 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 enableEndpointDiscovery: true,
                 isPreferredLocationsListEmpty: false);
 
+            DistributedTransactionDispatchTracker dispatchTracker = new();
             ClientRetryPolicy retryPolicy = new(
                 endpointManager,
                 this.partitionKeyRangeLocationCache,
                 new RetryOptions(),
                 enableEndpointDiscovery: true,
-                isThinClientEnabled: false);
+                isThinClientEnabled: false,
+                distributedTransactionDispatchTracker: dispatchTracker);
 
-            using DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequestWithDispatchTracker();
+            using DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
 
             retryPolicy.OnBeforeSendRequest(request);
             string firstRegion = ClientRetryPolicyTests.ResolveDispatchRegion(endpointManager, request);
@@ -3341,14 +3387,16 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 isPreferredLocationsListEmpty: false,
                 preferedRegionListOverride: new List<string>() { "location2", "location1" }.AsReadOnly());
 
+            DistributedTransactionDispatchTracker dispatchTracker = new();
             ClientRetryPolicy retryPolicy = new(
                 endpointManager,
                 this.partitionKeyRangeLocationCache,
                 new RetryOptions(),
                 enableEndpointDiscovery: true,
-                isThinClientEnabled: false);
+                isThinClientEnabled: false,
+                distributedTransactionDispatchTracker: dispatchTracker);
 
-            using DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequestWithDispatchTracker();
+            using DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
 
             retryPolicy.OnBeforeSendRequest(request);
             Assert.IsTrue(
@@ -3389,14 +3437,16 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 enableEndpointDiscovery: true,
                 isPreferredLocationsListEmpty: true);
 
+            DistributedTransactionDispatchTracker dispatchTracker = new();
             ClientRetryPolicy retryPolicy = new(
                 endpointManager,
                 this.partitionKeyRangeLocationCache,
                 new RetryOptions(),
                 enableEndpointDiscovery: true,
-                isThinClientEnabled: false);
+                isThinClientEnabled: false,
+                distributedTransactionDispatchTracker: dispatchTracker);
 
-            using DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequestWithDispatchTracker();
+            using DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
 
             // Dispatch 1: stamp, then let the dispatch site resolve the endpoint.
             retryPolicy.OnBeforeSendRequest(request);
@@ -3461,18 +3511,6 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             // Reads the region the way the dispatch site does, so assertions compare against the endpoint
             // the request is actually sent to rather than one re-derived from current topology.
             return endpointManager.GetLocation(endpointManager.ResolveServiceEndpoint(request));
-        }
-
-        private static DocumentServiceRequest CreateDtxRequestWithDispatchTracker()
-        {
-            DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
-
-            request.Properties = new Dictionary<string, object>
-            {
-                [DistributedTransactionDispatchTracker.PropertyKey] = new DistributedTransactionDispatchTracker()
-            };
-
-            return request;
         }
 
         private static DocumentClientException CreateWriteForbiddenException(DocumentServiceRequest request)
