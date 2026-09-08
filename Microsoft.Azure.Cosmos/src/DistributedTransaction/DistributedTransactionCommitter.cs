@@ -278,11 +278,8 @@ namespace Microsoft.Azure.Cosmos
             requestMessage.UseGatewayMode = true;
 
             // ClientRetryPolicy can re-dispatch this message to another write region without returning
-            // here, so the tracker rides along and the headers are stamped per dispatch.
-            if (serverRequest.DispatchTracker != null)
-            {
-                requestMessage.Properties[DistributedTransactionDispatchTracker.PropertyKey] = serverRequest.DispatchTracker;
-            }
+            // here, so the token-scoped tracker rides along and the headers are stamped per dispatch.
+            requestMessage.DistributedTransactionDispatchTracker = serverRequest.DispatchTracker;
         }
 
         internal static void MergeSessionTokens(

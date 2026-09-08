@@ -1171,7 +1171,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
         // ─── Dispatch signals ──────────────────────────────────────────────────
         // The committer only attaches a tracker whose lifetime matches the idempotency token;
-        // ClientRetryPolicy reads it back and stamps the headers per dispatch.
+        // RetryHandler injects it into ClientRetryPolicy, which stamps the headers per dispatch.
 
         [TestMethod]
         [Description("A write transaction carries the dispatch tracker on the request, which is how ClientRetryPolicy stamps the signals on a dispatch it re-routes to another write region without returning to the committer.")]
@@ -1338,12 +1338,10 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             })
             {
                 enricher(request);
-
-                return request.Properties.TryGetValue(
-                    DistributedTransactionDispatchTracker.PropertyKey,
-                    out object tracker)
-                        ? tracker as DistributedTransactionDispatchTracker
-                        : null;
+                Assert.IsFalse(
+                    request.IsPropertiesInitialized,
+                    "Distributed transaction dispatch state must not be exposed through the public Properties bag.");
+                return request.DistributedTransactionDispatchTracker;
             }
         }
 

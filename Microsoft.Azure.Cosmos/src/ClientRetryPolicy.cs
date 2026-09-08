@@ -50,6 +50,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly bool isHubRegionProcessingEnabled;
 #endif
         private readonly AuthorizationTokenProvider authorizationTokenProvider;
+        private readonly DistributedTransactionDispatchTracker distributedTransactionDispatchTracker;
         private int failoverRetryCount;
 
         private int sessionTokenRetryCount;
@@ -96,6 +97,28 @@ namespace Microsoft.Azure.Cosmos
             this.isHubRegionProcessingEnabled = isHubRegionProcessingEnabled;
 #endif
             this.authorizationTokenProvider = authorizationTokenProvider;
+        }
+
+        internal ClientRetryPolicy(
+            GlobalEndpointManager globalEndpointManager,
+            GlobalPartitionEndpointManager partitionKeyRangeLocationCache,
+            RetryOptions retryOptions,
+            bool enableEndpointDiscovery,
+            bool isThinClientEnabled,
+            DistributedTransactionDispatchTracker distributedTransactionDispatchTracker,
+            bool isHubRegionProcessingEnabled = true,
+            AuthorizationTokenProvider authorizationTokenProvider = null)
+            : this(
+                globalEndpointManager,
+                partitionKeyRangeLocationCache,
+                retryOptions,
+                enableEndpointDiscovery,
+                isThinClientEnabled,
+                isHubRegionProcessingEnabled,
+                authorizationTokenProvider)
+        {
+            this.distributedTransactionDispatchTracker = distributedTransactionDispatchTracker
+                ?? throw new ArgumentNullException(nameof(distributedTransactionDispatchTracker));
         }
 
         /// <summary> 
@@ -394,7 +417,7 @@ namespace Microsoft.Azure.Cosmos
                 // headers never named. ClearRouteToLocation frees the pin for the next attempt.
                 this.locationEndpoint = this.globalEndpointManager.ResolveServiceEndpoint(request);
 
-                DistributedTransactionDispatchTracker.StampDispatchHeaders(
+                this.distributedTransactionDispatchTracker?.StampDispatchHeaders(
                     request,
                     this.globalEndpointManager.GetLocation(this.locationEndpoint));
             }

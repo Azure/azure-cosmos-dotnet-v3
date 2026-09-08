@@ -149,6 +149,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal Action<DocumentServiceRequest> OnBeforeSendRequestActions { get; set; }
 
+        internal DistributedTransactionDispatchTracker DistributedTransactionDispatchTracker { get; set; }
+
         internal bool IsPropertiesInitialized => this.properties.IsValueCreated;
 
         /// <summary>
@@ -351,6 +353,7 @@ namespace Microsoft.Azure.Cosmos
             clone.UseGatewayMode = this.UseGatewayMode;
             clone.ContainerId = this.ContainerId;
             clone.DatabaseId = this.DatabaseId;
+            clone.DistributedTransactionDispatchTracker = this.DistributedTransactionDispatchTracker;
 
             return clone;
         }

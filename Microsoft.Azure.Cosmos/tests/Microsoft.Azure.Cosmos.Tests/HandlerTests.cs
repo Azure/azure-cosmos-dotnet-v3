@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -82,6 +83,20 @@ namespace Microsoft.Azure.Cosmos.Tests
                     ResourceType.Document,
                     OperationType.Read));
         }
+
+            [TestMethod]
+            public void RequestMessageClone_PreservesDistributedTransactionDispatchTracker()
+            {
+                DistributedTransactionDispatchTracker dispatchTracker = new();
+                using RequestMessage request = new RequestMessage
+                {
+                    DistributedTransactionDispatchTracker = dispatchTracker
+                };
+
+                using RequestMessage clone = request.Clone(NoOpTrace.Singleton, cloneContent: null);
+
+                Assert.AreSame(dispatchTracker, clone.DistributedTransactionDispatchTracker);
+            }
 
         [TestMethod]
         public async Task TestPreProcessingHandler()
