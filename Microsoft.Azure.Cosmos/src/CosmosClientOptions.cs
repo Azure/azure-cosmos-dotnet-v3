@@ -400,12 +400,7 @@ namespace Microsoft.Azure.Cosmos
         /// <see cref="ReadConsistencyStrategy.GlobalStrong"/> is only valid for accounts configured with Strong consistency.
         /// </para>
         /// </remarks>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        ReadConsistencyStrategy? ReadConsistencyStrategy { get; set; }
+        public ReadConsistencyStrategy? ReadConsistencyStrategy { get; set; }
 
         /// <summary>
         /// Gets or sets the client-wide default <see cref="ICosmosEmbeddingGenerator"/> used to generate
@@ -1219,15 +1214,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <remarks>
         /// If throughput bucket is also set at request level in <see cref="RequestOptions.ThroughputBucket"/>, that throughput bucket is used.
-        /// If <see cref="AllowBulkExecution"/> is set to true in CosmosClientOptions, throughput bucket can only be set at client level.
+        /// When <see cref="AllowBulkExecution"/> is set to true in CosmosClientOptions, a request-level throughput bucket is not
+        /// supported for item point operations (they are batched); set the throughput bucket at the client level instead.
         /// </remarks>
         /// <seealso href="https://aka.ms/cosmsodb-bucketing"/>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        int? ThroughputBucket { get; set; }
+        public int? ThroughputBucket { get; set; }
 
         internal IChaosInterceptorFactory ChaosInterceptorFactory { get; set; }
 

@@ -44,12 +44,7 @@ namespace Microsoft.Azure.Cosmos
         /// The <see cref="ReadConsistencyStrategy.GlobalStrong"/> strategy is only valid
         /// for accounts configured with Strong consistency.
         /// </remarks>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        ReadConsistencyStrategy? ReadConsistencyStrategy
+        public ReadConsistencyStrategy? ReadConsistencyStrategy
         {
             get => this.BaseReadConsistencyStrategy;
             set => this.BaseReadConsistencyStrategy = value;

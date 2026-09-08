@@ -173,92 +173,101 @@ namespace Microsoft.Azure.Cosmos
                             using (CancellationTokenSource timerTokenSource = CancellationTokenSource.CreateLinkedTokenSource(applicationProvidedCancellationToken))
                             {
                                 CancellationToken timerToken = timerTokenSource.Token;
-                                using (Task hedgeTimer = Task.Delay(awaitTime, timerToken))
+
+                                // The hedge timer is intentionally NOT wrapped in a `using`. Task.Dispose() throws
+                                // InvalidOperationException ("A task may only be disposed if it is in a completion
+                                // state") when the task has not completed yet, and the timerTokenSource.Cancel()
+                                // below does not guarantee the Task.Delay has already transitioned to Canceled: if
+                                // the linked applicationProvidedCancellationToken is being cancelled concurrently on
+                                // another thread, that thread wins the CancellationTokenSource state transition and
+                                // Cancel() returns here immediately, before the delay's cancellation callback has
+                                // run. Disposing a Task is unnecessary anyway - its wait handle is allocated lazily
+                                // and is never requested here - so the timer is simply left to the GC. See #6048.
+                                Task hedgeTimer = Task.Delay(awaitTime, timerToken);
+
+                                Task<HedgingResponse> requestTask = this.CloneAndSendAsync(
+                                        sender: sender,
+                                        request: request,
+                                        clonedBody: clonedBody,
+                                        hedgeRegions: hedgeRegions,
+                                        requestNumber: requestNumber,
+                                        trace: trace,
+                                        hedgeRequestsCancellationTokenSource: hedgeRequestsCancellationTokenSource);
+
+                                requestTasks.Add(requestTask);
+                                requestTasks.Add(hedgeTimer);
+
+                                Task completedTask;
+                                do
                                 {
-                                    Task<HedgingResponse> requestTask = this.CloneAndSendAsync(
-                                            sender: sender,
-                                            request: request,
-                                            clonedBody: clonedBody,
-                                            hedgeRegions: hedgeRegions,
-                                            requestNumber: requestNumber,
-                                            trace: trace,
-                                            hedgeRequestsCancellationTokenSource: hedgeRequestsCancellationTokenSource);
+                                    completedTask = await Task.WhenAny(requestTasks);
+                                    requestTasks.Remove(completedTask);
+                                }
+                                while (
+                                    completedTask == hedgeTimer &&
+                                    // Ignore hedge timer signals if either the e2e timeout is hit
+                                    // or the hedgeTimer task failed (or more commonly since this is a linked CTS was cancelled)
+                                    // in both of these cases we do not want to spawn new hedge requests
+                                    // but just consolidate the outcome of previous requests
+                                    (!completedTask.IsCompleted || applicationProvidedCancellationToken.IsCancellationRequested));
 
-                                    requestTasks.Add(requestTask);
-                                    requestTasks.Add(hedgeTimer);
+                                if (completedTask == hedgeTimer)
+                                {
+                                    continue;
+                                }
 
-                                    Task completedTask;
-                                    do
-                                    {
-                                        completedTask = await Task.WhenAny(requestTasks);
-                                        requestTasks.Remove(completedTask);
-                                    }
-                                    while (
-                                        completedTask == hedgeTimer &&
-                                        // Ignore hedge timer signals if either the e2e timeout is hit 
-                                        // or the hedgeTimer task failed (or more commonly since this is a linked CTS was cancelled)
-                                        // in both of these cases we do not want to spawn new hedge requests
-                                        // but just consolidate the outcome of previous requests
-                                        (!completedTask.IsCompleted || applicationProvidedCancellationToken.IsCancellationRequested));
+                                requestTasks.Remove(hedgeTimer);
+                                timerTokenSource.Cancel();
 
-                                    if (completedTask == hedgeTimer)
-                                    {
-                                        continue;
-                                    }
-
+                                if (completedTask.IsFaulted || completedTask.IsCanceled)
+                                {
                                     requestTasks.Remove(hedgeTimer);
                                     timerTokenSource.Cancel();
 
-                                    if (completedTask.IsFaulted || completedTask.IsCanceled)
+                                    if (applicationProvidedCancellationToken.IsCancellationRequested)
                                     {
-                                        requestTasks.Remove(hedgeTimer);
-                                        timerTokenSource.Cancel();
-
-                                        if (applicationProvidedCancellationToken.IsCancellationRequested)
-                                        {
-                                            await (Task<HedgingResponse>)completedTask;
-                                        }
-                                        else
-                                        {
-                                            // The losing hedge completed faulted/canceled but the operation
-                                            // itself was not cancelled, so we loop to spawn the next hedge.
-                                            // completedTask has already been removed from requestTasks and is
-                                            // never awaited on this continue path, so the finally sweep can
-                                            // never see it. Observe it here so a non-cancellation fault on this
-                                            // abandoned loser cannot escape as an unobserved task exception.
-                                            // (A loser canceled by the winner completes Canceled and carries no
-                                            // exception, so it is a no-op here; the real leak is a non-OCE fault.)
-                                            CrossRegionHedgingAvailabilityStrategy.ObserveAbandonedHedgeTasks(new[] { completedTask });
-                                        }
-
-                                        continue;
+                                        await (Task<HedgingResponse>)completedTask;
+                                    }
+                                    else
+                                    {
+                                        // The losing hedge completed faulted/canceled but the operation
+                                        // itself was not cancelled, so we loop to spawn the next hedge.
+                                        // completedTask has already been removed from requestTasks and is
+                                        // never awaited on this continue path, so the finally sweep can
+                                        // never see it. Observe it here so a non-cancellation fault on this
+                                        // abandoned loser cannot escape as an unobserved task exception.
+                                        // (A loser canceled by the winner completes Canceled and carries no
+                                        // exception, so it is a no-op here; the real leak is a non-OCE fault.)
+                                        CrossRegionHedgingAvailabilityStrategy.ObserveAbandonedHedgeTasks(new[] { completedTask });
                                     }
 
-                                    hedgeResponse = await (Task<HedgingResponse>)completedTask;
-                                    if (hedgeResponse.IsNonTransient)
-                                    {
-                                        hedgeRequestsCancellationTokenSource.Cancel();
+                                    continue;
+                                }
 
+                                hedgeResponse = await (Task<HedgingResponse>)completedTask;
+                                if (hedgeResponse.IsNonTransient)
+                                {
+                                    hedgeRequestsCancellationTokenSource.Cancel();
+
+                                    ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
+                                        HedgeConfig,
+                                        this.HedgeConfigText);
+
+                                    if (requestNumber > 0)
+                                    {
+                                        //Take is not inclusive, so we need to add 1 to the request number which starts at 0
                                         ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
-                                            HedgeConfig,
-                                            this.HedgeConfigText);
-
-                                        if (requestNumber > 0)
-                                        {
-                                            //Take is not inclusive, so we need to add 1 to the request number which starts at 0
-                                            ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
-                                                HedgeContext,
-                                                hedgeRegions.Take(requestNumber + 1));
-                                            // Note that the target region can be seperate than the actual region that serviced the request depending on the scenario
-                                            ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
-                                                ResponseRegion,
-                                                hedgeResponse.TargetRegionName);
-                                        }
-
-                                        // Any still in-flight losers are abandoned when this winner returns;
-                                        // the finally sweep observes their faults on the way out.
-                                        return hedgeResponse.ResponseMessage;
+                                            HedgeContext,
+                                            hedgeRegions.Take(requestNumber + 1));
+                                        // Note that the target region can be seperate than the actual region that serviced the request depending on the scenario
+                                        ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
+                                            ResponseRegion,
+                                            hedgeResponse.TargetRegionName);
                                     }
+
+                                    // Any still in-flight losers are abandoned when this winner returns;
+                                    // the finally sweep observes their faults on the way out.
+                                    return hedgeResponse.ResponseMessage;
                                 }
                             }
                         }

@@ -45,6 +45,7 @@
             SqlQuerySpec sqlQuerySpec,
             Cosmos.PartitionKey? partitionKey,
             string supportedQueryFeatures,
+            System.Collections.Generic.IReadOnlyList<string> excludeRegions,
             Guid correlatedActivityId,
             ITrace trace,
             CancellationToken cancellationToken)
@@ -57,6 +58,7 @@
                 sqlQuerySpec,
                 partitionKey,
                 supportedQueryFeatures,
+                excludeRegions,
                 correlatedActivityId,
                 trace,
                 cancellationToken);

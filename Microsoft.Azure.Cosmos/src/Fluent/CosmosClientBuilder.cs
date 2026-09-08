@@ -841,17 +841,13 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <remarks>
         /// If throughput bucket is also set at request level in <see cref="RequestOptions.ThroughputBucket"/>, that throughput bucket is used.
-        /// If <see cref="WithBulkExecution(bool)"/> is set to true, throughput bucket can only be set at client level.
+        /// When <see cref="WithBulkExecution(bool)"/> is set to true, a request-level throughput bucket is not supported for item
+        /// point operations (they are batched); set the throughput bucket at the client level instead.
         /// </remarks>
         /// <param name="throughputBucket">The desired throughput bucket for the client.</param>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso href="https://aka.ms/cosmsodb-bucketing"/>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        CosmosClientBuilder WithThroughputBucket(int throughputBucket)
+        public CosmosClientBuilder WithThroughputBucket(int throughputBucket)
         {
             this.clientOptions.ThroughputBucket = throughputBucket;
             return this;
@@ -866,12 +862,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </remarks>
         /// <param name="readConsistencyStrategy">The desired read consistency strategy for the client.</param>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        CosmosClientBuilder WithReadConsistencyStrategy(Cosmos.ReadConsistencyStrategy readConsistencyStrategy)
+        public CosmosClientBuilder WithReadConsistencyStrategy(Cosmos.ReadConsistencyStrategy readConsistencyStrategy)
         {
             this.clientOptions.ReadConsistencyStrategy = readConsistencyStrategy;
             return this;

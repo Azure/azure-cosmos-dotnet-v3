@@ -183,16 +183,24 @@ namespace Microsoft.Azure.Cosmos
             SqlQuerySpec sqlQuerySpec,
             PartitionKey? partitionKey,
             string supportedQueryFeatures,
+            IReadOnlyList<string> excludeRegions,
             Guid clientQueryCorrelationId,
             ITrace trace,
             CancellationToken cancellationToken)
         {
+            // Mirrors the real query's RequestOptions.ExcludeRegions handling (RequestMessage.cs) so that
+            // gateway query-plan requests honor caller-specified excluded regions the same way a regular
+            // Query request does, instead of always defaulting to the unfiltered/preferred read-endpoint list.
+            RequestOptions requestOptions = (excludeRegions != null && excludeRegions.Count > 0)
+                ? new RequestOptions { ExcludeRegions = excludeRegions.ToList() }
+                : null;
+
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
             using (ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
-                requestOptions: null,
+                requestOptions: requestOptions,
                 feedRange: partitionKey.HasValue ? new FeedRangePartitionKey(partitionKey.Value) : null,
                 cosmosContainerCore: this.cosmosContainerCore,
                 streamPayload: this.clientContext.SerializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, resourceType),
