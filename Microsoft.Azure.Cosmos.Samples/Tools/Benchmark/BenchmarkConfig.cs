@@ -241,11 +241,31 @@ namespace CosmosBenchmark
                 ClientTelemetryOptions.DefaultIntervalForTelemetryJob = TimeSpan.FromSeconds(this.TelemetryScheduleInSec);
             }
 
+            // Direct-mode benchmark tuning: the SDK default MaxRequestsPerTcpConnection
+            // is 30, which multiplexes up to 30 concurrent requests over a single rntbd
+            // TCP connection per replica endpoint. Under this benchmark's parallelism
+            // (PL=18) that creates head-of-line blocking on the shared channel: when
+            // any one call has a transient hiccup, all pipelined calls behind it stall,
+            // inflating Transit Time (and P95/P99) even though backend latency
+            // (BELatencyInMs) is single-digit ms. Empirically observed in this repo's
+            // benchmark diagnostics: a Direct Upsert saw inflightRequests=14 with
+            // callsPendingReceive=13 on openConnections=1 -> 391ms transit for a 4.7ms
+            // backend call. Capping at 6 forces the SDK to open additional TCP
+            // connections earlier, spreading the load and shrinking the HOL blocking
+            // radius. This only affects Direct mode. Users may still override via --tcp.
+            int? effectiveMaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection;
+            if (effectiveMaxRequestsPerTcpConnection == null
+                && !this.IsThinClientEnabled
+                && !this.IsGatewayModeEnabled)
+            {
+                effectiveMaxRequestsPerTcpConnection = 6;
+            }
+
             Microsoft.Azure.Cosmos.CosmosClientOptions clientOptions = new Microsoft.Azure.Cosmos.CosmosClientOptions()
             {
                 ApplicationName = this.GetUserAgentPrefix(),
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
-                MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
+                MaxRequestsPerTcpConnection = effectiveMaxRequestsPerTcpConnection,
                 // Pass through the CLI value (nullable) for all modes. When null the SDK
                 // picks its own default. Do NOT hardcode a low value here: for Direct
                 // mode forcing a small MaxTcpConnectionsPerEndpoint (e.g. 200) caps the
