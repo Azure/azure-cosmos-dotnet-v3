@@ -18,67 +18,90 @@ namespace Microsoft.Azure.Cosmos
     /// policy on any retriable non-abort response, so policy-local state would reset while the token lives
     /// on and under-report both signals.
     ///
-    /// Unsynchronized: a commit awaits one attempt at a time, and CrossRegionHedgingAvailabilityStrategy
-    /// only hedges <see cref="ResourceType.Document"/>, so a transaction never runs as concurrent arms.
+    /// The tracker owns and synchronizes its mutable state. The Properties dictionary only carries the
+    /// tracker reference; callers mutate dispatch state exclusively through this type.
     /// </remarks>
     internal sealed class DistributedTransactionDispatchTracker
     {
         internal const string PropertyKey = "DistributedTransactionDispatchTracker";
 
+        private readonly object stateLock = new object();
         private string originalDispatchRegion;
         private int dispatchCount;
         private bool hasUnresolvedDispatch;
+        private bool isCrossRegionRedirect;
 
         /// <summary>
         /// Derived rather than assigned: the headers are read after <see cref="RecordDispatch"/> has counted
         /// the imminent dispatch, so the first one still has to report false.
         /// </summary>
-        internal bool IsRetry => this.dispatchCount > 1;
+        internal bool IsRetry
+        {
+            get
+            {
+                lock (this.stateLock)
+                {
+                    return this.dispatchCount > 1;
+                }
+            }
+        }
 
         /// <summary>
         /// Sticky for the lifetime of the token. A dispatch lost in flight may still have reached the
         /// coordinator, so failing back to the original region does not clear the signal.
         /// </summary>
-        internal bool IsCrossRegionRedirect { get; private set; }
+        internal bool IsCrossRegionRedirect
+        {
+            get
+            {
+                lock (this.stateLock)
+                {
+                    return this.isCrossRegionRedirect;
+                }
+            }
+        }
 
         /// <summary>
         /// Records the region an imminent dispatch is pinned to.
         /// </summary>
         /// <remarks>
-        /// Records intent: a send that fails after routing still counts, because it may have reached the
-        /// coordinator first. So a failure before the request leaves the process (authorization, store
-        /// proxy resolution) is counted anyway, over-reporting in the safe direction. Conversely a gateway
-        /// resend after a retriable WebException is not counted, because CosmosHttpClientCore retries in
-        /// place without re-entering <see cref="ClientRetryPolicy.OnBeforeSendRequest"/>; that
-        /// under-reports, but only for connection failures that never reached the coordinator.
+        /// Records intent rather than delivery: a failed dispatch may still have reached the coordinator,
+        /// so it counts, over-reporting in the safe direction. Transport resends that retry in place go
+        /// uncounted, but those never reached the coordinator.
         /// </remarks>
-        internal void RecordDispatch(string regionName)
+        /// <returns>A consistent snapshot of both dispatch signals after recording this dispatch.</returns>
+        internal (bool IsRetry, bool IsCrossRegionRedirect) RecordDispatch(string regionName)
         {
-            this.dispatchCount++;
-
-            // A region goes unnamed when the endpoint is absent from the account topology: before the
-            // first account refresh populates it, or when endpoint discovery is disabled. The dispatch
-            // still happened, so it has to count.
-            if (string.IsNullOrEmpty(regionName))
+            lock (this.stateLock)
             {
-                this.hasUnresolvedDispatch = true;
-                return;
-            }
+                this.dispatchCount++;
 
-            if (this.originalDispatchRegion == null)
-            {
-                this.originalDispatchRegion = regionName;
-
-                // An earlier dispatch went somewhere this client could not name, so this region cannot be
-                // trusted as the origin. Report a crossing rather than hide one that may have happened.
-                if (this.hasUnresolvedDispatch)
+                // An unresolved first dispatch establishes no origin. Any unresolved retry may have crossed
+                // regions, so conservatively latch the redirect signal.
+                if (string.IsNullOrEmpty(regionName))
                 {
-                    this.IsCrossRegionRedirect = true;
+                    this.hasUnresolvedDispatch = true;
+                    this.isCrossRegionRedirect |= this.dispatchCount > 1;
+                    return (this.dispatchCount > 1, this.isCrossRegionRedirect);
                 }
-            }
-            else if (!string.Equals(this.originalDispatchRegion, regionName, StringComparison.OrdinalIgnoreCase))
-            {
-                this.IsCrossRegionRedirect = true;
+
+                if (this.originalDispatchRegion == null)
+                {
+                    this.originalDispatchRegion = regionName;
+
+                    // An earlier dispatch went somewhere this client could not name, so this region cannot be
+                    // trusted as the origin. Report a crossing rather than hide one that may have happened.
+                    if (this.hasUnresolvedDispatch)
+                    {
+                        this.isCrossRegionRedirect = true;
+                    }
+                }
+                else if (!string.Equals(this.originalDispatchRegion, regionName, StringComparison.OrdinalIgnoreCase))
+                {
+                    this.isCrossRegionRedirect = true;
+                }
+
+                return (this.dispatchCount > 1, this.isCrossRegionRedirect);
             }
         }
 
@@ -95,12 +118,12 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
-            tracker.RecordDispatch(regionName);
+            (bool IsRetry, bool IsCrossRegionRedirect) dispatchSignals = tracker.RecordDispatch(regionName);
 
             request.Headers[DistributedTransactionConstants.IsDtxRetry] =
-                tracker.IsRetry ? bool.TrueString : bool.FalseString;
+                dispatchSignals.IsRetry ? bool.TrueString : bool.FalseString;
             request.Headers[DistributedTransactionConstants.IsDtxCrossRegionRedirect] =
-                tracker.IsCrossRegionRedirect ? bool.TrueString : bool.FalseString;
+                dispatchSignals.IsCrossRegionRedirect ? bool.TrueString : bool.FalseString;
         }
     }
 }

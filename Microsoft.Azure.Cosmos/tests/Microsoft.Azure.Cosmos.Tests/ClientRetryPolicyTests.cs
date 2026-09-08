@@ -2926,8 +2926,10 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             DocumentServiceRequest dtxRead = ClientRetryPolicyTests.CreateReadDtxRequest();
             retryPolicy.OnBeforeSendRequest(dtxRead);
 
-            // Verify UsePreferredLocations was set to false by OnBeforeSendRequest
-            Assert.AreEqual(false, dtxRead.RequestContext.UsePreferredLocations, "OnBeforeSendRequest must set UsePreferredLocations=false for DTX reads.");
+            Assert.AreEqual(
+                ClientRetryPolicyTests.Location1Endpoint,
+                dtxRead.RequestContext.LocationEndpointToRoute,
+                "OnBeforeSendRequest must pin DTX reads to the write region so the dispatch site cannot re-resolve them onto a read-only region.");
 
             Uri dtxReadEndpoint = endpointManager.ResolveServiceEndpoint(dtxRead);
             Assert.AreEqual(
@@ -2974,8 +2976,10 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             DocumentServiceRequest dtxRead = ClientRetryPolicyTests.CreateReadDtxRequest();
             retryPolicy.OnBeforeSendRequest(dtxRead);
 
-            // Verify UsePreferredLocations was set to false
-            Assert.AreEqual(false, dtxRead.RequestContext.UsePreferredLocations, "OnBeforeSendRequest must set UsePreferredLocations=false for DTX reads in multi-master.");
+            CollectionAssert.Contains(
+                endpointManager.WriteEndpoints.ToList(),
+                dtxRead.RequestContext.LocationEndpointToRoute,
+                "OnBeforeSendRequest must pin DTX reads to a write-capable region in multi-master.");
 
             Uri dtxReadEndpoint = endpointManager.ResolveServiceEndpoint(dtxRead);
             Assert.IsTrue(
@@ -3327,6 +3331,121 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 "Both regions can accept this commit, so the coordinator in the new one must be told the token already exists elsewhere.");
         }
 
+        [TestMethod]
+        [Description("After DTX overrides a hub route with the actual write-region endpoint, a transport failure must mark that endpoint unavailable rather than the superseded hub endpoint.")]
+        public async Task OnBeforeSendRequest_DistributedTransactionWrite_EndpointFailureMarksActualDispatchEndpointUnavailable()
+        {
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: true,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: false,
+                preferedRegionListOverride: new List<string>() { "location2", "location1" }.AsReadOnly());
+
+            ClientRetryPolicy retryPolicy = new(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery: true,
+                isThinClientEnabled: false);
+
+            using DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequestWithDispatchTracker();
+
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.IsTrue(
+                (await retryPolicy.ShouldRetryAsync(
+                    ClientRetryPolicyTests.CreateWriteForbiddenException(request),
+                    CancellationToken.None)).ShouldRetry,
+                "Test precondition: a 403.3 must put the multi-master metadata retry onto its hub-routing path.");
+
+            retryPolicy.OnBeforeSendRequest(request);
+            Uri failedDispatchEndpoint = request.RequestContext.LocationEndpointToRoute;
+            Assert.AreEqual(
+                ClientRetryPolicyTests.Location2Endpoint,
+                failedDispatchEndpoint,
+                "DTX must override the hub route with the next write-region endpoint.");
+            Assert.AreEqual(
+                failedDispatchEndpoint,
+                endpointManager.WriteEndpoints[0],
+                "Test precondition: the failed endpoint must start first so moving it last proves it was marked unavailable.");
+
+            Assert.IsTrue(
+                (await retryPolicy.ShouldRetryAsync(
+                    new HttpRequestException("The dispatched endpoint is unreachable."),
+                    CancellationToken.None)).ShouldRetry,
+                "A gateway connection failure must be retried.");
+
+            Assert.AreEqual(
+                failedDispatchEndpoint,
+                endpointManager.WriteEndpoints.Last(),
+                "The endpoint that physically failed must be deprioritized, not the superseded hub endpoint.");
+        }
+
+        [TestMethod]
+        [Description("Guards the stamp-vs-wire window: OnBeforeSendRequest stamps the dispatch headers from the region it resolves, and the dispatch site (GatewayStoreModel.GetFeedUri) resolves the endpoint again later. An account refresh in between must not be able to move the dispatch to a region the headers never named.")]
+        public async Task OnBeforeSendRequest_DistributedTransactionWrite_TopologyReorderedBetweenStampAndWire_DispatchStaysOnStampedRegion()
+        {
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: true,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: true);
+
+            ClientRetryPolicy retryPolicy = new(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery: true,
+                isThinClientEnabled: false);
+
+            using DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequestWithDispatchTracker();
+
+            // Dispatch 1: stamp, then let the dispatch site resolve the endpoint.
+            retryPolicy.OnBeforeSendRequest(request);
+            Uri wireEndpoint1 = endpointManager.ResolveServiceEndpoint(request);
+
+            // Dispatch 2: stamp first - this is where the tracker records the region ...
+            retryPolicy.OnBeforeSendRequest(request);
+
+            // ... then the account flips write-region order before the endpoint is resolved for the wire.
+            // This models the window between TransportHandler's ToDocumentServiceRequest and GetFeedUri,
+            // which spans an awaited authorization-token acquisition.
+            await this.SwapWriteRegionOrderAsync(endpointManager);
+
+            Uri wireEndpoint2 = endpointManager.ResolveServiceEndpoint(request);
+
+            Assert.AreEqual(
+                wireEndpoint1,
+                wireEndpoint2,
+                "A topology reorder after the headers are stamped must not move the dispatch. Re-resolving here would send the request to a region the headers never named, so the coordinator would not learn that the idempotency token already exists elsewhere.");
+
+            ClientRetryPolicyTests.AssertDispatchHeaders(
+                request,
+                bool.TrueString,
+                bool.FalseString,
+                "The second dispatch is a retry to the same region, so it must report a retry without a cross-region redirect.");
+        }
+
+        private async Task SwapWriteRegionOrderAsync(GlobalEndpointManager endpointManager)
+        {
+            Collection<AccountRegion> reorderedRegions = new Collection<AccountRegion>()
+            {
+                { new AccountRegion() { Name = "location2", Endpoint = ClientRetryPolicyTests.Location2Endpoint.ToString() } },
+                { new AccountRegion() { Name = "location1", Endpoint = ClientRetryPolicyTests.Location1Endpoint.ToString() } },
+            };
+
+            AccountProperties reorderedAccount = new AccountProperties()
+            {
+                EnableMultipleWriteLocations = true,
+                ReadLocationsInternal = reorderedRegions,
+                WriteLocationsInternal = reorderedRegions
+            };
+
+            this.mockedClient
+                .Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(reorderedAccount);
+
+            await endpointManager.RefreshLocationAsync(forceRefresh: true);
+        }
+
         private static void AssertDispatchHeaders(
             DocumentServiceRequest request,
             string expectedIsRetry,
@@ -3339,8 +3458,8 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
         private static string ResolveDispatchRegion(GlobalEndpointManager endpointManager, DocumentServiceRequest request)
         {
-            // OnBeforeSendRequest re-arms index-based routing for distributed transactions, which clears the
-            // pinned endpoint, so the dispatch region has to be read the way the store model reads it.
+            // Reads the region the way the dispatch site does, so assertions compare against the endpoint
+            // the request is actually sent to rather than one re-derived from current topology.
             return endpointManager.GetLocation(endpointManager.ResolveServiceEndpoint(request));
         }
 

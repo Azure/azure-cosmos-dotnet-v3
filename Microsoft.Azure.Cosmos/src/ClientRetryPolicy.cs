@@ -380,26 +380,23 @@ namespace Microsoft.Azure.Cosmos
 
             request.RequestContext.RouteToLocation(this.locationEndpoint);
 
-            // Force UsePreferredLocations=false for DTX after endpoint pinning so that any
-            // downstream re-resolution (e.g. on retry) stays on the write-region branch.
+            // DTX failover must follow the write-region retry index. The general path can short-circuit on
+            // a RouteToHub pin, which would otherwise send the retry back to the hub.
             if (this.isDtxRequest)
             {
                 int dispatchLocationIndex = this.retryContext?.RetryLocationIndex ?? 0;
 
                 request.RequestContext.RouteToLocation(dispatchLocationIndex, usePreferredLocations: false);
 
-                // this.locationEndpoint was resolved before the line above re-routed the request, and on a
-                // failover retry that resolve short-circuits on the hub pin (RouteToHub) rather than
-                // consulting the index. Stamping it would name the hub for a dispatch already bound for
-                // the other write region, reporting no crossing on a multi-master failover that has one.
-                string dispatchRegion = this.globalEndpointManager.GetLocation(
-                    this.globalEndpointManager.ResolveServiceEndpoint(request));
+                // The pin this resolution leaves behind is load-bearing. The dispatch site
+                // (GatewayStoreModel.GetFeedUri) resolves the endpoint again, and an account refresh in
+                // between could otherwise reorder the write regions and send the token to a region these
+                // headers never named. ClearRouteToLocation frees the pin for the next attempt.
+                this.locationEndpoint = this.globalEndpointManager.ResolveServiceEndpoint(request);
 
-                // ResolveServiceEndpoint mutates: it routes the request to whatever it picked, clearing
-                // the index set above. Restore it so this block only reads.
-                request.RequestContext.RouteToLocation(dispatchLocationIndex, usePreferredLocations: false);
-
-                DistributedTransactionDispatchTracker.StampDispatchHeaders(request, dispatchRegion);
+                DistributedTransactionDispatchTracker.StampDispatchHeaders(
+                    request,
+                    this.globalEndpointManager.GetLocation(this.locationEndpoint));
             }
 
             // Hedging-Detection API: tag the upcoming dispatch reason on Properties so that

@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 {
     using System.Collections.Generic;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -96,32 +98,29 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
-        public void RecordDispatch_UnresolvableRegionBeforeAnyKnownRegion_ReportsRedirectOnceOneResolves()
+        public void RecordDispatch_UnresolvableFirstRegion_ReportsRedirectOnceNextRegionResolves()
         {
             DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
 
             tracker.RecordDispatch(null);
-            tracker.RecordDispatch(string.Empty);
-
-            // Nothing has been placed in a known region yet, so there is no boundary to have crossed.
             Assert.IsFalse(tracker.IsCrossRegionRedirect);
 
-            // Those dispatches may have landed elsewhere, so East US cannot be trusted as the origin.
             tracker.RecordDispatch(EastUs);
             Assert.IsTrue(tracker.IsCrossRegionRedirect);
         }
 
         [TestMethod]
-        public void RecordDispatch_UnresolvableRegionAfterKnownRegion_DoesNotDiscardOriginRegion()
+        public void RecordDispatch_UnresolvableRegionAfterKnownRegion_ReportsRedirect()
         {
             DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
 
             tracker.RecordDispatch(EastUs);
 
             tracker.RecordDispatch(null);
-            Assert.IsFalse(tracker.IsCrossRegionRedirect);
+            Assert.IsTrue(
+                tracker.IsCrossRegionRedirect,
+                "An unresolved retry may have crossed a region boundary, so it must report the safe conservative signal.");
 
-            // The unresolvable dispatch must not have overwritten East US, so West US still crosses.
             tracker.RecordDispatch(WestUs);
             Assert.IsTrue(tracker.IsCrossRegionRedirect);
         }
@@ -149,7 +148,9 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             tracker.RecordDispatch(null);
             Assert.IsTrue(tracker.IsRetry);
-            Assert.IsFalse(tracker.IsCrossRegionRedirect);
+            Assert.IsTrue(
+                tracker.IsCrossRegionRedirect,
+                "Two unresolved dispatches cannot be proven to have stayed in one region.");
         }
 
         [TestMethod]
@@ -241,6 +242,51 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
                 DistributedTransactionDispatchTrackerTests.AssertHeaders(request, bool.TrueString, bool.TrueString);
             }
+        }
+
+        [TestMethod]
+        public void StampDispatchHeaders_ConcurrentRequests_UseConsistentSignalSnapshots()
+        {
+            const int DispatchCount = 1000;
+            DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
+            int firstDispatchCount = 0;
+            int inconsistentSnapshotCount = 0;
+
+            Parallel.For(
+                0,
+                DispatchCount,
+                dispatchIndex =>
+                {
+                    using (DocumentServiceRequest request =
+                        DistributedTransactionDispatchTrackerTests.CreateRequestWithTracker(tracker))
+                    {
+                        string regionName = dispatchIndex % 2 == 0
+                            ? DistributedTransactionDispatchTrackerTests.EastUs
+                            : DistributedTransactionDispatchTrackerTests.WestUs;
+
+                        DistributedTransactionDispatchTracker.StampDispatchHeaders(request, regionName);
+
+                        bool isRetry = bool.Parse(
+                            request.Headers[DistributedTransactionConstants.IsDtxRetry]);
+                        bool isCrossRegionRedirect = bool.Parse(
+                            request.Headers[DistributedTransactionConstants.IsDtxCrossRegionRedirect]);
+
+                        if (!isRetry)
+                        {
+                            Interlocked.Increment(ref firstDispatchCount);
+                        }
+
+                        if (!isRetry && isCrossRegionRedirect)
+                        {
+                            Interlocked.Increment(ref inconsistentSnapshotCount);
+                        }
+                    }
+                });
+
+            Assert.AreEqual(1, firstDispatchCount);
+            Assert.AreEqual(0, inconsistentSnapshotCount);
+            Assert.IsTrue(tracker.IsRetry);
+            Assert.IsTrue(tracker.IsCrossRegionRedirect);
         }
 
         private static void AssertHeaders(
