@@ -97,16 +97,15 @@ namespace Microsoft.Azure.Cosmos
         internal bool HasIndex { get; set; }
 
         /// <summary>
-        /// Gets the session token returned for this operation. Callers can pass this value
-        /// back through <c>DistributedTransactionRequestOptions.SessionToken</c> on a
-        /// subsequent operation to enforce read-your-writes session consistency.
+        /// Gets the session token returned by the distributed transaction coordinator for
+        /// this operation. Callers can pass this value back through
+        /// <c>DistributedTransactionRequestOptions.SessionToken</c> on a subsequent DTx
+        /// operation to enforce read-your-writes session consistency for that op.
         /// </summary>
         /// <remarks>
-        /// Treat the value as opaque and pass it back unchanged.
-        /// <para>
-        /// The value is <c>null</c> when no token was returned. A token that is not in
-        /// the expected format is preserved for diagnostics and rejected if passed back.
-        /// </para>
+        /// Treat the value as opaque: pass it back unchanged via
+        /// <c>DistributedTransactionRequestOptions.SessionToken</c>. It may be <c>null</c> or
+        /// non-canonical if the coordinator omits or misformats the token.
         /// </remarks>
         public virtual string SessionToken { get; internal set; }
 

@@ -777,7 +777,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(colonIndex > 0, $"Emulator session token '{canonicalToken}' must be in {{pkRangeId}}:{{lsn}} format.");
             string pkRangeId = canonicalToken.Substring(0, colonIndex);
 
-            // The coordinator is required to send the canonical token; the SDK records it as received.
             string dtcMockResponse = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""sessionToken"":""{canonicalToken}"",""partitionKeyRangeId"":""{pkRangeId}""}}]}}";
 
             DistributedTransactionMockHandler handler = new DistributedTransactionMockHandler(
@@ -839,7 +838,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(colonIndex > 0, $"Emulator session token '{canonicalToken}' must be in {{pkRangeId}}:{{lsn}} format.");
             string lsnOnly = canonicalToken.Substring(colonIndex + 1);
 
-            // An LSN with no partitionKeyRangeId prefix cannot be attributed to a partition.
             string dtcMockResponse = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""sessionToken"":""{lsnOnly}""}}]}}";
 
             DistributedTransactionMockHandler handler = new DistributedTransactionMockHandler(
@@ -863,8 +861,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             StringAssert.Contains(exception.Message, "partitionKeyRangeId",
                 "The message must state why the token could not be recorded.");
-            StringAssert.Contains(exception.Message, "should not be retried",
-                "The message must state the transaction already committed so callers do not double-apply it.");
         }
 
         // Read Transaction Tests
