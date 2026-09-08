@@ -449,10 +449,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                             if (stat.RequestHeaders != null)
                             {
-                                stringBuilder.AppendLine($"{space}{space}RequestHeaders");
                                 foreach (KeyValuePair<string, string> header in stat.RequestHeaders)
                                 {
-                                    stringBuilder.AppendLine($"{space}{space}{space}{header.Key}: {header.Value}");
+                                    stringBuilder.AppendLine($"{space}{space}{header.Key}: {header.Value}");
                                 }
                             }
 
