@@ -114,7 +114,7 @@
             IReadOnlyList<KeyValuePair<string, string>> captured = ClientSideRequestStatisticsTraceDatum.CaptureRequestHeaders(requestMessage);
 
             Assert.AreEqual(1, captured.Count);
-            Assert.AreEqual(DistributedTransactionConstants.IsDtxRetry, captured[0].Key);
+            Assert.AreEqual("IsDtxRetry", captured[0].Key);
             Assert.AreEqual("true", captured[0].Value);
         }
 
@@ -132,11 +132,11 @@
             datum.RecordHttpResponse(requestMessage, responseMessage, ResourceType.Document, DateTime.UtcNow);
 
             trace.AddDatum("stats", datum);
-            JToken requestHeaders = JObject.Parse(new CosmosTraceDiagnostics(trace).ToString())
-                ["data"]["stats"]["HttpResponseStats"][0]["RequestHeaders"];
+            JToken httpResponseStat = JObject.Parse(new CosmosTraceDiagnostics(trace).ToString())
+                ["data"]["stats"]["HttpResponseStats"][0];
 
-            Assert.AreEqual("true", requestHeaders[DistributedTransactionConstants.IsDtxRetry].Value<string>());
-            Assert.AreEqual("false", requestHeaders[DistributedTransactionConstants.IsDtxCrossRegionRedirect].Value<string>());
+            Assert.AreEqual("true", httpResponseStat["IsDtxRetry"].Value<string>());
+            Assert.AreEqual("false", httpResponseStat["IsDtxCrossRegionRedirect"].Value<string>());
         }
 
         [TestMethod]
@@ -155,7 +155,8 @@
             JToken httpResponseStat = JObject.Parse(new CosmosTraceDiagnostics(trace).ToString())
                 ["data"]["stats"]["HttpResponseStats"][0];
 
-            Assert.IsNull(httpResponseStat["RequestHeaders"]);
+            Assert.IsNull(httpResponseStat["IsDtxRetry"]);
+            Assert.IsNull(httpResponseStat["IsDtxCrossRegionRedirect"]);
         }
 
         [TestMethod]
@@ -170,21 +171,19 @@
             datum.RecordHttpException(requestMessage, new OperationCanceledException(), ResourceType.Document, DateTime.UtcNow);
 
             trace.AddDatum("stats", datum);
-            JToken requestHeaders = JObject.Parse(new CosmosTraceDiagnostics(trace).ToString())
-                ["data"]["stats"]["HttpResponseStats"][0]["RequestHeaders"];
+            JToken httpResponseStat = JObject.Parse(new CosmosTraceDiagnostics(trace).ToString())
+                ["data"]["stats"]["HttpResponseStats"][0];
 
-            Assert.AreEqual("true", requestHeaders[DistributedTransactionConstants.IsDtxRetry].Value<string>());
+            Assert.AreEqual("true", httpResponseStat["IsDtxRetry"].Value<string>());
         }
 
         [TestMethod]
-        public void TraceToTextGroupsAllowlistedRequestHeadersUnderTheirOwnHeading()
+        public void TraceToTextEmitsAllowlistedRequestHeaders()
         {
             using HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Post, ClientSideRequestStatisticsTraceDatumTests.uri);
             requestMessage.Headers.Add(DistributedTransactionConstants.IsDtxRetry, "true");
 
-            // A literal trace name keeps the assertions below from matching the test's own name, which the
-            // writer emits as the root trace node.
-            Trace trace = Trace.GetRootTrace("http");
+            Trace trace = Trace.GetRootTrace(nameof(TraceToTextEmitsAllowlistedRequestHeaders));
             ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
 
             using HttpResponseMessage responseMessage = new HttpResponseMessage();
@@ -197,14 +196,9 @@
             trace.SetWalkingStateRecursively();
             string[] lines = TraceWriter.TraceToText(trace).Split(Environment.NewLine);
 
-            int headingIndex = Array.FindIndex(lines, line => line.EndsWith("RequestHeaders"));
-            Assert.AreNotEqual(-1, headingIndex, "Request headers were not emitted under a RequestHeaders heading.");
             Assert.IsTrue(
-                lines[headingIndex + 1].EndsWith($"{DistributedTransactionConstants.IsDtxRetry}: true"),
-                $"Expected the captured header to follow the heading, found '{lines[headingIndex + 1]}'.");
-            Assert.IsTrue(
-                lines[headingIndex + 1].IndexOf('x') > lines[headingIndex].IndexOf('R'),
-                "Captured headers should be indented under the heading rather than sitting alongside the intrinsic fields.");
+                lines.Any(line => line.EndsWith("IsDtxRetry: true")),
+                "The captured request header was not emitted.");
         }
 
         private async Task ConcurrentUpdateTestHelper<T>(

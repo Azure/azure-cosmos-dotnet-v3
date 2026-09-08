@@ -24,11 +24,12 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         internal static readonly string HttpRequestRegionNameProperty = "regionName";
 
         // Headers that change how the backend handles the request. Kept as a closed list so no
-        // credential-bearing or high-cardinality header reaches diagnostics by accident.
-        private static readonly string[] DiagnosticRequestHeaders = new string[]
+        // credential-bearing or high-cardinality header reaches diagnostics by accident. Compact
+        // diagnostic names keep repeated retry traces small.
+        private static readonly (string headerName, string diagnosticName)[] DiagnosticRequestHeaders = new (string, string)[]
         {
-            DistributedTransactionConstants.IsDtxRetry,
-            DistributedTransactionConstants.IsDtxCrossRegionRedirect,
+            (DistributedTransactionConstants.IsDtxRetry, "IsDtxRetry"),
+            (DistributedTransactionConstants.IsDtxCrossRegionRedirect, "IsDtxCrossRegionRedirect"),
         };
 
         private readonly object requestEndTimeLock = new object();
@@ -428,16 +429,16 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         {
             List<KeyValuePair<string, string>> capturedHeaders = null;
 
-            foreach (string headerName in ClientSideRequestStatisticsTraceDatum.DiagnosticRequestHeaders)
+            foreach ((string headerName, string diagnosticName) header in ClientSideRequestStatisticsTraceDatum.DiagnosticRequestHeaders)
             {
-                if (request.Headers.TryGetValues(headerName, out IEnumerable<string> values))
+                if (request.Headers.TryGetValues(header.headerName, out IEnumerable<string> values))
                 {
                     if (capturedHeaders == null)
                     {
                         capturedHeaders = new List<KeyValuePair<string, string>>(ClientSideRequestStatisticsTraceDatum.DiagnosticRequestHeaders.Length);
                     }
 
-                    capturedHeaders.Add(new KeyValuePair<string, string>(headerName, string.Join(",", values)));
+                    capturedHeaders.Add(new KeyValuePair<string, string>(header.diagnosticName, string.Join(",", values)));
                 }
             }
 
