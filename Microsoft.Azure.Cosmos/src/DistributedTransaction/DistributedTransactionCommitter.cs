@@ -277,12 +277,7 @@ namespace Microsoft.Azure.Cosmos
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.ResourceType, requestMessage.ResourceType.ToResourceTypeString());
             requestMessage.UseGatewayMode = true;
 
-            // ClientRetryPolicy can re-dispatch this message to another write region without returning
-            // here, so the tracker rides along and the headers are stamped per dispatch.
-            if (serverRequest.DispatchTracker != null)
-            {
-                requestMessage.Properties[DistributedTransactionDispatchTracker.PropertyKey] = serverRequest.DispatchTracker;
-            }
+            requestMessage.DistributedTransactionDispatchTracker = serverRequest.DispatchTracker;
         }
 
         internal static void MergeSessionTokens(

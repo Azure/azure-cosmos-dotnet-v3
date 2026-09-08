@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 {
-    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
@@ -158,74 +157,39 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         {
             DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
 
-            using (DocumentServiceRequest request = DistributedTransactionDispatchTrackerTests.CreateRequestWithTracker(tracker))
+            using (DocumentServiceRequest request = DistributedTransactionDispatchTrackerTests.CreateRequest())
             {
-                DistributedTransactionDispatchTracker.StampDispatchHeaders(request, EastUs);
+                tracker.StampDispatchHeaders(request, EastUs);
                 DistributedTransactionDispatchTrackerTests.AssertHeaders(request, bool.FalseString, bool.FalseString);
 
-                DistributedTransactionDispatchTracker.StampDispatchHeaders(request, EastUs);
+                tracker.StampDispatchHeaders(request, EastUs);
                 DistributedTransactionDispatchTrackerTests.AssertHeaders(request, bool.TrueString, bool.FalseString);
 
-                DistributedTransactionDispatchTracker.StampDispatchHeaders(request, WestUs);
+                tracker.StampDispatchHeaders(request, WestUs);
                 DistributedTransactionDispatchTrackerTests.AssertHeaders(request, bool.TrueString, bool.TrueString);
             }
         }
 
         [TestMethod]
-        public void StampDispatchHeaders_NoTrackerInProperties_OmitsBothHeaders()
+        public void RequestMessageClone_PreservesTypedTracker()
         {
-            using (DocumentServiceRequest request = DocumentServiceRequest.Create(
-                OperationType.Read,
-                ResourceType.DistributedTransactionBatch,
-                AuthorizationTokenType.PrimaryMasterKey))
+            DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
+            using (RequestMessage request = new RequestMessage
             {
-                request.Properties = new Dictionary<string, object>();
-
-                DistributedTransactionDispatchTracker.StampDispatchHeaders(request, EastUs);
-
-                DistributedTransactionDispatchTrackerTests.AssertHeaders(request, null, null);
-            }
-        }
-
-        [TestMethod]
-        public void StampDispatchHeaders_NullProperties_OmitsBothHeaders()
-        {
-            using (DocumentServiceRequest request = DocumentServiceRequest.Create(
-                OperationType.CommitDistributedTransaction,
-                ResourceType.DistributedTransactionBatch,
-                AuthorizationTokenType.PrimaryMasterKey))
+                ResourceType = ResourceType.DistributedTransactionBatch,
+                OperationType = OperationType.CommitDistributedTransaction,
+                DistributedTransactionDispatchTracker = tracker,
+            })
+            using (RequestMessage clone = request.Clone(request.Trace, cloneContent: null))
             {
-                request.Properties = null;
-
-                DistributedTransactionDispatchTracker.StampDispatchHeaders(request, EastUs);
-
-                DistributedTransactionDispatchTrackerTests.AssertHeaders(request, null, null);
-            }
-        }
-
-        [TestMethod]
-        public void StampDispatchHeaders_ForeignValueUnderTrackerKey_OmitsBothHeaders()
-        {
-            using (DocumentServiceRequest request = DocumentServiceRequest.Create(
-                OperationType.CommitDistributedTransaction,
-                ResourceType.DistributedTransactionBatch,
-                AuthorizationTokenType.PrimaryMasterKey))
-            {
-                request.Properties = new Dictionary<string, object>
-                {
-                    [DistributedTransactionDispatchTracker.PropertyKey] = "not a tracker"
-                };
-
-                DistributedTransactionDispatchTracker.StampDispatchHeaders(request, EastUs);
-
-                DistributedTransactionDispatchTrackerTests.AssertHeaders(request, null, null);
+                Assert.AreSame(tracker, clone.DistributedTransactionDispatchTracker);
             }
         }
 
         [TestMethod]
         public void StampDispatchHeaders_NullRequest_DoesNotThrow()
         {
-            DistributedTransactionDispatchTracker.StampDispatchHeaders(null, EastUs);
+            new DistributedTransactionDispatchTracker().StampDispatchHeaders(null, EastUs);
         }
 
         [TestMethod]
@@ -233,12 +197,12 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         {
             DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
 
-            using (DocumentServiceRequest request = DistributedTransactionDispatchTrackerTests.CreateRequestWithTracker(tracker))
+            using (DocumentServiceRequest request = DistributedTransactionDispatchTrackerTests.CreateRequest())
             {
-                DistributedTransactionDispatchTracker.StampDispatchHeaders(request, EastUs);
-                DistributedTransactionDispatchTracker.StampDispatchHeaders(request, WestUs);
+                tracker.StampDispatchHeaders(request, EastUs);
+                tracker.StampDispatchHeaders(request, WestUs);
 
-                DistributedTransactionDispatchTracker.StampDispatchHeaders(request, null);
+                tracker.StampDispatchHeaders(request, null);
 
                 DistributedTransactionDispatchTrackerTests.AssertHeaders(request, bool.TrueString, bool.TrueString);
             }
@@ -258,13 +222,13 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 dispatchIndex =>
                 {
                     using (DocumentServiceRequest request =
-                        DistributedTransactionDispatchTrackerTests.CreateRequestWithTracker(tracker))
+                        DistributedTransactionDispatchTrackerTests.CreateRequest())
                     {
                         string regionName = dispatchIndex % 2 == 0
                             ? DistributedTransactionDispatchTrackerTests.EastUs
                             : DistributedTransactionDispatchTrackerTests.WestUs;
 
-                        DistributedTransactionDispatchTracker.StampDispatchHeaders(request, regionName);
+                        tracker.StampDispatchHeaders(request, regionName);
 
                         bool isRetry = bool.Parse(
                             request.Headers[DistributedTransactionConstants.IsDtxRetry]);
@@ -298,19 +262,12 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             Assert.AreEqual(expectedIsCrossRegionRedirect, request.Headers[DistributedTransactionConstants.IsDtxCrossRegionRedirect]);
         }
 
-        private static DocumentServiceRequest CreateRequestWithTracker(DistributedTransactionDispatchTracker tracker)
+        private static DocumentServiceRequest CreateRequest()
         {
-            DocumentServiceRequest request = DocumentServiceRequest.Create(
+            return DocumentServiceRequest.Create(
                 OperationType.CommitDistributedTransaction,
                 ResourceType.DistributedTransactionBatch,
                 AuthorizationTokenType.PrimaryMasterKey);
-
-            request.Properties = new Dictionary<string, object>
-            {
-                [DistributedTransactionDispatchTracker.PropertyKey] = tracker
-            };
-
-            return request;
         }
     }
 }
