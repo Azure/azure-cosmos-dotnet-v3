@@ -112,100 +112,33 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             return false;
         }
 
-        private Task<MdeCryptoResult> EncryptWithPublicEncryptorAsync(
+        private async Task<MdeCryptoResult> EncryptWithPublicEncryptorAsync(
             TypeMarker typeMarker,
             byte[] plainText,
             int plainTextLength)
         {
-            this.cancellationToken.ThrowIfCancellationRequested();
-
-            byte[] exactPlainText = new byte[plainTextLength];
-            Buffer.BlockCopy(plainText, 0, exactPlainText, 0, plainTextLength);
-
-            Task<byte[]> encryptTask;
-            try
-            {
-                encryptTask = this.encryptor.EncryptAsync(
-                    exactPlainText,
-                    this.dataEncryptionKeyId,
-                    this.encryptionAlgorithm,
-                    this.cancellationToken);
-            }
-            catch (OperationCanceledException exception)
-            {
-                return Task.FromException<MdeCryptoResult>(exception);
-            }
-
-            if (encryptTask == null)
-            {
-                return Task.FromException<MdeCryptoResult>(
-                    new InvalidOperationException($"{nameof(Encryptor)} returned a null task from {nameof(Encryptor.EncryptAsync)}."));
-            }
-
-            return CompleteEncryptionAsync(encryptTask, typeMarker, this.cancellationToken);
+            byte[] cipherText = await MdeCryptoOperations.EncryptAsync(
+                this.encryptor,
+                this.dataEncryptionKeyId,
+                this.encryptionAlgorithm,
+                typeMarker,
+                plainText,
+                plainTextLength,
+                this.cancellationToken).ConfigureAwait(false);
+            return new MdeCryptoResult(cipherText, cipherText.Length);
         }
 
-        private Task<MdeCryptoResult> DecryptWithPublicEncryptorAsync(
+        private async Task<MdeCryptoResult> DecryptWithPublicEncryptorAsync(
             byte[] cipherTextWithTypeMarker,
             int cipherTextLength)
         {
-            this.cancellationToken.ThrowIfCancellationRequested();
-
-            byte[] exactCipherText = new byte[cipherTextLength - 1];
-            Buffer.BlockCopy(cipherTextWithTypeMarker, 1, exactCipherText, 0, exactCipherText.Length);
-
-            Task<byte[]> decryptTask;
-            try
-            {
-                decryptTask = this.encryptor.DecryptAsync(
-                    exactCipherText,
-                    this.dataEncryptionKeyId,
-                    this.encryptionAlgorithm,
-                    this.cancellationToken);
-            }
-            catch (OperationCanceledException exception)
-            {
-                return Task.FromException<MdeCryptoResult>(exception);
-            }
-
-            if (decryptTask == null)
-            {
-                return Task.FromException<MdeCryptoResult>(
-                    new InvalidOperationException($"{nameof(Encryptor)} returned a null task from {nameof(Encryptor.DecryptAsync)}."));
-            }
-
-            return CompleteDecryptionAsync(decryptTask, this.cancellationToken);
-        }
-
-        private static async Task<MdeCryptoResult> CompleteEncryptionAsync(
-            Task<byte[]> encryptTask,
-            TypeMarker typeMarker,
-            CancellationToken cancellationToken)
-        {
-#pragma warning disable VSTHRD003 // The task is supplied by the caller's Encryptor implementation and is always awaited asynchronously.
-            byte[] cipherText = await encryptTask.WaitAsync(cancellationToken).ConfigureAwait(false) ?? throw new InvalidOperationException(
-                $"{nameof(Encryptor)} returned null cipherText from {nameof(Encryptor.EncryptAsync)}.");
-#pragma warning restore VSTHRD003
-
-            cancellationToken.ThrowIfCancellationRequested();
-
-            byte[] cipherTextWithTypeMarker = new byte[checked(cipherText.Length + 1)];
-            cipherTextWithTypeMarker[0] = (byte)typeMarker;
-            Buffer.BlockCopy(cipherText, 0, cipherTextWithTypeMarker, 1, cipherText.Length);
-            return new MdeCryptoResult(cipherTextWithTypeMarker, cipherTextWithTypeMarker.Length);
-        }
-
-        private static async Task<MdeCryptoResult> CompleteDecryptionAsync(
-            Task<byte[]> decryptTask,
-            CancellationToken cancellationToken)
-        {
-#pragma warning disable VSTHRD003 // The task is supplied by the caller's Encryptor implementation and is always awaited asynchronously.
-            byte[] plainText = await decryptTask.WaitAsync(cancellationToken).ConfigureAwait(false) ?? throw new InvalidOperationException(
-                $"{nameof(Encryptor)} returned null plainText from {nameof(Encryptor.DecryptAsync)}.");
-#pragma warning restore VSTHRD003
-
-            cancellationToken.ThrowIfCancellationRequested();
-
+            byte[] plainText = await MdeCryptoOperations.DecryptAsync(
+                this.encryptor,
+                this.dataEncryptionKeyId,
+                this.encryptionAlgorithm,
+                cipherTextWithTypeMarker,
+                cipherTextLength,
+                this.cancellationToken).ConfigureAwait(false);
             return new MdeCryptoResult(plainText, plainText.Length);
         }
     }

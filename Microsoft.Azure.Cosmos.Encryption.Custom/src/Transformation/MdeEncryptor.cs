@@ -103,10 +103,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             byte[] cipherText = encryptionKey.EncryptData(exactPlainText)
                 ?? throw new InvalidOperationException($"{nameof(DataEncryptionKey)} returned null cipherText from {nameof(DataEncryptionKey.EncryptData)}.");
 
-            byte[] encryptedText = new byte[cipherText.Length + 1];
-            encryptedText[0] = (byte)typeMarker;
-            Buffer.BlockCopy(cipherText, 0, encryptedText, 1, cipherText.Length);
-            return encryptedText;
+            return MdeCryptoOperations.WrapCipherText(typeMarker, cipherText);
         }
 
         internal virtual (byte[] plainText, int plainTextLength) Decrypt(DataEncryptionKey encryptionKey, byte[] cipherText, int cipherTextLength, ArrayPoolManager arrayPoolManager)
@@ -149,8 +146,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             byte[] cipherText,
             int cipherTextLength)
         {
-            byte[] exactCipherText = new byte[cipherTextLength - 1];
-            Buffer.BlockCopy(cipherText, 1, exactCipherText, 0, exactCipherText.Length);
+            byte[] exactCipherText = MdeCryptoOperations.UnwrapCipherText(cipherText, cipherTextLength);
             byte[] plainText = encryptionKey.DecryptData(exactCipherText)
                 ?? throw new InvalidOperationException($"{nameof(DataEncryptionKey)} returned null plainText from {nameof(DataEncryptionKey.DecryptData)}.");
             return (plainText, plainText.Length);

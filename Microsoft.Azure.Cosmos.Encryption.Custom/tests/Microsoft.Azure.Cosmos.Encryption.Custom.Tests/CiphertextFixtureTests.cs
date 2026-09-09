@@ -5,10 +5,13 @@
 namespace Microsoft.Azure.Cosmos.Encryption.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Encryption.Custom;
+    using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
@@ -134,6 +137,68 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             Assert.IsNotNull(context, "fixture document must be recognized as encrypted");
             AssertFixtureContent(new StreamReader(decrypted).ReadToEnd());
+        }
+
+        [TestMethod]
+        public async Task Fixture_DecryptsWithNewtonsoftProcessorPublicFallback()
+        {
+            using MemoryStream encrypted = new (Convert.FromBase64String(FixtureEncryptedDocBase64));
+            (Stream decrypted, DecryptionContext context) = await EncryptionProcessor.DecryptAsync(
+                encrypted,
+                CreatePublicFixtureEncryptor(),
+                new CosmosDiagnosticsContext(),
+                requestOptions: null,
+                CancellationToken.None);
+
+            using (decrypted)
+            {
+                Assert.IsNotNull(context);
+                AssertFixtureContent(new StreamReader(decrypted).ReadToEnd());
+            }
+        }
+
+        [DataTestMethod]
+        [DynamicData(nameof(CrossReaderCases), DynamicDataSourceType.Method)]
+        public async Task RealMde_PublicAndBufferPaths_Interoperate(int writerProcessor, int readerProcessor, bool publicWriter)
+        {
+            using MemoryStream input = new (Encoding.UTF8.GetBytes(FixtureOriginalJson));
+            MdeEncryptionProcessor processor = new ();
+            using Stream encrypted = await processor.EncryptAsync(
+                input,
+                publicWriter ? CreatePublicFixtureEncryptor() : CreateFixtureEncryptor(),
+                new EncryptionOptions
+                {
+                    DataEncryptionKeyId = FixtureDekId,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                    PathsToEncrypt = new[] { "/SensStr", "/SensLong", "/SensDouble", "/SensBool", "/SensObj", "/SensArr" },
+                },
+                (JsonProcessor)writerProcessor,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+            (Stream decrypted, DecryptionContext context) = await processor.DecryptAsync(
+                encrypted,
+                publicWriter ? CreateFixtureEncryptor() : CreatePublicFixtureEncryptor(),
+                (JsonProcessor)readerProcessor,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+
+            using (decrypted)
+            {
+                Assert.IsNotNull(context);
+                AssertFixtureContent(new StreamReader(decrypted).ReadToEnd());
+            }
+        }
+
+        public static IEnumerable<object[]> CrossReaderCases()
+        {
+            foreach (bool publicWriter in new[] { true, false })
+            {
+                yield return new object[] { (int)JsonProcessor.Newtonsoft, (int)JsonProcessor.Newtonsoft, publicWriter };
+#if NET8_0_OR_GREATER
+                yield return new object[] { (int)JsonProcessor.Stream, (int)JsonProcessor.Newtonsoft, publicWriter };
+                yield return new object[] { (int)JsonProcessor.Newtonsoft, (int)JsonProcessor.Stream, publicWriter };
+#endif
+            }
         }
 
 #if NET8_0_OR_GREATER

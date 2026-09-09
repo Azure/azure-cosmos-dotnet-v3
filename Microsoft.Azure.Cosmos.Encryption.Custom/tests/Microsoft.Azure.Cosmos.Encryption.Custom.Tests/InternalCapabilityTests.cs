@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using Microsoft.Azure.Cosmos.Encryption.Custom.Tests;
     using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class InternalCapabilityTests
@@ -412,136 +413,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
-        public async Task PublicFallbackStream_CancellationDuringNonCooperatingEncrypt_StopsWaiting()
-        {
-            NonCooperatingBlockingEncryptor encryptor = new (blockEncrypt: true);
-            using Stream input = ToStream(Document);
-            using MemoryStream output = new ();
-            using CancellationTokenSource cancellation = new ();
-
-            Task operation = EncryptionProcessor.EncryptAsync(
-                input,
-                output,
-                encryptor,
-                new EncryptionOptions
-                {
-                    DataEncryptionKeyId = DekId,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
-                    PathsToEncrypt = new List<string> { "/Sensitive" },
-                },
-                JsonProcessor.Stream,
-                new CosmosDiagnosticsContext(),
-                cancellation.Token);
-
-            await encryptor.OperationStarted.WaitAsync(TimeSpan.FromSeconds(5));
-            cancellation.Cancel();
-
-            try
-            {
-                await AssertCanceledAsync(
-                    async () => await operation.WaitAsync(TimeSpan.FromSeconds(5)),
-                    cancellation.Token);
-            }
-            finally
-            {
-                encryptor.Release();
-            }
-
-            Assert.AreEqual(0, output.Length);
-        }
-
-        [TestMethod]
-        public async Task PublicFallbackStream_CancellationDuringNonCooperatingDecrypt_StopsWaiting()
-        {
-            using Stream encrypted = await EncryptAsync(
-                JsonProcessor.Stream,
-                new ArrayKeyAccessorEncryptor(),
-                CancellationToken.None);
-            NonCooperatingBlockingEncryptor encryptor = new (blockEncrypt: false);
-            using MemoryStream output = new ();
-            using CancellationTokenSource cancellation = new ();
-
-            Task operation = EncryptionProcessor.DecryptAsync(
-                encrypted,
-                output,
-                encryptor,
-                new CosmosDiagnosticsContext(),
-                RequestOptionsOverrideHelper.Create(JsonProcessor.Stream),
-                cancellation.Token);
-
-            await encryptor.OperationStarted.WaitAsync(TimeSpan.FromSeconds(5));
-            cancellation.Cancel();
-
-            try
-            {
-                await AssertCanceledAsync(
-                    async () => await operation.WaitAsync(TimeSpan.FromSeconds(5)),
-                    cancellation.Token);
-            }
-            finally
-            {
-                encryptor.Release();
-            }
-
-            Assert.AreEqual(0, output.Length);
-        }
-
-        [DataTestMethod]
-        [DataRow(true, "null task")]
-        [DataRow(false, "null cipherText")]
-        public async Task PublicFallbackStream_NullEncryptResult_ThrowsClearErrorWithoutOutput(
-            bool returnNullTask,
-            string expectedMessage)
-        {
-            using Stream input = ToStream(Document);
-            using MemoryStream output = new ();
-
-            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
-                () => EncryptionProcessor.EncryptAsync(
-                    input,
-                    output,
-                    new NullReturningEncryptor(returnNullTask),
-                    new EncryptionOptions
-                    {
-                        DataEncryptionKeyId = DekId,
-                        EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
-                        PathsToEncrypt = new List<string> { "/Sensitive" },
-                    },
-                    JsonProcessor.Stream,
-                    new CosmosDiagnosticsContext(),
-                    CancellationToken.None));
-
-            StringAssert.Contains(exception.Message, expectedMessage);
-            Assert.AreEqual(0, output.Length);
-        }
-
-        [DataTestMethod]
-        [DataRow(true, "null task")]
-        [DataRow(false, "null plainText")]
-        public async Task PublicFallbackStream_NullDecryptResult_ThrowsClearErrorWithoutOutput(
-            bool returnNullTask,
-            string expectedMessage)
-        {
-            using Stream encrypted = await EncryptAsync(
-                JsonProcessor.Stream,
-                new ArrayKeyAccessorEncryptor(),
-                CancellationToken.None);
-            using MemoryStream output = new ();
-
-            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
-                () => EncryptionProcessor.DecryptAsync(
-                    encrypted,
-                    output,
-                    new NullReturningEncryptor(returnNullTask),
-                    new CosmosDiagnosticsContext(),
-                    RequestOptionsOverrideHelper.Create(JsonProcessor.Stream),
-                    CancellationToken.None));
-
-            StringAssert.Contains(exception.Message, expectedMessage);
-            Assert.AreEqual(0, output.Length);
-        }
-
-        [TestMethod]
         public async Task EncryptorWithoutAccessor_StreamDecryptableItem_UsesPublicArrays()
         {
             PublicArrayEncryptor encryptor = new ();
@@ -578,6 +449,210 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.AreEqual(1, encryptor.DecryptCalls);
         }
 #endif
+
+        [DataTestMethod]
+        [DataRow("{\"id\":\"1\",\"Plain\":5}")]
+        [DataRow("{\"id\":\"1\",\"Sensitive\":null,\"Plain\":5}")]
+        public async Task PublicFallbackNewtonsoft_PreCanceledEncrypt_DoesNotMutateDocument(string json)
+        {
+            JObject document = JObject.Parse(json);
+            JObject original = (JObject)document.DeepClone();
+            PublicArrayEncryptor encryptor = new (ignoreCancellation: true);
+            using CancellationTokenSource cancellation = new ();
+            cancellation.Cancel();
+
+            await AssertCanceledAsync(
+                () => new MdeJObjectEncryptionProcessor().EncryptAsync(
+                    document,
+                    encryptor,
+                    CreateEncryptionOptions(),
+                    cancellation.Token),
+                cancellation.Token);
+
+            Assert.IsTrue(JToken.DeepEquals(original, document));
+            Assert.AreEqual(0, encryptor.EncryptCalls);
+        }
+
+        [DataTestMethod]
+        [DataRow("{\"id\":\"1\"}", true)]
+        [DataRow("{\"id\":\"1\"}", false)]
+        [DataRow("{\"id\":\"1\",\"Sensitive\":null}", false)]
+        public async Task PublicFallbackNewtonsoft_PreCanceledDecrypt_DoesNotMutateDocument(string json, bool emptyPaths)
+        {
+            EncryptionProperties properties = new (
+                EncryptionFormatVersion.Mde,
+                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                DekId,
+                encryptedData: null,
+                emptyPaths ? Array.Empty<string>() : new[] { "/Sensitive" });
+            JObject document = JObject.Parse(json);
+            document.Add(Constants.EncryptedInfo, JObject.FromObject(properties));
+            JObject original = (JObject)document.DeepClone();
+            PublicArrayEncryptor encryptor = new (ignoreCancellation: true);
+            using CancellationTokenSource cancellation = new ();
+            cancellation.Cancel();
+
+            await AssertCanceledAsync(
+                () => new MdeJObjectEncryptionProcessor().DecryptObjectAsync(
+                    document,
+                    encryptor,
+                    properties,
+                    new CosmosDiagnosticsContext(),
+                    cancellation.Token),
+                cancellation.Token);
+
+            Assert.IsTrue(JToken.DeepEquals(original, document));
+            Assert.AreEqual(0, encryptor.DecryptCalls);
+        }
+
+        [DataTestMethod]
+        [DynamicData(nameof(PublicFallbackOperations), DynamicDataSourceType.Method)]
+        public async Task PublicFallback_NullTaskAndResult_ThrowClearErrors(int processor, bool decrypt)
+        {
+            foreach (bool returnNullTask in new[] { true, false })
+            {
+                using MemoryStream output = new ();
+                InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                    () => RunPublicOperationAsync(
+                        (JsonProcessor)processor,
+                        decrypt,
+                        new NullReturningEncryptor(returnNullTask),
+                        output,
+                        CancellationToken.None));
+
+                StringAssert.Contains(exception.Message, returnNullTask ? "null task" : decrypt ? "null plainText" : "null cipherText");
+                Assert.AreEqual(0, output.Length);
+            }
+        }
+
+        [DataTestMethod]
+        [DynamicData(nameof(PublicFallbackOperations), DynamicDataSourceType.Method)]
+        public async Task PublicFallback_CancellationDuringNonCooperatingOperation_StopsWaiting(int processor, bool decrypt)
+        {
+            NonCooperatingBlockingEncryptor encryptor = new (blockEncrypt: !decrypt);
+            using MemoryStream output = new ();
+            using CancellationTokenSource cancellation = new ();
+            Task operation = RunPublicOperationAsync((JsonProcessor)processor, decrypt, encryptor, output, cancellation.Token);
+
+            try
+            {
+                await encryptor.OperationStarted.WaitAsync(TimeSpan.FromSeconds(5));
+                cancellation.Cancel();
+                await AssertCanceledAsync(
+                    async () => await operation.WaitAsync(TimeSpan.FromSeconds(5)),
+                    cancellation.Token);
+                byte[] plainText = Encoding.UTF8.GetBytes(SensitiveValue);
+                CollectionAssert.AreEqual(
+                    decrypt ? TestCommon.EncryptData(plainText) : plainText,
+                    encryptor.RetainedInput);
+            }
+            finally
+            {
+                encryptor.Release();
+            }
+
+            Assert.AreEqual(0, output.Length);
+        }
+
+        [DataTestMethod]
+        [DynamicData(nameof(PublicFallbackOperations), DynamicDataSourceType.Method)]
+        public async Task PublicFallback_CanceledSuccessfulResult_DoesNotPublishOutput(int processor, bool decrypt)
+        {
+            using CancellationTokenSource cancellation = new ();
+            CallbackEncryptor encryptor = new ((bytes, token) =>
+            {
+                Assert.AreEqual(cancellation.Token, token);
+                cancellation.Cancel();
+                return Task.FromResult(decrypt ? TestCommon.DecryptData(bytes) : TestCommon.EncryptData(bytes));
+            });
+            using MemoryStream output = new ();
+
+            await AssertCanceledAsync(
+                () => RunPublicOperationAsync((JsonProcessor)processor, decrypt, encryptor, output, cancellation.Token),
+                cancellation.Token);
+
+            Assert.AreEqual(0, output.Length);
+        }
+
+        [DataTestMethod]
+        [DynamicData(nameof(PublicFallbackOperations), DynamicDataSourceType.Method)]
+        public async Task PublicFallback_PreservesEncryptorFailuresAndCancellation(int processor, bool decrypt)
+        {
+            using CancellationTokenSource otherCancellation = new ();
+            otherCancellation.Cancel();
+            foreach (bool synchronous in new[] { true, false })
+            {
+                foreach (bool canceled in new[] { true, false })
+                {
+                    Exception expected = canceled
+                        ? new OperationCanceledException(otherCancellation.Token)
+                        : new InvalidOperationException("custom crypto failure");
+                    CallbackEncryptor encryptor = new ((bytes, token) =>
+                    {
+                        if (synchronous)
+                        {
+                            throw expected;
+                        }
+
+                        return canceled
+                            ? Task.FromCanceled<byte[]>(otherCancellation.Token)
+                            : Task.FromException<byte[]>(expected);
+                    });
+                    using MemoryStream output = new ();
+
+                    try
+                    {
+                        await RunPublicOperationAsync((JsonProcessor)processor, decrypt, encryptor, output, CancellationToken.None);
+                        Assert.Fail("Expected the custom encryptor failure to propagate.");
+                    }
+                    catch (OperationCanceledException exception) when (canceled)
+                    {
+                        Assert.AreEqual(otherCancellation.Token, exception.CancellationToken);
+                    }
+                    catch (InvalidOperationException exception) when (!canceled)
+                    {
+                        Assert.AreSame(expected, exception);
+                    }
+
+                    Assert.AreEqual(0, output.Length);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void ArrayFallback_FramingExcludesUnusedBufferCapacity()
+        {
+            byte[] plainText = Encoding.UTF8.GetBytes(SensitiveValue);
+            byte[] paddedPlainText = new byte[plainText.Length + 17];
+            Array.Fill(paddedPlainText, (byte)0xCC);
+            Buffer.BlockCopy(plainText, 0, paddedPlainText, 0, plainText.Length);
+            ArrayOnlyKey key = new ();
+            MdeEncryptor encryptor = new ();
+            using ArrayPoolManager pool = new ();
+
+            (byte[] encrypted, int length) = encryptor.Encrypt(key, TypeMarker.String, paddedPlainText, plainText.Length, pool);
+            byte[] expected = new byte[plainText.Length + 1];
+            expected[0] = (byte)TypeMarker.String;
+            Buffer.BlockCopy(TestCommon.EncryptData(plainText), 0, expected, 1, plainText.Length);
+            CollectionAssert.AreEqual(expected, encrypted);
+            Assert.AreEqual(expected.Length, length);
+
+            byte[] paddedCipherText = new byte[length + 17];
+            Array.Fill(paddedCipherText, (byte)0xCC);
+            Buffer.BlockCopy(encrypted, 0, paddedCipherText, 0, length);
+            (byte[] decrypted, int decryptedLength) = encryptor.Decrypt(key, paddedCipherText, length, pool);
+            CollectionAssert.AreEqual(plainText, decrypted);
+            Assert.AreEqual(plainText.Length, decryptedLength);
+        }
+
+        public static IEnumerable<object[]> PublicFallbackOperations()
+        {
+            foreach (object[] processor in JsonProcessors())
+            {
+                yield return new object[] { processor[0], false };
+                yield return new object[] { processor[0], true };
+            }
+        }
 
         public static IEnumerable<object[]> JsonProcessors()
         {
@@ -689,6 +764,41 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             return new MemoryStream(Encoding.UTF8.GetBytes(json));
         }
 
+        private static EncryptionOptions CreateEncryptionOptions()
+        {
+            return new EncryptionOptions
+            {
+                DataEncryptionKeyId = DekId,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                PathsToEncrypt = new[] { "/Sensitive" },
+            };
+        }
+
+        private static async Task RunPublicOperationAsync(
+            JsonProcessor jsonProcessor,
+            bool decrypt,
+            Encryptor encryptor,
+            Stream output,
+            CancellationToken cancellationToken)
+        {
+            using Stream input = decrypt
+                ? await EncryptAsync(jsonProcessor, new ArrayKeyAccessorEncryptor(), CancellationToken.None)
+                : ToStream(Document);
+            MdeEncryptionProcessor processor = new ();
+            if (decrypt)
+            {
+                RequestOptions requestOptions = null;
+#if NET8_0_OR_GREATER
+                requestOptions = RequestOptionsOverrideHelper.Create(jsonProcessor);
+#endif
+                await processor.DecryptAsync(input, output, encryptor, new CosmosDiagnosticsContext(), requestOptions, cancellationToken);
+            }
+            else
+            {
+                await processor.EncryptAsync(input, output, encryptor, CreateEncryptionOptions(), jsonProcessor, new CosmosDiagnosticsContext(), cancellationToken);
+            }
+        }
+
         private static async Task<string> ReadToEndAsync(Stream stream)
         {
             stream.Position = 0;
@@ -707,6 +817,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             return Encoding.UTF8.GetBytes(await ReadToEndAsync(encrypted));
         }
 
+#endif
+
         private static async Task AssertCanceledAsync(
             Func<Task> operation,
             CancellationToken expectedCancellationToken)
@@ -722,6 +834,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
         }
 
+#if NET8_0_OR_GREATER
         private static async Task EncryptToOutputAsync(
             string document,
             Stream output,
@@ -865,7 +978,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
         }
 
-#if NET8_0_OR_GREATER
+        private sealed class CallbackEncryptor : PublicArrayEncryptor
+        {
+            private readonly Func<byte[], CancellationToken, Task<byte[]>> operation;
+
+            public CallbackEncryptor(Func<byte[], CancellationToken, Task<byte[]>> operation)
+            {
+                this.operation = operation;
+            }
+
+            public override Task<byte[]> EncryptAsync(byte[] plainText, string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
+            {
+                return this.operation(plainText, cancellationToken);
+            }
+
+            public override Task<byte[]> DecryptAsync(byte[] cipherText, string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
+            {
+                return this.operation(cipherText, cancellationToken);
+            }
+        }
+
         private sealed class NullReturningEncryptor : Encryptor
         {
             private readonly bool returnNullTask;
@@ -921,6 +1053,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             public Task OperationStarted => this.operationStarted.Task;
 
+            public byte[] RetainedInput { get; private set; }
+
             public void Release()
             {
                 this.release.TrySetResult(true);
@@ -942,6 +1076,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             {
                 if (this.blockEncrypt)
                 {
+                    this.RetainedInput = plainText;
                     this.operationStarted.TrySetResult(true);
                     await this.release.Task.ConfigureAwait(false);
                 }
@@ -957,6 +1092,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             {
                 if (!this.blockEncrypt)
                 {
+                    this.RetainedInput = cipherText;
                     this.operationStarted.TrySetResult(true);
                     await this.release.Task.ConfigureAwait(false);
                 }
@@ -965,6 +1101,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
         }
 
+#if NET8_0_OR_GREATER
         private sealed class CancellationIgnoringMemoryStream : MemoryStream
         {
             public CancellationIgnoringMemoryStream(byte[] buffer)
