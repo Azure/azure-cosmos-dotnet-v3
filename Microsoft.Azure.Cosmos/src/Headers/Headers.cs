@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso cref="RequestMessage"/>
     public class Headers : IEnumerable
     {
-        internal static readonly string SDKSUPPORTEDCAPABILITIES = SDKSupportedCapabilitiesHelpers.GetSDKSupportedCapabilities().ToString(
+        internal static readonly string SDKSUPPORTEDCAPABILITIES = Microsoft.Azure.Cosmos.SDKSupportedCapabilitiesHelpers.GetSDKSupportedCapabilities().ToString(
             CultureInfo.InvariantCulture);
 
         internal virtual SubStatusCodes SubStatusCode

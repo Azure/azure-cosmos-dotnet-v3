@@ -46,6 +46,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                         throw new LeaseLostException(lease);
                     }
                     serverLease.ContinuationToken = continuationToken;
+
+                    // Propagate start time to the persisted lease so subsequent processors
+                    // can send If-Modified-Since alongside the continuation token.
+                    serverLease.StartTime = lease.StartTime;
+
                     return serverLease;
                 }).ConfigureAwait(false);
         }

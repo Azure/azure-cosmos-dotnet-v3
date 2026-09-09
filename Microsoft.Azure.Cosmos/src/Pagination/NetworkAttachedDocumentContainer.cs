@@ -371,7 +371,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 double requestCharge = responseMessage.Headers.RequestCharge;
                 string activityId = responseMessage.Headers.ActivityId;
                 int itemCount = int.Parse(responseMessage.Headers.ItemCount);
-                ChangeFeedState state = ChangeFeedState.Continuation(CosmosString.Create(responseMessage.Headers.ETag));
+                ChangeFeedState state = NetworkAttachedDocumentContainer.CreateChangeFeedStateFromResponse(
+                    feedRangeState.State,
+                    responseMessage.Headers.ETag);
                 Dictionary<string, string> additionalHeaders = GetAdditionalHeaders(
                     responseMessage.Headers.CosmosMessageHeaders,
                     ChangeFeedPage.BannedHeaders);
@@ -458,6 +460,22 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 message.Headers.IfNoneMatch = (changeFeedStateContinuation.ContinuationToken as CosmosString).Value;
             }
 
+            public void Visit(ChangeFeedStateContinuationAndStartTime changeFeedStateContinuationAndStartTime, RequestMessage message)
+            {
+                // When a merge happens, the child partition will contain documents ordered by LSN but the _ts/creation time
+                // of the documents may not be sequential. So when reading the change feed by LSN, it is possible to encounter
+                // documents with lower _ts. In order to guarantee we always get the documents after the customer's point start
+                // time, we need to always pass the start time in the header alongside the continuation token.
+                if (changeFeedStateContinuationAndStartTime.StartTime != ChangeFeedStateRequestMessagePopulator.StartFromBeginningTime)
+                {
+                    message.Headers.Add(
+                        HttpConstants.HttpHeaders.IfModifiedSince,
+                        changeFeedStateContinuationAndStartTime.StartTime.ToString("r", CultureInfo.InvariantCulture));
+                }
+
+                message.Headers.IfNoneMatch = (changeFeedStateContinuationAndStartTime.ContinuationToken as CosmosString).Value;
+            }
+
             public void Visit(ChangeFeedStateNow changeFeedStateNow, RequestMessage message)
             {
                 message.Headers.IfNoneMatch = ChangeFeedStateRequestMessagePopulator.IfNoneMatchAllHeaderValue;
@@ -476,6 +494,28 @@ namespace Microsoft.Azure.Cosmos.Pagination
             }
 
             return additionalHeaders;
+        }
+
+        /// <summary>
+        /// Creates the appropriate <see cref="ChangeFeedState"/> after receiving a response.
+        /// When the previous state was time-based, preserves the start time alongside the continuation token
+        /// to handle partition merge scenarios where documents may be out of time order.
+        /// </summary>
+        private static ChangeFeedState CreateChangeFeedStateFromResponse(ChangeFeedState previousState, string etag)
+        {
+            CosmosElement continuationToken = CosmosString.Create(etag);
+
+            if (previousState is ChangeFeedStateTime changeFeedStateTime)
+            {
+                return ChangeFeedState.ContinuationAndStartTime(continuationToken, changeFeedStateTime.StartTime);
+            }
+
+            if (previousState is ChangeFeedStateContinuationAndStartTime existingComposite)
+            {
+                return ChangeFeedState.ContinuationAndStartTime(continuationToken, existingComposite.StartTime);
+            }
+
+            return ChangeFeedState.Continuation(continuationToken);
         }
     }
 }

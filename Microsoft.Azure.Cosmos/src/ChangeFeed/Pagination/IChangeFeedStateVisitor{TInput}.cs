@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
         void Visit(ChangeFeedStateBeginning changeFeedStateBeginning, TInput input);
         void Visit(ChangeFeedStateTime changeFeedStateTime, TInput input);
         void Visit(ChangeFeedStateContinuation changeFeedStateContinuation, TInput input);
+        void Visit(ChangeFeedStateContinuationAndStartTime changeFeedStateContinuationAndStartTime, TInput input);
         void Visit(ChangeFeedStateNow changeFeedStateNow, TInput input);
     }
 }

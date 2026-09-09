@@ -106,13 +106,26 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                     }
                     serverLease.Owner = this.options.HostName;
                     serverLease.Properties = lease.Properties;
+
+                    // Persist user-explicit start time on the lease during acquisition
+                    // to ensure it survives restarts even for partitions that never checkpoint.
+                    if (this.options.IsStartTimeUserExplicit)
+                    {
+                        serverLease.StartTime = this.options.StartTime;
+                    }
+
                     return serverLease;
                 }).ConfigureAwait(false);
         }
 
         public override Task<DocumentServiceLease> CreateLeaseIfNotExistAsync(
             PartitionKeyRange partitionKeyRange, 
-            string continuationToken)
+            string continuationToken) => this.CreateLeaseIfNotExistAsync(partitionKeyRange, continuationToken, startTime: null);
+
+        public override Task<DocumentServiceLease> CreateLeaseIfNotExistAsync(
+            PartitionKeyRange partitionKeyRange,
+            string continuationToken,
+            DateTime? startTime)
         {
             if (partitionKeyRange == null)
             {
@@ -127,7 +140,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 LeaseToken = leaseToken,
                 ContinuationToken = continuationToken,
                 FeedRange = new FeedRangeEpk(partitionKeyRange.ToRange()),
-                Mode = this.GetChangeFeedMode()
+                Mode = this.GetChangeFeedMode(),
+                StartTime = startTime,
             };
 
             this.requestOptionsFactory.AddPartitionKeyIfNeeded(
@@ -139,7 +153,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
         public override Task<DocumentServiceLease> CreateLeaseIfNotExistAsync(
             FeedRangeEpk feedRange,
-            string continuationToken)
+            string continuationToken) => this.CreateLeaseIfNotExistAsync(feedRange, continuationToken, startTime: null);
+
+        public override Task<DocumentServiceLease> CreateLeaseIfNotExistAsync(
+            FeedRangeEpk feedRange,
+            string continuationToken,
+            DateTime? startTime)
         {
             if (feedRange == null)
             {
@@ -154,7 +173,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 LeaseToken = leaseToken,
                 ContinuationToken = continuationToken,
                 FeedRange = feedRange,
-                Mode = this.GetChangeFeedMode()
+                Mode = this.GetChangeFeedMode(),
+                StartTime = startTime,
             };
 
             this.requestOptionsFactory.AddPartitionKeyIfNeeded(
