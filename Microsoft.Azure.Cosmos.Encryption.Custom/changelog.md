@@ -5,8 +5,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### <a name="1.1.0-preview01"/> [1.1.0-preview01](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption.Custom/1.1.0-preview01) - Unreleased
 
-Changes since [1.0.0-preview07](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption.Custom/1.0.0-preview07).
-
 #### Added
 - [#4766](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4766) Adds a `net8.0` target alongside the existing `netstandard2.0`. The `net8.0` build is what enables the opt-in System.Text.Json stream processor and its `IAsyncDisposable` surface; `netstandard2.0` consumers are unaffected.
 - [#5423](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5423) Adds `CosmosDataEncryptionKeyProvider.Initialize(Container)`, a synchronous counterpart to `InitializeAsync(Container)` for binding the key container.
