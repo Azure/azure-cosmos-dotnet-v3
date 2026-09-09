@@ -46,10 +46,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         /// <summary>
-        /// Reproduces the customer-reported NullReferenceException: TryGetOverlappingRangesAsync
-        /// returns null when the routing map cache lookup fails (e.g. a transient 404 while
-        /// resolving the collection's routing map), and the split-handling code used to call
-        /// <c>.Count</c> on that null result without checking for it first.
+        /// Repros the customer NRE: TryGetOverlappingRangesAsync returns null and split handling
+        /// used to dereference it.
         /// </summary>
         [TestMethod]
         public async Task HandlePartitionGoneAsync_OverlappingRangesLookupReturnsNull_ThrowsInvalidOperationExceptionNotNullReferenceException()
@@ -91,9 +89,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         /// <summary>
-        /// Reproduces the customer-reported NullReferenceException using the exact lease JSON shape
-        /// from the field report (issue tracked in the changefeed branch), including a non-null
-        /// FeedRange populated by the in-memory lease store's own serializer.
+        /// Repros the customer NRE using the exact in-memory lease JSON shape (non-null FeedRange).
         /// </summary>
         [TestMethod]
         public async Task HandlePartitionGoneAsync_CustomerReportedLeaseJson_DoesNotThrowNullReferenceException()
@@ -124,9 +120,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             IReadOnlyList<DocumentServiceLease> restoredLeases = await storeManager.LeaseContainer.GetAllLeasesAsync();
             DocumentServiceLease restoredLease = restoredLeases.Single();
 
-            // Confirm the deserialized state actually matches what the customer reported before
-            // exercising HandlePartitionGoneAsync, so a failure here points at deserialization
-            // instead of the split-handling logic.
+            // Sanity-check deserialization before exercising the split path.
             Assert.IsNotNull(restoredLease.FeedRange);
             Assert.AreEqual("\"32\"", restoredLease.ContinuationToken);
 
@@ -437,11 +431,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         /// <summary>
-        /// Verifies a PKRange-based lease with a null FeedRange is resolved via its PartitionKeyRangeId
-        /// instead of throwing, and that the split completes normally.
+        /// PKRange lease with null FeedRange: children are resolved via Parents-based lookup
+        /// on the full range (old id is gone from the routing map after the split).
         /// </summary>
         [TestMethod]
-        public async Task HandlePartitionGoneAsync_PKRangeBasedLease_WithNullFeedRange_ResolvesRangeAndSplitsSuccessfully()
+        public async Task HandlePartitionGoneAsync_PKRangeBasedLease_WithNullFeedRange_ResolvesViaParentsLookup()
         {
             DocumentServiceLeaseCore lease = new DocumentServiceLeaseCore()
             {
@@ -451,75 +445,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 FeedRange = null,
             };
 
-            Documents.PartitionKeyRange currentRange = new Documents.PartitionKeyRange() { Id = "0", MinInclusive = "", MaxExclusive = "FF" };
-            List<Documents.PartitionKeyRange> childRanges = new List<Documents.PartitionKeyRange>()
-            {
-                new Documents.PartitionKeyRange(){ Id = "1", MinInclusive = "", MaxExclusive = "BB", Parents = new Collection<string> { "0" } },
-                new Documents.PartitionKeyRange(){ Id = "2", MinInclusive = "BB", MaxExclusive = "FF", Parents = new Collection<string> { "0" } },
-            };
-
-            Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
-                Mock.Of<ICosmosAuthorizationTokenProvider>(),
-                Mock.Of<Documents.IStoreModel>(),
-                new Mock<Common.CollectionCache>(false).Object,
-                this.endpointManager,
-                false,
-                false,
-                null);
-
-            // Note: TryGetPartitionKeyRangeByIdAsync (by-id lookup) is intentionally NOT mocked here -
-            // HandlePartitionGoneAsync no longer calls it for a null-FeedRange PKRange-based lease; it
-            // resolves the replacement range(s) directly via a Parents-based lookup on the full range.
-            pkRangeCache.Setup(p => p.TryGetOverlappingRangesAsync(
-                It.IsAny<string>(),
-                It.Is<Documents.Routing.Range<string>>(r => r.Min == FeedRangeEpk.FullRange.Range.Min && r.Max == FeedRangeEpk.FullRange.Range.Max),
-                It.IsAny<ITrace>(),
-                It.IsAny<bool>())).ReturnsAsync(childRanges);
-
-            Mock<DocumentServiceLeaseManager> leaseManager = new Mock<DocumentServiceLeaseManager>();
-            leaseManager.Setup(l => l.CreateLeaseIfNotExistAsync(It.IsAny<Documents.PartitionKeyRange>(), It.IsAny<string>()))
-                .ReturnsAsync((Documents.PartitionKeyRange range, string continuation) => new DocumentServiceLeaseCore { LeaseToken = range.Id, ContinuationToken = continuation });
-
-            PartitionSynchronizerCore partitionSynchronizerCore = new PartitionSynchronizerCore(
-                Mock.Of<ContainerInternal>(),
-                Mock.Of<DocumentServiceLeaseContainer>(),
-                leaseManager.Object,
-                1,
-                pkRangeCache.Object,
-                Guid.NewGuid().ToString());
-
-            (IEnumerable<DocumentServiceLease> newLeases, bool removeCurrentLease) =
-                await partitionSynchronizerCore.HandlePartitionGoneAsync(lease);
-
-            Assert.IsTrue(removeCurrentLease, "The parent lease should be marked for removal once child leases are created.");
-            Assert.AreEqual(2, newLeases.Count(), "Both child ranges should have produced a new lease.");
-
-            leaseManager.Verify(l => l.CreateLeaseIfNotExistAsync(
-               It.IsAny<Documents.PartitionKeyRange>(),
-               It.IsAny<string>()), Times.Exactly(2));
-        }
-
-        /// <summary>
-        /// Verifies a PKRange-based lease with a null FeedRange whose partition has ALREADY split is
-        /// resolved via a Parents-based reverse lookup (find current ranges whose Parents list this
-        /// lease's old id) instead of ever asking whether the old id itself still resolves. This method
-        /// only ever runs after the service has confirmed a split/merge, so the old id is guaranteed gone;
-        /// before this fix, the code asked "does this id still exist?" (guaranteed "no", every retry,
-        /// forever) with no further fallback, causing this lease to throw InvalidOperationException
-        /// permanently instead of self-healing.
-        /// </summary>
-        [TestMethod]
-        public async Task HandlePartitionGoneAsync_PKRangeBasedLease_WithNullFeedRange_AlreadySplitParentId_ResolvesViaParentsLookup()
-        {
-            DocumentServiceLeaseCore lease = new DocumentServiceLeaseCore()
-            {
-                LeaseToken = "0",
-                ContinuationToken = Guid.NewGuid().ToString(),
-                Owner = Guid.NewGuid().ToString(),
-                FeedRange = null,
-            };
-
-            // Children of the already-split parent "0". Parents lists the old, now-nonexistent id.
+            // Children whose Parents list the gone id "0".
             List<Documents.PartitionKeyRange> allCurrentRanges = new List<Documents.PartitionKeyRange>()
             {
                 new Documents.PartitionKeyRange(){ Id = "1", MinInclusive = "", MaxExclusive = "BB", Parents = new Collection<string> { "0" } },
@@ -535,9 +461,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 false,
                 null);
 
-            // Full-range lookup returns the current routing map, which includes the split children.
-            // Note: TryGetPartitionKeyRangeByIdAsync (by-id lookup) is intentionally NOT mocked/used here -
-            // the fix no longer calls it at all for this code path, since the old id is guaranteed gone.
+            // Fix path: no by-id lookup; children are found via a full-range Parents lookup.
             pkRangeCache.Setup(p => p.TryGetOverlappingRangesAsync(
                 It.IsAny<string>(),
                 It.Is<Documents.Routing.Range<string>>(r => r.Min == FeedRangeEpk.FullRange.Range.Min && r.Max == FeedRangeEpk.FullRange.Range.Max),
@@ -568,13 +492,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         /// <summary>
-        /// Verifies a PKRange-based lease with a null FeedRange whose Parents-based lookup resolves to
-        /// exactly ONE current range (a merge, not a split) does not throw a NullReferenceException/
-        /// InvalidCastException by dereferencing the lease's own (null) FeedRange. The merge branch must
-        /// fall back to creating the new lease directly from the already-resolved current range instead.
+        /// PKRange lease with null FeedRange resolving to a merge (one child): must throw instead
+        /// of collapsing parents' continuation tokens onto a single lease.
         /// </summary>
         [TestMethod]
-        public async Task HandlePartitionGoneAsync_PKRangeBasedLease_WithNullFeedRange_ResolvesToSingleMergedRange_DoesNotThrow()
+        public async Task HandlePartitionGoneAsync_PKRangeBasedLease_WithNullFeedRange_ResolvesToSingleMergedRange_Throws()
         {
             DocumentServiceLeaseCore lease = new DocumentServiceLeaseCore()
             {
@@ -584,7 +506,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 FeedRange = null,
             };
 
-            // Exactly one current range replaces the gone parent "0" - a merge scenario.
+            // Merge: exactly one current range replaces the gone parent "0".
             List<Documents.PartitionKeyRange> allCurrentRanges = new List<Documents.PartitionKeyRange>()
             {
                 new Documents.PartitionKeyRange(){ Id = "1", MinInclusive = "", MaxExclusive = "FF", Parents = new Collection<string> { "0", "0-sibling" } },
@@ -617,20 +539,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 pkRangeCache.Object,
                 Guid.NewGuid().ToString());
 
-            (IEnumerable<DocumentServiceLease> newLeases, bool removeCurrentLease) =
-                await partitionSynchronizerCore.HandlePartitionGoneAsync(lease);
+            InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => partitionSynchronizerCore.HandlePartitionGoneAsync(lease));
 
-            Assert.IsTrue(removeCurrentLease, "The parent lease should be marked for removal once the merged lease is created.");
-            Assert.AreEqual(1, newLeases.Count(), "The single merged range should have produced exactly one new lease.");
+            StringAssert.Contains(ex.Message, "merge");
+            StringAssert.Contains(ex.Message, "0");
 
+            // Parent lease untouched.
             leaseManager.Verify(l => l.CreateLeaseIfNotExistAsync(
                It.IsAny<Documents.PartitionKeyRange>(),
-               It.IsAny<string>()), Times.Once);
+               It.IsAny<string>()), Times.Never);
         }
 
         /// <summary>
-        /// Verifies a lease rehydrated from saved in-memory lease state (which produces a null
-        /// FeedRange for a PKRange-based lease) can still be split successfully end-to-end.
+        /// End-to-end: rehydrated in-memory PKRange lease (null FeedRange) can still be split.
         /// </summary>
         [TestMethod]
         public async Task HandlePartitionGoneAsync_LeaseRehydratedFromSavedInMemoryState_SplitsSuccessfully()
@@ -667,9 +589,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 false,
                 null);
 
-            // Note: TryGetPartitionKeyRangeByIdAsync (by-id lookup) is intentionally NOT mocked here -
-            // HandlePartitionGoneAsync no longer calls it for a null-FeedRange PKRange-based lease; it
-            // resolves the replacement range(s) directly via a Parents-based lookup on the full range.
             pkRangeCache.Setup(p => p.TryGetOverlappingRangesAsync(
                 It.IsAny<string>(),
                 It.Is<Documents.Routing.Range<string>>(r => r.Min == FeedRangeEpk.FullRange.Range.Min && r.Max == FeedRangeEpk.FullRange.Range.Max),
@@ -741,13 +660,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         /// <summary>
-        /// Verifies CreateMissingLeasesAsync does not throw a NullReferenceException when
-        /// TryGetOverlappingRangesAsync returns null (e.g. a transient 404 resolving the routing map,
-        /// or a stale cache). Mirrors the Java SDK's PartitionSynchronizerImpl#enumPartitionKeyRanges,
-        /// which normalizes the same failure to an empty sequence instead of propagating null.
+        /// Null routing map during lease store init must throw so Bootstrapper doesn't mark
+        /// initialization complete with zero leases.
         /// </summary>
         [TestMethod]
-        public async Task CreateMissingLeases_NullOverlappingRanges_DoesNotThrow()
+        public async Task CreateMissingLeases_NullOverlappingRanges_ThrowsInvalidOperationException()
         {
             Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
                 Mock.Of<ICosmosAuthorizationTokenProvider>(),
@@ -779,9 +696,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 pkRangeCache.Object,
                 Guid.NewGuid().ToString());
 
-            // Should complete without throwing, and simply create no leases this cycle.
-            await partitionSynchronizerCore.CreateMissingLeasesAsync();
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => partitionSynchronizerCore.CreateMissingLeasesAsync());
 
+            // No leases must have been created when initialization is aborted this cycle - the retry
+            // will happen on the next InitializeAsync attempt.
             leaseManager.Verify(m => m.CreateLeaseIfNotExistAsync(It.IsAny<PartitionKeyRange>(), It.IsAny<string>()), Times.Never);
         }
 
@@ -912,9 +831,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         /// <summary>
-        /// Offline split: lease store has only stale parent lease "0"; PKRangeCache reports children
-        /// "1"/"2" with Parents=["0"]. CreateMissingLeasesAsync must skip "1"/"2" so the parent's own
-        /// split handling creates them with its real continuation token.
+        /// Offline split: stale parent "0" in lease store; children "1"/"2" advertise Parents=["0"].
+        /// CreateMissingLeasesAsync must skip children so the parent's split path creates them with
+        /// its real continuation token.
         /// </summary>
         [TestMethod]
         public async Task CreateMissingLeases_StaleParentLeaseFromOfflineSplit_DoesNotCreateChildLeases()

@@ -49,17 +49,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
         public override async Task CreateMissingLeasesAsync()
         {
             IReadOnlyList<PartitionKeyRange> ranges = await this.partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                this.containerRid, 
-                FeedRangeEpk.FullRange.Range, 
-                NoOpTrace.Singleton, 
+                this.containerRid,
+                FeedRangeEpk.FullRange.Range,
+                NoOpTrace.Singleton,
                 forceRefresh: false);
-            // A null result means the routing map could not be resolved (e.g. a transient 404 from the
-            // service, or a stale cache entry). Normalize it to empty here, mirroring the Java SDK's
-            // PartitionSynchronizerImpl#enumPartitionKeyRanges, so a caller never dereferences a null list.
-            // CreateLeasesAsync is a no-op for an empty list, so this is a safe, retryable no-op for this
-            // call; the next scheduled bootstrap/refresh cycle will pick up any missing leases once the
-            // routing map becomes resolvable again.
-            ranges ??= Array.Empty<PartitionKeyRange>();
+
+            // Don't silently mark the lease store initialized with zero leases; retry on next start.
+            if (ranges == null)
+            {
+                DefaultTrace.TraceError("Source collection: '{0}', routing map could not be resolved during lease store initialization", this.container.LinkUri);
+                throw new InvalidOperationException($"Routing map could not be resolved for container '{this.container.LinkUri}' during change feed processor lease store initialization; the initialization will be retried on the next start.");
+            }
+
             DefaultTrace.TraceInformation("Source collection: '{0}', {1} partition(s)", this.container.LinkUri, ranges.Count);
             await this.CreateLeasesAsync(ranges).ConfigureAwait(false);
         }
@@ -85,19 +86,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
             {
                 if (lease is DocumentServiceLeaseCoreEpk)
                 {
-                    // EPK-based leases have no PartitionKeyRangeId to resolve the range from; the lease token
-                    // itself only encodes the range, which is exactly what's missing.
+                    // EPK leases have no PartitionKeyRangeId to fall back on.
                     DefaultTrace.TraceError("Lease {0} is gone but has no FeedRange and is not a PKRange-based lease; the range cannot be resolved", leaseToken);
                     throw new InvalidOperationException($"Lease {leaseToken} is gone but has no FeedRange and its range cannot be resolved.");
                 }
 
-                // This method only ever runs after the service has already confirmed the partition split or
-                // merged (see PartitionControllerCore.ProcessPartitionAsync's FeedRangeGoneException handler),
-                // so the lease's old PartitionKeyRangeId is guaranteed to no longer exist in the routing map -
-                // asking "does this id still exist?" would always answer "no". Instead, find its replacement(s)
-                // directly: search the full routing map for current ranges whose Parents list this lease's old
-                // id - i.e. its actual split/merge children - the same technique CreateLeasesAsync already uses
-                // in the opposite direction.
+                // FeedRange can be null on rehydrated in-memory leases. The old PKRangeId is gone
+                // from the routing map, so find its children via Parents lookup.
                 IReadOnlyList<PartitionKeyRange> allCurrentRanges = await this.partitionKeyRangeCache.TryGetOverlappingRangesAsync(
                     this.containerRid,
                     FeedRangeEpk.FullRange.Range,
@@ -111,6 +106,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
                 {
                     DefaultTrace.TraceError("Lease {0} is gone but has no FeedRange and its replacement range(s) could not be resolved", leaseToken);
                     throw new InvalidOperationException($"Lease {leaseToken} is gone but has no FeedRange and its replacement range(s) could not be resolved.");
+                }
+
+                // Merge without FeedRange: we can't reconstruct
+                // this parent's EPK sub-slice, so proceeding would collapse both parents' tokens
+                // onto one lease and drop the other. Fail loudly and keep the lease intact.
+                if (childRangesOfGoneParent.Count == 1)
+                {
+                    DefaultTrace.TraceError("Lease {0} is gone due to a merge but has no FeedRange; merge recovery requires the parent's EPK sub-range which cannot be reconstructed from a PKRange-only lease", leaseToken);
+                    throw new InvalidOperationException($"Lease {leaseToken} is gone due to a merge but has no FeedRange; the merged range cannot be safely reconstructed without losing the parent's continuation token.");
                 }
 
                 DefaultTrace.TraceInformation("Lease {0} is gone but has no FeedRange; resolved {1} child range(s) via Parents lookup", leaseToken, childRangesOfGoneParent.Count);
@@ -171,13 +175,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
                 PartitionKeyRange mergedRange = overlappingRanges[0];
                 DefaultTrace.TraceInformation("Lease {0} merged into {1}", leaseToken, mergedRange.Id);
 
-                // partitionBasedLease.FeedRange can be null here when this lease was resolved through the
-                // null-FeedRange fallback above (e.g. a rehydrated in-memory lease that never had FeedRange
-                // populated). In that case there is nothing to cast - create the lease directly from the
-                // already-resolved merged range instead of dereferencing a null FeedRange.
-                DocumentServiceLease newLease = partitionBasedLease.FeedRange != null
-                    ? await this.leaseManager.CreateLeaseIfNotExistAsync((FeedRangeEpk)partitionBasedLease.FeedRange, lastContinuationToken)
-                    : await this.leaseManager.CreateLeaseIfNotExistAsync(mergedRange, lastContinuationToken);
+                // A null-FeedRange PKRange-based lease reaching the merge path is rejected earlier in
+                // HandlePartitionGoneAsync (the merged range cannot be reconstructed without losing this
+                // parent's continuation token), so partitionBasedLease.FeedRange is guaranteed non-null here.
+                DocumentServiceLease newLease = await this.leaseManager.CreateLeaseIfNotExistAsync((FeedRangeEpk)partitionBasedLease.FeedRange, lastContinuationToken);
                 if (newLease != null)
                 {
                     newLeases.Enqueue(newLease);
