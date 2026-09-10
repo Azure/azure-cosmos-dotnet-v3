@@ -256,10 +256,21 @@ namespace Microsoft.Azure.Cosmos
                             attemptTrace,
                             cancellationToken);
 
-                        DistributedTransactionCommitter.MergeSessionTokens(
-                            response,
-                            serverRequest,
-                            this.clientContext.DocumentClient?.sessionContainer);
+                        try
+                        {
+                            DistributedTransactionCommitter.MergeSessionTokens(
+                                response,
+                                serverRequest,
+                                this.clientContext.DocumentClient?.sessionContainer);
+                        }
+                        catch
+                        {
+                            // Ownership of the response transfers to the caller only on the return path.
+                            // When bookkeeping throws, nothing else can reach it, so it is disposed here
+                            // rather than left to the finalizer.
+                            response.Dispose();
+                            throw;
+                        }
 
                         return response;
                     }
@@ -287,8 +298,7 @@ namespace Microsoft.Azure.Cosmos
             // without getting ReadSessionNotAvailable.
             //
             // DTC spans multiple collections so the server embeds per-operation session tokens in the JSON body.
-            // DistributedTransactionOperationResult.FromJson assembles each token into canonical SDK session-token
-            // format, and capture is gated per sub-operation on the same statuses point operations capture on.
+            // Capture is gated per sub-operation on the same statuses point operations capture on.
             if (response == null || response.Count == 0 || serverRequest == null || sessionContainer == null)
             {
                 return;
@@ -300,10 +310,13 @@ namespace Microsoft.Azure.Cosmos
             {
                 DistributedTransactionOperationResult result = response[i];
 
-                DistributedTransactionOperation operation = null;
+                string collectionFullName = null;
+                string failureReason = null;
+                Exception failureCause = null;
+
                 try
                 {
-                    operation = serverRequest.Operations[result.Index];
+                    DistributedTransactionOperation operation = serverRequest.Operations[result.Index];
 
                     if (string.IsNullOrEmpty(result.SessionToken) || string.IsNullOrEmpty(operation.CollectionResourceId))
                     {
@@ -321,30 +334,65 @@ namespace Microsoft.Azure.Cosmos
                         continue;
                     }
 
-                    // SessionToken is already in canonical SDK session-token format, assembled by FromJson.
-                    // Note: each SetSessionToken call acquires a write lock on the SessionContainer.
-                    // For a future optimization, consider a batch-update API on ISessionContainer to
-                    // reduce lock acquisitions when multiple operations target the same collection.
-                    headers.Clear();
-                    headers[HttpConstants.HttpHeaders.SessionToken] = result.SessionToken;
+                    collectionFullName = DistributedTransactionConstants.GetCollectionFullName(operation.Database, operation.Container);
 
-                    sessionContainer.SetSessionToken(
-                        operation.CollectionResourceId,
-                        DistributedTransactionConstants.GetCollectionFullName(operation.Database, operation.Container),
-                        headers);
+                    if (DistributedTransactionCommitter.TryValidateSessionToken(result.SessionToken, out string validationFailure))
+                    {
+                        headers.Clear();
+                        headers[HttpConstants.HttpHeaders.SessionToken] = result.SessionToken;
+
+                        sessionContainer.SetSessionToken(
+                            operation.CollectionResourceId,
+                            collectionFullName,
+                            headers);
+                    }
+                    else
+                    {
+                        failureReason = $"{validationFailure} Token: '{TruncateForLog(result.SessionToken)}'.";
+                    }
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
-                    // Session-token bookkeeping must never fail a transaction the server already committed.
-                    // Log and continue so the remaining operations' tokens are still attempted.
-                    DefaultTrace.TraceWarning(
-                        "DTC session token merge failed for operation index {0} (collection {1}): [{2}] {3}",
-                        result.Index,
-                        operation?.CollectionResourceId ?? "<unknown>",
-                        ex.GetType().Name,
-                        ex.Message);
+                    failureCause = ex;
+                    failureReason = ex.Message;
                 }
+
+                if (failureReason == null)
+                {
+                    continue;
+                }
+
+                string collectionScope = collectionFullName == null
+                    ? string.Empty
+                    : $" for collection '{collectionFullName}'";
+
+                string message = $"Session token for operation index {result.Index} could not be recorded{collectionScope}: {failureReason}";
+
+                // Keep server-supplied braces out of the format string.
+                DefaultTrace.TraceWarning("{0} Session token was not recorded.", message);
+
+                // Stop at the first failure; later tokens are intentionally not recorded.
+                throw new InvalidOperationException(message, failureCause);
             }
+        }
+
+        private static bool TryValidateSessionToken(string sessionToken, out string failureReason)
+        {
+            if (!SessionTokenHelper.TryParse(sessionToken, out string partitionKeyRangeId, out ISessionToken _))
+            {
+                failureReason = "the token could not be parsed.";
+                return false;
+            }
+
+            // TryParse accepts a bare LSN, but the session container requires the range id.
+            if (string.IsNullOrEmpty(partitionKeyRangeId))
+            {
+                failureReason = "the token is missing the partitionKeyRangeId prefix.";
+                return false;
+            }
+
+            failureReason = null;
+            return true;
         }
     }
 }
