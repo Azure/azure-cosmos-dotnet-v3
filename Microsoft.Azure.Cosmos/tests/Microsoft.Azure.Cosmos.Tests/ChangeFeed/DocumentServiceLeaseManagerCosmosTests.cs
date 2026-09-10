@@ -746,6 +746,174 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Assert.IsNotNull(afterAcquire.FeedRange);
         }
 
+        /// <summary>
+        /// Mirrors <see cref="PopulateMissingRange"/> for <see cref="DocumentServiceLeaseManagerInMemory"/>:
+        /// a lease missing its range (e.g. restored from previously persisted in-memory lease state) should
+        /// have it resolved and backfilled on acquire.
+        /// </summary>
+        [TestMethod]
+        public async Task InMemoryManager_PopulateMissingRange()
+        {
+            DocumentServiceLeaseCore lease = new DocumentServiceLeaseCore()
+            {
+                LeaseToken = "0",
+                Owner = Guid.NewGuid().ToString()
+            };
+
+            Mock<DocumentServiceLeaseUpdater> mockUpdater = new Mock<DocumentServiceLeaseUpdater>();
+
+            Func<Func<DocumentServiceLease, DocumentServiceLease>, bool> validateUpdater = (Func<DocumentServiceLease, DocumentServiceLease> updater) =>
+            {
+                DocumentServiceLease afterUpdateLease = updater(lease);
+                return afterUpdateLease.FeedRange != null;
+            };
+
+            mockUpdater.Setup(c => c.UpdateLeaseAsync(
+                It.IsAny<DocumentServiceLease>(),
+                It.IsAny<string>(),
+                It.IsAny<PartitionKey>(),
+                It.Is<Func<DocumentServiceLease, DocumentServiceLease>>(f => validateUpdater(f))))
+                .ReturnsAsync(lease);
+
+            Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>();
+            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+            containerMock.Setup(c => c.ClientContext).Returns(mockContext.Object);
+            containerMock.Setup(c => c.LinkUri).Returns("http://localhost");
+            containerMock.Setup(c => c.GetCachedRIDAsync(It.IsAny<bool>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>())).ReturnsAsync("test");
+            MockDocumentClient mockDocumentClient = new MockDocumentClient();
+            mockContext.Setup(c => c.DocumentClient).Returns(mockDocumentClient);
+
+            DocumentServiceLeaseManagerInMemory documentServiceLeaseManagerInMemory = new DocumentServiceLeaseManagerInMemory(
+                mockUpdater.Object,
+                new ConcurrentDictionary<string, DocumentServiceLease>(),
+                containerMock.Object);
+
+            DocumentServiceLease afterAcquire = await documentServiceLeaseManagerInMemory.AcquireAsync(lease);
+
+            Assert.IsNotNull(afterAcquire.FeedRange);
+        }
+
+        /// <summary>
+        /// When <see cref="DocumentServiceLeaseManagerInMemory"/> is constructed without a monitored
+        /// container (e.g. via the original constructor overload used before this fix, or any caller that
+        /// doesn't have one available), acquiring a lease with a missing FeedRange must remain a no-op for
+        /// that field instead of throwing - preserving pre-existing behavior for that code path.
+        /// </summary>
+        [TestMethod]
+        public async Task InMemoryManager_NoMonitoredContainer_DoesNotPopulateOrThrow()
+        {
+            DocumentServiceLeaseCore lease = new DocumentServiceLeaseCore()
+            {
+                LeaseToken = "0",
+                Owner = Guid.NewGuid().ToString()
+            };
+
+            Mock<DocumentServiceLeaseUpdater> mockUpdater = new Mock<DocumentServiceLeaseUpdater>();
+            mockUpdater.Setup(c => c.UpdateLeaseAsync(
+                It.IsAny<DocumentServiceLease>(),
+                It.IsAny<string>(),
+                It.IsAny<PartitionKey>(),
+                It.IsAny<Func<DocumentServiceLease, DocumentServiceLease>>()))
+                .ReturnsAsync(lease);
+
+            DocumentServiceLeaseManagerInMemory documentServiceLeaseManagerInMemory = new DocumentServiceLeaseManagerInMemory(
+                mockUpdater.Object,
+                new ConcurrentDictionary<string, DocumentServiceLease>());
+
+            DocumentServiceLease afterAcquire = await documentServiceLeaseManagerInMemory.AcquireAsync(lease);
+
+            Assert.IsNull(afterAcquire.FeedRange);
+        }
+
+        /// <summary>
+        /// A lease that already has a FeedRange must not be touched or re-resolved on acquire - the
+        /// backfill only applies to leases missing a FeedRange.
+        /// </summary>
+        [TestMethod]
+        public async Task InMemoryManager_ExistingFeedRange_IsNotOverwritten()
+        {
+            FeedRangeEpk existingFeedRange = new FeedRangeEpk(new Documents.Routing.Range<string>("", "FF", true, false));
+            DocumentServiceLeaseCore lease = new DocumentServiceLeaseCore()
+            {
+                LeaseToken = "0",
+                Owner = Guid.NewGuid().ToString(),
+                FeedRange = existingFeedRange
+            };
+
+            Mock<DocumentServiceLeaseUpdater> mockUpdater = new Mock<DocumentServiceLeaseUpdater>();
+            mockUpdater.Setup(c => c.UpdateLeaseAsync(
+                It.IsAny<DocumentServiceLease>(),
+                It.IsAny<string>(),
+                It.IsAny<PartitionKey>(),
+                It.IsAny<Func<DocumentServiceLease, DocumentServiceLease>>()))
+                .ReturnsAsync(lease);
+
+            Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>();
+
+            DocumentServiceLeaseManagerInMemory documentServiceLeaseManagerInMemory = new DocumentServiceLeaseManagerInMemory(
+                mockUpdater.Object,
+                new ConcurrentDictionary<string, DocumentServiceLease>(),
+                containerMock.Object);
+
+            DocumentServiceLease afterAcquire = await documentServiceLeaseManagerInMemory.AcquireAsync(lease);
+
+            Assert.AreSame(existingFeedRange, afterAcquire.FeedRange);
+            // No routing-cache/RID calls should be made when there is nothing to backfill.
+            containerMock.Verify(c => c.GetCachedRIDAsync(It.IsAny<bool>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        /// <summary>
+        /// If the lease's PartitionKeyRangeId can no longer be resolved (e.g. the range is already gone),
+        /// the backfill must leave FeedRange null rather than throwing, matching
+        /// <see cref="DocumentServiceLeaseManagerCosmos.AcquireAsync"/>'s behavior for the same case.
+        /// </summary>
+        [TestMethod]
+        public async Task InMemoryManager_UnresolvableRange_LeavesFeedRangeNull()
+        {
+            DocumentServiceLeaseCore lease = new DocumentServiceLeaseCore()
+            {
+                LeaseToken = "0",
+                Owner = Guid.NewGuid().ToString()
+            };
+
+            Mock<DocumentServiceLeaseUpdater> mockUpdater = new Mock<DocumentServiceLeaseUpdater>();
+            mockUpdater.Setup(c => c.UpdateLeaseAsync(
+                It.IsAny<DocumentServiceLease>(),
+                It.IsAny<string>(),
+                It.IsAny<PartitionKey>(),
+                It.IsAny<Func<DocumentServiceLease, DocumentServiceLease>>()))
+                .ReturnsAsync(lease);
+
+            Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>();
+            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+            containerMock.Setup(c => c.ClientContext).Returns(mockContext.Object);
+            containerMock.Setup(c => c.LinkUri).Returns("http://localhost");
+            containerMock.Setup(c => c.GetCachedRIDAsync(It.IsAny<bool>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>())).ReturnsAsync("test");
+            UnresolvableRangeMockDocumentClient mockDocumentClient = new UnresolvableRangeMockDocumentClient();
+            mockContext.Setup(c => c.DocumentClient).Returns(mockDocumentClient);
+
+            DocumentServiceLeaseManagerInMemory documentServiceLeaseManagerInMemory = new DocumentServiceLeaseManagerInMemory(
+                mockUpdater.Object,
+                new ConcurrentDictionary<string, DocumentServiceLease>(),
+                containerMock.Object);
+
+            DocumentServiceLease afterAcquire = await documentServiceLeaseManagerInMemory.AcquireAsync(lease);
+
+            Assert.IsNull(afterAcquire.FeedRange);
+        }
+
+        /// <summary>
+        /// <see cref="MockDocumentClient"/> variant that always fails to resolve a PartitionKeyRange by id,
+        /// simulating a lease whose original range is no longer present in the routing map cache.
+        /// </summary>
+        private class UnresolvableRangeMockDocumentClient : MockDocumentClient
+        {
+            internal override Documents.PartitionKeyRange ResolvePartitionKeyRangeById(string collectionRid, string pkRangeId, bool forceRefresh)
+            {
+                return null;
+            }
+        }
+
         private static RequestOptionsFactory GetRequestOptionsFactory(int factoryType)
         {
             return factoryType switch
