@@ -36,5 +36,11 @@ namespace Microsoft.Azure.Cosmos
         /// Method that is called to get the retry policy for a non-query request.
         /// </summary>
         IDocumentClientRetryPolicy GetRequestPolicy();
+
+        /// <summary>
+        /// Method that is called to get the retry policy for a distributed transaction request.
+        /// </summary>
+        IDocumentClientRetryPolicy GetRequestPolicy(
+            DistributedTransactionDispatchTracker distributedTransactionDispatchTracker);
     }
 }

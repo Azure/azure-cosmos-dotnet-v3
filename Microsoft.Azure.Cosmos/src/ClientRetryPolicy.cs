@@ -50,6 +50,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly bool isHubRegionProcessingEnabled;
 #endif
         private readonly AuthorizationTokenProvider authorizationTokenProvider;
+        private readonly DistributedTransactionDispatchTracker distributedTransactionDispatchTracker;
         private int failoverRetryCount;
 
         private int sessionTokenRetryCount;
@@ -96,6 +97,28 @@ namespace Microsoft.Azure.Cosmos
             this.isHubRegionProcessingEnabled = isHubRegionProcessingEnabled;
 #endif
             this.authorizationTokenProvider = authorizationTokenProvider;
+        }
+
+        internal ClientRetryPolicy(
+            GlobalEndpointManager globalEndpointManager,
+            GlobalPartitionEndpointManager partitionKeyRangeLocationCache,
+            RetryOptions retryOptions,
+            bool enableEndpointDiscovery,
+            bool isThinClientEnabled,
+            DistributedTransactionDispatchTracker distributedTransactionDispatchTracker,
+            bool isHubRegionProcessingEnabled = true,
+            AuthorizationTokenProvider authorizationTokenProvider = null)
+            : this(
+                globalEndpointManager,
+                partitionKeyRangeLocationCache,
+                retryOptions,
+                enableEndpointDiscovery,
+                isThinClientEnabled,
+                isHubRegionProcessingEnabled,
+                authorizationTokenProvider)
+        {
+            this.distributedTransactionDispatchTracker = distributedTransactionDispatchTracker
+                ?? throw new ArgumentNullException(nameof(distributedTransactionDispatchTracker));
         }
 
         /// <summary> 
@@ -380,13 +403,23 @@ namespace Microsoft.Azure.Cosmos
 
             request.RequestContext.RouteToLocation(this.locationEndpoint);
 
-            // Force UsePreferredLocations=false for DTX after endpoint pinning so that any
-            // downstream re-resolution (e.g. on retry) stays on the write-region branch.
+            // DTX failover must follow the write-region retry index. The general path can short-circuit on
+            // a RouteToHub pin, which would otherwise send the retry back to the hub.
             if (this.isDtxRequest)
             {
-                request.RequestContext.RouteToLocation(
-                    this.retryContext?.RetryLocationIndex ?? 0,
-                    usePreferredLocations: false);
+                int dispatchLocationIndex = this.retryContext?.RetryLocationIndex ?? 0;
+
+                request.RequestContext.RouteToLocation(dispatchLocationIndex, usePreferredLocations: false);
+
+                // The pin this resolution leaves behind is load-bearing. The dispatch site
+                // (GatewayStoreModel.GetFeedUri) resolves the endpoint again, and an account refresh in
+                // between could otherwise reorder the write regions and send the token to a region these
+                // headers never named. ClearRouteToLocation frees the pin for the next attempt.
+                this.locationEndpoint = this.globalEndpointManager.ResolveServiceEndpoint(request);
+
+                this.distributedTransactionDispatchTracker?.StampDispatchHeaders(
+                    request,
+                    this.globalEndpointManager.GetLocation(this.locationEndpoint));
             }
 
             // Hedging-Detection API: tag the upcoming dispatch reason on Properties so that
