@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.IO;
     using System.Net;
     using System.Threading;
@@ -96,6 +97,9 @@ namespace Microsoft.Azure.Cosmos
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
+
+                this.ValidateUserSuppliedSessionTokens();
+
                 await DistributedTransactionCommitterUtils.ResolveCollectionRidsAsync(
                     this.operations,
                     this.clientContext,
@@ -110,7 +114,7 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                DefaultTrace.TraceError($"Distributed transaction failed: {ex.Message}");
+                DefaultTrace.TraceError($"Distributed transaction failed: {FormatForLog(ex.Message)}");
                 throw;
             }
         }
@@ -145,7 +149,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     DefaultTrace.TraceWarning(
                         $"Distributed transaction isRetriable retry budget exhausted after {attempt} attempts " +
-                            $"(StatusCode={response.StatusCode}, DiagnosticString={TruncateForLog(response.DiagnosticString)}). Returning last response.");
+                            $"(StatusCode={response.StatusCode}, DiagnosticString={FormatForLog(response.DiagnosticString)}). Returning last response.");
                     response.Diagnostics = diagnostics;
                     return response;
                 }
@@ -172,7 +176,7 @@ namespace Microsoft.Azure.Cosmos
                             $"(cumulativeDelayMs={(int)cumulativeRetryDelay.TotalMilliseconds}, " +
                             $"maxDelayMs={(int)this.maxCumulativeRetryDelay.TotalMilliseconds}, " +
                             $"attempt={attempt}, StatusCode={response.StatusCode}, " +
-                            $"DiagnosticString={TruncateForLog(response.DiagnosticString)}). Returning last response.");
+                                $"DiagnosticString={FormatForLog(response.DiagnosticString)}). Returning last response.");
                     response.Diagnostics = diagnostics;
                     return response;
                 }
@@ -190,7 +194,7 @@ namespace Microsoft.Azure.Cosmos
                     (int)delay.TotalMilliseconds,
                     (int)cumulativeRetryDelay.TotalMilliseconds,
                     serverRequest.IdempotencyToken,
-                    TruncateForLog(response.DiagnosticString));
+                    FormatForLog(response.DiagnosticString));
 
                 response.Dispose();
                 attempt++;
@@ -198,9 +202,8 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        // Caps server-controlled diagnostic strings before they enter SDK trace logs to prevent
-        // log bloat and avoid newline-driven log-line interleaving.
-        private static string TruncateForLog(string value)
+        // Bounds and escapes external text before it enters SDK trace logs.
+        private static string FormatForLog(string value)
         {
             const int MaxLogLength = 256;
             if (string.IsNullOrEmpty(value))
@@ -208,9 +211,13 @@ namespace Microsoft.Azure.Cosmos
                 return value;
             }
 
-            return value.Length <= MaxLogLength
+            string boundedValue = value.Length <= MaxLogLength
                 ? value
                 : value.Substring(0, MaxLogLength) + "...[truncated]";
+
+            return boundedValue
+                .Replace("\r", "\\r")
+                .Replace("\n", "\\n");
         }
 
         private async Task<DistributedTransactionResponse> ExecuteCommitAsync(
@@ -348,7 +355,7 @@ namespace Microsoft.Azure.Cosmos
                     }
                     else
                     {
-                        failureReason = $"{validationFailure} Token: '{TruncateForLog(result.SessionToken)}'.";
+                        failureReason = $"{validationFailure} Token: '{FormatForLog(result.SessionToken)}'.";
                     }
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
@@ -369,30 +376,194 @@ namespace Microsoft.Azure.Cosmos
                 string message = $"Session token for operation index {result.Index} could not be recorded{collectionScope}: {failureReason}";
 
                 // Keep server-supplied braces out of the format string.
-                DefaultTrace.TraceWarning("{0} Session token was not recorded.", message);
+                DefaultTrace.TraceWarning("{0} Session token was not recorded.", FormatForLog(message));
 
                 // Stop at the first failure; later tokens are intentionally not recorded.
                 throw new InvalidOperationException(message, failureCause);
             }
         }
 
+        /// <summary>
+        /// Rejects malformed caller-supplied session tokens before dispatch.
+        /// </summary>
+        private void ValidateUserSuppliedSessionTokens()
+        {
+            foreach (DistributedTransactionOperation operation in this.operations)
+            {
+                string sessionToken = operation?.SessionToken;
+                if (string.IsNullOrEmpty(sessionToken))
+                {
+                    continue;
+                }
+
+                if (DistributedTransactionCommitter.TryValidateSessionToken(sessionToken, out string _))
+                {
+                    continue;
+                }
+
+                throw new ArgumentException(
+                    $"Distributed transaction operation index {operation.OperationIndex} was given the session token " +
+                    $"'{FormatSessionTokenForMessage(sessionToken)}', which must be a single valid " +
+                    "'<partitionKeyRangeId>:<token>' pair. The transaction was not sent.",
+                    nameof(DistributedTransactionRequestOptions.SessionToken));
+            }
+        }
+
+        private static string FormatSessionTokenForMessage(string sessionToken)
+        {
+            return FormatForLog(sessionToken);
+        }
+
+        /// <summary>
+        /// Determines whether a session token is usable: it must have one numeric partition key range id
+        /// and a simple or vector token whose numeric segments fit their wire types.
+        /// </summary>
+        /// <param name="sessionToken">The token reported for a single operation.</param>
+        /// <param name="failureReason">The reason the token is unusable, or <c>null</c> when it is usable.</param>
         private static bool TryValidateSessionToken(string sessionToken, out string failureReason)
         {
-            if (!SessionTokenHelper.TryParse(sessionToken, out string partitionKeyRangeId, out ISessionToken _))
+            int colonIndex = sessionToken.IndexOf(':');
+            string partitionKeyRangeId = colonIndex < 0
+                ? null
+                : sessionToken.Substring(0, colonIndex);
+            string tokenSegment = colonIndex < 0
+                ? sessionToken
+                : sessionToken.Substring(colonIndex + 1);
+
+            if (sessionToken.IndexOf(',') >= 0
+                || (colonIndex >= 0 && sessionToken.IndexOf(':', colonIndex + 1) >= 0)
+                || !DistributedTransactionCommitter.IsValidSessionTokenSegment(tokenSegment))
             {
                 failureReason = "the token could not be parsed.";
                 return false;
             }
 
-            // TryParse accepts a bare LSN, but the session container requires the range id.
             if (string.IsNullOrEmpty(partitionKeyRangeId))
             {
                 failureReason = "the token is missing the partitionKeyRangeId prefix.";
                 return false;
             }
 
+            if (!DistributedTransactionCommitter.IsValidPartitionKeyRangeId(partitionKeyRangeId))
+            {
+                failureReason = "the partitionKeyRangeId prefix is invalid.";
+                return false;
+            }
+
             failureReason = null;
             return true;
+        }
+
+        private static bool IsValidPartitionKeyRangeId(string value)
+        {
+            int index = 0;
+            while (index < value.Length && value[index] == ' ')
+            {
+                index++;
+            }
+
+            if (index == value.Length)
+            {
+                return false;
+            }
+
+            int parsedValue = 0;
+            for (; index < value.Length; index++)
+            {
+                int digit = value[index] - '0';
+                if (digit < 0
+                    || digit > 9
+                    || parsedValue > (int.MaxValue - digit) / 10)
+                {
+                    return false;
+                }
+
+                parsedValue = (parsedValue * 10) + digit;
+            }
+
+            return true;
+        }
+
+        private static bool IsValidSessionTokenSegment(string value)
+        {
+            string[] segments = value.Split('#');
+            if (segments.Length == 1)
+            {
+                return DistributedTransactionCommitter.IsValidInt64Segment(segments[0]);
+            }
+
+            if (segments.Length < 2
+                || !DistributedTransactionCommitter.IsValidInt64Segment(segments[0])
+                || !DistributedTransactionCommitter.IsValidInt64Segment(segments[1]))
+            {
+                return false;
+            }
+
+            for (int index = 2; index < segments.Length; index++)
+            {
+                string regionProgress = segments[index];
+                int separatorIndex = regionProgress.IndexOf('=');
+                if (separatorIndex <= 0
+                    || separatorIndex != regionProgress.LastIndexOf('=')
+                    || separatorIndex == regionProgress.Length - 1
+                    || !DistributedTransactionCommitter.IsValidUInt32Segment(regionProgress.Substring(0, separatorIndex))
+                    || !DistributedTransactionCommitter.IsValidInt64Segment(regionProgress.Substring(separatorIndex + 1)))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool IsValidInt64Segment(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return false;
+            }
+
+            int index = value[0] == '-' ? 1 : 0;
+            if (index == value.Length)
+            {
+                return false;
+            }
+
+            for (; index < value.Length; index++)
+            {
+                if (value[index] < '0' || value[index] > '9')
+                {
+                    return false;
+                }
+            }
+
+            return long.TryParse(
+                value,
+                NumberStyles.AllowLeadingSign,
+                CultureInfo.InvariantCulture,
+                out long _);
+        }
+
+        private static bool IsValidUInt32Segment(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return false;
+            }
+
+            for (int index = 0; index < value.Length; index++)
+            {
+                if (value[index] < '0' || value[index] > '9')
+                {
+                    return false;
+                }
+            }
+
+            return uint.TryParse(
+                value,
+                NumberStyles.None,
+                CultureInfo.InvariantCulture,
+                out uint _);
         }
     }
 }
