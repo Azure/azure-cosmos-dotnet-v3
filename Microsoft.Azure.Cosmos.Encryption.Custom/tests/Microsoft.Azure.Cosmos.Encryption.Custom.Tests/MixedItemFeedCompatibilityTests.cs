@@ -264,8 +264,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             CompatibilityFixture[] fixtures = { currentMde, unknownAlgorithm, legacy };
             FixedKeyEncryptor encryptor = new ();
             ContainerHarness harness = CreateHarness(Array.Empty<CompatibilityFixture>(), encryptor);
-            using MemoryStream responseContent = CreateFeedStream(fixtures);
-            byte[] originalResponseBytes = responseContent.ToArray();
+            using MemoryStream writableResponseContent = CreateFeedStream(fixtures);
+            byte[] originalResponseBytes = writableResponseContent.ToArray();
+            using MemoryStream responseContent = new (originalResponseBytes, writable: false);
             using ResponseMessage innerResponse = new (HttpStatusCode.OK)
             {
                 Content = responseContent,
