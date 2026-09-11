@@ -20,6 +20,10 @@ parameters:
   VmImage: ''
   IncludeIntegration: false
   MultiRegionConnectionString: ''
+  # Optional dotnet test --filter applied to the live integration run. Empty
+  # means "run everything". Used to exclude suites whose backing account is not
+  # configured on the pipeline definition consuming this template.
+  IntegrationTestFilter: ''
   UnitTestFilter: ' --filter "FullyQualifiedName~FaultInjectionUnitTests|FullyQualifiedName~FaultInjectionBuilderValidationTests" --verbosity normal '
 
 jobs:
@@ -122,7 +126,7 @@ jobs:
       inputs:
         command: test
         projects: 'Microsoft.Azure.Cosmos/FaultInjection/tests/*.csproj'
-        arguments: --verbosity normal --configuration ${{ parameters.BuildConfiguration }} /p:OS=Windows
+        arguments: ${{ parameters.IntegrationTestFilter }} --verbosity normal --configuration ${{ parameters.BuildConfiguration }} /p:OS=Windows
         nugetConfigPath: NuGet.config
         publishTestResults: true
         testRunTitle: FaultInjectionTests
