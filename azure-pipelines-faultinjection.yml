@@ -29,6 +29,13 @@ stages:
         IncludeIntegration: true
         MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
         ThinClientConnectionString: $(COSMOSDB_THINCLIENT)
+        # FaultInjectionProxyTests require COSMOSDB_THIN_CLIENT, which is fed by
+        # the COSMOSDB_THINCLIENT secret variable above. That variable is not yet
+        # defined on this pipeline definition, so the suite is excluded to keep the
+        # release gate meaningful. Once COSMOSDB_THINCLIENT is added to the
+        # dotnet-fault-injection-release definition, delete this parameter to turn
+        # thin client coverage on -- the plumbing above is already in place.
+        IntegrationTestFilter: ' --filter "FullyQualifiedName!~FaultInjectionProxyTests" '
 
 - stage:
   displayName: Publish 

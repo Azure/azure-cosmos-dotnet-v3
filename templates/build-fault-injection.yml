@@ -26,6 +26,10 @@ parameters:
   # COSMOSDB_THIN_CLIENT, while the ADO variable holding the account is named
   # COSMOSDB_THINCLIENT (no underscore) -- the release pipeline bridges the two.
   ThinClientConnectionString: ''
+  # Optional dotnet test --filter applied to the live integration run. Empty
+  # means "run everything". Used to exclude suites whose account is not yet
+  # configured on the release pipeline definition.
+  IntegrationTestFilter: ''
   UnitTestFilter: ' --filter "FullyQualifiedName~FaultInjectionUnitTests|FullyQualifiedName~FaultInjectionBuilderValidationTests" --verbosity normal '
 
 jobs:
@@ -128,7 +132,7 @@ jobs:
       inputs:
         command: test
         projects: 'Microsoft.Azure.Cosmos/FaultInjection/tests/*.csproj'
-        arguments: --verbosity normal --configuration ${{ parameters.BuildConfiguration }} /p:OS=Windows
+        arguments: ${{ parameters.IntegrationTestFilter }} --verbosity normal --configuration ${{ parameters.BuildConfiguration }} /p:OS=Windows
         nugetConfigPath: NuGet.config
         publishTestResults: true
         testRunTitle: FaultInjectionTests
