@@ -1321,9 +1321,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             capturedTrackers.Add(tracker);
 
-            signalsAtAttemptStart.Add((tracker.IsRetry, tracker.IsCrossRegionRedirect));
-
-            tracker.RecordDispatch("East US");
+            signalsAtAttemptStart.Add(tracker.RecordDispatch("East US"));
             tracker.RecordDispatch("West US");
         }
 

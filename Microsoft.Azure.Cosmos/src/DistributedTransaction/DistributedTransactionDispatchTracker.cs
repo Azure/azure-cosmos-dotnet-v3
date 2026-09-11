@@ -27,42 +27,12 @@ namespace Microsoft.Azure.Cosmos
         private bool isCrossRegionRedirect;
 
         /// <summary>
-        /// Derived rather than assigned: the headers are read after <see cref="RecordDispatch"/> has counted
-        /// the imminent dispatch, so the first one still has to report false.
-        /// </summary>
-        internal bool IsRetry
-        {
-            get
-            {
-                lock (this.stateLock)
-                {
-                    return this.dispatchCount > 1;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Sticky for the lifetime of the token. A dispatch lost in flight may still have reached the
-        /// coordinator, so failing back to the original region does not clear the signal.
-        /// </summary>
-        internal bool IsCrossRegionRedirect
-        {
-            get
-            {
-                lock (this.stateLock)
-                {
-                    return this.isCrossRegionRedirect;
-                }
-            }
-        }
-
-        /// <summary>
         /// Records the region an imminent dispatch is pinned to.
         /// </summary>
         /// <remarks>
         /// Records intent rather than delivery: a failed dispatch may still have reached the coordinator,
-        /// so it counts, over-reporting in the safe direction. Transport resends that retry in place go
-        /// uncounted, but those never reached the coordinator.
+        /// so it counts, over-reporting in the safe direction. Lower-level transport resends do not
+        /// record a new dispatch. Once set, the cross-region signal stays true for this token.
         /// </remarks>
         /// <returns>A consistent snapshot of both dispatch signals after recording this dispatch.</returns>
         internal (bool IsRetry, bool IsCrossRegionRedirect) RecordDispatch(string regionName)
@@ -107,7 +77,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (request == null)
             {
-                return;
+                throw new ArgumentNullException(nameof(request));
             }
 
             (bool IsRetry, bool IsCrossRegionRedirect) dispatchSignals = this.RecordDispatch(regionName);

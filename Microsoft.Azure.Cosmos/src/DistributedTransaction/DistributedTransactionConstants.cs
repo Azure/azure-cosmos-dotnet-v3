@@ -27,8 +27,8 @@ namespace Microsoft.Azure.Cosmos
         internal const string IsDtxRetry = "x-ms-cosmos-internal-is-dtx-retry";
 
         /// <summary>
-        /// Request header reporting whether the current dispatch of a distributed write transaction is
-        /// targeting a write region other than the one the idempotency token originally targeted.
+        /// Request header reporting whether an idempotency token has crossed write regions or a retry
+        /// cannot be proven to target its original region. Once true, it stays true for that token.
         /// </summary>
         internal const string IsDtxCrossRegionRedirect = "x-ms-cosmos-internal-is-dtx-cross-region-redirect";
 

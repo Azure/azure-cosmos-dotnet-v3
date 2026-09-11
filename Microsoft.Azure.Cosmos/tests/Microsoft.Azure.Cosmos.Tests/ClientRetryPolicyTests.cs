@@ -3189,8 +3189,8 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         [TestMethod]
-        [Description("With endpoint discovery disabled the client is pinned to the endpoint it was configured with, so a distributed transaction has no failover path and can never report a cross-region redirect.")]
-        public async Task OnBeforeSendRequest_EndpointDiscoveryDisabled_PinsToConfiguredEndpointAndNeverRedirects()
+        [Description("A configured endpoint outside the regional topology is not authoritative physical-region identity, so a replay must conservatively report a possible redirect.")]
+        public async Task OnBeforeSendRequest_EndpointDiscoveryDisabled_TreatsConfiguredEndpointReplayAsPotentialRedirect()
         {
             using GlobalEndpointManager endpointManager = this.Initialize(
                 useMultipleWriteLocations: false,
@@ -3227,8 +3227,8 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             ClientRetryPolicyTests.AssertDispatchHeaders(
                 request,
                 bool.TrueString,
-                bool.FalseString,
-                "The committer can still replay this token, but with no failover path the dispatch stays in the configured endpoint's region.");
+                bool.TrueString,
+                "The configured endpoint can be served by a different physical region after failover.");
         }
 
         [TestMethod]

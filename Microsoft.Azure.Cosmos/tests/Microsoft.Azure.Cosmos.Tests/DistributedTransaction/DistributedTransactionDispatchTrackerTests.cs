@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 {
+    using System;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
@@ -30,10 +31,10 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         {
             DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
 
-            tracker.RecordDispatch(EastUs);
+            (bool IsRetry, bool IsCrossRegionRedirect) signals = tracker.RecordDispatch(EastUs);
 
-            Assert.IsFalse(tracker.IsRetry);
-            Assert.IsFalse(tracker.IsCrossRegionRedirect);
+            Assert.IsFalse(signals.IsRetry);
+            Assert.IsFalse(signals.IsCrossRegionRedirect);
         }
 
         [TestMethod]
@@ -43,10 +44,10 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             tracker.RecordDispatch(EastUs);
             tracker.RecordDispatch(EastUs);
-            tracker.RecordDispatch(EastUs);
+            (bool IsRetry, bool IsCrossRegionRedirect) signals = tracker.RecordDispatch(EastUs);
 
-            Assert.IsTrue(tracker.IsRetry);
-            Assert.IsFalse(tracker.IsCrossRegionRedirect);
+            Assert.IsTrue(signals.IsRetry);
+            Assert.IsFalse(signals.IsCrossRegionRedirect);
         }
 
         [TestMethod]
@@ -55,10 +56,10 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
 
             tracker.RecordDispatch(EastUs);
-            tracker.RecordDispatch(WestUs);
+            (bool IsRetry, bool IsCrossRegionRedirect) signals = tracker.RecordDispatch(WestUs);
 
-            Assert.IsTrue(tracker.IsRetry);
-            Assert.IsTrue(tracker.IsCrossRegionRedirect);
+            Assert.IsTrue(signals.IsRetry);
+            Assert.IsTrue(signals.IsCrossRegionRedirect);
         }
 
         [TestMethod]
@@ -68,9 +69,9 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             tracker.RecordDispatch(EastUs);
             tracker.RecordDispatch(WestUs);
-            tracker.RecordDispatch(WestUs);
+            (bool IsRetry, bool IsCrossRegionRedirect) signals = tracker.RecordDispatch(WestUs);
 
-            Assert.IsTrue(tracker.IsCrossRegionRedirect);
+            Assert.IsTrue(signals.IsCrossRegionRedirect);
         }
 
         [TestMethod]
@@ -80,9 +81,9 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             tracker.RecordDispatch(EastUs);
             tracker.RecordDispatch(WestUs);
-            tracker.RecordDispatch(EastUs);
+            (bool IsRetry, bool IsCrossRegionRedirect) signals = tracker.RecordDispatch(EastUs);
 
-            Assert.IsTrue(tracker.IsCrossRegionRedirect);
+            Assert.IsTrue(signals.IsCrossRegionRedirect);
         }
 
         [TestMethod]
@@ -91,21 +92,23 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
 
             tracker.RecordDispatch(EastUs);
-            tracker.RecordDispatch("east us");
+            (bool IsRetry, bool IsCrossRegionRedirect) signals = tracker.RecordDispatch("east us");
 
-            Assert.IsFalse(tracker.IsCrossRegionRedirect);
+            Assert.IsFalse(signals.IsCrossRegionRedirect);
         }
 
-        [TestMethod]
-        public void RecordDispatch_UnresolvableFirstRegion_ReportsRedirectOnceNextRegionResolves()
+        [DataTestMethod]
+        [DataRow(null)]
+        [DataRow("")]
+        public void RecordDispatch_UnresolvableFirstRegion_ReportsRedirectOnceNextRegionResolves(string region)
         {
             DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
 
-            tracker.RecordDispatch(null);
-            Assert.IsFalse(tracker.IsCrossRegionRedirect);
+            (bool IsRetry, bool IsCrossRegionRedirect) first = tracker.RecordDispatch(region);
+            Assert.IsFalse(first.IsCrossRegionRedirect);
 
-            tracker.RecordDispatch(EastUs);
-            Assert.IsTrue(tracker.IsCrossRegionRedirect);
+            (bool IsRetry, bool IsCrossRegionRedirect) next = tracker.RecordDispatch(EastUs);
+            Assert.IsTrue(next.IsCrossRegionRedirect);
         }
 
         [TestMethod]
@@ -115,13 +118,13 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             tracker.RecordDispatch(EastUs);
 
-            tracker.RecordDispatch(null);
+            (bool IsRetry, bool IsCrossRegionRedirect) unresolved = tracker.RecordDispatch(null);
             Assert.IsTrue(
-                tracker.IsCrossRegionRedirect,
+                unresolved.IsCrossRegionRedirect,
                 "An unresolved retry may have crossed a region boundary, so it must report the safe conservative signal.");
 
-            tracker.RecordDispatch(WestUs);
-            Assert.IsTrue(tracker.IsCrossRegionRedirect);
+            (bool IsRetry, bool IsCrossRegionRedirect) next = tracker.RecordDispatch(WestUs);
+            Assert.IsTrue(next.IsCrossRegionRedirect);
         }
 
         [TestMethod]
@@ -131,9 +134,9 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             tracker.RecordDispatch(EastUs);
             tracker.RecordDispatch(WestUs);
-            tracker.RecordDispatch(null);
+            (bool IsRetry, bool IsCrossRegionRedirect) signals = tracker.RecordDispatch(null);
 
-            Assert.IsTrue(tracker.IsCrossRegionRedirect);
+            Assert.IsTrue(signals.IsCrossRegionRedirect);
         }
 
         [TestMethod]
@@ -142,14 +145,27 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
 
             // Retry-ness is a property of the token, not of where the dispatch landed.
-            tracker.RecordDispatch(null);
-            Assert.IsFalse(tracker.IsRetry);
+            (bool IsRetry, bool IsCrossRegionRedirect) first = tracker.RecordDispatch(null);
+            Assert.IsFalse(first.IsRetry);
 
-            tracker.RecordDispatch(null);
-            Assert.IsTrue(tracker.IsRetry);
+            (bool IsRetry, bool IsCrossRegionRedirect) next = tracker.RecordDispatch(null);
+            Assert.IsTrue(next.IsRetry);
             Assert.IsTrue(
-                tracker.IsCrossRegionRedirect,
+                next.IsCrossRegionRedirect,
                 "Two unresolved dispatches cannot be proven to have stayed in one region.");
+        }
+
+        [TestMethod]
+        public void RecordDispatch_ReturnedSnapshot_DoesNotChangeAfterLaterDispatches()
+        {
+            DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
+            (bool IsRetry, bool IsCrossRegionRedirect) first = tracker.RecordDispatch(EastUs);
+            (bool IsRetry, bool IsCrossRegionRedirect) sameRegion = tracker.RecordDispatch(EastUs);
+            (bool IsRetry, bool IsCrossRegionRedirect) crossRegion = tracker.RecordDispatch(WestUs);
+
+            Assert.AreEqual((false, false), first);
+            Assert.AreEqual((true, false), sameRegion);
+            Assert.AreEqual((true, true), crossRegion);
         }
 
         [TestMethod]
@@ -187,9 +203,14 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
-        public void StampDispatchHeaders_NullRequest_DoesNotThrow()
+        public void StampDispatchHeaders_NullRequest_ThrowsWithoutRecordingDispatch()
         {
-            new DistributedTransactionDispatchTracker().StampDispatchHeaders(null, EastUs);
+            DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
+            ArgumentNullException exception = Assert.ThrowsException<ArgumentNullException>(
+                () => tracker.StampDispatchHeaders(null, EastUs));
+
+            Assert.AreEqual("request", exception.ParamName);
+            Assert.AreEqual((false, false), tracker.RecordDispatch(WestUs));
         }
 
         [TestMethod]
@@ -249,8 +270,9 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             Assert.AreEqual(1, firstDispatchCount);
             Assert.AreEqual(0, inconsistentSnapshotCount);
-            Assert.IsTrue(tracker.IsRetry);
-            Assert.IsTrue(tracker.IsCrossRegionRedirect);
+            (bool IsRetry, bool IsCrossRegionRedirect) final = tracker.RecordDispatch(EastUs);
+            Assert.IsTrue(final.IsRetry);
+            Assert.IsTrue(final.IsCrossRegionRedirect);
         }
 
         private static void AssertHeaders(

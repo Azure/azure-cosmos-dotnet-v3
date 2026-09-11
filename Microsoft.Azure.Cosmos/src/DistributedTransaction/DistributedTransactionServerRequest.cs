@@ -24,7 +24,6 @@ namespace Microsoft.Azure.Cosmos
             this.Operations = operations ?? throw new ArgumentNullException(nameof(operations));
             this.serializerCore = serializerCore ?? throw new ArgumentNullException(nameof(serializerCore));
             this.tracksDispatch = tracksDispatch;
-            this.DispatchTracker = tracksDispatch ? new DistributedTransactionDispatchTracker() : null;
         }
 
         public IReadOnlyList<DistributedTransactionOperation> Operations { get; }
@@ -38,8 +37,8 @@ namespace Microsoft.Azure.Cosmos
         public Guid IdempotencyToken { get; private set; }
 
         /// <summary>
-        /// Tracks how the current <see cref="IdempotencyToken"/> has been dispatched, or null for a read
-        /// transaction.
+        /// Tracks how the current <see cref="IdempotencyToken"/> has been dispatched, or null before
+        /// the first token is generated and for read transactions.
         /// </summary>
         public DistributedTransactionDispatchTracker DispatchTracker { get; private set; }
 

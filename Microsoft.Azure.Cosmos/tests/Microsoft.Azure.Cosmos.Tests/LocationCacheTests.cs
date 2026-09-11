@@ -91,6 +91,32 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             }
         }
 
+        [TestMethod]
+        [Owner("atulk")]
+        public void ValidateGetExactLocationDoesNotInferDefaultEndpoint()
+        {
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: false);
+
+            Assert.IsNull(this.cache.GetExactLocation(LocationCacheTests.DefaultEndpoint));
+
+            foreach (AccountRegion databaseAccountLocation in this.databaseAccount.WriteLocationsInternal)
+            {
+                Assert.AreEqual(
+                    databaseAccountLocation.Name,
+                    this.cache.GetExactLocation(new Uri(databaseAccountLocation.Endpoint)));
+            }
+
+            foreach (AccountRegion databaseAccountLocation in this.databaseAccount.ReadLocationsInternal)
+            {
+                Assert.AreEqual(
+                    databaseAccountLocation.Name,
+                    this.cache.GetExactLocation(new Uri(databaseAccountLocation.Endpoint)));
+            }
+        }
+
 
         [TestMethod]
         [Owner("sourabhjain")]

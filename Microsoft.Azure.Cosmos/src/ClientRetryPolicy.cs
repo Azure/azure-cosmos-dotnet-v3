@@ -419,7 +419,7 @@ namespace Microsoft.Azure.Cosmos
 
                 this.distributedTransactionDispatchTracker?.StampDispatchHeaders(
                     request,
-                    this.globalEndpointManager.GetLocation(this.locationEndpoint));
+                    this.globalEndpointManager.GetExactLocation(this.locationEndpoint));
             }
 
             // Hedging-Detection API: tag the upcoming dispatch reason on Properties so that

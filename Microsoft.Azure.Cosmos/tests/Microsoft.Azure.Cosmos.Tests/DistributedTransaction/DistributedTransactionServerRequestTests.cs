@@ -56,28 +56,33 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 CancellationToken.None,
                 tracksDispatch: true);
 
-            Assert.IsNotNull(request.DispatchTracker, "A write transaction carries a tracker from construction.");
+            Assert.IsNull(request.DispatchTracker, "No tracker is needed before the first token is generated.");
 
-            request.RotateIdempotencyToken();
+            System.Guid firstToken = request.RotateIdempotencyToken();
 
             DistributedTransactionDispatchTracker firstTokenTracker = request.DispatchTracker;
+            Assert.IsNotNull(firstTokenTracker);
             firstTokenTracker.RecordDispatch("East US");
-            firstTokenTracker.RecordDispatch("West US");
-            Assert.IsTrue(firstTokenTracker.IsRetry, "Test precondition: the retry signal must be set before rotation.");
-            Assert.IsTrue(firstTokenTracker.IsCrossRegionRedirect, "Test precondition: the redirect signal must be set before rotation.");
+            (bool IsRetry, bool IsCrossRegionRedirect) firstTokenSignals = firstTokenTracker.RecordDispatch("West US");
+            Assert.IsTrue(firstTokenSignals.IsRetry, "Test precondition: the retry signal must be set before rotation.");
+            Assert.IsTrue(firstTokenSignals.IsCrossRegionRedirect, "Test precondition: the redirect signal must be set before rotation.");
 
             request.RotateIdempotencyToken();
 
+            Assert.AreNotEqual(firstToken, request.IdempotencyToken);
             Assert.AreNotSame(
                 firstTokenTracker,
                 request.DispatchTracker,
                 "A rotated token must not reuse the tracker that describes its predecessor.");
+            (bool IsRetry, bool IsCrossRegionRedirect) rotatedTokenSignals = request.DispatchTracker.RecordDispatch("West US");
             Assert.IsFalse(
-                request.DispatchTracker.IsRetry,
+                rotatedTokenSignals.IsRetry,
                 "A rotated token has never been dispatched, so the retry signal must not carry over.");
             Assert.IsFalse(
-                request.DispatchTracker.IsCrossRegionRedirect,
+                rotatedTokenSignals.IsCrossRegionRedirect,
                 "A rotated token has no record in any region, so the redirect signal must not carry over.");
+            Assert.AreEqual((true, true), firstTokenTracker.RecordDispatch("East US"),
+                "Rotation must not clear the previous token's tracker.");
         }
 
         [TestMethod]
@@ -95,6 +100,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             request.RotateIdempotencyToken();
 
             Assert.AreNotEqual(System.Guid.Empty, request.IdempotencyToken);
+            Assert.IsNull(request.DispatchTracker, "Rotating a read token must not allocate a tracker.");
         }
 
         private static IReadOnlyList<DistributedTransactionOperation> CreateTestOperations()
