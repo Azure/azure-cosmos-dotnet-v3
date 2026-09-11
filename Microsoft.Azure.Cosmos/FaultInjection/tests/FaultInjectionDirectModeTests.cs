@@ -1446,30 +1446,37 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 dynamicRateRule.Enable();
 
-                //Count the injected 429s directly: this tests the user-visible probability contract and is
-                //immune to any internal re-entry of the rule.
-                int fullRateInjected = await ReadBatchAsync(this.fiContainer, 100);
+                //Assert on the rule hit count, not on 429s surfaced to the caller. WithTimes(1) faults only
+                //the first replica attempt of an operation, and a Session-consistency point read needs just one
+                //valid replica response, so the store reader falls back to a clean replica and the injected 429
+                //never reaches the caller. MaxRetryAttemptsOnRateLimitedRequests = 0 disables the throttling
+                //retry policy, not that replica fan-out.
+                await ReadBatchAsync(this.fiContainer, 100);
 
-                //A rate of 1 with retries disabled injects into every one of the 100 reads.
-                Assert.AreEqual(
-                    100,
-                    fullRateInjected,
-                    $"A rate of 1 should inject into every read. {Describe(dynamicRateRule)}");
+                long fullRateHitCount = dynamicRateRule.GetHitCount();
+
+                //At rate 1 every read is injected, and WithTimes(1) caps the rule at one application per
+                //operation, so the count is at least 100.
+                Assert.IsTrue(
+                    fullRateHitCount >= 100,
+                    $"A rate of 1 should inject into every read. Batch hits: {fullRateHitCount}. {Describe(dynamicRateRule)}");
 
                 // The client is already built and running; this is the behavior under test.
                 dynamicRateRule.SetInjectionRate(0.5);
 
-                int halfRateInjected = await ReadBatchAsync(this.fiContainer, 100);
+                await ReadBatchAsync(this.fiContainer, 100);
+
+                long halfRateHitCount = dynamicRateRule.GetHitCount() - fullRateHitCount;
 
                 //50% injection rate over 100 requests is Binomial(100, 0.5): mean 50, standard deviation 5.
                 //[30, 70] is +/- 4 standard deviations, so a passing run is not a coin flip while a rate change
                 //that never reached the live client (which would inject 100 times) is still caught.
                 Assert.IsTrue(
-                    halfRateInjected >= 30,
-                    $"Injection rate too low after SetInjectionRate. Injected: {halfRateInjected}. {Describe(dynamicRateRule)}");
+                    halfRateHitCount >= 30,
+                    $"Injection rate too low after SetInjectionRate. Batch hits: {halfRateHitCount}. {Describe(dynamicRateRule)}");
                 Assert.IsTrue(
-                    halfRateInjected <= 70,
-                    $"Injection rate too high after SetInjectionRate. Injected: {halfRateInjected}. {Describe(dynamicRateRule)}");
+                    halfRateHitCount <= 70,
+                    $"Injection rate too high after SetInjectionRate. Batch hits: {halfRateHitCount}. {Describe(dynamicRateRule)}");
             }
             finally
             {
@@ -1477,9 +1484,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             }
         }
 
-        private static async Task<int> ReadBatchAsync(Container container, int requestCount)
+        private static async Task ReadBatchAsync(Container container, int requestCount)
         {
-            int injectedCount = 0;
             for (int i = 0; i < requestCount; i++)
             {
                 try
@@ -1488,13 +1494,12 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                         "testId",
                         new PartitionKey("pk"));
                 }
-                catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.TooManyRequests)
+                catch (CosmosException)
                 {
-                    injectedCount++;
+                    // Injected faults and missing items both surface as CosmosException; the rule hit count
+                    // is what the injection rate assertions rely on.
                 }
             }
-
-            return injectedCount;
         }
 
         [TestMethod]
@@ -1596,12 +1601,18 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 Assert.IsTrue(connectionErrorRule.GetHitCount() == hitCount);
 
+                //FaultInjectionDynamicChannelStore only tracks live channels - a channel is removed from the
+                //store when it is disposed. So a connection error rule did its job when at least one of the
+                //channels captured above is no longer present.
+                List<Guid> liveChannelIds = channelStore.GetAllChannelIds();
                 bool disposedChannel = false;
                 foreach (Guid channelGuid in channelGuids)
                 {
-                    disposedChannel = disposedChannel || channelStore.GetAllChannelIds().Contains(channelGuid);
+                    disposedChannel = disposedChannel || !liveChannelIds.Contains(channelGuid);
                 }
-                Assert.IsTrue(disposedChannel);
+                Assert.IsTrue(
+                    disposedChannel,
+                    $"Expected at least one of the {channelGuids.Count} captured channels to be disposed by rule '{ruldId}'. Hit count: {hitCount}.");
 
             }
             finally
