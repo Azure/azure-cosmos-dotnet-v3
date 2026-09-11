@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
     using ServerStoreModel = Microsoft.Azure.Documents.ServerStoreModel;
 
     [TestClass]
-    public class CollectionMetadataSecondaryIndexMetadataProviderTests
+    public class ContainerMetadataSecondaryIndexMetadataProviderTests
     {
         private static readonly string SourceRid = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
         private static readonly string GsiARid = ResourceId.NewDocumentCollectionId(42, 130).DocumentCollectionId.ToString();
@@ -38,17 +38,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 new MaterializedViewProperties
                 {
                     ResourceId = GsiBRid,
-                    ContainerType = CollectionMetadataSecondaryIndexMetadataProvider.GlobalSecondaryIndexContainerType,
+                    ContainerType = ContainerMetadataSecondaryIndexMetadataProvider.GlobalSecondaryIndexContainerType,
                 },
                 new MaterializedViewProperties
                 {
                     ResourceId = GsiARid,
-                    ContainerType = CollectionMetadataSecondaryIndexMetadataProvider.GlobalSecondaryIndexContainerType,
+                    ContainerType = ContainerMetadataSecondaryIndexMetadataProvider.GlobalSecondaryIndexContainerType,
                 },
                 new MaterializedViewProperties
                 {
                     ResourceId = GsiARid,
-                    ContainerType = CollectionMetadataSecondaryIndexMetadataProvider.GlobalSecondaryIndexContainerType,
+                    ContainerType = ContainerMetadataSecondaryIndexMetadataProvider.GlobalSecondaryIndexContainerType,
                 },
             };
 
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 new MaterializedViewProperties
                 {
                     ResourceId = FilteredRid,
-                    ContainerType = CollectionMetadataSecondaryIndexMetadataProvider.GlobalSecondaryIndexContainerType,
+                    ContainerType = ContainerMetadataSecondaryIndexMetadataProvider.GlobalSecondaryIndexContainerType,
                 },
                 new MaterializedViewProperties
                 {
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 new MaterializedViewProperties
                 {
                     ResourceId = EligibleRid,
-                    ContainerType = CollectionMetadataSecondaryIndexMetadataProvider.GlobalSecondaryIndexContainerType,
+                    ContainerType = ContainerMetadataSecondaryIndexMetadataProvider.GlobalSecondaryIndexContainerType,
                 },
             };
 
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             string sourcePath,
             string projectedPath)
         {
-            bool succeeded = CollectionMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
+            bool succeeded = ContainerMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
                 CreateMaterializedViewDefinition(query),
                 CreateSource(),
                 out IReadOnlyDictionary<string, string> includedProperties);
@@ -210,7 +210,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         [TestMethod]
         public void TryGetIncludedPropertiesMapsMultiplePropertyPaths()
         {
-            bool succeeded = CollectionMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
+            bool succeeded = ContainerMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
                 CreateMaterializedViewDefinition(
                     "SELECT c.id AS _id, c.region, c.address.zip AS postalCode FROM c"),
                 CreateSource(),
@@ -226,7 +226,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         [TestMethod]
         public void TryGetIncludedPropertiesMapsSpecialCharacterProperties()
         {
-            bool succeeded = CollectionMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
+            bool succeeded = ContainerMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
                 CreateMaterializedViewDefinition(
                     "SELECT c[\"a/b\"], c[\"a~1b\"] FROM c"),
                 CreateSource(),
@@ -241,7 +241,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         [TestMethod]
         public void TryGetIncludedPropertiesDistinguishesPropertyFromNestedPath()
         {
-            bool succeeded = CollectionMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
+            bool succeeded = ContainerMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
                 CreateMaterializedViewDefinition(
                     "SELECT c[\"a/b\"], c.a.b FROM c"),
                 CreateSource(),
@@ -256,7 +256,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         [TestMethod]
         public void TryGetIncludedPropertiesMapsWildcardAndPartitionKey()
         {
-            bool succeeded = CollectionMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
+            bool succeeded = ContainerMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
                 CreateMaterializedViewDefinition("SELECT * FROM c"),
                 CreateSource(),
                 out IReadOnlyDictionary<string, string> includedProperties);
@@ -284,7 +284,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         [DataRow("SELECT other.id FROM c")]
         public void TryGetIncludedPropertiesRejectsUnsupportedDefinitions(string query)
         {
-            bool succeeded = CollectionMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
+            bool succeeded = ContainerMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
                 CreateMaterializedViewDefinition(query),
                 CreateSource(),
                 out IReadOnlyDictionary<string, string> includedProperties);
@@ -296,13 +296,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         [TestMethod]
         public void TryGetIncludedPropertiesRejectsMissingInputs()
         {
-            Assert.IsFalse(CollectionMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
+            Assert.IsFalse(ContainerMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
                 definition: null,
                 CreateSource(),
                 out IReadOnlyDictionary<string, string> missingDefinitionProperties));
             Assert.IsNull(missingDefinitionProperties);
 
-            Assert.IsFalse(CollectionMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
+            Assert.IsFalse(ContainerMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
                 CreateMaterializedViewDefinition("SELECT * FROM c"),
                 source: null,
                 out IReadOnlyDictionary<string, string> missingSourceProperties));
@@ -320,7 +320,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         {
             Assert.AreEqual(
                 expected,
-                CollectionMetadataSecondaryIndexMetadataProvider.IsFilteredMaterializedView(
+                ContainerMetadataSecondaryIndexMetadataProvider.IsFilteredMaterializedView(
                     CreateMaterializedViewDefinition(query)));
         }
 
@@ -345,7 +345,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                     SourceContainerId = "source",
                     SourceContainerResourceId = SourceRid,
                     Definition = query,
-                    ContainerType = CollectionMetadataSecondaryIndexMetadataProvider.GlobalSecondaryIndexContainerType,
+                    ContainerType = ContainerMetadataSecondaryIndexMetadataProvider.GlobalSecondaryIndexContainerType,
                 };
 
             candidate.IndexingPolicy.IncludedPaths.Add(new IncludedPath { Path = "/*" });
@@ -369,10 +369,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             {
                 this.collectionCache = new TestClientCollectionCache(collections);
                 this.documentClient = new TestDocumentClient(this.collectionCache);
-                this.Provider = new CollectionMetadataSecondaryIndexMetadataProvider(this.documentClient);
+                this.Provider = new ContainerMetadataSecondaryIndexMetadataProvider(this.documentClient);
             }
 
-            public CollectionMetadataSecondaryIndexMetadataProvider Provider { get; }
+            public ContainerMetadataSecondaryIndexMetadataProvider Provider { get; }
 
             public int ResolveCount => this.collectionCache.ResolveCount;
 

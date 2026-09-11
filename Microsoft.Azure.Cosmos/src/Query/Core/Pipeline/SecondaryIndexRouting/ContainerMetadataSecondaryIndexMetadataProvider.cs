@@ -23,14 +23,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
     /// Discovers secondary indexes from collection secondaryIndexesMetadata and normalizes them to
     /// the provider-neutral query-routing contract.
     /// </summary>
-    internal sealed class CollectionMetadataSecondaryIndexMetadataProvider : ISecondaryIndexMetadataProvider
+    internal sealed class ContainerMetadataSecondaryIndexMetadataProvider : ISecondaryIndexMetadataProvider
     {
         internal const string GlobalSecondaryIndexContainerType = "GlobalSecondaryIndex";
         internal const string WildcardProjectionPath = "/*";
 
         private readonly DocumentClient documentClient;
 
-        internal CollectionMetadataSecondaryIndexMetadataProvider(DocumentClient documentClient)
+        internal ContainerMetadataSecondaryIndexMetadataProvider(DocumentClient documentClient)
         {
             this.documentClient = documentClient ?? throw new ArgumentNullException(nameof(documentClient));
         }
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             }
 
             using ITrace discoveryTrace = (trace ?? NoOpTrace.Singleton).StartChild(
-                "CollectionMetadataSecondaryIndexDiscovery",
+                "ContainerMetadataSecondaryIndexDiscovery",
                 TraceComponent.Query,
                 TraceLevel.Info);
 
@@ -61,9 +61,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             List<ISecondaryIndexMetadata> secondaryIndexesMetadata = new List<ISecondaryIndexMetadata>();
             HashSet<string> discoveredRids = new HashSet<string>(StringComparer.Ordinal);
             foreach (MaterializedViewProperties mvReference in mvReferences
-                .Where(mvReference =>
-                    !string.IsNullOrWhiteSpace(mvReference?.ResourceId)
-                    && IsGlobalSecondaryIndexContainerType(mvReference.ContainerType))
+                .Where(mvReference => !string.IsNullOrWhiteSpace(mvReference?.ResourceId))
                 .OrderBy(mvReference => mvReference.ResourceId, StringComparer.Ordinal))
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -111,7 +109,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
         {
             MaterializedViewDefinition definition = candidate?.MaterializedViewDefinition;
             return definition != null
-                && IsGlobalSecondaryIndexContainerType(definition.ContainerType)
                 && source != null
                 && string.Equals(definition.SourceContainerResourceId, source.ResourceId, StringComparison.Ordinal)
                 && string.Equals(definition.SourceContainerId, source.Id, StringComparison.Ordinal);
@@ -214,12 +211,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             return !string.IsNullOrWhiteSpace(definition?.Definition)
                 && SqlQueryParser.TryParse(definition.Definition, out SqlQuery query)
                 && query.WhereClause != null;
-        }
-
-        private static bool IsGlobalSecondaryIndexContainerType(string containerType)
-        {
-            return string.IsNullOrWhiteSpace(containerType)
-                || string.Equals(containerType, GlobalSecondaryIndexContainerType, StringComparison.OrdinalIgnoreCase);
         }
 
         private static T Clone<T>(T value)

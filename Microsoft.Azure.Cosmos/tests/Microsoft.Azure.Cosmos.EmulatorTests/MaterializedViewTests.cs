@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual("SELECT * FROM c", definition.Definition);
 
             using CosmosClient discoveryClient = TestCommon.CreateCosmosClient();
-            ISecondaryIndexMetadataProvider provider = new CollectionMetadataSecondaryIndexMetadataProvider(
+            ISecondaryIndexMetadataProvider provider = new ContainerMetadataSecondaryIndexMetadataProvider(
                 discoveryClient.DocumentClient);
             IReadOnlyList<ISecondaryIndexMetadata> metadata = await provider.GetSecondaryIndexMetadataAsync(
                 sourceCreateResponse.Resource.ResourceId,
