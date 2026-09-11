@@ -2693,7 +2693,7 @@ cancellationToken) =>
         }
 
         // This class is same as CosmosEncryptor but copied so as to induce decryption failure easily for testing.
-        private class TestEncryptor : Encryptor
+        private class TestEncryptor : Encryptor, IDataEncryptionKeyAccessor
         {
             public DataEncryptionKeyProvider DataEncryptionKeyProvider { get; }
             public bool FailDecryption { get; set; }
@@ -2734,10 +2734,13 @@ cancellationToken) =>
                 return await this.encryptor.EncryptAsync(plainText, dataEncryptionKeyId, encryptionAlgorithm, cancellationToken);
             }
 
-            public override async Task<DataEncryptionKey> GetEncryptionKeyAsync(string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
+            public async Task<DataEncryptionKey> GetEncryptionKeyAsync(string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
             {
                 this.ThrowIfFail(dataEncryptionKeyId);
-                return await this.encryptor.GetEncryptionKeyAsync(dataEncryptionKeyId, encryptionAlgorithm, cancellationToken);
+                return await ((IDataEncryptionKeyAccessor)this.encryptor).GetEncryptionKeyAsync(
+                    dataEncryptionKeyId,
+                    encryptionAlgorithm,
+                    cancellationToken);
             }
         }
 
@@ -3139,4 +3142,3 @@ cancellationToken) =>
         #endregion
     }
 }
-
