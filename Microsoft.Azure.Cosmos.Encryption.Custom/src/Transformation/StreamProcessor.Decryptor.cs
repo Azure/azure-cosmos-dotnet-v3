@@ -351,7 +351,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             int encryptedPathCount = properties.EncryptedPaths is ICollection<string> ec ? ec.Count : properties.EncryptedPaths.Count();
             using ArrayPoolManager arrayPoolManager = new (initialRentCapacity: (encryptedPathCount * 2) + 4);
 
-            DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(properties.DataEncryptionKeyId, properties.EncryptionAlgorithm, cancellationToken);
+            MdeCryptoOperationAdapter cryptoOperationAdapter = await MdeCryptoOperationAdapter.CreateAsync(
+                encryptor,
+                properties.DataEncryptionKeyId,
+                properties.EncryptionAlgorithm,
+                this.Encryptor,
+                cancellationToken).ConfigureAwait(false);
+            if (cryptoOperationAdapter.UsesPublicEncryptor)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
 
             List<string> pathsDecrypted = new (encryptedPathCount);
             using Utf8JsonWriter writer = new (outputBufferWriter);
@@ -368,25 +377,63 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             bool isIgnoredBlock = false;
 
             string decryptPropertyName = null;
+            Task<MdeCryptoResult> pendingCryptoOperation = null;
+            TypeMarker pendingTypeMarker = default;
+            string pendingDecryptPropertyName = null;
 
             while (!isFinalBlock)
             {
                 int dataLength = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
                 int dataSize = dataLength + leftOver;
                 isFinalBlock = dataLength == 0;
-                long bytesConsumed = 0;
 
-                bytesConsumed = this.TransformDecryptBuffer(buffer.AsSpan(0, dataSize), encryptionKey, pathsDecrypted, writer, ref state, encryptedPathsTable, arrayPoolManager, isFinalBlock, ref isIgnoredBlock, ref decryptPropertyName);
+                while (true)
+                {
+                    pendingCryptoOperation = null;
+                    long bytesConsumed = this.TransformDecryptBuffer(
+                        buffer.AsSpan(0, dataSize),
+                        cryptoOperationAdapter,
+                        pathsDecrypted,
+                        writer,
+                        ref state,
+                        encryptedPathsTable,
+                        arrayPoolManager,
+                        isFinalBlock,
+                        ref isIgnoredBlock,
+                        ref decryptPropertyName,
+                        ref pendingCryptoOperation,
+                        ref pendingTypeMarker,
+                        ref pendingDecryptPropertyName);
+                    int remaining = dataSize - (int)bytesConsumed;
 
-                leftOver = dataSize - (int)bytesConsumed;
+                    if (pendingCryptoOperation != null)
+                    {
+                        MdeCryptoResult result = await pendingCryptoOperation.ConfigureAwait(false);
+                        WriteDecryptedValue(writer, pendingTypeMarker, result.Buffer, result.Length);
+                        pathsDecrypted.Add(pendingDecryptPropertyName);
+                        pendingDecryptPropertyName = null;
 
-                buffer = HandleReadBuffer(
-                    buffer,
-                    dataSize,
-                    leftOver,
-                    isFinalBlock,
-                    arrayPoolManager,
-                    JsonFeedStreamHelper.MaximumBufferSize);
+                        if (remaining == 0)
+                        {
+                            leftOver = 0;
+                            break;
+                        }
+
+                        buffer.AsSpan((int)bytesConsumed, remaining).CopyTo(buffer);
+                        dataSize = remaining;
+                        continue;
+                    }
+
+                    leftOver = remaining;
+                    buffer = HandleReadBuffer(
+                        buffer,
+                        dataSize,
+                        leftOver,
+                        isFinalBlock,
+                        arrayPoolManager,
+                        JsonFeedStreamHelper.MaximumBufferSize);
+                    break;
+                }
             }
 
             writer.Flush();
@@ -425,7 +472,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
         private long TransformDecryptBuffer(
             ReadOnlySpan<byte> buffer,
-            DataEncryptionKey encryptionKey,
+            MdeCryptoOperationAdapter cryptoOperationAdapter,
             List<string> pathsDecrypted,
             Utf8JsonWriter writer,
             ref JsonReaderState state,
@@ -433,7 +480,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             ArrayPoolManager arrayPoolManager,
             bool isFinalBlock,
             ref bool isIgnoredBlock,
-            ref string decryptPropertyName)
+            ref string decryptPropertyName,
+            ref Task<MdeCryptoResult> pendingCryptoOperation,
+            ref TypeMarker pendingTypeMarker,
+            ref string pendingDecryptPropertyName)
         {
             Utf8JsonReader reader = new (buffer, isFinalBlock, state);
 
@@ -460,7 +510,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         }
                         else
                         {
-                            this.TransformDecryptProperty(ref reader, encryptionKey, writer, arrayPoolManager);
+                            if (!this.TryTransformDecryptProperty(
+                                ref reader,
+                                cryptoOperationAdapter,
+                                writer,
+                                arrayPoolManager,
+                                out pendingCryptoOperation,
+                                out pendingTypeMarker))
+                            {
+                                pendingDecryptPropertyName = decryptPropertyName;
+                                decryptPropertyName = null;
+                                state = reader.CurrentState;
+                                return reader.BytesConsumed;
+                            }
 
                             pathsDecrypted.Add(decryptPropertyName);
                         }
@@ -553,7 +615,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 tokenType == JsonTokenType.Null;
         }
 
-        private void TransformDecryptProperty(ref Utf8JsonReader reader, DataEncryptionKey encryptionKey, Utf8JsonWriter writer, ArrayPoolManager arrayPoolManager)
+        private bool TryTransformDecryptProperty(
+            ref Utf8JsonReader reader,
+            MdeCryptoOperationAdapter cryptoOperationAdapter,
+            Utf8JsonWriter writer,
+            ArrayPoolManager arrayPoolManager,
+            out Task<MdeCryptoResult> pendingCryptoOperation,
+            out TypeMarker typeMarker)
         {
             byte[] cipherTextWithTypeMarker = arrayPoolManager.Rent(reader.ValueSpan.Length);
 
@@ -566,10 +634,29 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 throw new InvalidOperationException($"Base64 decoding failed: {status}");
             }
 
-            (byte[] bytes, int processedBytes) = this.Encryptor.Decrypt(encryptionKey, cipherTextWithTypeMarker, cipherTextLength, arrayPoolManager);
+            typeMarker = (TypeMarker)cipherTextWithTypeMarker[0];
+            if (!cryptoOperationAdapter.TryDecrypt(
+                cipherTextWithTypeMarker,
+                cipherTextLength,
+                arrayPoolManager,
+                out MdeCryptoResult result,
+                out pendingCryptoOperation))
+            {
+                return false;
+            }
 
-            ReadOnlySpan<byte> bytesToWrite = bytes.AsSpan(0, processedBytes);
-            switch ((TypeMarker)cipherTextWithTypeMarker[0])
+            WriteDecryptedValue(writer, typeMarker, result.Buffer, result.Length);
+            return true;
+        }
+
+        private static void WriteDecryptedValue(
+            Utf8JsonWriter writer,
+            TypeMarker typeMarker,
+            byte[] bytes,
+            int length)
+        {
+            ReadOnlySpan<byte> bytesToWrite = bytes.AsSpan(0, length);
+            switch (typeMarker)
             {
                 case TypeMarker.String:
                     writer.WriteStringValue(bytesToWrite);
