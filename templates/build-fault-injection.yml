@@ -20,6 +20,12 @@ parameters:
   VmImage: ''
   IncludeIntegration: false
   MultiRegionConnectionString: ''
+  # FaultInjectionProxyTests talks to the thin client proxy and reads
+  # COSMOSDB_THIN_CLIENT (see FaultInjection/tests/Utils/TestCommon.cs ->
+  # GetThinClientConnectionString). Note the env var the tests read is
+  # COSMOSDB_THIN_CLIENT, while the ADO variable holding the account is named
+  # COSMOSDB_THINCLIENT (no underscore) -- the release pipeline bridges the two.
+  ThinClientConnectionString: ''
   UnitTestFilter: ' --filter "FullyQualifiedName~FaultInjectionUnitTests|FullyQualifiedName~FaultInjectionBuilderValidationTests" --verbosity normal '
 
 jobs:
@@ -128,3 +134,4 @@ jobs:
         testRunTitle: FaultInjectionTests
       env:
         COSMOSDB_MULTI_REGION: ${{ parameters.MultiRegionConnectionString }} # Real Account Connection String used by Integration Tests while running as part of release pipeline
+        COSMOSDB_THIN_CLIENT: ${{ parameters.ThinClientConnectionString }} # Thin client proxy account used by FaultInjectionProxyTests. ADO secret variables are not auto-exported to the process environment, so this mapping is required.

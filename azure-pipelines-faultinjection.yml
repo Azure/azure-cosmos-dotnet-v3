@@ -28,6 +28,7 @@ stages:
         VmImage: '${{ variables.VmImage }}'
         IncludeIntegration: true
         MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
+        ThinClientConnectionString: $(COSMOSDB_THINCLIENT)
 
 - stage:
   displayName: Publish 
