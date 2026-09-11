@@ -35,17 +35,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             this.documentClient = documentClient ?? throw new ArgumentNullException(nameof(documentClient));
         }
 
-        public async Task<IReadOnlyList<ISecondaryIndexMetadata>> GetSecondaryIndexMetadataAsync(
+        public async Task<IEnumerable<ISecondaryIndexMetadata>> GetSecondaryIndexMetadataAsync(
             string sourceCollectionRid,
             ITrace trace,
             CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(sourceCollectionRid))
+            if (string.IsNullOrEmpty(sourceCollectionRid))
             {
                 throw new ArgumentNullException(nameof(sourceCollectionRid));
             }
 
-            using ITrace discoveryTrace = (trace ?? NoOpTrace.Singleton).StartChild(
+            using ITrace discoveryTrace = trace.StartChild(
                 "ContainerMetadataSecondaryIndexDiscovery",
                 TraceComponent.Query,
                 TraceLevel.Info);
@@ -59,23 +59,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             }
 
             List<ISecondaryIndexMetadata> secondaryIndexesMetadata = new List<ISecondaryIndexMetadata>();
-            HashSet<string> discoveredRids = new HashSet<string>(StringComparer.Ordinal);
-            foreach (MaterializedViewProperties mvReference in mvReferences
-                .Where(mvReference => !string.IsNullOrWhiteSpace(mvReference?.ResourceId))
-                .OrderBy(mvReference => mvReference.ResourceId, StringComparer.Ordinal))
+            IEnumerable<string> secondaryIndexRids = mvReferences
+                .Select(mvReference => mvReference.ResourceId)
+                .Where(resourceId => !string.IsNullOrEmpty(resourceId))
+                .Distinct(StringComparer.Ordinal);
+
+            foreach (string secondaryIndexRid in secondaryIndexRids)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                if (!discoveredRids.Add(mvReference.ResourceId))
+
+                ContainerProperties candidate = await ResolveByRidAsync(collectionCache, secondaryIndexRid, discoveryTrace, cancellationToken);
+                SecondaryIndexMetadata secondaryIndexMetadata = TryCreateMetadata(candidate, source);
+                if (secondaryIndexMetadata == null)
                 {
                     continue;
                 }
 
-                ContainerProperties candidate = await ResolveByRidAsync(collectionCache, mvReference.ResourceId, discoveryTrace, cancellationToken);
-                SecondaryIndexMetadata secondaryIndexMetadata = TryCreateMetadata(candidate, source);
-                if (secondaryIndexMetadata != null)
-                {
-                    secondaryIndexesMetadata.Add(secondaryIndexMetadata);
-                }
+                secondaryIndexesMetadata.Add(secondaryIndexMetadata);
             }
 
             discoveryTrace.AddDatum("SecondaryIndexDiscovery.CandidateCount", secondaryIndexesMetadata.Count);
@@ -200,8 +200,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                 candidate.Id,
                 candidate.ResourceId,
                 source.ResourceId,
-                Clone(candidate.PartitionKey),
-                Clone(candidate.IndexingPolicy),
+                candidate.PartitionKey,
+                candidate.IndexingPolicy,
                 includedProperties,
                 ConsistencyLevel.Eventual);
         }
@@ -211,11 +211,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             return !string.IsNullOrWhiteSpace(definition?.Definition)
                 && SqlQueryParser.TryParse(definition.Definition, out SqlQuery query)
                 && query.WhereClause != null;
-        }
-
-        private static T Clone<T>(T value)
-        {
-            return JsonConvert.DeserializeObject<T>(JsonConvert.SerializeObject(value));
         }
 
         private static bool TryGetRootCollectionIdentifier(

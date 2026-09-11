@@ -67,10 +67,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
 
             using ProviderTestContext context = new ProviderTestContext(collections);
 
-            IReadOnlyList<ISecondaryIndexMetadata> metadata = await context.Provider.GetSecondaryIndexMetadataAsync(SourceRid, NoOpTrace.Singleton, CancellationToken.None);
+            IEnumerable<ISecondaryIndexMetadata> metadata = await context.Provider.GetSecondaryIndexMetadataAsync(SourceRid, NoOpTrace.Singleton, CancellationToken.None);
 
             Assert.AreEqual(3, context.ResolveCount);
-            Assert.AreEqual(2, metadata.Count);
+            Assert.AreEqual(2, metadata.Count());
             CollectionAssert.AreEqual(
                 new[] { GsiARid, GsiBRid }.OrderBy(rid => rid, StringComparer.Ordinal).ToArray(),
                 metadata.Select(candidate => candidate.Rid).ToArray());
@@ -104,9 +104,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 };
             using ProviderTestContext context = new ProviderTestContext(collections);
 
-            IReadOnlyList<ISecondaryIndexMetadata> metadata = await context.Provider.GetSecondaryIndexMetadataAsync(SourceRid, NoOpTrace.Singleton);
+            IEnumerable<ISecondaryIndexMetadata> metadata = await context.Provider.GetSecondaryIndexMetadataAsync(SourceRid, NoOpTrace.Singleton);
 
-            Assert.AreEqual(0, metadata.Count);
+            Assert.AreEqual(0, metadata.Count());
         }
 
         [TestMethod]
@@ -131,9 +131,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 };
             using ProviderTestContext context = new ProviderTestContext(collections);
 
-            IReadOnlyList<ISecondaryIndexMetadata> metadata = await context.Provider.GetSecondaryIndexMetadataAsync(SourceRid, NoOpTrace.Singleton);
+            IEnumerable<ISecondaryIndexMetadata> metadata = await context.Provider.GetSecondaryIndexMetadataAsync(SourceRid, NoOpTrace.Singleton);
 
-            Assert.AreEqual(0, metadata.Count);
+            Assert.AreEqual(0, metadata.Count());
         }
 
         [TestMethod]
@@ -176,10 +176,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 };
             using ProviderTestContext context = new ProviderTestContext(collections);
 
-            IReadOnlyList<ISecondaryIndexMetadata> metadata = await context.Provider.GetSecondaryIndexMetadataAsync(SourceRid, NoOpTrace.Singleton);
+            IEnumerable<ISecondaryIndexMetadata> metadata = await context.Provider.GetSecondaryIndexMetadataAsync(SourceRid, NoOpTrace.Singleton);
 
-            Assert.AreEqual(1, metadata.Count);
-            Assert.AreEqual(EligibleRid, metadata[0].Rid);
+            Assert.AreEqual(1, metadata.Count());
+            Assert.AreEqual(EligibleRid, metadata.ElementAt(0).Rid);
         }
 
         #region TryGetIncludedProperties Tests

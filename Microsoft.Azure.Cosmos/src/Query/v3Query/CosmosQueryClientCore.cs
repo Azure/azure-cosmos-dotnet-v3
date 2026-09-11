@@ -81,14 +81,16 @@ namespace Microsoft.Azure.Cosmos
                 };
             }
 
-            IReadOnlyList<ISecondaryIndexMetadata> globalSecondaryIndexes = null;
+            IEnumerable<ISecondaryIndexMetadata> globalSecondaryIndexes = null;
             if (this.clientContext.ClientOptions?.EnableSecondaryIndexLookupRouting == true)
             {
                 try
                 {
                     globalSecondaryIndexes = 
                         await this.clientContext.SecondaryIndexMetadataCache.TryGetSecondaryIndexMetadataAsync(
-                            containerProperties.ResourceId, trace, cancellationToken: cancellationToken);
+                            containerProperties.ResourceId, 
+                            trace, 
+                            cancellationToken: cancellationToken);
                 }
                 catch (CosmosException exception)
                 {

@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
@@ -15,15 +14,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
     internal sealed class SecondaryIndexMetadataCache : ISecondaryIndexMetadataCache
     {
         private readonly ISecondaryIndexMetadataProvider provider;
-        private readonly AsyncCache<string, IReadOnlyList<ISecondaryIndexMetadata>> cache;
+        private readonly AsyncCache<string, IEnumerable<ISecondaryIndexMetadata>> cache;
 
         public SecondaryIndexMetadataCache(ISecondaryIndexMetadataProvider indexMetadataProvider, bool enableAsyncCacheExceptionNoSharing = true)
         {
             this.provider = indexMetadataProvider ?? throw new ArgumentNullException(nameof(indexMetadataProvider));
-            this.cache = new AsyncCache<string, IReadOnlyList<ISecondaryIndexMetadata>>(enableAsyncCacheExceptionNoSharing);
+            this.cache = new AsyncCache<string, IEnumerable<ISecondaryIndexMetadata>>(enableAsyncCacheExceptionNoSharing);
         }
 
-        public Task<IReadOnlyList<ISecondaryIndexMetadata>> TryGetSecondaryIndexMetadataAsync(
+        public Task<IEnumerable<ISecondaryIndexMetadata>> TryGetSecondaryIndexMetadataAsync(
             string sourceCollectionRid,
             ITrace trace,
             bool forceRefresh = false,
@@ -40,14 +39,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                 obsoleteValue: null,
                 async () =>
                 {
-                    IReadOnlyList<ISecondaryIndexMetadata> metadata = 
+                    IEnumerable<ISecondaryIndexMetadata> metadata = 
                         await this.provider.GetSecondaryIndexMetadataAsync(sourceCollectionRid, trace, cancellationToken);
                     if (metadata == null)
                     {
                         throw new InvalidOperationException("Secondary index metadata providers must return an empty list when no candidates exist.");
                     }
 
-                    return new ReadOnlyCollection<ISecondaryIndexMetadata>(new List<ISecondaryIndexMetadata>(metadata));
+                    return metadata;
                 },
                 cancellationToken,
                 forceRefresh);

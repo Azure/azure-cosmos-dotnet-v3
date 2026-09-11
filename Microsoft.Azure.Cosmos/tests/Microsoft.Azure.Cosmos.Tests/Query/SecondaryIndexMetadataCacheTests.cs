@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System.Linq;
     using PartitionKeyDefinition = Microsoft.Azure.Documents.PartitionKeyDefinition;
 
     [TestClass]
@@ -27,12 +28,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             });
             SecondaryIndexMetadataCache cache = new SecondaryIndexMetadataCache(provider);
 
-            Task<IReadOnlyList<ISecondaryIndexMetadata>> first = cache.TryGetSecondaryIndexMetadataAsync("sourceRid", NoOpTrace.Singleton);
-            Task<IReadOnlyList<ISecondaryIndexMetadata>> second = cache.TryGetSecondaryIndexMetadataAsync("sourceRid", NoOpTrace.Singleton);
+            Task<IEnumerable<ISecondaryIndexMetadata>> first = cache.TryGetSecondaryIndexMetadataAsync("sourceRid", NoOpTrace.Singleton);
+            Task<IEnumerable<ISecondaryIndexMetadata>> second = cache.TryGetSecondaryIndexMetadataAsync("sourceRid", NoOpTrace.Singleton);
 
             releaseProvider.SetResult(true);
             await Task.WhenAll(first, second);
-            IReadOnlyList<ISecondaryIndexMetadata> third = await cache.TryGetSecondaryIndexMetadataAsync("sourceRid", NoOpTrace.Singleton);
+            IEnumerable<ISecondaryIndexMetadata> third = await cache.TryGetSecondaryIndexMetadataAsync("sourceRid", NoOpTrace.Singleton);
 
             Assert.AreEqual(1, provider.CallCount);
             Assert.AreSame(first.Result, second.Result);
@@ -46,20 +47,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 Task.FromResult<IReadOnlyList<ISecondaryIndexMetadata>>(new[] { CreateMetadata($"gsi{providerCallSequence++}") }));
             SecondaryIndexMetadataCache cache = new SecondaryIndexMetadataCache(provider);
 
-            IReadOnlyList<ISecondaryIndexMetadata> first = await cache.TryGetSecondaryIndexMetadataAsync("sourceRid", NoOpTrace.Singleton);
-            IReadOnlyList<ISecondaryIndexMetadata> cached = await cache.TryGetSecondaryIndexMetadataAsync("sourceRid", NoOpTrace.Singleton);
-            IReadOnlyList<ISecondaryIndexMetadata> refreshed = await cache.TryGetSecondaryIndexMetadataAsync("sourceRid", NoOpTrace.Singleton, forceRefresh: true);
+            IEnumerable<ISecondaryIndexMetadata> first = await cache.TryGetSecondaryIndexMetadataAsync("sourceRid", NoOpTrace.Singleton);
+            IEnumerable<ISecondaryIndexMetadata> cached = await cache.TryGetSecondaryIndexMetadataAsync("sourceRid", NoOpTrace.Singleton);
+            IEnumerable<ISecondaryIndexMetadata> refreshed = await cache.TryGetSecondaryIndexMetadataAsync("sourceRid", NoOpTrace.Singleton, forceRefresh: true);
 
             cache.Invalidate("sourceRid");
-            IReadOnlyList<ISecondaryIndexMetadata> repopulated = await cache.TryGetSecondaryIndexMetadataAsync("sourceRid", NoOpTrace.Singleton);
+            IEnumerable<ISecondaryIndexMetadata> repopulated = await cache.TryGetSecondaryIndexMetadataAsync("sourceRid", NoOpTrace.Singleton);
 
             Assert.AreSame(first, cached);
             Assert.AreNotSame(first, refreshed);
             Assert.AreNotSame(refreshed, repopulated);
             Assert.AreEqual(3, provider.CallCount);
-            Assert.AreEqual("gsi0", first[0].Rid);
-            Assert.AreEqual("gsi1", refreshed[0].Rid);
-            Assert.AreEqual("gsi2", repopulated[0].Rid);
+            Assert.AreEqual("gsi0", first.ElementAt(0).Rid);
+            Assert.AreEqual("gsi1", refreshed.ElementAt(0).Rid);
+            Assert.AreEqual("gsi2", repopulated.ElementAt(0).Rid);
         }
 
         [TestMethod]
@@ -78,10 +79,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
 
             await Assert.ThrowsExceptionAsync<InvalidOperationException>(() =>
                 cache.TryGetSecondaryIndexMetadataAsync("sourceRid", NoOpTrace.Singleton));
-            IReadOnlyList<ISecondaryIndexMetadata> result = await cache.TryGetSecondaryIndexMetadataAsync("sourceRid", NoOpTrace.Singleton);
+            IEnumerable<ISecondaryIndexMetadata> result = await cache.TryGetSecondaryIndexMetadataAsync("sourceRid", NoOpTrace.Singleton);
 
             Assert.AreEqual(2, provider.CallCount);
-            Assert.AreEqual(0, result.Count);
+            Assert.AreEqual(0, result.Count());
         }
 
         [TestMethod]
@@ -149,13 +150,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
 
             public int CallCount { get; private set; }
 
-            public Task<IReadOnlyList<ISecondaryIndexMetadata>> GetSecondaryIndexMetadataAsync(
+            public Task<IEnumerable<ISecondaryIndexMetadata>> GetSecondaryIndexMetadataAsync(
                 string collectionRid,
                 ITrace trace,
                 CancellationToken cancellationToken = default)
             {
                 this.CallCount++;
-                return this.callback(collectionRid, trace, cancellationToken);
+                return this.callback(collectionRid, trace, cancellationToken).ContinueWith(t => (IEnumerable<ISecondaryIndexMetadata>)t.Result, cancellationToken);
             }
         }
     }

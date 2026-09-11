@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
         /// Gets normalized secondary index metadata for a source collection.
         /// </summary>
         /// <returns>The secondary indexes associated with the source collection.</returns>
-        Task<IReadOnlyList<ISecondaryIndexMetadata>> GetSecondaryIndexMetadataAsync(
+        Task<IEnumerable<ISecondaryIndexMetadata>> GetSecondaryIndexMetadataAsync(
             string sourceCollectionRid,
             ITrace trace,
             CancellationToken cancellationToken = default);

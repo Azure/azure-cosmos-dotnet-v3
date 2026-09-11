@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy,
             Cosmos.GeospatialType geospatialType,
             bool useLengthAwareRangeComparer,
-            IReadOnlyList<ISecondaryIndexMetadata> globalSecondaryIndexes = null)
+            IEnumerable<ISecondaryIndexMetadata> globalSecondaryIndexes = null)
         {
             this.ResourceId = resourceId;
             this.EffectiveRangesForPartitionKey = effectivePartitionKeyRanges;
@@ -42,6 +42,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
         public Cosmos.GeospatialType GeospatialType { get; }
         public bool UseLengthAwareRangeComparer { get; }
 
-        public IReadOnlyList<ISecondaryIndexMetadata> GlobalSecondaryIndexes { get; }
+        public IEnumerable<ISecondaryIndexMetadata> GlobalSecondaryIndexes { get; }
     }
 }

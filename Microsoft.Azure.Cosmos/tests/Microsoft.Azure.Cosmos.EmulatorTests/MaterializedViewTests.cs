@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting;
@@ -90,17 +91,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using CosmosClient discoveryClient = TestCommon.CreateCosmosClient();
             ISecondaryIndexMetadataProvider provider = new ContainerMetadataSecondaryIndexMetadataProvider(
                 discoveryClient.DocumentClient);
-            IReadOnlyList<ISecondaryIndexMetadata> metadata = await provider.GetSecondaryIndexMetadataAsync(
+            IEnumerable<ISecondaryIndexMetadata> metadata = await provider.GetSecondaryIndexMetadataAsync(
                 sourceCreateResponse.Resource.ResourceId,
                 NoOpTrace.Singleton);
 
-            Assert.AreEqual(1, metadata.Count);
-            Assert.AreEqual(materializedViewCreateResponse.Resource.ResourceId, metadata[0].Rid);
-            Assert.AreEqual(sourceCreateResponse.Resource.ResourceId, metadata[0].SourceCollectionRid);
-            Assert.AreEqual("/pk", metadata[0].PartitionKey.Paths[0]);
-            Assert.AreEqual("/*", metadata[0].IncludedProperties["/*"]);
-            Assert.AreEqual("/pk", metadata[0].IncludedProperties["/pk"]);
-            Assert.AreEqual(ConsistencyLevel.Eventual, metadata[0].Consistency);
+            Assert.AreEqual(1, metadata.Count());
+            Assert.AreEqual(materializedViewCreateResponse.Resource.ResourceId, metadata.ElementAt(0).Rid);
+            Assert.AreEqual(sourceCreateResponse.Resource.ResourceId, metadata.ElementAt(0).SourceCollectionRid);
+            Assert.AreEqual("/pk", metadata.ElementAt(0).PartitionKey.Paths[0]);
+            Assert.AreEqual("/*", metadata.ElementAt(0).IncludedProperties["/*"]);
+            Assert.AreEqual("/pk", metadata.ElementAt(0).IncludedProperties["/pk"]);
+            Assert.AreEqual(ConsistencyLevel.Eventual, metadata.ElementAt(0).Consistency);
         }
     }
 }
