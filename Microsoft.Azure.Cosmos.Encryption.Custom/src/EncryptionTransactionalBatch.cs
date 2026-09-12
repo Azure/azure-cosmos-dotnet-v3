@@ -17,20 +17,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         private readonly Encryptor encryptor;
         private readonly CosmosSerializer cosmosSerializer;
         private readonly JsonProcessor defaultJsonProcessor;
+        private readonly Func<TransactionalBatch> transactionalBatchFactory;
         private readonly object operationStateLock = new ();
         private List<JsonProcessor?> operationJsonProcessorOverrides = new ();
         private TransactionalBatch transactionalBatch;
 
         public EncryptionTransactionalBatch(
-            TransactionalBatch transactionalBatch,
+            Func<TransactionalBatch> transactionalBatchFactory,
             Encryptor encryptor,
             CosmosSerializer cosmosSerializer,
             JsonProcessor defaultJsonProcessor)
         {
-            this.transactionalBatch = transactionalBatch ?? throw new ArgumentNullException(nameof(transactionalBatch));
+            this.transactionalBatchFactory = transactionalBatchFactory ?? throw new ArgumentNullException(nameof(transactionalBatchFactory));
             this.encryptor = encryptor ?? throw new ArgumentNullException(nameof(encryptor));
             this.cosmosSerializer = cosmosSerializer ?? throw new ArgumentNullException(nameof(cosmosSerializer));
             this.defaultJsonProcessor = defaultJsonProcessor;
+            this.transactionalBatch = this.CreateTransactionalBatch();
         }
 
         public override TransactionalBatch CreateItem<T>(
@@ -305,16 +307,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(options: null);
             using (diagnosticsContext.CreateScope("TransactionalBatch.ExecuteAsync"))
             {
-                Task<TransactionalBatchResponse> executeTask;
-                List<JsonProcessor?> operationJsonProcessorOverrides;
-                lock (this.operationStateLock)
-                {
-                    operationJsonProcessorOverrides = this.operationJsonProcessorOverrides;
-                    this.operationJsonProcessorOverrides = new List<JsonProcessor?>();
-                    executeTask = this.transactionalBatch.ExecuteAsync(cancellationToken);
-                }
-
-                TransactionalBatchResponse response = await executeTask;
+                TransactionalBatch currentBatch = this.DetachCurrentBatch(
+                    out List<JsonProcessor?> operationJsonProcessorOverrides);
+                TransactionalBatchResponse response = await currentBatch.ExecuteAsync(cancellationToken);
                 return await this.DecryptTransactionalBatchResponseAsync(
                     response,
                     this.defaultJsonProcessor,
@@ -337,22 +332,37 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(options: null);
             using (diagnosticsContext.CreateScope("TransactionalBatch.ExecuteAsync.WithRequestOptions"))
             {
-                Task<TransactionalBatchResponse> executeTask;
-                List<JsonProcessor?> operationJsonProcessorOverrides;
-                lock (this.operationStateLock)
-                {
-                    operationJsonProcessorOverrides = this.operationJsonProcessorOverrides;
-                    this.operationJsonProcessorOverrides = new List<JsonProcessor?>();
-                    executeTask = this.transactionalBatch.ExecuteAsync(requestOptions, cancellationToken);
-                }
-
-                TransactionalBatchResponse response = await executeTask;
+                TransactionalBatch currentBatch = this.DetachCurrentBatch(
+                    out List<JsonProcessor?> operationJsonProcessorOverrides);
+                TransactionalBatchResponse response = await currentBatch.ExecuteAsync(requestOptions, cancellationToken);
                 return await this.DecryptTransactionalBatchResponseAsync(
                     response,
                     jsonProcessor,
                     operationJsonProcessorOverrides,
                     diagnosticsContext,
                     cancellationToken);
+            }
+        }
+
+        private TransactionalBatch CreateTransactionalBatch()
+        {
+            return this.transactionalBatchFactory()
+                ?? throw new InvalidOperationException("Transactional batch factory returned null.");
+        }
+
+        private TransactionalBatch DetachCurrentBatch(out List<JsonProcessor?> operationJsonProcessorOverrides)
+        {
+            lock (this.operationStateLock)
+            {
+                // The SDK can defer capturing its operations until after ExecuteAsync returns.
+                // Prepare both replacements before changing state so factory failures retain queued operations.
+                TransactionalBatch nextBatch = this.CreateTransactionalBatch();
+                List<JsonProcessor?> nextOverrides = new ();
+                TransactionalBatch currentBatch = this.transactionalBatch;
+                operationJsonProcessorOverrides = this.operationJsonProcessorOverrides;
+                this.transactionalBatch = nextBatch;
+                this.operationJsonProcessorOverrides = nextOverrides;
+                return currentBatch;
             }
         }
 

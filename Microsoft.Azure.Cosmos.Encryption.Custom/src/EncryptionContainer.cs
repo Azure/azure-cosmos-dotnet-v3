@@ -576,7 +576,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             PartitionKey partitionKey)
         {
             return new EncryptionTransactionalBatch(
-                this.container.CreateTransactionalBatch(partitionKey),
+                () => this.container.CreateTransactionalBatch(partitionKey),
                 this.Encryptor,
                 this.CosmosSerializer,
                 this.DefaultJsonProcessor);

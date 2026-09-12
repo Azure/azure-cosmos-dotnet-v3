@@ -761,7 +761,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             JsonProcessor defaultJsonProcessor = JsonProcessor.Newtonsoft)
         {
             return new EncryptionTransactionalBatch(
-                inner.Object,
+                () => inner.Object,
                 encryptor ?? Mock.Of<Encryptor>(),
                 Mock.Of<CosmosSerializer>(),
                 defaultJsonProcessor);
@@ -844,7 +844,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 .ReturnsAsync(response.Object);
 
             return new EncryptionTransactionalBatch(
-                inner.Object,
+                () => inner.Object,
                 encryptor ?? Mock.Of<Encryptor>(),
                 Mock.Of<CosmosSerializer>(),
                 defaultJsonProcessor);
