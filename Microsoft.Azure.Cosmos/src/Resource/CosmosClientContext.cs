@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Telemetry;
@@ -26,6 +27,8 @@ namespace Microsoft.Azure.Cosmos
         internal abstract CosmosClient Client { get; }
 
         internal abstract DocumentClient DocumentClient { get; }
+
+        internal abstract ISecondaryIndexMetadataCache SecondaryIndexMetadataCache { get; }
 
         internal abstract CosmosSerializerCore SerializerCore { get; }
 
