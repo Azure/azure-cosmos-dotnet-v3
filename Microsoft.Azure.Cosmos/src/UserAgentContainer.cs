@@ -16,7 +16,12 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly string cosmosBaseUserAgent;
         private readonly string clientId;
-        private static readonly Regex regex = new Regex(@"F\d+\|", RegexOptions.Compiled);
+
+        // The customer-provided suffix (e.g. ApplicationName), captured before the first feature flag is
+        // applied so subsequent feature-flag updates can be re-composed without parsing arbitrary customer
+        // text. Null until the first AppendFeatures call.
+        private string userProvidedSuffix;
+        private bool featureFlagApplied;
 
         public UserAgentContainer(
             int clientId,
@@ -35,42 +40,21 @@ namespace Microsoft.Azure.Cosmos
         public void AppendFeatures(
             string features)
         {
-            if (!string.IsNullOrEmpty(features))
+            // The first time a feature flag is applied, the current Suffix is purely the customer-provided
+            // suffix (e.g. ApplicationName). Capture it so later feature-flag updates (which can add, replace,
+            // or remove the flag as capabilities change dynamically) re-compose the suffix without parsing
+            // arbitrary customer text — the feature flag is always kept as the leading token.
+            if (!this.featureFlagApplied)
             {
-                // Here we have 3 scenarios: 
-                // 1. Suffix is empty, we just set it to the features.
-                // 2. Suffix is not empty, we append the features to the existing suffix.
-                // 3. Suffix already contains features, we the new features in the existing suffix.
-                this.Suffix = string.IsNullOrEmpty(this.Suffix)
+                this.userProvidedSuffix = this.Suffix ?? string.Empty;
+                this.featureFlagApplied = true;
+            }
+
+            this.Suffix = string.IsNullOrEmpty(features)
+                ? this.userProvidedSuffix
+                : string.IsNullOrEmpty(this.userProvidedSuffix)
                     ? features
-                    : this.HasFeatureFlag()
-                        ? $"{features}{this.Suffix.Substring(this.Suffix.IndexOf(UserAgentContainer.PipeDelimiter))}"
-                        : $"{features}{UserAgentContainer.PipeDelimiter}{this.Suffix}";
-            }
-            else
-            {
-                // Here we have 3 scenarios: 
-                // 1. Suffix is empty, we just set it to empty.
-                // 2. Suffix is not empty, we remove the features from the existing suffix.
-                // 3. Suffix already contains features, we remove the features from the existing suffix.
-                this.Suffix = string.IsNullOrEmpty(this.Suffix)
-                    ? string.Empty
-                    : this.HasFeatureFlag()
-                        //if the suffix contains a feature flag we can assume that the first pipe delimiter marks the end of it
-                        ? this.Suffix.Substring(this.Suffix.IndexOf(UserAgentContainer.PipeDelimiter) + 1)
-                        : this.Suffix;
-            }
-        }
-
-        private bool HasFeatureFlag()
-        {
-            if (string.IsNullOrEmpty(this.Suffix))
-            {
-                return false;
-            }
-
-            // Matches 'F' followed by one or more digits, then a pipe '|'
-            return regex.IsMatch(this.Suffix);
+                    : $"{features}{UserAgentContainer.PipeDelimiter}{this.userProvidedSuffix}";
         }
 
         internal override string BaseUserAgent => this.cosmosBaseUserAgent ?? string.Empty;

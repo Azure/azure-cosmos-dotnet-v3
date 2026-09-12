@@ -297,7 +297,7 @@
                 throw new NotImplementedException();
             }
 
-            public override Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(string resourceUri, ResourceType resourceType, OperationType operationType, SqlQuerySpec sqlQuerySpec, Cosmos.PartitionKey? partitionKey, string supportedQueryFeatures, Guid clientQueryCorrelationId, ITrace trace, CancellationToken cancellationToken)
+            public override Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(string resourceUri, ResourceType resourceType, OperationType operationType, SqlQuerySpec sqlQuerySpec, Cosmos.PartitionKey? partitionKey, string supportedQueryFeatures, IReadOnlyList<string> excludeRegions, Guid clientQueryCorrelationId, ITrace trace, CancellationToken cancellationToken)
             {
                 return Task.FromResult(new PartitionedQueryExecutionInfo());
             }

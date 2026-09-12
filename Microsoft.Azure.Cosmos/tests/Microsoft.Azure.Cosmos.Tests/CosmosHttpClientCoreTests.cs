@@ -21,11 +21,150 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class CosmosHttpClientCoreTests
     {
+        [TestMethod]
+        [Owner("aavasthy")]
+        public async Task ClientIdHeaderIsSentOnGetDatabaseAccountCallAsync()
+        {
+            string clientId = Guid.NewGuid().ToString();
+            string observedClientId = null;
+
+            Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                observedClientId = request.Headers.TryGetValues(CosmosHttpClientCore.ClientIdHeaderName, out IEnumerable<string> values)
+                    ? values.Single()
+                    : null;
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{}") });
+            }
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy
+            {
+                HttpClientFactory = () => new HttpClient(new MockMessageHandler(sendFunc)),
+            };
+
+            using CosmosHttpClient cosmosHttpClient = CosmosHttpClientCore.CreateWithConnectionPolicy(
+                apiType: default,
+                eventSource: DocumentClientEventSource.Instance,
+                connectionPolicy: connectionPolicy,
+                httpMessageHandler: null,
+                sendingRequestEventArgs: null,
+                receivedResponseEventArgs: null,
+                clientId: clientId);
+
+            using ITrace trace = Trace.GetRootTrace(nameof(ClientIdHeaderIsSentOnGetDatabaseAccountCallAsync));
+
+            // Exercises the exact code path used by GatewayAccountReader for a
+            // GetDatabaseAccount call (GetAsync with ResourceType.DatabaseAccount).
+            await cosmosHttpClient.GetAsync(
+                uri: new Uri("http://localhost"),
+                additionalHeaders: new RequestNameValueCollection(),
+                resourceType: ResourceType.DatabaseAccount,
+                timeoutPolicy: HttpTimeoutPolicyControlPlaneRead.Instance,
+                clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace),
+                cancellationToken: default,
+                documentServiceRequest: CreateDocumentServiceRequestByOperation(ResourceType.DatabaseAccount, OperationType.Read));
+
+            Assert.AreEqual(clientId, observedClientId, "GetDatabaseAccount calls must carry the client id header.");
+        }
+
+        [TestMethod]
+        [Owner("aavasthy")]
+        public async Task ClientIdHeaderIsSentOnEveryRequestIncludingRetriesAsync()
+        {
+            string clientId = Guid.NewGuid().ToString();
+            List<string> observedClientIds = new List<string>();
+
+            Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                observedClientIds.Add(
+                    request.Headers.TryGetValues(CosmosHttpClientCore.ClientIdHeaderName, out IEnumerable<string> values)
+                        ? values.Single()
+                        : null);
+
+                // Force the default HttpTimeoutPolicy to retry so we can assert the header
+                // is present on retried requests as well.
+                throw new OperationCanceledException("Injected failure to trigger a retry.");
+            }
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy
+            {
+                HttpClientFactory = () => new HttpClient(new MockMessageHandler(sendFunc)),
+            };
+
+            using CosmosHttpClient cosmosHttpClient = CosmosHttpClientCore.CreateWithConnectionPolicy(
+                apiType: default,
+                eventSource: DocumentClientEventSource.Instance,
+                connectionPolicy: connectionPolicy,
+                httpMessageHandler: null,
+                sendingRequestEventArgs: null,
+                receivedResponseEventArgs: null,
+                clientId: clientId);
+
+            try
+            {
+                using ITrace trace = Trace.GetRootTrace(nameof(ClientIdHeaderIsSentOnEveryRequestIncludingRetriesAsync));
+                await cosmosHttpClient.SendHttpAsync(
+                    () => new ValueTask<HttpRequestMessage>(new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
+                    resourceType: ResourceType.Collection,
+                    timeoutPolicy: HttpTimeoutPolicyDefault.Instance,
+                    clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace),
+                    cancellationToken: default,
+                    documentServiceRequest: CreateDocumentServiceRequestByOperation(ResourceType.Collection, OperationType.Read));
+            }
+            catch (Exception)
+            {
+                // Ignore: the injected failure surfaces after retries are exhausted.
+            }
+
+            Assert.IsTrue(observedClientIds.Count > 1, "The default HttpTimeoutPolicy should have retried the request.");
+            Assert.IsTrue(
+                observedClientIds.All(id => id == clientId),
+                $"Every request (including retries) must carry the same '{CosmosHttpClientCore.ClientIdHeaderName}' header. Observed: [{string.Join(", ", observedClientIds)}]");
+        }
+
+        [TestMethod]
+        [Owner("aavasthy")]
+        public async Task ClientIdHeaderIsNotAddedWhenClientIdIsNullAsync()
+        {
+            bool headerPresent = true;
+
+            Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                headerPresent = request.Headers.Contains(CosmosHttpClientCore.ClientIdHeaderName);
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
+            }
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy
+            {
+                HttpClientFactory = () => new HttpClient(new MockMessageHandler(sendFunc)),
+            };
+
+            using CosmosHttpClient cosmosHttpClient = CosmosHttpClientCore.CreateWithConnectionPolicy(
+                apiType: default,
+                eventSource: DocumentClientEventSource.Instance,
+                connectionPolicy: connectionPolicy,
+                httpMessageHandler: null,
+                sendingRequestEventArgs: null,
+                receivedResponseEventArgs: null,
+                clientId: null);
+
+            using ITrace trace = Trace.GetRootTrace(nameof(ClientIdHeaderIsNotAddedWhenClientIdIsNullAsync));
+            await cosmosHttpClient.SendHttpAsync(
+                () => new ValueTask<HttpRequestMessage>(new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
+                resourceType: ResourceType.Collection,
+                timeoutPolicy: HttpTimeoutPolicyDefault.Instance,
+                clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace),
+                cancellationToken: default,
+                documentServiceRequest: CreateDocumentServiceRequestByOperation(ResourceType.Collection, OperationType.Read));
+
+            Assert.IsFalse(headerPresent, "No client id header should be sent when the client id is null.");
+        }
+
         [TestMethod]
         public async Task ResponseMessageHasRequestMessageAsync()
         {

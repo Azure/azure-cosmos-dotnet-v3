@@ -205,6 +205,99 @@ namespace Microsoft.Azure.Cosmos
         }
 
 
+        [TestMethod]
+        [Owner("aavasthy")]
+        public async Task ProcessMessageAsync_AfterServiceAdvertisesThinLocations_RoutesViaThinClient()
+        {
+            int thinClientInvocations = 0;
+            MockThinClientStoreClient thinClientStoreClient = new(
+                (request, resourceType, uri, endpoint, accountName, cache, ct) =>
+                {
+                    Interlocked.Increment(ref thinClientInvocations);
+                    return Task.FromResult(new DocumentServiceResponse(Stream.Null, new StoreResponseNameValueCollection(), HttpStatusCode.OK));
+                });
+
+            int gatewayInvocations = 0;
+            Mock<CosmosHttpClient> mockHttpClient = new();
+            mockHttpClient
+                .Setup(c => c.SendHttpAsync(
+                    It.IsAny<Func<ValueTask<HttpRequestMessage>>>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<HttpTimeoutPolicy>(),
+                    It.IsAny<IClientSideRequestStatistics>(),
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<DocumentServiceRequest>()))
+                .Callback(() => Interlocked.Increment(ref gatewayInvocations))
+                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("Response") });
+
+            ThinClientStoreModel storeModel = this.BuildStoreModel(
+                out GlobalEndpointManager endpointManager,
+                advertiseThinClientLocations: false,
+                httpClient: mockHttpClient.Object);
+            ReplaceThinClientStoreClientField(storeModel, thinClientStoreClient);
+
+            // Phase 1: no thin-client locations advertised → request stays on the gateway HTTP path.
+            await storeModel.ProcessMessageAsync(CreateDocumentRequest(OperationType.Create));
+            Assert.AreEqual(0, thinClientInvocations, "Thin-client must NOT be invoked before the service advertises thin locations.");
+            Assert.AreEqual(1, gatewayInvocations, "First request must route via the gateway HTTP path while thin-client is unavailable.");
+
+            // Phase 2: service advertises (and probes healthy) thin-client locations on the next account refresh.
+            TestUtils.EnableThinClientLocationsForTest(endpointManager);
+            TestUtils.MarkThinClientEndpointsHealthyForTest(endpointManager);
+
+            await storeModel.ProcessMessageAsync(CreateDocumentRequest(OperationType.Create));
+            Assert.AreEqual(1, thinClientInvocations, "Second request must route via thin-client on the very next dispatch after locations are advertised.");
+            Assert.AreEqual(1, gatewayInvocations, "Gateway HTTP path must NOT be invoked again once thin-client becomes available.");
+        }
+
+
+        [TestMethod]
+        [Owner("aavasthy")]
+        public void WillRouteToThinClient_TracksLiveRoutingDecision_ForDiagnosticsLabel()
+        {
+            ThinClientStoreModel storeModel = this.BuildStoreModel(
+                out GlobalEndpointManager endpointManager,
+                advertiseThinClientLocations: false);
+            DocumentServiceRequest request = CreateDocumentRequest(OperationType.Create);
+
+            // No thin-client locations advertised: the request is served by the inherited gateway path, so the
+            // transport diagnostics label must report GatewayStoreModel, not ThinClientStoreModel.
+            Assert.IsFalse(
+                storeModel.WillRouteToThinClient(request),
+                "Request served by the gateway fall-back must not be labelled as ThinClientStoreModel.");
+
+            // Service advertises (and probes healthy) thin-client locations on the next refresh.
+            TestUtils.EnableThinClientLocationsForTest(endpointManager);
+            TestUtils.MarkThinClientEndpointsHealthyForTest(endpointManager);
+
+            Assert.IsTrue(
+                storeModel.WillRouteToThinClient(request),
+                "Request dispatched through the thin-client proxy must be labelled as ThinClientStoreModel.");
+        }
+
+
+        [DataTestMethod]
+        [Owner("aavasthy")]
+        [DataRow(false, false, false, DisplayName = "No thin locations + PPAF/PPCB off -> not resolved (fast path)")]
+        [DataRow(true, false, true, DisplayName = "No thin locations + PPCB on -> resolved (base honoured)")]
+        [DataRow(false, true, true, DisplayName = "No thin locations + PPAF on -> resolved (base honoured)")]
+        public void ShouldResolvePartitionKeyRange_NoThinLocations_HonoursBaseDecision(
+            bool partitionLevelCircuitBreakerEnabled,
+            bool partitionLevelAutomaticFailoverEnabled,
+            bool expected)
+        {
+            ThinClientStoreModel storeModel = this.BuildDecisionStoreModel(
+                advertiseThinClientLocations: false,
+                partitionLevelCircuitBreakerEnabled: partitionLevelCircuitBreakerEnabled,
+                partitionLevelAutomaticFailoverEnabled: partitionLevelAutomaticFailoverEnabled);
+
+            Assert.AreEqual(
+                expected,
+                InvokeShouldResolvePartitionKeyRange(storeModel),
+                "Without thin-client locations, ShouldResolvePartitionKeyRange must exactly mirror the base PPAF/PPCB-gated decision.");
+        }
+
+
         /// <summary>
         /// When a thin-client request transparently falls back to the Gateway V1 HTTP path (because the
         /// request is not thin-client-routable), it must send the <c>x-ms-noretry-449</c> opt-out header.
@@ -509,6 +602,53 @@ namespace Microsoft.Azure.Cosmos
             request.Headers[HttpConstants.HttpHeaders.PartitionKey] = "[\"test\"]";
             request.RequestContext = new DocumentServiceRequestContext();
             return request;
+        }
+
+        private ThinClientStoreModel BuildDecisionStoreModel(
+            bool advertiseThinClientLocations,
+            bool partitionLevelCircuitBreakerEnabled,
+            bool partitionLevelAutomaticFailoverEnabled)
+        {
+            Mock<IDocumentClientInternal> mockDocumentClient = new();
+            mockDocumentClient.Setup(c => c.ServiceEndpoint).Returns(new Uri("https://mock.proxy.com"));
+            mockDocumentClient
+                .Setup(c => c.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new AccountProperties());
+
+            GlobalEndpointManager endpointManager = new(mockDocumentClient.Object, new ConnectionPolicy());
+            if (advertiseThinClientLocations)
+            {
+                TestUtils.EnableThinClientLocationsForTest(endpointManager);
+                TestUtils.MarkThinClientEndpointsHealthyForTest(endpointManager);
+            }
+
+            Mock<GlobalPartitionEndpointManager> globalPartitionEndpointManager = new();
+            globalPartitionEndpointManager
+                .Setup(m => m.IsPartitionLevelCircuitBreakerEnabled())
+                .Returns(partitionLevelCircuitBreakerEnabled);
+            globalPartitionEndpointManager
+                .Setup(m => m.IsPartitionLevelAutomaticFailoverEnabled())
+                .Returns(partitionLevelAutomaticFailoverEnabled);
+
+            return new ThinClientStoreModel(
+                endpointManager,
+                new Mock<ISessionContainer>().Object,
+                ConsistencyLevel.Session,
+                new Mock<DocumentClientEventSource>().Object,
+                new JsonSerializerSettings(),
+                new Mock<CosmosHttpClient>().Object,
+                globalPartitionEndpointManager.Object,
+                new UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix"));
+        }
+
+        private static bool InvokeShouldResolvePartitionKeyRange(ThinClientStoreModel model)
+        {
+            MethodInfo method = typeof(ThinClientStoreModel).GetMethod(
+                "ShouldResolvePartitionKeyRange",
+                BindingFlags.NonPublic | BindingFlags.Instance)
+                ?? throw new InvalidOperationException("Could not find 'ShouldResolvePartitionKeyRange' method on ThinClientStoreModel");
+
+            return (bool)method.Invoke(model, null);
         }
 
         /// <summary>

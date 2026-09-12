@@ -877,6 +877,105 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
 #if !INTERNAL
         /// <summary>
+        /// Issue #6091: a LastCommittedSingleWriteRegion read on a replica must read the hub override on retry
+        /// after a 403/WriteForbidden (no hedging, no prior 404/1002) instead of looping on the same replica.
+        /// </summary>
+        [TestMethod]
+        [Owner("aavasthy")]
+        public async Task ClientRetryPolicy_LastCommittedSingleWriteRegion_ReadOnReplica_RoutesToHubOnRetryAfter403()
+        {
+            string originalHubRegionFlag = Environment.GetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled);
+            Environment.SetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled, "True");
+
+            try
+            {
+                const bool enableEndpointDiscovery = true;
+
+                // Single write region account (hub = location1). Application region is the replica
+                // (location2) — preferred list is ordered replica-first to mirror the repro.
+                using GlobalEndpointManager endpointManager = this.Initialize(
+                    useMultipleWriteLocations: false,
+                    enableEndpointDiscovery: enableEndpointDiscovery,
+                    isPreferredLocationsListEmpty: false,
+                    enforceSingleMasterSingleWriteLocation: true,
+                    preferedRegionListOverride: new List<string> { "location2", "location1" }.AsReadOnly());
+
+                // Deliberately DISABLE per-partition failover and circuit breaker on the cache manager
+                // to prove hub region discovery is independent of PPAF (see issue open question 1).
+                GlobalPartitionEndpointManagerCore cacheManager = new GlobalPartitionEndpointManagerCore(
+                    endpointManager,
+                    isPartitionLevelFailoverEnabled: false,
+                    isPartitionLevelCircuitBreakerEnabled: false);
+
+                PartitionKeyRange pkRange = new PartitionKeyRange { Id = "0", MinInclusive = "", MaxExclusive = "FF" };
+
+                ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                    endpointManager,
+                    cacheManager,
+                    new RetryOptions(),
+                    enableEndpointDiscovery,
+                    isThinClientEnabled: false);
+
+                DocumentServiceRequest request = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+                request.RequestContext.ResolvedPartitionKeyRange = pkRange;
+
+                // Simulate RequestInvokerHandler setting the hub-region header up-front for
+                // LastCommittedSingleWriteRegion reads — before ClientRetryPolicy ever sees the request.
+                request.Headers[HubRegionHeader] = bool.TrueString;
+
+                // Attempt 1: routes to the replica (application/preferred region), not the hub.
+                retryPolicy.OnBeforeSendRequest(request);
+                Uri firstAttemptEndpoint = request.RequestContext.LocationEndpointToRoute;
+                Assert.AreEqual(
+                    ClientRetryPolicyTests.Location2Endpoint,
+                    firstAttemptEndpoint,
+                    "Attempt 1 must route to the replica (application region), not the hub.");
+
+                // The replica rejects a request that must be processed in the hub region → 403/WriteForbidden.
+                // There is NO prior 404/1002 (sessionTokenRetryCount stays 0) and NO hedging.
+                DocumentClientException writeForbidden = new DocumentClientException(
+                    message: "403/3 WriteForbidden from replica",
+                    innerException: null,
+                    statusCode: HttpStatusCode.Forbidden,
+                    substatusCode: SubStatusCodes.WriteForbidden,
+                    requestUri: firstAttemptEndpoint,
+                    responseHeaders: new DictionaryNameValueCollection());
+
+                ShouldRetryResult shouldRetry = await retryPolicy.ShouldRetryAsync(writeForbidden, CancellationToken.None);
+                Assert.IsTrue(shouldRetry.ShouldRetry, "Should retry after 403/3 WriteForbidden.");
+
+                // The failure path must have recorded a hub region override for the partition.
+                DocumentServiceRequest probe = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+                probe.RequestContext.ResolvedPartitionKeyRange = pkRange;
+                probe.Headers[HubRegionHeader] = bool.TrueString;
+                Assert.IsTrue(
+                    cacheManager.TryAddPartitionLevelLocationOverride(probe, checkHubRegionOverrideInCache: true),
+                    "The 403/3 must have recorded a hub region partition override in the cache.");
+                Assert.AreEqual(
+                    ClientRetryPolicyTests.Location1Endpoint,
+                    probe.RequestContext.LocationEndpointToRoute,
+                    "The recorded override must point at the hub (location1).");
+
+                // Attempt 2 (the assertion that fails WITHOUT the fix): dispatch must consult the hub
+                // override and route to the hub, converging the retry loop instead of hanging on the replica.
+                retryPolicy.OnBeforeSendRequest(request);
+                Assert.AreEqual(
+                    ClientRetryPolicyTests.Location1Endpoint,
+                    request.RequestContext.LocationEndpointToRoute,
+                    "Attempt 2 must route to the hub (location1) by reading the recorded override. " +
+                    "Before the fix it re-routed to the replica (location2), causing an unbounded hang.");
+                Assert.AreNotEqual(
+                    firstAttemptEndpoint,
+                    request.RequestContext.LocationEndpointToRoute,
+                    "The endpoint actually used must change between attempts so the retry loop can converge.");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled, originalHubRegionFlag);
+            }
+        }
+
+        /// <summary>
         /// Hub reassignment: after R1 populates the cache with hub A,
         /// a subsequent request that escalates to the header-bearing retry and receives 403/3 from
         /// the cached hub must invalidate the cache via TryMoveNextLocation.

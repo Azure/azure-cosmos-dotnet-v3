@@ -3402,6 +3402,13 @@
           "Attributes": [],
           "MethodInfo": "System.Nullable`1[System.Int32] get_MaxTcpConnectionsPerEndpoint();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "System.Nullable`1[System.Int32] get_ThroughputBucket()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Int32] get_ThroughputBucket();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.Nullable`1[System.Int32] MaxRequestsPerTcpConnection": {
           "Type": "Property",
           "Attributes": [],
@@ -3416,6 +3423,11 @@
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": "System.Nullable`1[System.Int32] MaxTcpConnectionsPerEndpoint;CanRead:True;CanWrite:True;System.Nullable`1[System.Int32] get_MaxTcpConnectionsPerEndpoint();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_MaxTcpConnectionsPerEndpoint(System.Nullable`1[System.Int32]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.Int32] ThroughputBucket": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[System.Int32] ThroughputBucket;CanRead:True;CanWrite:True;System.Nullable`1[System.Int32] get_ThroughputBucket();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_ThroughputBucket(System.Nullable`1[System.Int32]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Nullable`1[System.TimeSpan] get_IdleTcpConnectionTimeout()": {
           "Type": "Method",
@@ -3683,6 +3695,13 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_ServerCertificateCustomValidationCallback(System.Func`4[System.Security.Cryptography.X509Certificates.X509Certificate2,System.Security.Cryptography.X509Certificates.X509Chain,System.Net.Security.SslPolicyErrors,System.Boolean]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_ThroughputBucket(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_ThroughputBucket(System.Nullable`1[System.Int32]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_TokenCredentialBackgroundRefreshInterval(System.Nullable`1[System.TimeSpan])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -5537,6 +5556,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithThrottlingRetryOptions(System.TimeSpan, Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithThroughputBucket(Int32)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithThroughputBucket(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.CosmosClient] BuildAndInitializeAsync(System.Collections.Generic.IReadOnlyList`1[System.ValueTuple`2[System.String,System.String]], System.Threading.CancellationToken)": {
           "Type": "Method",
@@ -10106,6 +10130,18 @@
           "Attributes": [],
           "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.PriorityLevel] PriorityLevel;CanRead:True;CanWrite:True;System.Nullable`1[Microsoft.Azure.Cosmos.PriorityLevel] get_PriorityLevel();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_PriorityLevel(System.Nullable`1[Microsoft.Azure.Cosmos.PriorityLevel]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "System.Nullable`1[System.Int32] get_ThroughputBucket()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Int32] get_ThroughputBucket();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.Int32] ThroughputBucket": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[System.Int32] ThroughputBucket;CanRead:True;CanWrite:True;System.Nullable`1[System.Int32] get_ThroughputBucket();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_ThroughputBucket(System.Nullable`1[System.Int32]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.String get_IfMatchEtag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -10190,6 +10226,13 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_Properties(System.Collections.Generic.IReadOnlyDictionary`2[System.String,System.Object]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_ThroughputBucket(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_ThroughputBucket(System.Nullable`1[System.Int32]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}

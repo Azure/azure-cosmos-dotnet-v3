@@ -257,6 +257,36 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
         }
 
+        [TestMethod]
+        public async Task ValidateThroughputBucketRequestOptionThrows()
+        {
+            // A request-level ThroughputBucket cannot be honored for a bulk (point-item) operation,
+            // because such operations are merged into shared batches that carry a single set of headers.
+            // ValidateOperationAsync must reject it early (consistent with SessionToken / Triggers / etc.)
+            // rather than let it be silently dropped downstream.
+            Mock<CosmosClientContext> mockedContext = this.MockClientContext();
+            mockedContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
+            mockedContext.Setup(c => c.SerializerCore).Returns(MockCosmosUtil.Serializer);
+
+            Mock<ContainerInternal> mockContainer = new Mock<ContainerInternal>();
+            mockContainer.Setup(x => x.LinkUri).Returns("/dbs/db/colls/colls");
+
+            BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(
+                mockContainer.Object,
+                mockedContext.Object,
+                20,
+                BatchAsyncContainerExecutorCache.DefaultMaxBulkRequestBodySizeInBytes);
+
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => executor.ValidateOperationAsync(
+                CreateItem("test"),
+                new ItemRequestOptions() { ThroughputBucket = 1 }));
+
+            // A null request-level bucket must NOT throw (client-level bucket still applies to the batch request).
+            await executor.ValidateOperationAsync(
+                CreateItem("test"),
+                new ItemRequestOptions());
+        }
+
         private static async Task<ResponseMessage> GenerateResponseAsync(
             ItemBatchOperation itemBatchOperation,
             HttpStatusCode httpStatusCode,

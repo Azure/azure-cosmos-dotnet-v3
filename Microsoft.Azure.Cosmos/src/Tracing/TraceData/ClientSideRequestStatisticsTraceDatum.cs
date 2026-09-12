@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     using System.Net;
     using System.Net.Http;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Documents;
@@ -331,7 +332,14 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             {
                 if (!this.endpointToAddressResolutionStats.ContainsKey(identifier))
                 {
-                    throw new ArgumentException("Identifier {0} does not exist. Please call start before calling end.", identifier);
+                    // Address resolution statistics are diagnostics bookkeeping only. A missing
+                    // identifier means the start was recorded on a different datum instance (for
+                    // example a background address refresh outliving the attempt that started it),
+                    // which must never fault the caller.
+                    DefaultTrace.TraceVerbose(
+                        "ClientSideRequestStatisticsTraceDatum: address resolution identifier {0} was not recorded by this instance. Skipping end.",
+                        identifier);
+                    return;
                 }
 
                 AddressResolutionStatistics start = this.endpointToAddressResolutionStats[identifier];

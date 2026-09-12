@@ -939,16 +939,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     ItemResponse<TestObject> response = await localContainer.CreateItemAsync(item, new PartitionKey(item.Pk));
                     Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
-                    Assert.IsFalse(
-                        response.Diagnostics.ToString().Contains("|F4"),
-                        "User agent must not advertise the ThinClient capability (|F4) when the account does not advertise thin-client endpoints.");
                 }
 
-                // The account does not advertise thin-client (proxy) endpoints, so no request - data-plane or
-                // connectivity-probe - must ever target the proxy port (10250). All traffic stays on Gateway V1.
+                // |F4 is a client-capability user-agent flag (thin-client feature flag on + Gateway mode +
+                // master-key auth), consistent with the other user-agent feature flags; it is fixed at client
+                // startup and does not indicate that a given request routed through the proxy. Actual routing is
+                // what this test asserts: because the account does not advertise thin-client (proxy) endpoints,
+                // no request - data-plane or connectivity-probe - must ever target the proxy port (10250). All
+                // traffic stays on Gateway V1.
                 Assert.IsFalse(
                     requestPorts.Contains(ThinClientProxyPort),
                     $"No request should target the ThinClient proxy port {ThinClientProxyPort} when the account does not advertise thin-client endpoints. Observed ports: {string.Join(", ", requestPorts.Distinct())}");
+
+                // Regression guard for the initialization-time gate removal (PR 6085): even though the account
+                // advertises no thin-client endpoints at startup, a thin-client-enabled Gateway-mode client must
+                // remain thin-client-capable - i.e. StoreModel is a ThinClientStoreModel - so the SAME client can
+                // begin thin-client dispatch if the account later advertises endpoints, without a restart.
+                // Re-introducing the ThinClientWritableLocationsInternal count gate would pin StoreModel to the
+                // plain GatewayStoreModel for the client's lifetime and turn this assertion red.
+                object storeModel = localClient.ClientContext.DocumentClient.StoreModel;
+                Assert.IsInstanceOfType(
+                    storeModel,
+                    typeof(Microsoft.Azure.Cosmos.ThinClientStoreModel),
+                    "A thin-client-enabled Gateway-mode client must remain thin-client-capable (StoreModel is ThinClientStoreModel) even when the account advertises no thin-client endpoints at initialization.");
             }
             finally
             {

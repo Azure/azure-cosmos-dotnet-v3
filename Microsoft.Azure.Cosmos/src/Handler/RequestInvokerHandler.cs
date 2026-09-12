@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             await this.ValidateAndSetConsistencyLevelAsync(request);
             this.SetPriorityLevel(request);
-            this.ValidateAndSetThroughputBucket(request);
+            this.SetThroughputBucket(request);
 
             (bool isError, ResponseMessage errorResponse) = await this.EnsureValidClientAsync(request, request.Trace);
             if (isError)
@@ -607,22 +607,22 @@ namespace Microsoft.Azure.Cosmos.Handlers
         }
 
         /// <summary>
-        /// Set the ThroughputBucket in the request headers
+        /// Sets the ThroughputBucket in the request headers, resolving request-level over client-level precedence.
         /// </summary>
+        /// <remarks>
+        /// A request-level throughput bucket for bulk (point-item) operations is rejected earlier, in
+        /// <see cref="BatchAsyncContainerExecutor.ValidateOperationAsync"/>, because such operations are
+        /// merged into shared batches that cannot carry a per-operation bucket. All other operation types
+        /// honor the request-level bucket here; when unset, the client-level bucket (if any) is applied.
+        /// </remarks>
         /// <param name="requestMessage"></param>
-        private void ValidateAndSetThroughputBucket(RequestMessage requestMessage)
+        private void SetThroughputBucket(RequestMessage requestMessage)
         {
             int? throughputBucket = this.RequestedClientThroughputBucket;
             RequestOptions promotedRequestOptions = requestMessage.RequestOptions;
 
             if (promotedRequestOptions?.ThroughputBucket.HasValue == true)
             {
-                if (this.client.ClientOptions.AllowBulkExecution)
-                {
-                    throw new ArgumentException($"{nameof(requestMessage.RequestOptions.ThroughputBucket)} cannot be set in " +
-                        $"{nameof(requestMessage.RequestOptions)} when {nameof(this.client.ClientOptions.AllowBulkExecution)} is set to true. " +
-                        $"Instead, set {nameof(this.client.ClientOptions.ThroughputBucket)} only in {nameof(this.client.ClientOptions)}.");
-                }
                 throughputBucket = promotedRequestOptions.ThroughputBucket.Value;
             }
 
