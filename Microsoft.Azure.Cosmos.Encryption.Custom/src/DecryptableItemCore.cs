@@ -36,8 +36,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             try
             {
+                // Decryption mutates its input. Keep the original ciphertext for diagnostics and subsequent reads.
                 (JObject decryptedItem, DecryptionContext decryptionContext) = await EncryptionProcessor.DecryptAsync(
-                    document,
+                    (JObject)document.DeepClone(),
                     this.encryptor,
                     new CosmosDiagnosticsContext(),
                     cancellationToken: default);
@@ -46,14 +47,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
             catch (Exception exception)
             {
-                string dataEncryptionKeyId = !(document.TryGetValue(Constants.EncryptedInfo, out JToken encryptedInfo) &&
-                    (encryptedInfo is JObject encryptedInfoObject))
-                    ? null
-                    : (string)encryptedInfoObject.GetValue(Constants.EncryptionDekId);
+                string dataEncryptionKeyId = null;
+                string encryptedContent = string.Empty;
+                if (document.TryGetValue(Constants.EncryptedInfo, out JToken encryptedInfo) &&
+                    encryptedInfo is JObject encryptedInfoObject)
+                {
+                    dataEncryptionKeyId = (string)encryptedInfoObject.GetValue(Constants.EncryptionDekId);
+                    if (encryptedInfoObject.TryGetValue(Constants.EncryptionAlgorithm, out JToken algorithm) &&
+                        algorithm.Type != JTokenType.Null)
+                    {
+                        encryptedContent = document.ToString();
+                    }
+                }
 
                 throw new EncryptionException(
                     dataEncryptionKeyId ?? string.Empty,
-                    this.decryptableContent.ToString(),
+                    encryptedContent,
                     exception);
             }
         }

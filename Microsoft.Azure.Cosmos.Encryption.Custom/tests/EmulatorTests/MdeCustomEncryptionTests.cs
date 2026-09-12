@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         private const string ExpectedMdeAlgorithm = "MdeAeadAes256CbcHmac256Randomized";
         private const string LegacyPreview07PackageSha256 = "121AA0ED2A518D1F791992AC4E6A90B8E3A16A9BEDE4CB719F6156CF384398F8";
         private const string LegacyPreview07AssemblySha256 = "064FE92B0CC610B3F6CB5E290DA3DFA231643FADB7DC974D01FFDE8D9AEBA3AC";
-        private const string LegacyPreview07FixtureSha256 = "FE4196FFD23DF3192A9369EF634CAED32CE3624F9ECA129255A008BA73CAE699";
+        private const string LegacyPreview07FixtureSha256 = "62B7F88E998A77A19D2A9F86094376D0BBA059DAB27C511659CA437B91B50E14";
         private static CosmosClient client;
         private static Database database;
         private static DataEncryptionKeyProperties dekProperties;

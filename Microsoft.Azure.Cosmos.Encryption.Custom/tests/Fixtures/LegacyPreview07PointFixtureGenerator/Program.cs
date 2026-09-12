@@ -10,6 +10,7 @@ namespace LegacyPreview07PointFixtureGenerator
     using System.Linq;
     using System.Net.Http;
     using System.Security.Cryptography;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -126,7 +127,8 @@ namespace LegacyPreview07PointFixtureGenerator
                     ["encryptedPaths"] = new JArray(EncryptedPaths),
                 };
                 Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outputPath)));
-                File.WriteAllText(outputPath, fixture.ToString(Formatting.Indented) + Environment.NewLine);
+                string canonicalFixture = fixture.ToString(Formatting.Indented).Replace("\r\n", "\n") + "\n";
+                File.WriteAllText(outputPath, canonicalFixture, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
                 Console.WriteLine($"fixture={Path.GetFullPath(outputPath)}");
                 Console.WriteLine($"fixture-sha256={HashFile(outputPath)}");
                 Console.WriteLine($"package-sha256={ExpectedPackageSha256}");
