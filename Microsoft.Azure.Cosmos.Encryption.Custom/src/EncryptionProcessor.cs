@@ -484,19 +484,53 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Encryptor encryptor,
             CancellationToken cancellationToken)
         {
-            try
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(null);
+            if (!content.CanRead || (content.CanWrite && content.CanSeek))
             {
                 return await MdeEncryptionProcessor.DecryptJsonArrayStreamInPlaceAsync(
                     content,
                     encryptor,
-                    CosmosDiagnosticsContext.Create(null),
-                    cancellationToken);
+                    diagnosticsContext,
+                    cancellationToken).ConfigureAwait(false);
             }
-            catch (NotSupportedException)
-            {
-                content.Position = 0;
 
-                return await DecryptJsonArrayNewtonsoftAsync(content, encryptor, cancellationToken);
+            PooledMemoryStream ownedContent = new ();
+            try
+            {
+                long? originalPosition = content.CanSeek
+                    ? content.Position
+                    : null;
+
+                try
+                {
+                    if (originalPosition.HasValue)
+                    {
+                        content.Position = 0;
+                    }
+
+                    await content.CopyToAsync(ownedContent, cancellationToken).ConfigureAwait(false);
+                }
+                finally
+                {
+                    if (originalPosition.HasValue)
+                    {
+                        content.Position = originalPosition.Value;
+                    }
+                }
+
+                ownedContent.Position = 0;
+                await MdeEncryptionProcessor.DecryptJsonArrayStreamInPlaceAsync(
+                    ownedContent,
+                    encryptor,
+                    diagnosticsContext,
+                    cancellationToken).ConfigureAwait(false);
+
+                return ownedContent;
+            }
+            catch
+            {
+                await ownedContent.DisposeAsync().ConfigureAwait(false);
+                throw;
             }
         }
 #endif
