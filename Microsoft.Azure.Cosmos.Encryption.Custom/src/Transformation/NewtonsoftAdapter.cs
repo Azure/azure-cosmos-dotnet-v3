@@ -26,9 +26,33 @@ internal sealed class NewtonsoftAdapter : IMdeJsonProcessorAdapter
         this.jObjectProcessor = jObjectProcessor;
     }
 
-    public Task<Stream> EncryptAsync(Stream input, Encryptor encryptor, EncryptionOptions options, CancellationToken cancellationToken)
+    public Task<Stream> EncryptAsync(
+        Stream input,
+        Encryptor encryptor,
+        EncryptionOptions options,
+        CancellationToken cancellationToken)
     {
-        return this.jObjectProcessor.EncryptAsync(input, encryptor, options, cancellationToken);
+        return this.EncryptAsync(
+            input,
+            encryptor,
+            options,
+            cancellationToken,
+            replacePlaintextEncryptionMetadata: false);
+    }
+
+    public Task<Stream> EncryptAsync(
+        Stream input,
+        Encryptor encryptor,
+        EncryptionOptions options,
+        CancellationToken cancellationToken,
+        bool replacePlaintextEncryptionMetadata)
+    {
+        return this.jObjectProcessor.EncryptAsync(
+            input,
+            encryptor,
+            options,
+            cancellationToken,
+            replacePlaintextEncryptionMetadata);
     }
 
     public Task EncryptAsync(Stream input, Stream output, Encryptor encryptor, EncryptionOptions options, JsonProcessor jsonProcessor, CancellationToken cancellationToken)
