@@ -34,6 +34,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         private Mock<FeedIterator> feedIteratorMock;
         private EncryptionContainer encryptionContainer;
 
+        public TestContext TestContext { get; set; }
+
         [TestInitialize]
         public void TestInitialize()
         {
@@ -1025,68 +1027,179 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [DataRow("Upsert")]
         public async Task EncryptableItem_ContentResponseDisabled_PreservesSuccessfulWrite(string operation)
         {
-            EncryptionItemRequestOptions requestOptions = new ()
-            {
-                EnableContentResponseOnWrite = false,
-                EncryptionOptions = new EncryptionOptions
-                {
-                    DataEncryptionKeyId = "dekId",
-#pragma warning disable CS0618
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
-#pragma warning restore CS0618
-                    PathsToEncrypt = Array.Empty<string>(),
-                },
-            };
+            EncryptionItemRequestOptions requestOptions = CreateEncryptableWriteOptions(false);
             HttpStatusCode statusCode = operation == "Create"
                 ? HttpStatusCode.Created
                 : HttpStatusCode.OK;
-            ResponseMessage innerResponse = new (statusCode);
-            this.innerContainerMock
-                .Setup(c => c.CreateItemStreamAsync(
-                    It.IsAny<Stream>(),
-                    new PartitionKey("pk1"),
-                    requestOptions,
-                    It.IsAny<CancellationToken>()))
-                .ReturnsAsync(innerResponse);
-            this.innerContainerMock
-                .Setup(c => c.ReplaceItemStreamAsync(
-                    It.IsAny<Stream>(),
-                    "doc1",
-                    new PartitionKey("pk1"),
-                    requestOptions,
-                    It.IsAny<CancellationToken>()))
-                .ReturnsAsync(innerResponse);
-            this.innerContainerMock
-                .Setup(c => c.UpsertItemStreamAsync(
-                    It.IsAny<Stream>(),
-                    new PartitionKey("pk1"),
-                    requestOptions,
-                    It.IsAny<CancellationToken>()))
-                .ReturnsAsync(innerResponse);
-            EncryptableItemStream item = new (
-                new MemoryStream(Encoding.UTF8.GetBytes("{\"id\":\"doc1\",\"pk\":\"pk1\"}")));
+            using ResponseMessage innerResponse = new (statusCode);
+            this.SetupWriteResponse(operation, requestOptions, innerResponse);
+            using EncryptableItemStream item = new (CreateItemStream());
 
-            ItemResponse<EncryptableItemStream> response = operation switch
-            {
-                "Create" => await this.encryptionContainer.CreateItemAsync(
-                    item,
-                    new PartitionKey("pk1"),
-                    requestOptions),
-                "Replace" => await this.encryptionContainer.ReplaceItemAsync(
-                    item,
-                    "doc1",
-                    new PartitionKey("pk1"),
-                    requestOptions),
-                "Upsert" => await this.encryptionContainer.UpsertItemAsync(
-                    item,
-                    new PartitionKey("pk1"),
-                    requestOptions),
-                _ => throw new AssertFailedException($"Unknown operation: {operation}"),
-            };
+            ItemResponse<EncryptableItemStream> response = await this.ExecuteEncryptableWriteAsync(
+                operation, item, requestOptions);
 
+            this.innerContainerMock.Verify();
             Assert.AreEqual(statusCode, response.StatusCode);
             Assert.AreSame(item, response.Resource);
+            Assert.AreSame(innerResponse.Headers, response.Headers);
             Assert.ThrowsException<InvalidOperationException>(() => _ = item.DecryptableItem);
+        }
+
+        [DataTestMethod]
+        [DataRow("Create", HttpStatusCode.Conflict, false)]
+        [DataRow("Create", HttpStatusCode.Conflict, true)]
+        [DataRow("Replace", HttpStatusCode.NotFound, false)]
+        [DataRow("Replace", HttpStatusCode.NotFound, true)]
+        [DataRow("Upsert", HttpStatusCode.TooManyRequests, false)]
+        [DataRow("Upsert", HttpStatusCode.TooManyRequests, true)]
+        public async Task EncryptableItem_NullContentError_ThrowsCosmosException(
+            string operation,
+            HttpStatusCode statusCode,
+            bool enableContentResponseOnWrite)
+        {
+            EncryptionItemRequestOptions requestOptions = CreateEncryptableWriteOptions(enableContentResponseOnWrite);
+            using ResponseMessage innerResponse = new (statusCode);
+            innerResponse.Headers.Add("x-ms-activity-id", "typed-write-error");
+            innerResponse.Headers.Add("x-ms-substatus", "1000");
+            innerResponse.Headers.Add("x-ms-request-charge", "1.25");
+            innerResponse.Headers.Add("x-ms-retry-after-ms", "1500");
+            Assert.IsNull(innerResponse.Content);
+            Assert.IsFalse(innerResponse.IsSuccessStatusCode);
+            this.SetupWriteResponse(operation, requestOptions, innerResponse);
+            using EncryptableItemStream item = new (CreateItemStream());
+
+            CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(async () =>
+            {
+                try
+                {
+                    ItemResponse<EncryptableItemStream> response = await this.ExecuteEncryptableWriteAsync(
+                        operation, item, requestOptions);
+                    this.TestContext.WriteLine(
+                        $"Unexpected normal completion: {operation}, HTTP {(int)response.StatusCode}, " +
+                        $"IsSuccessStatusCode={innerResponse.IsSuccessStatusCode}, " +
+                        $"EnableContentResponseOnWrite={enableContentResponseOnWrite}.");
+                    Assert.AreEqual(statusCode, response.StatusCode);
+                    Assert.AreSame(item, response.Resource);
+                }
+                finally
+                {
+                    this.innerContainerMock.Verify();
+                }
+            });
+
+            Assert.AreEqual(statusCode, exception.StatusCode);
+            Assert.AreEqual("typed-write-error", exception.ActivityId);
+            Assert.AreEqual(1000, exception.SubStatusCode);
+            Assert.AreEqual(1.25, exception.RequestCharge);
+            Assert.AreEqual(TimeSpan.FromMilliseconds(1500), exception.RetryAfter);
+            Assert.IsNotNull(exception.Diagnostics);
+            Assert.ThrowsException<ObjectDisposedException>(() => innerResponse.Content = null);
+            Assert.ThrowsException<InvalidOperationException>(() => _ = item.DecryptableItem);
+        }
+
+        [DataTestMethod]
+        [DataRow("Create")]
+        [DataRow("Replace")]
+        [DataRow("Upsert")]
+        public async Task EncryptableItem_NullContentError_PreservesExistingCosmosException(string operation)
+        {
+            EncryptionItemRequestOptions requestOptions = CreateEncryptableWriteOptions(false);
+            using ResponseMessage innerResponse = new (HttpStatusCode.TooManyRequests, errorMessage: "synthetic throttling");
+            CosmosException expectedException = Assert.ThrowsException<CosmosException>(
+                () => innerResponse.EnsureSuccessStatusCode());
+            this.SetupWriteResponse(operation, requestOptions, innerResponse);
+            using EncryptableItemStream item = new (CreateItemStream());
+
+            CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(async () =>
+            {
+                try
+                {
+                    await this.ExecuteEncryptableWriteAsync(operation, item, requestOptions);
+                }
+                finally
+                {
+                    this.innerContainerMock.Verify();
+                }
+            });
+
+            Assert.AreSame(expectedException, exception);
+            StringAssert.Contains(exception.Message, "synthetic throttling");
+            Assert.ThrowsException<ObjectDisposedException>(() => innerResponse.Content = null);
+        }
+
+        [DataTestMethod]
+        [DataRow("Create", HttpStatusCode.Conflict)]
+        [DataRow("Replace", HttpStatusCode.NotFound)]
+        [DataRow("Upsert", HttpStatusCode.TooManyRequests)]
+        public async Task StreamWrite_NullContentError_PreservesResponse(string operation, HttpStatusCode statusCode)
+        {
+            EncryptionItemRequestOptions requestOptions = CreateEncryptableWriteOptions(false);
+            using ResponseMessage innerResponse = new (statusCode);
+            this.SetupWriteResponse(operation, requestOptions, innerResponse);
+
+            ResponseMessage response = await ExecuteWriteAsync(this.encryptionContainer, operation, requestOptions);
+
+            this.innerContainerMock.Verify();
+            Assert.AreSame(innerResponse, response);
+            Assert.AreEqual(statusCode, response.StatusCode);
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.IsNull(response.Content);
+            response.Content = null;
+        }
+
+        private static EncryptionItemRequestOptions CreateEncryptableWriteOptions(bool enableContentResponseOnWrite)
+        {
+            EncryptionItemRequestOptions requestOptions = CreateEncryptedWriteOptions();
+            requestOptions.EnableContentResponseOnWrite = enableContentResponseOnWrite;
+            requestOptions.EncryptionOptions.PathsToEncrypt = Array.Empty<string>();
+            return requestOptions;
+        }
+
+        private Task<ItemResponse<EncryptableItemStream>> ExecuteEncryptableWriteAsync(
+            string operation,
+            EncryptableItemStream item,
+            EncryptionItemRequestOptions requestOptions)
+        {
+            return operation switch
+            {
+                "Create" => this.encryptionContainer.CreateItemAsync(item, new PartitionKey("pk1"), requestOptions),
+                "Replace" => this.encryptionContainer.ReplaceItemAsync(item, "doc1", new PartitionKey("pk1"), requestOptions),
+                "Upsert" => this.encryptionContainer.UpsertItemAsync(item, new PartitionKey("pk1"), requestOptions),
+                _ => throw new AssertFailedException($"Unknown operation: {operation}"),
+            };
+        }
+
+        private void SetupWriteResponse(
+            string operation,
+            ItemRequestOptions requestOptions,
+            ResponseMessage responseMessage)
+        {
+            switch (operation)
+            {
+                case "Create":
+                    this.innerContainerMock
+                        .Setup(c => c.CreateItemStreamAsync(
+                            It.IsAny<Stream>(), new PartitionKey("pk1"), requestOptions, It.IsAny<CancellationToken>()))
+                        .ReturnsAsync(responseMessage)
+                        .Verifiable();
+                    break;
+                case "Replace":
+                    this.innerContainerMock
+                        .Setup(c => c.ReplaceItemStreamAsync(
+                            It.IsAny<Stream>(), "doc1", new PartitionKey("pk1"), requestOptions, It.IsAny<CancellationToken>()))
+                        .ReturnsAsync(responseMessage)
+                        .Verifiable();
+                    break;
+                case "Upsert":
+                    this.innerContainerMock
+                        .Setup(c => c.UpsertItemStreamAsync(
+                            It.IsAny<Stream>(), new PartitionKey("pk1"), requestOptions, It.IsAny<CancellationToken>()))
+                        .ReturnsAsync(responseMessage)
+                        .Verifiable();
+                    break;
+                default:
+                    throw new AssertFailedException($"Unknown operation: {operation}");
+            }
         }
 
         private static EncryptionContainer CreateEncryptionContainer(

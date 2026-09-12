@@ -1270,6 +1270,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             EncryptableItem encryptableItem,
             ResponseMessage responseMessage)
         {
+            if (!responseMessage.IsSuccessStatusCode)
+            {
+                using (responseMessage)
+                {
+                    responseMessage.EnsureSuccessStatusCode();
+                }
+            }
+
             if (responseMessage.Content == null)
             {
                 return;
