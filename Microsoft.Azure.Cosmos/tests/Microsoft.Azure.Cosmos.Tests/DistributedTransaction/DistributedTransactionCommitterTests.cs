@@ -522,7 +522,8 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             SessionContainer sessionContainer = new SessionContainer("testhost");
 
-            // No partitionKeyRangeId; session token is LSN-only (as always returned by the endpoint)
+            // No partitionKeyRangeId, so the token stays LSN-only: the coordinator prefixes the range id
+            // onto each per-operation token and falls back to the raw value only when it cannot.
             string responseJson = BuildDtcResponseJson(
                 new[] { (statusCode: 201, subStatusCode: (int?)null, sessionToken: lsnOnly, partitionKeyRangeId: (string)null) });
 
@@ -697,6 +698,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
+        [DoNotParallelize]
         [Description("m9: When an operation result carries a session token with no partitionKeyRangeId, the capture path " +
                      "emits a TraceWarning before surfacing so the failure is observable in diagnostic traces.")]
         public async Task ExecuteTransactionAsync_EmitsTraceWarning_WhenPartitionKeyRangeIdIsAbsent()
@@ -2520,6 +2522,351 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 "A malformed token must never reach the session container.");
         }
 
+        // ─── Request-side session token validation ────────────────────────────────
+
+        [TestMethod]
+        [Description("Verifies that a caller-supplied session token the SDK cannot interpret fails the transaction before collection metadata is read or anything is sent.")]
+        [DataRow("garbage", DisplayName = "no separator, unparseable")]
+        [DataRow("5", DisplayName = "bare LSN, no partitionKeyRangeId")]
+        [DataRow("1#5#4=3", DisplayName = "bare vector, no partitionKeyRangeId")]
+        [DataRow(":1#5", DisplayName = "empty partitionKeyRangeId")]
+        [DataRow("0:", DisplayName = "empty token")]
+        [DataRow("0:garbage", DisplayName = "valid prefix, unparseable token")]
+        [DataRow("0:1#5 ", DisplayName = "trailing space, lands in lsn")]
+        [DataRow("0:1#5 ,1:2#8", DisplayName = "space before separator, lands in lsn")]
+        [DataRow("0:1#5,1:2#8", DisplayName = "compound token")]
+        [DataRow("bogus:1#5", DisplayName = "nonnumeric partitionKeyRangeId")]
+        [DataRow(",0:1#5", DisplayName = "leading compound separator")]
+        [DataRow("2147483648:1#5", DisplayName = "partitionKeyRangeId overflow")]
+        [DataRow("0:#1", DisplayName = "empty vector version")]
+        [DataRow("0:1#-", DisplayName = "empty signed global LSN")]
+        [DataRow("0:+1#5", DisplayName = "unsupported positive sign")]
+        [DataRow("0:9223372036854775808#1", DisplayName = "vector version overflow")]
+        [DataRow("0:1#5#=7", DisplayName = "empty region id")]
+        [DataRow("0:1#5#4294967296=7", DisplayName = "region id overflow")]
+        [DataRow("0:1#5#4=9223372036854775808", DisplayName = "local LSN overflow")]
+        [DataRow("0:1#5#4=7=8", DisplayName = "multiple region separators")]
+        public async Task ExecuteTransactionAsync_ThrowsOnMalformedUserSuppliedSessionToken(string malformedToken)
+        {
+            int dispatchCount = 0;
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            this.SetupProcessResourceOperation(
+                mockContext,
+                () =>
+                {
+                    dispatchCount++;
+                    return Task.FromResult(CreateSuccessResponseMessage(operationCount: 1));
+                });
+
+            List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Create, 0, DatabaseName, ContainerName,
+                    new PartitionKey("pk1"), id: "doc1",
+                    requestOptions: new DistributedTransactionRequestOptions { SessionToken = malformedToken }),
+            };
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                operations, mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
+
+            ArgumentException exception = await Assert.ThrowsExceptionAsync<ArgumentException>(
+                () => committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None));
+
+            Assert.IsTrue(exception.Message.Contains(malformedToken),
+                $"Message must quote the offending token. Message: {exception.Message}");
+            Assert.AreEqual(0, dispatchCount,
+                "A malformed caller-supplied token must fail pre-flight, before the transaction is dispatched.");
+        }
+
+        [DataTestMethod]
+        [Description("Read transactions validate caller-supplied tokens before dispatch regardless of client consistency.")]
+        [DataRow(Cosmos.ConsistencyLevel.Strong)]
+        [DataRow(Cosmos.ConsistencyLevel.BoundedStaleness)]
+        [DataRow(Cosmos.ConsistencyLevel.Session)]
+        [DataRow(Cosmos.ConsistencyLevel.ConsistentPrefix)]
+        [DataRow(Cosmos.ConsistencyLevel.Eventual)]
+        public async Task ExecuteTransactionAsync_ThrowsOnMalformedUserSuppliedSessionToken_ForRead(
+            Cosmos.ConsistencyLevel consistencyLevel)
+        {
+            int dispatchCount = 0;
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext(
+                new CosmosClientOptions { ConsistencyLevel = consistencyLevel });
+            this.SetupProcessResourceOperation(
+                mockContext,
+                () =>
+                {
+                    dispatchCount++;
+                    return Task.FromResult(CreateSuccessResponseMessage(operationCount: 1));
+                });
+
+            List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Read, 0, DatabaseName, ContainerName,
+                    new PartitionKey("pk1"), id: "doc1",
+                    requestOptions: new DistributedTransactionRequestOptions { SessionToken = "0:not-a-session-token" }),
+            };
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                operations, mockContext.Object, OperationType.Read, TimeSpan.Zero);
+
+            await Assert.ThrowsExceptionAsync<ArgumentException>(
+                () => committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None));
+
+            Assert.AreEqual(0, dispatchCount,
+                "A malformed caller-supplied read token must fail before dispatch.");
+        }
+
+        [TestMethod]
+        [Description("Read transactions validate caller-supplied tokens without resolving effective consistency.")]
+        public async Task ExecuteTransactionAsync_ThrowsOnMalformedUserSuppliedSessionToken_WithoutClientOptions()
+        {
+            int dispatchCount = 0;
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            this.SetupProcessResourceOperation(
+                mockContext,
+                () =>
+                {
+                    dispatchCount++;
+                    return Task.FromResult(CreateSuccessResponseMessage(operationCount: 1));
+                });
+
+            List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Read, 0, DatabaseName, ContainerName,
+                    new PartitionKey("pk1"), id: "doc1",
+                    requestOptions: new DistributedTransactionRequestOptions { SessionToken = "0:not-a-session-token" }),
+            };
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                operations, mockContext.Object, OperationType.Read, TimeSpan.Zero);
+
+            await Assert.ThrowsExceptionAsync<ArgumentException>(
+                () => committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None));
+
+            Assert.AreEqual(0, dispatchCount,
+                "A malformed caller-supplied read token must fail before dispatch.");
+        }
+
+        [TestMethod]
+        [DoNotParallelize]
+        [Description("Verifies that a malformed caller token is bounded and has line breaks escaped before it reaches the exception text that the committer logs.")]
+        public async Task ExecuteTransactionAsync_BoundsMalformedUserSuppliedSessionTokenInException()
+        {
+            string malformedToken = "0:garbage\r\n" + new string('x', 300);
+            int dispatchCount = 0;
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            this.SetupProcessResourceOperation(
+                mockContext,
+                () =>
+                {
+                    dispatchCount++;
+                    return Task.FromResult(CreateSuccessResponseMessage(operationCount: 1));
+                });
+
+            List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Create, 0, DatabaseName, ContainerName,
+                    new PartitionKey("pk1"), id: "doc1",
+                    requestOptions: new DistributedTransactionRequestOptions { SessionToken = malformedToken }),
+            };
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                operations, mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
+
+            List<string> capturedMessages = new List<string>();
+            System.Diagnostics.TraceListener listener = new DelegatingTraceListener(
+                (_, message) => capturedMessages.Add(message));
+
+            System.Diagnostics.SourceLevels previousLevel = DefaultTrace.TraceSource.Switch.Level;
+            DefaultTrace.TraceSource.Switch.Level = System.Diagnostics.SourceLevels.All;
+            DefaultTrace.TraceSource.Listeners.Add(listener);
+
+            ArgumentException exception;
+            try
+            {
+                exception = await Assert.ThrowsExceptionAsync<ArgumentException>(
+                    () => committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None));
+            }
+            finally
+            {
+                DefaultTrace.TraceSource.Listeners.Remove(listener);
+                DefaultTrace.TraceSource.Switch.Level = previousLevel;
+            }
+
+            StringAssert.Contains(exception.Message, @"0:garbage\r\n");
+            StringAssert.Contains(exception.Message, "...[truncated]");
+            Assert.IsFalse(exception.Message.Contains("0:garbage\r\n"),
+                "Caller-controlled line breaks must not be emitted verbatim in the exception text that is logged.");
+            Assert.IsFalse(exception.Message.Contains(malformedToken),
+                "The full caller-controlled token must not be emitted in the exception text that is logged.");
+            Assert.IsTrue(capturedMessages.Any(message => message.Contains(@"0:garbage\r\n")),
+                "The sanitized token should remain diagnosable in trace output.");
+            Assert.IsFalse(capturedMessages.Any(message => message.Contains("\r") || message.Contains("\n")),
+                "Caller-controlled line breaks must not be emitted verbatim in trace output.");
+            Assert.IsFalse(capturedMessages.Any(message => message.Contains(malformedToken)),
+                "The full caller-controlled token must not be emitted in trace output.");
+            Assert.AreEqual(0, dispatchCount,
+                "A malformed caller-supplied token must fail pre-flight, before the transaction is dispatched.");
+        }
+
+        [TestMethod]
+        [DoNotParallelize]
+        [Description("Verifies that a malformed response token is bounded and escaped before it reaches exceptions or trace output.")]
+        public async Task ExecuteTransactionAsync_BoundsMalformedResponseSessionTokenInExceptionAndTrace()
+        {
+            string malformedToken = "0:garbage\r\n" + new string('x', 300);
+            string responseJson =
+                "{\"operationResponses\":[{\"index\":0,\"statuscode\":201,\"sessionToken\":" +
+                Newtonsoft.Json.JsonConvert.SerializeObject(malformedToken) +
+                "}]}";
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                new SessionContainer("testhost"),
+                responseContent: responseJson,
+                statusCode: HttpStatusCode.OK,
+                accountConsistencyLevel: Cosmos.ConsistencyLevel.Session);
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                this.CreateOperations(1),
+                mockContext.Object,
+                OperationType.CommitDistributedTransaction,
+                TimeSpan.Zero);
+
+            List<string> capturedMessages = new List<string>();
+            System.Diagnostics.TraceListener listener = new DelegatingTraceListener(
+                (_, message) => capturedMessages.Add(message));
+
+            System.Diagnostics.SourceLevels previousLevel = DefaultTrace.TraceSource.Switch.Level;
+            DefaultTrace.TraceSource.Switch.Level = System.Diagnostics.SourceLevels.All;
+            DefaultTrace.TraceSource.Listeners.Add(listener);
+
+            InvalidOperationException exception;
+            try
+            {
+                exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                    () => committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None));
+            }
+            finally
+            {
+                DefaultTrace.TraceSource.Listeners.Remove(listener);
+                DefaultTrace.TraceSource.Switch.Level = previousLevel;
+            }
+
+            StringAssert.Contains(exception.Message, @"0:garbage\r\n");
+            StringAssert.Contains(exception.Message, "...[truncated]");
+            Assert.IsFalse(exception.Message.Contains("0:garbage\r\n"),
+                "Server-controlled line breaks must not be emitted verbatim in the exception.");
+            Assert.IsFalse(exception.Message.Contains(malformedToken),
+                "The full server-controlled token must not be emitted in the exception.");
+            Assert.IsTrue(capturedMessages.Any(message => message.Contains(@"0:garbage\r\n")),
+                "The sanitized token should remain diagnosable in trace output.");
+            Assert.IsFalse(capturedMessages.Any(message => message.Contains("\r") || message.Contains("\n")),
+                "Server-controlled line breaks must not be emitted verbatim in trace output.");
+            Assert.IsFalse(capturedMessages.Any(message => message.Contains(malformedToken)),
+                "The full server-controlled token must not be emitted in trace output.");
+        }
+
+        [TestMethod]
+        [Description("Verifies that validation reports the first malformed token in operation order, so the caller is pointed at one deterministic operation.")]
+        public async Task ExecuteTransactionAsync_ThrowsOnFirstMalformedUserSuppliedSessionToken()
+        {
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            this.SetupProcessResourceOperation(
+                mockContext,
+                () => Task.FromResult(CreateSuccessResponseMessage(operationCount: 3)));
+
+            List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Create, 0, DatabaseName, ContainerName,
+                    new PartitionKey("pk0"), id: "doc0",
+                    requestOptions: new DistributedTransactionRequestOptions { SessionToken = "0:1#5" }),
+                new DistributedTransactionOperation(
+                    OperationType.Create, 1, DatabaseName, ContainerName,
+                    new PartitionKey("pk1"), id: "doc1",
+                    requestOptions: new DistributedTransactionRequestOptions { SessionToken = "first-bad" }),
+                new DistributedTransactionOperation(
+                    OperationType.Create, 2, DatabaseName, ContainerName,
+                    new PartitionKey("pk2"), id: "doc2",
+                    requestOptions: new DistributedTransactionRequestOptions { SessionToken = "second-bad" }),
+            };
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                operations, mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
+
+            ArgumentException exception = await Assert.ThrowsExceptionAsync<ArgumentException>(
+                () => committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None));
+
+            Assert.IsTrue(exception.Message.Contains("index 1"),
+                $"Message must identify the first malformed operation. Message: {exception.Message}");
+            Assert.IsFalse(exception.Message.Contains("second-bad"),
+                $"Message must not report a later malformed token. Message: {exception.Message}");
+        }
+
+        [TestMethod]
+        [Description("Verifies that operations without a caller-supplied session token are unaffected by request-side validation.")]
+        public async Task ExecuteTransactionAsync_DoesNotValidateAbsentUserSuppliedSessionToken()
+        {
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            this.SetupProcessResourceOperation(
+                mockContext,
+                () => Task.FromResult(CreateSuccessResponseMessage(operationCount: 2)));
+
+            List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Create, 0, DatabaseName, ContainerName, new PartitionKey("pk0"), id: "doc0"),
+                new DistributedTransactionOperation(
+                    OperationType.Create, 1, DatabaseName, ContainerName,
+                    new PartitionKey("pk1"), id: "doc1",
+                    requestOptions: new DistributedTransactionRequestOptions { SessionToken = "   " }),
+            };
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                operations, mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
+
+            using DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [DataTestMethod]
+        [Description("Verifies valid boundary values and tolerated leading range-id whitespace are accepted.")]
+        [DataRow(" 0:1#5", DisplayName = "leading space, lands in range id")]
+        [DataRow("2147483647:9223372036854775807", DisplayName = "maximum range id and simple LSN")]
+        [DataRow("0:-9223372036854775808#9223372036854775807#4294967295=-9223372036854775808", DisplayName = "vector numeric boundaries")]
+        public async Task ExecuteTransactionAsync_AcceptsSessionTokenShapesThePointOperationPathTolerates(string tolerantToken)
+        {
+            int dispatchCount = 0;
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            this.SetupProcessResourceOperation(
+                mockContext,
+                () =>
+                {
+                    dispatchCount++;
+                    return Task.FromResult(CreateSuccessResponseMessage(operationCount: 1));
+                });
+
+            List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Create, 0, DatabaseName, ContainerName,
+                    new PartitionKey("pk1"), id: "doc1",
+                    requestOptions: new DistributedTransactionRequestOptions { SessionToken = tolerantToken }),
+            };
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                operations, mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
+
+            await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+
+            Assert.AreEqual(1, dispatchCount,
+                $"Validation must not be stricter than the point-operation path, which accepts '{tolerantToken}'.");
+        }
+
         // ─── Diagnostics ──────────────────────────────────────────────────────────
 
         [TestMethod]
@@ -2990,6 +3337,14 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             public override void Write(string message) { }
 
             public override void WriteLine(string message) { }
+
+            public override void TraceEvent(
+                System.Diagnostics.TraceEventCache eventCache,
+                string source,
+                System.Diagnostics.TraceEventType eventType,
+                int id,
+                string message)
+                => this.onEvent(eventType, message);
 
             public override void TraceEvent(
                 System.Diagnostics.TraceEventCache eventCache,
