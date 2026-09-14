@@ -6,6 +6,7 @@ namespace CosmosBenchmark
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
@@ -51,7 +52,8 @@ namespace CosmosBenchmark
 
         public async Task<OperationResult> ExecuteOnceAsync()
         {
-            ItemResponse<Dictionary<string, object>> response = await this.container.ReadItemAsync<Dictionary<string, object>>(this.itemId, new PartitionKey(this.itemPk));
+            using CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            ItemResponse<Dictionary<string, object>> response = await this.container.ReadItemAsync<Dictionary<string, object>>(this.itemId, new PartitionKey(this.itemPk), cancellationToken: cts.Token);
             return new OperationResult
             {
                 DatabseName = this.databaseName,
