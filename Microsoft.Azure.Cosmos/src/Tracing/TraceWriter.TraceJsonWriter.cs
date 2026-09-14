@@ -264,6 +264,15 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 jsonWriter.WriteFieldName("ActivityId");
                 this.WriteStringValueOrNull(stat.ActivityId);
 
+                if (stat.RequestHeaders != null)
+                {
+                    foreach (KeyValuePair<string, string> header in stat.RequestHeaders)
+                    {
+                        jsonWriter.WriteFieldName(header.Key);
+                        jsonWriter.WriteStringValue(header.Value);
+                    }
+                }
+
                 if (stat.Exception != null)
                 {
                     jsonWriter.WriteFieldName("ExceptionType");

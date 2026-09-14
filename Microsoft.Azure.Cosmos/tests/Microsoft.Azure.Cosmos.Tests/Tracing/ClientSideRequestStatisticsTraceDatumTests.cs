@@ -113,6 +113,112 @@
             Assert.IsNotNull(clientSideRequestStatistics.RegionsContacted);
         }
 
+        [TestMethod]
+        public void CaptureRequestHeadersReturnsNullWhenNoAllowlistedHeaderIsPresent()
+        {
+            using HttpRequestMessage requestMessage = new HttpRequestMessage();
+            requestMessage.Headers.Add("x-ms-version", "2020-07-15");
+
+            Assert.IsNull(ClientSideRequestStatisticsTraceDatum.CaptureRequestHeaders(requestMessage));
+        }
+
+        [TestMethod]
+        public void CaptureRequestHeadersCapturesOnlyAllowlistedHeaders()
+        {
+            using HttpRequestMessage requestMessage = new HttpRequestMessage();
+            requestMessage.Headers.Add(DistributedTransactionConstants.IsDtxRetry, "true");
+            requestMessage.Headers.Add("x-ms-cosmos-internal-something-else", "true");
+
+            IReadOnlyList<KeyValuePair<string, string>> captured = ClientSideRequestStatisticsTraceDatum.CaptureRequestHeaders(requestMessage);
+
+            Assert.AreEqual(1, captured.Count);
+            Assert.AreEqual("IsDtxRetry", captured[0].Key);
+            Assert.AreEqual("true", captured[0].Value);
+        }
+
+        [TestMethod]
+        public void RecordHttpResponseEmitsAllowlistedRequestHeaders()
+        {
+            using HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Post, ClientSideRequestStatisticsTraceDatumTests.uri);
+            requestMessage.Headers.Add(DistributedTransactionConstants.IsDtxRetry, "true");
+            requestMessage.Headers.Add(DistributedTransactionConstants.IsDtxCrossRegionRedirect, "false");
+
+            ITrace trace = Trace.GetRootTrace(nameof(RecordHttpResponseEmitsAllowlistedRequestHeaders));
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
+
+            using HttpResponseMessage responseMessage = new HttpResponseMessage();
+            datum.RecordHttpResponse(requestMessage, responseMessage, ResourceType.Document, DateTime.UtcNow);
+
+            trace.AddDatum("stats", datum);
+            JToken httpResponseStat = JObject.Parse(new CosmosTraceDiagnostics(trace).ToString())
+                ["data"]["stats"]["HttpResponseStats"][0];
+
+            Assert.AreEqual("true", httpResponseStat["IsDtxRetry"].Value<string>());
+            Assert.AreEqual("false", httpResponseStat["IsDtxCrossRegionRedirect"].Value<string>());
+        }
+
+        [TestMethod]
+        public void RecordHttpResponseOmitsRequestHeadersWhenNoneAreAllowlisted()
+        {
+            using HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, ClientSideRequestStatisticsTraceDatumTests.uri);
+            requestMessage.Headers.Add("x-ms-version", "2020-07-15");
+
+            ITrace trace = Trace.GetRootTrace(nameof(RecordHttpResponseOmitsRequestHeadersWhenNoneAreAllowlisted));
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
+
+            using HttpResponseMessage responseMessage = new HttpResponseMessage();
+            datum.RecordHttpResponse(requestMessage, responseMessage, ResourceType.Document, DateTime.UtcNow);
+
+            trace.AddDatum("stats", datum);
+            JToken httpResponseStat = JObject.Parse(new CosmosTraceDiagnostics(trace).ToString())
+                ["data"]["stats"]["HttpResponseStats"][0];
+
+            Assert.IsNull(httpResponseStat["IsDtxRetry"]);
+            Assert.IsNull(httpResponseStat["IsDtxCrossRegionRedirect"]);
+        }
+
+        [TestMethod]
+        public void RecordHttpExceptionEmitsAllowlistedRequestHeaders()
+        {
+            using HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Post, ClientSideRequestStatisticsTraceDatumTests.uri);
+            requestMessage.Headers.Add(DistributedTransactionConstants.IsDtxRetry, "true");
+
+            ITrace trace = Trace.GetRootTrace(nameof(RecordHttpExceptionEmitsAllowlistedRequestHeaders));
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
+
+            datum.RecordHttpException(requestMessage, new OperationCanceledException(), ResourceType.Document, DateTime.UtcNow);
+
+            trace.AddDatum("stats", datum);
+            JToken httpResponseStat = JObject.Parse(new CosmosTraceDiagnostics(trace).ToString())
+                ["data"]["stats"]["HttpResponseStats"][0];
+
+            Assert.AreEqual("true", httpResponseStat["IsDtxRetry"].Value<string>());
+        }
+
+        [TestMethod]
+        public void TraceToTextEmitsAllowlistedRequestHeaders()
+        {
+            using HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Post, ClientSideRequestStatisticsTraceDatumTests.uri);
+            requestMessage.Headers.Add(DistributedTransactionConstants.IsDtxRetry, "true");
+
+            Trace trace = Trace.GetRootTrace(nameof(TraceToTextEmitsAllowlistedRequestHeaders));
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
+
+            using HttpResponseMessage responseMessage = new HttpResponseMessage();
+            datum.RecordHttpResponse(requestMessage, responseMessage, ResourceType.Document, DateTime.UtcNow);
+
+            trace.AddDatum("stats", datum);
+
+            // TraceWriter reads trace data directly, which callers must mark as walkable first. In production
+            // CosmosTraceDiagnostics does this before serializing.
+            trace.SetWalkingStateRecursively();
+            string[] lines = TraceWriter.TraceToText(trace).Split(Environment.NewLine);
+
+            Assert.IsTrue(
+                lines.Any(line => line.EndsWith("IsDtxRetry: true")),
+                "The captured request header was not emitted.");
+        }
+
         private async Task ConcurrentUpdateTestHelper<T>(
             Action<ClientSideRequestStatisticsTraceDatum, CancellationToken> backgroundUpdater,
             Func<ClientSideRequestStatisticsTraceDatum, IEnumerable<T>> getList)
