@@ -23,11 +23,12 @@ namespace Microsoft.Azure.Cosmos
         // The first-attempt timeout was raised from 500ms to 1s to align with HttpTimeoutPolicyForThinClient
         // (see issue #5642). The original 500ms value caused spurious TaskCanceledException retries on
         // .NET 10 due to changes in HttpConnectionPool behavior and any environment with moderate network
-        // latency. The 5s and 65s tail attempts are preserved to keep the existing retry budget for slow
-        // control-plane operations.
+        // latency. INTERNAL builds skip that first attempt and use only the 5s and 65s tail attempts.
         private readonly IReadOnlyList<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> TimeoutsAndDelays = new List<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)>()
         {
+#if !INTERNAL
             (TimeSpan.FromSeconds(1), TimeSpan.Zero),
+#endif
             (TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(1)),
             (TimeSpan.FromSeconds(65), TimeSpan.Zero),
         };
