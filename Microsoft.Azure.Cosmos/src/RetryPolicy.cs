@@ -56,5 +56,27 @@ namespace Microsoft.Azure.Cosmos
 
             return clientRetryPolicy;
         }
+
+        /// <summary>
+        /// Creates a new instance of the ClientRetryPolicy class retrying distributed transaction failures.
+        /// </summary>
+        public IDocumentClientRetryPolicy GetRequestPolicy(
+            DistributedTransactionDispatchTracker distributedTransactionDispatchTracker)
+        {
+            if (distributedTransactionDispatchTracker == null)
+            {
+                throw new System.ArgumentNullException(nameof(distributedTransactionDispatchTracker));
+            }
+
+            return new ClientRetryPolicy(
+                this.globalEndpointManager,
+                this.partitionKeyRangeLocationCache,
+                this.retryOptions,
+                this.enableEndpointDiscovery,
+                this.isThinClientEnabled,
+                distributedTransactionDispatchTracker,
+                this.isHubRegionProcessingEnabled,
+                this.authorizationTokenProvider);
+        }
     }
 }
