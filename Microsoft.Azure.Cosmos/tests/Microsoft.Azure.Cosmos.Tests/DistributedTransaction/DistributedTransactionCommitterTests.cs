@@ -35,6 +35,9 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         // Known-valid collection resource ID that passes ResourceId.Parse.
         private const string TestCollectionResourceId = "ccZ1ANCszwk=";
 
+        // DataRow sentinel: MSTest cannot express an absent int? cleanly, and -1 is not a real substatus.
+        private const int SubStatusCodeAbsent = -1;
+
         [TestMethod]
         [Description("Verifies that when the DTC response carries a session token, the token is merged into the SessionContainer")]
         public async Task ExecuteTransactionAsync_MergesSessionTokensIntoSessionContainer()
@@ -212,8 +215,8 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
-        [Description("Verifies that session tokens are still merged into the SessionContainer even when the DTC response indicates a failure")]
-        public async Task ExecuteTransactionAsync_MergesSessionTokens_OnFailureResponse()
+        [Description("Verifies that session tokens are still merged into the SessionContainer on a 409, a failure status point operations also capture on")]
+        public async Task ExecuteTransactionAsync_MergesSessionTokens_OnCapturableFailureStatus()
         {
             // Deliberately distinct from the success-path token so a copy-paste regression would be caught.
             const string lsnOnly = "1#3#4=2#5=1";
@@ -245,7 +248,192 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             string storedToken = sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName));
             Assert.AreEqual(expectedToken, storedToken,
-                "Session token should still be merged even when the DTC response indicates a failure.");
+                "Session token should still be merged on a 409, which point operations also capture on.");
+        }
+
+        [DataTestMethod]
+        [Description("Session token capture is gated on exactly the statuses point operations capture on: anything below 400, plus 409, 412, and 404 with a substatus other than ReadSessionNotAvailable")]
+        [DataRow(200, SubStatusCodeAbsent, true, DisplayName = "200 OK is captured")]
+        [DataRow(201, SubStatusCodeAbsent, true, DisplayName = "201 Created is captured")]
+        [DataRow(304, SubStatusCodeAbsent, true, DisplayName = "304 NotModified is captured")]
+        [DataRow(0, SubStatusCodeAbsent, true, DisplayName = "A zero status, which is also what an absent statuscode yields, is captured")]
+        [DataRow(412, SubStatusCodeAbsent, true, DisplayName = "412 PreconditionFailed is captured")]
+        [DataRow(409, SubStatusCodeAbsent, true, DisplayName = "409 Conflict is captured")]
+        [DataRow(404, 0, true, DisplayName = "404 NotFound with an unrelated substatus is captured")]
+        [DataRow(404, 1002, false, DisplayName = "404 ReadSessionNotAvailable is skipped")]
+        [DataRow(424, SubStatusCodeAbsent, false, DisplayName = "424 FailedDependency is skipped")]
+        [DataRow(429, 3200, false, DisplayName = "429 TooManyRequests is skipped")]
+        [DataRow(410, SubStatusCodeAbsent, false, DisplayName = "410 Gone is skipped")]
+        [DataRow(503, SubStatusCodeAbsent, false, DisplayName = "503 ServiceUnavailable is skipped")]
+        [DataRow(408, SubStatusCodeAbsent, false, DisplayName = "408 RequestTimeout is skipped")]
+        [DataRow(500, SubStatusCodeAbsent, false, DisplayName = "500 InternalServerError is skipped")]
+        public async Task ExecuteTransactionAsync_CapturesSessionToken_OnPointOperationStatusesOnly(
+            int operationStatusCode,
+            int operationSubStatusCode,
+            bool expectCaptured)
+        {
+            const string lsnOnly = "1#11#4=9";
+            const string pkRangeId = "0";
+            const string expectedToken = "0:1#11#4=9";
+
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            string responseJson = BuildDtcResponseJson(
+                new[]
+                {
+                    (statusCode: operationStatusCode,
+                     subStatusCode: operationSubStatusCode == SubStatusCodeAbsent ? (int?)null : operationSubStatusCode,
+                     sessionToken: lsnOnly,
+                     partitionKeyRangeId: pkRangeId),
+                });
+
+            // MultiStatus keeps the envelope uniform across rows; per-operation statuses are what the
+            // capture gate reads, so the envelope must not be what decides the outcome.
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: responseJson,
+                statusCode: (HttpStatusCode)StatusCodes.MultiStatus);
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                this.CreateOperations(1), mockContext.Object, OperationType.CommitDistributedTransaction);
+
+            await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+
+            string storedToken = sessionContainer.GetSessionToken(
+                DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName));
+
+            Assert.AreEqual(
+                expectCaptured ? expectedToken : string.Empty,
+                storedToken,
+                $"Status {operationStatusCode}/{operationSubStatusCode} should {(expectCaptured ? "be" : "not be")} captured.");
+        }
+
+        [TestMethod]
+        [Description("A MultiStatus response mixing captured and skipped per-operation statuses captures only the qualifying operations")]
+        public async Task ExecuteTransactionAsync_CapturesPerOperation_WhenMultiStatusMixesStatuses()
+        {
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            // Operations 0 and 1 share partition 0 so the recorded LSN proves the skip rather than just
+            // the absence of a range: capturing the 503 would advance partition 0 from 11 to 99.
+            string responseJson = BuildDtcResponseJson(
+                new[]
+                {
+                    (statusCode: 200, subStatusCode: (int?)null, sessionToken: "1#11#4=9", partitionKeyRangeId: "0"),
+                    (statusCode: 503, subStatusCode: (int?)null, sessionToken: "1#99#4=9", partitionKeyRangeId: "0"),
+                    (statusCode: 409, subStatusCode: (int?)null, sessionToken: "1#12#4=9", partitionKeyRangeId: "1"),
+                    (statusCode: 424, subStatusCode: (int?)null, sessionToken: "1#13#4=9", partitionKeyRangeId: "2"),
+                });
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: responseJson,
+                statusCode: (HttpStatusCode)StatusCodes.MultiStatus);
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                this.CreateOperations(4), mockContext.Object, OperationType.CommitDistributedTransaction);
+
+            await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+
+            Dictionary<string, string> tokensByRange = ParseSessionTokensByRange(
+                sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName)));
+
+            CollectionAssert.AreEquivalent(
+                new[] { "0", "1" },
+                tokensByRange.Keys.ToArray(),
+                "Only the operations whose status permits capture should reach the session container.");
+
+            Assert.AreEqual(
+                "1#11#4=9",
+                tokensByRange["0"],
+                "Partition 0 must keep the 200's LSN: the skipped 503 on the same partition must not advance it.");
+
+            Assert.AreEqual(
+                "1#12#4=9",
+                tokensByRange["1"],
+                "Partition 1 must hold the 409's LSN.");
+        }
+
+        [TestMethod]
+        [Description("A 207 pairing a 200 with a 304, the shape a conditional read transaction returns, captures both tokens")]
+        public async Task ExecuteTransactionAsync_CapturesBothTokens_WhenMultiStatusPairsOkWithNotModified()
+        {
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            string responseJson = BuildDtcResponseJson(
+                new[]
+                {
+                    (statusCode: 200, subStatusCode: (int?)null, sessionToken: "1#11#4=9", partitionKeyRangeId: "0"),
+                    (statusCode: 304, subStatusCode: (int?)null, sessionToken: "1#12#4=9", partitionKeyRangeId: "1"),
+                });
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: responseJson,
+                statusCode: (HttpStatusCode)StatusCodes.MultiStatus);
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                this.CreateOperations(2), mockContext.Object, OperationType.CommitDistributedTransaction);
+
+            await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+
+            Dictionary<string, string> tokensByRange = ParseSessionTokensByRange(
+                sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName)));
+
+            CollectionAssert.AreEquivalent(
+                new[] { "0", "1" },
+                tokensByRange.Keys.ToArray(),
+                "A 304 read observed real replica progress, so its token must be captured just as the gateway captures it.");
+        }
+
+        [TestMethod]
+        [Description("Capture is not gated on consistency: tokens are merged on a non-session account, matching point-operation behavior")]
+        public async Task ExecuteTransactionAsync_MergesSessionTokens_OnNonSessionAccount()
+        {
+            const string lsnOnly = "1#14#4=9";
+            const string expectedToken = "0:1#14#4=9";
+
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: BuildDtcResponseJson(
+                    new[] { (statusCode: 200, subStatusCode: (int?)null, sessionToken: lsnOnly, partitionKeyRangeId: "0") }),
+                statusCode: HttpStatusCode.OK,
+                accountConsistencyLevel: Cosmos.ConsistencyLevel.Eventual);
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                this.CreateOperations(1), mockContext.Object, OperationType.CommitDistributedTransaction);
+
+            await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+
+            Assert.AreEqual(
+                expectedToken,
+                sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName)),
+                "Point operations capture regardless of consistency level, so the DTx path must too.");
+        }
+
+        [TestMethod]
+        [Description("A transport-level failure whose results are padded placeholders merges nothing and throws nothing")]
+        public async Task ExecuteTransactionAsync_MergesNothing_WhenResultsArePaddedPlaceholders()
+        {
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: null,
+                statusCode: HttpStatusCode.ServiceUnavailable);
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                this.CreateOperations(2), mockContext.Object, OperationType.CommitDistributedTransaction);
+
+            DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+
+            Assert.IsNotNull(response, "A transport failure must still produce a response rather than throwing.");
+            Assert.AreEqual(
+                string.Empty,
+                sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName)),
+                "Padded placeholder results carry no session token, so nothing should be captured.");
         }
 
         [TestMethod]
@@ -2147,10 +2335,18 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             string responseContent,
             HttpStatusCode statusCode)
         {
-            MockDocumentClient documentClient = new MockDocumentClient
-            {
-                sessionContainer = sessionContainer
-            };
+            return this.CreateMockContext(sessionContainer, responseContent, statusCode, accountConsistencyLevel: null);
+        }
+
+        private Mock<CosmosClientContext> CreateMockContext(
+            ISessionContainer sessionContainer,
+            string responseContent,
+            HttpStatusCode statusCode,
+            Cosmos.ConsistencyLevel? accountConsistencyLevel)
+        {
+            MockDocumentClient documentClient = accountConsistencyLevel.HasValue
+                ? new MockDocumentClient(accountConsistencyLevel.Value) { sessionContainer = sessionContainer }
+                : new MockDocumentClient { sessionContainer = sessionContainer };
 
             ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId(CollectionResourceId);
             containerProperties.Id = "TestContainerId";
@@ -2186,6 +2382,51 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 .ReturnsAsync(responseMessage);
 
             return mockContext;
+        }
+
+        /// <summary>
+        /// Builds <paramref name="count"/> create operations against the single collection the
+        /// <c>CreateMockContext</c> helpers stub, each on its own partition key.
+        /// </summary>
+        private List<DistributedTransactionOperation> CreateOperations(int count)
+        {
+            List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>(count);
+            for (int i = 0; i < count; i++)
+            {
+                operations.Add(new DistributedTransactionOperation(
+                    OperationType.Create,
+                    operationIndex: i,
+                    DatabaseName,
+                    ContainerName,
+                    new PartitionKey($"pk{i}"),
+                    id: $"doc{i}"));
+            }
+
+            return operations;
+        }
+
+        /// <summary>
+        /// Extracts the partition key range ids from a compound collection session token
+        /// (<c>"0:1#5,1:1#7"</c>), identifying which operations reached the session container.
+        /// </summary>
+        private static Dictionary<string, string> ParseSessionTokensByRange(string compoundSessionToken)
+        {
+            Dictionary<string, string> tokensByRange = new Dictionary<string, string>(StringComparer.Ordinal);
+            if (string.IsNullOrEmpty(compoundSessionToken))
+            {
+                return tokensByRange;
+            }
+
+            foreach (string segment in compoundSessionToken.Split(','))
+            {
+                int separatorIndex = segment.IndexOf(':');
+                if (separatorIndex > 0)
+                {
+                    tokensByRange[segment.Substring(0, separatorIndex)] = segment.Substring(separatorIndex + 1);
+                }
+            }
+
+            return tokensByRange;
         }
 
         // ─── Retry test helpers ────────────────────────────────────────────────
