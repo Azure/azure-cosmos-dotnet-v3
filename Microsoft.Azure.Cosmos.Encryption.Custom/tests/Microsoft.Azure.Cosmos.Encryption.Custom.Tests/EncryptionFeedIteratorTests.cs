@@ -102,7 +102,94 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.AreSame(response, result);
         }
 
+        [DataTestMethod]
+        [DynamicData(nameof(GetSupportedJsonProcessorsData), DynamicDataSourceType.Method)]
+        public async Task ReadNextAsync_SuccessfulResponseWithoutContent_ReturnsOriginalResponseMessage(string jsonProcessor)
+        {
+            ResponseMessage response = new (HttpStatusCode.OK);
+            Mock<FeedIterator> innerIterator = new ();
+            innerIterator
+                .Setup(iterator => iterator.ReadNextAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(response);
+            EncryptionFeedIterator feedIterator = this.CreateFeedIterator(innerIterator.Object, jsonProcessor);
+
+            ResponseMessage result = await feedIterator.ReadNextAsync();
+
+            Assert.AreSame(response, result);
+            Assert.IsNull(result.Content);
+        }
+
 #if NET8_0_OR_GREATER
+        [DataTestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
+        public async Task ReadNextAsync_StreamProcessor_AdaptsReadableNonWritableContent(bool canSeek)
+        {
+            const string rawPayload = "{\"Documents\":[{\"id\":\"doc1\",\"precise\":1234567890.12345678901234567890,\"trailing\":1.2300,\"exponent\":6.022e+23}],\"_count\":1}";
+            TrackingReadOnlyStream responseContent = new (Encoding.UTF8.GetBytes(rawPayload), canSeek);
+            if (canSeek)
+            {
+                responseContent.Position = 7;
+            }
+
+            ResponseMessage response = new (HttpStatusCode.OK)
+            {
+                Content = responseContent,
+            };
+            Mock<FeedIterator> innerIterator = new ();
+            innerIterator
+                .Setup(iterator => iterator.ReadNextAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(response);
+            EncryptionFeedIterator feedIterator = this.CreateFeedIterator(innerIterator.Object, StreamProcessorName);
+
+            ResponseMessage result = await feedIterator.ReadNextAsync();
+
+            try
+            {
+                Assert.IsInstanceOfType(result, typeof(DecryptedResponseMessage));
+                Assert.AreNotSame(responseContent, result.Content);
+                Assert.IsFalse(responseContent.IsDisposed);
+                if (canSeek)
+                {
+                    Assert.AreEqual(7, responseContent.Position);
+                }
+
+                using StreamReader reader = new (result.Content, Encoding.UTF8, false, 1024, leaveOpen: true);
+                Assert.AreEqual(rawPayload, await reader.ReadToEndAsync());
+            }
+            finally
+            {
+                result.Dispose();
+            }
+
+            Assert.IsTrue(responseContent.IsDisposed);
+        }
+
+        [TestMethod]
+        public async Task ReadNextAsync_StreamProcessor_CancelledAdaptationDoesNotDisposeSource()
+        {
+            const string rawPayload = "{\"Documents\":[{\"id\":\"doc1\"}],\"_count\":1}";
+            TrackingReadOnlyStream responseContent = new (Encoding.UTF8.GetBytes(rawPayload), canSeek: false);
+            ResponseMessage response = new (HttpStatusCode.OK)
+            {
+                Content = responseContent,
+            };
+            Mock<FeedIterator> innerIterator = new ();
+            innerIterator
+                .Setup(iterator => iterator.ReadNextAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(response);
+            EncryptionFeedIterator feedIterator = this.CreateFeedIterator(innerIterator.Object, StreamProcessorName);
+            using CancellationTokenSource cancellation = new ();
+            cancellation.Cancel();
+
+            await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+                () => feedIterator.ReadNextAsync(cancellation.Token));
+
+            Assert.IsFalse(responseContent.IsDisposed);
+            response.Dispose();
+            Assert.IsTrue(responseContent.IsDisposed);
+        }
+
         [TestMethod]
         public async Task ReadNextAsync_EmptyDocumentsArray_StreamAndNewtonsoftAgree()
         {
@@ -403,6 +490,114 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             response.Content = stream;
             return response;
+        }
+
+        private sealed class TrackingReadOnlyStream : Stream
+        {
+            private readonly byte[] content;
+            private readonly bool canSeek;
+            private int position;
+
+            public TrackingReadOnlyStream(byte[] content, bool canSeek)
+            {
+                this.content = content;
+                this.canSeek = canSeek;
+            }
+
+            public bool IsDisposed { get; private set; }
+
+            public override bool CanRead => !this.IsDisposed;
+
+            public override bool CanSeek => !this.IsDisposed && this.canSeek;
+
+            public override bool CanWrite => false;
+
+            public override long Length => this.canSeek
+                ? this.content.Length
+                : throw new NotSupportedException();
+
+            public override long Position
+            {
+                get => this.canSeek
+                    ? this.position
+                    : throw new NotSupportedException();
+                set
+                {
+                    if (!this.canSeek)
+                    {
+                        throw new NotSupportedException();
+                    }
+
+                    if (value < 0 || value > this.content.Length)
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(value));
+                    }
+
+                    this.position = (int)value;
+                }
+            }
+
+            public override void Flush()
+            {
+            }
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                int toCopy = Math.Min(count, this.content.Length - this.position);
+                if (toCopy <= 0)
+                {
+                    return 0;
+                }
+
+                Buffer.BlockCopy(this.content, this.position, buffer, offset, toCopy);
+                this.position += toCopy;
+                return toCopy;
+            }
+
+            public override ValueTask<int> ReadAsync(
+                Memory<byte> buffer,
+                CancellationToken cancellationToken = default)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                int toCopy = Math.Min(buffer.Length, this.content.Length - this.position);
+                if (toCopy <= 0)
+                {
+                    return ValueTask.FromResult(0);
+                }
+
+                this.content.AsMemory(this.position, toCopy).CopyTo(buffer);
+                this.position += toCopy;
+                return ValueTask.FromResult(toCopy);
+            }
+
+            public override long Seek(long offset, SeekOrigin origin)
+            {
+                if (!this.canSeek)
+                {
+                    throw new NotSupportedException();
+                }
+
+                long newPosition = origin switch
+                {
+                    SeekOrigin.Begin => offset,
+                    SeekOrigin.Current => this.position + offset,
+                    SeekOrigin.End => this.content.Length + offset,
+                    _ => throw new ArgumentOutOfRangeException(nameof(origin)),
+                };
+
+                this.Position = newPosition;
+                return this.position;
+            }
+
+            public override void SetLength(long value) => throw new NotSupportedException();
+
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+            protected override void Dispose(bool disposing)
+            {
+                this.IsDisposed = true;
+                base.Dispose(disposing);
+            }
         }
 
 #endif
