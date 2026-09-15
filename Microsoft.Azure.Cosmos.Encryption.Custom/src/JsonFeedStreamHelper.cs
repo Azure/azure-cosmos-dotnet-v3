@@ -10,6 +10,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
     internal static class JsonFeedStreamHelper
     {
+        internal const int MaximumBufferSize = 64 * 1024 * 1024;
+
         private const string MissingDocumentsArrayMessage = "The JSON payload must be a Cosmos DB feed response object containing a Documents array.";
         private const string DocumentsMustBeArrayMessage = "The Documents property must be a JSON array.";
 

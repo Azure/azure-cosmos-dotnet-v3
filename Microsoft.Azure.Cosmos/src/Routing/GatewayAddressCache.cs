@@ -305,7 +305,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     request.RequestContext.LastPartitionAddressInformationHashCode = addresses.GetHashCode();
                 }
 
-                int targetReplicaSetSize = this.serviceConfigReader.UserReplicationPolicy.MaxReplicaSetSize;
+                int targetReplicaSetSize = addresses.PartitionTargetReplicaSetSize
+                    ?? this.serviceConfigReader.UserReplicationPolicy.MaxReplicaSetSize;
                 if (addresses.AllAddresses.Count() < targetReplicaSetSize)
                 {
                     this.suboptimalServerPartitionTimestamps.TryAdd(partitionKeyRangeIdentity, DateTime.UtcNow);
@@ -761,7 +762,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 Uri targetEndpoint = UrlUtility.SetQuery(this.addressEndpoint, UrlUtility.CreateQuery(addressQuery));
 
-                string identifier = GatewayAddressCache.LogAddressResolutionStart(request, targetEndpoint);
+                AddressResolutionActivity addressResolutionActivity = GatewayAddressCache.LogAddressResolutionStart(request, targetEndpoint);
 
                 if (this.httpClient.IsFaultInjectionClient)
                 {
@@ -781,7 +782,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             documentServiceRequest: faultInjectionRequest))
                         {
                             DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
-                            GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
+                            GatewayAddressCache.LogAddressResolutionEnd(addressResolutionActivity);
                             return documentServiceResponse;
                         }
                     }
@@ -798,7 +799,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         cancellationToken: default))
                     {
                         DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
-                        GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
+                        GatewayAddressCache.LogAddressResolutionEnd(addressResolutionActivity);
                         return documentServiceResponse;
                     }
                 }
@@ -829,7 +830,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         cancellationToken: default))
                     {
                         DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
-                        GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
+                        GatewayAddressCache.LogAddressResolutionEnd(addressResolutionActivity);
                         return documentServiceResponse;
                     }
                 }
@@ -901,7 +902,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 Uri targetEndpoint = UrlUtility.SetQuery(this.addressEndpoint, UrlUtility.CreateQuery(addressQuery));
 
-                string identifier = GatewayAddressCache.LogAddressResolutionStart(request, targetEndpoint);
+                AddressResolutionActivity addressResolutionActivity = GatewayAddressCache.LogAddressResolutionStart(request, targetEndpoint);
                 
                 if (this.httpClient.IsFaultInjectionClient)
                 {
@@ -921,7 +922,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             documentServiceRequest: faultInjectionRequest))
                         {
                             DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
-                            GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
+                            GatewayAddressCache.LogAddressResolutionEnd(addressResolutionActivity);
                             return documentServiceResponse;
                         }
                     }
@@ -938,7 +939,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         cancellationToken: default))
                     {
                         DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
-                        GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
+                        GatewayAddressCache.LogAddressResolutionEnd(addressResolutionActivity);
                         return documentServiceResponse;
                     }
                 }
@@ -969,7 +970,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         cancellationToken: default))
                     {
                         DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
-                        GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
+                        GatewayAddressCache.LogAddressResolutionEnd(addressResolutionActivity);
                         return documentServiceResponse;
                     }
                 }
@@ -1016,9 +1017,15 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
             }
 
+            // Extract per-partition TargetReplicaSetSize from the first address
+            // (all addresses in a partition share the same TRSS value from the gateway).
+            // This flows through to AddressSelector.ResolveAddressesAsync which stashes it
+            // on RequestContext for CRSS scale-up detection.
+            int? partitionTargetReplicaSetSize = address.PartitionTargetReplicaSetSize;
+
             return Tuple.Create(
-                partitionKeyRangeIdentity,
-                new PartitionAddressInformation(addressInfosSorted, inNetworkRequest));
+               partitionKeyRangeIdentity,
+               new PartitionAddressInformation(addressInfosSorted, inNetworkRequest, partitionTargetReplicaSetSize));
         }
 
         private static IReadOnlyList<AddressInformation> GetSortedAddressInformation(IList<Address> addresses)
@@ -1050,23 +1057,48 @@ namespace Microsoft.Azure.Cosmos.Routing
             return inNetworkRequest;
         }
 
-        private static string LogAddressResolutionStart(DocumentServiceRequest request, Uri targetEndpoint)
+        private static AddressResolutionActivity LogAddressResolutionStart(DocumentServiceRequest request, Uri targetEndpoint)
         {
-            string identifier = null;
-            if (request != null && request.RequestContext.ClientRequestStatistics != null)
+            IClientSideRequestStatistics clientSideRequestStatistics = request?.RequestContext?.ClientRequestStatistics;
+            if (clientSideRequestStatistics == null)
             {
-                identifier = request.RequestContext.ClientRequestStatistics.RecordAddressResolutionStart(targetEndpoint);
+                return default;
             }
 
-            return identifier;
+            return new AddressResolutionActivity(
+                clientSideRequestStatistics,
+                clientSideRequestStatistics.RecordAddressResolutionStart(targetEndpoint));
         }
 
-        private static void LogAddressResolutionEnd(DocumentServiceRequest request, string identifier)
+        private static void LogAddressResolutionEnd(AddressResolutionActivity addressResolutionActivity)
         {
-            if (request != null && request.RequestContext.ClientRequestStatistics != null)
+            // The statistics instance captured at start time is used deliberately. The instance
+            // hanging off request.RequestContext.ClientRequestStatistics can be replaced (for
+            // example by a retry or a hedged attempt re-entering TransportHandler) while a
+            // background address refresh is still in flight, and ending the resolution against a
+            // different instance would not find the identifier recorded at start.
+            addressResolutionActivity.ClientSideRequestStatistics?.RecordAddressResolutionEnd(
+                addressResolutionActivity.Identifier);
+        }
+
+        /// <summary>
+        /// Binds an address resolution identifier to the exact <see cref="IClientSideRequestStatistics"/>
+        /// instance it was recorded on, so that the start/end pair stays consistent even when the
+        /// statistics instance on the request is swapped out concurrently.
+        /// </summary>
+        private readonly struct AddressResolutionActivity
+        {
+            public AddressResolutionActivity(
+                IClientSideRequestStatistics clientSideRequestStatistics,
+                string identifier)
             {
-                request.RequestContext.ClientRequestStatistics.RecordAddressResolutionEnd(identifier);
+                this.ClientSideRequestStatistics = clientSideRequestStatistics;
+                this.Identifier = identifier;
             }
+
+            public IClientSideRequestStatistics ClientSideRequestStatistics { get; }
+
+            public string Identifier { get; }
         }
 
         private static Protocol ProtocolFromString(string protocol)

@@ -147,6 +147,7 @@ namespace Microsoft.Azure.Cosmos
                                 || itemRequestOptions.PostTriggers != null
                                 || itemRequestOptions.SessionToken != null
                                 || itemRequestOptions.Properties != null
+                                || itemRequestOptions.ThroughputBucket.HasValue
                                 || itemRequestOptions.DedicatedGatewayRequestOptions?.MaxIntegratedCacheStaleness != null)
                 {
                     throw new InvalidOperationException(ClientResources.UnsupportedBulkRequestOptions);

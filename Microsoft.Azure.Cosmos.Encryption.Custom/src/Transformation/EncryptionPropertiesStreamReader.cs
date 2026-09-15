@@ -36,10 +36,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         /// or <see langword="null"/> if the root object has no <c>_ei</c> property. Requires
         /// a seekable stream and leaves <see cref="Stream.Position"/> at 0 on return.
         /// </summary>
-        public static async ValueTask<EncryptionProperties> ReadAsync(
+        public static ValueTask<EncryptionProperties> ReadAsync(
             Stream input,
             JsonSerializerOptions serializerOptions,
             CancellationToken cancellationToken)
+            => ReadAsync(input, serializerOptions, cancellationToken, JsonFeedStreamHelper.MaximumBufferSize);
+
+        internal static async ValueTask<EncryptionProperties> ReadAsync(
+            Stream input,
+            JsonSerializerOptions serializerOptions,
+            CancellationToken cancellationToken,
+            int maxBufferSize)
         {
             if (input == null)
             {
@@ -61,6 +68,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 int leftOver = 0;
                 bool isFinalBlock = false;
                 JsonReaderState readerState = new (JsonReaderOptions);
+                MetadataCandidate metadataCandidate = default;
 
                 while (!isFinalBlock)
                 {
@@ -69,39 +77,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     isFinalBlock = read == 0;
 
                     // ScanChunk holds a ref-struct Utf8JsonReader and cannot span an await.
-                    ChunkOutcome outcome = ScanChunk(buffer.AsSpan(0, dataSize), isFinalBlock, readerState, serializerOptions);
+                    ChunkOutcome outcome = ScanChunk(buffer.AsSpan(0, dataSize), isFinalBlock, readerState, ref metadataCandidate);
                     readerState = outcome.NextState;
-
-                    if (outcome.Status == ScanResult.Found)
-                    {
-                        input.Position = 0;
-                        return outcome.Properties;
-                    }
 
                     if (outcome.Status == ScanResult.RootEnded)
                     {
                         input.Position = 0;
-                        return null;
+                        return metadataCandidate.Deserialize(serializerOptions);
                     }
 
                     leftOver = dataSize - (int)outcome.BytesConsumed;
 
-                    // Grow only when the buffer is full AND the scan made no progress.
-                    // A short read (trickle stream) with unused capacity means "need more
-                    // bytes", not "need a bigger buffer"; growing on the latter alone would
-                    // explode the buffer under partial-read transports.
-                    if (leftOver == dataSize && dataSize == buffer.Length && !isFinalBlock)
-                    {
-                        int newSize = buffer.Length * 2;
-                        byte[] bigger = ArrayPool<byte>.Shared.Rent(newSize);
-                        buffer.AsSpan(0, leftOver).CopyTo(bigger);
-                        ArrayPool<byte>.Shared.Return(buffer, clearArray: true);
-                        buffer = bigger;
-                    }
-                    else if (leftOver != 0 && leftOver != dataSize)
-                    {
-                        buffer.AsSpan(dataSize - leftOver, leftOver).CopyTo(buffer);
-                    }
+                    buffer = JsonFeedStreamHelper.HandleLeftOver(
+                        buffer,
+                        dataSize,
+                        leftOver,
+                        checked((int)outcome.BytesConsumed),
+                        maxBufferSize);
                 }
 
                 // Valid JSON whose root is not an object (array/number/string/literal)
@@ -118,18 +110,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         private enum ScanResult
         {
             NeedMore,
-            Found,
             RootEnded,
         }
 
         private readonly struct ChunkOutcome
         {
-            public ChunkOutcome(ScanResult status, long bytesConsumed, JsonReaderState nextState, EncryptionProperties properties)
+            public ChunkOutcome(ScanResult status, long bytesConsumed, JsonReaderState nextState)
             {
                 this.Status = status;
                 this.BytesConsumed = bytesConsumed;
                 this.NextState = nextState;
-                this.Properties = properties;
             }
 
             public ScanResult Status { get; }
@@ -137,15 +127,43 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             public long BytesConsumed { get; }
 
             public JsonReaderState NextState { get; }
+        }
 
-            public EncryptionProperties Properties { get; }
+        private struct MetadataCandidate
+        {
+            private byte[] json;
+            private bool seen;
+
+            public void SetNull()
+            {
+                this.json = null;
+                this.seen = true;
+            }
+
+            public void SetJson(ReadOnlySpan<byte> value)
+            {
+                this.json = value.ToArray();
+                this.seen = true;
+            }
+
+            public EncryptionProperties Deserialize(JsonSerializerOptions serializerOptions)
+            {
+                if (!this.seen)
+                {
+                    return null;
+                }
+
+                return this.json == null
+                    ? null
+                    : JsonSerializer.Deserialize<EncryptionProperties>(this.json, serializerOptions);
+            }
         }
 
         private static ChunkOutcome ScanChunk(
             ReadOnlySpan<byte> buffer,
             bool isFinalBlock,
             JsonReaderState readerState,
-            JsonSerializerOptions serializerOptions)
+            ref MetadataCandidate metadataCandidate)
         {
             Utf8JsonReader reader = new (buffer, isFinalBlock, readerState);
 
@@ -163,46 +181,50 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     {
                         if (!reader.Read())
                         {
-                            return new ChunkOutcome(ScanResult.NeedMore, safeConsumed, safeState, null);
+                            return new ChunkOutcome(ScanResult.NeedMore, safeConsumed, safeState);
                         }
 
                         if (reader.TokenType == JsonTokenType.Null)
                         {
-                            return new ChunkOutcome(ScanResult.Found, reader.BytesConsumed, reader.CurrentState, null);
+                            metadataCandidate.SetNull();
                         }
-
-                        if (reader.TokenType != JsonTokenType.StartObject)
+                        else if (reader.TokenType == JsonTokenType.StartObject)
                         {
-                            throw new InvalidOperationException("Encryption properties metadata was malformed (_ei value was not a JSON object).");
-                        }
+                            long objectStart = reader.TokenStartIndex;
+                            if (!reader.TrySkip())
+                            {
+                                return new ChunkOutcome(ScanResult.NeedMore, safeConsumed, safeState);
+                            }
 
-                        long objectStart = reader.TokenStartIndex;
-                        if (!reader.TrySkip())
+                            long objectEnd = reader.BytesConsumed;
+                            metadataCandidate.SetJson(buffer.Slice((int)objectStart, (int)(objectEnd - objectStart)));
+                        }
+                        else
                         {
-                            return new ChunkOutcome(ScanResult.NeedMore, safeConsumed, safeState, null);
-                        }
+                            if (!reader.TrySkip())
+                            {
+                                return new ChunkOutcome(ScanResult.NeedMore, safeConsumed, safeState);
+                            }
 
-                        long objectEnd = reader.BytesConsumed;
-                        Utf8JsonReader subReader = new (buffer.Slice((int)objectStart, (int)(objectEnd - objectStart)), isFinalBlock: true, state: default);
-                        EncryptionProperties ep = JsonSerializer.Deserialize<EncryptionProperties>(ref subReader, serializerOptions);
-                        return new ChunkOutcome(ScanResult.Found, reader.BytesConsumed, reader.CurrentState, ep);
+                            metadataCandidate.SetNull();
+                        }
                     }
 
                     if (!reader.TrySkip())
                     {
-                        return new ChunkOutcome(ScanResult.NeedMore, safeConsumed, safeState, null);
+                        return new ChunkOutcome(ScanResult.NeedMore, safeConsumed, safeState);
                     }
                 }
                 else if (reader.TokenType == JsonTokenType.EndObject && reader.CurrentDepth == 0)
                 {
-                    return new ChunkOutcome(ScanResult.RootEnded, reader.BytesConsumed, reader.CurrentState, null);
+                    return new ChunkOutcome(ScanResult.RootEnded, reader.BytesConsumed, reader.CurrentState);
                 }
 
                 safeConsumed = reader.BytesConsumed;
                 safeState = reader.CurrentState;
             }
 
-            return new ChunkOutcome(ScanResult.NeedMore, safeConsumed, safeState, null);
+            return new ChunkOutcome(ScanResult.NeedMore, safeConsumed, safeState);
         }
     }
 }

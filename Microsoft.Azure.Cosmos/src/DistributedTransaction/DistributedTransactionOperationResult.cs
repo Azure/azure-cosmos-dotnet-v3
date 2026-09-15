@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.IO;
     using System.Net;
+    using System.Text;
     using System.Text.Json;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -30,6 +31,7 @@ namespace Microsoft.Azure.Cosmos
         internal DistributedTransactionOperationResult(DistributedTransactionOperationResult other)
         {
             this.Index = other.Index;
+            this.HasIndex = other.HasIndex;
             this.StatusCode = other.StatusCode;
             this.SubStatusCode = other.SubStatusCode;
             this.ETag = other.ETag;
@@ -89,7 +91,24 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual SubStatusCodes SubStatusCode { get; set; }
 
-        internal virtual string SessionToken { get; set; }
+        /// <summary>
+        /// Whether the server explicitly provided an <c>index</c>. A missing <c>index</c> defaults to 0
+        /// (indistinguishable from a real 0), so the reorder logic uses this flag to reject ambiguous responses.
+        /// </summary>
+        internal bool HasIndex { get; set; }
+
+        /// <summary>
+        /// Gets the session token returned by the distributed transaction coordinator for
+        /// this operation. Callers can pass this value back through
+        /// <c>DistributedTransactionRequestOptions.SessionToken</c> on a subsequent DTx
+        /// operation to enforce read-your-writes session consistency for that op.
+        /// </summary>
+        /// <remarks>
+        /// Treat the value as opaque: pass it back unchanged via
+        /// <c>DistributedTransactionRequestOptions.SessionToken</c>. It may be <c>null</c> or
+        /// non-canonical if the coordinator omits or misformats the token.
+        /// </remarks>
+        public virtual string SessionToken { get; internal set; }
 
         internal virtual string PartitionKeyRangeId { get; set; }
 
@@ -159,6 +178,7 @@ namespace Microsoft.Azure.Cosmos
             if (TryGetInt32Property(json, DistributedTransactionSerializer.Index, out int index))
             {
                 result.Index = index;
+                result.HasIndex = true;
             }
 
             if (TryGetInt32Property(json, DistributedTransactionSerializer.StatusCode, out int statusCode))
@@ -201,7 +221,10 @@ namespace Microsoft.Azure.Cosmos
                     throw new JsonException($"The 'resourceBody' value must be a JSON object, but was '{resourceBody.ValueKind}'.");
                 }
 
-                byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(resourceBody);
+                // Surface the coordinator's document verbatim: GetRawText() preserves raw UTF-8, quotes, and
+                // numeric tokens as received (no SDK re-escaping). Pure pass-through — escapes are not decoded.
+                // Do NOT use Utf8JsonWriter/WriteTo: its encoder re-introduces \uXXXX escaping.
+                byte[] bytes = Encoding.UTF8.GetBytes(resourceBody.GetRawText());
                 result.ResourceStream = new MemoryStream(bytes, 0, bytes.Length, writable: false, publiclyVisible: true);
             }
 

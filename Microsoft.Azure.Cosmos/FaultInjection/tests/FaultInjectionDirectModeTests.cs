@@ -354,7 +354,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 writeRegionServerGoneRule.Enable();
 
-                bool ruleApplied = operationType .IsWriteOperation();
+                //Gone rules cannot be limited to an operation type: FaultInjectionRuleProcessor.CanErrorLimitToOperation
+                //returns false for Gone, so the rule's operation type filter is dropped once the addresses are
+                //resolved and the rule applies to every operation, not just writes.
+                bool ruleApplied = true;
                 await this.PerformDocumentOperationAndCheckApplication(
                     this.fiContainer,
                     operationType,
@@ -436,7 +439,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 condition:
                     new FaultInjectionConditionBuilder()
                         .WithRegion(preferredRegions[1])
-                        .WithConnectionType(FaultInjectionConnectionType.Gateway)
+                        .WithConnectionType(FaultInjectionConnectionType.Direct)
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.Gone)
@@ -1129,7 +1132,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                         >= interceptor.GetRequestTimeout().TotalSeconds);
                 }
 
-                this.ValidateHitCount(serverErrorResponseRule, 1);
+                this.ValidateRuleHit(serverErrorResponseRule, 1);
             }
             finally
             {
@@ -1290,7 +1293,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                     410, 
                     21005);
 
-                this.ValidateHitCount(includePrimaryServerGoneRule, 1);
+                this.ValidateRuleHit(includePrimaryServerGoneRule, 1);
+                long hitCountAfterCreate = includePrimaryServerGoneRule.GetHitCount();
 
                 await this.PerformDocumentOperationAndCheckApplication(
                     this.fiContainer,
@@ -1300,7 +1304,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                     410,
                     21005);
 
-                this.ValidateHitCount(includePrimaryServerGoneRule, 2);
+                Assert.IsTrue(
+                    includePrimaryServerGoneRule.GetHitCount() > hitCountAfterCreate,
+                    $"Expected the rule to also be applied to the upsert. {Describe(includePrimaryServerGoneRule)}");
             }
             finally
             {
@@ -1330,7 +1336,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                         .WithOperationType(FaultInjectionOperationType.ReadItem)
                         .Build(),
                 result:
-                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.Gone)
+                    // TooManyRequests (with MaxRetryAttemptsOnRateLimitedRequests = 0) is used instead of Gone so
+                    // that each injected read produces exactly one rule application. Gone cannot be limited to an
+                    // operation type (FaultInjectionRuleProcessor.CanErrorLimitToOperation), so a Gone rule also
+                    // faults address refreshes and inflates the hit count well past the injection rate.
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.TooManyRequests)
                         .WithInjectionRate(.5)
                         .WithTimes(1)
                         .Build())
@@ -1346,7 +1356,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 {
                     ConsistencyLevel = ConsistencyLevel.Session,
                     FaultInjector = faultInjector,
-                    Serializer = this.serializer
+                    Serializer = this.serializer,
+                    MaxRetryAttemptsOnRateLimitedRequests = 0,
                 };
 
                 this.fiClient = new CosmosClient(
@@ -1376,13 +1387,114 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 }
 
-                Assert.IsTrue(thresholdRule.GetHitCount() >= 38, "This is Expected to fail 0.602% of the time");
-                Assert.IsTrue(thresholdRule.GetHitCount() <= 62, "This is Expected to fail 0.602% of the time");
+                //50% injection rate over 100 requests is Binomial(100, 0.5): mean 50, standard deviation 5.
+                //[30, 70] is +/- 4 standard deviations, so a passing run is not a coin flip while a broken
+                //injection rate (never applied, always applied, or materially off) is still caught.
+                Assert.IsTrue(
+                    thresholdRule.GetHitCount() >= 30,
+                    $"Injection rate too low. {Describe(thresholdRule)}");
+                Assert.IsTrue(
+                    thresholdRule.GetHitCount() <= 70,
+                    $"Injection rate too high. {Describe(thresholdRule)}");
             }
             finally
             {
                 thresholdRule.Disable();
             }
+        }
+
+        [TestMethod]
+        [Timeout(Timeout * 2)]
+        [Owner("kundadebdatta")]
+        [Description("Tests that SetInjectionRate changes the rate honored by an already registered client")]
+        public async Task FaultInjectionServerErrorRule_DynamicInjectionRateTest()
+        {
+            string dynamicRateRuleId = "dynamicRateRule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule dynamicRateRule = new FaultInjectionRuleBuilder(
+                id: dynamicRateRuleId,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithOperationType(FaultInjectionOperationType.ReadItem)
+                        .Build(),
+                result:
+                    // See FaultInjectionServerErrorRule_InjectionRateTest for why TooManyRequests is used here.
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.TooManyRequests)
+                        .WithInjectionRate(1)
+                        .WithTimes(1)
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(5))
+                .Build();
+            dynamicRateRule.Disable();
+
+            try
+            {
+                FaultInjector faultInjector = new FaultInjector(new List<FaultInjectionRule> { dynamicRateRule });
+
+                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+                {
+                    ConsistencyLevel = ConsistencyLevel.Session,
+                    FaultInjector = faultInjector,
+                    Serializer = this.serializer,
+                    MaxRetryAttemptsOnRateLimitedRequests = 0,
+                };
+
+                this.fiClient = new CosmosClient(
+                    this.connectionString,
+                    cosmosClientOptions);
+                this.fiDatabase = this.fiClient.GetDatabase(this.database.Id);
+                this.fiContainer = this.fiDatabase.GetContainer(this.container.Id);
+
+                dynamicRateRule.Enable();
+
+                //Count the injected 429s directly: this tests the user-visible probability contract and is
+                //immune to any internal re-entry of the rule.
+                int fullRateInjected = await ReadBatchAsync(this.fiContainer, 100);
+
+                //A rate of 1 with retries disabled injects into every one of the 100 reads.
+                Assert.AreEqual(
+                    100,
+                    fullRateInjected,
+                    $"A rate of 1 should inject into every read. {Describe(dynamicRateRule)}");
+
+                // The client is already built and running; this is the behavior under test.
+                dynamicRateRule.SetInjectionRate(0.5);
+
+                int halfRateInjected = await ReadBatchAsync(this.fiContainer, 100);
+
+                //50% injection rate over 100 requests is Binomial(100, 0.5): mean 50, standard deviation 5.
+                //[30, 70] is +/- 4 standard deviations, so a passing run is not a coin flip while a rate change
+                //that never reached the live client (which would inject 100 times) is still caught.
+                Assert.IsTrue(
+                    halfRateInjected >= 30,
+                    $"Injection rate too low after SetInjectionRate. Injected: {halfRateInjected}. {Describe(dynamicRateRule)}");
+                Assert.IsTrue(
+                    halfRateInjected <= 70,
+                    $"Injection rate too high after SetInjectionRate. Injected: {halfRateInjected}. {Describe(dynamicRateRule)}");
+            }
+            finally
+            {
+                dynamicRateRule.Disable();
+            }
+        }
+
+        private static async Task<int> ReadBatchAsync(Container container, int requestCount)
+        {
+            int injectedCount = 0;
+            for (int i = 0; i < requestCount; i++)
+            {
+                try
+                {
+                    await container.ReadItemAsync<FaultInjectionTestObject>(
+                        "testId",
+                        new PartitionKey("pk"));
+                }
+                catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.TooManyRequests)
+                {
+                    injectedCount++;
+                }
+            }
+
+            return injectedCount;
         }
 
         [TestMethod]
@@ -1803,9 +1915,30 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             return (writeRegions, readRegions);
         }
 
+        private static string Describe(FaultInjectionRule rule)
+        {
+            return $"rule '{rule.GetId()}' hitCount={rule.GetHitCount()} "
+                + $"regionEndpoints=[{string.Join(", ", rule.GetRegionEndpoints())}] "
+                + $"addresses=[{string.Join(", ", rule.GetAddresses())}]";
+        }
+
         private void ValidateHitCount(FaultInjectionRule rule, long expectedHitCount)
         {
-            Assert.AreEqual(expectedHitCount, rule.GetHitCount());
+            Assert.AreEqual(expectedHitCount, rule.GetHitCount(), Describe(rule));
+        }
+
+        /// <summary>
+        /// Asserts a rule was applied at least <paramref name="minimumHitCount"/> times.
+        ///
+        /// Retryable errors (410, 403, ...) trigger cross region retries, and the WithTimes limit is enforced
+        /// per activity id, so every region attempt is a new application of the rule. The total hit count
+        /// therefore scales with the number of regions on the test account and cannot be asserted exactly.
+        /// </summary>
+        private void ValidateRuleHit(FaultInjectionRule rule, long minimumHitCount)
+        {
+            Assert.IsTrue(
+                minimumHitCount <= rule.GetHitCount(),
+                $"Expected the rule to be applied at least {minimumHitCount} time(s). {Describe(rule)}");
         }
 
         private void ValidateFaultInjectionRuleNotApplied(
@@ -1813,12 +1946,13 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             FaultInjectionRule rule)
         {
             string diagnosticsString = ex.Diagnostics.ToString();
-            Assert.AreEqual(0, rule.GetHitCount());
-            Assert.AreEqual(0, ex.Diagnostics.GetFailedRequestCount());
+            Assert.AreEqual(0, rule.GetHitCount(), Describe(rule));
+            Assert.AreEqual(0, ex.Diagnostics.GetFailedRequestCount(), Describe(rule));
             Assert.IsTrue(
                 diagnosticsString.Contains("200")
                 || diagnosticsString.Contains("201")
-                || diagnosticsString.Contains("204"));
+                || diagnosticsString.Contains("204"),
+                Describe(rule));
         }
 
         private void ValidateFaultInjectionRuleNotApplied(
@@ -1826,9 +1960,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             FaultInjectionRule rule,
             int expectedHitCount = 0)
         {
-            Assert.AreEqual(expectedHitCount, rule.GetHitCount());
-            Assert.AreEqual(expectedHitCount, response.Diagnostics.GetFailedRequestCount());
-            Assert.IsTrue((int)response.StatusCode < 400);
+            Assert.AreEqual(expectedHitCount, rule.GetHitCount(), Describe(rule));
+            Assert.AreEqual(expectedHitCount, response.Diagnostics.GetFailedRequestCount(), Describe(rule));
+            Assert.IsTrue((int)response.StatusCode < 400, Describe(rule));
         }
 
         private void ValidateFaultInjectionRuleNotApplied(
@@ -1836,9 +1970,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             FaultInjectionRule rule,
             int expectedHitCount = 0)
         {
-            Assert.AreEqual(expectedHitCount, rule.GetHitCount());
-            Assert.AreEqual(expectedHitCount, response.Diagnostics.GetFailedRequestCount());
-            Assert.IsTrue((int)response.StatusCode < 400);
+            Assert.AreEqual(expectedHitCount, rule.GetHitCount(), Describe(rule));
+            Assert.AreEqual(expectedHitCount, response.Diagnostics.GetFailedRequestCount(), Describe(rule));
+            Assert.IsTrue((int)response.StatusCode < 400, Describe(rule));
         }
 
         private void ValidateFaultInjectionRuleApplication(
@@ -1848,11 +1982,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             FaultInjectionRule rule)
         {
             string diagnosticsString = diagnostics.ToString();
-            Console.WriteLine(diagnostics.ToString());
-            Assert.IsTrue(1 <= rule.GetHitCount());
-            Assert.IsTrue(1 <= diagnostics.GetFailedRequestCount());
-            Assert.IsTrue(diagnosticsString.Contains(statusCode.ToString()));
-            Assert.IsTrue(diagnosticsString.Contains(subStatusCode.ToString()));
+            Console.WriteLine(diagnosticsString);
+            Assert.IsTrue(1 <= rule.GetHitCount(), Describe(rule));
+            Assert.IsTrue(1 <= diagnostics.GetFailedRequestCount(), Describe(rule));
+            Assert.IsTrue(diagnosticsString.Contains(statusCode.ToString()), Describe(rule));
+            Assert.IsTrue(diagnosticsString.Contains(subStatusCode.ToString()), Describe(rule));
         }
 
         private void ValidateFaultInjectionRuleApplication(
@@ -1860,9 +1994,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             int statusCode,
             FaultInjectionRule rule)
         {
-            Assert.IsTrue(1 <= rule.GetHitCount());
-            Assert.IsTrue(ex.Message.Contains(rule.GetId()));
-            Assert.AreEqual(statusCode, (int)ex.StatusCode);
+            Assert.IsTrue(1 <= rule.GetHitCount(), Describe(rule));
+            Assert.IsTrue(ex.Message.Contains(rule.GetId()), ex.Message);
+            Assert.AreEqual(statusCode, (int)ex.StatusCode, ex.Message);
         }
 
         private void ValidateFaultInjectionRuleApplication(
@@ -1870,9 +2004,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             int statusCode,
             FaultInjectionRule rule)
         {
-            Assert.IsTrue(1 <= rule.GetHitCount());
-            Assert.IsTrue(ex.Message.Contains(rule.GetId()));
-            Assert.AreEqual(statusCode, (int)ex.StatusCode);
+            Assert.IsTrue(1 <= rule.GetHitCount(), Describe(rule));
+            Assert.IsTrue(ex.Message.Contains(rule.GetId()), ex.Message);
+            Assert.AreEqual(statusCode, (int)ex.StatusCode, ex.Message);
         }
 
         private void ValidateFaultInjectionRuleApplication(
@@ -1881,10 +2015,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             int subStatusCode,
             FaultInjectionRule rule)
         {
-            Assert.IsTrue(1 <= rule.GetHitCount());
-            Assert.IsTrue(ex.Message.Contains(rule.GetId()));
-            Assert.AreEqual(statusCode, (int)ex.StatusCode);
-            Assert.AreEqual(subStatusCode.ToString(), ex.Headers.Get(WFConstants.BackendHeaders.SubStatus));
+            Assert.IsTrue(1 <= rule.GetHitCount(), Describe(rule));
+            Assert.IsTrue(ex.Message.Contains(rule.GetId()), ex.Message);
+            Assert.AreEqual(statusCode, (int)ex.StatusCode, ex.Message);
+            Assert.AreEqual(subStatusCode.ToString(), ex.Headers.Get(WFConstants.BackendHeaders.SubStatus), ex.Message);
         }
 
         private void ValidateFaultInjectionRuleApplication(
@@ -1893,10 +2027,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             int subStatusCode,
             FaultInjectionRule rule)
         {
-            Assert.IsTrue(1 <= rule.GetHitCount());
-            Assert.IsTrue(ex.Message.Contains(rule.GetId()));
-            Assert.AreEqual(statusCode, (int)ex.StatusCode);
-            Assert.AreEqual(subStatusCode, ex.SubStatusCode);
+            Assert.IsTrue(1 <= rule.GetHitCount(), Describe(rule));
+            Assert.IsTrue(ex.Message.Contains(rule.GetId()), ex.Message);
+            Assert.AreEqual(statusCode, (int)ex.StatusCode, ex.Message);
+            Assert.AreEqual(subStatusCode, ex.SubStatusCode, ex.Message);
         }
 
         private async Task InitializeHighThroughputContainerAsync()

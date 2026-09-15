@@ -112,6 +112,11 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode statusCode,
             string wwwAuthenticateHeaderValue)
         {
+            if (!ConfigurationManager.IsAadTokenRevocationEnabled())
+            {
+                return false;
+            }
+
             if (statusCode != HttpStatusCode.Unauthorized)
             {
                 return false;
@@ -182,6 +187,11 @@ namespace Microsoft.Azure.Cosmos
             AuthorizationTokenProvider authorizationTokenProvider,
             DocumentClientException exception)
         {
+            if (!ConfigurationManager.IsAadTokenRevocationEnabled())
+            {
+                return false;
+            }
+
             if (exception.StatusCode != HttpStatusCode.Unauthorized)
             {
                 return false;

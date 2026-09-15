@@ -58,12 +58,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// types DiskANN and quantizedFlat. Allowed values are Product and Spherical.
         /// </param>
         /// <returns>An instance of the current <see cref="VectorIndexDefinition{T}"/>.</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        VectorIndexDefinition<T> WithQuantizerType(
+        public VectorIndexDefinition<T> WithQuantizerType(
             QuantizerType quantizerType)
         {
             this.vectorIndexPath.QuantizerType = quantizerType;

@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DistributedTransactionResponse response = await this.client
                 .CreateDistributedReadTransaction()
                 .ReadItem(this.container, new PartitionKey(doc.pk), doc.id)
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, $"Envelope status should be 200 OK. Got: {response.StatusCode}");
             Assert.AreEqual(1, response.Count);
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .ReadItem(this.container, new PartitionKey(doc1.pk), doc1.id)
                 .ReadItem(this.container, new PartitionKey(doc2.pk), doc2.id)
                 .ReadItem(this.container, new PartitionKey(doc3.pk), doc3.id)
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, $"Envelope status should be 200 OK. Got: {response.StatusCode}");
             Assert.AreEqual(3, response.Count);
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .CreateDistributedReadTransaction()
                 .ReadItem(this.container, new PartitionKey(doc1.pk), doc1.id)
                 .ReadItem(secondContainer, new PartitionKey(doc2.pk), doc2.id)
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, $"Envelope status should be 200 OK. Got: {response.StatusCode}");
             Assert.AreEqual(2, response.Count);
@@ -169,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .CreateDistributedReadTransaction()
                 .ReadItem(this.container, new PartitionKey(doc1.pk), doc1.id)
                 .ReadItem(this.container, new PartitionKey(doc2.pk), doc2.id)
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, $"Envelope status should be 200 OK. Got: {response.StatusCode}");
             Assert.AreEqual(2, response.Count);
@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .CreateDistributedReadTransaction()
                 .ReadItem(this.container, new PartitionKey(pk1), Guid.NewGuid().ToString())
                 .ReadItem(this.container, new PartitionKey(pk2), Guid.NewGuid().ToString())
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
             // Pin the coordinator contract: envelope is 200 (multi-status), each missing item surfaces as a per-op 404.
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, "Envelope status should be 200 even when all per-op results are 404.");
@@ -216,7 +216,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .CreateDistributedReadTransaction()
                 .ReadItem(this.container, new PartitionKey(existing.pk), existing.id)
                 .ReadItem(this.container, new PartitionKey(missingPk), missingId)
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, "Envelope status should be 200 even with mixed per-op results.");
             Assert.AreEqual(2, response.Count);
@@ -236,7 +236,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .CreateDistributedReadTransaction()
                 .ReadItem(this.container, new PartitionKey(doc1.pk), doc1.id)
                 .ReadItem(this.container, new PartitionKey(doc2.pk), doc2.id)
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, $"Envelope status should be 200 OK. Got: {response.StatusCode}");
             Assert.AreEqual(HttpStatusCode.OK, response[0].StatusCode, "Per-op[0] should be 200 OK.");
@@ -259,7 +259,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await Assert.ThrowsExceptionAsync<InvalidOperationException>(() =>
                 this.client
                     .CreateDistributedReadTransaction()
-                    .CommitTransactionAsync(CancellationToken.None));
+                    .ExecuteTransactionAsync(CancellationToken.None));
         }
 
         // ─── Container resolution failure (real path, before /dtc) ─────────────
@@ -273,7 +273,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.client
                     .CreateDistributedReadTransaction()
                     .ReadItem(missingContainer, new PartitionKey("pk"), "item-id")
-                    .CommitTransactionAsync(CancellationToken.None));
+                    .ExecuteTransactionAsync(CancellationToken.None));
 
             Assert.AreEqual(
                 HttpStatusCode.NotFound,
@@ -307,7 +307,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .CreateDistributedReadTransaction()
                 .ReadItem(containerA, new PartitionKey(docA.pk), docA.id)
                 .ReadItem(containerB, new PartitionKey(docB.pk), docB.id)
-                .CommitTransactionAsync(CancellationToken.None);
+                .ExecuteTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, $"Envelope status should be 200 OK. Got: {response.StatusCode}");
             Assert.AreEqual(2, response.Count);
@@ -335,7 +335,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 HttpStatusCode status = await TryGetReadTransactionStatusAsync(() => readOnlyClient
                     .CreateDistributedReadTransaction()
                     .ReadItem(readOnlyClient.GetContainer(DatabaseId, ContainerId), new PartitionKey(doc.pk), doc.id)
-                    .CommitTransactionAsync(CancellationToken.None));
+                    .ExecuteTransactionAsync(CancellationToken.None));
 
                 Assert.AreEqual(
                     HttpStatusCode.OK,
@@ -359,7 +359,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 HttpStatusCode status = await TryGetReadTransactionStatusAsync(() => readWriteClient
                     .CreateDistributedReadTransaction()
                     .ReadItem(readWriteClient.GetContainer(DatabaseId, ContainerId), new PartitionKey(doc.pk), doc.id)
-                    .CommitTransactionAsync(CancellationToken.None));
+                    .ExecuteTransactionAsync(CancellationToken.None));
 
                 Assert.AreEqual(
                     HttpStatusCode.OK,
@@ -377,7 +377,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             HttpStatusCode status = await TryGetReadTransactionStatusAsync(() => this.client
                 .CreateDistributedReadTransaction()
                 .ReadItem(this.container, new PartitionKey(doc.pk), doc.id)
-                .CommitTransactionAsync(CancellationToken.None));
+                .ExecuteTransactionAsync(CancellationToken.None));
 
             Assert.AreEqual(
                 HttpStatusCode.OK,

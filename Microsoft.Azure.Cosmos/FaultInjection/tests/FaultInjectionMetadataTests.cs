@@ -156,11 +156,12 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 // reliable signal (a sub-1s delay that avoids the timeout would be swamped by connection and
                 // cross-region latency and is equally unreliable). Validate the delay's effect deterministically
                 // instead: the rule was applied, the injected delay forced at least one failed/retried metadata
-                // request (GetFailedRequestCount, which is 0 when no fault is applied), and the operation still
-                // succeeds despite the injected delay.
-                Assert.IsTrue(
-                    response.Diagnostics.GetFailedRequestCount() >= 1,
-                    "Expected the injected metadata response delay to produce at least one failed/retried request.");
+                // request, and the operation still succeeds despite the injected delay.
+                //
+                // GetFailedRequestCount() only counts failed direct (RNTBD) store responses, so it stays 0 for a
+                // faulted metadata call. The timed-out metadata request is instead recorded in the diagnostics as
+                // a gateway call with no status code, which is what is asserted here.
+                ValidateTimedOutMetadataRequest(response.Diagnostics);
                 Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
             }
             finally
@@ -458,11 +459,12 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 // reliable signal (a sub-1s delay that avoids the timeout would be swamped by connection and
                 // cross-region latency and is equally unreliable). Validate the delay's effect deterministically
                 // instead: the rule was applied, the injected delay forced at least one failed/retried metadata
-                // request (GetFailedRequestCount, which is 0 when no fault is applied), and the operation still
-                // succeeds despite the injected delay.
-                Assert.IsTrue(
-                    response.Diagnostics.GetFailedRequestCount() >= 1,
-                    "Expected the injected metadata response delay to produce at least one failed/retried request.");
+                // request, and the operation still succeeds despite the injected delay.
+                //
+                // GetFailedRequestCount() only counts failed direct (RNTBD) store responses, so it stays 0 for a
+                // faulted metadata call. The timed-out metadata request is instead recorded in the diagnostics as
+                // a gateway call with no status code, which is what is asserted here.
+                ValidateTimedOutMetadataRequest(response.Diagnostics);
                 Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
             }
             finally
@@ -530,11 +532,12 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 // reliable signal (a sub-1s delay that avoids the timeout would be swamped by connection and
                 // cross-region latency and is equally unreliable). Validate the delay's effect deterministically
                 // instead: the rule was applied, the injected delay forced at least one failed/retried metadata
-                // request (GetFailedRequestCount, which is 0 when no fault is applied), and the operation still
-                // succeeds despite the injected delay.
-                Assert.IsTrue(
-                    response.Diagnostics.GetFailedRequestCount() >= 1,
-                    "Expected the injected metadata response delay to produce at least one failed/retried request.");
+                // request, and the operation still succeeds despite the injected delay.
+                //
+                // GetFailedRequestCount() only counts failed direct (RNTBD) store responses, so it stays 0 for a
+                // faulted metadata call. The timed-out metadata request is instead recorded in the diagnostics as
+                // a gateway call with no status code, which is what is asserted here.
+                ValidateTimedOutMetadataRequest(response.Diagnostics);
                 Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
             }
             finally
@@ -559,6 +562,25 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         private void ValidateRuleHit(FaultInjectionRule rule, long expectedHitCount)
         {
             Assert.IsTrue(expectedHitCount <= rule.GetHitCount());
+        }
+
+        /// <summary>
+        /// Asserts the diagnostics record a metadata (gateway) request that never received a status code.
+        ///
+        /// Metadata calls route through HttpTimeoutPolicyControlPlaneRetriableHotPath, whose first attempt times
+        /// out after 1s, so an injected delay longer than that aborts the request and the SDK retries it. The
+        /// aborted attempt shows up in the diagnostics summary as a gateway call with status code 0.
+        /// CosmosDiagnostics.GetFailedRequestCount() cannot be used for this: it only counts failed direct
+        /// (RNTBD) store responses and stays 0 when only a metadata call was faulted.
+        /// </summary>
+        private static void ValidateTimedOutMetadataRequest(CosmosDiagnostics diagnostics)
+        {
+            string diagnosticsString = diagnostics.ToString();
+
+            Assert.IsTrue(
+                diagnosticsString.Contains("\"GatewayCalls\"") && diagnosticsString.Contains("\"(0, 0)\""),
+                "Expected the injected metadata response delay to produce a timed out metadata request. "
+                    + diagnosticsString);
         }
 
         private void ValidateFaultInjectionRuleNotApplied(

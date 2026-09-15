@@ -687,7 +687,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     });
 
             DistributedWriteTransaction tx = new DistributedWriteTransactionCore(contextMock.Object);
-            await buildTransaction(tx).CommitTransactionAsync(CancellationToken.None);
+            await buildTransaction(tx).ExecuteTransactionAsync(CancellationToken.None);
 
             Assert.IsNotNull(capturedJson, "The commit body was not captured — the mock was not invoked.");
             return capturedJson;
@@ -723,7 +723,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     });
 
             DistributedReadTransaction tx = new DistributedReadTransactionCore(contextMock.Object);
-            await buildTransaction(tx).CommitTransactionAsync(CancellationToken.None);
+            await buildTransaction(tx).ExecuteTransactionAsync(CancellationToken.None);
 
             Assert.IsNotNull(capturedJson, "The commit body was not captured — the mock was not invoked.");
             return capturedJson;

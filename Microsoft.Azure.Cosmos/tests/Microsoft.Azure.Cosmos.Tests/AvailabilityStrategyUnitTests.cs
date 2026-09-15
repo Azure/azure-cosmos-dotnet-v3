@@ -1025,6 +1025,188 @@
                 $"Actual stack trace:\n{stack}");
         }
 
+        /// <summary>
+        /// Regression test proving the residual unobserved-task-exception mode is closed by the
+        /// phase-1 faulted-task branch of <see cref="CrossRegionHedgingAvailabilityStrategy"/>.
+        ///
+        /// When a losing hedge arm FAULTS with a non-cancellation exception and the application token is
+        /// NOT cancelled, <c>ExecuteAvailabilityStrategyAsync</c> removes that task from its tracking
+        /// list and <c>continue</c>s. Without the fix, the faulted task was neither awaited nor had its
+        /// <see cref="Task.Exception"/> observed and — because it had already been removed — the later
+        /// <c>ObserveAbandonedHedgeTasks</c> at the winner-return could never see it. The task could then
+        /// be finalized with an unobserved exception and raise
+        /// <see cref="TaskScheduler.UnobservedTaskException"/> — the failure mode originally reported for
+        /// this strategy (issue #5623).
+        ///
+        /// The primary arm faults synchronously with a non-OCE exception (so its Task ends Faulted, not
+        /// Canceled) while the app token stays uncancelled, and a later region wins. The winner is gated
+        /// on the primary having faulted, so the faulted primary is always dequeued through the phase-1
+        /// faulted-task branch — no reliance on Task.Delay timing. Finalization is forced synchronously
+        /// with GC.WaitForPendingFinalizers (no wall-clock delay), and the assertion is scoped to the
+        /// exact injected fault (an <see cref="ArgumentNullException"/> with ParamName "request"), so a
+        /// task leaked by an unrelated test cannot be misattributed to this one. The test is also marked
+        /// <c>[DoNotParallelize]</c> to keep the process-global GC window isolated. Reverting the fix
+        /// leaves the faulted primary unobserved and fails this test.
+        /// </summary>
+        [TestMethod]
+        [DoNotParallelize]
+        public async Task LosingHedgeFaultsAppTokenNotCancelled_NoUnobservedTaskException()
+        {
+            // Arrange. A large primary threshold guarantees the primary arm faults long before its
+            // hedge timer fires, so the faulted primary is always dequeued through the phase-1
+            // faulted-task branch (in the requestNumber==0 iteration, before the winning region is even
+            // launched). Once the primary faults its timer is cancelled immediately, so the large
+            // threshold never actually delays the test.
+            CrossRegionHedgingAvailabilityStrategy availabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                threshold: TimeSpan.FromSeconds(30),
+                thresholdStep: TimeSpan.FromMilliseconds(10));
+
+            using RequestMessage request = CreateReadRequest();
+            using CosmosClient mockCosmosClient = CreateMockClientWithRegions(3);
+
+            List<Exception> unobservedExceptions = new List<Exception>();
+            EventHandler<UnobservedTaskExceptionEventArgs> handler = (_, args) =>
+            {
+                lock (unobservedExceptions)
+                {
+                    unobservedExceptions.Add(args.Exception);
+                }
+
+                // Mark observed so this test can never actually tear down the process.
+                args.SetObserved();
+            };
+
+            // The winning (second) region only returns after the primary has faulted, so the faulted
+            // primary is always dequeued through the phase-1 faulted-task branch while the app token is
+            // uncancelled — exactly the path the fix must observe.
+            TaskCompletionSource<bool> primaryFaulted = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+
+            int senderCallCount = 0;
+
+            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender = async (req, ct) =>
+            {
+                int callNumber = Interlocked.Increment(ref senderCallCount);
+                if (callNumber == 1)
+                {
+                    // Primary (losing) arm: fault with a non-cancellation exception. A non-OCE
+                    // exception is required so the Task ends Faulted (carrying an Exception that can be
+                    // left unobserved) rather than Canceled (which carries none).
+                    primaryFaulted.TrySetResult(true);
+                    throw new ArgumentNullException("request");
+                }
+
+                // Winning arm: return a final result only after the primary has faulted.
+                await primaryFaulted.Task;
+                return new ResponseMessage(HttpStatusCode.OK);
+            };
+
+            TaskScheduler.UnobservedTaskException += handler;
+            try
+            {
+                // Act
+                ResponseMessage response = await availabilityStrategy.ExecuteAvailabilityStrategyAsync(
+                    sender, mockCosmosClient, request, CancellationToken.None);
+
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+
+                // Force the faulted losing task to be finalized. If its exception were left unobserved,
+                // the Task finalizer raises TaskScheduler.UnobservedTaskException while it is finalized.
+                // Yield once so any trailing internal continuations drop their references to the
+                // abandoned task before it is collected; this is a GC-settle window only — request
+                // routing above is TaskCompletionSource-gated and does not depend on this delay.
+                await Task.Yield();
+                for (int attempt = 0; attempt < 5; attempt++)
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                }
+            }
+            finally
+            {
+                TaskScheduler.UnobservedTaskException -= handler;
+            }
+
+            // Assert. Scope the assertion to the exact fault this test injects — an
+            // ArgumentNullException with ParamName "request" — so a task leaked by an unrelated test
+            // that happens to be finalized inside this GC window cannot be misattributed to this test.
+            List<Exception> injectedLeaks;
+            lock (unobservedExceptions)
+            {
+                injectedLeaks = unobservedExceptions
+                    .SelectMany(e => (e as AggregateException)?.Flatten().InnerExceptions ?? (IEnumerable<Exception>)new[] { e })
+                    .Where(inner => inner is ArgumentNullException ane && ane.ParamName == "request")
+                    .ToList();
+            }
+
+            Assert.AreEqual(
+                0,
+                injectedLeaks.Count,
+                $"The faulted losing hedge arm (injected ArgumentNullException(\"request\")) must never " +
+                $"surface as an unobserved task exception (senderCallCount={senderCallCount}). Observed: " +
+                string.Join("; ", injectedLeaks.Select(e => e?.Message)));
+        }
+
+        /// <summary>
+        /// Guard test proving the abandoned-task observation does NOT swallow genuine errors. When a
+        /// hedge arm throws a genuine, non-cancellation error while the hedge cancellation token source
+        /// is NOT cancelled (no other region has won and the app token is not cancelled), the original
+        /// exception — not a <see cref="CosmosOperationCanceledException"/> — must propagate to the
+        /// caller. This locks in the property protected by deliberately NOT adding a broad
+        /// post-cancellation normalization catch.
+        /// </summary>
+        [TestMethod]
+        public async Task GenuineErrorWhileHedgeCtsNotCancelled_OriginalExceptionSurfaces()
+        {
+            // Arrange: tiny thresholds so the hedge timer fires before either arm resolves, launching
+            // both regions and letting a faulted arm reach the phase-2 accumulation loop.
+            CrossRegionHedgingAvailabilityStrategy availabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                threshold: TimeSpan.FromMilliseconds(1),
+                thresholdStep: TimeSpan.FromMilliseconds(1));
+
+            using RequestMessage request = CreateReadRequest();
+            using CosmosClient mockCosmosClient = CreateMockClientWithRegions(2);
+
+            const string sentinelMessage = "Genuine backend failure that must not be normalized to a cancellation.";
+
+            // Gate every arm's throw until all regions have been launched so no arm resolves during the
+            // first threshold iteration. This keeps the routing deterministic without relying on
+            // Task.Delay durations: an arm only faults once the for-loop has dispatched every hedge, so
+            // at least one faulted arm always survives into phase 2.
+            int senderCallCount = 0;
+            TaskCompletionSource<bool> allHedgesLaunched = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+
+            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender = async (req, ct) =>
+            {
+                if (Interlocked.Increment(ref senderCallCount) == 2)
+                {
+                    allHedgesLaunched.TrySetResult(true);
+                }
+
+                await allHedgesLaunched.Task;
+
+                // Genuine, non-cancellation failure raised while the hedge CTS is NOT cancelled.
+                throw new InvalidOperationException(sentinelMessage);
+            };
+
+            // Act + Assert: the original InvalidOperationException must surface unchanged.
+            InvalidOperationException caught = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => availabilityStrategy.ExecuteAvailabilityStrategyAsync(
+                    sender, mockCosmosClient, request, CancellationToken.None));
+
+            Assert.AreEqual(
+                sentinelMessage,
+                caught.Message,
+                "The genuine error must propagate unchanged — no post-cancellation normalization " +
+                "must fire while the hedge CTS is uncancelled.");
+            Assert.IsNotInstanceOfType(
+                caught,
+                typeof(CosmosOperationCanceledException),
+                "A genuine error thrown with the hedge CTS uncancelled must not be normalized to " +
+                "CosmosOperationCanceledException.");
+        }
+
         private static async Task ThrowDeepInPipelineWithDelayAsync(string message)
         {
             // Delay must exceed CrossRegionHedgingAvailabilityStrategy threshold/thresholdStep
@@ -1036,6 +1218,175 @@
             // `ExceptionDispatchInfo.Capture(lastException).Throw()` branch.
             await Task.Delay(50);
             throw new InvalidOperationException(message);
+        }
+
+        /// <summary>
+        /// Characterization test for issue #6048.
+        ///
+        /// <c>CrossRegionHedgingAvailabilityStrategy.ExecuteAvailabilityStrategyAsync</c> used to hold
+        /// its per-region hedge timer in a <c>using (Task hedgeTimer = Task.Delay(awaitTime, timerToken))</c>
+        /// block. When a request arm won, the strategy called <c>timerTokenSource.Cancel()</c> and then
+        /// left that block, disposing the timer. <see cref="CancellationTokenSource.Cancel()"/> does NOT
+        /// guarantee the delay has already reached a completion state on return: if another thread is
+        /// concurrently cancelling the linked application token, that thread wins the
+        /// <see cref="CancellationTokenSource"/> state transition and <c>Cancel()</c> returns immediately,
+        /// before the delay's cancellation callback has run. Disposing the still-incomplete
+        /// <see cref="Task"/> then threw the customer-reported
+        /// <see cref="InvalidOperationException"/> out of the SDK, replacing the operation's real outcome.
+        ///
+        /// This test pins the underlying .NET behaviour that made the old pattern unsafe, so the
+        /// <c>using</c> is never reintroduced around a <see cref="Task"/> in the hedging path.
+        /// </summary>
+        [TestMethod]
+        public void TaskDelayDisposedBeforeCompletion_ThrowsInvalidOperationException()
+        {
+            using CancellationTokenSource timerTokenSource = new CancellationTokenSource();
+
+            // Same shape as the hedge timer: a Task.Delay that only completes via cancellation.
+            Task hedgeTimer = Task.Delay(TimeSpan.FromMinutes(5), timerTokenSource.Token);
+
+            try
+            {
+                Assert.IsFalse(
+                    hedgeTimer.IsCompleted,
+                    "Precondition: the hedge timer must still be pending, which is exactly its state " +
+                    "when a hedge arm wins before the threshold elapses.");
+
+                InvalidOperationException caught = Assert.ThrowsException<InvalidOperationException>(
+                    () => hedgeTimer.Dispose(),
+                    "Disposing a Task that has not reached a completion state must throw — this is the " +
+                    "exception reported in issue #6048, and the reason the hedge timer is no longer " +
+                    "wrapped in a `using` block.");
+
+                StringAssert.Contains(
+                    caught.Message,
+                    "completion state",
+                    $"Expected the documented Task disposal error. Actual: {caught.Message}");
+            }
+            finally
+            {
+                timerTokenSource.Cancel();
+            }
+        }
+
+        /// <summary>
+        /// Regression coverage for issue #6048: a hedge arm winning while the application
+        /// cancellation token is cancelled from another thread must never surface a
+        /// <see cref="InvalidOperationException"/> from hedge-timer cleanup.
+        ///
+        /// The threshold is deliberately long so the hedge timer never fires on its own — it is still
+        /// pending when the winning arm completes, which is the only state in which the old
+        /// <c>using (Task hedgeTimer ...)</c> could dispose a not-yet-completed <see cref="Task"/>.
+        /// Each iteration parks two threads on a gate and releases them together, putting the winner's
+        /// <c>timerTokenSource.Cancel()</c> in a dead heat with the linked cancellation propagation
+        /// from the application token, sweeping their relative start offset across iterations so the
+        /// (few-microsecond) failure window is crossed reliably rather than by chance.
+        ///
+        /// The only acceptable outcomes are the winner's response or an
+        /// <see cref="OperationCanceledException"/>; anything else (in particular a task-disposal
+        /// <see cref="InvalidOperationException"/>) fails the test. Against the pre-fix
+        /// <c>using (Task hedgeTimer ...)</c> code this reproduced on every run.
+        /// </summary>
+        [TestMethod]
+        public async Task WinningHedgeRacingApplicationCancellation_NeverThrowsFromTimerCleanup()
+        {
+            // Sized so the (narrow, ~0.2% per iteration) cancellation race is hit with very high
+            // probability while keeping the test well under a second.
+            const int iterations = 4000;
+
+            CrossRegionHedgingAvailabilityStrategy availabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                threshold: TimeSpan.FromSeconds(30),
+                thresholdStep: TimeSpan.FromMilliseconds(10));
+
+            using CosmosClient mockCosmosClient = CreateMockClientWithRegions(3);
+
+            List<string> unexpectedFailures = new List<string>();
+            int totalUnexpectedFailures = 0;
+
+            for (int iteration = 0; iteration < iterations; iteration++)
+            {
+                using RequestMessage request = CreateReadRequest();
+                using CancellationTokenSource applicationCts = new CancellationTokenSource();
+                using ManualResetEventSlim raceGate = new ManualResetEventSlim(false);
+                using CountdownEvent racersReady = new CountdownEvent(2);
+
+                // Deliberately *not* RunContinuationsAsynchronously: completing this source resumes the
+                // strategy inline on the releasing racer thread, so the winner's `timerTokenSource.Cancel()`
+                // runs in a genuine dead heat with the other racer's application-token cancellation instead
+                // of being pushed behind a thread pool dispatch.
+                TaskCompletionSource<bool> winnerRelease = new TaskCompletionSource<bool>();
+
+                Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender = async (req, ct) =>
+                {
+                    await winnerRelease.Task;
+                    return new ResponseMessage(HttpStatusCode.OK);
+                };
+
+                // Runs synchronously up to the `await Task.WhenAny(...)` inside the strategy, so the
+                // hedge timer already exists and is pending by the time the racers are released.
+                Task<ResponseMessage> operation = availabilityStrategy.ExecuteAvailabilityStrategyAsync(
+                    sender,
+                    mockCosmosClient,
+                    request,
+                    applicationCts.Token);
+
+                // The failure window is the few microseconds between the linked timer token winning the
+                // CancellationTokenSource state transition and its `Task.Delay` callback actually
+                // completing the timer. Sweeping the two racers' relative start offset across iterations
+                // walks that window deterministically instead of leaving it to thread pool luck.
+                int sweep = (iteration / 2) % 256;
+                int winnerSpin = (iteration % 2) == 0 ? sweep : 0;
+                int cancelSpin = (iteration % 2) == 0 ? 0 : sweep;
+
+                Task releaseWinner = Task.Run(() =>
+                {
+                    racersReady.Signal();
+                    raceGate.Wait();
+                    Thread.SpinWait(winnerSpin);
+                    winnerRelease.TrySetResult(true);
+                });
+
+                Task cancelApplication = Task.Run(() =>
+                {
+                    racersReady.Signal();
+                    raceGate.Wait();
+                    Thread.SpinWait(cancelSpin);
+                    applicationCts.Cancel();
+                });
+
+                racersReady.Wait();
+                raceGate.Set();
+
+                try
+                {
+                    using ResponseMessage response = await operation;
+                    Assert.IsNotNull(response, "A winning hedge must produce a response.");
+                }
+                catch (OperationCanceledException)
+                {
+                    // Acceptable: the application token won the race and cancelled the operation.
+                }
+                catch (Exception ex)
+                {
+                    // Cap the captured detail: a genuine regression reproduces many times per run and
+                    // the full stack of every hit would swamp the assertion message.
+                    if (unexpectedFailures.Count < 5)
+                    {
+                        unexpectedFailures.Add($"iteration {iteration}: {ex}");
+                    }
+
+                    totalUnexpectedFailures++;
+                }
+
+                await Task.WhenAll(releaseWinner, cancelApplication);
+            }
+
+            Assert.AreEqual(
+                0,
+                totalUnexpectedFailures,
+                $"Hedging must complete with either the winner's response or an OperationCanceledException " +
+                $"when the application token is cancelled concurrently. {totalUnexpectedFailures} of " +
+                $"{iterations} iterations failed. First failures:\n" + string.Join("\n", unexpectedFailures));
         }
 
         /// <summary>

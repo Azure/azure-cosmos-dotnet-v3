@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure.Core;
+    using Microsoft.Azure.Cosmos.Authorization;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Query;
@@ -177,6 +178,12 @@ namespace Microsoft.Azure.Cosmos
         private readonly object hedgingStrategyLock = new object();
 
         internal bool isThinClientEnabled;
+
+        // Whether the account is currently advertising thin-client endpoints (as of the last account read).
+        // Combined with isThinClientEnabled (the client capability), this drives the F4 user-agent feature
+        // flag so it reflects whether the client is actually routing through the thin-client proxy. Updated
+        // dynamically on account refresh via GlobalEndpointManager.OnThinClientAvailabilityChanged.
+        internal volatile bool thinClientEndpointsAvailable;
 
         // Gateway has backoff/retry logic to hide transient errors.
         private RetryPolicy retryPolicy;
@@ -1068,7 +1075,8 @@ namespace Microsoft.Azure.Cosmos
                 handler,
                 this.sendingRequest,
                 this.receivedResponse,
-                this.chaosInterceptor);
+                this.chaosInterceptor,
+                clientId: this.clientId);
 
             // Loading VM Information (non blocking call and initialization won't fail if this call fails)
             VmMetadataApiHandler.TryInitialize(this.httpClient);
@@ -1164,8 +1172,33 @@ namespace Microsoft.Azure.Cosmos
             // traffic; whether a given request actually routes to the proxy is decided per request
             // by IsThinClientRoutable and the connectivity probe gate, so the SDK can switch between
             // the proxy and Gateway V1 mid-session without a restart.
-            this.isThinClientEnabled = this.isThinClientFeatureFlagEnabled && (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway) &&
-                (this.accountServiceConfiguration.AccountProperties?.ThinClientWritableLocationsInternal?.Count ?? 0) > 0;
+            //
+            // ThinClient mode does not support resource-token (permission-scoped) authorization. A client
+            // authenticated with a resource token must therefore always route through the Gateway store model.
+            // This init-time gate short-circuits the common case (a client constructed with a resource token):
+            // the ThinClient store model is not built and no connectivity-probe cycle is started. Credential
+            // rotation (an AzureKeyCredential key updated from a master key to a resource token mid-session) is
+            // additionally guarded live per request in GetStoreProxy. Master-key and AAD/token-credential
+            // clients are unaffected by either check.
+            // Do not gate on the initial ThinClientWritableLocationsInternal count: it is a snapshot of
+            // dynamic account topology and would pin StoreModel to plain GatewayStoreModel for the
+            // client's lifetime, breaking the enable direction of the dynamic-switch contract.
+            // Per-request routability is enforced downstream by ThinClientStoreModel.IsThinClientRoutable
+            // (live LocationCache flags) and the probe-health gate in DispatchAsync, so accounts that
+            // never advertise thin-client endpoints transparently fall through to the gateway path.
+            bool isResourceTokenAuthorization = DocumentClient.IsResourceTokenAuthorization(this.cosmosAuthorization);
+
+            this.isThinClientEnabled = this.isThinClientFeatureFlagEnabled
+                && (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway)
+                && !isResourceTokenAuthorization;
+
+            if (this.isThinClientFeatureFlagEnabled && isResourceTokenAuthorization
+                && (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway))
+            {
+                DefaultTrace.TraceInformation(
+                    "DocumentClient: ThinClient mode disabled because the client is using resource-token authorization, which ThinClient does not support. Data-plane requests will route through the Gateway store model.");
+            }
+
             if (this.isThinClientEnabled)
             {
                 // Wire the HTTP/2 http client for the connectivity probe and run an initial probe against the
@@ -1173,6 +1206,12 @@ namespace Microsoft.Azure.Cosmos
                 this.GlobalEndpointManager.SetThinClientHttpClient(this.httpClient);
                 _ = this.GlobalEndpointManager.RunThinClientProbeCycleAsync();
             }
+
+            // Seed the live thin-client availability from the first account read (already performed by
+            // InitializeGatewayConfigurationReaderAsync above) so the initial user agent's F4 flag reflects
+            // whether the service is currently advertising thin-client endpoints.
+            this.thinClientEndpointsAvailable = this.GlobalEndpointManager.HasThinClientReadLocations
+                || this.GlobalEndpointManager.HasThinClientWriteLocations;
 
             this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker |= this.ConnectionPolicy.EnablePartitionLevelFailover;
             this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
@@ -1496,11 +1535,19 @@ namespace Microsoft.Azure.Cosmos
 
             this.cancellationTokenSource.Dispose();
 
-            if (this.StoreModel != null)
+            IStoreModelExtension storeModel = this.StoreModel;
+            if (storeModel != null)
             {
-                this.StoreModel.Dispose();
+                storeModel.Dispose();
                 this.StoreModel = null;
             }
+
+            if (this.GatewayStoreModel != null && !ReferenceEquals(this.GatewayStoreModel, storeModel))
+            {
+                this.GatewayStoreModel.Dispose();
+            }
+
+            this.GatewayStoreModel = null;
 
             if (this.storeClientFactory != null)
             {
@@ -1548,6 +1595,7 @@ namespace Microsoft.Azure.Cosmos
             if (this.GlobalEndpointManager != null)
             {
                 this.GlobalEndpointManager.OnEnablePartitionLevelFailoverConfigChanged -= this.UpdatePartitionLevelFailoverConfigWithAccountRefresh;
+                this.GlobalEndpointManager.OnThinClientAvailabilityChanged -= this.UpdateThinClientUserAgentFeatures;
                 this.GlobalEndpointManager.Dispose();
                 this.GlobalEndpointManager = null;
             }
@@ -6744,6 +6792,18 @@ namespace Microsoft.Azure.Cosmos
                     "Ensure all in-flight requests complete before disposing the client.");
             }
 
+            // ThinClient mode does not support resource-token (permission-scoped) authorization. When ThinClient
+            // is enabled but the client is currently authenticated with a resource token, route through the plain
+            // Gateway store model instead of the ThinClient store model. This is evaluated per request (the auth
+            // provider is refreshed by TransportHandler immediately before this call), so an AzureKeyCredential
+            // rotated to a resource token mid-session falls back to Gateway on the very next request without a
+            // client restart. Master-key and AAD/token-credential clients are unaffected.
+            if (this.isThinClientEnabled
+                && DocumentClient.IsResourceTokenAuthorization(this.cosmosAuthorization))
+            {
+                return this.GatewayStoreModel;
+            }
+
             // If a request is configured to always use Gateway mode(in some cases when targeting .NET Core)
             // we return the Gateway store model
             if (request.UseGatewayMode)
@@ -6891,6 +6951,17 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.storeClientFactory = storeClientFactory;
                 this.isStoreClientFactoryCreatedInternally = false;
+
+                // Note: EnableBarrierEarlyYieldOn429 has no effect when an external
+                // IStoreClientFactory is supplied (e.g., the compute-gateway reuse path).
+                // The external factory owns its own StoreClient configuration. If the flag
+                // is explicitly set, log a trace so misconfigurations are diagnosable.
+                if (!this.ConnectionPolicy.EnableBarrierEarlyYieldOn429)
+                {
+                    DefaultTrace.TraceWarning(
+                        "EnableBarrierEarlyYieldOn429 is set to false but has no effect "
+                        + "when an external IStoreClientFactory is provided.");
+                }
             }
             else
             {
@@ -6933,7 +7004,9 @@ namespace Microsoft.Azure.Cosmos
                     dnsResolutionFunction: ConfigurationManager.IsTcpDnsDotSuffixEnabled()
                         ? DnsDotSuffixHelper.ResolveHostAsync
                         : null,
-                    chaosInterceptor: this.chaosInterceptor);
+                    chaosInterceptor: this.chaosInterceptor,
+                    enableBarrierEarlyYieldOn429: this.ConnectionPolicy.EnableBarrierEarlyYieldOn429
+                        && ConfigurationManager.IsBarrierEarlyYieldOn429Enabled());
 
                 if (this.transportClientHandlerFactory != null)
                 {
@@ -7037,7 +7110,27 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.GlobalEndpointManager.OnEnablePartitionLevelFailoverConfigChanged += this.UpdatePartitionLevelFailoverConfigWithAccountRefresh;
+            this.GlobalEndpointManager.OnThinClientAvailabilityChanged += this.UpdateThinClientUserAgentFeatures;
             this.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
+        }
+
+        /// <summary>
+        /// Determines whether the supplied authorization provider represents resource-token
+        /// (permission-scoped) authorization. ThinClient mode does not support resource tokens, so a client
+        /// using this authorization type must always route through the Gateway store model. Returns true only
+        /// for resource-token providers; master-key and Microsoft Entra ID (AAD) token-credential providers
+        /// return false. The <see cref="AzureKeyCredentialAuthorizationTokenProvider"/> wrapper is unwrapped
+        /// to its current inner provider because the key it holds can itself be a resource token and can be
+        /// rotated at runtime.
+        /// </summary>
+        internal static bool IsResourceTokenAuthorization(AuthorizationTokenProvider authorizationTokenProvider)
+        {
+            if (authorizationTokenProvider is AzureKeyCredentialAuthorizationTokenProvider azureKeyCredentialAuthorizationTokenProvider)
+            {
+                return azureKeyCredentialAuthorizationTokenProvider.authorizationTokenProvider is AuthorizationTokenProviderResourceToken;
+            }
+
+            return authorizationTokenProvider is AuthorizationTokenProviderResourceToken;
         }
 
         internal string GetUserAgentFeatures()
@@ -7053,7 +7146,7 @@ namespace Microsoft.Azure.Cosmos
                 featureFlag += (int)UserAgentFeatureFlags.PerPartitionCircuitBreaker;
             }
 
-            if (this.isThinClientEnabled)
+            if (this.isThinClientEnabled && this.thinClientEndpointsAvailable)
             {
                 featureFlag += (int)UserAgentFeatureFlags.ThinClient;
             }
@@ -7064,6 +7157,26 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return featureFlag == 0 ? string.Empty : $"F{featureFlag:X}";
+        }
+
+        /// <summary>
+        /// Re-emits the user-agent feature flags when the account's thin-client endpoint availability changes
+        /// on an account refresh, so the F4 flag reflects whether the client is currently routing through the
+        /// thin-client proxy. Self-guarded: a failure here must never disrupt the account-refresh loop.
+        /// </summary>
+        private void UpdateThinClientUserAgentFeatures(bool thinClientEndpointsAvailable)
+        {
+            try
+            {
+                this.thinClientEndpointsAvailable = thinClientEndpointsAvailable;
+                this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceWarning(
+                    "DocumentClient: Failed to update ThinClient user-agent features on availability change: {0}",
+                    ex.Message);
+            }
         }
 
         internal void InitializePartitionLevelFailoverWithDefaultHedging()

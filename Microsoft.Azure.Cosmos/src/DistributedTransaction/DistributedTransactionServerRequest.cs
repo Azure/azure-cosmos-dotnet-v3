@@ -21,12 +21,29 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Operations = operations ?? throw new ArgumentNullException(nameof(operations));
             this.serializerCore = serializerCore ?? throw new ArgumentNullException(nameof(serializerCore));
-            this.IdempotencyToken = Guid.NewGuid();
         }
 
         public IReadOnlyList<DistributedTransactionOperation> Operations { get; }
 
-        public Guid IdempotencyToken { get; }
+        /// <summary>
+        /// The idempotency token for the current attempt, <see cref="Guid.Empty"/> until the first
+        /// <see cref="RotateIdempotencyToken"/>. It rotates for each new logical attempt (first attempt or
+        /// a post-Abort resubmission) and is replayed for a non-aborted retriable retry; the serialized
+        /// body is decoupled and reused byte-for-byte either way.
+        /// </summary>
+        public Guid IdempotencyToken { get; private set; }
+
+        /// <summary>
+        /// Assigns a fresh <see cref="Guid"/> to <see cref="IdempotencyToken"/> and returns it. Called for
+        /// each new logical attempt (first attempt or a post-Abort resubmission); a non-aborted retriable
+        /// retry reuses the current token instead.
+        /// </summary>
+        /// <returns>The newly generated idempotency token.</returns>
+        public Guid RotateIdempotencyToken()
+        {
+            this.IdempotencyToken = Guid.NewGuid();
+            return this.IdempotencyToken;
+        }
 
         public static async Task<DistributedTransactionServerRequest> CreateAsync(
             IReadOnlyList<DistributedTransactionOperation> operations,

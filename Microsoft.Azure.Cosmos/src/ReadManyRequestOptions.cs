@@ -38,12 +38,7 @@ namespace Microsoft.Azure.Cosmos
         /// The <see cref="ReadConsistencyStrategy.GlobalStrong"/> strategy is only valid
         /// for accounts configured with Strong consistency.
         /// </remarks>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        ReadConsistencyStrategy? ReadConsistencyStrategy
+        public ReadConsistencyStrategy? ReadConsistencyStrategy
         {
             get => this.BaseReadConsistencyStrategy;
             set => this.BaseReadConsistencyStrategy = value;
@@ -91,7 +86,8 @@ namespace Microsoft.Azure.Cosmos
                 IfNoneMatchEtag = this.IfNoneMatchEtag,
                 Properties = this.Properties,
                 AddRequestHeaders = this.AddRequestHeaders,
-                ExcludeRegions = this.ExcludeRegions
+                ExcludeRegions = this.ExcludeRegions,
+                ThroughputBucket = this.ThroughputBucket
             };
         }
 
@@ -111,7 +107,8 @@ namespace Microsoft.Azure.Cosmos
                 SessionToken = this.SessionToken,
                 Properties = this.Properties,
                 AddRequestHeaders = this.AddRequestHeaders,
-                ExcludeRegions = this.ExcludeRegions
+                ExcludeRegions = this.ExcludeRegions,
+                ThroughputBucket = this.ThroughputBucket
             };
         }
     }

@@ -26,7 +26,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
     internal static class PipelineFactory
     {
-        private const int PageSizeFactorForTop = 5;
+        /// <summary>
+        /// Page size factor used for a cross-partition ORDER BY query that has no TOP or LIMIT clause.
+        /// With continuations, it is expected that all pages will be consumed, so each range can fetch a
+        /// larger multiple of its share: documents fetched beyond the current page are served by later
+        /// pages rather than discarded, and the larger buffer reduces the number of network calls.
+        /// </summary>
+        private const int PageSizeFactorForContinuation = 5;
+
+        /// <summary>
+        /// Over-fetch factor used for a cross-partition ORDER BY query that has a TOP or LIMIT clause
+        /// </summary>
+        private static readonly int PageSizeFactorForTop = ConfigurationManager.GetPageSizeFactorForTop();
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
             IDocumentContainer documentContainer,
@@ -157,44 +168,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             CosmosElement requestContinuationToken)
         {
             // We need to compute the optimal initial page size for order-by queries
-            long optimalPageSize = maxItemCount;
-            if (queryInfo.HasOrderBy)
-            {
-                uint top;
-                if (queryInfo.HasTop && (queryInfo.Top.Value > 0))
-                {
-                    top = queryInfo.Top.Value;
-                }
-                else if (queryInfo.HasLimit && (queryInfo.Limit.Value > 0))
-                {
-                    top = Math.Min((queryInfo.Offset ?? 0) + queryInfo.Limit.Value, int.MaxValue);
-                }
-                else
-                {
-                    top = 0;
-                }
-
-                if (top > int.MaxValue)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(queryInfo.Top.Value));
-                }
-
-                if (top > 0)
-                {
-                    // All partitions should initially fetch about 1/nth of the top value.
-                    long pageSizeWithTop = (long)Math.Min(
-                        Math.Ceiling(top / (double)targetRanges.Count) * PageSizeFactorForTop,
-                        top);
-
-                    optimalPageSize = Math.Min(pageSizeWithTop, optimalPageSize);
-                }
-                else if (isContinuationExpected)
-                {
-                    optimalPageSize = (long)Math.Min(
-                        Math.Ceiling(optimalPageSize / (double)targetRanges.Count) * PageSizeFactorForTop,
-                        optimalPageSize);
-                }
-            }
+            long optimalPageSize = ComputeOptimalPageSize(
+                queryInfo: queryInfo,
+                targetRangeCount: targetRanges.Count,
+                maxItemCount: maxItemCount,
+                isContinuationExpected: isContinuationExpected,
+                pageSizeFactorForTop: PageSizeFactorForTop);
 
             QueryExecutionOptions queryPaginationOptions = new QueryExecutionOptions(pageSizeHint: (int)optimalPageSize);
 
@@ -320,6 +299,67 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
             return monadicCreatePipelineStage(requestContinuationToken)
                 .Try<IQueryPipelineStage>(onSuccess: stage => new SkipEmptyPageQueryPipelineStage(stage));
+        }
+
+        /// <summary>
+        /// Computes the initial per-partition page size requested from the backend.
+        /// </summary>
+        /// <remarks>
+        /// Only cross-partition ORDER BY queries are adjusted. Because the results have to be merge sorted across
+        /// partitions, every partition is asked for roughly <c>1/n</c> of the required documents, multiplied by an
+        /// over-fetch factor that absorbs an uneven distribution of the sort key. When the query carries a TOP or
+        /// LIMIT clause the result set is capped, so anything fetched past that cap is loaded by the backend and
+        /// then discarded, which is why that branch uses the smaller factor.
+        /// </remarks>
+        public static long ComputeOptimalPageSize(
+            QueryInfo queryInfo,
+            int targetRangeCount,
+            int maxItemCount,
+            bool isContinuationExpected,
+            int pageSizeFactorForTop)
+        {
+            long optimalPageSize = maxItemCount;
+            if (queryInfo.HasOrderBy)
+            {
+                uint top;
+                if (queryInfo.HasTop && (queryInfo.Top.Value > 0))
+                {
+                    top = queryInfo.Top.Value;
+                }
+                else if (queryInfo.HasLimit && (queryInfo.Limit.Value > 0))
+                {
+                    top = Math.Min((queryInfo.Offset ?? 0) + queryInfo.Limit.Value, int.MaxValue);
+                }
+                else
+                {
+                    top = 0;
+                }
+
+                if (top > int.MaxValue)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(queryInfo.Top.Value));
+                }
+
+                if (top > 0)
+                {
+                    // Each targeted range initially fetches its 1/nth share of the top value, scaled by an
+                    // over-fetch factor to absorb an uneven distribution of the sort key across ranges.
+                    // Anything fetched beyond top is discarded, so the factor is kept small.
+                    long pageSizeWithTop = (long)Math.Min(
+                        Math.Ceiling(top / (double)targetRangeCount) * pageSizeFactorForTop,
+                        top);
+
+                    optimalPageSize = Math.Min(pageSizeWithTop, optimalPageSize);
+                }
+                else if (isContinuationExpected)
+                {
+                    optimalPageSize = (long)Math.Min(
+                        Math.Ceiling(optimalPageSize / (double)targetRangeCount) * PageSizeFactorForContinuation,
+                        optimalPageSize);
+                }
+            }
+
+            return optimalPageSize;
         }
 
         private static PrefetchPolicy DeterminePrefetchPolicy(QueryInfo queryInfo)

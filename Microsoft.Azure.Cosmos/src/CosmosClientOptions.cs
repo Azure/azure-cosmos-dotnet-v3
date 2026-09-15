@@ -60,6 +60,8 @@ namespace Microsoft.Azure.Cosmos
         /// Default request timeout
         /// </summary>
         private int gatewayModeMaxConnectionLimit;
+        private int? maxRetryAttemptsOnAbortedTransactions;
+        private TimeSpan? maxRetryWaitTimeOnAbortedTransactions;
         private CosmosSerializationOptions serializerOptions;
         private CosmosSerializer serializerInternal;
         private System.Text.Json.JsonSerializerOptions stjSerializerOptions;
@@ -398,12 +400,7 @@ namespace Microsoft.Azure.Cosmos
         /// <see cref="ReadConsistencyStrategy.GlobalStrong"/> is only valid for accounts configured with Strong consistency.
         /// </para>
         /// </remarks>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        ReadConsistencyStrategy? ReadConsistencyStrategy { get; set; }
+        public ReadConsistencyStrategy? ReadConsistencyStrategy { get; set; }
 
         /// <summary>
         /// Gets or sets the client-wide default <see cref="ICosmosEmbeddingGenerator"/> used to generate
@@ -478,6 +475,87 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithThrottlingRetryOptions(TimeSpan, int)"/>
         public TimeSpan? MaxRetryWaitTimeOnRateLimitedRequests { get; set; }
+
+        /// <summary>
+        /// Gets or sets the maximum number of retries in the case where a distributed transaction
+        /// commit fails because the Azure Cosmos DB service reports the transaction as aborted but
+        /// retriable.
+        /// </summary>
+        /// <value>
+        /// The default value is 10. This means in the case where a distributed transaction commit is
+        /// reported as retriable, the SDK will re-issue the commit for a maximum of 10 attempts before
+        /// returning the last response to the application.
+        ///
+        /// If the value of this property is set to 0, there will be no automatic retry on retriable
+        /// aborted distributed transactions from the client and the first retriable response is returned
+        /// to the application to be handled at the application level.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// When a distributed transaction commit is reported by the service as aborted but retriable, the
+        /// SDK re-issues the commit after an exponentially increasing backoff. This property caps the number
+        /// of such retry attempts. Retries also stop once the cumulative wait time exceeds
+        /// <see cref="MaxRetryWaitTimeOnAbortedTransactions"/>, whichever budget is exhausted first.
+        /// </para>
+        /// </remarks>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        int? MaxRetryAttemptsOnAbortedTransactions
+        {
+            get => this.maxRetryAttemptsOnAbortedTransactions;
+            set
+            {
+                if (value < 0)
+                {
+                    throw new ArgumentException("value must be a positive integer.");
+                }
+
+                this.maxRetryAttemptsOnAbortedTransactions = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the maximum cumulative wait time across all retry attempts when a distributed
+        /// transaction commit fails because the Azure Cosmos DB service reports the transaction as aborted
+        /// but retriable.
+        /// </summary>
+        /// <value>
+        /// The default value is 30 seconds.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// When a distributed transaction commit is reported by the service as aborted but retriable, the
+        /// SDK waits (using an exponentially increasing backoff, honoring any server retry-after hint) before
+        /// re-issuing the commit. This property caps the total cumulative wait time accumulated across all
+        /// retry attempts. If the next planned delay would push the cumulative wait time past this value, the
+        /// client stops retrying and returns the last response to the application.
+        /// </para>
+        /// <para>
+        /// Retries also stop once the number of attempts exceeds
+        /// <see cref="MaxRetryAttemptsOnAbortedTransactions"/>, whichever budget is exhausted first.
+        /// </para>
+        /// </remarks>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        TimeSpan? MaxRetryWaitTimeOnAbortedTransactions
+        {
+            get => this.maxRetryWaitTimeOnAbortedTransactions;
+            set
+            {
+                if (value < TimeSpan.Zero)
+                {
+                    throw new ArgumentException("value must be a positive TimeSpan.");
+                }
+
+                this.maxRetryWaitTimeOnAbortedTransactions = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the boolean to only return the headers and status code in
@@ -816,6 +894,21 @@ namespace Microsoft.Azure.Cosmos
         public bool EnableTcpConnectionEndpointRediscovery { get; set; } = true;
 
         /// <summary>
+        /// Gets or sets a value indicating whether the barrier early yield on 429
+        /// optimization is enabled. When true, ConsistencyWriter and QuorumReader
+        /// in the Direct transport layer return early when all replicas return 429
+        /// during a write or read barrier. Direct retries the 429 internally; when
+        /// retries are exhausted it surfaces a synthetic 408 with substatus 21013
+        /// (Server_WriteBarrierThrottled) to the SDK. The SDK's ClientRetryPolicy
+        /// recognizes this substatus and avoids marking the endpoint unavailable,
+        /// preventing unnecessary cross-region failover.
+        /// </summary>
+        /// <value>
+        /// The default value is true. Internal only — not exposed to external SDK users.
+        /// </value>
+        internal bool EnableBarrierEarlyYieldOn429 { get; set; } = true;
+
+        /// <summary>
         /// Gets or sets a delegate to use to obtain an HttpClient instance to be used for HTTPS communication.
         /// </summary>
         /// <remarks>
@@ -1121,15 +1214,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <remarks>
         /// If throughput bucket is also set at request level in <see cref="RequestOptions.ThroughputBucket"/>, that throughput bucket is used.
-        /// If <see cref="AllowBulkExecution"/> is set to true in CosmosClientOptions, throughput bucket can only be set at client level.
+        /// When <see cref="AllowBulkExecution"/> is set to true in CosmosClientOptions, a request-level throughput bucket is not
+        /// supported for item point operations (they are batched); set the throughput bucket at the client level instead.
         /// </remarks>
         /// <seealso href="https://aka.ms/cosmsodb-bucketing"/>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        int? ThroughputBucket { get; set; }
+        public int? ThroughputBucket { get; set; }
 
         internal IChaosInterceptorFactory ChaosInterceptorFactory { get; set; }
 
@@ -1176,6 +1265,7 @@ namespace Microsoft.Azure.Cosmos
                 ServerCertificateCustomValidationCallback = this.ServerCertificateCustomValidationCallback,
                 CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions(),
                 AvailabilityStrategy = this.AvailabilityStrategy,
+                EnableBarrierEarlyYieldOn429 = this.EnableBarrierEarlyYieldOn429,
             };
 
             if (this.CosmosClientTelemetryOptions != null)

@@ -56,7 +56,9 @@ namespace Microsoft.Azure.Cosmos
             this.Scripts = new ScriptsInlineCore(this, this.ClientContext);
             this.cachedUriSegmentWithoutId = this.GetResourceSegmentUriWithoutId();
             this.queryClient = cosmosQueryClient ?? new CosmosQueryClientCore(this.ClientContext, this);
-            this.lazyBatchExecutor = new Lazy<BatchAsyncContainerExecutor>(() => this.ClientContext.GetExecutorForContainer(this));
+            this.lazyBatchExecutor = new Lazy<BatchAsyncContainerExecutor>(
+                () => this.ClientContext.GetExecutorForContainer(this),
+                LazyThreadSafetyMode.PublicationOnly);
         }
 
         public override string Id { get; }

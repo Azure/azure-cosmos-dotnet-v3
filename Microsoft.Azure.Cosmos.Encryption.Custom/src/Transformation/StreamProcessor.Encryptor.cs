@@ -65,26 +65,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                     leftOver = dataSize - (int)bytesConsumed;
 
-                    // Grow only when the buffer is genuinely full AND the scan made no progress.
-                    // A short read (trickle stream) that leaves unused capacity means "need more
-                    // bytes", not "need a bigger buffer"; growing on no-progress alone would double
-                    // the buffer on every partial read until it hits the cap and throws on valid input.
-                    if (leftOver == dataSize && dataSize == buffer.Length && !isFinalBlock)
-                    {
-                        int newSize = checked(buffer.Length * 2);
-                        if (newSize > MaxBufferSize)
-                        {
-                            throw new InvalidOperationException($"JSON document or token does not fit within the maximum buffer size of {MaxBufferSize} bytes");
-                        }
-
-                        byte[] newBuffer = arrayPoolManager.Rent(newSize);
-                        buffer.AsSpan().CopyTo(newBuffer);
-                        buffer = newBuffer;
-                    }
-                    else if (leftOver != 0)
-                    {
-                        buffer.AsSpan(dataSize - leftOver, leftOver).CopyTo(buffer);
-                    }
+                    buffer = HandleReadBuffer(
+                        buffer,
+                        dataSize,
+                        leftOver,
+                        isFinalBlock,
+                        arrayPoolManager,
+                        JsonFeedStreamHelper.MaximumBufferSize);
                 }
 
                 await inputStream.DisposeAsync();

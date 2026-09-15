@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     internal static class JsonArrayStreamSplitter
     {
         private const int DefaultBufferSize = 4096;
-        private const int MaxBufferSize = 64 * 1024 * 1024;
 
         /// <summary>
         /// Splits a JSON array stream into separate objects, returning each as a Stream.
@@ -81,7 +80,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         writeSegment);
 
                     leftOver = dataLength - result.BytesConsumed;
-                    buffer = JsonFeedStreamHelper.HandleLeftOver(buffer, dataLength, leftOver, result.BytesConsumed, MaxBufferSize);
+                    buffer = JsonFeedStreamHelper.HandleLeftOver(
+                        buffer,
+                        dataLength,
+                        leftOver,
+                        result.BytesConsumed,
+                        JsonFeedStreamHelper.MaximumBufferSize);
 
                     if (isFinalBlock && leftOver > 0)
                     {
