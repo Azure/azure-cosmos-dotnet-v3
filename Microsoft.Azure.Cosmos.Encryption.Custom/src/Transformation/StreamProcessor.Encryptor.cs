@@ -16,13 +16,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     internal partial class StreamProcessor
     {
         private readonly byte[] encryptionPropertiesNameBytes = Encoding.UTF8.GetBytes(Constants.EncryptedInfo);
+        private readonly byte[] encryptionAlgorithmNameBytes = Encoding.UTF8.GetBytes(Constants.EncryptionAlgorithm);
 
         internal async Task EncryptStreamAsync(
             Stream inputStream,
             Stream outputStream,
             Encryptor encryptor,
             EncryptionOptions encryptionOptions,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            bool replacePlaintextEncryptionMetadata = false)
         {
             List<string> pathsEncrypted = new (encryptionOptions.PathsToEncrypt is ICollection<string> c ? c.Count : 0);
 
@@ -52,6 +54,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             string encryptPropertyName = null;
             RentArrayBufferWriter bufferWriter = null;
             bool firstTokenValidated = false;
+            bool skippingPlaintextEncryptionMetadata = false;
+            bool awaitingEncryptionMetadataValue = false;
+            bool awaitingEncryptionAlgorithmValue = false;
+            int encryptionMetadataObjectDepth = -1;
 
             try
             {
@@ -125,6 +131,57 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         {
                             throw new NotSupportedException("Streaming encryption requires a JSON object root. Root arrays or primitive values are not supported.");
                         }
+                    }
+
+                    if (skippingPlaintextEncryptionMetadata)
+                    {
+                        if (awaitingEncryptionMetadataValue)
+                        {
+                            awaitingEncryptionMetadataValue = false;
+                            if (tokenType == JsonTokenType.StartObject)
+                            {
+                                encryptionMetadataObjectDepth = reader.CurrentDepth;
+                                continue;
+                            }
+
+                            if (tokenType == JsonTokenType.Null)
+                            {
+                                skippingPlaintextEncryptionMetadata = false;
+                                continue;
+                            }
+
+                            throw new InvalidOperationException(
+                                $"The input document contains an invalid top-level '{Constants.EncryptedInfo}' property. Encrypting a document with existing encryption metadata is not supported.");
+                        }
+
+                        if (awaitingEncryptionAlgorithmValue)
+                        {
+                            awaitingEncryptionAlgorithmValue = false;
+                            if (tokenType != JsonTokenType.Null)
+                            {
+                                throw new InvalidOperationException(
+                                    $"The input document already contains a top-level '{Constants.EncryptedInfo}' property with '{Constants.EncryptionAlgorithm}' metadata. Encrypting a document with existing encryption metadata is not supported.");
+                            }
+
+                            continue;
+                        }
+
+                        if (tokenType == JsonTokenType.PropertyName &&
+                            reader.CurrentDepth == encryptionMetadataObjectDepth + 1 &&
+                            reader.ValueTextEquals(this.encryptionAlgorithmNameBytes))
+                        {
+                            awaitingEncryptionAlgorithmValue = true;
+                            continue;
+                        }
+
+                        if (tokenType == JsonTokenType.EndObject &&
+                            reader.CurrentDepth == encryptionMetadataObjectDepth)
+                        {
+                            skippingPlaintextEncryptionMetadata = false;
+                            encryptionMetadataObjectDepth = -1;
+                        }
+
+                        continue;
                     }
 
                     Utf8JsonWriter currentWriter = encryptionPayloadWriter ?? writer;
@@ -206,6 +263,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 // across processors, not the exception type.
                                 if (reader.ValueTextEquals(this.encryptionPropertiesNameBytes))
                                 {
+                                    if (replacePlaintextEncryptionMetadata)
+                                    {
+                                        skippingPlaintextEncryptionMetadata = true;
+                                        awaitingEncryptionMetadataValue = true;
+                                        continue;
+                                    }
+
                                     throw new InvalidOperationException($"The input document already contains a top-level '{Constants.EncryptedInfo}' property, which is reserved for encryption metadata. Encrypting a document that already contains this property is not supported (it would produce a duplicate '{Constants.EncryptedInfo}').");
                                 }
 

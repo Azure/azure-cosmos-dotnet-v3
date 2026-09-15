@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
     using Microsoft.Azure.Cosmos.Encryption.Custom;
     using Microsoft.Azure.Cosmos.Encryption.Custom.Tests;
@@ -40,9 +41,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
-        [DynamicData(nameof(JsonProcessors))]
-
-        internal async Task InvalidPathToEncrypt(JsonProcessor jsonProcessor)
+        public async Task InvalidPathToEncrypt()
         {
             TestDoc testDoc = TestDoc.Create();
             EncryptionOptions encryptionOptionsWithInvalidPathToEncrypt = new ()
@@ -52,7 +51,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 PathsToEncrypt = new List<string>() { "/SensitiveStr", "/Invalid" }
             };
 
-            EncryptionItemRequestOptions requestOptions = RequestOptionsOverrideHelper.Create(encryptionOptionsWithInvalidPathToEncrypt, jsonProcessor);
+            EncryptionItemRequestOptions requestOptions = RequestOptionsOverrideHelper.Create(
+                encryptionOptionsWithInvalidPathToEncrypt,
+                JsonProcessor.Newtonsoft);
 
             Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
                 testDoc.ToStream(),
@@ -78,13 +79,32 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
-        [DynamicData(nameof(JsonProcessors))]
-        internal async Task EncryptDecryptPropertyWithNullValue(JsonProcessor jsonProcessor)
+        public async Task EncryptDecryptPropertyWithNullValue()
         {
             TestDoc testDoc = TestDoc.Create();
             testDoc.SensitiveStr = null;
 
-            JObject encryptedDoc = await LegacyEncryptionProcessorTests.VerifyEncryptionSucceeded(testDoc, jsonProcessor);
+            JObject encryptedDoc = await LegacyEncryptionProcessorTests.VerifyEncryptionSucceeded(testDoc);
+
+            (JObject decryptedDoc, DecryptionContext decryptionContext) = await EncryptionProcessor.DecryptAsync(
+                encryptedDoc,
+                LegacyEncryptionProcessorTests.mockEncryptor.Object,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+
+            LegacyEncryptionProcessorTests.VerifyDecryptionSucceeded(
+                decryptedDoc,
+                testDoc,
+                TestDoc.PathsToEncrypt.Count,
+                decryptionContext);
+        }
+
+        [TestMethod]
+        public async Task ValidateEncryptDecryptDocument()
+        {
+            TestDoc testDoc = TestDoc.Create();
+
+            JObject encryptedDoc = await LegacyEncryptionProcessorTests.VerifyEncryptionSucceeded(testDoc);
 
             (JObject decryptedDoc, DecryptionContext decryptionContext) = await EncryptionProcessor.DecryptAsync(
                 encryptedDoc,
@@ -101,32 +121,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [TestMethod]
         [DynamicData(nameof(JsonProcessors))]
-        internal async Task ValidateEncryptDecryptDocument(JsonProcessor jsonProcessor)
+        public async Task ValidateDecryptStream(int jsonProcessorValue)
         {
+            JsonProcessor jsonProcessor = ResolveJsonProcessor(jsonProcessorValue);
             TestDoc testDoc = TestDoc.Create();
 
-            JObject encryptedDoc = await LegacyEncryptionProcessorTests.VerifyEncryptionSucceeded(testDoc, jsonProcessor);
-
-            (JObject decryptedDoc, DecryptionContext decryptionContext) = await EncryptionProcessor.DecryptAsync(
-                encryptedDoc,
-                LegacyEncryptionProcessorTests.mockEncryptor.Object,
-                new CosmosDiagnosticsContext(),
-                CancellationToken.None);
-
-            LegacyEncryptionProcessorTests.VerifyDecryptionSucceeded(
-                decryptedDoc,
-                testDoc,
-                TestDoc.PathsToEncrypt.Count,
-                decryptionContext);
-        }
-
-        [TestMethod]
-        [DynamicData(nameof(JsonProcessors))]
-        internal async Task ValidateDecryptStream(JsonProcessor jsonProcessor)
-        {
-            TestDoc testDoc = TestDoc.Create();
-
-            EncryptionItemRequestOptions requestOptions = RequestOptionsOverrideHelper.Create(LegacyEncryptionProcessorTests.encryptionOptions, jsonProcessor);
+            EncryptionItemRequestOptions requestOptions = RequestOptionsOverrideHelper.Create(LegacyEncryptionProcessorTests.encryptionOptions, JsonProcessor.Newtonsoft);
 
             Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
                 testDoc.ToStream(),
@@ -139,6 +139,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 encryptedStream,
                 LegacyEncryptionProcessorTests.mockEncryptor.Object,
                 new CosmosDiagnosticsContext(),
+                RequestOptionsOverrideHelper.Create(jsonProcessor),
                 CancellationToken.None);
 
             JObject decryptedDoc = EncryptionProcessor.BaseSerializer.FromStream<JObject>(decryptedStream);
@@ -167,9 +168,178 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsNull(decryptionContext);
         }
 
-        private static async Task<JObject> VerifyEncryptionSucceeded(TestDoc testDoc, JsonProcessor jsonProcessor)
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task DecryptJObject_MissingOrNullAlgorithm_ReturnsPlaintextUnchanged(bool explicitNull)
         {
-            EncryptionItemRequestOptions requestOptions = RequestOptionsOverrideHelper.Create(LegacyEncryptionProcessorTests.encryptionOptions, jsonProcessor);
+            TestDoc expected = TestDoc.Create();
+            JObject document = CreateDocumentWithMissingAlgorithm(expected, explicitNull);
+            JObject original = (JObject)document.DeepClone();
+            Mock<Encryptor> encryptor = new (MockBehavior.Strict);
+
+            (JObject decrypted, DecryptionContext context) = await EncryptionProcessor.DecryptAsync(
+                document,
+                encryptor.Object,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+
+            Assert.AreSame(document, decrypted);
+            Assert.IsNull(context);
+            Assert.IsTrue(JToken.DeepEquals(original, decrypted));
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task DecryptableItemCore_MissingOrNullAlgorithm_ReturnsPlaintextUnchanged(bool explicitNull)
+        {
+            TestDoc expected = TestDoc.Create();
+            JObject document = CreateDocumentWithMissingAlgorithm(expected, explicitNull);
+            JObject original = (JObject)document.DeepClone();
+            Mock<Encryptor> encryptor = new (MockBehavior.Strict);
+            Mock<CosmosSerializer> serializer = new (MockBehavior.Strict);
+            serializer
+                .Setup(s => s.FromStream<TestDoc>(It.IsAny<Stream>()))
+                .Returns((Stream stream) => TestCommon.FromStream<TestDoc>(stream));
+            DecryptableItemCore decryptableItem = new (
+                document,
+                encryptor.Object,
+                serializer.Object);
+
+            (TestDoc actual, DecryptionContext context) = await decryptableItem.GetItemAsync<TestDoc>();
+
+            Assert.AreEqual(expected, actual);
+            Assert.IsNull(context);
+            Assert.IsTrue(JToken.DeepEquals(original, document));
+        }
+
+        [TestMethod]
+        public async Task DecryptJObject_PresentUnknownAlgorithm_FailsClosed()
+        {
+            TestDoc expected = TestDoc.Create();
+            JObject document = JObject.FromObject(expected);
+            document[Constants.EncryptedInfo] = new JObject
+            {
+                [Constants.EncryptionFormatVersion] = EncryptionFormatVersion.Mde,
+                [Constants.EncryptionAlgorithm] = "future-algorithm",
+                [Constants.EncryptionDekId] = LegacyEncryptionProcessorTests.dekId,
+                [Constants.EncryptedPaths] = new JArray(),
+            };
+
+            NotSupportedException exception = await Assert.ThrowsExceptionAsync<NotSupportedException>(
+                async () => await EncryptionProcessor.DecryptAsync(
+                    document,
+                    new Mock<Encryptor>(MockBehavior.Strict).Object,
+                    new CosmosDiagnosticsContext(),
+                    CancellationToken.None));
+
+            StringAssert.Contains(exception.Message, "future-algorithm");
+        }
+
+        [TestMethod]
+        public async Task DecryptableItemCore_CorruptLegacyMetadataWithoutDekId_PreservesFailure()
+        {
+            TestDoc testDoc = TestDoc.Create();
+            JObject encryptedDoc = await LegacyEncryptionProcessorTests.VerifyEncryptionSucceeded(testDoc);
+            ((JObject)encryptedDoc[Constants.EncryptedInfo]).Remove(Constants.EncryptionDekId);
+            string encryptedContent = encryptedDoc.ToString();
+            DecryptableItemCore decryptableItem = new (
+                encryptedDoc,
+                LegacyEncryptionProcessorTests.mockEncryptor.Object,
+                new Mock<CosmosSerializer>().Object);
+
+            EncryptionException exception = await Assert.ThrowsExceptionAsync<EncryptionException>(
+                async () => await decryptableItem.GetItemAsync<TestDoc>());
+
+            Assert.AreEqual(string.Empty, exception.DataEncryptionKeyId);
+            Assert.AreEqual(encryptedContent, exception.EncryptedContent);
+            Assert.IsInstanceOfType(exception.InnerException, typeof(InvalidOperationException));
+        }
+
+        [TestMethod]
+        [DynamicData(nameof(JsonProcessors))]
+        public async Task DecryptStream_TamperedLegacyCiphertext_PreservesFailure(int jsonProcessorValue)
+        {
+            JsonProcessor jsonProcessor = ResolveJsonProcessor(jsonProcessorValue);
+            using Stream encryptedStream = await TestCommon.CreateLegacyEncryptedStreamAsync(
+                TestDoc.Create(),
+                LegacyEncryptionProcessorTests.mockEncryptor.Object,
+                LegacyEncryptionProcessorTests.dekId);
+            JObject encryptedDoc = EncryptionProcessor.BaseSerializer.FromStream<JObject>(encryptedStream);
+            ((JObject)encryptedDoc[Constants.EncryptedInfo])[Constants.EncryptedData] =
+                Convert.ToBase64String(new byte[] { 1 });
+            using Stream tamperedStream = EncryptionProcessor.BaseSerializer.ToStream(encryptedDoc);
+
+            await Assert.ThrowsExceptionAsync<JsonReaderException>(
+                async () => await EncryptionProcessor.DecryptAsync(
+                    tamperedStream,
+                    LegacyEncryptionProcessorTests.mockEncryptor.Object,
+                    new CosmosDiagnosticsContext(),
+                    RequestOptionsOverrideHelper.Create(jsonProcessor),
+                    CancellationToken.None));
+
+            Assert.IsTrue(tamperedStream.CanRead);
+            Assert.AreEqual(
+                jsonProcessor == JsonProcessor.Newtonsoft ? tamperedStream.Length : 0,
+                tamperedStream.Position);
+        }
+
+        [TestMethod]
+        [DynamicData(nameof(JsonProcessors))]
+        public async Task DecryptStream_LegacyDecryptorNotSupported_PreservesFailure(int jsonProcessorValue)
+        {
+            JsonProcessor jsonProcessor = ResolveJsonProcessor(jsonProcessorValue);
+            using Stream encryptedStream = await TestCommon.CreateLegacyEncryptedStreamAsync(
+                TestDoc.Create(),
+                LegacyEncryptionProcessorTests.mockEncryptor.Object,
+                LegacyEncryptionProcessorTests.dekId);
+            NotSupportedException decryptorFailure = new ("Legacy decryptor is unavailable.");
+            Mock<Encryptor> failingEncryptor = new ();
+            failingEncryptor
+                .Setup(e => e.DecryptAsync(
+                    It.IsAny<byte[]>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()))
+                .ThrowsAsync(decryptorFailure);
+
+            NotSupportedException exception = await Assert.ThrowsExceptionAsync<NotSupportedException>(
+                async () => await EncryptionProcessor.DecryptAsync(
+                    encryptedStream,
+                    failingEncryptor.Object,
+                    new CosmosDiagnosticsContext(),
+                    RequestOptionsOverrideHelper.Create(jsonProcessor),
+                    CancellationToken.None));
+
+            Assert.AreSame(decryptorFailure, exception);
+            Assert.IsTrue(encryptedStream.CanRead);
+            Assert.AreEqual(
+                jsonProcessor == JsonProcessor.Newtonsoft ? encryptedStream.Length : 0,
+                encryptedStream.Position);
+        }
+
+        private static JObject CreateDocumentWithMissingAlgorithm(TestDoc testDoc, bool explicitNull)
+        {
+            JObject encryptionProperties = new ()
+            {
+                [Constants.EncryptionFormatVersion] = EncryptionFormatVersion.Mde,
+                [Constants.EncryptionDekId] = LegacyEncryptionProcessorTests.dekId,
+                [Constants.EncryptedPaths] = new JArray(),
+            };
+            if (explicitNull)
+            {
+                encryptionProperties[Constants.EncryptionAlgorithm] = JValue.CreateNull();
+            }
+
+            JObject document = JObject.FromObject(testDoc);
+            document[Constants.EncryptedInfo] = encryptionProperties;
+            return document;
+        }
+
+        private static async Task<JObject> VerifyEncryptionSucceeded(TestDoc testDoc)
+        {
+            EncryptionItemRequestOptions requestOptions = RequestOptionsOverrideHelper.Create(LegacyEncryptionProcessorTests.encryptionOptions, JsonProcessor.Newtonsoft);
 
             Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
                 testDoc.ToStream(),
@@ -231,11 +401,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         {
             get
             {
-                    yield return new object[] { JsonProcessor.Newtonsoft };
+                yield return new object[] { (int)JsonProcessor.Newtonsoft };
 #if NET8_0_OR_GREATER
-                    yield return new object[] { JsonProcessor.Stream };
+                yield return new object[] { (int)JsonProcessor.Stream };
 #endif
             }
+        }
+
+        private static JsonProcessor ResolveJsonProcessor(int value)
+        {
+            if (!Enum.IsDefined(typeof(JsonProcessor), value))
+            {
+                throw new ArgumentOutOfRangeException(nameof(value), "Invalid JsonProcessor value supplied to test.");
+            }
+
+            return (JsonProcessor)value;
         }
     }
 

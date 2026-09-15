@@ -20,12 +20,37 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
         this.streamProcessor = streamProcessor;
     }
 
-    public async Task<Stream> EncryptAsync(Stream input, Encryptor encryptor, EncryptionOptions options, CancellationToken cancellationToken)
+    public Task<Stream> EncryptAsync(
+        Stream input,
+        Encryptor encryptor,
+        EncryptionOptions options,
+        CancellationToken cancellationToken)
+    {
+        return this.EncryptAsync(
+            input,
+            encryptor,
+            options,
+            cancellationToken,
+            replacePlaintextEncryptionMetadata: false);
+    }
+
+    public async Task<Stream> EncryptAsync(
+        Stream input,
+        Encryptor encryptor,
+        EncryptionOptions options,
+        CancellationToken cancellationToken,
+        bool replacePlaintextEncryptionMetadata)
     {
         PooledMemoryStream ms = new ();
         try
         {
-            await this.streamProcessor.EncryptStreamAsync(input, ms, encryptor, options, cancellationToken);
+            await this.streamProcessor.EncryptStreamAsync(
+                input,
+                ms,
+                encryptor,
+                options,
+                cancellationToken,
+                replacePlaintextEncryptionMetadata);
             return ms;  // Ownership transfers successfully
         }
         catch
@@ -43,7 +68,13 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
             throw new NotSupportedException("This overload is only supported for Stream JsonProcessor");
         }
 
-        return this.streamProcessor.EncryptStreamAsync(input, output, encryptor, options, cancellationToken);
+        return this.streamProcessor.EncryptStreamAsync(
+            input,
+            output,
+            encryptor,
+            options,
+            cancellationToken,
+            replacePlaintextEncryptionMetadata: false);
     }
 
     public async Task<(Stream, DecryptionContext)> DecryptAsync(Stream input, Encryptor encryptor, CosmosDiagnosticsContext diagnosticsContext, CancellationToken cancellationToken)
