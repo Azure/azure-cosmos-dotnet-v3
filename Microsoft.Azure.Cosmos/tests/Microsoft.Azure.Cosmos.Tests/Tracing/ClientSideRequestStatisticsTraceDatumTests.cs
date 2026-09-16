@@ -23,6 +23,24 @@
         private static readonly DocumentServiceRequest requestDsr = DocumentServiceRequest.Create(OperationType.Read, resourceType: ResourceType.Document, authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
         private static readonly StoreResult storeResult = StoreResult.CreateForTesting(storeResponse: new StoreResponse()).Target;
 
+        [TestMethod]
+        [Owner("nalutripician")]
+        public void RecordAddressResolutionEnd_WithUnknownIdentifier_DoesNotThrow()
+        {
+            // Regression for #6067: address resolution statistics are diagnostics bookkeeping only.
+            // A background address refresh can outlive the attempt that started it, at which point
+            // the statistics instance on the request has already been replaced and the identifier
+            // recorded at start is not present on the instance seen at end. That must never fault.
+            ClientSideRequestStatisticsTraceDatum datum = new (
+                DateTime.UtcNow,
+                Trace.GetRootTrace(nameof(RecordAddressResolutionEnd_WithUnknownIdentifier_DoesNotThrow)));
+
+            datum.RecordAddressResolutionEnd(Guid.NewGuid().ToString());
+            datum.RecordAddressResolutionEnd(null);
+
+            Assert.AreEqual(0, datum.EndpointToAddressResolutionStatistics.Count);
+        }
+
         /// <summary>
         /// This test is needed because different parts of the SDK use the same ClientSideRequestStatisticsTraceDatum across multiple
         /// threads. It's even possible that there are background threads referencing the same instance.

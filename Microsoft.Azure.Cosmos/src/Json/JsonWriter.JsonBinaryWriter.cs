@@ -1,6 +1,9 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+
+// Ignore Spelling: Json
+
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
@@ -8,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using Microsoft.Azure.Cosmos.Core;
     using Microsoft.Azure.Cosmos.Core.Utf8;
@@ -36,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 initialCapacity: 256,
                 enableNumberArrays: false,
                 enableUint64Values: false,
+                enableBase64Strings: false,
                 enableEncodedStrings: false);
             Contract.Requires(!jsonBinaryWriter.JsonObjectState.InArrayContext);
             Contract.Requires(!jsonBinaryWriter.JsonObjectState.InObjectContext);
@@ -59,8 +64,14 @@ namespace Microsoft.Azure.Cosmos.Json
         {
             private enum RawValueType : byte
             {
-                Token,
-                StrUsr,
+                Arr,
+                Arr1,
+                ArrArrNum,
+                ArrNum,
+                NumUI64,
+                Obj,
+                Obj1,
+                StrBase64,
                 StrEncLen,
                 StrL1,
                 StrL2,
@@ -69,13 +80,8 @@ namespace Microsoft.Azure.Cosmos.Json
                 StrR2,
                 StrR3,
                 StrR4,
-                Arr1,
-                Obj1,
-                Arr,
-                Obj,
-                ArrNum,
-                ArrArrNum,
-                NumUI64,
+                StrUsr,
+                Token
             }
 
             private const int MaxStackAllocSize = 4 * 1024;
@@ -117,13 +123,13 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 // Empty Range
                 RawValueType.Token,      // <empty> 0x70
-                RawValueType.Token,      // <empty> 0x71
-                RawValueType.Token,      // <empty> 0x72
-                RawValueType.Token,      // <empty> 0x73
-                RawValueType.Token,      // <empty> 0x74
-                RawValueType.Token,      // RawValueType.StrGL (Lowercase GUID string)
-                RawValueType.Token,      // RawValueType.StrGU (Uppercase GUID string)
-                RawValueType.Token,      // RawValueType.StrGQ (Double-quoted lowercase GUID string)
+                RawValueType.StrBase64,  // Standard Base64-encoded string with 1-byte length and 1-byte padding length
+                RawValueType.StrBase64,  // Standard Base64-encoded string with 2-byte length and 1-byte padding length
+                RawValueType.StrBase64,  // URL-safe Base64-encoded string with 1-byte length and 1-byte padding length
+                RawValueType.StrBase64,  // URL-safe Base64-encoded string with 2-byte length and 1-byte padding length
+                RawValueType.Token,      // RawValueType.Lowercase GUID string
+                RawValueType.Token,      // RawValueType.Uppercase GUID string
+                RawValueType.Token,      // RawValueType.Double-quoted lowercase GUID string
 
                 // Compressed strings [0x78, 0x80)
                 RawValueType.Token,      // RawValueType.String 1-byte length - Lowercase hexadecimal digits encoded as 4-bit characters
@@ -255,6 +261,11 @@ namespace Microsoft.Azure.Cosmos.Json
             private readonly bool enableUInt64Values;
 
             /// <summary>
+            /// Determines whether to enable writing of Base64-encoded strings.
+            /// </summary>
+            private readonly bool enableBase64Strings;
+
+            /// <summary>
             /// Writer used to write fully materialized context to the internal stream.
             /// </summary>
             private readonly JsonBinaryMemoryWriter binaryWriter;
@@ -296,16 +307,19 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <param name="initialCapacity">The initial capacity to avoid intermediary allocations.</param>
             /// <param name="enableNumberArrays">Determines whether to enable writing of uniform number arrays.</param>
             /// <param name="enableUint64Values">Determines whether to enable writing of full-precision unsigned 64-bit integer values</param>
+            /// <param name="enableBase64Strings">Determines whether to enable writing of Base64-encoded strings.</param>
             /// <param name="enableEncodedStrings">Determines whether to enable reference string encoding.</param>
             public JsonBinaryWriter(
                 int initialCapacity,
                 bool enableNumberArrays,
                 bool enableUint64Values,
+                bool enableBase64Strings,
                 bool enableEncodedStrings = true,
                 IJsonStringDictionary jsonStringDictionary = null)
             {
                 this.enableNumberArrays = enableNumberArrays;
                 this.enableUInt64Values = enableUint64Values;
+                this.enableBase64Strings = enableBase64Strings;
                 this.enableEncodedStrings = enableEncodedStrings;
                 this.binaryWriter = new JsonBinaryMemoryWriter(initialCapacity);
                 this.bufferedContexts = new Stack<ArrayAndObjectInfo>();
@@ -1427,7 +1441,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
                 else if (this.enableEncodedStrings
                     && !isFieldName
-                    && JsonBinaryEncoding.TryEncodeCompressedString(utf8Span.Span, this.binaryWriter.Cursor, out int bytesWritten))
+                    && JsonBinaryEncoding.TryEncodeCompressedString(utf8Span.Span, this.binaryWriter.Cursor, this.enableBase64Strings, out int bytesWritten))
                 {
                     // Encoded value as a compressed string
                     this.binaryWriter.Position += bytesWritten;
@@ -1627,6 +1641,17 @@ namespace Microsoft.Azure.Cosmos.Json
                 bool isFieldName,
                 IJsonStringDictionary jsonStringDictionary)
             {
+                // Defense in depth against stack exhaustion on attacker-supplied
+                // buffers. The StrR1-4 reference-string cases below recurse via
+                // a byte offset read from the buffer itself, and the structural
+                // Arr / Obj cases recurse per element; both are bounded by
+                // RewriteResolvedReferenceString (reference invariant) and
+                // JsonObjectState.Push (256 nesting depth) respectively, but
+                // EnsureSufficientExecutionStack converts any escape from those
+                // checks into a catchable InsufficientExecutionStackException
+                // rather than an unrecoverable StackOverflowException.
+                RuntimeHelpers.EnsureSufficientExecutionStack();
+
                 ReadOnlyMemory<byte> rawJsonValue = rootBuffer.Slice(valueOffset);
                 byte typeMarker = rawJsonValue.Span[0];
 
@@ -1637,6 +1662,12 @@ namespace Microsoft.Azure.Cosmos.Json
                 else
                 {
                     RawValueType rawType = (RawValueType)RawValueTypes[typeMarker];
+
+                    // Check for base64 string support
+                    if (this.enableBase64Strings && (rawType == RawValueType.StrBase64))
+                    {
+                        rawType = RawValueType.Token;
+                    }
 
                     // Check for uniform number array support
                     if (this.enableNumberArrays && ((rawType == RawValueType.ArrNum) || (rawType == RawValueType.ArrArrNum)))
@@ -1679,36 +1710,42 @@ namespace Microsoft.Azure.Cosmos.Json
                             break;
 
                         case RawValueType.StrR1:
-                            this.ForceRewriteRawJsonValue(
+                            this.RewriteResolvedReferenceString(
                                 rootBuffer,
                                 JsonBinaryEncoding.GetFixedSizedValue<byte>(rawJsonValue.Slice(start: 1).Span),
-                                default,
                                 isFieldName,
                                 jsonStringDictionary);
                             break;
                         case RawValueType.StrR2:
-                            this.ForceRewriteRawJsonValue(
+                            this.RewriteResolvedReferenceString(
                                 rootBuffer,
                                 JsonBinaryEncoding.GetFixedSizedValue<ushort>(rawJsonValue.Slice(start: 1).Span),
-                                default,
                                 isFieldName,
                                 jsonStringDictionary);
                             break;
                         case RawValueType.StrR3:
-                            this.ForceRewriteRawJsonValue(
+                            this.RewriteResolvedReferenceString(
                                 rootBuffer,
                                 JsonBinaryEncoding.GetFixedSizedValue<JsonBinaryEncoding.UInt24>(rawJsonValue.Slice(start: 1).Span),
-                                default,
                                 isFieldName,
                                 jsonStringDictionary);
                             break;
                         case RawValueType.StrR4:
-                            this.ForceRewriteRawJsonValue(
+                            this.RewriteResolvedReferenceString(
                                 rootBuffer,
                                 JsonBinaryEncoding.GetFixedSizedValue<int>(rawJsonValue.Slice(start: 1).Span),
-                                default,
                                 isFieldName,
                                 jsonStringDictionary);
+                            break;
+
+                        case RawValueType.StrBase64:
+                            {
+                                Utf8String stringValue = JsonBinaryEncoding.GetUtf8StringValue(
+                                    rootBuffer,
+                                    rawJsonValue,
+                                    jsonStringDictionary: null);
+                                this.WriteStringValue(stringValue);
+                            }
                             break;
 
                         case RawValueType.Arr1:
@@ -1802,6 +1839,64 @@ namespace Microsoft.Azure.Cosmos.Json
                             throw new InvalidOperationException($"Unknown {nameof(RawValueType)} {rawType}.");
                     }
                 }
+            }
+
+            /// <summary>
+            /// Rewrites a reference string (StrR1/2/3/4) by validating that the
+            /// target offset is in-bounds and does not itself point at another
+            /// reference string, then delegating to
+            /// <see cref="ForceRewriteRawJsonValue"/>.
+            /// </summary>
+            /// <remarks>
+            /// The binary writer's invariant (enforced by
+            /// <see cref="FixReferenceStringOffsets"/>) is that every reference
+            /// string in a well-formed buffer points to a single non-reference
+            /// string value (StrL1/2/4, StrEncLen, StrUsr). In a
+            /// well-formed buffer the dereference is always exactly one hop deep.
+            ///
+            /// On a hostile / corrupted buffer the target byte could be another
+            /// StrR marker, which would let an attacker construct an arbitrarily
+            /// deep chain or a cycle (e.g. StrR1@a -> StrR1@b -> StrR1@a) that
+            /// would otherwise drive <see cref="ForceRewriteRawJsonValue"/> into
+            /// an unrecoverable <see cref="StackOverflowException"/>. This method
+            /// rejects reference-to-reference at the precise byte where the
+            /// malformation occurs with a catchable
+            /// <see cref="JsonInvalidTokenException"/>, which is strictly cheaper
+            /// than relying on a depth counter and handles cycles of any size.
+            ///
+            /// The unsigned bounds check also catches negative offsets (StrR4
+            /// reads a signed <c>int</c>) so the caller cannot index before the
+            /// start of the root buffer. Targets that are not string literals
+            /// (including other StrR markers) are rejected directly by this
+            /// helper, matching the writer-side invariant in
+            /// <see cref="FixReferenceStringOffsets"/>.
+            /// </remarks>
+            private void RewriteResolvedReferenceString(
+                ReadOnlyMemory<byte> rootBuffer,
+                int targetOffset,
+                bool isFieldName,
+                IJsonStringDictionary jsonStringDictionary)
+            {
+                if (!JsonBinaryEncoding.IsValidReferenceStringTarget(rootBuffer, targetOffset))
+                {
+                    // Writer invariant (see FixReferenceStringOffsets): an StrR
+                    // marker always resolves to a string literal in exactly one
+                    // hop. Anything else (another reference, an array/object
+                    // marker, a number, etc.) -- including an out-of-bounds or
+                    // negative offset -- is malformed and, left alone, would let
+                    // a hostile buffer build cycles or non-string targets that
+                    // recurse through ForceRewriteRawJsonValue. The shared
+                    // IsValidReferenceStringTarget predicate is the same gate the
+                    // binary reader uses; reject up front.
+                    throw new JsonInvalidTokenException();
+                }
+
+                this.ForceRewriteRawJsonValue(
+                    rootBuffer,
+                    targetOffset,
+                    externalArrayInfo: default,
+                    isFieldName: isFieldName,
+                    jsonStringDictionary: jsonStringDictionary);
             }
 
             private void WriteRawStringValue(RawValueType rawValueType, ReadOnlyMemory<byte> buffer, bool isFieldName, IJsonStringDictionary jsonStringDictionary)

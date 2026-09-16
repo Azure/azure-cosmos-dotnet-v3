@@ -1,0 +1,44 @@
+# .NET SDK PR Review Rules
+# These rules are loaded by the PR review agent via the pragentrules-resolver skill.
+# They customize review behavior for the azure-cosmos-dotnet-v3 repository.
+# Each rule starts with a dash (-) and is one per line.
+
+# --- Changelog ---
+- Do NOT flag missing changelog entries. The .NET SDK updates the changelog at release time (batch per release), not per-PR. This is different from Java/Python which update changelogs per-PR.
+
+# --- API Contracts ---
+- DO verify that UpdateContracts.ps1 was run if the PR adds, removes, or modifies any public or preview API surface. Look for corresponding changes to contract baseline files under the Contracts/ directory (e.g., DotNetSDKAPI.net6.json, DotNetSDKAPI.net8.json, and their Preview/Telemetry variants). If public API changed but contract files are not updated, flag as 🔴 Blocking.
+- DO verify that PREVIEW-only APIs are properly gated with #if PREVIEW conditional compilation. Preview APIs must not be publicly accessible in GA builds. Look for [PREVIEW] attribute usage or #if PREVIEW / #if ENCRYPTIONPREVIEW blocks.
+- DO check that new public APIs have comprehensive XML documentation including <summary>, <param>, <returns>, and <remarks> where appropriate. All edge cases and no-op scenarios should be explicitly documented.
+
+# --- PR Title and Description ---
+- DO verify that the PR title prefix matches the change scope. [Internal] should ONLY be used for changes with NO customer-facing impact. Bug fixes, API changes, feature additions, and sample code fixes that affect customers should NOT use [Internal]. Feature-area-specific prefixes like [FaultInjection], [Encryption], [LINQ], etc. are preferred for scoped changes.
+- DO verify that behavioral changes are explicitly called out in the PR description. Changes that alter runtime behavior must not be disguised as "refactoring" or "cleanup" — the PR description should clearly state what behavior changed and why.
+
+# --- Design and Architecture ---
+- DO look for design documents in the docs/ directory and the openspec/ directory for major features. If a PR introduces a significant new feature or behavioral change and no design document exists, note this as a risk (💬 Observation, not blocking).
+- DO check that new request options properties follow the unsealed pattern. RequestOptions classes should not be sealed so internal teams can extend them.
+- DO verify consistency with Azure SDK .NET guidelines (https://azure.github.io/azure-sdk/dotnet_introduction.html) where possible, but note that consistency with existing V3 public API takes priority over central SDK guidelines since V3 predates those guidelines.
+- Service-side validation is preferred over SDK-side validation for header and protocol concerns. If the SDK duplicates validation that the service already performs, flag as 🟢 Suggestion to consider removing SDK-side validation and letting the service handle it.
+
+# --- Versioning ---
+- DO check that Directory.Build.props version changes are intentional and clearly noted in the PR description. Version bumps (ClientOfficialVersion, direct package versions) should not be incidental — they should be the explicit purpose of the PR or clearly called out.
+
+# --- Exception Handling and Reliability ---
+- DO check for proper exception handling patterns following the CosmosException hierarchy. New exceptions should extend the appropriate base types.
+- DO verify cancellation token propagation on all async methods. CancellationToken parameters should be passed through the full call chain and not silently dropped.
+- DO verify IDisposable/IAsyncDisposable patterns for resource cleanup. Resources like streams, HTTP responses, and connections must be properly disposed.
+- DO check that retry policy changes (ClientRetryPolicy, ResourceThrottleRetryPolicy, etc.) correctly handle the modified code paths. Retry policies are critical infrastructure — changes can cause cascading failures.
+- DO verify handler pipeline changes maintain the chain correctly. The SDK uses a handler pipeline pattern (RequestInvokerHandler, etc.) and breaking the chain causes silent failures.
+- DO check thread safety for fields accessed across retry attempts. Fields set during ShouldRetryAsync and read in OnBeforeSendRequest have async/await memory barriers, but verify this pattern is maintained. Look for whether volatile is needed based on existing patterns (sessionTokenRetryCount, serviceUnavailableRetryCount, etc.).
+
+# --- Testing ---
+- DO verify new tests are additive, not substitutive. New feature tests should NOT replace existing test coverage for related features. If an existing test is modified, verify the original scenario is still covered (either in the same test or a new one).
+- DO check for both unit tests (Microsoft.Azure.Cosmos.Tests) AND emulator tests (Microsoft.Azure.Cosmos.EmulatorTests) when a feature touches service interaction. Unit tests alone are not sufficient for service-facing changes.
+- DO verify that tests validate error paths, not just happy paths. Retry logic, exception handling, and edge cases should have dedicated test coverage.
+- DO verify emulator tests have appropriate [TestCategory] attributes (e.g., [TestCategory("Windows")]) for platform-specific tests.
+- DO check that mock-based tests use StoreResponseNameValueCollection (not raw Mock<INameValueCollection>) when constructing DocumentClientException instances, as raw mocks may not survive internal copies.
+
+# --- Multi-region and Failover ---
+- DO verify that changes to failover logic distinguish between single-master and multi-master account configurations. Behaviors that are correct for single-master accounts may cause regressions in multi-master scenarios (e.g., Per Partition Automatic Failover headers).
+- DO check that region-routing changes consider all connectivity modes (Gateway and Direct).

@@ -13,15 +13,31 @@ namespace Microsoft.Azure.Cosmos
         public abstract string TimeoutPolicyName { get; }
         public abstract int TotalRetryCount { get; }
         public abstract IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> GetTimeoutEnumerator();
-        public abstract bool IsSafeToRetry(HttpMethod httpMethod);
 
         public abstract bool ShouldRetryBasedOnResponse(HttpMethod requestHttpMethod, HttpResponseMessage responseMessage);
 
         public virtual bool ShouldThrow503OnTimeout => false;
 
+        /// <summary>
+        /// The request timeout of the first attempt in this policy's timeout sequence.
+        /// Cross-region metadata hedging derives its hedge threshold from this value
+        /// (first-attempt timeout + a fixed step) so the threshold always sits between
+        /// the first and second HTTP attempt timeouts. See
+        /// <c>docs/metadata-hedging-simple-design.md</c> §5.
+        /// </summary>
+        public virtual TimeSpan FirstAttemptTimeout
+        {
+            get
+            {
+                using IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> e = this.GetTimeoutEnumerator();
+                return e.MoveNext() ? e.Current.requestTimeout : TimeSpan.Zero;
+            }
+        }
+
         public static HttpTimeoutPolicy GetTimeoutPolicy(
            DocumentServiceRequest documentServiceRequest,
-           bool isPartitionLevelFailoverEnabled = false)
+           bool isPartitionLevelFailoverEnabled = false,
+           bool isThinClientEnabled = false)
         {
             //Query Plan Requests
             if (documentServiceRequest.ResourceType == ResourceType.Document
@@ -43,12 +59,49 @@ namespace Microsoft.Azure.Cosmos
                 return HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout;
             }
 
-            //Data Plane Read
-            if (!HttpTimeoutPolicy.IsMetaData(documentServiceRequest) && documentServiceRequest.IsReadOnlyRequest)
+            // Distributed transaction (DTX) requests have their own retry/backoff policy
+            // (see DistributedTransactionCommitter outer loop and ClientRetryPolicy.ShouldRetryDtxRequest).
+            // They must use the default HTTP timeout policy regardless of OperationType (Read for
+            // DistributedReadTransaction vs CommitDistributedTransaction for DistributedWriteTransaction)
+            // so that read DTX is not mis-classified as a metadata-read on the control-plane hot path
+            // (1s/5s/65s timeouts), which would cancel long-running commits prematurely.
+            if (DistributedTransactionConstants.IsDistributedTransactionRequest(
+                    documentServiceRequest.OperationType,
+                    documentServiceRequest.ResourceType))
             {
-                return isPartitionLevelFailoverEnabled
-                    ? HttpTimeoutPolicyForPartitionFailover.InstanceShouldThrow503OnTimeout
-                    : HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout;
+                return HttpTimeoutPolicyDefault.Instance;
+            }
+
+            //Data Plane Operations
+            if (!HttpTimeoutPolicy.IsMetaData(documentServiceRequest))
+            {
+                if (isThinClientEnabled)
+                {
+                    if (documentServiceRequest.IsReadOnlyRequest)
+                    {
+                        return documentServiceRequest.OperationType == OperationType.Read
+                            ? HttpTimeoutPolicyForThinClient.InstanceShouldRetryAndThrow503OnTimeoutForPointReads
+                            : HttpTimeoutPolicyForThinClient.InstanceShouldRetryAndThrow503OnTimeoutForNonPointReads;
+                    }
+                    else
+                    {
+                        return HttpTimeoutPolicyForThinClient.InstanceShouldNotRetryAndThrow503OnTimeoutForWrites;
+                    }
+                }
+                // Data Plane Reads.
+                else if (documentServiceRequest.IsReadOnlyRequest)
+                {
+                    if (isPartitionLevelFailoverEnabled)
+                    {
+                        return documentServiceRequest.OperationType == OperationType.Read 
+                            ? HttpTimeoutPolicyForPartitionFailover.InstanceShouldThrow503OnTimeoutForPointReads
+                            : HttpTimeoutPolicyForPartitionFailover.InstanceShouldThrow503OnTimeoutForNonPointReads;
+                    }
+                    else
+                    {
+                         return HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout;
+                    }
+                }
             }
 
             //Meta Data Read

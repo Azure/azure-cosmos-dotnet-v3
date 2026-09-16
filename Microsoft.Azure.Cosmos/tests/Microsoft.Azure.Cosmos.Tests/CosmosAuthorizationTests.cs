@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net.Http;
     using System.Reflection;
     using System.Security.Cryptography.X509Certificates;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure.Core;
@@ -85,13 +86,15 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task TokenAuthAsync()
         {
             LocalEmulatorTokenCredential simpleEmulatorTokenCredential = new LocalEmulatorTokenCredential(
-                "VGhpcyBpcyBhIHNhbXBsZSBzdHJpbmc=",
+                expectedScope: "https://127.0.0.1/.default",
+                masterKey: "VGhpcyBpcyBhIHNhbXBsZSBzdHJpbmc=",
                 defaultDateTime: new DateTime(2030, 9, 21, 9, 9, 9, DateTimeKind.Utc));
 
             using AuthorizationTokenProvider cosmosAuthorization = new AuthorizationTokenProviderTokenCredential(
                 simpleEmulatorTokenCredential,
                 new Uri("https://127.0.0.1:8081"),
-                backgroundTokenCredentialRefreshInterval: TimeSpan.FromSeconds(1));
+                backgroundTokenCredentialRefreshInterval: TimeSpan.FromSeconds(1),
+                AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
 
             {
                 StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
@@ -103,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     AuthorizationTokenType.PrimaryMasterKey);
 
                 Assert.AreEqual(
-                    "type%3daad%26ver%3d1.0%26sig%3dew0KICAgICAgICAgICAgICAgICJhbGciOiJSUzI1NiIsDQogICAgICAgICAgICAgICAgImtpZCI6InhfOUtTdXNLVTVZY0hmNCIsDQogICAgICAgICAgICAgICAgInR5cCI6IkpXVCINCiAgICAgICAgICAgIH0.ew0KICAgICAgICAgICAgICAgICJvaWQiOiI5NjMxMzAzNC00NzM5LTQzY2ItOTNjZC03NDE5M2FkYmU1YjYiLA0KICAgICAgICAgICAgICAgICJ0aWQiOiI3YjE5OTlhMS1kZmQ3LTQ0MGUtODIwNC0wMDE3MDk3OWI5ODQiLA0KICAgICAgICAgICAgICAgICJzY3AiOiJ1c2VyX2ltcGVyc29uYXRpb24iLA0KICAgICAgICAgICAgICAgICJncm91cHMiOlsNCiAgICAgICAgICAgICAgICAgICAgIjdjZTFkMDAzLTRjYjMtNDg3OS1iN2M1LTc0MDYyYTM1YzY2ZSIsDQogICAgICAgICAgICAgICAgICAgICJlOTlmZjMwYy1jMjI5LTRjNjctYWIyOS0zMGE2YWViYzNlNTgiLA0KICAgICAgICAgICAgICAgICAgICAiNTU0OWJiNjItYzc3Yi00MzA1LWJkYTktOWVjNjZiODVkOWU0IiwNCiAgICAgICAgICAgICAgICAgICAgImM0NGZkNjg1LTVjNTgtNDUyYy1hYWY3LTEzY2U3NTE4NGY2NSIsDQogICAgICAgICAgICAgICAgICAgICJiZTg5NTIxNS1lYWI1LTQzYjctOTUzNi05ZWY4ZmUxMzAzMzAiDQogICAgICAgICAgICAgICAgXSwNCiAgICAgICAgICAgICAgICAibmJmIjoxOTE2MjEyMTQ5LA0KICAgICAgICAgICAgICAgICJleHAiOjE5MTYyMTU3NDksDQogICAgICAgICAgICAgICAgImlhdCI6MTU5NjU5MjMzNSwNCiAgICAgICAgICAgICAgICAiaXNzIjoiaHR0cHM6Ly9zdHMuZmFrZS1pc3N1ZXIubmV0LzdiMTk5OWExLWRmZDctNDQwZS04MjA0LTAwMTcwOTc5Yjk4NCIsDQogICAgICAgICAgICAgICAgImF1ZCI6Imh0dHBzOi8vbG9jYWxob3N0LmxvY2FsaG9zdCINCiAgICAgICAgICAgIH0.VkdocGN5QnBjeUJoSUhOaGJYQnNaU0J6ZEhKcGJtYz0",
+                    "type%3daad%26ver%3d1.0%26sig%3dewogICAgICAgICAgICAgICAgImFsZyI6IlJTMjU2IiwKICAgICAgICAgICAgICAgICJraWQiOiJ4XzlLU3VzS1U1WWNIZjQiLAogICAgICAgICAgICAgICAgInR5cCI6IkpXVCIKICAgICAgICAgICAgfQ.ewogICAgICAgICAgICAgICAgIm9pZCI6Ijk2MzEzMDM0LTQ3MzktNDNjYi05M2NkLTc0MTkzYWRiZTViNiIsCiAgICAgICAgICAgICAgICAidGlkIjoiN2IxOTk5YTEtZGZkNy00NDBlLTgyMDQtMDAxNzA5NzliOTg0IiwKICAgICAgICAgICAgICAgICJzY3AiOiJ1c2VyX2ltcGVyc29uYXRpb24iLAogICAgICAgICAgICAgICAgImdyb3VwcyI6WwogICAgICAgICAgICAgICAgICAgICI3Y2UxZDAwMy00Y2IzLTQ4NzktYjdjNS03NDA2MmEzNWM2NmUiLAogICAgICAgICAgICAgICAgICAgICJlOTlmZjMwYy1jMjI5LTRjNjctYWIyOS0zMGE2YWViYzNlNTgiLAogICAgICAgICAgICAgICAgICAgICI1NTQ5YmI2Mi1jNzdiLTQzMDUtYmRhOS05ZWM2NmI4NWQ5ZTQiLAogICAgICAgICAgICAgICAgICAgICJjNDRmZDY4NS01YzU4LTQ1MmMtYWFmNy0xM2NlNzUxODRmNjUiLAogICAgICAgICAgICAgICAgICAgICJiZTg5NTIxNS1lYWI1LTQzYjctOTUzNi05ZWY4ZmUxMzAzMzAiCiAgICAgICAgICAgICAgICBdLAogICAgICAgICAgICAgICAgIm5iZiI6MTkxNjIxMjE0OSwKICAgICAgICAgICAgICAgICJleHAiOjE5MTYyMTU3NDksCiAgICAgICAgICAgICAgICAiaWF0IjoxNTk2NTkyMzM1LAogICAgICAgICAgICAgICAgImlzcyI6Imh0dHBzOi8vc3RzLmZha2UtaXNzdWVyLm5ldC83YjE5OTlhMS1kZmQ3LTQ0MGUtODIwNC0wMDE3MDk3OWI5ODQiLAogICAgICAgICAgICAgICAgImF1ZCI6Imh0dHBzOi8vbG9jYWxob3N0LmxvY2FsaG9zdCIKICAgICAgICAgICAgfQ.VkdocGN5QnBjeUJoSUhOaGJYQnNaU0J6ZEhKcGJtYz0",
                     token);
                 Assert.IsNull(payload);
             }
@@ -118,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     AuthorizationTokenType.PrimaryMasterKey);
 
                 Assert.AreEqual(
-                    "type%3daad%26ver%3d1.0%26sig%3dew0KICAgICAgICAgICAgICAgICJhbGciOiJSUzI1NiIsDQogICAgICAgICAgICAgICAgImtpZCI6InhfOUtTdXNLVTVZY0hmNCIsDQogICAgICAgICAgICAgICAgInR5cCI6IkpXVCINCiAgICAgICAgICAgIH0.ew0KICAgICAgICAgICAgICAgICJvaWQiOiI5NjMxMzAzNC00NzM5LTQzY2ItOTNjZC03NDE5M2FkYmU1YjYiLA0KICAgICAgICAgICAgICAgICJ0aWQiOiI3YjE5OTlhMS1kZmQ3LTQ0MGUtODIwNC0wMDE3MDk3OWI5ODQiLA0KICAgICAgICAgICAgICAgICJzY3AiOiJ1c2VyX2ltcGVyc29uYXRpb24iLA0KICAgICAgICAgICAgICAgICJncm91cHMiOlsNCiAgICAgICAgICAgICAgICAgICAgIjdjZTFkMDAzLTRjYjMtNDg3OS1iN2M1LTc0MDYyYTM1YzY2ZSIsDQogICAgICAgICAgICAgICAgICAgICJlOTlmZjMwYy1jMjI5LTRjNjctYWIyOS0zMGE2YWViYzNlNTgiLA0KICAgICAgICAgICAgICAgICAgICAiNTU0OWJiNjItYzc3Yi00MzA1LWJkYTktOWVjNjZiODVkOWU0IiwNCiAgICAgICAgICAgICAgICAgICAgImM0NGZkNjg1LTVjNTgtNDUyYy1hYWY3LTEzY2U3NTE4NGY2NSIsDQogICAgICAgICAgICAgICAgICAgICJiZTg5NTIxNS1lYWI1LTQzYjctOTUzNi05ZWY4ZmUxMzAzMzAiDQogICAgICAgICAgICAgICAgXSwNCiAgICAgICAgICAgICAgICAibmJmIjoxOTE2MjEyMTQ5LA0KICAgICAgICAgICAgICAgICJleHAiOjE5MTYyMTU3NDksDQogICAgICAgICAgICAgICAgImlhdCI6MTU5NjU5MjMzNSwNCiAgICAgICAgICAgICAgICAiaXNzIjoiaHR0cHM6Ly9zdHMuZmFrZS1pc3N1ZXIubmV0LzdiMTk5OWExLWRmZDctNDQwZS04MjA0LTAwMTcwOTc5Yjk4NCIsDQogICAgICAgICAgICAgICAgImF1ZCI6Imh0dHBzOi8vbG9jYWxob3N0LmxvY2FsaG9zdCINCiAgICAgICAgICAgIH0.VkdocGN5QnBjeUJoSUhOaGJYQnNaU0J6ZEhKcGJtYz0", token);
+                    "type%3daad%26ver%3d1.0%26sig%3dewogICAgICAgICAgICAgICAgImFsZyI6IlJTMjU2IiwKICAgICAgICAgICAgICAgICJraWQiOiJ4XzlLU3VzS1U1WWNIZjQiLAogICAgICAgICAgICAgICAgInR5cCI6IkpXVCIKICAgICAgICAgICAgfQ.ewogICAgICAgICAgICAgICAgIm9pZCI6Ijk2MzEzMDM0LTQ3MzktNDNjYi05M2NkLTc0MTkzYWRiZTViNiIsCiAgICAgICAgICAgICAgICAidGlkIjoiN2IxOTk5YTEtZGZkNy00NDBlLTgyMDQtMDAxNzA5NzliOTg0IiwKICAgICAgICAgICAgICAgICJzY3AiOiJ1c2VyX2ltcGVyc29uYXRpb24iLAogICAgICAgICAgICAgICAgImdyb3VwcyI6WwogICAgICAgICAgICAgICAgICAgICI3Y2UxZDAwMy00Y2IzLTQ4NzktYjdjNS03NDA2MmEzNWM2NmUiLAogICAgICAgICAgICAgICAgICAgICJlOTlmZjMwYy1jMjI5LTRjNjctYWIyOS0zMGE2YWViYzNlNTgiLAogICAgICAgICAgICAgICAgICAgICI1NTQ5YmI2Mi1jNzdiLTQzMDUtYmRhOS05ZWM2NmI4NWQ5ZTQiLAogICAgICAgICAgICAgICAgICAgICJjNDRmZDY4NS01YzU4LTQ1MmMtYWFmNy0xM2NlNzUxODRmNjUiLAogICAgICAgICAgICAgICAgICAgICJiZTg5NTIxNS1lYWI1LTQzYjctOTUzNi05ZWY4ZmUxMzAzMzAiCiAgICAgICAgICAgICAgICBdLAogICAgICAgICAgICAgICAgIm5iZiI6MTkxNjIxMjE0OSwKICAgICAgICAgICAgICAgICJleHAiOjE5MTYyMTU3NDksCiAgICAgICAgICAgICAgICAiaWF0IjoxNTk2NTkyMzM1LAogICAgICAgICAgICAgICAgImlzcyI6Imh0dHBzOi8vc3RzLmZha2UtaXNzdWVyLm5ldC83YjE5OTlhMS1kZmQ3LTQ0MGUtODIwNC0wMDE3MDk3OWI5ODQiLAogICAgICAgICAgICAgICAgImF1ZCI6Imh0dHBzOi8vbG9jYWxob3N0LmxvY2FsaG9zdCIKICAgICAgICAgICAgfQ.VkdocGN5QnBjeUJoSUhOaGJYQnNaU0J6ZEhKcGJtYz0", token);
                 Assert.IsNull(payload);
             }
 
@@ -132,8 +135,117 @@ namespace Microsoft.Azure.Cosmos.Tests
                     AuthorizationTokenType.PrimaryMasterKey);
 
                 Assert.AreEqual(
-                    "type%3daad%26ver%3d1.0%26sig%3dew0KICAgICAgICAgICAgICAgICJhbGciOiJSUzI1NiIsDQogICAgICAgICAgICAgICAgImtpZCI6InhfOUtTdXNLVTVZY0hmNCIsDQogICAgICAgICAgICAgICAgInR5cCI6IkpXVCINCiAgICAgICAgICAgIH0.ew0KICAgICAgICAgICAgICAgICJvaWQiOiI5NjMxMzAzNC00NzM5LTQzY2ItOTNjZC03NDE5M2FkYmU1YjYiLA0KICAgICAgICAgICAgICAgICJ0aWQiOiI3YjE5OTlhMS1kZmQ3LTQ0MGUtODIwNC0wMDE3MDk3OWI5ODQiLA0KICAgICAgICAgICAgICAgICJzY3AiOiJ1c2VyX2ltcGVyc29uYXRpb24iLA0KICAgICAgICAgICAgICAgICJncm91cHMiOlsNCiAgICAgICAgICAgICAgICAgICAgIjdjZTFkMDAzLTRjYjMtNDg3OS1iN2M1LTc0MDYyYTM1YzY2ZSIsDQogICAgICAgICAgICAgICAgICAgICJlOTlmZjMwYy1jMjI5LTRjNjctYWIyOS0zMGE2YWViYzNlNTgiLA0KICAgICAgICAgICAgICAgICAgICAiNTU0OWJiNjItYzc3Yi00MzA1LWJkYTktOWVjNjZiODVkOWU0IiwNCiAgICAgICAgICAgICAgICAgICAgImM0NGZkNjg1LTVjNTgtNDUyYy1hYWY3LTEzY2U3NTE4NGY2NSIsDQogICAgICAgICAgICAgICAgICAgICJiZTg5NTIxNS1lYWI1LTQzYjctOTUzNi05ZWY4ZmUxMzAzMzAiDQogICAgICAgICAgICAgICAgXSwNCiAgICAgICAgICAgICAgICAibmJmIjoxOTE2MjEyMTQ5LA0KICAgICAgICAgICAgICAgICJleHAiOjE5MTYyMTU3NDksDQogICAgICAgICAgICAgICAgImlhdCI6MTU5NjU5MjMzNSwNCiAgICAgICAgICAgICAgICAiaXNzIjoiaHR0cHM6Ly9zdHMuZmFrZS1pc3N1ZXIubmV0LzdiMTk5OWExLWRmZDctNDQwZS04MjA0LTAwMTcwOTc5Yjk4NCIsDQogICAgICAgICAgICAgICAgImF1ZCI6Imh0dHBzOi8vbG9jYWxob3N0LmxvY2FsaG9zdCINCiAgICAgICAgICAgIH0.VkdocGN5QnBjeUJoSUhOaGJYQnNaU0J6ZEhKcGJtYz0", token);
+                    "type%3daad%26ver%3d1.0%26sig%3dewogICAgICAgICAgICAgICAgImFsZyI6IlJTMjU2IiwKICAgICAgICAgICAgICAgICJraWQiOiJ4XzlLU3VzS1U1WWNIZjQiLAogICAgICAgICAgICAgICAgInR5cCI6IkpXVCIKICAgICAgICAgICAgfQ.ewogICAgICAgICAgICAgICAgIm9pZCI6Ijk2MzEzMDM0LTQ3MzktNDNjYi05M2NkLTc0MTkzYWRiZTViNiIsCiAgICAgICAgICAgICAgICAidGlkIjoiN2IxOTk5YTEtZGZkNy00NDBlLTgyMDQtMDAxNzA5NzliOTg0IiwKICAgICAgICAgICAgICAgICJzY3AiOiJ1c2VyX2ltcGVyc29uYXRpb24iLAogICAgICAgICAgICAgICAgImdyb3VwcyI6WwogICAgICAgICAgICAgICAgICAgICI3Y2UxZDAwMy00Y2IzLTQ4NzktYjdjNS03NDA2MmEzNWM2NmUiLAogICAgICAgICAgICAgICAgICAgICJlOTlmZjMwYy1jMjI5LTRjNjctYWIyOS0zMGE2YWViYzNlNTgiLAogICAgICAgICAgICAgICAgICAgICI1NTQ5YmI2Mi1jNzdiLTQzMDUtYmRhOS05ZWM2NmI4NWQ5ZTQiLAogICAgICAgICAgICAgICAgICAgICJjNDRmZDY4NS01YzU4LTQ1MmMtYWFmNy0xM2NlNzUxODRmNjUiLAogICAgICAgICAgICAgICAgICAgICJiZTg5NTIxNS1lYWI1LTQzYjctOTUzNi05ZWY4ZmUxMzAzMzAiCiAgICAgICAgICAgICAgICBdLAogICAgICAgICAgICAgICAgIm5iZiI6MTkxNjIxMjE0OSwKICAgICAgICAgICAgICAgICJleHAiOjE5MTYyMTU3NDksCiAgICAgICAgICAgICAgICAiaWF0IjoxNTk2NTkyMzM1LAogICAgICAgICAgICAgICAgImlzcyI6Imh0dHBzOi8vc3RzLmZha2UtaXNzdWVyLm5ldC83YjE5OTlhMS1kZmQ3LTQ0MGUtODIwNC0wMDE3MDk3OWI5ODQiLAogICAgICAgICAgICAgICAgImF1ZCI6Imh0dHBzOi8vbG9jYWxob3N0LmxvY2FsaG9zdCIKICAgICAgICAgICAgfQ.VkdocGN5QnBjeUJoSUhOaGJYQnNaU0J6ZEhKcGJtYz0", token);
                 Assert.IsNull(payload);
+            }
+        }
+
+        [TestMethod]
+        public async Task AadAuthorizationSignatureCaching_ReturnsCachedResultForSameToken()
+        {
+            Mock<TokenCredential> mockCredential = new Mock<TokenCredential>();
+            mockCredential.Setup(c => c.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new AccessToken("test-aad-token-value", DateTimeOffset.UtcNow.AddHours(1)));
+
+            using TokenCredentialCache cache = new TokenCredentialCache(
+                mockCredential.Object,
+                CosmosAuthorizationTests.AccountEndpoint,
+                backgroundTokenCredentialRefreshInterval: TimeSpan.MaxValue,
+                tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
+
+            using ITrace trace = Cosmos.Tracing.Trace.GetRootTrace("test");
+            string result1 = await cache.GetTokenAuthorizationHeaderAsync(trace);
+            string result2 = await cache.GetTokenAuthorizationHeaderAsync(trace);
+
+            // Same reference means the cached value was returned (not recomputed)
+            Assert.AreSame(result1, result2, "Expected cached authorization header to be returned for the same token.");
+
+            // Verify the result matches the static method
+            string expected = AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature("test-aad-token-value");
+            Assert.AreEqual(expected, result1);
+
+            // Token credential should only be called once (cached after that)
+            mockCredential.Verify(c => c.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task AadAuthorizationSignatureCaching_RecomputesForNewToken()
+        {
+            int callCount = 0;
+            Mock<TokenCredential> mockCredential = new Mock<TokenCredential>();
+            mockCredential.Setup(c => c.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(() =>
+                {
+                    callCount++;
+                    return callCount == 1
+                        ? new AccessToken("first-aad-token", DateTimeOffset.UtcNow.AddMilliseconds(1))
+                        : new AccessToken("second-aad-token", DateTimeOffset.UtcNow.AddHours(1));
+                });
+
+            using TokenCredentialCache cache = new TokenCredentialCache(
+                mockCredential.Object,
+                CosmosAuthorizationTests.AccountEndpoint,
+                backgroundTokenCredentialRefreshInterval: TimeSpan.MaxValue,
+                tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
+
+            using ITrace trace = Cosmos.Tracing.Trace.GetRootTrace("test");
+            string result1 = await cache.GetTokenAuthorizationHeaderAsync(trace);
+
+            // Wait for first token to expire
+            await Task.Delay(50);
+
+            string result2 = await cache.GetTokenAuthorizationHeaderAsync(trace);
+
+            Assert.AreNotEqual(result1, result2, "Different tokens should produce different authorization headers.");
+
+            string expected1 = AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature("first-aad-token");
+            string expected2 = AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature("second-aad-token");
+            Assert.AreEqual(expected1, result1);
+            Assert.AreEqual(expected2, result2);
+        }
+
+        [DataTestMethod]
+        [DataRow("https://env-override/.default", "https://env-override/.default", DisplayName = "EnvVarOverride")]
+        [DataRow("https://cosmos.azure.com/.default", "https://cosmos.azure.com/.default", DisplayName = "EnvVarOverride_Fabric")]
+        [DataRow(null, "https://anyhost.documents.azure.com/.default", DisplayName = "NoEnvVar_DefaultScope")]
+        public async Task TokenCredentialCache_SetsCorrectScope_EnvOverrideOrDefault(string envVarValue, string expectedScope)
+        {
+            Environment.SetEnvironmentVariable("AZURE_COSMOS_AAD_SCOPE_OVERRIDE", envVarValue);
+
+            try
+            {
+                string anyHost = "anyhost.documents.azure.com";
+                Uri anyUri = new Uri($"https://{anyHost}");
+
+                LocalEmulatorTokenCredential credential = new LocalEmulatorTokenCredential(
+                    masterKey: "testkey",
+                    expectedScope: expectedScope);
+
+                using (AuthorizationTokenProvider authorization = new AuthorizationTokenProviderTokenCredential(
+                    credential,
+                    anyUri,
+                    backgroundTokenCredentialRefreshInterval: TimeSpan.FromSeconds(1),
+                    AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature))
+                {
+                    StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
+                    (string token, string payload) = await authorization.GetUserAuthorizationAsync(
+                        "dbs\\test",
+                        ResourceType.Database.ToResourceTypeString(),
+                        "GET",
+                        headers,
+                        AuthorizationTokenType.PrimaryMasterKey);
+
+                    Assert.IsFalse(string.IsNullOrEmpty(token));
+                    Assert.IsNull(payload);
+                }
+            }
+            catch (Exception ex)
+            {
+                Assert.Fail($"Test failed with exception: {ex}");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_AAD_SCOPE_OVERRIDE", null);
             }
         }
 
@@ -146,7 +258,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new TokenCredentialCache(
                     new Mock<TokenCredential>().Object,
                     CosmosAuthorizationTests.AccountEndpoint,
-                    backgroundTokenCredentialRefreshInterval: toLarge);
+                    backgroundTokenCredentialRefreshInterval: toLarge,
+                    tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
                 Assert.Fail("Should throw ArgumentException");
             }
             catch (ArgumentException ae)
@@ -159,7 +272,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new TokenCredentialCache(
                     new Mock<TokenCredential>().Object,
                     CosmosAuthorizationTests.AccountEndpoint,
-                    backgroundTokenCredentialRefreshInterval: TimeSpan.MinValue);
+                    backgroundTokenCredentialRefreshInterval: TimeSpan.MinValue,
+                    tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
                 Assert.Fail("Should throw ArgumentException");
             }
             catch (ArgumentException ae)
@@ -172,7 +286,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new TokenCredentialCache(
                     new Mock<TokenCredential>().Object,
                     CosmosAuthorizationTests.AccountEndpoint,
-                    backgroundTokenCredentialRefreshInterval: TimeSpan.Zero);
+                    backgroundTokenCredentialRefreshInterval: TimeSpan.Zero,
+                    tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
                 Assert.Fail("Should throw ArgumentException");
             }
             catch (ArgumentException ae)
@@ -185,7 +300,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new TokenCredentialCache(
                     new Mock<TokenCredential>().Object,
                     CosmosAuthorizationTests.AccountEndpoint,
-                    backgroundTokenCredentialRefreshInterval: TimeSpan.FromMilliseconds(-1));
+                    backgroundTokenCredentialRefreshInterval: TimeSpan.FromMilliseconds(-1),
+                    tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
                 Assert.Fail("Should throw ArgumentException");
             }
             catch (ArgumentException ae)
@@ -197,12 +313,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             using TokenCredentialCache token = new TokenCredentialCache(
                     new Mock<TokenCredential>().Object,
                     CosmosAuthorizationTests.AccountEndpoint,
-                    backgroundTokenCredentialRefreshInterval: TimeSpan.FromMilliseconds(Int32.MaxValue));
+                    backgroundTokenCredentialRefreshInterval: TimeSpan.FromMilliseconds(Int32.MaxValue),
+                    tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
 
             using TokenCredentialCache disableBackgroundTask = new TokenCredentialCache(
                    new Mock<TokenCredential>().Object,
                    CosmosAuthorizationTests.AccountEndpoint,
-                   backgroundTokenCredentialRefreshInterval: TimeSpan.MaxValue);
+                   backgroundTokenCredentialRefreshInterval: TimeSpan.MaxValue,
+                   tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
         }
 
         [TestMethod]
@@ -228,8 +346,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 try
                 {
-                    await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton);
-                    Assert.Fail("TokenCredentialCache.GetTokenAsync() is expected to fail but succeeded");
+                    await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton);
+                    Assert.Fail("TokenCredentialCache.GetTokenAuthorizationHeaderAsync() is expected to fail but succeeded");
                 }
                 catch (Exception exception)
                 {
@@ -240,7 +358,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         exceptionToBeThrown));
                 }
 
-                // TokenCredential.GetTokenAsync() is retried for 3 times, so it should have been invoked for 4 times.
+                // TokenCredential.GetTokenAuthorizationHeaderAsync() is retried for 3 times, so it should have been invoked for 4 times.
                 Assert.AreEqual(2, testTokenCredential.NumTimesInvoked);
                 this.ValidateSemaphoreIsReleased(tokenCredentialCache);
             }
@@ -273,24 +391,26 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             using (TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential))
             {
-                string t1 = await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton);
-                Assert.AreEqual(token1, t1);
+                string t1 = await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton);
+                Assert.AreEqual(AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(token1), t1);
 
                 // Token is valid for 6 seconds. Client TokenCredentialRefreshBuffer is set to 5 seconds.
                 // After waiting for 2 seconds, the cache token is still valid, but it will be refreshed in the background.
                 await Task.Delay(TimeSpan.FromSeconds(2));
 
-                string t2 = await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton);
-                Assert.AreEqual(token1, t2);
+                string t2 = await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton);
+                Assert.AreEqual(AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(token1), t2);
 
                 // Wait until the background refresh occurs.
+                Stopwatch sw = Stopwatch.StartNew();
                 while (testTokenCredential.NumTimesInvoked == 1)
                 {
-                    await Task.Delay(500);
+                    Assert.IsTrue(sw.Elapsed < TimeSpan.FromSeconds(20), "Background token refresh did not occur within 20 seconds.");
+                    await Task.Delay(200);
                 }
 
-                string t3 = await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton);
-                Assert.AreEqual(token2, t3);
+                string t3 = await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton);
+                Assert.AreEqual(AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(token2), t3);
 
                 Assert.AreEqual(2, testTokenCredential.NumTimesInvoked);
                 this.ValidateSemaphoreIsReleased(tokenCredentialCache);
@@ -320,11 +440,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential, TimeSpan.FromMilliseconds(100));
-            string t1 = await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton);
+            string t1 = await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton);
             this.ValidateSemaphoreIsReleased(tokenCredentialCache);
 
             tokenCredentialCache.Dispose();
-            Assert.AreEqual(token1, t1);
+            Assert.AreEqual(AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(token1), t1);
 
             await Task.Delay(1000);
         }
@@ -362,14 +482,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             using ITrace trace = Cosmos.Tracing.Trace.GetRootTrace("test");
             using (TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential))
             {
-                Assert.AreEqual(token, await tokenCredentialCache.GetTokenAsync(trace));
+                Assert.AreEqual(AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(token), await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(trace));
                 Assert.AreEqual(1, testTokenCredential.NumTimesInvoked);
                 throwExceptionOnGetToken = true;
 
                 // Token is valid for 10 seconds. Client TokenCredentialRefreshBuffer is set to 5 seconds.
                 // After waiting for 2 seconds, the cache token is still valid, but it will be refreshed in the background.
                 await Task.Delay(TimeSpan.FromSeconds(2));
-                Assert.AreEqual(token, await tokenCredentialCache.GetTokenAsync(trace));
+                Assert.AreEqual(AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(token), await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(trace));
                 Assert.AreEqual(1, testTokenCredential.NumTimesInvoked);
 
                 // Token refreshes fails except for the first time, but the cached token will be served as long as it is valid.
@@ -380,7 +500,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Assert.IsTrue(stopwatch.Elapsed.TotalSeconds < 10, "The background task did not start in 10 seconds");
                     await Task.Delay(200);
                 }
-                Assert.AreEqual(token, await tokenCredentialCache.GetTokenAsync(trace));
+                Assert.AreEqual(AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(token), await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(trace));
                 Assert.AreEqual(3, testTokenCredential.NumTimesInvoked, $"The cached token was not used. Waited time for background refresh: {stopwatch.Elapsed.TotalSeconds} seconds");
 
                 // Cache token has expired, and it fails to refresh.
@@ -395,8 +515,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     {
                         try
                         {
-                            await tokenCredentialCache.GetTokenAsync(trace);
-                            Assert.Fail("TokenCredentialCache.GetTokenAsync() is expected to fail but succeeded");
+                            await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(trace);
+                            Assert.Fail("TokenCredentialCache.GetTokenAuthorizationHeaderAsync() is expected to fail but succeeded");
                         }
                         catch (Exception thrownException)
                         {
@@ -421,7 +541,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 tasks = new List<Task>();
                 for (int i = 0; i < 40; i++)
                 {
-                    Task task = Task.Run(async () => await tokenCredentialCache.GetTokenAsync(trace));
+                    Task task = Task.Run(async () => await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(trace));
                     tasks.Add(task);
                 }
 
@@ -434,7 +554,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task TestTokenCredentialMultiThreadAsync()
         {
-            // When multiple thread calls TokenCredentialCache.GetTokenAsync and a valid cached token
+            // When multiple thread calls TokenCredentialCache.GetTokenAuthorizationHeaderAsync and a valid cached token
             // is not available, TokenCredentialCache will only create one task to get token.
             int numTasks = 100;
             bool delayTokenRefresh = true;
@@ -481,6 +601,765 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        [TestMethod]
+        [DataRow("Bearer error=\"insufficient_claims\", claims=\"eyJhY2Nlc3NfdG9rZW4iOnt9fQ==\"", true, DisplayName = "With insufficient_claims")]
+        [DataRow("Bearer claims=\"eyJhY2Nlc3NfdG9rZW4iOnt9fQ==\"", true, DisplayName = "With claims only")]
+        [DataRow("Bearer realm=\"test\"", false, DisplayName = "Without claims challenge")]
+        [DataRow("", false, DisplayName = "Empty header")]
+        public void TryHandleTokenRevocation_VariousHeaders(string wwwAuthenticateValue, bool expectedResult)
+        {
+            Environment.SetEnvironmentVariable(ConfigurationManager.AadTokenRevocationEnabled, "True");
+
+            try
+            {
+                // Arrange
+                Mock<TokenCredential> mockTokenCredential = new Mock<TokenCredential>();
+                mockTokenCredential
+                    .Setup(x => x.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new AccessToken("test-token", DateTimeOffset.MaxValue));
+
+                using AuthorizationTokenProviderTokenCredential tokenProvider = new AuthorizationTokenProviderTokenCredential(
+                    mockTokenCredential.Object,
+                    CosmosAuthorizationTests.AccountEndpoint,
+                    backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(5),
+                    tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
+
+                // Act
+                bool result = tokenProvider.TryHandleTokenRevocation(HttpStatusCode.Unauthorized, wwwAuthenticateValue);
+
+                // Assert
+                Assert.AreEqual(expectedResult, result);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.AadTokenRevocationEnabled, "False");
+            }
+        }
+
+        [TestMethod]
+        [DataRow(HttpStatusCode.Forbidden)]
+        [DataRow(HttpStatusCode.BadRequest)]
+        [DataRow(HttpStatusCode.NotFound)]
+        public void TryHandleTokenRevocation_NonUnauthorizedStatus_ReturnsFalse(HttpStatusCode statusCode)
+        {
+            Environment.SetEnvironmentVariable(ConfigurationManager.AadTokenRevocationEnabled, "True");
+
+            try
+            {
+                // Arrange
+                Mock<TokenCredential> mockTokenCredential = new Mock<TokenCredential>();
+                mockTokenCredential
+                    .Setup(x => x.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new AccessToken("test-token", DateTimeOffset.MaxValue));
+
+                using AuthorizationTokenProviderTokenCredential tokenProvider = new AuthorizationTokenProviderTokenCredential(
+                    mockTokenCredential.Object,
+                    CosmosAuthorizationTests.AccountEndpoint,
+                    backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(5),
+                    tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
+
+                string wwwAuthenticateValue = "Bearer error=\"insufficient_claims\", claims=\"eyJhY2Nlc3NfdG9rZW4iOnt9fQ==\"";
+
+                // Act
+                bool result = tokenProvider.TryHandleTokenRevocation(statusCode, wwwAuthenticateValue);
+                // Assert
+                Assert.IsFalse(result);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.AadTokenRevocationEnabled, "False");
+            }
+        }
+
+        [TestMethod]
+        [DataRow(null, DisplayName = "Null claims")]
+        [DataRow("", DisplayName = "Empty claims")]
+        public void MergeClaimsWithClientCapabilities_NullOrEmpty_ReturnsNull(string claimsChallenge)
+        {
+            // No revocation / CAE challenge outstanding => no claims must be attached, so the
+            // credential's own token cache stays usable (a non-empty 'claims' forces MSAL to
+            // bypass its cache and go live to ESTS on every acquisition).
+            // Act
+            string result = TokenCredentialCache.MergeClaimsWithClientCapabilities(claimsChallenge);
+
+            // Assert
+            Assert.IsNull(result);
+        }
+
+        [TestMethod]
+        [DataRow("not-valid-base64!!!", "{\"access_token\":{\"xms_cc\":{\"values\":[\"cp1\"]}}}", DisplayName = "Invalid base64")]
+        public void MergeClaimsWithClientCapabilities_InvalidChallenge_ReturnsOnlyCp1(string claimsChallenge, string expected)
+        {
+            // A non-empty but malformed challenge still means a challenge occurred, so we fall
+            // back to attaching only the cp1 client capability.
+            // Act
+            string result = TokenCredentialCache.MergeClaimsWithClientCapabilities(claimsChallenge);
+
+            // Assert
+            Assert.AreEqual(expected, result);
+        }
+
+        [TestMethod]
+        public void MergeClaimsWithClientCapabilities_ValidClaims_MergesWithCp1()
+        {
+            // Arrange - Base64 encoded: {"access_token":{"acrs":{"essential":true,"value":"c1"}}}
+            string claimsChallenge = "eyJhY2Nlc3NfdG9rZW4iOnsiYWNycyI6eyJlc3NlbnRpYWwiOnRydWUsInZhbHVlIjoiYzEifX19";
+
+            // Act
+            string result = TokenCredentialCache.MergeClaimsWithClientCapabilities(claimsChallenge);
+
+            // Assert
+            Assert.IsTrue(result.Contains("\"xms_cc\":{\"values\":[\"cp1\"]}"), "Should contain cp1");
+            Assert.IsTrue(result.Contains("\"acrs\""), "Should contain original claims");
+        }
+
+        [DataTestMethod]
+        // {"access_token":{}}
+        [DataRow("eyJhY2Nlc3NfdG9rZW4iOnt9fQ==", DisplayName = "Empty access_token object")]
+        // {"access_token":{"nbf":{"essential":true,"value":"1"}}} - real revocation shape
+        [DataRow("eyJhY2Nlc3NfdG9rZW4iOnsibmJmIjp7ImVzc2VudGlhbCI6dHJ1ZSwidmFsdWUiOiIxIn19fQ==", DisplayName = "nbf revocation shape")]
+        // {"access_token":{"nonce":"a}b"}} - brace inside a string value
+        [DataRow("eyJhY2Nlc3NfdG9rZW4iOnsibm9uY2UiOiJhfWIifX0=", DisplayName = "Brace inside string value")]
+        // {"access_token":{"xms_cc":{"values":["cp2"]},"nbf":{"value":"1"}}} - pre-existing xms_cc must be overwritten
+        [DataRow("eyJhY2Nlc3NfdG9rZW4iOnsieG1zX2NjIjp7InZhbHVlcyI6WyJjcDIiXX0sIm5iZiI6eyJ2YWx1ZSI6IjEifX19", DisplayName = "Pre-existing xms_cc is overwritten")]
+        public void MergeClaimsWithClientCapabilities_ProducesValidJson(string base64Claims)
+        {
+            // Act
+            string merged = TokenCredentialCache.MergeClaimsWithClientCapabilities(base64Claims);
+
+            // Assert - result must be parseable JSON with the expected shape.
+            using JsonDocument doc = JsonDocument.Parse(merged);
+            JsonElement accessToken = doc.RootElement.GetProperty("access_token");
+            Assert.AreEqual(JsonValueKind.Object, accessToken.ValueKind);
+
+            JsonElement xmsCc = accessToken.GetProperty("xms_cc");
+            JsonElement values = xmsCc.GetProperty("values");
+            Assert.AreEqual(1, values.GetArrayLength());
+            Assert.AreEqual("cp1", values[0].GetString());
+        }
+
+        [TestMethod]
+        public async Task TokenCredentialCache_ResetWithClaims_RefreshesTokenWithClaims()
+        {
+            // Arrange
+            int callCount = 0;
+            List<string> claimsReceived = new List<string>();
+
+            TestTokenCredential testTokenCredential = new TestTokenCredential(() =>
+            {
+                callCount++;
+                return new ValueTask<AccessToken>(new AccessToken($"Token{callCount}", DateTimeOffset.MaxValue));
+            });
+
+            using TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential);
+
+            // Get initial token
+            string t1 = await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton);
+            Assert.AreEqual(AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature("Token1"), t1);
+            Assert.AreEqual(1, callCount);
+
+            // Simulate CAE revocation with claims
+            string claimsChallenge = Convert.ToBase64String(
+                System.Text.Encoding.UTF8.GetBytes("{\"access_token\":{\"acrs\":{\"essential\":true,\"value\":\"c1\"}}}"));
+            tokenCredentialCache.ResetCachedToken(claimsChallenge);
+
+            // Get token again
+            string t2 = await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton);
+
+            // Assert
+            Assert.AreEqual(AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature("Token2"), t2);
+            Assert.AreEqual(2, callCount);
+        }
+
+        [TestMethod]
+        public async Task TokenCredentialCache_ResetWithNullClaims_RefreshesToken()
+        {
+            // Arrange
+            int callCount = 0;
+            TestTokenCredential testTokenCredential = new TestTokenCredential(() =>
+            {
+                callCount++;
+                return new ValueTask<AccessToken>(new AccessToken($"Token{callCount}", DateTimeOffset.MaxValue));
+            });
+
+            using TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential);
+
+            // Get initial token
+            await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton);
+            Assert.AreEqual(1, callCount);
+
+            // Reset with null claims
+            tokenCredentialCache.ResetCachedToken(claimsChallenge: null);
+
+            // Get token again
+            await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton);
+
+            // Assert
+            Assert.AreEqual(2, callCount);
+        }
+
+        // ---------------------------------------------------------------------------------------
+        // Regression tests for the AAD ReadAccountAsync hang introduced by PR #5549 (CAE / token
+        // revocation) between SDK 3.61.0 and main.
+        //
+        // Root cause: TokenCredentialCache attached a NON-EMPTY 'claims' parameter (the cp1 client
+        // capability) on EVERY token acquisition — even when there was no revocation challenge —
+        // because MergeClaimsWithClientCapabilities(null) returns the cp1 JSON rather than null.
+        // Azure.Identity / MSAL treat any non-empty 'claims' as "the cached token does not satisfy
+        // this challenge" and therefore SKIP AcquireTokenSilent's token cache and go live to ESTS on
+        // every acquisition. Under an MSAL-backed credential (certificate / managed identity) that
+        // live call can stall, and because all callers funnel through a single-flight refresh, the
+        // first ReadAccountAsync (and everything after it) hangs. cp1/CAE is ALREADY advertised the
+        // correct, cache-friendly way via isCaeEnabled:true in CosmosScopeProvider, so the claims
+        // injection was redundant. The fix attaches 'claims' only on an actual revocation challenge.
+        // ---------------------------------------------------------------------------------------
+
+        [TestMethod]
+        public async Task TokenCredentialCache_NormalAcquisition_DoesNotAttachClaims_SoMsalCacheIsUsable()
+        {
+            using IDisposable revocationEnabled = EnableAadTokenRevocation();
+
+            // Arrange
+            ClaimsCapturingTokenCredential credential = new ClaimsCapturingTokenCredential();
+            using TokenCredentialCache cache = this.CreateTokenCredentialCache(credential, TimeSpan.FromMinutes(30));
+
+            // Act — a normal first acquisition with no revocation challenge outstanding.
+            await cache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton);
+
+            // Assert
+            Assert.AreEqual(1, credential.Requests.Count, "Expected exactly one token acquisition.");
+            (string claims, bool isCaeEnabled) = credential.Requests[0];
+
+            Assert.IsTrue(
+                string.IsNullOrEmpty(claims),
+                "REGRESSION (PR #5549): the normal (no-revocation) token acquisition must NOT attach a " +
+                "'claims' parameter. A non-empty claims forces Azure.Identity/MSAL to bypass its token " +
+                "cache (AcquireTokenSilent) and call ESTS live on every acquisition, which stalls " +
+                $"ReadAccountAsync under MSAL-backed credentials. Actual claims sent: '{claims}'.");
+
+            Assert.IsTrue(
+                isCaeEnabled,
+                "CAE / cp1 must still be advertised the cache-friendly way, via isCaeEnabled:true.");
+        }
+
+        [TestMethod]
+        public async Task TokenCredentialCache_RevocationChallenge_StillAttachesMergedClaims()
+        {
+            using IDisposable revocationEnabled = EnableAadTokenRevocation();
+
+            // Arrange
+            ClaimsCapturingTokenCredential credential = new ClaimsCapturingTokenCredential();
+            using TokenCredentialCache cache = this.CreateTokenCredentialCache(credential, TimeSpan.FromMinutes(30));
+
+            // Act — normal acquire, then simulate a CAE revocation challenge and acquire again.
+            await cache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton);
+
+            string claimsChallenge = Convert.ToBase64String(
+                System.Text.Encoding.UTF8.GetBytes("{\"access_token\":{\"acrs\":{\"essential\":true,\"value\":\"c1\"}}}"));
+            cache.ResetCachedToken(claimsChallenge);
+
+            await cache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton);
+
+            // Assert
+            Assert.AreEqual(2, credential.Requests.Count, "Expected two token acquisitions.");
+            Assert.IsTrue(
+                string.IsNullOrEmpty(credential.Requests[0].Claims),
+                "The first (normal) acquisition must not attach claims.");
+
+            string revocationClaims = credential.Requests[1].Claims;
+                Assert.IsTrue(revocationClaims != null && revocationClaims.Length > 0,
+                "On an actual revocation challenge, the SDK MUST attach the claims so CAE revocation works.");
+            Assert.IsTrue(revocationClaims.Contains("acrs"), "Revocation claims must include the challenge's claims.");
+            Assert.IsTrue(revocationClaims.Contains("cp1"), "Revocation claims must still include the cp1 client capability.");
+        }
+
+        [TestMethod]
+        [Timeout(30000)]
+        public async Task TokenCredentialCache_NormalAcquisition_DoesNotStallOnMsalCacheBypass()
+        {
+            using IDisposable revocationEnabled = EnableAadTokenRevocation();
+
+            // This is the deterministic reproduction of the customer-reported hang. The credential
+            // faithfully models MSAL's behavior: a non-empty 'claims' cannot be served from the token
+            // cache and triggers a live (here: long-stalling) ESTS call, whereas an empty 'claims' is
+            // served fast. On the normal path the SDK must send NO claims, so the acquisition must NOT
+            // stall. Before the fix, the SDK sent cp1 claims here -> the credential stalls -> the
+            // acquisition (and thus ReadAccountAsync) hangs, and this test times out.
+            TimeSpan stallWhenCacheBypassed = TimeSpan.FromSeconds(20);
+            ClaimsCapturingTokenCredential credential = new ClaimsCapturingTokenCredential(
+                delayWhenClaimsPresent: stallWhenCacheBypassed);
+            using TokenCredentialCache cache = this.CreateTokenCredentialCache(credential, TimeSpan.FromMinutes(30));
+
+            // Act
+            Task<string> acquire = cache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton).AsTask();
+            Task first = await Task.WhenAny(acquire, Task.Delay(TimeSpan.FromSeconds(5)));
+
+            // Assert
+            Assert.AreSame(
+                acquire,
+                first,
+                "REGRESSION (PR #5549): the first token acquisition (no revocation challenge) stalled. " +
+                "The SDK attached a non-empty 'claims' on the normal path, forcing the MSAL cache-bypass " +
+                "live path and hanging ReadAccountAsync. With the fix (no claims on the normal path) the " +
+                "acquisition completes immediately.");
+
+            string header = await acquire;
+            Assert.IsFalse(string.IsNullOrEmpty(header));
+        }
+
+        [TestMethod]
+        [Timeout(30000)]
+        public async Task TokenCredentialCache_StaleNoClaimsRefresh_DoesNotClobberClaimsToken()
+        {
+            using IDisposable revocationEnabled = EnableAadTokenRevocation();
+
+            // Regression: a normal (no-claims) refresh that is already in flight when a CAE revocation
+            // arrives (ResetCachedToken(claims)) must NOT, on late completion, republish its stale
+            // no-claims token over the newer claims-based token, clear the installed claims challenge,
+            // or clear the newer refresh's currentRefreshOperation. Because
+            // ClientRetryPolicy.MaxCaeRevocationRetryCount == 1, serving the stale token on the retry
+            // path can surface as a user-visible auth failure.
+            GatedClaimsTokenCredential credential = new GatedClaimsTokenCredential();
+            using TokenCredentialCache cache = this.CreateTokenCredentialCache(credential, TimeSpan.FromMinutes(30));
+
+            // 1) Start a normal no-claims refresh and let it reach the credential, where it parks.
+            Task<string> staleRefresh = cache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton).AsTask();
+            await credential.NoClaimsRefreshStarted;
+
+            // 2) A CAE 401 arrives: reset with a claims challenge. This bumps the refresh generation
+            //    and drops the in-flight (now stale) refresh's ownership.
+            string claimsChallenge = Convert.ToBase64String(
+                System.Text.Encoding.UTF8.GetBytes("{\"access_token\":{\"acrs\":{\"essential\":true,\"value\":\"c1\"}}}"));
+            cache.ResetCachedToken(claimsChallenge);
+
+            // 3) The retry starts a claims-based refresh, which completes first and becomes the cached state.
+            string claimsHeader = await cache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton);
+            Assert.AreEqual(
+                AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(GatedClaimsTokenCredential.ClaimsToken),
+                claimsHeader,
+                "The claims-based refresh should have produced the cached authorization header.");
+
+            // 4) Now let the stale no-claims refresh complete LAST.
+            credential.ReleaseNoClaimsRefresh();
+            await staleRefresh;
+
+            // 5) The cached header must still be the claims-based one - the stale refresh must not clobber it.
+            string headerAfterStaleCompletes = await cache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton);
+            Assert.AreEqual(
+                AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(GatedClaimsTokenCredential.ClaimsToken),
+                headerAfterStaleCompletes,
+                "REGRESSION: a stale in-flight no-claims refresh republished its token over the newer " +
+                "claims-based token. This drops the CAE revocation response; with " +
+                "MaxCaeRevocationRetryCount == 1 that surfaces as an auth failure.");
+        }
+
+        /// <summary>
+        /// A TokenCredential that records the claims / IsCaeEnabled of every request context the SDK
+        /// passes, and — to model Azure.Identity/MSAL cache-bypass semantics — optionally stalls when a
+        /// non-empty <c>claims</c> is present (a claims challenge cannot be served from the silent cache
+        /// and forces a live ESTS call), while returning immediately when no claims are present.
+        /// </summary>
+        private sealed class ClaimsCapturingTokenCredential : TokenCredential
+        {
+            private readonly TimeSpan delayWhenClaimsPresent;
+
+            public ClaimsCapturingTokenCredential(TimeSpan? delayWhenClaimsPresent = null)
+            {
+                this.delayWhenClaimsPresent = delayWhenClaimsPresent ?? TimeSpan.Zero;
+            }
+
+            public List<(string Claims, bool IsCaeEnabled)> Requests { get; } = new List<(string, bool)>();
+
+            public override AccessToken GetToken(TokenRequestContext requestContext, CancellationToken cancellationToken)
+            {
+                return this.GetTokenAsync(requestContext, cancellationToken).AsTask().GetAwaiter().GetResult();
+            }
+
+            public override async ValueTask<AccessToken> GetTokenAsync(TokenRequestContext requestContext, CancellationToken cancellationToken)
+            {
+                bool hasClaims = !string.IsNullOrEmpty(requestContext.Claims);
+                lock (this.Requests)
+                {
+                    this.Requests.Add((requestContext.Claims, requestContext.IsCaeEnabled));
+                }
+
+                if (hasClaims && this.delayWhenClaimsPresent > TimeSpan.Zero)
+                {
+                    // Models MSAL: a non-empty claims challenge skips the token cache and goes live.
+                    await Task.Delay(this.delayWhenClaimsPresent, cancellationToken);
+                }
+
+                return new AccessToken("AccessToken", DateTimeOffset.MaxValue);
+            }
+        }
+
+        /// <summary>
+        /// A TokenCredential that parks the first no-claims token acquisition until it is explicitly
+        /// released, while serving any claims-bearing acquisition immediately. This lets a test drive
+        /// the exact interleaving where a stale no-claims refresh completes AFTER a claims-based
+        /// refresh that a CAE revocation started. It returns distinct token values so the caller can
+        /// tell which refresh's result ended up cached.
+        /// </summary>
+        private sealed class GatedClaimsTokenCredential : TokenCredential
+        {
+            public const string NoClaimsToken = "NoClaimsToken";
+            public const string ClaimsToken = "ClaimsToken";
+
+            private readonly TaskCompletionSource<bool> noClaimsRefreshStarted
+                = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            private readonly TaskCompletionSource<bool> releaseNoClaimsRefresh
+                = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            public Task NoClaimsRefreshStarted => this.noClaimsRefreshStarted.Task;
+
+            public void ReleaseNoClaimsRefresh() => this.releaseNoClaimsRefresh.TrySetResult(true);
+
+            public override AccessToken GetToken(TokenRequestContext requestContext, CancellationToken cancellationToken)
+            {
+                return this.GetTokenAsync(requestContext, cancellationToken).AsTask().GetAwaiter().GetResult();
+            }
+
+            public override async ValueTask<AccessToken> GetTokenAsync(TokenRequestContext requestContext, CancellationToken cancellationToken)
+            {
+                if (string.IsNullOrEmpty(requestContext.Claims))
+                {
+                    // The stale, no-claims refresh: announce it started, then block until released so
+                    // it deterministically finishes after the claims-based refresh.
+                    this.noClaimsRefreshStarted.TrySetResult(true);
+                    await this.releaseNoClaimsRefresh.Task;
+                    return new AccessToken(NoClaimsToken, DateTimeOffset.MaxValue);
+                }
+
+                return new AccessToken(ClaimsToken, DateTimeOffset.MaxValue);
+            }
+        }
+
+        [TestMethod]
+        [Timeout(30000)]
+        public async Task TokenCredentialCache_StaleRefreshPlantedDuringInstall_DoesNotWedgeSlot()
+        {
+            using IDisposable revocationEnabled = EnableAadTokenRevocation();
+
+            // Regression for the snapshot-vs-assignment race: a ResetCachedToken (CAE revocation) that
+            // fires WHILE a no-claims refresh is being installed leaves that now-stale refresh planted in
+            // currentRefreshOperation. A generation-guarded clear cannot remove it (its generation is
+            // already superseded), so it stays stuck as a completed, no-claims task and every later
+            // caller reuses it - never starting a fresh claims-based refresh. With
+            // MaxCaeRevocationRetryCount == 1 that surfaces as a user-visible auth failure. An identity
+            // (operation-id) compare-and-clear removes the stale occupant so the next caller can start a
+            // fresh, claims-based refresh.
+            ResetOnFirstNoClaimsRefreshCredential credential = new ResetOnFirstNoClaimsRefreshCredential();
+            using TokenCredentialCache cache = this.CreateTokenCredentialCache(credential, TimeSpan.FromMinutes(30));
+
+            string claimsChallenge = Convert.ToBase64String(
+                System.Text.Encoding.UTF8.GetBytes("{\"access_token\":{\"acrs\":{\"essential\":true,\"value\":\"c1\"}}}"));
+
+            // The credential invokes this the moment the no-claims refresh reaches it - i.e. during the
+            // slot install, before currentRefreshOperation has been published - reproducing the race.
+            credential.SetOnNoClaimsRefreshStarting(() => cache.ResetCachedToken(claimsChallenge));
+
+            // 1) Start the no-claims refresh. It synchronously reaches the credential, which resets the
+            //    cache (bumping the generation) and then parks - so this stale refresh is planted in the
+            //    slot AFTER the reset already advanced the generation.
+            Task<string> plantedStaleRefresh = cache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton).AsTask();
+
+            // 2) A second caller arriving while the stale refresh is in flight joins that same task.
+            Task<string> joinsStaleRefresh = cache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton).AsTask();
+
+            // 3) Let the stale no-claims refresh complete. Its completion must clear the slot by identity.
+            credential.ReleaseNoClaimsRefresh();
+            await plantedStaleRefresh;
+            await joinsStaleRefresh;
+
+            // 4) The next acquisition must NOT be stuck serving the stale no-claims task - it must start a
+            //    fresh refresh that honors the installed claims challenge and returns the claims token.
+            string headerAfterStale = await cache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton);
+            Assert.AreEqual(
+                AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(ResetOnFirstNoClaimsRefreshCredential.ClaimsToken),
+                headerAfterStale,
+                "REGRESSION: a stale no-claims refresh planted during the reset window was left in " +
+                "currentRefreshOperation, so subsequent callers reused it and never performed the " +
+                "claims-based refresh. With MaxCaeRevocationRetryCount == 1 that drops the CAE revocation " +
+                "and surfaces as an auth failure. The slot must be cleared by identity so the next caller " +
+                "starts a fresh, claims-based refresh.");
+        }
+
+        /// <summary>
+        /// A TokenCredential that, on the FIRST no-claims acquisition, invokes a caller-supplied action
+        /// (used to fire ResetCachedToken while the refresh is still being installed) and then parks until
+        /// released - deterministically reproducing the snapshot-vs-assignment race where a stale refresh
+        /// is planted into the slot after a CAE reset has already advanced the generation. Claims-bearing
+        /// acquisitions are served immediately. Distinct token values let the caller tell which refresh's
+        /// result ended up cached.
+        /// </summary>
+        private sealed class ResetOnFirstNoClaimsRefreshCredential : TokenCredential
+        {
+            public const string NoClaimsToken = "NoClaimsToken";
+            public const string ClaimsToken = "ClaimsToken";
+
+            private readonly TaskCompletionSource<bool> releaseNoClaimsRefresh
+                = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            private Action onNoClaimsRefreshStarting;
+            private int noClaimsRefreshCount;
+
+            public void SetOnNoClaimsRefreshStarting(Action action) => this.onNoClaimsRefreshStarting = action;
+
+            public void ReleaseNoClaimsRefresh() => this.releaseNoClaimsRefresh.TrySetResult(true);
+
+            public override AccessToken GetToken(TokenRequestContext requestContext, CancellationToken cancellationToken)
+            {
+                return this.GetTokenAsync(requestContext, cancellationToken).AsTask().GetAwaiter().GetResult();
+            }
+
+            public override async ValueTask<AccessToken> GetTokenAsync(TokenRequestContext requestContext, CancellationToken cancellationToken)
+            {
+                if (string.IsNullOrEmpty(requestContext.Claims))
+                {
+                    // Only the first no-claims refresh drives the race; any later no-claims call returns
+                    // immediately so the test can never hang on an unexpected extra acquisition.
+                    if (Interlocked.Increment(ref this.noClaimsRefreshCount) == 1)
+                    {
+                        // Runs while the refresh is being installed into the slot: fire the reset here so
+                        // the generation advances before this (now stale) refresh is published, then park
+                        // so it deterministically completes last.
+                        this.onNoClaimsRefreshStarting?.Invoke();
+                        await this.releaseNoClaimsRefresh.Task;
+                    }
+
+                    return new AccessToken(NoClaimsToken, DateTimeOffset.MaxValue);
+                }
+
+                return new AccessToken(ClaimsToken, DateTimeOffset.MaxValue);
+            }
+        }
+
+        [TestMethod]
+        public async Task TokenCredentialCache_ThrowsObjectDisposed_AfterDispose()
+        {
+            TestTokenCredential testTokenCredential = new TestTokenCredential(() => new ValueTask<AccessToken>(this.AccessToken));
+            using TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential, TimeSpan.MaxValue);
+
+            tokenCredentialCache.Dispose();
+
+            await Assert.ThrowsExceptionAsync<ObjectDisposedException>(
+                () => tokenCredentialCache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton).AsTask());
+        }
+
+        [DataTestMethod]
+        [DataRow(HttpStatusCode.Unauthorized)]
+        [DataRow(HttpStatusCode.Forbidden)]
+        public async Task TokenCredentialCache_DoesNotRetry_OnUnauthorizedOrForbidden(HttpStatusCode statusCode)
+        {
+            int callCount = 0;
+            Mock<TokenCredential> mockCredential = new Mock<TokenCredential>();
+            mockCredential
+                .Setup(c => c.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
+                .Returns<TokenRequestContext, CancellationToken>((ctx, ct) =>
+                {
+                    callCount++;
+                    if (callCount == 1)
+                    {
+                        throw new global::Azure.RequestFailedException((int)statusCode, "authorization failure");
+                    }
+
+                    return new ValueTask<AccessToken>(new AccessToken("recovered-token", DateTimeOffset.UtcNow.AddHours(1)));
+                });
+
+            using TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(mockCredential.Object, TimeSpan.MaxValue);
+            using ITrace trace = Cosmos.Tracing.Trace.GetRootTrace("test");
+
+            global::Azure.RequestFailedException thrown = await Assert.ThrowsExceptionAsync<global::Azure.RequestFailedException>(
+                () => tokenCredentialCache.GetTokenAuthorizationHeaderAsync(trace).AsTask());
+
+            Assert.AreEqual((int)statusCode, thrown.Status);
+            Assert.AreEqual(1, callCount, "A 401/403 from the credential must not be retried within a single refresh.");
+
+            // The cached auth state is cleared on 401/403, so the next request re-invokes the credential and recovers.
+            string header = await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(trace);
+            Assert.AreEqual(AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature("recovered-token"), header);
+            Assert.AreEqual(2, callCount);
+        }
+
+        [TestMethod]
+        public async Task TokenCredentialCache_Throws_WhenCredentialReturnsExpiredToken()
+        {
+            TestTokenCredential testTokenCredential = new TestTokenCredential(
+                () => new ValueTask<AccessToken>(new AccessToken("expired-token", DateTimeOffset.UtcNow - TimeSpan.FromMinutes(5))));
+
+            using TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential, TimeSpan.MaxValue);
+            using ITrace trace = Cosmos.Tracing.Trace.GetRootTrace("test");
+
+            await Assert.ThrowsExceptionAsync<ArgumentOutOfRangeException>(
+                () => tokenCredentialCache.GetTokenAuthorizationHeaderAsync(trace).AsTask());
+
+            // The expired-token guard sits inside the retry loop (totalRetryCount = 2 iterations),
+            // so the credential is invoked on the initial attempt plus one retry = 2 total invocations.
+            Assert.AreEqual(2, testTokenCredential.NumTimesInvoked);
+        }
+
+        [TestMethod]
+        public async Task TokenCredentialCache_MapsCancellation_ToFailedToGetAadTokenSubStatus()
+        {
+            TestTokenCredential testTokenCredential = new TestTokenCredential(
+                () => throw new OperationCanceledException("token fetch cancelled"));
+
+            using TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential, TimeSpan.MaxValue);
+            using ITrace trace = Cosmos.Tracing.Trace.GetRootTrace("test");
+
+            CosmosException ce = await Assert.ThrowsExceptionAsync<CosmosException>(
+                () => tokenCredentialCache.GetTokenAuthorizationHeaderAsync(trace).AsTask());
+
+            Assert.AreEqual(HttpStatusCode.RequestTimeout, ce.StatusCode);
+            Assert.AreEqual((int)SubStatusCodes.FailedToGetAadToken, ce.SubStatusCode);
+        }
+
+        [TestMethod]
+        public void GenerateAadAuthorizationSignature_ProducesExpectedFormat()
+        {
+            string token = "sample.jwt.token";
+
+            string signature = AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(token);
+
+            // The header is URL-encoded; decoding it back must yield the documented AAD signature structure.
+            string decoded = Uri.UnescapeDataString(signature);
+            Assert.AreEqual($"type=aad&ver=1.0&sig={token}", decoded);
+        }
+
+        [TestMethod]
+        public async Task AddAuthorizationHeaderAsync_AddsAuthorizationHeader()
+        {
+            TestTokenCredential testTokenCredential = new TestTokenCredential(() => new ValueTask<AccessToken>(this.AccessToken));
+            using AuthorizationTokenProvider provider = new AuthorizationTokenProviderTokenCredential(
+                testTokenCredential,
+                CosmosAuthorizationTests.AccountEndpoint,
+                backgroundTokenCredentialRefreshInterval: TimeSpan.MaxValue,
+                AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
+
+            StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
+            await provider.AddAuthorizationHeaderAsync(
+                headers,
+                CosmosAuthorizationTests.AccountEndpoint,
+                "GET",
+                AuthorizationTokenType.PrimaryMasterKey);
+
+            string authorizationHeader = headers[HttpConstants.HttpHeaders.Authorization];
+            Assert.IsFalse(string.IsNullOrEmpty(authorizationHeader), "Authorization header should be populated.");
+            Assert.AreEqual(
+                AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(this.AccessToken.Token),
+                authorizationHeader);
+        }
+
+        [TestMethod]
+        [Timeout(30000)]
+        public async Task TokenCredentialCache_MaxValueInterval_DisablesBackgroundRefresh()
+        {
+            TestTokenCredential testTokenCredential = new TestTokenCredential(
+                () => new ValueTask<AccessToken>(new AccessToken("token", DateTimeOffset.MaxValue)));
+
+            using TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential, TimeSpan.MaxValue);
+            using ITrace trace = Cosmos.Tracing.Trace.GetRootTrace("test");
+
+            await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(trace);
+            Assert.AreEqual(1, testTokenCredential.NumTimesInvoked);
+
+            // With TimeSpan.MaxValue the background refresh loop must exit immediately without ever
+            // refreshing. Poll over a bounded window and assert the credential is never invoked again;
+            // polling also catches an erroneous refresh that fires partway through the window, which a
+            // single end-of-wait check would miss.
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            while (stopwatch.Elapsed < TimeSpan.FromSeconds(3))
+            {
+                Assert.AreEqual(1, testTokenCredential.NumTimesInvoked, "TimeSpan.MaxValue should disable the background refresh loop.");
+                await Task.Delay(200);
+            }
+        }
+
+        [TestMethod]
+        [Timeout(30000)]
+        public async Task TokenCredentialCache_RefreshesToken_WhenCachedTokenIsExpired()
+        {
+            // The first call returns a token that is valid at fetch time but expires shortly after.
+            // This forces the following request to miss the cache and re-acquire a token on the request
+            // path (the on-demand refresh branch in GetTokenAuthorizationHeaderAsync), independent of the
+            // background refresh loop.
+            int invocation = 0;
+            TestTokenCredential testTokenCredential = new TestTokenCredential(() =>
+            {
+                invocation++;
+                return invocation == 1
+                    ? new ValueTask<AccessToken>(new AccessToken("short-lived-token", DateTimeOffset.UtcNow + TimeSpan.FromSeconds(2)))
+                    : new ValueTask<AccessToken>(new AccessToken("refreshed-token", DateTimeOffset.UtcNow + TimeSpan.FromHours(1)));
+            });
+
+            // TimeSpan.MaxValue disables the background refresh loop, isolating the on-demand refresh path.
+            using TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential, TimeSpan.MaxValue);
+            using ITrace trace = Cosmos.Tracing.Trace.GetRootTrace("test");
+
+            string firstHeader = await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(trace);
+            Assert.AreEqual(
+                AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature("short-lived-token"),
+                firstHeader);
+            Assert.AreEqual(1, testTokenCredential.NumTimesInvoked);
+
+            // Wait until the cached token is past its expiry.
+            await Task.Delay(TimeSpan.FromSeconds(3));
+
+            // The cached token is now expired, so the request path must acquire a fresh token rather than
+            // serve the stale cached header.
+            string secondHeader = await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(trace);
+            Assert.AreEqual(
+                AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature("refreshed-token"),
+                secondHeader);
+            Assert.AreEqual(2, testTokenCredential.NumTimesInvoked);
+        }
+
+        [TestMethod]
+        [DoNotParallelize]
+        public async Task TokenCredentialCache_UsesFallbackScope_WithinRetryLoop_AfterAadsts500011()
+        {
+            string previous = Environment.GetEnvironmentVariable("AZURE_COSMOS_AAD_SCOPE_OVERRIDE");
+            Environment.SetEnvironmentVariable("AZURE_COSMOS_AAD_SCOPE_OVERRIDE", null);
+
+            try
+            {
+                const string accountScope = "https://test-account.documents.azure.com/.default";
+                const string fallbackScope = "https://cosmos.azure.com/.default";
+                List<string> requestedScopes = new List<string>();
+
+                Mock<TokenCredential> mockCredential = new Mock<TokenCredential>();
+                mockCredential
+                    .Setup(c => c.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
+                    .Returns<TokenRequestContext, CancellationToken>((ctx, ct) =>
+                    {
+                        string scope = ctx.Scopes[0];
+                        requestedScopes.Add(scope);
+
+                        if (string.Equals(scope, accountScope, StringComparison.OrdinalIgnoreCase))
+                        {
+                            throw new global::Azure.RequestFailedException("AADSTS500011: The resource principal named was not found.");
+                        }
+
+                        return new ValueTask<AccessToken>(new AccessToken("fallback-token", DateTimeOffset.UtcNow.AddHours(1)));
+                    });
+
+                using TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(mockCredential.Object, TimeSpan.MaxValue);
+                using ITrace trace = Cosmos.Tracing.Trace.GetRootTrace("test");
+
+                string header = await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(trace);
+
+                Assert.AreEqual(
+                    AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature("fallback-token"),
+                    header);
+                Assert.AreEqual(2, requestedScopes.Count, "Expected an account-scope attempt followed by a fallback-scope retry.");
+                Assert.AreEqual(accountScope, requestedScopes[0]);
+                Assert.AreEqual(fallbackScope, requestedScopes[1]);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_AAD_SCOPE_OVERRIDE", previous);
+            }
+        }
+
         private TokenCredentialCache CreateTokenCredentialCache(
             TokenCredential tokenCredential)
         {
@@ -494,7 +1373,37 @@ namespace Microsoft.Azure.Cosmos.Tests
             return new TokenCredentialCache(
                 tokenCredential,
                 CosmosAuthorizationTests.AccountEndpoint,
-                backgroundTokenCredentialRefreshInterval: refreshInterval);
+                backgroundTokenCredentialRefreshInterval: refreshInterval,
+                tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
+        }
+
+        /// <summary>
+        /// Enables the AAD token revocation / CAE feature (disabled by default) for the duration of a
+        /// test and restores the previous environment value on dispose, so the CAE-specific code paths
+        /// under test are actually exercised without leaking the flag to other tests.
+        /// </summary>
+        private static IDisposable EnableAadTokenRevocation()
+        {
+            string previousValue = Environment.GetEnvironmentVariable(ConfigurationManager.AadTokenRevocationEnabled);
+            Environment.SetEnvironmentVariable(ConfigurationManager.AadTokenRevocationEnabled, "True");
+            return new EnvironmentVariableScope(ConfigurationManager.AadTokenRevocationEnabled, previousValue);
+        }
+
+        private sealed class EnvironmentVariableScope : IDisposable
+        {
+            private readonly string variable;
+            private readonly string previousValue;
+
+            public EnvironmentVariableScope(string variable, string previousValue)
+            {
+                this.variable = variable;
+                this.previousValue = previousValue;
+            }
+
+            public void Dispose()
+            {
+                Environment.SetEnvironmentVariable(this.variable, this.previousValue);
+            }
         }
 
         private bool IsTokenRefreshInProgress(TokenCredentialCache tokenCredentialCache)
@@ -521,9 +1430,10 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private async Task GetAndVerifyTokenAsync(TokenCredentialCache tokenCredentialCache)
         {
-            string result = await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton);
+            string result = await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(NoOpTrace.Singleton);
+            string expectedAuthorizationHeader = AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(this.AccessToken.Token);
             Assert.AreEqual(
-                this.AccessToken.Token,
+                expectedAuthorizationHeader,
                 result);
         }
 

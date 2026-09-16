@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 {
-    using System.Threading;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 

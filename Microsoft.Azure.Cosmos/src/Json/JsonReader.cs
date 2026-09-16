@@ -46,6 +46,11 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <param name="buffer">The byte array (with format marker) to read from.</param>
         /// <param name="jsonStringDictionary">The dictionary to use for user string encoding.</param>
         /// <returns>A concrete JsonReader that can read the supplied byte array.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="buffer"/> is empty.</exception>
+        /// <exception cref="JsonMaxNestingExceededException">
+        /// Thrown when a binary-format buffer nests array/object type markers more deeply than the parser allows.
+        /// This guards against crafted payloads that would otherwise exhaust the call stack.
+        /// </exception>
         public static IJsonReader Create(ReadOnlyMemory<byte> buffer, IJsonStringDictionary jsonStringDictionary = null)
         {
             if (buffer.IsEmpty)
@@ -67,6 +72,11 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <param name="buffer">The buffer to read from.</param>
         /// <param name="jsonStringDictionary">The optional dictionary to decode strings.</param>
         /// <returns>An <see cref="IJsonReader"/> for the buffer, format, and dictionary.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="buffer"/> is empty or <paramref name="jsonSerializationFormat"/> is not recognized.</exception>
+        /// <exception cref="JsonMaxNestingExceededException">
+        /// Thrown for binary-format buffers that nest array/object type markers more deeply than the parser allows.
+        /// This guards against crafted payloads that would otherwise exhaust the call stack.
+        /// </exception>
         public static IJsonReader Create(
             JsonSerializationFormat jsonSerializationFormat,
             ReadOnlyMemory<byte> buffer,

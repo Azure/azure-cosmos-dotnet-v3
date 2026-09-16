@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Collections.Generic;
     using System.Runtime.InteropServices;
     using System.Text;
-    using System.Xml.Linq;
     using Microsoft.Azure.Cosmos.Core.Utf8;
 
     /// <summary>

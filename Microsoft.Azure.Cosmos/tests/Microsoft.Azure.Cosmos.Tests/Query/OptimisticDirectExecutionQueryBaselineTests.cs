@@ -1030,6 +1030,7 @@
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
                 isHybridSearchQueryPlanOptimizationDisabled: queryRequestOptions.IsHybridSearchQueryPlanOptimizationDisabled,
                 enableDistributedQueryGatewayMode: queryRequestOptions.EnableDistributedQueryGatewayMode,
+                fullTextScoreScope: queryRequestOptions.FullTextScoreScope,
                 testInjections: queryRequestOptions.TestSettings);
 
             List<PartitionKeyRange> targetPkRanges = new();
@@ -1301,7 +1302,7 @@
             throw new NotImplementedException();
         }
 
-        public override Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(string resourceUri, ResourceType resourceType, OperationType operationType, SqlQuerySpec sqlQuerySpec, Cosmos.PartitionKey? partitionKey, string supportedQueryFeatures, Guid clientQueryCorrelationId, ITrace trace, CancellationToken cancellationToken)
+        public override Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(string resourceUri, ResourceType resourceType, OperationType operationType, SqlQuerySpec sqlQuerySpec, Cosmos.PartitionKey? partitionKey, string supportedQueryFeatures, IReadOnlyList<string> excludeRegions, Guid clientQueryCorrelationId, ITrace trace, CancellationToken cancellationToken)
         {
             return Task.FromResult(new PartitionedQueryExecutionInfo());
         }
@@ -1325,7 +1326,8 @@
                  },
                  new PartitionKeyDefinition(),
                  vectorEmbeddingPolicy: null,
-                 Cosmos.GeospatialType.Geometry));
+                 Cosmos.GeospatialType.Geometry,
+                 false));
         }
 
         public override Task<bool> GetClientDisableOptimisticDirectExecutionAsync()

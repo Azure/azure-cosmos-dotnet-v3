@@ -212,11 +212,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             Collection<Cosmos.Embedding> embeddings = new Collection<Cosmos.Embedding>()
-            {
-                embedding1,
-                embedding2,
-                embedding3,
-            };
+    {
+        embedding1,
+        embedding2,
+        embedding3,
+    };
 
             ContainerProperties containerSettings = new ContainerProperties(id: "TestContainer", partitionKeyPath: "/partitionKey")
             {
@@ -224,28 +224,30 @@ namespace Microsoft.Azure.Cosmos.Tests
                 IndexingPolicy = new Cosmos.IndexingPolicy()
                 {
                     VectorIndexes = new()
-                    {
-                        new Cosmos.VectorIndexPath()
-                        {
-                            Path = "/vector1",
-                            Type = Cosmos.VectorIndexType.Flat,
-                        },
-                        new Cosmos.VectorIndexPath()
-                        {
-                            Path = "/vector2",
-                            Type = Cosmos.VectorIndexType.QuantizedFlat,
-                            VectorIndexShardKey = new[] { "/Country" },
-                            QuantizationByteSize = 3,
-                        },
-                        new Cosmos.VectorIndexPath()
-                        {
-                            Path = "/vector3",
-                            Type = Cosmos.VectorIndexType.DiskANN,
-                            VectorIndexShardKey = new[] { "/ZipCode" },
-                            QuantizationByteSize = 2,
-                            IndexingSearchListSize = 5,
-                        }
-                    },
+            {
+                new Cosmos.VectorIndexPath()
+                {
+                    Path = "/vector1",
+                    Type = Cosmos.VectorIndexType.Flat,
+                },
+                new Cosmos.VectorIndexPath()
+                {
+                    Path = "/vector2",
+                    Type = Cosmos.VectorIndexType.QuantizedFlat,
+                    QuantizerType = Cosmos.QuantizerType.Product,
+                    VectorIndexShardKey = new[] { "/Country" },
+                    QuantizationByteSize = 3,
+                },
+                new Cosmos.VectorIndexPath()
+                {
+                    Path = "/vector3",
+                    Type = Cosmos.VectorIndexType.DiskANN,
+                    QuantizerType = Cosmos.QuantizerType.Spherical,
+                    VectorIndexShardKey = new[] { "/ZipCode" },
+                    QuantizationByteSize = 2,
+                    IndexingSearchListSize = 5,
+                }
+            },
                 },
             };
 
@@ -261,16 +263,97 @@ namespace Microsoft.Azure.Cosmos.Tests
             Collection<Cosmos.VectorIndexPath> vectorIndexes = containerSettings.IndexingPolicy.VectorIndexes;
             Assert.AreEqual("/vector1", vectorIndexes[0].Path);
             Assert.AreEqual(Cosmos.VectorIndexType.Flat, vectorIndexes[0].Type);
+            Assert.IsNull(vectorIndexes[0].QuantizerType); // Flat type doesn't use quantizer
+
             Assert.AreEqual("/vector2", vectorIndexes[1].Path);
             Assert.AreEqual(Cosmos.VectorIndexType.QuantizedFlat, vectorIndexes[1].Type);
+            Assert.AreEqual(Cosmos.QuantizerType.Product, vectorIndexes[1].QuantizerType);
             Assert.AreEqual(3, vectorIndexes[1].QuantizationByteSize);
             CollectionAssert.AreEqual(new string[] { "/Country" }, vectorIndexes[1].VectorIndexShardKey);
 
             Assert.AreEqual("/vector3", vectorIndexes[2].Path);
             Assert.AreEqual(Cosmos.VectorIndexType.DiskANN, vectorIndexes[2].Type);
+            Assert.AreEqual(Cosmos.QuantizerType.Spherical, vectorIndexes[2].QuantizerType);
             Assert.AreEqual(2, vectorIndexes[2].QuantizationByteSize);
             Assert.AreEqual(5, vectorIndexes[2].IndexingSearchListSize);
             CollectionAssert.AreEqual(new string[] { "/ZipCode" }, vectorIndexes[2].VectorIndexShardKey);
+        }
+
+        [TestMethod]
+        public void ValidateVectorIndexQuantizerTypeSerialization()
+        {
+            // Test with Product quantizer
+            Cosmos.VectorIndexPath vectorIndexProduct = new Cosmos.VectorIndexPath()
+            {
+                Path = "/vector",
+                Type = Cosmos.VectorIndexType.DiskANN,
+                QuantizerType = Cosmos.QuantizerType.Product,
+                QuantizationByteSize = 2,
+                IndexingSearchListSize = 100
+            };
+
+            // Serialize
+            string serializedProduct = JsonConvert.SerializeObject(vectorIndexProduct);
+
+            // Verify the JSON contains quantizerType
+            Assert.IsTrue(serializedProduct.Contains("\"quantizerType\":\"product\""));
+
+            // Deserialize
+            Cosmos.VectorIndexPath deserializedProduct = JsonConvert.DeserializeObject<Cosmos.VectorIndexPath>(serializedProduct);
+
+            // Verify round-trip
+            Assert.AreEqual(vectorIndexProduct.Path, deserializedProduct.Path);
+            Assert.AreEqual(vectorIndexProduct.Type, deserializedProduct.Type);
+            Assert.AreEqual(Cosmos.QuantizerType.Product, deserializedProduct.QuantizerType);
+            Assert.AreEqual(vectorIndexProduct.QuantizationByteSize, deserializedProduct.QuantizationByteSize);
+            Assert.AreEqual(vectorIndexProduct.IndexingSearchListSize, deserializedProduct.IndexingSearchListSize);
+
+            // Test with Spherical quantizer
+            Cosmos.VectorIndexPath vectorIndexSpherical = new Cosmos.VectorIndexPath()
+            {
+                Path = "/embedding",
+                Type = Cosmos.VectorIndexType.QuantizedFlat,
+                QuantizerType = Cosmos.QuantizerType.Spherical,
+                QuantizationByteSize = 3,
+                VectorIndexShardKey = new[] { "/region" }
+            };
+
+            // Serialize
+            string serializedSpherical = JsonConvert.SerializeObject(vectorIndexSpherical);
+
+            // Verify the JSON contains quantizerType
+            Assert.IsTrue(serializedSpherical.Contains("\"quantizerType\":\"spherical\""));
+
+            // Deserialize
+            Cosmos.VectorIndexPath deserializedSpherical = JsonConvert.DeserializeObject<Cosmos.VectorIndexPath>(serializedSpherical);
+
+            // Verify round-trip
+            Assert.AreEqual(vectorIndexSpherical.Path, deserializedSpherical.Path);
+            Assert.AreEqual(vectorIndexSpherical.Type, deserializedSpherical.Type);
+            Assert.AreEqual(Cosmos.QuantizerType.Spherical, deserializedSpherical.QuantizerType);
+            Assert.AreEqual(vectorIndexSpherical.QuantizationByteSize, deserializedSpherical.QuantizationByteSize);
+            CollectionAssert.AreEqual(vectorIndexSpherical.VectorIndexShardKey, deserializedSpherical.VectorIndexShardKey);
+
+            // Test with null quantizer type (for Flat index)
+            Cosmos.VectorIndexPath vectorIndexFlat = new Cosmos.VectorIndexPath()
+            {
+                Path = "/flatVector",
+                Type = Cosmos.VectorIndexType.Flat
+            };
+
+            // Serialize
+            string serializedFlat = JsonConvert.SerializeObject(vectorIndexFlat);
+
+            // Verify the JSON doesn't contain quantizerType (null value handling)
+            Assert.IsFalse(serializedFlat.Contains("quantizerType"));
+
+            // Deserialize
+            Cosmos.VectorIndexPath deserializedFlat = JsonConvert.DeserializeObject<Cosmos.VectorIndexPath>(serializedFlat);
+
+            // Verify round-trip
+            Assert.AreEqual(vectorIndexFlat.Path, deserializedFlat.Path);
+            Assert.AreEqual(vectorIndexFlat.Type, deserializedFlat.Type);
+            Assert.IsNull(deserializedFlat.QuantizerType);
         }
 
         [TestMethod]

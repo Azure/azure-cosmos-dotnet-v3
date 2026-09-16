@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.FaultInjection
@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     using System.Net;
     using System.Net.Http.Headers;
     using System.Text;
+    using System.Threading;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Rntbd;
@@ -21,8 +23,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly int times;
         private readonly TimeSpan delay;
         private readonly bool suppressServiceRequest;
-        private readonly double injectionRate;
         private readonly FaultInjectionApplicationContext applicationContext;
+        private readonly GlobalEndpointManager globalEndpointManager;
+
+        private double injectionRate;
 
         /// <summary>
         /// Constructor for FaultInjectionServerErrorResultInternal
@@ -32,13 +36,15 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <param name="delay"></param>
         /// <param name="injectionRate"></param>
         /// <param name="applicationContext"></param>
+        /// <param name="globalEndpointManager"></param>
         public FaultInjectionServerErrorResultInternal(
-            FaultInjectionServerErrorType serverErrorType, 
-            int times, 
-            TimeSpan delay, 
+            FaultInjectionServerErrorType serverErrorType,
+            int times,
+            TimeSpan delay,
             bool suppressServiceRequest,
             double injectionRate,
-            FaultInjectionApplicationContext applicationContext)
+            FaultInjectionApplicationContext applicationContext,
+            GlobalEndpointManager globalEndpointManager)
         {
             this.serverErrorType = serverErrorType;
             this.times = times;
@@ -46,6 +52,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             this.suppressServiceRequest = suppressServiceRequest;
             this.injectionRate = injectionRate;
             this.applicationContext = applicationContext;
+            this.globalEndpointManager = globalEndpointManager;
         }
 
         /// <summary>
@@ -91,7 +98,17 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <returns></returns>
         public double GetInjectionRate()
         {
-            return this.injectionRate;
+            return Volatile.Read(ref this.injectionRate);
+        }
+
+        /// <summary>
+        /// Updates the percentage of how many times the rule will be applied. The new rate takes
+        /// effect on the next request evaluated by the rule.
+        /// </summary>
+        /// <param name="injectionRate">the new injection rate, in the range (0, 1].</param>
+        public void SetInjectionRate(double injectionRate)
+        {
+            Volatile.Write(ref this.injectionRate, injectionRate);
         }
 
         /// <summary>
@@ -164,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         Headers = retryWithHeaders,
                         ResponseBody = new MemoryStream(FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Retry With, rule: {ruleId}"))
                     };
-                    
+
                     return storeResponse;
 
                 case FaultInjectionServerErrorType.TooManyRequests:
@@ -205,7 +222,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         Headers = internalServerErrorHeaders,
                         ResponseBody = new MemoryStream(FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Internal Server Error, rule: {ruleId}"))
                     };
-                    
+
                     return storeResponse;
 
                 case FaultInjectionServerErrorType.ReadSessionNotAvailable:
@@ -223,7 +240,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         Headers = readSessionHeaders,
                         ResponseBody = new MemoryStream(FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Read Session Not Available, rule: {ruleId}"))
                     };
-                    
+
                     return storeResponse;
 
                 case FaultInjectionServerErrorType.PartitionIsMigrating:
@@ -237,7 +254,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         Headers = partitionMigrationHeaders,
                         ResponseBody = new MemoryStream(FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Partition Migrating, rule: {ruleId}"))
                     };
-                    
+
                     return storeResponse;
 
                 case FaultInjectionServerErrorType.PartitionIsSplitting:
@@ -265,7 +282,30 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     };
 
                     return storeResponse;
-
+                case FaultInjectionServerErrorType.Unauthorized:
+                    INameValueCollection unauthorizedHeaders = args.RequestHeaders;
+                    unauthorizedHeaders.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
+                    storeResponse = new StoreResponse()
+                    {
+                        Status = 401,
+                        Headers = unauthorizedHeaders,
+                        ResponseBody = new MemoryStream(FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Unauthorized, rule: {ruleId}"))
+                    };
+                    return storeResponse;
+                case FaultInjectionServerErrorType.AadTokenRevoked:
+                    INameValueCollection aadTokenRevokedHeaders = args.RequestHeaders;
+                    aadTokenRevokedHeaders.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
+                    aadTokenRevokedHeaders.Set(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.AadTokenRevoked).ToString());
+                    aadTokenRevokedHeaders.Set(
+                        HttpConstants.HttpHeaders.WwwAuthenticate,
+                        this.GenerateWwwAuthenticateForRevocation());
+                    storeResponse = new StoreResponse()
+                    {
+                        Status = 401,
+                        Headers = aadTokenRevokedHeaders,
+                        ResponseBody = new MemoryStream(FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Aad Token Revoked, rule: {ruleId}"))
+                    };
+                    return storeResponse;
                 default:
                     throw new ArgumentException($"Server error type {this.serverErrorType} is not supported");
             }
@@ -284,23 +324,27 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             //Global or Local lsn?
             string lsn = dsr.RequestContext.QuorumSelectedLSN.ToString(CultureInfo.InvariantCulture);
             INameValueCollection headers = dsr.Headers;
+            bool isProxyCall = this.IsProxyCall(dsr);
 
             switch (this.serverErrorType)
             {
                 case FaultInjectionServerErrorType.Gone:
-                    
+
                     httpResponse = new HttpResponseMessage
                     {
+                        Version = isProxyCall
+                            ? new Version(2, 0)
+                            : new Version(1, 1),
                         StatusCode = HttpStatusCode.Gone,
-                        Content = new FauntInjectionHttpContent(
+                        Content = new FaultInjectionHttpContent(
                         new MemoryStream(
-                            FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Gone, rule: {ruleId}"))),
+                            isProxyCall
+                                ? FaultInjectionResponseEncoding.GetBytes(
+                                    GetProxyResponseMessageString((int)StatusCodes.Gone, (int)SubStatusCodes.ServerGenerated410, "Gone", ruleId))
+                                : FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Gone, rule: {ruleId}"))),
                     };
 
-                    foreach (string header in headers.AllKeys())
-                    {
-                        httpResponse.Headers.Add(header, headers.Get(header));
-                    }
+                    this.SetHttpHeaders(httpResponse, headers, isProxyCall);
 
                     httpResponse.Headers.Add(
                         WFConstants.BackendHeaders.SubStatus,
@@ -308,44 +352,74 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
                     return httpResponse;
 
-                case FaultInjectionServerErrorType.TooManyRequests:
-                    
+                case FaultInjectionServerErrorType.RetryWith:
+
                     httpResponse = new HttpResponseMessage
                     {
-                        StatusCode = HttpStatusCode.TooManyRequests,
-                        Content = new FauntInjectionHttpContent(
+                        Version = isProxyCall
+                            ? new Version(2, 0)
+                            : new Version(1, 1),
+                        StatusCode = (HttpStatusCode)StatusCodes.RetryWith,
+                        Content = new FaultInjectionHttpContent(
                             new MemoryStream(
-                                FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: TooManyRequests, rule: {ruleId}"))),
+                                isProxyCall
+                                    ? FaultInjectionResponseEncoding.GetBytes(
+                                        GetProxyResponseMessageString((int)StatusCodes.RetryWith, (int)SubStatusCodes.Unknown, "RetryWith", ruleId))
+                                    : FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: RetryWith, rule: {ruleId}"))),
                     };
 
+                    this.SetHttpHeaders(httpResponse, headers, isProxyCall);
 
-                    foreach (string header in headers.AllKeys())
+                    httpResponse.Headers.Add(
+                        WFConstants.BackendHeaders.SubStatus,
+                        ((int)SubStatusCodes.Unknown).ToString(CultureInfo.InvariantCulture));
+                    httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
+
+                    return httpResponse;
+
+                case FaultInjectionServerErrorType.TooManyRequests:
+
+                    httpResponse = new HttpResponseMessage
                     {
-                        httpResponse.Headers.Add(header, headers.Get(header));
-                    }
+                        Version = isProxyCall
+                            ? new Version(2, 0)
+                            : new Version(1, 1),
+                        StatusCode = HttpStatusCode.TooManyRequests,
+                        Content = new FaultInjectionHttpContent(
+                            new MemoryStream(
+                                isProxyCall
+                                    ? FaultInjectionResponseEncoding.GetBytes(
+                                    GetProxyResponseMessageString((int)StatusCodes.TooManyRequests, (int)SubStatusCodes.RUBudgetExceeded, "TooManyRequests", ruleId))
+                                : FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: TooManyRequests, rule: {ruleId}"))),
+                    };
+
+                    this.SetHttpHeaders(httpResponse, headers, isProxyCall);
 
                     httpResponse.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromMilliseconds(500));
                     httpResponse.Headers.Add(
-                        WFConstants.BackendHeaders.SubStatus, 
+                        WFConstants.BackendHeaders.SubStatus,
                         ((int)SubStatusCodes.RUBudgetExceeded).ToString(CultureInfo.InvariantCulture));
                     httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
 
                     return httpResponse;
 
                 case FaultInjectionServerErrorType.Timeout:
-                    
+
                     httpResponse = new HttpResponseMessage
                     {
+                        Version = isProxyCall
+                            ? new Version(2, 0)
+                            : new Version(1, 1),
                         StatusCode = HttpStatusCode.RequestTimeout,
-                        Content = new FauntInjectionHttpContent(
+                        Content = new FaultInjectionHttpContent(
                             new MemoryStream(
-                                FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Timeout, rule: {ruleId}"))),
+                                isProxyCall
+                                    ? FaultInjectionResponseEncoding.GetBytes(
+                                       GetProxyResponseMessageString((int)StatusCodes.RequestTimeout, (int)SubStatusCodes.Unknown, "Timeout", ruleId))
+                                    : FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Timeout, rule: {ruleId}"))),
                     };
 
-                    foreach (string header in headers.AllKeys())
-                    {
-                        httpResponse.Headers.Add(header, headers.Get(header));
-                    }
+                    this.SetHttpHeaders(httpResponse, headers, isProxyCall);
 
                     httpResponse.Headers.Add(
                         WFConstants.BackendHeaders.SubStatus,
@@ -355,19 +429,22 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     return httpResponse;
 
                 case FaultInjectionServerErrorType.InternalServerError:
-                    
+
                     httpResponse = new HttpResponseMessage
                     {
+                        Version = isProxyCall
+                            ? new Version(2, 0)
+                            : new Version(1, 1),
                         StatusCode = HttpStatusCode.InternalServerError,
-                        Content = new FauntInjectionHttpContent(
+                        Content = new FaultInjectionHttpContent(
                             new MemoryStream(
-                                FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Internal Server Error, rule: {ruleId}"))),
+                                isProxyCall
+                                    ? FaultInjectionResponseEncoding.GetBytes(
+                                        GetProxyResponseMessageString((int)StatusCodes.InternalServerError, (int)SubStatusCodes.Unknown, "InternalServerError", ruleId))
+                                    : FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: InternalServerError, rule: {ruleId}"))),
                     };
 
-                    foreach (string header in headers.AllKeys())
-                    {
-                        httpResponse.Headers.Add(header, headers.Get(header));
-                    }
+                    this.SetHttpHeaders(httpResponse, headers, isProxyCall);
 
                     httpResponse.Headers.Add(
                         WFConstants.BackendHeaders.SubStatus,
@@ -377,20 +454,23 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     return httpResponse;
 
                 case FaultInjectionServerErrorType.ReadSessionNotAvailable:
-                    
+
                     const string badSesstionToken = "1:1#1#1=1#1=1";
                     httpResponse = new HttpResponseMessage
                     {
+                        Version = isProxyCall
+                            ? new Version(2, 0)
+                            : new Version(1, 1),
                         StatusCode = HttpStatusCode.NotFound,
-                        Content = new FauntInjectionHttpContent(
+                        Content = new FaultInjectionHttpContent(
                             new MemoryStream(
-                                FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Read Session Not Available, rule: {ruleId}"))),
+                                isProxyCall
+                                    ? FaultInjectionResponseEncoding.GetBytes(
+                                        GetProxyResponseMessageString((int)StatusCodes.NotFound, (int)SubStatusCodes.ReadSessionNotAvailable, "ReadSessionNotAvailable", ruleId))
+                                    : FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: ReadSessionNotAvailable, rule: {ruleId}"))),
                     };
 
-                    foreach (string header in headers.AllKeys())
-                    {
-                        httpResponse.Headers.Add(header, headers.Get(header));
-                    }
+                    this.SetHttpHeaders(httpResponse, headers, isProxyCall);
 
                     httpResponse.Headers.Add(
                         WFConstants.BackendHeaders.SubStatus,
@@ -401,19 +481,22 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     return httpResponse;
 
                 case FaultInjectionServerErrorType.PartitionIsMigrating:
-                    
+
                     httpResponse = new HttpResponseMessage
                     {
+                        Version = isProxyCall
+                            ? new Version(2, 0)
+                            : new Version(1, 1),
                         StatusCode = HttpStatusCode.Gone,
-                        Content = new FauntInjectionHttpContent(
+                        Content = new FaultInjectionHttpContent(
                             new MemoryStream(
-                                FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: PartitionIsMigrating, rule: {ruleId}"))),
+                                isProxyCall
+                                    ? FaultInjectionResponseEncoding.GetBytes(
+                                        GetProxyResponseMessageString((int)StatusCodes.Gone, (int)SubStatusCodes.CompletingPartitionMigration, "PartitionIsMigrating", ruleId))
+                                    : FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: PartitionIsMigrating, rule: {ruleId}"))),
                     };
 
-                    foreach (string header in headers.AllKeys())
-                    {
-                        httpResponse.Headers.Add(header, headers.Get(header));
-                    }
+                    this.SetHttpHeaders(httpResponse, headers, isProxyCall);
 
                     httpResponse.Headers.Add(
                         WFConstants.BackendHeaders.SubStatus,
@@ -423,19 +506,22 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     return httpResponse;
 
                 case FaultInjectionServerErrorType.PartitionIsSplitting:
-                    
+
                     httpResponse = new HttpResponseMessage
                     {
+                        Version = isProxyCall
+                            ? new Version(2, 0)
+                            : new Version(1, 1),
                         StatusCode = HttpStatusCode.Gone,
-                        Content = new FauntInjectionHttpContent(
+                        Content = new FaultInjectionHttpContent(
                             new MemoryStream(
-                                FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: PartitionIsSplitting, rule: {ruleId}"))),
+                                isProxyCall
+                                    ? FaultInjectionResponseEncoding.GetBytes(
+                                        GetProxyResponseMessageString((int)StatusCodes.Gone, (int)SubStatusCodes.CompletingSplit, "PartitionIsSplitting", ruleId))
+                                    : FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: PartitionIsSplitting, rule: {ruleId}"))),
                     };
 
-                    foreach (string header in headers.AllKeys())
-                    {
-                        httpResponse.Headers.Add(header, headers.Get(header));
-                    }
+                    this.SetHttpHeaders(httpResponse, headers, isProxyCall);
 
                     httpResponse.Headers.Add(
                         WFConstants.BackendHeaders.SubStatus,
@@ -448,16 +534,19 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
                     httpResponse = new HttpResponseMessage
                     {
+                        Version = isProxyCall
+                            ? new Version(2, 0)
+                            : new Version(1, 1),
                         StatusCode = HttpStatusCode.ServiceUnavailable,
-                        Content = new FauntInjectionHttpContent(
+                        Content = new FaultInjectionHttpContent(
                             new MemoryStream(
-                                FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Service Unavailable, rule: {ruleId}"))),
+                                isProxyCall
+                                    ? FaultInjectionResponseEncoding.GetBytes(
+                                       GetProxyResponseMessageString((int)StatusCodes.ServiceUnavailable, (int)SubStatusCodes.Unknown, "ServiceUnavailable", ruleId))
+                                    : FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: ServiceUnavailable, rule: {ruleId}"))),
                     };
 
-                    foreach (string header in headers.AllKeys())
-                    {
-                        httpResponse.Headers.Add(header, headers.Get(header));
-                    }
+                    this.SetHttpHeaders(httpResponse, headers, isProxyCall);
 
                     httpResponse.Headers.Add(
                         WFConstants.BackendHeaders.SubStatus,
@@ -467,19 +556,22 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     return httpResponse;
 
                 case FaultInjectionServerErrorType.DatabaseAccountNotFound:
-                    
+
                     httpResponse = new HttpResponseMessage
                     {
+                        Version = isProxyCall
+                            ? new Version(2, 0)
+                            : new Version(1, 1),
                         StatusCode = HttpStatusCode.Forbidden,
-                        Content = new FauntInjectionHttpContent(
+                        Content = new FaultInjectionHttpContent(
                             new MemoryStream(
-                                FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: DatabaseAccountNotFound, rule: {ruleId}"))),
+                                isProxyCall
+                                    ? FaultInjectionResponseEncoding.GetBytes(
+                                        GetProxyResponseMessageString((int)StatusCodes.Forbidden, (int)SubStatusCodes.DatabaseAccountNotFound, "DatabaseAccountNotFound", ruleId))
+                                    : FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: DatabaseAccountNotFound, rule: {ruleId}"))),
                     };
 
-                    foreach (string header in headers.AllKeys())
-                    {
-                        httpResponse.Headers.Add(header, headers.Get(header));
-                    }
+                    this.SetHttpHeaders(httpResponse, headers, isProxyCall);
 
                     httpResponse.Headers.Add(
                         WFConstants.BackendHeaders.SubStatus,
@@ -492,16 +584,19 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
                     httpResponse = new HttpResponseMessage
                     {
+                        Version = isProxyCall
+                            ? new Version(2, 0)
+                            : new Version(1, 1),
                         StatusCode = HttpStatusCode.Gone,
-                        Content = new FauntInjectionHttpContent(
+                        Content = new FaultInjectionHttpContent(
                             new MemoryStream(
-                                FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: LeaseNotFound, rule: {ruleId}"))),
+                                isProxyCall
+                                    ? FaultInjectionResponseEncoding.GetBytes(
+                                        GetProxyResponseMessageString((int)StatusCodes.Gone, (int)SubStatusCodes.LeaseNotFound, "LeaseNotFound", ruleId))
+                                    : FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: LeaseNotFound, rule: {ruleId}"))),
                     };
 
-                    foreach (string header in headers.AllKeys())
-                    {
-                        httpResponse.Headers.Add(header, headers.Get(header));
-                    }
+                    this.SetHttpHeaders(httpResponse, headers, isProxyCall);
 
                     httpResponse.Headers.Add(
                         WFConstants.BackendHeaders.SubStatus,
@@ -509,17 +604,100 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
 
                     return httpResponse;
-
+                case FaultInjectionServerErrorType.Unauthorized:
+                    httpResponse = new HttpResponseMessage
+                    {
+                        Version = isProxyCall
+                            ? new Version(2, 0)
+                            : new Version(1, 1),
+                        StatusCode = HttpStatusCode.Unauthorized,
+                        Content = new FaultInjectionHttpContent(
+                            new MemoryStream(
+                                isProxyCall
+                                    ? FaultInjectionResponseEncoding.GetBytes(
+                                        GetProxyResponseMessageString((int)StatusCodes.Unauthorized, (int)SubStatusCodes.Unknown, "Unauthorized", ruleId))
+                                    : FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Unauthorized, rule: {ruleId}"))),
+                    };
+                    this.SetHttpHeaders(httpResponse, headers, isProxyCall);
+                    httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
+                    return httpResponse;
+                case FaultInjectionServerErrorType.AadTokenRevoked:
+                    httpResponse = new HttpResponseMessage
+                    {
+                        Version = isProxyCall
+                            ? new Version(2, 0)
+                            : new Version(1, 1),
+                        StatusCode = HttpStatusCode.Unauthorized,
+                        Content = new FaultInjectionHttpContent(
+                            new MemoryStream(
+                                isProxyCall
+                                    ? FaultInjectionResponseEncoding.GetBytes(
+                                        GetProxyResponseMessageString((int)StatusCodes.Unauthorized, (int)SubStatusCodes.AadTokenRevoked, "AadTokenRevoked", ruleId))
+                                    : FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: AadTokenRevoked, rule: {ruleId}"))),
+                    };
+                    this.SetHttpHeaders(httpResponse, headers, isProxyCall);
+                    httpResponse.Headers.Add(
+                        WFConstants.BackendHeaders.SubStatus,
+                        ((int)SubStatusCodes.AadTokenRevoked).ToString());
+                    httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
+                    httpResponse.Headers.TryAddWithoutValidation(
+                        HttpConstants.HttpHeaders.WwwAuthenticate,
+                        this.GenerateWwwAuthenticateForRevocation());
+                    return httpResponse;
                 default:
                     throw new ArgumentException($"Server error type {this.serverErrorType} is not supported");
             }
         }
 
-        internal class FauntInjectionHttpContent : HttpContent
+        private bool IsProxyCall(DocumentServiceRequest dsr)
+        {
+            string gwUriString = dsr.Headers.Get("FAULTINJECTION_IS_PROXY");
+
+            return !string.IsNullOrEmpty(gwUriString);
+        }
+
+        private void SetHttpHeaders(
+            HttpResponseMessage httpResponse,
+            INameValueCollection headers,
+            bool isProxyCall)
+        {
+            foreach (string header in headers.AllKeys())
+            {
+                if (header != "FAULTINJECTION_IS_PROXY")
+                {
+                    httpResponse.Headers.Add(header, headers.Get(header));
+                }
+            }
+
+            if (isProxyCall)
+            {
+                httpResponse.Headers.Add(ThinClientConstants.RoutedViaProxy,"1");
+            }
+        }
+
+        private static string GetProxyResponseMessageString(
+            int statusCode,
+            int subStatusCode,
+            string message, 
+            string faultInjectionRuleId)
+        {
+            return $"{{\"code\": \"{statusCode}:{subStatusCode}\",\"message\":\"Fault Injection Server Error: {message}, rule: {faultInjectionRuleId}\"}}";
+        }
+
+        private string GenerateWwwAuthenticateForRevocation()
+        {
+            long currentTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            string claimsJson = "{\"access_token\":{\"nbf\":{\"essential\":false,\"value\":\"" + currentTimestamp.ToString() + "\"}}}";
+            string base64Claims = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(claimsJson));
+
+            return "Bearer realm=\"\", authorization_uri=\"\", error=\"insufficient_claims\", claims=\"" + base64Claims + "\"";
+        }
+
+        internal class FaultInjectionHttpContent : HttpContent
         {
             private readonly Stream content;
 
-            public FauntInjectionHttpContent(Stream content)
+            public FaultInjectionHttpContent(Stream content)
             {
                 this.content = content;
             }
@@ -536,13 +714,18 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             }
         }
 
-        internal static class  FaultInjectionResponseEncoding
+        internal static class FaultInjectionResponseEncoding
         {
             private static readonly UTF8Encoding Encoding = new UTF8Encoding(false);
 
             public static byte[] GetBytes(string value)
             {
                 return Encoding.GetBytes(value);
+            }
+
+            public static byte[] GetBytesFromHexString(string hexString)
+            {
+                return Convert.FromHexString(hexString);
             }
         }
     }

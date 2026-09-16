@@ -21,7 +21,6 @@
             this.singlePartition = singlePartition;
         }
 
-        [TestMethod]
         public async Task TestMoveNextAsyncThrowsTaskCanceledException()
         {
             int numItems = 100;
@@ -38,7 +37,6 @@
             await Assert.ThrowsExceptionAsync<OperationCanceledException>(async () => await enumerator.MoveNextAsync());
         }
 
-        [TestMethod]
         public async Task TestDrainFullyAsync(bool aggressivePrefetch)
         {
             int numItems = 1000;
@@ -48,7 +46,6 @@
             Assert.AreEqual(numItems, identifiers.Count);
         }
 
-        [TestMethod]
         public async Task TestResumingFromStateAsync(bool aggressivePrefetch, bool exercisePrefetch)
         {
             int numItems = 1000;
@@ -63,7 +60,6 @@
             Assert.AreEqual(numItems, firstDrainResults.Count + secondDrainResults.Count);
         }
 
-        [TestMethod]
         public async Task Test429sAsync(bool aggressivePrefetch)
         {
             int numItems = 100;
@@ -104,7 +100,6 @@
             Assert.AreEqual(numItems, identifiers.Count);
         }
 
-        [TestMethod]
         public async Task Test429sWithContinuationsAsync(bool aggressivePrefetch, bool exercisePrefetch)
         {
             int numItems = 100;
@@ -156,7 +151,6 @@
             Assert.AreEqual(numItems, identifiers.Count);
         }
 
-        [TestMethod]
         public async Task TestEmptyPages(bool aggressivePrefetch)
         {
             int numItems = 100;

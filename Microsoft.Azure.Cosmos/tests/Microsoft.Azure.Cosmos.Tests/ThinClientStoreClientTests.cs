@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
@@ -17,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -55,10 +57,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosHttpClient cosmosHttpClient = MockCosmosUtil.CreateMockCosmosHttpClientFromFunc(
                 _ => Task.FromResult(mockResponse));
 
+            Cosmos.UserAgentContainer userAgentContainer = new Microsoft.Azure.Cosmos.UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix");
+
             ThinClientStoreClient thinClientStoreClient = new ThinClientStoreClient(
                 httpClient: cosmosHttpClient,
                 eventSource: null,
-                serializerSettings: null);
+                userAgentContainer: userAgentContainer,
+                serializerSettings: null,
+                globalPartitionEndpointManager: GlobalPartitionEndpointManagerNoOp.Instance);
 
             DocumentServiceRequest request = DocumentServiceRequest.Create(
                 operationType: OperationType.Read,
@@ -81,7 +87,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 tokenProviderMock.Object,
                 retryPolicyFactoryMock.Object,
                 telemetry,
-                true)
+                true,
+                null)
             {
                 CallBase = true
             };
@@ -116,10 +123,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosHttpClient cosmosHttpClient = MockCosmosUtil.CreateMockCosmosHttpClientFromFunc(
                 _ => Task.FromResult(successResponse));
 
+            Cosmos.UserAgentContainer userAgentContainer = new Microsoft.Azure.Cosmos.UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix");
+
             ThinClientStoreClient thinClientStoreClient = new ThinClientStoreClient(
                 httpClient: cosmosHttpClient,
                 eventSource: null,
-                serializerSettings: null);
+                userAgentContainer: userAgentContainer,
+                serializerSettings: null,
+                globalPartitionEndpointManager: GlobalPartitionEndpointManagerNoOp.Instance);
 
             DocumentServiceRequest request = DocumentServiceRequest.Create(
                 operationType: OperationType.Read,
@@ -142,7 +153,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 tokenProviderMock.Object,
                 retryPolicyFactoryMock.Object,
                 telemetry,
-                true)
+                true,
+                null)
             {
                 CallBase = true
             };
@@ -170,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task InvokeAsync_ShouldAddRequiredProxyHeaders()
+        public async Task InvokeAsync_ShouldOnlyAddUserAgentAndActivityIdHeadersToProxyRequest()
         {
             HttpResponseMessage successResponse = new HttpResponseMessage(HttpStatusCode.Created)
             {
@@ -191,10 +203,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                         capturedRequest = await requestFactory())
                 .ReturnsAsync(successResponse);
 
+            Cosmos.UserAgentContainer userAgentContainer = new Microsoft.Azure.Cosmos.UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix");
+
             ThinClientStoreClient thinClientStoreClient = new ThinClientStoreClient(
                 httpClient: mockCosmosHttpClient.Object,
                 eventSource: null,
-                serializerSettings: null);
+                userAgentContainer: userAgentContainer,
+                serializerSettings: null,
+                globalPartitionEndpointManager: GlobalPartitionEndpointManagerNoOp.Instance);
 
             DocumentServiceRequest request = DocumentServiceRequest.Create(
                 operationType: OperationType.Read,
@@ -233,7 +249,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 tokenProviderMock.Object,
                 retryPolicyFactoryMock.Object,
                 telemetry,
-                true)
+                true,
+                null)
             {
                 CallBase = true
             };
@@ -258,21 +275,15 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Assert
             Assert.IsNotNull(capturedRequest, "The request was not captured");
 
-            // Get all request headers for verification
             System.Collections.Generic.Dictionary<string, string> requestHeaders = capturedRequest.Headers.ToDictionary(h => h.Key, h => h.Value.FirstOrDefault());
 
-            // Verify the required proxy headers
-            Assert.IsTrue(requestHeaders.ContainsKey(ThinClientConstants.ProxyStartEpk), "ProxyStartEpk header is missing");
-            Assert.AreEqual(mockPartitionKeyRange.MinInclusive, requestHeaders[ThinClientConstants.ProxyStartEpk]);
+            // Only UserAgent and ActivityId should be present
+            Assert.AreEqual(2, requestHeaders.Count, "Only UserAgent and ActivityId headers should be present");
+            Assert.IsTrue(requestHeaders.ContainsKey(ThinClientConstants.UserAgent), "UserAgent header is missing");
+            Assert.IsTrue(requestHeaders.ContainsKey(HttpConstants.HttpHeaders.ActivityId), "ActivityId header is missing");
 
-            Assert.IsTrue(requestHeaders.ContainsKey(ThinClientConstants.ProxyEndEpk), "ProxyEndEpk header is missing");
-            Assert.AreEqual(mockPartitionKeyRange.MaxExclusive, requestHeaders[ThinClientConstants.ProxyEndEpk]);
-
-            Assert.IsTrue(requestHeaders.ContainsKey(ThinClientConstants.ProxyOperationType), "ProxyOperationType header is missing");
-            Assert.AreEqual(request.OperationType.ToOperationTypeString(), requestHeaders[ThinClientConstants.ProxyOperationType]);
-
-            Assert.IsTrue(requestHeaders.ContainsKey(ThinClientConstants.ProxyResourceType), "ProxyResourceType header is missing");
-            Assert.AreEqual(request.ResourceType.ToResourceTypeString(), requestHeaders[ThinClientConstants.ProxyResourceType]);
+            Assert.IsFalse(requestHeaders.ContainsKey(ThinClientConstants.ProxyStartEpk), "ProxyStartEpk header should NOT be present");
+            Assert.IsFalse(requestHeaders.ContainsKey(ThinClientConstants.ProxyEndEpk), "ProxyEndEpk header should NOT be present");
         }
 
         [TestMethod]
@@ -297,10 +308,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                         capturedRequest = await requestFactory())
                 .ReturnsAsync(successResponse);
 
+            Cosmos.UserAgentContainer userAgentContainer = new Microsoft.Azure.Cosmos.UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix");
+
             ThinClientStoreClient thinClientStoreClient = new ThinClientStoreClient(
                 httpClient: mockCosmosHttpClient.Object,
                 eventSource: null,
-                serializerSettings: null);
+                userAgentContainer: userAgentContainer,
+                serializerSettings: null,
+                globalPartitionEndpointManager: GlobalPartitionEndpointManagerNoOp.Instance);
 
             DocumentServiceRequest request = DocumentServiceRequest.Create(
                 operationType: OperationType.Read,
@@ -329,7 +344,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 tokenProviderMock.Object,
                 retryPolicyFactoryMock.Object,
                 telemetry,
-                true)
+                true,
+                null)
             {
                 CallBase = true
             };
@@ -358,6 +374,27 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.IsFalse(headers.ContainsKey(ThinClientConstants.ProxyStartEpk), "ProxyStartEpk should not be added when PKRange is null");
             Assert.IsFalse(headers.ContainsKey(ThinClientConstants.ProxyEndEpk), "ProxyEndEpk should not be added when PKRange is null");
+        }
+
+        [TestMethod]
+        public void Constructor_ShouldThrowArgumentNullException_WhenUserAgentContainerIsNull()
+        {
+            // Arrange
+            Mock<CosmosHttpClient> mockHttpClient = new Mock<CosmosHttpClient>();
+            ICommunicationEventSource mockEventSource = Mock.Of<ICommunicationEventSource>();
+
+            // Act & Assert
+            ArgumentNullException ex = Assert.ThrowsException<ArgumentNullException>(() =>
+                new ThinClientStoreClient(
+                    httpClient: mockHttpClient.Object,
+                    userAgentContainer: null,
+                    eventSource: mockEventSource,
+                    globalPartitionEndpointManager: GlobalPartitionEndpointManagerNoOp.Instance,
+                    serializerSettings: null)
+            );
+
+            Assert.AreEqual("userAgentContainer", ex.ParamName);
+            StringAssert.Contains(ex.Message, "UserAgentContainer cannot be null");
         }
 
         private ContainerProperties GetMockContainerProperties()

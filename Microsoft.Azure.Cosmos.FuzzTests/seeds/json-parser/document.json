@@ -1,0 +1,1 @@
+{"id":"1","name":"test","age":42,"active":true,"address":{"city":"Seattle","zip":98052},"tags":["cosmos","sdk"],"score":3.14,"nothing":null}

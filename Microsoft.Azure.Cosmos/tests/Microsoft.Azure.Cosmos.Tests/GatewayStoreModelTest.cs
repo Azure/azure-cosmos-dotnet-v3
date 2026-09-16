@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.ObjectModel;
     using System.Diagnostics;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Text;
@@ -107,6 +108,33 @@ namespace Microsoft.Azure.Cosmos
             {
 
                 DefaultTrace.TraceSource.Listeners.Remove(testTraceListener);
+            }
+        }
+
+        [DataTestMethod]
+        [Owner("aavasthy")]
+        [DataRow(true, false, DisplayName = "Thin-client/Direct: separate StoreModel and GatewayStoreModel -> both disposed once")]
+        [DataRow(true, true, DisplayName = "Plain Gateway: shared instance -> disposed exactly once, never twice")]
+        [DataRow(false, false, DisplayName = "Partial init: StoreModel null, GatewayStoreModel set -> GatewayStoreModel disposed")]
+        public void Dispose_DisposesEachStoreModelInstanceExactlyOnce(bool assignStoreModel, bool gatewaySharesStoreModelInstance)
+        {
+            DocumentClient client = new DocumentClient(
+                new Uri("https://localhost:8081/"),
+                "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==",
+                new ConnectionPolicy());
+
+            Mock<IStoreModelExtension> storeModel = assignStoreModel ? new Mock<IStoreModelExtension>() : null;
+            Mock<IStoreModelExtension> gatewayStoreModel = gatewaySharesStoreModelInstance ? storeModel : new Mock<IStoreModelExtension>();
+
+            client.StoreModel = storeModel?.Object;
+            client.GatewayStoreModel = gatewayStoreModel.Object;
+
+            client.Dispose();
+
+            storeModel?.Verify(m => m.Dispose(), Times.Once, "StoreModel must be disposed exactly once (never twice when shared with GatewayStoreModel).");
+            if (!gatewaySharesStoreModelInstance)
+            {
+                gatewayStoreModel.Verify(m => m.Dispose(), Times.Once, "A GatewayStoreModel that is a separate instance from StoreModel must also be disposed.");
             }
         }
 
@@ -286,8 +314,8 @@ namespace Microsoft.Azure.Cosmos
                            dsr,
                            ConsistencyLevel.Session,
                            new Mock<ISessionContainer>().Object,
-                           partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false).Object,
-                           clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null, null, false).Object,
+                           partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false, false, null).Object,
+                           clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null, null, false, null).Object,
                            globalEndpointManager: Mock.Of<IGlobalEndpointManager>());
 
                         Assert.IsNull(dsr.Headers[HttpConstants.HttpHeaders.SessionToken]);
@@ -313,8 +341,8 @@ namespace Microsoft.Azure.Cosmos
                     dsrQueryPlan,
                     ConsistencyLevel.Session,
                     new Mock<ISessionContainer>().Object,
-                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false).Object,
-                    clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null, null, false).Object,
+                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false, false, null).Object,
+                    clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null, null, false, null).Object,
                     globalEndpointManager: Mock.Of<IGlobalEndpointManager>());
 
                 Assert.IsNull(dsrQueryPlan.Headers[HttpConstants.HttpHeaders.SessionToken]);
@@ -367,8 +395,8 @@ namespace Microsoft.Azure.Cosmos
                                 dsr,
                                 ConsistencyLevel.Session,
                                 new Mock<ISessionContainer>().Object,
-                                partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false).Object,
-                                clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null, null, false).Object,
+                                partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false, false, null).Object,
+                                clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null, null, false, null).Object,
                                 globalEndpointManager: Mock.Of<IGlobalEndpointManager>());
 
                             Assert.AreEqual(dsrSessionToken, dsr.Headers[HttpConstants.HttpHeaders.SessionToken]);
@@ -397,8 +425,8 @@ namespace Microsoft.Azure.Cosmos
                                 dsrNoSessionToken,
                                 ConsistencyLevel.Session,
                                 sessionContainer,
-                                partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false).Object,
-                                clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null, null, false).Object,
+                                partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false, false, null).Object,
+                                clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null, null, false, null).Object,
                                 globalEndpointManager: globalEndpointManager.Object);
 
                             if (dsrNoSessionToken.IsReadOnlyRequest || dsrNoSessionToken.OperationType == OperationType.Batch || multiMaster)
@@ -438,7 +466,7 @@ namespace Microsoft.Azure.Cosmos
                             It.IsAny<CancellationToken>(),
                             NoOpTrace.Singleton)).Returns(Task.FromResult(containerProperties));
 
-                        Mock<PartitionKeyRangeCache> mockPartitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(MockBehavior.Strict, null, null, null, null, false);
+                        Mock<PartitionKeyRangeCache> mockPartitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(MockBehavior.Strict, null, null, null, null, false, false, null);
                         mockPartitionKeyRangeCache.Setup(x => x.TryGetPartitionKeyRangeByIdAsync(
                             containerProperties.ResourceId,
                             partitionKeyRangeId,
@@ -485,8 +513,8 @@ namespace Microsoft.Azure.Cosmos
                     dsrSprocExecute,
                     ConsistencyLevel.Session,
                     new Mock<ISessionContainer>().Object,
-                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false).Object,
-                    clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null, null, false).Object,
+                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false, false, null).Object,
+                    clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null, null, false, null).Object,
                     globalEndpointManager: Mock.Of<IGlobalEndpointManager>());
 
                 Assert.AreEqual(sessionToken, dsrSprocExecute.Headers[HttpConstants.HttpHeaders.SessionToken]);
@@ -524,8 +552,8 @@ namespace Microsoft.Azure.Cosmos
                     dsrNoSessionToken,
                     ConsistencyLevel.Session,
                     sessionContainer,
-                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false).Object,
-                    clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null, null, false).Object,
+                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false, false, null).Object,
+                    clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null, null, false, null).Object,
                     globalEndpointManager: globalEndpointManager.Object);
 
                 if (isWriteRequest && multiMaster)
@@ -587,6 +615,159 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
+        }
+
+        /// <summary>
+        /// Gateway V1 must tell the gateway to suppress its server-side 449 (RetryWith) retry by
+        /// sending the <c>x-ms-noretry-449</c> header, so the SDK becomes the single client-side
+        /// authority for RetryWith retries.
+        /// </summary>
+        [TestMethod]
+        [Owner("aavasthy")]
+        public async Task GatewayStoreModel_GatewayV1_SetsNoRetry449Header()
+        {
+            bool noRetry449HeaderSent = false;
+            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = request =>
+            {
+                noRetry449HeaderSent = request.Headers.TryGetValues(
+                        HttpConstants.HttpHeaders.NoRetryOn449StatusCode,
+                        out IEnumerable<string> values)
+                    && values.Any(value => string.Equals(value, bool.TrueString, StringComparison.OrdinalIgnoreCase));
+
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("{}"),
+                    RequestMessage = request
+                });
+            };
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+            mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
+
+            using GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            ISessionContainer sessionContainer = new SessionContainer(string.Empty);
+            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
+            HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+            using GatewayStoreModel storeModel = new GatewayStoreModel(
+                endpointManager,
+                sessionContainer,
+                ConsistencyLevel.Eventual,
+                eventSource,
+                null,
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
+                GlobalPartitionEndpointManagerNoOp.Instance);
+
+            TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
+
+            using (new ActivityScope(Guid.NewGuid()))
+            using (DocumentServiceRequest request = DocumentServiceRequest.Create(
+                Documents.OperationType.Query,
+                Documents.ResourceType.Document,
+                new Uri("https://foo.com/dbs/db1/colls/coll1", UriKind.Absolute),
+                new MemoryStream(Encoding.UTF8.GetBytes("content1")),
+                AuthorizationTokenType.PrimaryMasterKey,
+                null))
+            {
+                await storeModel.ProcessMessageAsync(request);
+            }
+
+            Assert.IsTrue(
+                noRetry449HeaderSent,
+                "Gateway V1 must send x-ms-noretry-449=true so the gateway does not also retry the 449 server-side.");
+        }
+
+        /// <summary>
+        /// Gateway V1 must retry an HTTP 449 (RetryWith) response client-side and then surface the
+        /// subsequent success, proving the retry loop is wired through
+        /// <see cref="GatewayStoreModel.ProcessMessageAsync"/>.
+        /// </summary>
+        [TestMethod]
+        [Owner("aavasthy")]
+        public async Task GatewayStoreModel_GatewayV1_RetriesRetryWith449ThenSucceeds()
+        {
+            int attemptCount = 0;
+            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = request =>
+            {
+                attemptCount++;
+                HttpStatusCode statusCode = attemptCount == 1
+                    ? (HttpStatusCode)StatusCodes.RetryWith
+                    : HttpStatusCode.OK;
+
+                return Task.FromResult(new HttpResponseMessage(statusCode)
+                {
+                    Content = new StringContent("{}"),
+                    RequestMessage = request
+                });
+            };
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+            mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
+
+            using GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            ISessionContainer sessionContainer = new SessionContainer(string.Empty);
+            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
+            HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+            using GatewayStoreModel storeModel = new GatewayStoreModel(
+                endpointManager,
+                sessionContainer,
+                ConsistencyLevel.Eventual,
+                eventSource,
+                null,
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
+                GlobalPartitionEndpointManagerNoOp.Instance);
+
+            TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
+
+            using (new ActivityScope(Guid.NewGuid()))
+            using (DocumentServiceRequest request = DocumentServiceRequest.Create(
+                Documents.OperationType.Query,
+                Documents.ResourceType.Document,
+                new Uri("https://foo.com/dbs/db1/colls/coll1", UriKind.Absolute),
+                new MemoryStream(Encoding.UTF8.GetBytes("content1")),
+                AuthorizationTokenType.PrimaryMasterKey,
+                null))
+            {
+                DocumentServiceResponse response = await storeModel.ProcessMessageAsync(request);
+
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            }
+
+            Assert.AreEqual(
+                2,
+                attemptCount,
+                "The 449 (RetryWith) response must be retried once client-side before the request succeeds.");
+        }
+
+        /// <summary>
+        /// Distributed-transaction requests own their 449 (RetryWith) retry orchestration
+        /// (<see cref="ClientRetryPolicy"/> + the DistributedTransactionCommitter outer loop), so the
+        /// generic gateway 449 mechanism — which gates both the <c>x-ms-noretry-449</c> opt-out header and
+        /// the gateway store-model 449 retry loop on this decision — must exclude them. Every other
+        /// request type participates so its 449 is retried client-side.
+        /// </summary>
+        [TestMethod]
+        [Owner("aavasthy")]
+        public void GatewayStoreModel_IsGatewayRetryWith449Applicable_ExcludesDistributedTransactionRequests()
+        {
+            using (DocumentServiceRequest distributedTransactionRequest = DocumentServiceRequest.Create(
+                Documents.OperationType.CommitDistributedTransaction,
+                Documents.ResourceType.DistributedTransactionBatch,
+                AuthorizationTokenType.PrimaryMasterKey))
+            {
+                Assert.IsFalse(
+                    GatewayStoreModel.IsGatewayRetryWith449Applicable(distributedTransactionRequest),
+                    "Distributed-transaction requests must be excluded from the generic gateway 449 mechanism; their 449 retry is owned by the distributed-transaction pipeline.");
+            }
+
+            using (DocumentServiceRequest documentRequest = DocumentServiceRequest.Create(
+                Documents.OperationType.Read,
+                Documents.ResourceType.Document,
+                AuthorizationTokenType.PrimaryMasterKey))
+            {
+                Assert.IsTrue(
+                    GatewayStoreModel.IsGatewayRetryWith449Applicable(documentRequest),
+                    "Non-distributed-transaction requests must participate in the generic client-side gateway 449 retry mechanism.");
+            }
         }
 
         [TestMethod]
@@ -889,7 +1070,14 @@ namespace Microsoft.Azure.Cosmos
                                                       ResourceType.Document,
                                                       HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout,
                                                       clientSideRequestStatistics,
-                                                      CancellationToken.None);
+                                                      CancellationToken.None,
+                                                      documentServiceRequest: new DocumentServiceRequest(
+                                                                                OperationType.Read,
+                                                                                ResourceType.Document,
+                                                                                $"dbs/dummy_db_id/colls/dummy_ct_id",
+                                                                                body: null,
+                                                                                AuthorizationTokenType.PrimaryMasterKey,
+                                                                                headers: null));
 
                 Assert.AreEqual(clientSideRequestStatistics.HttpResponseStatisticsList.Count, 2);
                 // The duration is calculated using date times which can cause the duration to be slightly off. This allows for up to 15 Ms of variance.
@@ -986,8 +1174,9 @@ namespace Microsoft.Azure.Cosmos
                 null,
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient()),
                 GlobalPartitionEndpointManagerNoOp.Instance);
-            Mock<ClientCollectionCache> clientCollectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), storeModel, null, null, null, false);
-            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache.Object, endpointManager, false);
+
+            Mock<ClientCollectionCache> clientCollectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), storeModel, null, null, null, false, null);
+            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache.Object, endpointManager, false, false, null);
 
             sessionContainer.SetSessionToken(
                     ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString(),
@@ -1082,9 +1271,9 @@ namespace Microsoft.Azure.Cosmos
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
                 GlobalPartitionEndpointManagerNoOp.Instance);
 
-            Mock<ClientCollectionCache> clientCollectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), storeModel, null, null, null, false);
+            Mock<ClientCollectionCache> clientCollectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), storeModel, null, null, null, false, null);
 
-            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache.Object, endpointManager, false);
+            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache.Object, endpointManager, false, false, null);
             storeModel.SetCaches(partitionKeyRangeCache.Object, clientCollectionCache.Object);
 
             INameValueCollection headers = new RequestNameValueCollection();
@@ -1152,8 +1341,8 @@ namespace Microsoft.Azure.Cosmos
                     documentServiceRequestToChild,
                     ConsistencyLevel.Session,
                     sessionContainer,
-                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false).Object,
-                    clientCollectionCache: new Mock<ClientCollectionCache>(sessionContainer, gatewayStoreModel, null, null, null, false).Object,
+                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false, false, null).Object,
+                    clientCollectionCache: new Mock<ClientCollectionCache>(sessionContainer, gatewayStoreModel, null, null, null, false, null).Object,
                     globalEndpointManager: globalEndpointManager.Object);
 
                 Assert.AreEqual($"{childPKRangeId}:{parentSession}", documentServiceRequestToChild.Headers[HttpConstants.HttpHeaders.SessionToken]);
@@ -1218,13 +1407,14 @@ namespace Microsoft.Azure.Cosmos
                     documentServiceRequestToChild,
                     ConsistencyLevel.Session,
                     sessionContainer,
-                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false).Object,
-                    clientCollectionCache: new Mock<ClientCollectionCache>(sessionContainer, gatewayStoreModel, null, null, null, false).Object,
+                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false, false, null).Object,
+                    clientCollectionCache: new Mock<ClientCollectionCache>(sessionContainer, gatewayStoreModel, null, null, null, false, null).Object,
                     globalEndpointManager: globalEndpointManager.Object);
 
                 Assert.AreEqual($"{childPKRangeId}:{tokenWithAllMax}", documentServiceRequestToChild.Headers[HttpConstants.HttpHeaders.SessionToken]);
             });
         }
+
 
         private class MockMessageHandler : HttpMessageHandler
         {
@@ -1289,8 +1479,8 @@ namespace Microsoft.Azure.Cosmos
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(httpMessageHandler)),
                 GlobalPartitionEndpointManagerNoOp.Instance);
 
-            ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), storeModel, null, null, null, false).Object;
-            PartitionKeyRangeCache partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache, endpointManager, false).Object;
+            ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), storeModel, null, null, null, false, null).Object;
+            PartitionKeyRangeCache partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache, endpointManager, false, false, null).Object;
             storeModel.SetCaches(partitionKeyRangeCache, clientCollectionCache);
 
             await executeWithGatewayStoreModel(storeModel);

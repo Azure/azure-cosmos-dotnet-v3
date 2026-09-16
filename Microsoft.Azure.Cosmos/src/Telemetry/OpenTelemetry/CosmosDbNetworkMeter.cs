@@ -94,7 +94,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             if (!IsEnabled || !CosmosDbMeterUtil.TryGetDiagnostics(attributes, ex, out CosmosTraceDiagnostics diagnostics))
             {
-                DefaultTrace.TraceWarning("Network Meter is not enabled or Diagnostics is not available.");
                 return;
             }
 

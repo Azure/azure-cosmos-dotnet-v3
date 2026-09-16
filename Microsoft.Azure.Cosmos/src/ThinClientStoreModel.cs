@@ -1,21 +1,28 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.FaultInjection;
     using Newtonsoft.Json;
 
     /// <summary>
-    /// An IStoreModelExtension implementation that routes operations through the ThinClient proxy. 
-    /// It applies session tokens, resolves partition key ranges, and delegates requests to ThinClientStoreClient.
+    /// An <see cref="IStoreModelExtension"/> implementation that routes operations through the
+    /// ThinClient proxy. It applies session tokens, resolves partition key ranges and delegates
+    /// requests to <see cref="ThinClientStoreClient"/>. When a request is not eligible for the
+    /// thin-client path (operation type not supported, or the service has withdrawn the thin-client
+    /// endpoints mid-flight) the model transparently falls back to the regular gateway HTTP path
+    /// via the inherited <see cref="GatewayStoreClient"/>, without requiring a client restart.
+    /// This dispatch decision is taken per request (see <see cref="IsThinClientRoutable"/>) so the
+    /// model can switch direction in either way (thin-client → gateway, or gateway → thin-client)
+    /// as soon as the next <see cref="LocationCache"/> refresh updates the availability signals.
     /// </summary>
     internal class ThinClientStoreModel : GatewayStoreModel
     {
@@ -23,13 +30,16 @@ namespace Microsoft.Azure.Cosmos
 
         public ThinClientStoreModel(
             GlobalEndpointManager endpointManager,
-            GlobalPartitionEndpointManager globalPartitionEndpointManager,
             ISessionContainer sessionContainer,
             ConsistencyLevel defaultConsistencyLevel,
             DocumentClientEventSource eventSource,
             JsonSerializerSettings serializerSettings,
-            CosmosHttpClient httpClient)
-            : base(endpointManager,
+            CosmosHttpClient httpClient,
+            GlobalPartitionEndpointManager globalPartitionEndpointManager,
+            UserAgentContainer userAgentContainer,
+            IChaosInterceptor chaosInterceptor = null)
+            : base(
+                  endpointManager,
                   sessionContainer,
                   defaultConsistencyLevel,
                   eventSource,
@@ -39,106 +49,208 @@ namespace Microsoft.Azure.Cosmos
         {
             this.thinClientStoreClient = new ThinClientStoreClient(
                 httpClient,
+                userAgentContainer,
                 eventSource,
-                serializerSettings);
+                globalPartitionEndpointManager,
+                serializerSettings,
+                chaosInterceptor);
         }
 
-        public override async Task<DocumentServiceResponse> ProcessMessageAsync(
-            DocumentServiceRequest request,
-            CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Eagerly resolves the <see cref="PartitionKeyRange"/> whenever the account currently
+        /// advertises thin-client endpoints, so the proxy request can carry ProxyStartEpk /
+        /// ProxyEndEpk and split detection has the PKR available on the gateway fall-back. When no
+        /// thin-client endpoints are advertised, defers to the base PPAF/PPCB-gated decision so the
+        /// overhead matches plain <see cref="GatewayStoreModel"/>. Re-evaluated per request off the
+        /// live <see cref="LocationCache"/> flags.
+        /// </summary>
+        protected override bool ShouldResolvePartitionKeyRange()
         {
-            await GatewayStoreModel.ApplySessionTokenAsync(
-                request,
-                base.defaultConsistencyLevel,
-                base.sessionContainer,
-                base.partitionKeyRangeCache,
-                base.clientCollectionCache,
-                base.endpointManager);
+            return base.ShouldResolvePartitionKeyRange()
+                || this.endpointManager.HasThinClientReadLocations
+                || this.endpointManager.HasThinClientWriteLocations;
+        }
 
-            DocumentServiceResponse response;
-            try
+        /// <summary>
+        /// Routes the request through the thin-client store client when it is currently
+        /// thin-client-routable, otherwise transparently falls back to the inherited gateway HTTP
+        /// path on the same instance. The decision is taken per request so the model can switch
+        /// direction (thin-client ↔ gateway) as soon as the next <see cref="LocationCache"/> refresh
+        /// updates the availability signals, without requiring a client restart.
+        /// </summary>
+        protected override async Task<DocumentServiceResponse> DispatchAsync(
+            DocumentServiceRequest request,
+            Uri physicalAddress,
+            CancellationToken cancellationToken)
+        {
+            if (!this.TryGetHealthyThinClientEndpoint(request, out Uri thinClientEndpoint))
             {
-                Uri physicalAddress = ThinClientStoreClient.IsFeedRequest(request.OperationType) ? base.GetFeedUri(request) : base.GetEntityUri(request);
-                if (request.ResourceType.Equals(ResourceType.Document) && base.endpointManager.TryGetLocationForGatewayDiagnostics(
-                    request.RequestContext.LocationEndpointToRoute,
-                    out string regionName))
-                {
-                    request.RequestContext.RegionName = regionName;
-                }
-
-                AccountProperties properties = await this.GetDatabaseAccountPropertiesAsync();
-                response = await this.thinClientStoreClient.InvokeAsync(
-                    request,
-                    request.ResourceType,
-                    physicalAddress,
-                    this.endpointManager.ResolveThinClientEndpoint(request),
-                    properties.Id,
-                    base.clientCollectionCache,
-                    cancellationToken);
-            }
-            catch (DocumentClientException exception)
-            {
-                if ((!ReplicatedResourceClient.IsMasterResource(request.ResourceType)) &&
-                    (exception.StatusCode == HttpStatusCode.PreconditionFailed || exception.StatusCode == HttpStatusCode.Conflict
-                    || (exception.StatusCode == HttpStatusCode.NotFound && exception.GetSubStatus() != SubStatusCodes.ReadSessionNotAvailable)))
-                {
-                    await base.CaptureSessionTokenAndHandleSplitAsync(
-                        exception.StatusCode,
-                        exception.GetSubStatus(),
-                        request,
-                        exception.Headers);
-                }
-
-                throw;
+                return await base.DispatchAsync(request, physicalAddress, cancellationToken);
             }
 
-            await this.CaptureSessionTokenAndHandleSplitAsync(
-                response.StatusCode,
-                response.SubStatusCode,
-                request,
-                response.Headers);
+            AccountProperties account = await this.GetDatabaseAccountPropertiesAsync();
 
-            return response;
+            return await this.thinClientStoreClient.InvokeAsync(
+                request,
+                request.ResourceType,
+                physicalAddress,
+                thinClientEndpoint,
+                account.Id,
+                this.clientCollectionCache,
+                cancellationToken);
+        }
+
+        /// <summary>
+        /// Single source of truth for the per-request thin-client-vs-gateway routing decision. Returns true, and
+        /// the resolved healthy thin-client endpoint, only when the request will actually be dispatched through the
+        /// thin-client proxy; otherwise the request transparently falls back to the inherited gateway HTTP path.
+        /// Both <see cref="DispatchAsync"/> and the transport diagnostics label consult this method so the reported
+        /// store model always matches the path actually taken. Side-effect-free: only reads live routing state.
+        /// </summary>
+        internal bool TryGetHealthyThinClientEndpoint(DocumentServiceRequest request, out Uri thinClientEndpoint)
+        {
+            thinClientEndpoint = null;
+
+            if (this.thinClientStoreClient == null
+                || !ThinClientStoreModel.IsThinClientRoutable(this.endpointManager, request))
+            {
+                return false;
+            }
+
+            // Compute the candidate endpoint without pinning it onto the request (RouteToLocation). Pinning is
+            // owned by ClientRetryPolicy.OnBeforeSendRequest, which validates probe health before it commits an
+            // endpoint. Keeping this method side-effect-free means a failed probe here can never leave a proxy
+            // endpoint pinned for a request that then falls back to Gateway V1, and the diagnostics-label call
+            // (WillRouteToThinClient) can safely evaluate routability without mutating the request.
+            Uri candidate = this.endpointManager.GetThinClientEndpointCandidate(request);
+
+            // Per-region probe gate: route to the proxy only when this request's candidate regional endpoint has
+            // been confirmed healthy. An un-probed or failed region falls back to Gateway V1.
+            if (!this.endpointManager.IsProxyEndpointHealthy(candidate))
+            {
+                return false;
+            }
+
+            thinClientEndpoint = candidate;
+            return true;
+        }
+
+        /// <summary>
+        /// True when the given request will be dispatched through the thin-client proxy on this instance, false when
+        /// it will transparently fall back to the inherited gateway HTTP path. Used by the transport layer to label
+        /// diagnostics with the store model that actually serves the request.
+        /// </summary>
+        internal bool WillRouteToThinClient(DocumentServiceRequest request)
+        {
+            return this.TryGetHealthyThinClientEndpoint(request, out _);
+        }
+
+        internal static bool IsOperationSupportedByThinClient(DocumentServiceRequest request)
+        {
+            // Document operations
+            if (request.ResourceType == ResourceType.Document
+                && (request.OperationType == OperationType.Batch
+                || request.OperationType == OperationType.Patch
+                || request.OperationType == OperationType.Create
+                || request.OperationType == OperationType.Read
+                || request.OperationType == OperationType.Upsert
+                || request.OperationType == OperationType.Replace
+                || request.OperationType == OperationType.Delete
+                || request.OperationType == OperationType.Query))
+            {
+                return true;
+            }
+
+            // LatestVersion (Incremental) ChangeFeed on documents.
+            // AllVersionsAndDeletes (FullFidelity) is excluded because it requires
+            // split-handling logic in Compute Gateway (UseGatewayMode is set by ChangeFeedModeFullFidelity).
+            if (request.ResourceType == ResourceType.Document
+                && request.OperationType == OperationType.ReadFeed
+                && ThinClientStoreModel.IsLatestVersionChangeFeedRequest(request))
+            {
+                return true;
+            }
+
+            // Stored Procedure execution
+            if (request.ResourceType == ResourceType.StoredProcedure
+                && request.OperationType == OperationType.ExecuteJavaScript)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Returns true if the request is eligible for thin-client dispatch: the operation type is supported AND
+        /// the service is advertising thin-client endpoints for the request's direction. This is the capability +
+        /// topology gate only; per-region probe health is applied separately at dispatch time
+        /// (<see cref="DispatchAsync"/>), so an unhealthy region falls back to the gateway path.
+        /// </summary>
+        internal static bool IsThinClientRoutable(IGlobalEndpointManager endpointManager, DocumentServiceRequest request)
+        {
+            return IsOperationSupportedByThinClient(request)
+                && (request.IsReadOnlyRequest
+                    ? endpointManager.HasThinClientReadLocations
+                    : endpointManager.HasThinClientWriteLocations);
+        }
+
+        /// <summary>
+        /// Read-direction variant of <see cref="IsThinClientRoutable"/> for failover walks (PPCB / PPAF) that
+        /// traverse thin-client READ endpoints regardless of the original request direction. Because the walk
+        /// selects the whole read-endpoint list rather than a single endpoint, it requires every read region to
+        /// be probe-healthy (<see cref="IGlobalEndpointManager.AreAllThinClientReadEndpointsHealthy"/>);
+        /// otherwise it routes through the gateway read endpoints.
+        /// </summary>
+        internal static bool IsThinClientReadRoutable(IGlobalEndpointManager endpointManager, DocumentServiceRequest request)
+        {
+            return IsOperationSupportedByThinClient(request)
+                && endpointManager.AreAllThinClientReadEndpointsHealthy
+                && endpointManager.HasThinClientReadLocations;
+        }
+
+        /// <summary>
+        /// Determines if the request is a LatestVersion (Incremental) change feed request that can
+        /// be routed to the thin client. Returns true only when the A-IM header is exactly
+        /// <c>HttpConstants.A_IMHeaderValues.IncrementalFeed</c>. Any other value — including
+        /// Full-Fidelity Feed (AllVersionsAndDeletes) or an unknown future mode — falls back to
+        /// Compute Gateway so that new modes are not accidentally routed to the thin client.
+        /// </summary>
+        internal static bool IsLatestVersionChangeFeedRequest(DocumentServiceRequest request)
+        {
+            string aImHeaderValue = request.Headers[HttpConstants.HttpHeaders.A_IM];
+            return string.Equals(aImHeaderValue, HttpConstants.A_IMHeaderValues.IncrementalFeed, StringComparison.OrdinalIgnoreCase);
         }
 
         private async Task<AccountProperties> GetDatabaseAccountPropertiesAsync()
         {
-            try
+            AccountProperties accountProperties = await this.endpointManager.GetDatabaseAccountAsync();
+            if (accountProperties != null)
             {
-                AccountProperties accountProperties = await this.endpointManager.GetDatabaseAccountAsync();
-
-                if (accountProperties != null)
-                {
-                    return accountProperties;
-                }
-
-                throw new InvalidOperationException("Failed to retrieve AccountProperties. The response was null.");
+                return accountProperties;
             }
-            catch (Exception ex)
-            {
-                DefaultTrace.TraceError("Exception while retrieving database account information: {0}", ex.Message);
-                throw;
-            }
+
+            throw new InvalidOperationException("Failed to retrieve AccountProperties. The response was null.");
         }
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing)
+            if (disposing && this.thinClientStoreClient != null)
             {
-                if (this.thinClientStoreClient != null)
+                try
                 {
-                    try
-                    {
-                        this.thinClientStoreClient.Dispose();
-                    }
-                    catch (Exception exception)
-                    {
-                        DefaultTrace.TraceWarning("Exception {0} thrown during dispose of HttpClient, this could happen if there are inflight request during the dispose of client",
-                            exception.Message);
-                    }
-                    this.thinClientStoreClient = null;
+                    this.thinClientStoreClient.Dispose();
                 }
+                catch (Exception exception)
+                {
+                    DefaultTrace.TraceWarning(
+                        "Exception {0} thrown during dispose of HttpClient, this could happen if there are inflight request during the dispose of client",
+                        exception.Message);
+                }
+
+                this.thinClientStoreClient = null;
             }
+
             base.Dispose(disposing);
         }
     }

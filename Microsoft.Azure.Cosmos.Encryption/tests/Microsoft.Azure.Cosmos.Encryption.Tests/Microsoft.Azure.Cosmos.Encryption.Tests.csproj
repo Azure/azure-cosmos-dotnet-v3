@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <Compile Include="..\..\..\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Contracts\ContractEnforcement.cs" Link="Contracts\ContractEnforcement.cs" />
+    <Compile Include="..\..\..\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Contracts\ContractType.cs" Link="Contracts\ContractType.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -21,6 +22,7 @@
     <PackageReference Include="MSTest.TestAdapter" Version="1.2.0" />
     <PackageReference Include="MSTest.TestFramework" Version="1.2.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="coverlet.collector" Version="3.1.2" />
   </ItemGroup>
 
   <ItemGroup>
@@ -28,19 +30,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="Contracts\DotNetSDKEncryptionAPI.json">
+    <None Include="Contracts\DotNetSDKEncryptionAPI*.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-   <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="3.1.7" />
-	</ItemGroup>
-	
-  <ItemGroup Condition="'$(TargetFramework)' == 'net46'">
-   <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="1.1.2" />
-  </ItemGroup>
-	
   <ItemGroup>
    <PackageReference Include="System.Text.Encoding.CodePages" Version="5.0.0" />
   </ItemGroup>

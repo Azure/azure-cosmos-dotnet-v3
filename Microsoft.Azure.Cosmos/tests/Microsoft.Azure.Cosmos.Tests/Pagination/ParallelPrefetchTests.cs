@@ -459,6 +459,8 @@
 
             public IReadOnlyDictionary<string, object> Data { get; } = new Dictionary<string, object>();
 
+            public bool IsBeingWalked => true; // needs to return true to allow materialization
+
             internal SimpleTrace(ITrace parent, string name, TraceComponent component, Cosmos.Tracing.TraceLevel level)
             {
                 this.Parent = parent;
@@ -508,6 +510,12 @@
                 }
 
                 return child;
+            }
+
+            bool ITrace.TryGetDatum(string key, out object datum)
+            {
+                datum = null;
+                return false;
             }
         }
 

@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
 {
     using System;
     using System.Collections.Generic;
-    using System.Runtime.CompilerServices;
 
     /// <summary>
     /// Interface to represent a single node in a trace tree.
@@ -69,6 +68,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
         IReadOnlyDictionary<string, object> Data { get; }
 
         /// <summary>
+        /// Gets a value indicating whether this trace is currently being walked.
+        /// </summary>
+        bool IsBeingWalked { get; }
+
+        /// <summary>
         /// Starts a Trace and adds it as a child to this instance.
         /// </summary>
         /// <param name="name">The name of the child.</param>
@@ -115,5 +119,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// <param name="trace">Existing trace.</param>
         void AddChild(ITrace trace);
 
+        /// <summary>
+        /// Tries to get a specific datum - it is safe to call this even before IsBeingWalked is set.
+        /// </summary>
+        /// <param name="key">The key to identify the datum.</param>
+        /// <param name="datum">The datum itself.</param>
+        /// <returns>A flag indicating whether the datum with this key exists.</returns>
+        bool TryGetDatum(string key, out object datum);
     }
 }

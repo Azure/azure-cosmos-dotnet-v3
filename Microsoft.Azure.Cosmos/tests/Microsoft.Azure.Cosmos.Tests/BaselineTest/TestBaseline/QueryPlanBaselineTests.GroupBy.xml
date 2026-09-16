@@ -543,22 +543,22 @@ System.Runtime.InteropServices.COMException : 0x800A0B00
         </QueryRanges>
         <RewrittenQuery><![CDATA[SELECT [{"item": info}, {"item": g.name}] AS groupByItems, {"info": info, "count": {"item": Count(1)}, "group_name": g.name} AS payload
 FROM c
-JOIN 
-    (SELECT VALUE s
+JOIN (
+    SELECT VALUE s
     FROM s IN c.scores
-    GROUP BY s)
- AS s
-JOIN 
-    (SELECT s1 AS score, Avg(s1) AS avg_score, g1.name AS group_name
+    GROUP BY s
+) AS s
+JOIN (
+    SELECT s1 AS score, Avg(s1) AS avg_score, g1.name AS group_name
     FROM s1 IN c.scores
     JOIN g1 IN c.groups
-    GROUP BY s1, g1)
- AS info
-JOIN 
-    (SELECT VALUE g
+    GROUP BY s1, g1
+) AS info
+JOIN (
+    SELECT VALUE g
     FROM g IN c.groups
-    GROUP BY g)
- AS g
+    GROUP BY g
+) AS g
 WHERE (info.group_name = g.name)
 GROUP BY info, g.name]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>

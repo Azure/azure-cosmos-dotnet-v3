@@ -12,8 +12,16 @@ namespace Microsoft.Azure.Cosmos
     {
         private const int MaxOperatingSystemString = 30;
         private const int MaxClientId = 10;
+        private const string PipeDelimiter = "|";
+
         private readonly string cosmosBaseUserAgent;
         private readonly string clientId;
+
+        // The customer-provided suffix (e.g. ApplicationName), captured before the first feature flag is
+        // applied so subsequent feature-flag updates can be re-composed without parsing arbitrary customer
+        // text. Null until the first AppendFeatures call.
+        private string userProvidedSuffix;
+        private bool featureFlagApplied;
 
         public UserAgentContainer(
             int clientId,
@@ -32,12 +40,21 @@ namespace Microsoft.Azure.Cosmos
         public void AppendFeatures(
             string features)
         {
-            if (!string.IsNullOrEmpty(features))
+            // The first time a feature flag is applied, the current Suffix is purely the customer-provided
+            // suffix (e.g. ApplicationName). Capture it so later feature-flag updates (which can add, replace,
+            // or remove the flag as capabilities change dynamically) re-compose the suffix without parsing
+            // arbitrary customer text — the feature flag is always kept as the leading token.
+            if (!this.featureFlagApplied)
             {
-                this.Suffix = string.IsNullOrEmpty(this.Suffix)
-                    ? features
-                    : $"{features}|{this.Suffix}";
+                this.userProvidedSuffix = this.Suffix ?? string.Empty;
+                this.featureFlagApplied = true;
             }
+
+            this.Suffix = string.IsNullOrEmpty(features)
+                ? this.userProvidedSuffix
+                : string.IsNullOrEmpty(this.userProvidedSuffix)
+                    ? features
+                    : $"{features}{UserAgentContainer.PipeDelimiter}{this.userProvidedSuffix}";
         }
 
         internal override string BaseUserAgent => this.cosmosBaseUserAgent ?? string.Empty;

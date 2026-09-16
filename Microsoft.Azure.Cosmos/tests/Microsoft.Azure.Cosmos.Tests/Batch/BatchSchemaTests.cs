@@ -177,7 +177,59 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(comparer.Equals(results[1], batchResponse[1]));
         }
 
-        private class ItemBatchOperationEqualityComparer : IEqualityComparer<ItemBatchOperation>
+        [TestMethod]
+        [Owner("nalutripician")]
+        public async Task BatchResponseDeserializationPromotesErrorMessageAsync()
+        {
+            string expectedErrorMessage = "{\"Errors\":[\"Resource with specified id or name already exists.\"]}";
+            byte[] errorBody = System.Text.Encoding.UTF8.GetBytes(expectedErrorMessage);
+
+            using CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
+            ContainerInternal containerCore = (ContainerInlineCore)cosmosClient.GetDatabase("db").GetContainer("cont");
+            List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>
+            {
+                new TransactionalBatchOperationResult(HttpStatusCode.Conflict)
+                {
+                    ResourceStream = new CloneableStream(
+                        internalStream: new MemoryStream(errorBody, index: 0, count: errorBody.Length, writable: false, publiclyVisible: true),
+                        allowUnsafeDataAccess: true),
+                },
+                new TransactionalBatchOperationResult(HttpStatusCode.FailedDependency)
+            };
+
+            MemoryStream responseContent = await new BatchResponsePayloadWriter(results).GeneratePayloadAsync();
+
+            SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
+                partitionKey: Cosmos.PartitionKey.None,
+                operations: new ArraySegment<ItemBatchOperation>(
+                    new ItemBatchOperation[]
+                    {
+                        new ItemBatchOperation(OperationType.Create, operationIndex: 0, id: "someId", containerCore: containerCore),
+                        new ItemBatchOperation(OperationType.Create, operationIndex: 1, id: "someId2", containerCore: containerCore)
+                    }),
+                serializerCore: MockCosmosUtil.Serializer,
+                trace: NoOpTrace.Singleton,
+                cancellationToken: CancellationToken.None);
+
+            ResponseMessage response = new ResponseMessage((HttpStatusCode)StatusCodes.MultiStatus) { Content = responseContent };
+            response.Headers.Session = Guid.NewGuid().ToString();
+            response.Headers.ActivityId = Guid.NewGuid().ToString();
+
+            TransactionalBatchResponse batchResponse = await TransactionalBatchResponse.FromResponseMessageAsync(
+                response,
+                batchRequest,
+                MockCosmosUtil.Serializer,
+                true,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.IsNotNull(batchResponse);
+            Assert.AreEqual(HttpStatusCode.Conflict, batchResponse.StatusCode);
+            Assert.IsNotNull(batchResponse.ErrorMessage, "ErrorMessage should be promoted from the failing operation's ResourceStream");
+            Assert.AreEqual(expectedErrorMessage, batchResponse.ErrorMessage);
+        }
+
+        private class ItemBatchOperationEqualityComparer: IEqualityComparer<ItemBatchOperation>
         {
             public bool Equals(ItemBatchOperation x, ItemBatchOperation y)
             {

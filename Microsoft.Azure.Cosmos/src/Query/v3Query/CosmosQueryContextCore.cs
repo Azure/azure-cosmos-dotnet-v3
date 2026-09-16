@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -74,6 +75,7 @@ namespace Microsoft.Azure.Cosmos.Query
             SqlQuerySpec sqlQuerySpec,
             Cosmos.PartitionKey? partitionKey,
             string supportedQueryFeatures,
+            IReadOnlyList<string> excludeRegions,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -84,6 +86,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 sqlQuerySpec,
                 partitionKey,
                 supportedQueryFeatures,
+                excludeRegions,
                 this.CorrelatedActivityId,
                 trace,
                 cancellationToken);

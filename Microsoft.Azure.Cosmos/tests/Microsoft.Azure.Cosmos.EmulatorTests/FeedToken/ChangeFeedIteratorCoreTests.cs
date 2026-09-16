@@ -896,6 +896,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
                 foreach (ChangeFeedItem<Document> item in feedResponse)
                 {
+                    Assert.AreEqual(expected: "id3", actual: item.Metadata.Id.ToString());
                     Assert.AreEqual("id3", item.Previous.Id);
                     Assert.AreEqual(ChangeFeedOperationType.Delete, item.Metadata.OperationType);
                 }
@@ -1094,6 +1095,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         Assert.AreNotEqual(notExpected: default, actual: deleteOperation.Metadata.Lsn);
                         Assert.AreNotEqual(notExpected: default, actual: deleteOperation.Metadata.PreviousLsn);
                         Assert.IsNotNull(deleteOperation.Previous);
+                        Assert.AreEqual(expected: id, actual: deleteOperation.Metadata.Id.ToString());
                         Assert.AreEqual(expected: id, actual: deleteOperation.Previous.Id);
                         Assert.AreEqual(expected: "205 16th St NW", actual: deleteOperation.Previous.Line1);
                         Assert.AreEqual(expected: "Atlanta", actual: deleteOperation.Previous.City);

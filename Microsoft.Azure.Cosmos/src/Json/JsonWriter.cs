@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Json
     using System;
     using System.Collections.Generic;
     using System.Globalization;
-    using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Utf8;
     using RMResources = Documents.RMResources;
@@ -63,6 +62,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 JsonSerializationFormat.Binary => new JsonBinaryWriter(
                     enableNumberArrays: writeOptions.HasFlag(JsonWriteOptions.EnableNumberArrays),
                     enableUint64Values: writeOptions.HasFlag(JsonWriteOptions.EnableUInt64Values),
+                    enableBase64Strings: writeOptions.HasFlag(JsonWriteOptions.EnableBase64Strings),
                     initialCapacity: initialCapacity,
                     jsonStringDictionary: jsonStringDictionary),
                 _ => throw new ArgumentException(

@@ -60,6 +60,8 @@ namespace Microsoft.Azure.Cosmos
         /// Default request timeout
         /// </summary>
         private int gatewayModeMaxConnectionLimit;
+        private int? maxRetryAttemptsOnAbortedTransactions;
+        private TimeSpan? maxRetryWaitTimeOnAbortedTransactions;
         private CosmosSerializationOptions serializerOptions;
         private CosmosSerializer serializerInternal;
         private System.Text.Json.JsonSerializerOptions stjSerializerOptions;
@@ -174,7 +176,7 @@ namespace Microsoft.Azure.Cosmos
         /// <para>
         /// During the CosmosClient initialization the account information, including the available regions, is obtained from the <see cref="CosmosClient.Endpoint"/>.
         /// The CosmosClient will use the value of <see cref="ApplicationPreferredRegions"/> to populate the preferred list with the account available regions that intersect with its value.
-        /// If the value of <see cref="ApplicationPreferredRegions"/> contains regions that are not an available region in the account, the values will be ignored. If the these invalid regions are added later to the account, the CosmosClient will use them if they are higher in the preference order.
+        /// If the value of <see cref="ApplicationPreferredRegions"/> contains regions that are not an available region in the account, the values will be ignored. If these invalid regions are added later to the account, the CosmosClient will use them if they are higher in the preference order.
         /// </para>
         /// <para>
         /// If during CosmosClient initialization, the <see cref="CosmosClient.Endpoint"/> is not reachable, the CosmosClient will attempt to recover and obtain the account information issuing requests to the regions in <see cref="ApplicationPreferredRegions"/> in the order that they are listed.
@@ -244,7 +246,50 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <remarks>
         /// This setting is only applicable in Gateway mode.
+        /// The SDK sets the following on the underlying SocketsHttpHandler:
+        /// <list type="bullet">
+        /// <item><description>EnableMultipleHttp2Connections = true — allows additional HTTP/2 TCP connections
+        /// to be opened when the maximum concurrent streams limit on an existing connection is reached.</description></item>
+        /// <item><description>KeepAlivePingDelay = 1 second — sends HTTP/2 PING frames after 1 second
+        /// of inactivity to detect broken connections in the pool.</description></item>
+        /// <item><description>KeepAlivePingTimeout = 2 seconds — marks a connection as dead if no PONG
+        /// response is received within 2 seconds.</description></item>
+        /// <item><description>KeepAlivePingPolicy = Always — sends pings even for idle connections, which
+        /// is critical for detecting broken connections that remain in the pool.</description></item>
+        /// </list>
+        /// This property controls the upper bound on the total number of connections per server endpoint.
+        /// When using a custom <see cref="HttpClientFactory"/>, configure these properties
+        /// directly on your SocketsHttpHandler for equivalent behavior.
         /// </remarks>
+        /// <example>
+        /// Using the SDK-managed handler with a custom connection limit:
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClientOptions options = new CosmosClientOptions()
+        /// {
+        ///     ConnectionMode = ConnectionMode.Gateway,
+        ///     GatewayModeMaxConnectionLimit = 100
+        /// };
+        /// ]]>
+        /// </code>
+        /// When providing a custom HttpClientFactory, set the properties on SocketsHttpHandler directly:
+        /// <code language="c#">
+        /// <![CDATA[
+        /// SocketsHttpHandler handler = new SocketsHttpHandler
+        /// {
+        ///     MaxConnectionsPerServer = 100,
+        ///     EnableMultipleHttp2Connections = true,
+        ///     KeepAlivePingDelay = TimeSpan.FromSeconds(1),
+        ///     KeepAlivePingTimeout = TimeSpan.FromSeconds(2),
+        ///     KeepAlivePingPolicy = HttpKeepAlivePingPolicy.Always
+        /// };
+        /// CosmosClientOptions options = new CosmosClientOptions()
+        /// {
+        ///     HttpClientFactory = () => new HttpClient(handler, disposeHandler: false)
+        /// };
+        /// ]]>
+        /// </code>
+        /// </example>
         /// <value>Default value is 50.</value>
         /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?, IWebProxy)"/>
         public int GatewayModeMaxConnectionLimit
@@ -273,6 +318,24 @@ namespace Microsoft.Azure.Cosmos
         /// <value>Default value is 6 seconds.</value>
         /// <seealso cref="CosmosClientBuilder.WithRequestTimeout(TimeSpan)"/>
         public TimeSpan RequestTimeout { get; set; }
+
+        /// <summary>
+        /// Gets or sets the request timeout for inference service operations (e.g., semantic reranking).
+        /// The number specifies the time to wait for a response from the inference service before the request is cancelled.
+        /// This is a single-attempt timeout with no retries.
+        /// </summary>
+        /// <value>Default value is 5 seconds.</value>
+        /// <remarks>
+        /// This timeout is specific to inference service operations and is separate from the standard <see cref="RequestTimeout"/>.
+        /// If the request does not complete within the specified duration, a <see cref="CosmosException"/> with status 408 (Request Timeout) is thrown.
+        /// No retries are attempted on timeout.
+        /// </remarks>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        TimeSpan InferenceRequestTimeout { get; set; } = InferenceService.DefaultInferenceRequestTimeout;
 
         /// <summary>
         /// The SDK does a background refresh based on the time interval set to refresh the token credentials.
@@ -325,6 +388,31 @@ namespace Microsoft.Azure.Cosmos
         /// If this is not set the database account consistency level will be used for all requests.
         /// </summary>
         public ConsistencyLevel? ConsistencyLevel { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="ReadConsistencyStrategy"/> to be used for read operations.
+        /// </summary>
+        /// <remarks>
+        /// When set, this takes precedence over <see cref="ConsistencyLevel"/> for read and query operations.
+        /// If also set at request level (e.g., in <see cref="ItemRequestOptions.ReadConsistencyStrategy"/>),
+        /// the request-level value is used.
+        /// <para>
+        /// <see cref="ReadConsistencyStrategy.GlobalStrong"/> is only valid for accounts configured with Strong consistency.
+        /// </para>
+        /// </remarks>
+        public ReadConsistencyStrategy? ReadConsistencyStrategy { get; set; }
+
+        /// <summary>
+        /// Gets or sets the client-wide default <see cref="ICosmosEmbeddingGenerator"/> used to generate
+        /// query-time vector embeddings for hybrid and vector-search queries.
+        /// </summary>
+        [JsonIgnore]
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        ICosmosEmbeddingGenerator EmbeddingGenerator { get; set; }
 
         /// <summary>
         /// Sets the priority level for requests created using cosmos client.
@@ -389,6 +477,87 @@ namespace Microsoft.Azure.Cosmos
         public TimeSpan? MaxRetryWaitTimeOnRateLimitedRequests { get; set; }
 
         /// <summary>
+        /// Gets or sets the maximum number of retries in the case where a distributed transaction
+        /// commit fails because the Azure Cosmos DB service reports the transaction as aborted but
+        /// retriable.
+        /// </summary>
+        /// <value>
+        /// The default value is 10. This means in the case where a distributed transaction commit is
+        /// reported as retriable, the SDK will re-issue the commit for a maximum of 10 attempts before
+        /// returning the last response to the application.
+        ///
+        /// If the value of this property is set to 0, there will be no automatic retry on retriable
+        /// aborted distributed transactions from the client and the first retriable response is returned
+        /// to the application to be handled at the application level.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// When a distributed transaction commit is reported by the service as aborted but retriable, the
+        /// SDK re-issues the commit after an exponentially increasing backoff. This property caps the number
+        /// of such retry attempts. Retries also stop once the cumulative wait time exceeds
+        /// <see cref="MaxRetryWaitTimeOnAbortedTransactions"/>, whichever budget is exhausted first.
+        /// </para>
+        /// </remarks>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        int? MaxRetryAttemptsOnAbortedTransactions
+        {
+            get => this.maxRetryAttemptsOnAbortedTransactions;
+            set
+            {
+                if (value < 0)
+                {
+                    throw new ArgumentException("value must be a positive integer.");
+                }
+
+                this.maxRetryAttemptsOnAbortedTransactions = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the maximum cumulative wait time across all retry attempts when a distributed
+        /// transaction commit fails because the Azure Cosmos DB service reports the transaction as aborted
+        /// but retriable.
+        /// </summary>
+        /// <value>
+        /// The default value is 30 seconds.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// When a distributed transaction commit is reported by the service as aborted but retriable, the
+        /// SDK waits (using an exponentially increasing backoff, honoring any server retry-after hint) before
+        /// re-issuing the commit. This property caps the total cumulative wait time accumulated across all
+        /// retry attempts. If the next planned delay would push the cumulative wait time past this value, the
+        /// client stops retrying and returns the last response to the application.
+        /// </para>
+        /// <para>
+        /// Retries also stop once the number of attempts exceeds
+        /// <see cref="MaxRetryAttemptsOnAbortedTransactions"/>, whichever budget is exhausted first.
+        /// </para>
+        /// </remarks>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        TimeSpan? MaxRetryWaitTimeOnAbortedTransactions
+        {
+            get => this.maxRetryWaitTimeOnAbortedTransactions;
+            set
+            {
+                if (value < TimeSpan.Zero)
+                {
+                    throw new ArgumentException("value must be a positive TimeSpan.");
+                }
+
+                this.maxRetryWaitTimeOnAbortedTransactions = value;
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the boolean to only return the headers and status code in
         /// the Cosmos DB response for write item operation like Create, Upsert, Patch and Replace.
         /// Setting the option to false will cause the response to have a null resource. This reduces networking and CPU load by not sending
@@ -424,6 +593,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        [JsonConverter(typeof(ClientOptionJsonConverter))]
         public System.Text.Json.JsonSerializerOptions UseSystemTextJsonSerializerWithOptions
         {
             get => this.stjSerializerOptions;
@@ -468,6 +638,23 @@ namespace Microsoft.Azure.Cosmos
         internal bool EnableStreamPassThrough { get; set; } = false;
 
         /// <summary>
+        /// Gets or sets a value indicating whether to use length-aware range comparators for EPK range comparisons.
+        /// Length-aware range comparators were introduced in Range class to handle EPK range comparisons correctly 
+        /// in the case of a container's physical partition set consisting of fully and partially specified EPK values.
+        /// By default, length-aware range comparator is enabled. Refer to Range.cs in Msdata project for more details. 
+        /// Range.LengthAwareMinComparer/LengthAwareMaxComparer.
+        /// Setting the value to false will disable length-aware range comparator and switch to using the regular 
+        /// Range.MinComparer/MaxComparer.
+        /// Can be controlled via the AZURE_COSMOS_USE_LENGTH_AWARE_RANGE_COMPARATOR environment variable.
+        /// </summary>
+        /// <value>
+        /// Defaults to true (false for INTERNAL builds). Reads from ConfigurationManager which
+        /// respects the AZURE_COSMOS_USE_LENGTH_AWARE_RANGE_COMPARATOR environment variable.
+        /// </value>
+        internal bool UseLengthAwareRangeComparer { get; set; } =
+            ConfigurationManager.IsLengthAwareRangeComparatorEnabled();
+
+        /// <summary>
         /// (Direct/TCP) Controls the amount of idle time after which unused connections are closed.
         /// </summary>
         /// <value>
@@ -494,6 +681,27 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         /// <remarks>
         /// When the time elapses, the attempt is cancelled and an error is returned. Longer timeouts will delay retries and failures.
+        /// <para>
+        /// The supplied <see cref="TimeSpan"/> is preserved unchanged on this property. At the
+        /// transport boundary the value is converted to whole seconds:
+        /// </para>
+        /// <list type="bullet">
+        /// <item>
+        /// Values in [<see cref="TimeSpan.Zero"/>, 1 second) are treated as 0, causing the
+        /// configured <see cref="RequestTimeout"/> to be used as the open-connection timeout.
+        /// </item>
+        /// <item>
+        /// Values greater than or equal to 1 second are rounded up to the nearest whole second
+        /// (for example, 2.3 seconds becomes 3 seconds).
+        /// </item>
+        /// </list>
+        /// Negative values are not recommended. They are preserved on this property for backward
+        /// compatibility and will cause <c>DocumentClient</c> to emit a warning trace at client
+        /// construction time. At the transport boundary they are converted to whole seconds via
+        /// truncation (e.g. −5.7 s → −5) and ultimately reach the
+        /// <c>TransportClient.Options.OpenTimeout</c> getter, which returns
+        /// <see cref="RequestTimeout"/> for any value that is not greater than
+        /// <see cref="TimeSpan.Zero"/>.
         /// </remarks>
         public TimeSpan? OpenTcpConnectionTimeout
         {
@@ -532,7 +740,7 @@ namespace Microsoft.Azure.Cosmos
         /// Together with MaxRequestsPerTcpConnection, this setting limits the number of requests that are simultaneously sent to a single Cosmos DB back-end(MaxRequestsPerTcpConnection x MaxTcpConnectionPerEndpoint).
         /// </summary>
         /// <value>
-        /// The default value is 65,535. Value must be greater than or equal to 16.
+        /// The default value is 65,535. Any positive value is accepted, allowing applications to constrain the connection pool size when needed; values of 16 or greater are recommended.
         /// </value>
         public int? MaxTcpConnectionsPerEndpoint
         {
@@ -686,6 +894,21 @@ namespace Microsoft.Azure.Cosmos
         public bool EnableTcpConnectionEndpointRediscovery { get; set; } = true;
 
         /// <summary>
+        /// Gets or sets a value indicating whether the barrier early yield on 429
+        /// optimization is enabled. When true, ConsistencyWriter and QuorumReader
+        /// in the Direct transport layer return early when all replicas return 429
+        /// during a write or read barrier. Direct retries the 429 internally; when
+        /// retries are exhausted it surfaces a synthetic 408 with substatus 21013
+        /// (Server_WriteBarrierThrottled) to the SDK. The SDK's ClientRetryPolicy
+        /// recognizes this substatus and avoids marking the endpoint unavailable,
+        /// preventing unnecessary cross-region failover.
+        /// </summary>
+        /// <value>
+        /// The default value is true. Internal only — not exposed to external SDK users.
+        /// </value>
+        internal bool EnableBarrierEarlyYieldOn429 { get; set; } = true;
+
+        /// <summary>
         /// Gets or sets a delegate to use to obtain an HttpClient instance to be used for HTTPS communication.
         /// </summary>
         /// <remarks>
@@ -771,6 +994,14 @@ namespace Microsoft.Azure.Cosmos
         /// when PPAF is enabled, the SDK will automatically enable PPCB as well.
         /// </summary>
         internal bool EnablePartitionLevelCircuitBreaker { get; set; } = ConfigurationManager.IsPartitionLevelCircuitBreakerEnabled(defaultValue: false);
+
+        /// <summary>
+        /// Flag from gateway to disable partition level failover. Normally, the SDK will enable partition level failover based on the account settings. 
+        /// This flag will be used internally by the compute gateway as by default it will disable partition level failover.
+        /// 
+        /// The default value for this parameter is 'false'.
+        /// </summary>
+        internal bool DisablePartitionLevelFailover { get; set; } = false;
 
         /// <summary>
         /// Quorum Read allowed with eventual consistency account or consistent prefix account.
@@ -983,15 +1214,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <remarks>
         /// If throughput bucket is also set at request level in <see cref="RequestOptions.ThroughputBucket"/>, that throughput bucket is used.
-        /// If <see cref="AllowBulkExecution"/> is set to true in CosmosClientOptions, throughput bucket can only be set at client level.
+        /// When <see cref="AllowBulkExecution"/> is set to true in CosmosClientOptions, a request-level throughput bucket is not
+        /// supported for item point operations (they are batched); set the throughput bucket at the client level instead.
         /// </remarks>
         /// <seealso href="https://aka.ms/cosmsodb-bucketing"/>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        int? ThroughputBucket { get; set; }
+        public int? ThroughputBucket { get; set; }
 
         internal IChaosInterceptorFactory ChaosInterceptorFactory { get; set; }
 
@@ -1030,6 +1257,7 @@ namespace Microsoft.Azure.Cosmos
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
                 EnableEndpointDiscovery = !this.LimitToEndpoint,
                 EnablePartitionLevelCircuitBreaker = this.EnablePartitionLevelCircuitBreaker,
+                DisablePartitionLevelFailoverClientLevelOverride = this.DisablePartitionLevelFailover,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
                 EnableAdvancedReplicaSelectionForTcp = this.EnableAdvancedReplicaSelectionForTcp,
@@ -1037,6 +1265,7 @@ namespace Microsoft.Azure.Cosmos
                 ServerCertificateCustomValidationCallback = this.ServerCertificateCustomValidationCallback,
                 CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions(),
                 AvailabilityStrategy = this.AvailabilityStrategy,
+                EnableBarrierEarlyYieldOn429 = this.EnableBarrierEarlyYieldOn429,
             };
 
             if (this.CosmosClientTelemetryOptions != null)
@@ -1294,14 +1523,19 @@ namespace Microsoft.Azure.Cosmos
                     return;
                 }
 
-                CosmosJsonSerializerWrapper cosmosJsonSerializerWrapper = value as CosmosJsonSerializerWrapper;
-                if (value is CosmosJsonSerializerWrapper)
+                if (value is System.Text.Json.JsonSerializerOptions)
                 {
-                    writer.WriteValue(cosmosJsonSerializerWrapper.InternalJsonSerializer.GetType().ToString());
+                    writer.WriteValue(value.GetType().ToString());
+                    return;
                 }
 
-                CosmosSerializer cosmosSerializer = value as CosmosSerializer;
-                if (cosmosSerializer is CosmosSerializer)
+                if (value is CosmosJsonSerializerWrapper cosmosJsonSerializerWrapper)
+                {
+                    writer.WriteValue(cosmosJsonSerializerWrapper.InternalJsonSerializer.GetType().ToString());
+                    return;
+                }
+
+                if (value is CosmosSerializer cosmosSerializer)
                 {
                     writer.WriteValue(cosmosSerializer.GetType().ToString());
                 }

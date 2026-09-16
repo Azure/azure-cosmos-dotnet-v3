@@ -109,16 +109,22 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             }
 
             //create fault injection rule for local region 
+            //The rules are scoped to ReadItem: an unscoped rule also faults the metadata calls that target the
+            //same region, which makes the hit count depend on cache state rather than on the tested read.
             string localRegionRuleId = "localRegionRule-" + Guid.NewGuid().ToString();
             FaultInjectionRule localRegionRule = new FaultInjectionRuleBuilder(
                 id: localRegionRuleId,
                 condition:
                     new FaultInjectionConditionBuilder()
                         .WithRegion(preferredRegions[0])
+                        .WithOperationType(FaultInjectionOperationType.ReadItem)
                         .WithConnectionType(FaultInjectionConnectionType.Gateway)
                         .Build(),
                 result:
-                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.Gone)
+                    // TooManyRequests is used (instead of Gone, which is Direct only) because it is terminal
+                    // when MaxRetryAttemptsOnRateLimitedRequests is 0. A retryable error would cross-region
+                    // failover and hit the remote region rule, which this test asserts is never applied.
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.TooManyRequests)
                         .WithTimes(1)
                         .Build())
                 .WithDuration(TimeSpan.FromMinutes(5))
@@ -131,10 +137,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 condition:
                     new FaultInjectionConditionBuilder()
                         .WithRegion(preferredRegions[1])
+                        .WithOperationType(FaultInjectionOperationType.ReadItem)
                         .WithConnectionType(FaultInjectionConnectionType.Gateway)
                         .Build(),
                 result:
-                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.Gone)
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.TooManyRequests)
                         .WithTimes(1)
                         .Build())
                 .WithDuration(TimeSpan.FromMinutes(5))
@@ -154,7 +161,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 {
                     ConsistencyLevel = ConsistencyLevel.Session,
                     ConnectionMode = ConnectionMode.Gateway,
-                    Serializer = this.serializer
+                    Serializer = this.serializer,
+                    MaxRetryAttemptsOnRateLimitedRequests = 0,
                 };
 
                 this.fiClient = new CosmosClient(
@@ -182,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                     this.ValidateHitCount(remoteRegionRule, 0);
                     this.ValidateFaultInjectionRuleApplication(
                         ex,
-                        (int)HttpStatusCode.Gone,
+                        (int)HttpStatusCode.TooManyRequests,
                         localRegionRule);
                 }
                 catch (CosmosException ex)
@@ -191,7 +199,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                     this.ValidateHitCount(remoteRegionRule, 0);
                     this.ValidateFaultInjectionRuleApplication(
                         ex,
-                        (int)HttpStatusCode.Gone,
+                        (int)HttpStatusCode.TooManyRequests,
                         localRegionRule);
                 }
             }
@@ -212,6 +220,132 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 remoteRegionRule.Disable();
             }
         }
+
+        [TestMethod]
+        [Timeout(Timeout)]
+        [Description("Test Unautharized rule filtering")]
+        [Owner("ntripician")]
+        public async Task FIGatewayUnautharizedTest()
+        {            //403 is retried across regions, so the rule is applied once per region attempt and the total
+            //hit count depends on how many regions the test account has. Assert it was applied at least once.
+            //create fault injection rule for unauthorized requests
+            string unauthorizedRuleId = "unauthorizedRule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule unauthorizedRule = new FaultInjectionRuleBuilder(
+                id: unauthorizedRuleId,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithConnectionType(FaultInjectionConnectionType.Gateway)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.Unauthorized)
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(5))
+                .Build();
+            //disable rule until ready to test
+            unauthorizedRule.Disable();
+            try
+            {
+                //create client with fault injection
+                List<FaultInjectionRule> rules = new List<FaultInjectionRule> { unauthorizedRule };
+                FaultInjector faultInjector = new FaultInjector(rules);
+                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+                {
+                    ConsistencyLevel = ConsistencyLevel.Session,
+                    ConnectionMode = ConnectionMode.Gateway,
+                    Serializer = this.serializer
+                };
+                this.fiClient = new CosmosClient(
+                    this.connectionString,
+                    faultInjector.GetFaultInjectionClientOptions(cosmosClientOptions));
+                this.fiDatabase = this.fiClient.GetDatabase(TestCommon.FaultInjectionDatabaseName);
+                this.fiContainer = this.fiDatabase.GetContainer(TestCommon.FaultInjectionContainerName);
+                unauthorizedRule.Enable();
+
+                await this.fiContainer.ReadItemAsync<FaultInjectionTestObject>(
+                    "testId2",
+                    new PartitionKey("pk2"));
+            }
+            catch (DocumentClientException ex)
+            {
+                this.ValidateRuleHit(unauthorizedRule, 1);
+                this.ValidateFaultInjectionRuleApplication(
+                    ex,
+                    (int)HttpStatusCode.Unauthorized,
+                    unauthorizedRule);
+            }
+            catch (CosmosException ex)
+            {
+                this.ValidateRuleHit(unauthorizedRule, 1);
+                this.ValidateFaultInjectionRuleApplication(
+                    ex,
+                    (int)HttpStatusCode.Unauthorized,
+                    unauthorizedRule);
+            }
+        }
+
+        [TestMethod]
+        [Timeout(Timeout)]
+        [Description("Test AAD token revoked rule filtering")]
+        [Owner("ntripician")]
+        public async Task FIGatewayAADRevokedTest()
+        {
+            //403 is retried across regions, so the rule is applied once per region attempt and the total
+            //hit count depends on how many regions the test account has. Assert it was applied at least once.
+            //create fault injection rule for AAD token revoked requests
+            string aadRevokedRuleId = "AadRevoked-" + Guid.NewGuid().ToString();
+            FaultInjectionRule aadRevokedRule = new FaultInjectionRuleBuilder(
+                id: aadRevokedRuleId,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithConnectionType(FaultInjectionConnectionType.Gateway)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.AadTokenRevoked)
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(5))
+                .Build();
+            //disable rule until ready to test
+            aadRevokedRule.Disable();
+            try
+            {
+                //create client with fault injection
+                List<FaultInjectionRule> rules = new List<FaultInjectionRule> { aadRevokedRule };
+                FaultInjector faultInjector = new FaultInjector(rules);
+                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+                {
+                    ConsistencyLevel = ConsistencyLevel.Session,
+                    ConnectionMode = ConnectionMode.Gateway,
+                    Serializer = this.serializer
+                };
+                this.fiClient = new CosmosClient(
+                    this.connectionString,
+                    faultInjector.GetFaultInjectionClientOptions(cosmosClientOptions));
+                this.fiDatabase = this.fiClient.GetDatabase(TestCommon.FaultInjectionDatabaseName);
+                this.fiContainer = this.fiDatabase.GetContainer(TestCommon.FaultInjectionContainerName);
+                aadRevokedRule.Enable();
+
+                await this.fiContainer.ReadItemAsync<FaultInjectionTestObject>(
+                    "testId2",
+                    new PartitionKey("pk2"));
+            }
+            catch (DocumentClientException ex)
+            {
+                this.ValidateRuleHit(aadRevokedRule, 1);
+                this.ValidateFaultInjectionRuleApplication(
+                    ex,
+                    (int)HttpStatusCode.Unauthorized,
+                    aadRevokedRule);
+            }
+            catch (CosmosException ex)
+            {
+                this.ValidateRuleHit(aadRevokedRule, 1);
+                this.ValidateFaultInjectionRuleApplication(
+                    ex,
+                    (int)HttpStatusCode.Unauthorized,
+                    aadRevokedRule);
+            }
+        }
+
 
         //<summary>
         //Tests to to see if fault injection rules are applied to the correct partitions
@@ -560,20 +694,23 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
         //<summary>
         //Tests to see if specific server error responses are applied, tests read and create item
+        //
+        //Gone is intentionally absent: it is a Direct only error type and the builder rejects it for Gateway.
+        //That validation is covered by FaultInjectionBuilderValidationTests.FaultInjectionRuleBuilder_GatewayWithGone_Throws.
         //</summary>
         [TestMethod]
         [Timeout(Timeout * 100)]
         [Description("Test server error responses")]
         [Owner("ntripician")]
-        [DataRow(FaultInjectionOperationType.ReadItem, FaultInjectionServerErrorType.Gone, (int)StatusCodes.Gone, (int)SubStatusCodes.ServerGenerated410, DisplayName = "Gone")]
         [DataRow(FaultInjectionOperationType.ReadItem, FaultInjectionServerErrorType.InternalServerError, (int)StatusCodes.InternalServerError, (int)SubStatusCodes.Unknown, DisplayName = "InternalServerError")]
+        [DataRow(FaultInjectionOperationType.ReadItem, FaultInjectionServerErrorType.RetryWith, (int)StatusCodes.RetryWith, (int)SubStatusCodes.Unknown, DisplayName = "RetryWith")]
         [DataRow(FaultInjectionOperationType.ReadItem, FaultInjectionServerErrorType.TooManyRequests, (int)StatusCodes.TooManyRequests, (int)SubStatusCodes.RUBudgetExceeded, DisplayName = "TooManyRequests")]
         [DataRow(FaultInjectionOperationType.ReadItem, FaultInjectionServerErrorType.ReadSessionNotAvailable, (int)StatusCodes.NotFound, (int)SubStatusCodes.ReadSessionNotAvailable, DisplayName = "ReadSessionNotAvailable")]
         [DataRow(FaultInjectionOperationType.ReadItem, FaultInjectionServerErrorType.Timeout, (int)StatusCodes.RequestTimeout, (int)SubStatusCodes.Unknown, DisplayName = "Timeout")]
         [DataRow(FaultInjectionOperationType.ReadItem, FaultInjectionServerErrorType.PartitionIsMigrating, (int)StatusCodes.Gone, (int)SubStatusCodes.CompletingPartitionMigration, DisplayName = "PartitionIsMigrating")]
         [DataRow(FaultInjectionOperationType.ReadItem, FaultInjectionServerErrorType.PartitionIsSplitting, (int)StatusCodes.Gone, (int)SubStatusCodes.CompletingSplit, DisplayName = "PartitionIsSplitting")]
-        [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.Gone, (int)StatusCodes.Gone, (int)SubStatusCodes.ServerGenerated410, DisplayName = "Gone - write")]
         [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.InternalServerError, (int)StatusCodes.InternalServerError, (int)SubStatusCodes.Unknown, DisplayName = "InternalServerError - write")]
+        [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.RetryWith, (int)StatusCodes.RetryWith, (int)SubStatusCodes.Unknown, DisplayName = "RetryWith - write")]
         [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.TooManyRequests, (int)StatusCodes.TooManyRequests, (int)SubStatusCodes.RUBudgetExceeded, DisplayName = "TooManyRequests - write")]
         [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.ReadSessionNotAvailable, (int)StatusCodes.NotFound, (int)SubStatusCodes.ReadSessionNotAvailable, DisplayName = "ReadSessionNotAvailable - write")]
         [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.Timeout, (int)StatusCodes.RequestTimeout, (int)SubStatusCodes.Unknown, DisplayName = "Timeout - write")]
@@ -590,6 +727,22 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             string pk = "deleteMe";
 
             string serverErrorResponseRuleId = "serverErrorResponseRule-" + Guid.NewGuid().ToString();
+
+            // InternalServerError (500) and RetryWith (449) are retried by the SDK. Limiting the rule to a single
+            // application would only fault the first attempt, letting the retry reach the service and mask the
+            // injected error, so those types fault every attempt and the injected error is the terminal one.
+            bool retriedAwayByTheSdk =
+                faultInjectionServerErrorType == FaultInjectionServerErrorType.InternalServerError
+                || faultInjectionServerErrorType == FaultInjectionServerErrorType.RetryWith;
+
+            FaultInjectionServerErrorResultBuilder resultBuilder =
+                FaultInjectionResultBuilder.GetResultBuilder(faultInjectionServerErrorType);
+
+            if (!retriedAwayByTheSdk)
+            {
+                resultBuilder = resultBuilder.WithTimes(1);
+            }
+
             FaultInjectionRule serverErrorResponseRule = new FaultInjectionRuleBuilder(
                 id: serverErrorResponseRuleId,
                 condition:
@@ -597,10 +750,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                     .WithOperationType(faultInjectionOperationType)
                     .WithConnectionType(FaultInjectionConnectionType.Gateway)
                     .Build(),
-                result:
-                    FaultInjectionResultBuilder.GetResultBuilder(faultInjectionServerErrorType)
-                        .WithTimes(1)
-                        .Build())
+                result: resultBuilder.Build())
                 .WithDuration(TimeSpan.FromMinutes(5))
                 .Build();
             serverErrorResponseRule.Disable();
@@ -635,6 +785,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 ValueStopwatch stopwatch = ValueStopwatch.StartNew();
                 TimeSpan elapsed;
 
+                bool injectedErrorSurfaced = false;
 
                 try
                 {
@@ -654,11 +805,12 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                     {
                         response = await this.fiContainer.ReadItemAsync<FaultInjectionTestObject>(
                             "testId",
-                            new PartitionKey("/pk"));
+                            new PartitionKey("pk"));
                     }
                 }
                 catch (CosmosException ex)
                 {
+                    injectedErrorSurfaced = true;
                     this.ValidateRuleHit(serverErrorResponseRule, 1);
                     this.ValidateFaultInjectionRuleApplication(
                         ex,
@@ -668,6 +820,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 }
                 catch (DocumentClientException ex)
                 {
+                    injectedErrorSurfaced = true;
                     this.ValidateRuleHit(serverErrorResponseRule, 1);
                     this.ValidateFaultInjectionRuleApplication(
                         ex,
@@ -676,6 +829,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                         serverErrorResponseRule);
                 }
 
+                Assert.IsTrue(
+                    injectedErrorSurfaced,
+                    $"Expected the injected {faultInjectionServerErrorType} fault to surface as an exception, "
+                        + $"but the {faultInjectionOperationType} succeeded. {Describe(serverErrorResponseRule)}");
 
                 elapsed = stopwatch.Elapsed;
                 stopwatch.Stop();
@@ -721,10 +878,13 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 id: hitCountRuleId,
                 condition:
                     new FaultInjectionConditionBuilder()
+                    .WithOperationType(FaultInjectionOperationType.ReadItem)
                     .WithConnectionType(FaultInjectionConnectionType.Gateway)
                     .Build(),
                 result:
-                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.Gone)
+                    // TooManyRequests (with MaxRetryAttemptsOnRateLimitedRequests = 0) is used instead of Gone,
+                    // which is Direct only, so that each read produces exactly one rule application.
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.TooManyRequests)
                         .WithTimes(1)
                         .Build())
                 .WithHitLimit(2)
@@ -740,7 +900,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 {
                     ConsistencyLevel = ConsistencyLevel.Session,
                     ConnectionMode = ConnectionMode.Gateway,
-                    Serializer = this.serializer
+                    Serializer = this.serializer,
+                    MaxRetryAttemptsOnRateLimitedRequests = 0,
                 };
 
                 this.fiClient = new CosmosClient(
@@ -763,19 +924,24 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                         new PartitionKey("pk"));
                         Assert.IsNotNull(response);
 
-                        if (i > 2)
+                        if (i >= 2)
                         {
                             this.ValidateFaultInjectionRuleNotApplied(response, hitCountRule, 2);
+                        }
+                        else
+                        {
+                            Assert.Fail(
+                                $"Expected the hit limit rule to be applied on attempt {i}, but the request succeeded. {Describe(hitCountRule)}");
                         }
                     }
                     catch (DocumentClientException ex)
                     {
-                        this.ValidateFaultInjectionRuleApplication(ex, (int)HttpStatusCode.Gone, hitCountRule);
+                        this.ValidateFaultInjectionRuleApplication(ex, (int)HttpStatusCode.TooManyRequests, hitCountRule);
                         this.ValidateHitCount(hitCountRule, i + 1);
                     }
                     catch (CosmosException ex)
                     {
-                        this.ValidateFaultInjectionRuleApplication(ex, (int)HttpStatusCode.Gone, hitCountRule);
+                        this.ValidateFaultInjectionRuleApplication(ex, (int)HttpStatusCode.TooManyRequests, hitCountRule);
                         this.ValidateHitCount(hitCountRule, i + 1);
                     }
                 }
@@ -788,8 +954,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
         /// <summary>
         /// Injection rate is set to 0.5, so the rule should be applied ~50% of the time
-        /// This test will fail ~1.2% of the time due to the random nature of the test
-        /// 98.8% of the time the rule will be applied between 38 and 62 times out of 100 with an injection rate of 50%
         /// </summary>
         [TestMethod]
         [Timeout(Timeout)]
@@ -806,7 +970,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                         .WithConnectionType(FaultInjectionConnectionType.Gateway)
                         .Build(),
                 result:
-                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.Gone)
+                    // TooManyRequests (with MaxRetryAttemptsOnRateLimitedRequests = 0) is used instead of Gone,
+                    // which is Direct only. It is terminal, so the hit count matches the number of injected
+                    // reads rather than being inflated by SDK retries.
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.TooManyRequests)
                         .WithInjectionRate(.5)
                         .WithTimes(1)
                         .Build())
@@ -822,7 +989,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 {
                     ConsistencyLevel = ConsistencyLevel.Session,
                     ConnectionMode = ConnectionMode.Gateway,
-                    Serializer = this.serializer
+                    Serializer = this.serializer,
+                    MaxRetryAttemptsOnRateLimitedRequests = 0,
                 };
 
                 this.fiClient = new CosmosClient(
@@ -852,8 +1020,15 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 }
 
-                Assert.IsTrue(thresholdRule.GetHitCount() >= 38, "This is Expected to fail 0.602% of the time");
-                Assert.IsTrue(thresholdRule.GetHitCount() <= 62, "This is Expected to fail 0.602% of the time");
+                //50% injection rate over 100 requests is Binomial(100, 0.5): mean 50, standard deviation 5.
+                //[30, 70] is +/- 4 standard deviations, so a passing run is not a coin flip while a broken
+                //injection rate (never applied, always applied, or materially off) is still caught.
+                Assert.IsTrue(
+                    thresholdRule.GetHitCount() >= 30,
+                    $"Injection rate too low. {Describe(thresholdRule)}");
+                Assert.IsTrue(
+                    thresholdRule.GetHitCount() <= 70,
+                    $"Injection rate too high. {Describe(thresholdRule)}");
             }
             finally
             {
@@ -955,14 +1130,35 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             return (writeRegions, readRegions);
         }
 
+        private static string Describe(FaultInjectionRule rule)
+        {
+            return $"rule '{rule.GetId()}' hitCount={rule.GetHitCount()} "
+                + $"regionEndpoints=[{string.Join(", ", rule.GetRegionEndpoints())}] "
+                + $"addresses={rule.GetAddresses().Count}";
+        }
+
+        private static string Describe(Exception ex)
+        {
+            return ex switch
+            {
+                CosmosException cosmosException =>
+                    $"CosmosException status={(int)cosmosException.StatusCode} subStatus={cosmosException.SubStatusCode} message={cosmosException.Message}",
+                DocumentClientException documentClientException =>
+                    $"DocumentClientException status={(int?)documentClientException.StatusCode} "
+                    + $"subStatus={documentClientException.Headers?.Get(WFConstants.BackendHeaders.SubStatus)} "
+                    + $"message={documentClientException.Message}",
+                _ => $"{ex.GetType().Name}: {ex.Message}",
+            };
+        }
+
         private void ValidateHitCount(FaultInjectionRule rule, long expectedHitCount)
         {
-            Assert.AreEqual(expectedHitCount, rule.GetHitCount());
+            Assert.AreEqual(expectedHitCount, rule.GetHitCount(), Describe(rule));
         }
 
         private void ValidateRuleHit(FaultInjectionRule rule, long expectedHitCount)
         {
-            Assert.IsTrue(expectedHitCount <= rule.GetHitCount());
+            Assert.IsTrue(expectedHitCount <= rule.GetHitCount(), Describe(rule));
         }
 
         private void ValidateFaultInjectionRuleNotApplied(
@@ -970,9 +1166,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             FaultInjectionRule rule,
             int expectedHitCount = 0)
         {
-            Assert.AreEqual(expectedHitCount, rule.GetHitCount());
-            Assert.AreEqual(0, response.Diagnostics.GetFailedRequestCount());
-            Assert.IsTrue((int)response.StatusCode < 400);
+            Assert.AreEqual(expectedHitCount, rule.GetHitCount(), Describe(rule));
+            Assert.AreEqual(0, response.Diagnostics.GetFailedRequestCount(), Describe(rule));
+            Assert.IsTrue((int)response.StatusCode < 400, Describe(rule));
         }
 
         private void ValidateFaultInjectionRuleApplication(
@@ -980,9 +1176,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             int statusCode,
             FaultInjectionRule rule)
         {
-            Assert.IsTrue(1 <= rule.GetHitCount());
-            Assert.IsTrue(ex.Message.Contains(rule.GetId()));
-            Assert.AreEqual(statusCode, (int)ex.StatusCode);
+            Assert.IsTrue(1 <= rule.GetHitCount(), Describe(rule));
+            Assert.IsTrue(ex.Message.Contains(rule.GetId()), Describe(ex));
+            Assert.AreEqual(statusCode, (int)ex.StatusCode, Describe(ex));
         }
 
         private void ValidateFaultInjectionRuleApplication(
@@ -990,9 +1186,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             int statusCode,
             FaultInjectionRule rule)
         {
-            Assert.IsTrue(1 <= rule.GetHitCount());
-            Assert.IsTrue(ex.Message.Contains(rule.GetId()));
-            Assert.AreEqual(statusCode, (int)ex.StatusCode);
+            Assert.IsTrue(1 <= rule.GetHitCount(), Describe(rule));
+            Assert.IsTrue(ex.Message.Contains(rule.GetId()), Describe(ex));
+            Assert.AreEqual(statusCode, (int)ex.StatusCode, Describe(ex));
         }
 
         private void ValidateFaultInjectionRuleApplication(
@@ -1001,10 +1197,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             int subStatusCode,
             FaultInjectionRule rule)
         {
-            Assert.IsTrue(1 <= rule.GetHitCount());
-            Assert.IsTrue(ex.Message.Contains(rule.GetId()));
-            Assert.AreEqual(statusCode, (int)ex.StatusCode);
-            Assert.AreEqual(subStatusCode.ToString(), ex.Headers.Get(WFConstants.BackendHeaders.SubStatus));
+            Assert.IsTrue(1 <= rule.GetHitCount(), Describe(rule));
+            Assert.IsTrue(ex.Message.Contains(rule.GetId()), Describe(ex));
+            Assert.AreEqual(statusCode, (int)ex.StatusCode, Describe(ex));
+            Assert.AreEqual(subStatusCode.ToString(), ex.Headers.Get(WFConstants.BackendHeaders.SubStatus), Describe(ex));
         }
 
         private void ValidateFaultInjectionRuleApplication(
@@ -1013,10 +1209,98 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             int subStatusCode,
             FaultInjectionRule rule)
         {
-            Assert.IsTrue(1 <= rule.GetHitCount());
-            Assert.IsTrue(ex.Message.Contains(rule.GetId()));
-            Assert.AreEqual(statusCode, (int)ex.StatusCode);
-            Assert.AreEqual(subStatusCode, ex.SubStatusCode);
+            Assert.IsTrue(1 <= rule.GetHitCount(), Describe(rule));
+            Assert.IsTrue(ex.Message.Contains(rule.GetId()), Describe(ex));
+            Assert.AreEqual(statusCode, (int)ex.StatusCode, Describe(ex));
+            Assert.AreEqual(subStatusCode, ex.SubStatusCode, Describe(ex));
+        }
+
+        [TestMethod]
+        [Timeout(Timeout)]
+        [Owner("nalutripician")]
+        [Description("Tests custom server error with custom status and substatus codes for Gateway mode")]
+        [DataRow(123, 456789, DisplayName = "Custom Status 123, SubStatus 456789")]
+        [DataRow(418, 12345, DisplayName = "Custom Status 418, SubStatus 12345")]
+        [DataRow(999, 0, DisplayName = "Custom Status 999, SubStatus 0")]
+        public async Task FaultInjectionCustomServerErrorRule_GatewayModeTest(int statusCode, int subStatusCode)
+        {
+            //id and partitionkey of item that is to be created, will want to delete after test
+            string id = "customErrorTestId";
+            string pk = "customErrorTestPk";
+
+            FaultInjectionTestObject createdItem = new FaultInjectionTestObject
+            {
+                Id = id,
+                Pk = pk
+            };
+
+            await this.container.CreateItemAsync(createdItem);
+
+            string customErrorRuleId = "customErrorRule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule customErrorRule = new FaultInjectionRuleBuilder(
+                id: customErrorRuleId,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithConnectionType(FaultInjectionConnectionType.Gateway)
+                        .WithOperationType(FaultInjectionOperationType.ReadItem)
+                        .Build(),
+                result:
+                    new FaultInjectionCustomServerErrorResultBuilder(statusCode, subStatusCode)
+                        .WithTimes(1)
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(5))
+                .Build();
+
+            customErrorRule.Disable();
+
+            try
+            {
+                //create client with fault injection
+                List<FaultInjectionRule> rules = new List<FaultInjectionRule> { customErrorRule };
+                FaultInjector faultInjector = new FaultInjector(rules);
+
+                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+                {
+                    ConsistencyLevel = ConsistencyLevel.Session,
+                    ConnectionMode = ConnectionMode.Gateway,
+                    Serializer = this.serializer,
+                };
+
+                this.fiClient = new CosmosClient(
+                    this.connectionString,
+                    faultInjector.GetFaultInjectionClientOptions(cosmosClientOptions));
+
+                this.fiDatabase = this.fiClient.GetDatabase(TestCommon.FaultInjectionDatabaseName);
+                this.fiContainer = this.fiDatabase.GetContainer(TestCommon.FaultInjectionContainerName);
+
+                customErrorRule.Enable();
+
+                try
+                {
+                    ItemResponse<FaultInjectionTestObject> response = await this.fiContainer.ReadItemAsync<FaultInjectionTestObject>(
+                        id,
+                        new PartitionKey(pk));
+
+                    Assert.Fail("Expected exception was not thrown");
+                }
+                catch (CosmosException ex)
+                {
+                    this.ValidateFaultInjectionRuleApplication(ex, statusCode, subStatusCode, customErrorRule);
+                    this.ValidateHitCount(customErrorRule, 1);
+                }
+            }
+            finally
+            {
+                customErrorRule.Disable();
+                try
+                {
+                    await this.container.DeleteItemAsync<FaultInjectionTestObject>(id, new PartitionKey(pk));
+                }
+                catch (CosmosException)
+                {
+                    // Ignore the exception
+                }
+            }
         }
     }
 }

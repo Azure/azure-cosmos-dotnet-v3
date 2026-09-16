@@ -103,6 +103,33 @@ namespace Microsoft.Azure.Cosmos
             // If it's considered a failure create the corresponding CosmosException
             if (!documentServiceResponse.StatusCode.IsSuccess())
             {
+                // DTX responses carry per-operation results in the body that must be preserved
+                // for DistributedTransactionResponse.FromResponseMessageAsync to parse.
+                // Route through a lightweight CosmosException instead of CosmosExceptionFactory.Create
+                // which disposes the stream.
+                if (requestMessage?.ResourceType == ResourceType.DistributedTransactionBatch
+                    && documentServiceResponse.ResponseBody != null)
+                {
+                    CosmosException dtxCosmosException = new CosmosException(
+                        message: $"Distributed transaction batch failed with status code {(int)documentServiceResponse.StatusCode} ({documentServiceResponse.StatusCode}).",
+                        statusCode: documentServiceResponse.StatusCode,
+                        subStatusCode: (int)documentServiceResponse.SubStatusCode,
+                        activityId: headers.ActivityId,
+                        requestCharge: headers.RequestCharge);
+
+                    ResponseMessage dtcResponseMessage = new ResponseMessage(
+                        statusCode: documentServiceResponse.StatusCode,
+                        requestMessage: requestMessage,
+                        headers: headers,
+                        cosmosException: dtxCosmosException,
+                        trace: requestMessage.Trace ?? NoOpTrace.Singleton)
+                    {
+                        Content = documentServiceResponse.ResponseBody
+                    };
+
+                    return dtcResponseMessage;
+                }
+
                 CosmosException cosmosException = CosmosExceptionFactory.Create(
                     documentServiceResponse,
                     headers,

@@ -28,6 +28,65 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 encryptor);
         }
 
+#if NET8_0_OR_GREATER
+        /// <summary>
+        /// Configures the specified <see cref="Container"/> to use streaming JSON processing by default.
+        /// </summary>
+        /// <param name="container">The <see cref="Container"/> instance to configure. Must be an <see cref="EncryptionContainer"/>.</param>
+        /// <returns>The configured <see cref="EncryptionContainer"/> instance.</returns>
+        /// <exception cref="ArgumentException">Thrown if <paramref name="container"/> is not an <see cref="EncryptionContainer"/>.</exception>
+        /// <remarks>
+        /// <para>
+        /// Streaming JSON processing uses pooled <c>ArrayPool&lt;byte&gt;</c> buffers to reduce allocations on the
+        /// decrypt path. When the result type is <see cref="DecryptableItem"/>, individual items are decrypted
+        /// lazily inside <see cref="DecryptableItem.GetItemAsync{T}"/> and hold a rented buffer until the item is
+        /// disposed.
+        /// </para>
+        /// <para>
+        /// <strong>Per-call opt-in.</strong> This method sets the streaming processor as the container-wide default.
+        /// To opt in (or out) on an individual feed call instead, set the encryption JSON-processor override on that
+        /// call's <see cref="RequestOptions.Properties"/> bag using the key <c>"encryption-json-processor"</c> with the
+        /// string value <c>"Stream"</c> (to use streaming) or <c>"Newtonsoft"</c> (to force the default Newtonsoft path):
+        /// <code language="c#">
+        /// <![CDATA[
+        /// QueryRequestOptions requestOptions = new QueryRequestOptions
+        /// {
+        ///     Properties = new Dictionary<string, object> { ["encryption-json-processor"] = "Stream" }
+        /// };
+        /// ]]>
+        /// </code>
+        /// The per-call override takes precedence over the container default. A strongly-typed surface for this
+        /// override is planned; until then the string form above is the supported per-call mechanism. Note that the
+        /// LINQ entry points (<see cref="ToEncryptionFeedIterator{T}"/> and <see cref="ToEncryptionStreamIterator{T}"/>)
+        /// honor only the container default and do not currently accept per-call options.
+        /// </para>
+        /// <para>
+        /// <strong>Disposal contract for <c>FeedResponse&lt;DecryptableItem&gt;</c>.</strong> The <c>FeedResponse&lt;T&gt;</c>
+        /// returned from <c>FeedIterator&lt;DecryptableItem&gt;.ReadNextAsync</c> implements <see cref="IAsyncDisposable"/>
+        /// at runtime, but the compile-time return type does not advertise it. Callers SHOULD cast each page to
+        /// <see cref="IAsyncDisposable"/> and dispose it (typically in a <c>finally</c> block) so that any items the
+        /// caller skipped, did not enumerate, or did not call <c>GetItemAsync</c> on promptly return their pooled
+        /// buffers to the pool. Disposal is the prompt path; if it is missed, a finalizer on the underlying pooled
+        /// stream still returns and zeroes the buffer when the page is garbage-collected, so a missed dispose degrades
+        /// to a delayed cleanup rather than a permanent pool leak or lingering plaintext. See the example on
+        /// <see cref="DecryptableItem"/> for the recommended pattern.
+        /// </para>
+        /// </remarks>
+        public static Container UseStreamingJsonProcessingByDefault(this Container container)
+        {
+            if (container is not EncryptionContainer encryptionContainer)
+            {
+                throw new ArgumentException(
+                    $"{nameof(UseStreamingJsonProcessingByDefault)} is only supported with {nameof(EncryptionContainer)}.",
+                    nameof(container));
+            }
+
+            encryptionContainer.UseStreamingJsonProcessingByDefault();
+
+            return encryptionContainer;
+        }
+#endif
+
         /// <summary>
         /// This method gets the FeedIterator from LINQ IQueryable to execute query asynchronously.
         /// This will create the fresh new FeedIterator when called which will support decryption.
@@ -36,6 +95,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="container">the encryption container.</param>
         /// <param name="query">the IQueryable{T} to be converted.</param>
         /// <returns>An iterator to go through the items.</returns>
+        /// <remarks>
+        /// On .NET 8+, this iterator uses the container's default JSON processor (see
+        /// <c>UseStreamingJsonProcessingByDefault</c>). It does not accept per-call
+        /// <see cref="RequestOptions"/>, so the per-call <c>"encryption-json-processor"</c> override is not honored on
+        /// the LINQ path; set the container default if you need streaming for LINQ-sourced iterators.
+        /// </remarks>
         /// <example>
         /// This example shows how to get FeedIterator from LINQ.
         ///
@@ -57,7 +122,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             return new EncryptionFeedIterator<T>(
                 (EncryptionFeedIterator)encryptionContainer.ToEncryptionStreamIterator(query),
-                encryptionContainer.ResponseFactory);
+                encryptionContainer.ResponseFactory,
+                encryptionContainer.Encryptor,
+                encryptionContainer.CosmosSerializer,
+                encryptionContainer.DefaultJsonProcessor);
         }
 
         /// <summary>
@@ -68,6 +136,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="container">the encryption container.</param>
         /// <param name="query">the IQueryable{T} to be converted.</param>
         /// <returns>An iterator to go through the items.</returns>
+        /// <remarks>
+        /// On .NET 8+, this iterator uses the container's default JSON processor (see
+        /// <c>UseStreamingJsonProcessingByDefault</c>). It does not accept per-call
+        /// <see cref="RequestOptions"/>, so the per-call <c>"encryption-json-processor"</c> override is not honored on
+        /// the LINQ path; set the container default if you need streaming for LINQ-sourced iterators.
+        /// </remarks>
         /// <example>
         /// This example shows how to get FeedIterator from LINQ.
         ///
@@ -90,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return new EncryptionFeedIterator(
                 query.ToStreamIterator(),
                 encryptionContainer.Encryptor,
-                encryptionContainer.CosmosSerializer);
+                encryptionContainer.DefaultJsonProcessor);
         }
     }
 }

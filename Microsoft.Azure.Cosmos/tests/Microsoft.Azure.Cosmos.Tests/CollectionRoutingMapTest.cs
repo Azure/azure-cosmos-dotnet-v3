@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             serviceIdentity3),
 
 
-                    }, string.Empty);
+                    }, string.Empty, false);
 
             Assert.AreEqual("0", routingMap.OrderedPartitionKeyRanges[0].Id);
             Assert.AreEqual("1", routingMap.OrderedPartitionKeyRanges[1].Id);
@@ -116,6 +116,363 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual("2", partitionKeyRanges1.ElementAt(1).Id);
         }
 
+        /// <summary>
+        /// Validates that CollectionRoutingMap correctly identifies overlapping partition key ranges
+        /// when using length-aware range comparators.
+        /// This test ensures that EPK advanced comparison logic are applied as expected,
+        /// and that the routing map's behavior is consistent regardless if the input EPK is fully or partially specified.
+        /// The test covers scenarios where input EPKs are partial or fall on range boundaries,
+        /// verifying that the correct partition key ranges are returned when using the new LengthAware comparators.
+        /// </summary>
+        [TestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public void TestCollectionRoutingMapWithLengthAwareRangeComparators(bool isRoutingMapFullySpecified)
+        {
+            try
+            {
+                // Arrange: Set useLengthAwareComparer flag to "true" since the default is only true for Preview.
+                CollectionRoutingMap routingMap = this.GenerateRoutingMap(isRoutingMapFullySpecified, true);
+
+                // Test scenario 1.1: Input EPK is partial and falls on the boundary between two overlapping ranges.
+                // The LengthAware comparators are able to correctly compare partial and full EPK ranges.Routing map is hybrid of fully specified and partially specified EPK ranges.
+                // Input Min EPK 06AB34CFE4E482236BCACBBF50E234AB matches (significant bytes) with maxEPK of pkrangeid 1 and minEPK of pkrangeid 2.
+                Range<string> inputPkRange = new Range<string>(
+                "06AB34CFE4E482236BCACBBF50E234AB",
+                "06AB34CFE4E482236BCACBBF50E234ABFF",
+                true,
+                false);
+
+                // Expected outcome: Only partition key range with id 2 overlaps, as the LengthAware comparator correctly handles the partial EPK.
+                IReadOnlyList<PartitionKeyRange> partitionKeyRanges1 = routingMap.GetOverlappingRanges(inputPkRange);
+                Assert.AreEqual(1, partitionKeyRanges1.Count);
+                Assert.AreEqual("2", partitionKeyRanges1[0].Id);
+
+                // Test scenario 1.2: Input EPK falls on a boundary and maxEPK also matches the next range's max.
+                // The LengthAware comparator should return only the correct overlapping range.
+                inputPkRange = new Range<string>(
+                "0BD3FBE846AF75790CE63F78B1A81631",
+                "0BD3FBE846AF75790CE63F78B1A81631FF",
+                true,
+                false);
+
+                partitionKeyRanges1 = routingMap.GetOverlappingRanges(inputPkRange);
+                Assert.AreEqual(1, partitionKeyRanges1.Count);
+                CollectionAssert.AreEquivalent(new[] { "11" }, partitionKeyRanges1.Select(r => r.Id).ToArray());
+
+                inputPkRange = new Range<string>(
+                "0D4DC2CD8F49C65A8E0C5306B61B43440D4DC2CD8F49C65A8E0C5306B61B4343",
+                "0D4DC2CD8F49C65A8E0C5306B61B43440D4DC2CD8F49C65A8E0C5306B61B4344",
+                true,
+                false);
+
+                partitionKeyRanges1 = routingMap.GetOverlappingRanges(inputPkRange);
+                Assert.AreEqual(1, partitionKeyRanges1.Count);
+                CollectionAssert.AreEquivalent(new[] { "4" }, partitionKeyRanges1.Select(r => r.Id).ToArray());
+
+                // Test scenario 1.2 (continued): Input EPK falls in boundary and maxEPK also matches the next range's max.
+                inputPkRange = new Range<string>(
+                "0BD3FBE846AF75790CE63F78B1A81620",
+                "0BD3FBE846AF75790CE63F78B1A81631",
+                true,
+                false);
+
+                partitionKeyRanges1 = routingMap.GetOverlappingRanges(inputPkRange);
+                Assert.AreEqual(1, partitionKeyRanges1.Count);
+                CollectionAssert.AreEquivalent(new[] { "3" }, partitionKeyRanges1.Select(r => r.Id).ToArray());
+
+                // Test scenario 1.3: Input EPK is partial and spans two overlapping ranges.
+                /// Input Min EPK 0DCEB8CE51C6BFE84F4BD9409F69B9BB falls in both pkrangeid 4 and pkrangeid 5.
+                inputPkRange = new Range<string>(
+                "0DCEB8CE51C6BFE84F4BD9409F69B9BB",
+                "0DCEB8CE51C6BFE84F4BD9409F69B9BBFF",
+                true,
+                false);
+
+                partitionKeyRanges1 = routingMap.GetOverlappingRanges(inputPkRange);
+                Assert.AreEqual(2, partitionKeyRanges1.Count);
+                CollectionAssert.AreEquivalent(new[] { "24", "5" }, partitionKeyRanges1.Select(r => r.Id).ToArray());
+
+
+                ///Test scenario 1.4: Input EPK is partial and falls in a single range in the middle. Routing map is hybrid of fully specified and partially specified ranges.
+                inputPkRange = new Range<string>(
+                "02559A67F2724111B5E565DFA8711A00",
+                "02559A67F2724111B5E565DFA8711A00",
+                true,
+                true);
+
+                partitionKeyRanges1 = routingMap.GetOverlappingRanges(inputPkRange);
+                Assert.AreEqual(1, partitionKeyRanges1.Count);
+                Assert.AreEqual("0", partitionKeyRanges1[0].Id);
+
+
+                ///Test scenario 1.5: Input EPK is partial and falls in a single range in the middle. Routing map targeted range has partial EPK values only.
+                inputPkRange = new Range<string>(
+                "0D4DC2CD8F49C65A8E0C5306B61B4345",
+                "0D4DC2CD8F49C65A8E0C5306B61B4345",
+                true,
+                true);
+
+                partitionKeyRanges1 = routingMap.GetOverlappingRanges(inputPkRange);
+                Assert.AreEqual(1, partitionKeyRanges1.Count);
+                Assert.AreEqual("4", partitionKeyRanges1[0].Id);
+
+
+                // The following part of the test case verifies the routing map values i.e.backend ranges when they are not fully specified.
+                if (!isRoutingMapFullySpecified)
+                {
+                    // Test scenario 1.6: Input EPK is fully specified and backend range is partially specified.
+                    // The LengthAware comparator correctly matches the fully specified input to the partially specified backend range.
+                    inputPkRange = new Range<string>(
+                    "0D4DC2CD8F49C65A8E0C5306B61B434300000000000000000000000000000000",
+                    "0D4EC2CD8F49C65A8E0C5306B61B434300000000000000000000000000000000",
+                    true,
+                    false);
+
+                    // LengthAware comparator yields only the correct range.
+                    partitionKeyRanges1 = routingMap.GetOverlappingRanges(inputPkRange);
+                    Assert.AreEqual(1, partitionKeyRanges1.Count);
+                    CollectionAssert.AreEquivalent(new[] { "4" }, partitionKeyRanges1.Select(r => r.Id).ToArray());
+                }
+            }
+            finally
+            {
+                // Clean up: Remove the environment variable after the test.
+                Environment.SetEnvironmentVariable(ConfigurationManager.UseLengthAwareRangeComparator, null);
+            }
+        }
+
+        // Test GetOverlappingRanges behavior when the UseLengthAwareRangeComparator environment flag is set to false,
+        // which forces the use of legacy Min/Max comparators.
+        [TestMethod]
+        public void TestLegacyComparatorsUsedWhenLengthAwareComparatorFlagIsFalse()
+        {
+            try
+            {
+
+                // Arrange: Set useLengthAwareComparer to false to force legacy comparator usage.
+                CollectionRoutingMap routingMap = this.GenerateRoutingMap(false, false);
+
+
+                // Test scenario: Input EPK is partial and falls on the boundary between two overlapping ranges.
+                // With the environment flag set, the routing map uses legacy Min/Max comparators, which do not distinguish
+                // between partial and full EPKs. As a result, both partition key ranges with ids 1 and 2 are considered overlapping.
+                // Input Min EPK 06AB34CFE4E482236BCACBBF50E234AB matches (significant bytes) with maxEPK of pkrangeid 1 and minEPK of pkrangeid 2.
+                Range<string> inputPkRange = new Range<string>(
+                "06AB34CFE4E482236BCACBBF50E234AB",
+                "06AB34CFE4E482236BCACBBF50E234ABFF",
+                true,
+                false);
+                IReadOnlyList<PartitionKeyRange> partitionKeyRanges1 = routingMap.GetOverlappingRanges(inputPkRange);
+                Assert.AreEqual(2, partitionKeyRanges1.Count);
+                CollectionAssert.AreEquivalent(new[] { "1", "2" }, partitionKeyRanges1.Select(r => r.Id).ToArray());
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.UseLengthAwareRangeComparator, null);
+            }
+        }
+
+        // Regression for GetRangeByEffectivePartitionKey honoring the configured length-aware comparer.
+        // Previously the point lookup hard-coded the ordinal Range<string>.MinComparer.Instance while its
+        // sibling GetOverlappingRanges used the configured comparer, so the two disagreed for a short/partial
+        // EPK sitting on a zero-padded range boundary.
+        // The 32-char EPK "06AB34CFE4E482236BCACBBF50E234AB" equals (length-aware) range "2"'s zero-padded
+        // MinInclusive "06AB34CFE4E482236BCACBBF50E234AB00000000000000000000000000000000".
+        // Length-aware -> "2" (matches GetOverlappingRanges scenario 1.1); ordinal lands one bucket low at "1".
+        [TestMethod]
+        public void TestGetRangeByEffectivePartitionKeyUsesLengthAwareComparer()
+        {
+            CollectionRoutingMap routingMap = this.GenerateRoutingMap(isFullySpecified: false, useLengthAwareComparer: true);
+
+            string id = routingMap.GetRangeByEffectivePartitionKey("06AB34CFE4E482236BCACBBF50E234AB").Id;
+
+            Assert.AreEqual("2", id, "Length-aware point lookup must select the partition that owns the zero-padded boundary EPK.");
+        }
+
+        // The point lookup must agree with its sibling GetOverlappingRanges for the boundary EPK.
+        [TestMethod]
+        public void TestGetRangeByEffectivePartitionKeyAgreesWithGetOverlappingRanges()
+        {
+            CollectionRoutingMap routingMap = this.GenerateRoutingMap(isFullySpecified: false, useLengthAwareComparer: true);
+
+            const string boundaryEpk = "06AB34CFE4E482236BCACBBF50E234AB";
+
+            PartitionKeyRange pointLookup = routingMap.GetRangeByEffectivePartitionKey(boundaryEpk);
+
+            IReadOnlyList<PartitionKeyRange> overlapping = routingMap.GetOverlappingRanges(
+                new Range<string>(boundaryEpk, boundaryEpk + "FF", true, false));
+
+            Assert.AreEqual(1, overlapping.Count);
+            Assert.AreEqual("2", pointLookup.Id);
+            Assert.AreEqual(pointLookup.Id, overlapping[0].Id, "GetRangeByEffectivePartitionKey must agree with GetOverlappingRanges on the boundary EPK.");
+        }
+
+        // Legacy/ordinal path must be preserved when length-aware comparison is disabled: the same boundary
+        // EPK lands in range "1" under ordinal comparison (the historical behavior).
+        [TestMethod]
+        public void TestGetRangeByEffectivePartitionKeyLegacyComparerUnchanged()
+        {
+            CollectionRoutingMap routingMap = this.GenerateRoutingMap(isFullySpecified: false, useLengthAwareComparer: false);
+
+            string id = routingMap.GetRangeByEffectivePartitionKey("06AB34CFE4E482236BCACBBF50E234AB").Id;
+
+            Assert.AreEqual("1", id, "With the length-aware comparer disabled the ordinal/legacy behavior must be preserved.");
+        }
+
+        // Fully specified (64-char) EPKs are unaffected by the fix: current synchronous callers pass full-length
+        // EPKs, for which ordinal and length-aware comparison are equivalent. The same partition must be selected
+        // regardless of which comparer is configured.
+        [TestMethod]
+        public void TestGetRangeByEffectivePartitionKeyFullEpkUnaffected()
+        {
+            const string fullEpk = "0800000000000000000000000000000000000000000000000000000000000000";
+
+            CollectionRoutingMap lengthAwareMap = this.GenerateRoutingMap(isFullySpecified: false, useLengthAwareComparer: true);
+            CollectionRoutingMap legacyMap = this.GenerateRoutingMap(isFullySpecified: false, useLengthAwareComparer: false);
+
+            string lengthAwareId = lengthAwareMap.GetRangeByEffectivePartitionKey(fullEpk).Id;
+            string legacyId = legacyMap.GetRangeByEffectivePartitionKey(fullEpk).Id;
+
+            Assert.AreEqual("2", lengthAwareId);
+            Assert.AreEqual(legacyId, lengthAwareId, "A full-length EPK must map to the same partition under both comparers.");
+        }
+
+        private CollectionRoutingMap GenerateRoutingMap(bool isFullySpecified, bool useLengthAwareComparer)
+        {
+            IEnumerable<Tuple<PartitionKeyRange, ServiceIdentity>> partitionKeyRangeTuples = new[]
+                {
+                    Tuple.Create(
+                        new PartitionKeyRange
+                        {
+                            Id = "0",
+                            MinInclusive = "",
+                            MaxExclusive = "03559A67F2724111B5E565DFA8711A00"
+                        },
+                        (ServiceIdentity)null),
+
+                    Tuple.Create(
+                        new PartitionKeyRange
+                        {
+                            Id = "1",
+                            MinInclusive = "03559A67F2724111B5E565DFA8711A00",
+                            MaxExclusive = "06AB34CFE4E482236BCACBBF50E234AB00000000000000000000000000000000"
+                        },
+                        (ServiceIdentity)null),
+
+                    Tuple.Create(
+                        new PartitionKeyRange
+                        {
+                            Id = "2",
+                            MinInclusive = "06AB34CFE4E482236BCACBBF50E234AB00000000000000000000000000000000",
+                            MaxExclusive = "0BD3FBE846AF75790CE63F78B1A81620"
+                        },
+                        (ServiceIdentity)null),
+
+                    Tuple.Create(
+                        new PartitionKeyRange
+                        {
+                            Id = "3",
+                            MinInclusive = "0BD3FBE846AF75790CE63F78B1A81620",
+                            MaxExclusive = "0BD3FBE846AF75790CE63F78B1A8163100000000000000000000000000000000"
+                        },
+                        (ServiceIdentity)null),
+                    Tuple.Create(
+                        new PartitionKeyRange
+                        {
+                            Id = "11",
+                            MinInclusive = "0BD3FBE846AF75790CE63F78B1A8163100000000000000000000000000000000",
+                            MaxExclusive = "0BD3FBE846AF75790CE63F78B1A81631FF"
+                        },
+                        (ServiceIdentity)null),
+                    Tuple.Create(
+                        new PartitionKeyRange
+                        {
+                            Id = "12",
+                            MinInclusive = "0BD3FBE846AF75790CE63F78B1A81631FF",
+                            MaxExclusive = "0D4DC2CD8F49C65A8E0C5306B61B4343"
+                        },
+                        (ServiceIdentity)null),
+
+                    Tuple.Create(
+                        new PartitionKeyRange
+                        {
+                            Id = "4",
+                            MinInclusive = "0D4DC2CD8F49C65A8E0C5306B61B4343",
+                            MaxExclusive = "0D4EC2CD8F49C65A8E0C5306B61B4343"
+                        },
+                        (ServiceIdentity)null),
+
+                    Tuple.Create(
+                        new PartitionKeyRange
+                        {
+                            Id = "44",
+                            MinInclusive = "0D4EC2CD8F49C65A8E0C5306B61B4343",
+                            MaxExclusive = "0D5DC2CD8F49C65A8E0C5306B61B4343"
+                        },
+                        (ServiceIdentity)null),
+
+                    Tuple.Create(
+                        new PartitionKeyRange
+                        {
+                            Id = "24",
+                            MinInclusive = "0D5DC2CD8F49C65A8E0C5306B61B4343",
+                            MaxExclusive = "0DCEB8CE51C6BFE84F4BD9409F69B9BB2164DEBD78C50C850E0C1E3E3F0579ED"
+                        },
+                        (ServiceIdentity)null),
+
+                    Tuple.Create(
+                        new PartitionKeyRange
+                        {
+                            Id = "5",
+                            MinInclusive = "0DCEB8CE51C6BFE84F4BD9409F69B9BB2164DEBD78C50C850E0C1E3E3F0579ED",
+                            MaxExclusive = "1080F600C27CF98DC13F8639E94E7676"
+                        },
+                        (ServiceIdentity)null),
+                    Tuple.Create(
+                        new PartitionKeyRange
+                        {
+                            Id = "9",
+                            MinInclusive = "1080F600C27CF98DC13F8639E94E7676",
+                            MaxExclusive = "FF"
+                        },
+                        (ServiceIdentity)null),
+                };
+
+            if (isFullySpecified)
+            {
+                partitionKeyRangeTuples = partitionKeyRangeTuples
+                    .Select(tuple =>
+                    {
+                        PartitionKeyRange range = tuple.Item1;
+                        // Pad right to 64 bytes (128 hex chars) for MinInclusive and MaxExclusive if not empty
+                        string PadTo64(string value)
+                        {
+                            if (string.IsNullOrEmpty(value) || value == "FF")
+                                return value;
+                            return value.PadRight(64, '0');
+                        }
+                        return Tuple.Create(
+                            new PartitionKeyRange
+                            {
+                                Id = range.Id,
+                                MinInclusive = PadTo64(range.MinInclusive),
+                                MaxExclusive = PadTo64(range.MaxExclusive)
+                            },
+                            tuple.Item2
+                        );
+                    })
+                    .ToList();
+            }
+
+            CollectionRoutingMap routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(
+                partitionKeyRangeTuples,
+                string.Empty,
+                useLengthAwareComparer);
+
+            return routingMap;
+        }
+
         [TestMethod]
         [ExpectedException(typeof(InvalidOperationException))]
         public void TestInvalidRoutingMap()
@@ -126,7 +483,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         Tuple.Create(new PartitionKeyRange {Id = "1", MinInclusive = "0000000020", MaxExclusive = "0000000030"}, (ServiceIdentity)null),
                         Tuple.Create(new PartitionKeyRange { Id = "2", MinInclusive = "0000000025", MaxExclusive = "0000000035"}, (ServiceIdentity)null),
                     },
-                string.Empty);
+                string.Empty, false);
         }
 
         [TestMethod]
@@ -138,7 +495,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         Tuple.Create(new PartitionKeyRange{ Id = "2", MinInclusive = "", MaxExclusive = "0000000030"}, (ServiceIdentity)null),
                         Tuple.Create(new PartitionKeyRange{ Id = "3", MinInclusive = "0000000031", MaxExclusive = "FF"}, (ServiceIdentity)null),
                     },
-                string.Empty);
+                string.Empty, false);
 
             Assert.IsNull(routingMap);
 
@@ -148,7 +505,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         Tuple.Create(new PartitionKeyRange{Id = "2", MinInclusive = "", MaxExclusive = "0000000030"}, (ServiceIdentity)null),
                         Tuple.Create(new PartitionKeyRange{Id = "3", MinInclusive = "0000000030", MaxExclusive = "FF"}, (ServiceIdentity)null),
                     },
-                string.Empty);
+                string.Empty, false);
 
             Assert.IsNotNull(routingMap);
         }
@@ -163,7 +520,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         Tuple.Create(new PartitionKeyRange{ Id = "3", MinInclusive = "0000000030", MaxExclusive = "0000000032", Parents = new Collection<string>{"5"}}, (ServiceIdentity)null),
                         Tuple.Create(new PartitionKeyRange{ Id = "4", MinInclusive = "0000000032", MaxExclusive = "FF"}, (ServiceIdentity)null),
                     },
-              string.Empty);
+              string.Empty, false);
 
             Assert.IsTrue(routingMap.IsGone("1"));
             Assert.IsTrue(routingMap.IsGone("0"));
@@ -208,7 +565,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             MinInclusive = "0000000070",
                             MaxExclusive = "FF"},
                             (ServiceIdentity)null),
-                    }, string.Empty);
+                    }, string.Empty, false);
 
             CollectionRoutingMap newRoutingMap = routingMap.TryCombine(
                 new[]
@@ -229,7 +586,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             MaxExclusive = "0000000030"},
                             (ServiceIdentity)null),
                     },
-                    null);
+                    null, false);
 
             Assert.IsNotNull(newRoutingMap);
 
@@ -268,7 +625,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             MaxExclusive = "0000000030"},
                             (ServiceIdentity)null),
                     },
-                    null);
+                    null, false);
 
             Assert.IsNotNull(newRoutingMap);
 
@@ -283,7 +640,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             MaxExclusive = "0000000002"},
                             (ServiceIdentity)null),
                     },
-                    null);
+                    null, false);
 
             Assert.IsNull(newRoutingMap);
         }

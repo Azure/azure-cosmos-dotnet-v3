@@ -31,13 +31,17 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly IStoreModel storeModel;
         private readonly CollectionCache collectionCache;
         private readonly IGlobalEndpointManager endpointManager;
+        private readonly bool useLengthAwareRangeComparer;
+        private readonly MetadataHedgingStrategy metadataHedgingStrategy;
 
         public PartitionKeyRangeCache(
             ICosmosAuthorizationTokenProvider authorizationTokenProvider,
             IStoreModel storeModel,
             CollectionCache collectionCache,
             IGlobalEndpointManager endpointManager,
-            bool enableAsyncCacheExceptionNoSharing = true)
+            bool useLengthAwareRangeComparer,
+            bool enableAsyncCacheExceptionNoSharing = true,
+            MetadataHedgingStrategy metadataHedgingStrategy = null)
         {
             this.routingMapCache = new AsyncCacheNonBlocking<string, CollectionRoutingMap>(
                     keyEqualityComparer: StringComparer.Ordinal,
@@ -46,6 +50,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.storeModel = storeModel;
             this.collectionCache = collectionCache;
             this.endpointManager = endpointManager;
+            this.useLengthAwareRangeComparer = useLengthAwareRangeComparer;
+            this.metadataHedgingStrategy = metadataHedgingStrategy;
         }
 
         public virtual async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
@@ -81,6 +87,43 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 return routingMap.GetOverlappingRanges(range);
             }
+        }
+
+        /// <summary>
+        /// Force-refreshes the routing cache for a single collection when the partition key range the server
+        /// actually served differs from the range the client resolved for the request — i.e. the partition
+        /// moved (split/merge) to a range the client did not know about. If the ids match, or any input is
+        /// missing, this is a no-op.
+        /// </summary>
+        /// <remarks>
+        /// The method only detects the move and issues the refresh; the caller decides which responses to feed in
+        /// and how to handle a refresh failure. The returned task carries any failure so a caller can await and
+        /// retry, or ignore it. The method is stateless and safe to call concurrently. A caller that processes many
+        /// operations at once and wants repeated moves to the same range to refresh only once should dedupe the
+        /// distinct (collection, served range) pairs itself and call this once per distinct pair.
+        /// </remarks>
+        public static Task RefreshRoutingCacheIfPartitionMovedAsync(
+            PartitionKeyRangeCache partitionKeyRangeCache,
+            string collectionResourceId,
+            string clientResolvedPartitionKeyRangeId,
+            string serverServedPartitionKeyRangeId,
+            ITrace trace)
+        {
+            if (partitionKeyRangeCache == null
+                || string.IsNullOrEmpty(collectionResourceId)
+                || string.IsNullOrEmpty(clientResolvedPartitionKeyRangeId)
+                || string.IsNullOrWhiteSpace(serverServedPartitionKeyRangeId)
+                || serverServedPartitionKeyRangeId.Equals(clientResolvedPartitionKeyRangeId, StringComparison.OrdinalIgnoreCase))
+            {
+                return Task.CompletedTask;
+            }
+
+            // The request ended up on a different partition unknown to the client, so refresh the caches.
+            return partitionKeyRangeCache.TryGetPartitionKeyRangeByIdAsync(
+                collectionResourceId,
+                serverServedPartitionKeyRangeId,
+                trace ?? NoOpTrace.Singleton,
+                forceRefresh: true);
         }
 
         public virtual async Task<PartitionKeyRange> TryGetPartitionKeyRangeByIdAsync(
@@ -195,6 +238,12 @@ namespace Microsoft.Azure.Cosmos.Routing
                     endpointManager: this.endpointManager,
                     maxRetryAttemptsOnThrottledRequests: retryOptions.MaxRetryAttemptsOnThrottledRequests,
                     maxRetryWaitTimeInSeconds: retryOptions.MaxRetryWaitTimeInSeconds);
+
+            // Only the first change-feed page is hedged. If a hedge wins on the first page,
+            // subsequent pages are pinned to the winning region so the continuation ETag chain
+            // stays consistent (a continuation token is meaningful only to the region that issued it).
+            bool isFirstReadFeedPage = true;
+            Uri pinnedEndpoint = null;
             do
             {
                 INameValueCollection headers = new RequestNameValueCollection();
@@ -206,12 +255,32 @@ namespace Microsoft.Azure.Cosmos.Routing
                     headers.Set(HttpConstants.HttpHeaders.IfNoneMatch, changeFeedNextIfNoneMatch);
                 }
 
+                bool currentIsFirstReadFeedPage = isFirstReadFeedPage;
+                Uri currentPinnedEndpoint = pinnedEndpoint;
                 using (DocumentServiceResponse response = await BackoffRetryUtility<DocumentServiceResponse>.ExecuteAsync(
-                    () => this.ExecutePartitionKeyRangeReadChangeFeedAsync(collectionRid, headers, trace, clientSideRequestStatistics, metadataRetryPolicy),
+                    () => this.ExecutePartitionKeyRangeReadChangeFeedAsync(
+                        collectionRid,
+                        headers,
+                        trace,
+                        clientSideRequestStatistics,
+                        metadataRetryPolicy,
+                        currentIsFirstReadFeedPage,
+                        currentPinnedEndpoint,
+                        winningEndpoint => pinnedEndpoint = winningEndpoint),
                     retryPolicy: metadataRetryPolicy))
                 {
                     lastStatusCode = response.StatusCode;
                     changeFeedNextIfNoneMatch = response.Headers[HttpConstants.HttpHeaders.ETag];
+
+                    DefaultTrace.TraceInformation("PartitionKeyRangeCache GetRoutingMapForCollectionAsync collectionRid: {0}, StatusCode: {1}, SubstatusCode {2}, request Etag {3}, response ETag: {4}, RegionsContacted {5}", 
+                        collectionRid,
+                        lastStatusCode,
+                        response.GetSubStatusCodes(),
+                        headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.IfNoneMatch),
+                        changeFeedNextIfNoneMatch,
+                        response.RequestStats?.RegionsContacted != null
+                            ? string.Join(", ", response.RequestStats.RegionsContacted)
+                            : string.Empty);
 
                     FeedResource<PartitionKeyRange> feedResource = response.GetResource<FeedResource<PartitionKeyRange>>();
                     if (feedResource != null)
@@ -219,6 +288,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                         ranges.AddRange(feedResource);
                     }
                 }
+
+                isFirstReadFeedPage = false;
             }
             while (lastStatusCode != HttpStatusCode.NotModified);
 
@@ -232,11 +303,12 @@ namespace Microsoft.Azure.Cosmos.Routing
                 routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(
                     tuples.Where(tuple => !goneRanges.Contains(tuple.Item1.Id)),
                     string.Empty,
+                    this.useLengthAwareRangeComparer,
                     changeFeedNextIfNoneMatch);
             }
             else
             {
-                routingMap = previousRoutingMap.TryCombine(tuples, changeFeedNextIfNoneMatch);
+                routingMap = previousRoutingMap.TryCombine(tuples, changeFeedNextIfNoneMatch, this.useLengthAwareRangeComparer);
             }
 
             if (routingMap == null)
@@ -256,7 +328,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                                                                                 INameValueCollection headers, 
                                                                                 ITrace trace,
                                                                                 IClientSideRequestStatistics clientSideRequestStatistics,
-                                                                                IDocumentClientRetryPolicy retryPolicy)
+                                                                                IDocumentClientRetryPolicy retryPolicy,
+                                                                                bool isFirstReadFeedPage,
+                                                                                Uri pinnedEndpoint,
+                                                                                Action<Uri> onWinningEndpoint)
         {
             using (ITrace childTrace = trace.StartChild("Read PartitionKeyRange Change Feed", TraceComponent.Transport, Tracing.TraceLevel.Info))
             {
@@ -268,6 +343,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                     headers))
                 {
                     retryPolicy.OnBeforeSendRequest(request);
+
+                    // Pages 2..N after a first-page hedge win: pin to the winning region so the
+                    // change-feed continuation completes against the region that issued the ETag.
+                    if (pinnedEndpoint != null)
+                    {
+                        request.RequestContext.RouteToLocation(pinnedEndpoint);
+                    }
+
                     string authorizationToken = null;
                     try
                     {
@@ -309,6 +392,38 @@ namespace Microsoft.Azure.Cosmos.Routing
                     {
                         try
                         {
+                            // Hedge only the first change-feed page (and only when not already
+                            // pinned to a prior page's winning region). Later pages take the
+                            // pinned/primary path unchanged.
+                            if (this.metadataHedgingStrategy != null && isFirstReadFeedPage && pinnedEndpoint == null)
+                            {
+                                MetadataHedgingStrategy.MetadataHedgingResult hedgeResult = await this.metadataHedgingStrategy.ExecuteAsync(
+                                    request,
+                                    sendToEndpoint: MetadataHedgingStrategy.StoreModelSender(this.storeModel),
+                                    isFirstReadFeedPage: true,
+                                    cancellationToken: default);
+
+                                // Emit the hedge trace datum ONLY when a hedge actually fired, so the
+                                // common no-hedge path leaves the trace tree (and its baselines) unchanged.
+                                if (hedgeResult.HedgeFired)
+                                {
+                                    childTrace.AddDatum(
+                                        MetadataHedgingStrategy.TraceDatumKey,
+                                        $"HedgeFired={hedgeResult.HedgeFired}; HedgeWon={hedgeResult.HedgeWon}; WinningRegion={hedgeResult.WinningRegion}");
+                                }
+
+                                // Pin later pages to the winning region ONLY when the hedge actually
+                                // won (moved the region). When the primary won -- whether or not a hedge
+                                // fired -- pages 2..N stay on the normal per-page resolution path so the
+                                // metadata retry policy can still fail over across regions.
+                                if (hedgeResult.HedgeWon)
+                                {
+                                    onWinningEndpoint?.Invoke(hedgeResult.WinningEndpoint);
+                                }
+
+                                return hedgeResult.Response;
+                            }
+
                             return await this.storeModel.ProcessMessageAsync(request);
                         }
                         catch (DocumentClientException ex)

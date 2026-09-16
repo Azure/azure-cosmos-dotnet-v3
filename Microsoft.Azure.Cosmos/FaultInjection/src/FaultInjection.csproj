@@ -7,9 +7,7 @@
 		<Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
 		<NeutralLanguage>en-US</NeutralLanguage>
 		<CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
-		<OutputType>Exe</OutputType>
 		<TargetFramework>net6</TargetFramework>
-		<TargetType>library</TargetType>
 		<Authors>Microsoft</Authors>
 		<RootNamespace>Microsoft.Azure.Cosmos.FaultInjection</RootNamespace>
 		<AssemblyName>Microsoft.Azure.Cosmos.FaultInjection</AssemblyName>
@@ -36,12 +34,8 @@
 		<DebugType>portable</DebugType>
 		<IncludeSymbols>false</IncludeSymbols>
 		<IncludeSource>false</IncludeSource>
-		<PackageLicenseFile>LICENSE</PackageLicenseFile>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 	</PropertyGroup>
-
-	<ItemGroup>
-		<None Include="..\LICENSE" Pack="true" PackagePath="" Visible="false" />
-	</ItemGroup>
 
 	<ItemGroup>
 		<AdditionalFiles Include="stylecop.json" />

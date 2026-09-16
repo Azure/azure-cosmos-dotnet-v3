@@ -191,20 +191,6 @@ namespace Microsoft.Azure.Cosmos.Json
         }
 
         /// <summary>
-        /// Gets the length of a particular string given its TypeMarker.
-        /// </summary>
-        /// <param name="typeMarker">The type marker as input</param>
-        /// <returns>
-        /// - Non-Negative Value: The TypeMarker encodes the string length
-        /// - Negative Value: System or user dictionary encoded string, or encoded string length that follows The TypeMarker
-        /// </returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int GetStringLengths(byte typeMarker)
-        {
-            return JsonBinaryEncoding.StringLengths.Lengths[typeMarker];
-        }
-
-        /// <summary>
         /// Gets the offset of the first item in an array or object
         /// </summary>
         /// <param name="typeMarker">The TypeMarker as input.</param>
@@ -215,12 +201,29 @@ namespace Microsoft.Azure.Cosmos.Json
             return JsonBinaryEncoding.FirstValueOffsets.Offsets[typeMarker];
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryGetValueLength(ReadOnlySpan<byte> buffer, out int length)
         {
-            // Too lazy to convert this right now.
-            length = JsonBinaryEncoding.GetValueLength(buffer);
-            return true;
+            // Honor the Try-pattern contract: any malformed payload -- whether
+            // it trips the nesting cap (JsonParseException), is empty
+            // (IndexOutOfRangeException), has a length prefix that runs past
+            // the buffer (ArgumentOutOfRangeException), exceeds int.MaxValue
+            // (InvalidOperationException), or carries an unknown type marker
+            // (ArgumentException) -- must surface as a false return rather
+            // than leaking an exception to the caller. GetValueLength is a
+            // pure function with no side effects, so swallowing here is safe.
+            // [AggressiveInlining] is intentionally omitted: methods that
+            // contain a try/catch cannot be inlined by the JIT, so the hint
+            // would be misleading.
+            try
+            {
+                length = JsonBinaryEncoding.GetValueLength(buffer);
+                return true;
+            }
+            catch (Exception)
+            {
+                length = 0;
+                return false;
+            }
         }
 
         private static bool TryGetFixedWidthValue<T>(

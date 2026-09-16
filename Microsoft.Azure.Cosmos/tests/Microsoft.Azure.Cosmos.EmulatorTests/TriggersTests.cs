@@ -153,6 +153,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
 
+        [TestMethod]
         [DataRow(TriggerOperation.Create, false, DisplayName = "TriggerOperation - Create with Binary encoding disabled.")]
         [DataRow(TriggerOperation.Create, true, DisplayName = "TriggerOperation - Create with Binary encoding enabled.")]
         [DataRow(TriggerOperation.Upsert, false, DisplayName = "TriggerOperation - Upsert with Binary encoding disabled.")]

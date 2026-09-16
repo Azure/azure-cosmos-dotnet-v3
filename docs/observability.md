@@ -28,9 +28,9 @@ flowchart TD
     classDef orange fill:#f96
     classDef blue fill:#6fa8dc
     subgraph ClientContextCore
-        OpenTelemetryRecorderFactory --> CheckFeatureFlag{<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Fluent/CosmosClientBuilder.cs#L436'>isDistributedTracing</a> Enabled?} 
+        OpenTelemetryRecorderFactory --> CheckFeatureFlag{<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/main/Microsoft.Azure.Cosmos/src/Fluent/CosmosClientBuilder.cs#L436'>isDistributedTracing</a> Enabled?} 
         CheckFeatureFlag --> |Yes| CreateActivity(Start an Activity or Child activity<br> with preloaded attributes) 
-        CreateActivity --> HandlerPipeline{<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/docs/SdkDesign.md#handler-pipeline'>Handler Pipeline</a>}
+        CreateActivity --> HandlerPipeline{<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/main/docs/SdkDesign.md#handler-pipeline'>Handler Pipeline</a>}
         GetResponse --> TriggerDispose(Trigger Dispose of Diagnostic Scope)
         subgraph Dispose
             TriggerDispose --> CheckLatencyThreshold{Is high latency/errored response?}
@@ -99,7 +99,7 @@ CosmosClientOptions options = new CosmosClientOptions()
 
 #### Sample
 
-For Sample refer [this](https://github.com/Azure/azure-cosmos-dotnet-v3/tree/master/Microsoft.Azure.Cosmos.Samples/Usage/OpenTelemetry)
+For Sample refer [this](https://github.com/Azure/azure-cosmos-dotnet-v3/tree/main/Microsoft.Azure.Cosmos.Samples/Usage/OpenTelemetry)
 
 ### Metrics
 
@@ -229,19 +229,19 @@ When configuring the `OTEL_SEMCONV_STABILITY_OPT_IN` environment variable, the f
 
 1. **`database`**:
    - The SDK emits all attributes as per the OpenTelemetry database semantic conventions outlined [here](https://opentelemetry.io/docs/specs/semconv/database/cosmosdb/).
-   - Refer to the [list of OpenTelemetry attributes emitted by the SDK](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Telemetry/OpenTelemetry/OpenTelemetryAttributeKeys.cs).
+   - Refer to the [list of OpenTelemetry attributes emitted by the SDK](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/main/Microsoft.Azure.Cosmos/src/Telemetry/OpenTelemetry/OpenTelemetryAttributeKeys.cs).
 
 2. **`database/dup`**:
    - The SDK emits attributes that follow both OpenTelemetry database semantic conventions, available [here](https://opentelemetry.io/docs/specs/semconv/database/cosmosdb/), and additional attributes supported by the Classic Application Insights SDK.
-   - For a complete attribute list, refer to the OpenTelemetry attributes [here](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Telemetry/OpenTelemetry/OpenTelemetryAttributeKeys.cs) and Classic Application Insights attributes [here](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Telemetry/OpenTelemetry/AppInsightClassicAttributeKeys.cs).
+   - For a complete attribute list, refer to the OpenTelemetry attributes [here](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/main/Microsoft.Azure.Cosmos/src/Telemetry/OpenTelemetry/OpenTelemetryAttributeKeys.cs) and Classic Application Insights attributes [here](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/main/Microsoft.Azure.Cosmos/src/Telemetry/OpenTelemetry/AppInsightClassicAttributeKeys.cs).
 
 3. **`default`**:
    - This mode functions similarly to `database`, emitting attributes that adhere to the OpenTelemetry database semantic conventions. 
-   - View the full [attribute list emitted by the SDK](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Telemetry/OpenTelemetry/OpenTelemetryAttributeKeys.cs).
+   - View the full [attribute list emitted by the SDK](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/main/Microsoft.Azure.Cosmos/src/Telemetry/OpenTelemetry/OpenTelemetryAttributeKeys.cs).
 
 4. **`appinsightssdk`**:
    - The SDK emits only those attributes supported by the Classic Application Insights SDK.
-   - For a comprehensive list of attributes, refer [here](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Telemetry/OpenTelemetry/AppInsightClassicAttributeKeys.cs).
+   - For a comprehensive list of attributes, refer [here](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/main/Microsoft.Azure.Cosmos/src/Telemetry/OpenTelemetry/AppInsightClassicAttributeKeys.cs).
 
 Choose the appropriate mode to align with your telemetry requirements.
 

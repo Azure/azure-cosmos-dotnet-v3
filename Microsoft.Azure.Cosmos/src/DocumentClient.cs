@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure.Core;
+    using Microsoft.Azure.Cosmos.Authorization;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Query;
@@ -116,8 +117,8 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Default thresholds for PPAF request hedging.
         /// </summary>
-        private const int DefaultHedgingThresholdInMilliseconds = 1000;
-        private const int DefaultHedgingThresholdStepInMilliseconds = 500;
+        internal const int DefaultHedgingThresholdInMilliseconds = 1000;
+        internal const int DefaultHedgingThresholdStepInMilliseconds = 500;
 
         private static readonly char[] resourceIdOrFullNameSeparators = new char[] { '/' };
         private static readonly char[] resourceIdSeparators = new char[] { '/', '\\', '?', '#' };
@@ -126,7 +127,10 @@ namespace Microsoft.Azure.Cosmos
         private readonly bool isReplicaAddressValidationEnabled;
         private readonly bool enableAsyncCacheExceptionNoSharing;
 
-        private readonly bool isThinClientEnabled;
+        // Cross-region metadata hedging (Collection Read + PartitionKeyRange ReadFeed).
+        // Tri-state opt-in resolved once at construction. See
+        // docs/metadata-hedging-simple-design.md.
+        private readonly bool? enableMetadataHedging;
 
         //Fault Injection
         private readonly IChaosInterceptorFactory chaosInterceptorFactory;
@@ -134,8 +138,52 @@ namespace Microsoft.Azure.Cosmos
 
         private bool isChaosInterceptorInititalized = false;
 
+        // Metadata hedging strategy for this client; created during initialization and
+        // null when hedging is disabled.
+        private Cosmos.Routing.MetadataHedgingStrategy metadataHedgingStrategy;
+
         //Auth
         internal readonly AuthorizationTokenProvider cosmosAuthorization;
+
+        private readonly bool isThinClientFeatureFlagEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: true);
+
+        // Serializes the (disableCrossRegionalHedging, customerConfiguredAvailabilityStrategy,
+        // ConnectionPolicy.AvailabilityStrategy) mutation sequence performed by the gateway-driven
+        // hedging-override reconcile path.
+        //
+        // NOTE: This lock is NOT load-bearing under the current set of callers — the GlobalEndpointManager
+        // serializes its account-properties refreshes, and the init-time stash in
+        // InitializeGatewayConfigurationReaderAsync runs strictly before the background-refresh loop is
+        // started and before OnEnablePartitionLevelFailoverConfigChanged is subscribed. So in production
+        // today there is no real concurrency hazard to defend against here.
+        //
+        // The lock exists for two narrower reasons:
+        //   1. Internal test accessors (DisableCrossRegionalHedgingForTests,
+        //      CustomerConfiguredAvailabilityStrategyForTests) can read/write the same state directly
+        //      from arbitrary test threads, so the accessors and the reconcile path need to agree on
+        //      a single mutex.
+        //   2. Future-proofing: UpdatePartitionLevelFailoverConfigWithAccountRefresh and
+        //      ApplyHedgingStrategyForCurrentState are internal/private but reachable from any new
+        //      caller that wires them up. If a future change ever invokes them off the GEM-serialized
+        //      path, the stash/clear/restore sequence stays atomic instead of regressing silently.
+        //
+        // Per-request reads from RequestInvokerHandler intentionally do NOT take this lock:
+        //   • disableCrossRegionalHedging is declared volatile (acquire semantics on read, release on
+        //     write), which is sufficient for the per-request "is the gateway kill-switch on?" check.
+        //   • ConnectionPolicy.AvailabilityStrategy is a reference field; reference assignment is atomic
+        //     on the CLR, so a request observes either the pre- or post-transition strategy, never a
+        //     half-applied state.
+        // Skipping the lock keeps the hot path on RequestInvokerHandler.AvailabilityStrategy(...)
+        // monitor-free.
+        private readonly object hedgingStrategyLock = new object();
+
+        internal bool isThinClientEnabled;
+
+        // Whether the account is currently advertising thin-client endpoints (as of the last account read).
+        // Combined with isThinClientEnabled (the client capability), this drives the F4 user-agent feature
+        // flag so it reflects whether the client is actually routing through the thin-client proxy. Updated
+        // dynamically on account refresh via GlobalEndpointManager.OnThinClientAvailabilityChanged.
+        internal volatile bool thinClientEndpointsAvailable;
 
         // Gateway has backoff/retry logic to hide transient errors.
         private RetryPolicy retryPolicy;
@@ -170,7 +218,32 @@ namespace Microsoft.Azure.Cosmos
 
         //Private state.
         private bool isSuccessfullyInitialized;
+        private bool isDisposing;
         private bool isDisposed;
+
+        // Gateway-controlled override that disables all cross-regional hedging for PPAF accounts.
+        // Mirrors AccountProperties.DisableCrossRegionalHedging from the most recent account-properties refresh.
+        //
+        // Declared volatile so per-request reads from RequestInvokerHandler (via IsHedgingDisabledByGateway)
+        // and the init-time read in InitializePartitionLevelFailoverWithDefaultHedging do not need to take
+        // hedgingStrategyLock — volatile gives acquire semantics on the read and release semantics on the
+        // write, which is exactly what the "atomic kill-switch" contract requires. The lock continues to
+        // serialize the multi-field (flag + stashed strategy + ConnectionPolicy.AvailabilityStrategy)
+        // mutation sequence on the refresh / init-stash paths.
+        //
+        // Consistency note: the per-request path (RequestInvokerHandler.AvailabilityStrategy) reads this
+        // volatile flag and then separately reads ConnectionPolicy.AvailabilityStrategy. Those two reads are
+        // NOT a single atomic snapshot. The only guarantee is one-directional: when the volatile read
+        // observes true, hedging is off for that request. The reverse (flag false ⇒ a strategy is
+        // necessarily applied) is not guaranteed across the two reads — which is acceptable because the
+        // kill-switch only needs to win when true.
+        private volatile bool disableCrossRegionalHedging;
+
+        // When the gateway disable flag is true, the customer's explicit AvailabilityStrategy
+        // (if any) is stashed here so it can be restored verbatim if the flag is later toggled back to false.
+        // Null when the customer never configured a strategy or when no stash is currently held.
+        // Mutated only under hedgingStrategyLock.
+        private AvailabilityStrategy customerConfiguredAvailabilityStrategy;
 
         // creator of TransportClient is responsible for disposing it.
         private IStoreClientFactory storeClientFactory;
@@ -256,7 +329,6 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: this.cancellationTokenSource.Token,
                 enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
             this.isReplicaAddressValidationEnabled = ConfigurationManager.IsReplicaAddressValidationEnabled(connectionPolicy);
-            this.isThinClientEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: false);
         }
 
         /// <summary>
@@ -457,6 +529,8 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cosmosClientTelemetryOptions">This is distributed tracing flag</param>
         /// <param name="chaosInterceptorFactory">This is the chaos interceptor used for fault injection</param>
         /// <param name="enableAsyncCacheExceptionNoSharing">A boolean flag indicating if stack trace optimization is enabled.</param>
+        /// <param name="useLengthAwareRangeComparer">A boolean flag indicating if length-aware range comparators should be used for EPK range comparisons.</param>
+        /// <param name="enableMetadataHedging">Tri-state opt-in for cross-region metadata cache hedging (Collection Read and PartitionKeyRange ReadFeed). Null follows the account's PPAF state. See <c>docs/metadata-hedging-simple-design.md</c>.</param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -486,7 +560,9 @@ namespace Microsoft.Azure.Cosmos
                               RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
                               CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null,
                               IChaosInterceptorFactory chaosInterceptorFactory = null,
-                              bool enableAsyncCacheExceptionNoSharing = true)
+                              bool enableAsyncCacheExceptionNoSharing = true,
+                              bool useLengthAwareRangeComparer = false,
+                              bool? enableMetadataHedging = null)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -514,7 +590,8 @@ namespace Microsoft.Azure.Cosmos
                 enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
             this.chaosInterceptorFactory = chaosInterceptorFactory;
             this.chaosInterceptor = chaosInterceptorFactory?.CreateInterceptor(this);
-            this.isThinClientEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: false);
+            this.UseLengthAwareRangeComparer = useLengthAwareRangeComparer;
+            this.enableMetadataHedging = enableMetadataHedging;
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
@@ -526,8 +603,7 @@ namespace Microsoft.Azure.Cosmos
                 storeClientFactory: storeClientFactory,
                 cosmosClientId: cosmosClientId,
                 remoteCertificateValidationCallback: remoteCertificateValidationCallback,
-                cosmosClientTelemetryOptions: cosmosClientTelemetryOptions,
-                enableThinClientMode: this.isThinClientEnabled);
+                cosmosClientTelemetryOptions: cosmosClientTelemetryOptions);
         }
 
         /// <summary>
@@ -695,8 +771,9 @@ namespace Microsoft.Azure.Cosmos
                     tokenProvider: this, 
                     retryPolicy: this.retryPolicy,
                     telemetryToServiceHelper: this.telemetryToServiceHelper,
-                    enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
-                this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.enableAsyncCacheExceptionNoSharing);
+                    enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing,
+                    metadataHedgingStrategy: this.metadataHedgingStrategy);
+                this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.UseLengthAwareRangeComparer, this.enableAsyncCacheExceptionNoSharing, this.metadataHedgingStrategy);
 
                 DefaultTrace.TraceWarning("Exception occurred while OpenAsync. Exception Message: {0}", ex.Message);
             }
@@ -712,8 +789,7 @@ namespace Microsoft.Azure.Cosmos
             TokenCredential tokenCredential = null,
             string cosmosClientId = null,
             RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
-            CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null,
-            bool enableThinClientMode = false)
+            CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null)
         {
             if (serviceEndpoint == null)
             {
@@ -926,7 +1002,36 @@ namespace Microsoft.Azure.Cosmos
 
                 if (connectionPolicy.OpenTcpConnectionTimeout.HasValue)
                 {
-                    this.openConnectionTimeoutInSeconds = (int)connectionPolicy.OpenTcpConnectionTimeout.Value.TotalSeconds;
+                    // Values in [TimeSpan.Zero, 1 second) become 0 (use RequestTimeout).
+                    // Values >= 1 second round up to the nearest whole second, clamped to int.MaxValue.
+                    // Negative values are truncated via (int)TotalSeconds, preserving pre-PR behavior,
+                    // and a warning trace is emitted (Direct mode only) because negative timeouts
+                    // cause the TransportClient to fall back to the configured RequestTimeout.
+                    // The warning is gated on Direct mode because openConnectionTimeoutInSeconds is
+                    // not consumed in Gateway mode, so the message would be misleading there.
+                    TimeSpan openTcpConnectionTimeout = connectionPolicy.OpenTcpConnectionTimeout.Value;
+
+                    if (openTcpConnectionTimeout < TimeSpan.Zero)
+                    {
+                        if (connectionPolicy.ConnectionMode == ConnectionMode.Direct)
+                        {
+                            DefaultTrace.TraceWarning(
+                                "OpenTcpConnectionTimeout value {0} is negative. Negative values are not recommended; "
+                                + "the TransportClient will fall back to the configured RequestTimeout.",
+                                openTcpConnectionTimeout);
+                        }
+
+                        this.openConnectionTimeoutInSeconds = (int)openTcpConnectionTimeout.TotalSeconds;
+                    }
+                    else if (openTcpConnectionTimeout < TimeSpan.FromSeconds(1))
+                    {
+                        this.openConnectionTimeoutInSeconds = 0;
+                    }
+                    else
+                    {
+                        double ceilingSeconds = Math.Ceiling(openTcpConnectionTimeout.TotalSeconds);
+                        this.openConnectionTimeoutInSeconds = ceilingSeconds > int.MaxValue ? int.MaxValue : (int)ceilingSeconds;
+                    }
                 }
 
                 if (connectionPolicy.MaxRequestsPerTcpConnection.HasValue)
@@ -970,7 +1075,8 @@ namespace Microsoft.Azure.Cosmos
                 handler,
                 this.sendingRequest,
                 this.receivedResponse,
-                this.chaosInterceptor);
+                this.chaosInterceptor,
+                clientId: this.clientId);
 
             // Loading VM Information (non blocking call and initialization won't fail if this call fails)
             VmMetadataApiHandler.TryInitialize(this.httpClient);
@@ -1056,44 +1162,93 @@ namespace Microsoft.Azure.Cosmos
                 this.EnsureValidOverwrite(this.desiredConsistencyLevel.Value);
             }
 
-            bool isPPafEnabled = ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
-            if (this.accountServiceConfiguration != null && this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.HasValue)
+            if (!this.ConnectionPolicy.DisablePartitionLevelFailoverClientLevelOverride
+                && this.accountServiceConfiguration != null && this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.HasValue)
             {
-                isPPafEnabled = this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.Value;
+                this.ConnectionPolicy.EnablePartitionLevelFailover = this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.Value;
             }
 
-            this.ConnectionPolicy.EnablePartitionLevelFailover = isPPafEnabled;
+            // Thin-client mode: feature-flag + gateway mode. HTTP/2 is used implicitly for thin-client
+            // traffic; whether a given request actually routes to the proxy is decided per request
+            // by IsThinClientRoutable and the connectivity probe gate, so the SDK can switch between
+            // the proxy and Gateway V1 mid-session without a restart.
+            //
+            // ThinClient mode does not support resource-token (permission-scoped) authorization. A client
+            // authenticated with a resource token must therefore always route through the Gateway store model.
+            // This init-time gate short-circuits the common case (a client constructed with a resource token):
+            // the ThinClient store model is not built and no connectivity-probe cycle is started. Credential
+            // rotation (an AzureKeyCredential key updated from a master key to a resource token mid-session) is
+            // additionally guarded live per request in GetStoreProxy. Master-key and AAD/token-credential
+            // clients are unaffected by either check.
+            // Do not gate on the initial ThinClientWritableLocationsInternal count: it is a snapshot of
+            // dynamic account topology and would pin StoreModel to plain GatewayStoreModel for the
+            // client's lifetime, breaking the enable direction of the dynamic-switch contract.
+            // Per-request routability is enforced downstream by ThinClientStoreModel.IsThinClientRoutable
+            // (live LocationCache flags) and the probe-health gate in DispatchAsync, so accounts that
+            // never advertise thin-client endpoints transparently fall through to the gateway path.
+            bool isResourceTokenAuthorization = DocumentClient.IsResourceTokenAuthorization(this.cosmosAuthorization);
+
+            this.isThinClientEnabled = this.isThinClientFeatureFlagEnabled
+                && (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway)
+                && !isResourceTokenAuthorization;
+
+            if (this.isThinClientFeatureFlagEnabled && isResourceTokenAuthorization
+                && (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway))
+            {
+                DefaultTrace.TraceInformation(
+                    "DocumentClient: ThinClient mode disabled because the client is using resource-token authorization, which ThinClient does not support. Data-plane requests will route through the Gateway store model.");
+            }
+
+            if (this.isThinClientEnabled)
+            {
+                // Wire the HTTP/2 http client for the connectivity probe and run an initial probe against the
+                // endpoints discovered during gateway-configuration initialization.
+                this.GlobalEndpointManager.SetThinClientHttpClient(this.httpClient);
+                _ = this.GlobalEndpointManager.RunThinClientProbeCycleAsync();
+            }
+
+            // Seed the live thin-client availability from the first account read (already performed by
+            // InitializeGatewayConfigurationReaderAsync above) so the initial user agent's F4 flag reflects
+            // whether the service is currently advertising thin-client endpoints.
+            this.thinClientEndpointsAvailable = this.GlobalEndpointManager.HasThinClientReadLocations
+                || this.GlobalEndpointManager.HasThinClientWriteLocations;
+
             this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker |= this.ConnectionPolicy.EnablePartitionLevelFailover;
             this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
             this.InitializePartitionLevelFailoverWithDefaultHedging();
 
-            this.PartitionKeyRangeLocation = 
-                this.ConnectionPolicy.EnablePartitionLevelFailover 
-                || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker
-                    ? new GlobalPartitionEndpointManagerCore(
+            bool isHubRegionProcessingEnabled = ConfigurationManager.IsHubRegionProcessingEnabled();
+
+            this.PartitionKeyRangeLocation =
+                new GlobalPartitionEndpointManagerCore(
                         this.GlobalEndpointManager,
                         this.ConnectionPolicy.EnablePartitionLevelFailover,
-                        this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker)
-                    : GlobalPartitionEndpointManagerNoOp.Instance;
+                        this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker,
+                        this.isThinClientEnabled,
+                        isHubRegionProcessingEnabled);
 
             this.retryPolicy = new RetryPolicy(
                 globalEndpointManager: this.GlobalEndpointManager,
                 connectionPolicy: this.ConnectionPolicy,
-                partitionKeyRangeLocationCache: this.PartitionKeyRangeLocation);
+                partitionKeyRangeLocationCache: this.PartitionKeyRangeLocation,
+                isThinClientEnabled: this.isThinClientEnabled,
+                isHubRegionProcessingEnabled: isHubRegionProcessingEnabled,
+                authorizationTokenProvider: this.cosmosAuthorization);
 
             this.ResetSessionTokenRetryPolicy = this.retryPolicy;
 
             GatewayStoreModel gatewayStoreModel = new GatewayStoreModel(
-                    this.GlobalEndpointManager,
-                    this.sessionContainer,
-                    (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
-                    this.eventSource,
-                    this.serializerSettings,
-                    this.httpClient,
-                    this.PartitionKeyRangeLocation,
-                    isPartitionLevelFailoverEnabled: this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker);
+                endpointManager: this.GlobalEndpointManager,
+                sessionContainer: this.sessionContainer,
+                defaultConsistencyLevel: (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
+                eventSource: this.eventSource,
+                serializerSettings: this.serializerSettings,
+                httpClient: this.httpClient,
+                globalPartitionEndpointManager: this.PartitionKeyRangeLocation);
 
             this.GatewayStoreModel = gatewayStoreModel;
+
+            this.metadataHedgingStrategy = this.CreateMetadataHedgingStrategyIfEnabled();
 
             this.collectionCache = new ClientCollectionCache(
                     sessionContainer: this.sessionContainer, 
@@ -1101,30 +1256,36 @@ namespace Microsoft.Azure.Cosmos
                     tokenProvider: this, 
                     retryPolicy: this.retryPolicy,
                     telemetryToServiceHelper: this.telemetryToServiceHelper,
-                    enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
-            this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.enableAsyncCacheExceptionNoSharing);
+                    enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing,
+                    metadataHedgingStrategy: this.metadataHedgingStrategy);
+            this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.UseLengthAwareRangeComparer, this.enableAsyncCacheExceptionNoSharing, this.metadataHedgingStrategy);
             this.ResetSessionTokenRetryPolicy = new ResetSessionTokenRetryPolicyFactory(this.sessionContainer, this.collectionCache, this.retryPolicy);
 
             gatewayStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
 
-            if (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway && this.isThinClientEnabled)
+            if (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway)
             {
-                ThinClientStoreModel thinClientStoreModel = new (
-                    endpointManager: this.GlobalEndpointManager,
-                    this.PartitionKeyRangeLocation,
-                    this.sessionContainer,
-                    (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
-                    this.eventSource,
-                    this.serializerSettings,
-                    this.httpClient);
+                if (this.isThinClientEnabled)
+                {
+                    ThinClientStoreModel thinClientStoreModel = new ThinClientStoreModel(
+                        endpointManager: this.GlobalEndpointManager,
+                        sessionContainer: this.sessionContainer,
+                        defaultConsistencyLevel: (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
+                        eventSource: this.eventSource,
+                        serializerSettings: this.serializerSettings,
+                        httpClient: this.httpClient,
+                        globalPartitionEndpointManager: this.PartitionKeyRangeLocation,
+                        userAgentContainer: this.ConnectionPolicy.UserAgentContainer,
+                        chaosInterceptor: this.chaosInterceptor);
 
-                thinClientStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
+                    thinClientStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
 
-                this.StoreModel = thinClientStoreModel;
-            }
-            else if (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway)
-            {
-                this.StoreModel = this.GatewayStoreModel;
+                    this.StoreModel = thinClientStoreModel;
+                }
+                else
+                {
+                    this.StoreModel = this.GatewayStoreModel;
+                }
             }
             else
             {
@@ -1247,6 +1408,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal bool UseMultipleWriteLocations { get; private set; }
 
+        internal bool UseLengthAwareRangeComparer { get; private set; }
+
         /// <summary>
         /// Gets the endpoint Uri for the service endpoint from the Azure Cosmos DB service.
         /// </summary>
@@ -1354,6 +1517,11 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
+            // Set isDisposing flag FIRST to signal disposal has started
+            // This prevents race conditions where in-flight requests 
+            // could proceed while fields are being nulled
+            this.isDisposing = true;
+
             if (this.telemetryToServiceHelper != null)
             {
                 this.telemetryToServiceHelper.Dispose();
@@ -1367,11 +1535,19 @@ namespace Microsoft.Azure.Cosmos
 
             this.cancellationTokenSource.Dispose();
 
-            if (this.StoreModel != null)
+            IStoreModelExtension storeModel = this.StoreModel;
+            if (storeModel != null)
             {
-                this.StoreModel.Dispose();
+                storeModel.Dispose();
                 this.StoreModel = null;
             }
+
+            if (this.GatewayStoreModel != null && !ReferenceEquals(this.GatewayStoreModel, storeModel))
+            {
+                this.GatewayStoreModel.Dispose();
+            }
+
+            this.GatewayStoreModel = null;
 
             if (this.storeClientFactory != null)
             {
@@ -1410,8 +1586,16 @@ namespace Microsoft.Azure.Cosmos
                 this.cosmosAuthorization.Dispose();
             }
 
+            if (this.PartitionKeyRangeLocation != null)
+            {
+                (this.PartitionKeyRangeLocation as IDisposable)?.Dispose();
+                this.PartitionKeyRangeLocation = null;
+            }
+
             if (this.GlobalEndpointManager != null)
             {
+                this.GlobalEndpointManager.OnEnablePartitionLevelFailoverConfigChanged -= this.UpdatePartitionLevelFailoverConfigWithAccountRefresh;
+                this.GlobalEndpointManager.OnThinClientAvailabilityChanged -= this.UpdateThinClientUserAgentFeatures;
                 this.GlobalEndpointManager.Dispose();
                 this.GlobalEndpointManager = null;
             }
@@ -1430,6 +1614,7 @@ namespace Microsoft.Azure.Cosmos
             DefaultTrace.TraceInformation("DocumentClient with id {0} disposed.", this.traceId);
             DefaultTrace.Flush();
 
+            // Mark disposal complete
             this.isDisposed = true;
         }
 
@@ -6554,6 +6739,14 @@ namespace Microsoft.Azure.Cosmos
                         "GET",
                         AuthorizationTokenType.PrimaryMasterKey);
 
+                    // Added the thinclient endpoint discovery header for account data refresh requests.
+                    // This header signals to the service that the client supports thin client mode
+                    // and needs thinclient-specific endpoint information in the response.
+                    if (this.isThinClientFeatureFlagEnabled)
+                    {
+                        headersCollection[ThinClientConstants.EnableThinClientEndpointDiscoveryHeaderName] = true.ToString();
+                    }
+
                     foreach (string key in headersCollection.AllKeys())
                     {
                         request.Headers.Add(key, headersCollection[key]);
@@ -6587,10 +6780,42 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>Returns <see cref="IStoreModel"/> to which the request must be sent</returns>
         internal IStoreModel GetStoreProxy(DocumentServiceRequest request)
         {
+            // Check if client is being disposed - fail fast with clear error message
+            // This prevents the confusing "StoreProxy cannot be null" error when
+            // requests are in-flight during client disposal
+            // Note: Only check isDisposing since once disposal starts, requests should be rejected
+            if (this.isDisposing)
+            {
+                throw new ObjectDisposedException(
+                    nameof(DocumentClient),
+                    "Cannot process request because the CosmosClient has been disposed. " +
+                    "Ensure all in-flight requests complete before disposing the client.");
+            }
+
+            // ThinClient mode does not support resource-token (permission-scoped) authorization. When ThinClient
+            // is enabled but the client is currently authenticated with a resource token, route through the plain
+            // Gateway store model instead of the ThinClient store model. This is evaluated per request (the auth
+            // provider is refreshed by TransportHandler immediately before this call), so an AzureKeyCredential
+            // rotated to a resource token mid-session falls back to Gateway on the very next request without a
+            // client restart. Master-key and AAD/token-credential clients are unaffected.
+            if (this.isThinClientEnabled
+                && DocumentClient.IsResourceTokenAuthorization(this.cosmosAuthorization))
+            {
+                return this.GatewayStoreModel;
+            }
+
             // If a request is configured to always use Gateway mode(in some cases when targeting .NET Core)
             // we return the Gateway store model
             if (request.UseGatewayMode)
             {
+                // When thin client is enabled the gateway HTTP path is the thin client
+                // proxy, so route thin-client-routable requests through the ThinClientStoreModel.
+                if (this.StoreModel is ThinClientStoreModel
+                    && ThinClientStoreModel.IsThinClientRoutable(this.GlobalEndpointManager, request))
+                {
+                    return this.StoreModel;
+                }
+
                 return this.GatewayStoreModel;
             }
 
@@ -6726,6 +6951,17 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.storeClientFactory = storeClientFactory;
                 this.isStoreClientFactoryCreatedInternally = false;
+
+                // Note: EnableBarrierEarlyYieldOn429 has no effect when an external
+                // IStoreClientFactory is supplied (e.g., the compute-gateway reuse path).
+                // The external factory owns its own StoreClient configuration. If the flag
+                // is explicitly set, log a trace so misconfigurations are diagnosable.
+                if (!this.ConnectionPolicy.EnableBarrierEarlyYieldOn429)
+                {
+                    DefaultTrace.TraceWarning(
+                        "EnableBarrierEarlyYieldOn429 is set to false but has no effect "
+                        + "when an external IStoreClientFactory is provided.");
+                }
             }
             else
             {
@@ -6765,7 +7001,12 @@ namespace Microsoft.Azure.Cosmos
                     remoteCertificateValidationCallback: this.remoteCertificateValidationCallback,
                     distributedTracingOptions: distributedTracingOptions,
                     enableChannelMultiplexing: ConfigurationManager.IsTcpChannelMultiplexingEnabled(),
-                    chaosInterceptor: this.chaosInterceptor);
+                    dnsResolutionFunction: ConfigurationManager.IsTcpDnsDotSuffixEnabled()
+                        ? DnsDotSuffixHelper.ResolveHostAsync
+                        : null,
+                    chaosInterceptor: this.chaosInterceptor,
+                    enableBarrierEarlyYieldOn429: this.ConnectionPolicy.EnableBarrierEarlyYieldOn429
+                        && ConfigurationManager.IsBarrierEarlyYieldOn429Enabled());
 
                 if (this.transportClientHandlerFactory != null)
                 {
@@ -6787,7 +7028,8 @@ namespace Microsoft.Azure.Cosmos
                 this.ConnectionPolicy,
                 this.httpClient,
                 this.storeClientFactory.GetConnectionStateListener(),
-                this.enableAsyncCacheExceptionNoSharing);
+                this.enableAsyncCacheExceptionNoSharing,
+                authorizationTokenProvider: this.cosmosAuthorization);
 
             this.CreateStoreModel(subscribeRntbdStatus: true);
         }
@@ -6835,14 +7077,60 @@ namespace Microsoft.Azure.Cosmos
                     connectionPolicy: this.ConnectionPolicy,
                     httpClient: this.httpClient,
                     cancellationToken: this.cancellationTokenSource.Token,
-                    isThinClientEnabled: this.isThinClientEnabled);
+                    isThinClientEnabled: this.isThinClientFeatureFlagEnabled);
 
             this.accountServiceConfiguration = new CosmosAccountServiceConfiguration(accountReader.InitializeReaderAsync);
 
             await this.accountServiceConfiguration.InitializeAsync();
             AccountProperties accountProperties = this.accountServiceConfiguration.AccountProperties;
             this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && accountProperties.EnableMultipleWriteLocations;
+
+            // Capture the initial gateway disableCrossRegionalHedging flag and stash any customer-configured
+            // AvailabilityStrategy so it can be restored if the flag is later toggled back to false.
+            // This must run BEFORE the GEM background refresh loop is started and BEFORE the change-event
+            // handler is subscribed: if either happens first, a refresh-driven event firing concurrently with
+            // initialization could otherwise be overwritten here, leaving the SDK with stale state and a
+            // mismatched GEM baseline that would never re-fire.
+            if (!this.ConnectionPolicy.DisablePartitionLevelFailoverClientLevelOverride)
+            {
+                lock (this.hedgingStrategyLock)
+                {
+                    this.disableCrossRegionalHedging = accountProperties.DisableCrossRegionalHedging ?? false;
+                    if (this.disableCrossRegionalHedging
+                        && this.ConnectionPolicy.AvailabilityStrategy != null
+                        && !(this.ConnectionPolicy.AvailabilityStrategy is CrossRegionHedgingAvailabilityStrategy sdkDefaultAtInit
+                            && sdkDefaultAtInit.IsSDKDefaultStrategyForPPAF))
+                    {
+                        this.customerConfiguredAvailabilityStrategy = this.ConnectionPolicy.AvailabilityStrategy;
+                        this.ConnectionPolicy.AvailabilityStrategy = null;
+                        DefaultTrace.TraceInformation(
+                            "DocumentClient: Hedging disabled at initialization by Gateway property disableCrossRegionalHedging=true");
+                    }
+                }
+            }
+
+            this.GlobalEndpointManager.OnEnablePartitionLevelFailoverConfigChanged += this.UpdatePartitionLevelFailoverConfigWithAccountRefresh;
+            this.GlobalEndpointManager.OnThinClientAvailabilityChanged += this.UpdateThinClientUserAgentFeatures;
             this.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
+        }
+
+        /// <summary>
+        /// Determines whether the supplied authorization provider represents resource-token
+        /// (permission-scoped) authorization. ThinClient mode does not support resource tokens, so a client
+        /// using this authorization type must always route through the Gateway store model. Returns true only
+        /// for resource-token providers; master-key and Microsoft Entra ID (AAD) token-credential providers
+        /// return false. The <see cref="AzureKeyCredentialAuthorizationTokenProvider"/> wrapper is unwrapped
+        /// to its current inner provider because the key it holds can itself be a resource token and can be
+        /// rotated at runtime.
+        /// </summary>
+        internal static bool IsResourceTokenAuthorization(AuthorizationTokenProvider authorizationTokenProvider)
+        {
+            if (authorizationTokenProvider is AzureKeyCredentialAuthorizationTokenProvider azureKeyCredentialAuthorizationTokenProvider)
+            {
+                return azureKeyCredentialAuthorizationTokenProvider.authorizationTokenProvider is AuthorizationTokenProviderResourceToken;
+            }
+
+            return authorizationTokenProvider is AuthorizationTokenProviderResourceToken;
         }
 
         internal string GetUserAgentFeatures()
@@ -6858,24 +7146,423 @@ namespace Microsoft.Azure.Cosmos
                 featureFlag += (int)UserAgentFeatureFlags.PerPartitionCircuitBreaker;
             }
 
+            if (this.isThinClientEnabled && this.thinClientEndpointsAvailable)
+            {
+                featureFlag += (int)UserAgentFeatureFlags.ThinClient;
+            }
+
+            if (ConfigurationManager.IsBinaryEncodingEnabled())
+            {
+                featureFlag += (int)UserAgentFeatureFlags.BinaryEncoding;
+            }
+
             return featureFlag == 0 ? string.Empty : $"F{featureFlag:X}";
+        }
+
+        /// <summary>
+        /// Re-emits the user-agent feature flags when the account's thin-client endpoint availability changes
+        /// on an account refresh, so the F4 flag reflects whether the client is currently routing through the
+        /// thin-client proxy. Self-guarded: a failure here must never disrupt the account-refresh loop.
+        /// </summary>
+        private void UpdateThinClientUserAgentFeatures(bool thinClientEndpointsAvailable)
+        {
+            try
+            {
+                this.thinClientEndpointsAvailable = thinClientEndpointsAvailable;
+                this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceWarning(
+                    "DocumentClient: Failed to update ThinClient user-agent features on availability change: {0}",
+                    ex.Message);
+            }
         }
 
         internal void InitializePartitionLevelFailoverWithDefaultHedging()
         {
-            if (this.ConnectionPolicy.EnablePartitionLevelFailover
-                && this.ConnectionPolicy.AvailabilityStrategy == null)
+            if (this.disableCrossRegionalHedging)
             {
-                // The default threshold is the minimum value of 1 second and a fraction (currently it's half) of
-                // the request timeout value provided by the end customer.
-                double defaultThresholdInMillis = Math.Min(
-                    DocumentClient.DefaultHedgingThresholdInMilliseconds,
-                    this.ConnectionPolicy.RequestTimeout.TotalMilliseconds / 2);
-
-                this.ConnectionPolicy.AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
-                    threshold: TimeSpan.FromMilliseconds(defaultThresholdInMillis),
-                    thresholdStep: TimeSpan.FromMilliseconds(DocumentClient.DefaultHedgingThresholdStepInMilliseconds));
+                DefaultTrace.TraceInformation(
+                    "DocumentClient: Skipping default PPAF hedging because Gateway property disableCrossRegionalHedging=true");
+                return;
             }
+
+            lock (this.hedgingStrategyLock)
+            {
+                // Re-check under the lock: a refresh-driven UpdatePartitionLevelFailoverConfigWithAccountRefresh
+                // may have set the flag true between the cheap volatile early-return above and acquiring the
+                // lock. Reading the flag and installing the SDK-default strategy must be atomic against that
+                // reconcile so we never leave disableCrossRegionalHedging==true with a non-null
+                // AvailabilityStrategy. The lock is reentrant, so the call from
+                // ApplyHedgingStrategyForCurrentState (which already holds it) is unaffected.
+                if (this.disableCrossRegionalHedging)
+                {
+                    DefaultTrace.TraceInformation(
+                        "DocumentClient: Skipping default PPAF hedging under lock; disableCrossRegionalHedging flipped true during init race");
+                    return;
+                }
+
+                if (this.ConnectionPolicy.EnablePartitionLevelFailover
+                    && this.ConnectionPolicy.AvailabilityStrategy == null)
+                {
+                    // The default threshold is the minimum value of 1 second and a fraction (currently it's half) of
+                    // the request timeout value provided by the end customer.
+                    double defaultThresholdInMillis;
+
+                    if (this.ConnectionPolicy.RequestTimeout.TotalMilliseconds == 0)
+                    {
+                        // If the request timeout is 0, we will use the default hedging theshold value
+                        defaultThresholdInMillis = DocumentClient.DefaultHedgingThresholdInMilliseconds;
+                        DefaultTrace.TraceWarning("DocumentClient: Request timeout is set to 0, which is not a valid value. Falling back to default hedging threshold of {0} ms", defaultThresholdInMillis);
+                    }
+                    else
+                    {
+                        defaultThresholdInMillis = Math.Min(
+                            DocumentClient.DefaultHedgingThresholdInMilliseconds,
+                            this.ConnectionPolicy.RequestTimeout.TotalMilliseconds / 2);
+                    }
+
+                    this.ConnectionPolicy.AvailabilityStrategy = AvailabilityStrategy.SDKDefaultCrossRegionHedgingStrategyForPPAF(
+                        threshold: TimeSpan.FromMilliseconds(defaultThresholdInMillis),
+                        thresholdStep: TimeSpan.FromMilliseconds(DocumentClient.DefaultHedgingThresholdStepInMilliseconds));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Creates the cross-region metadata hedging strategy for this client, or returns
+        /// <c>null</c> when hedging is explicitly disabled. The effective on/off decision for
+        /// the <c>null</c> (unset) opt-in is deferred to the per-request eligibility check,
+        /// which follows the account's live PPAF state. See
+        /// <c>docs/metadata-hedging-simple-design.md</c>.
+        /// </summary>
+        private Cosmos.Routing.MetadataHedgingStrategy CreateMetadataHedgingStrategyIfEnabled()
+        {
+            return Cosmos.Routing.MetadataHedgingStrategy.CreateIfEnabled(
+                enableMetadataHedging: this.enableMetadataHedging,
+                globalEndpointManager: this.GlobalEndpointManager,
+                isPpafEnabled: () => this.ConnectionPolicy.EnablePartitionLevelFailover,
+                isCrossRegionalHedgingDisabled: () => this.disableCrossRegionalHedging);
+        }
+
+        internal void UpdatePartitionLevelFailoverConfigWithAccountRefresh(
+            bool latestIsEnabled,
+            bool latestDisableCrossRegionalHedging)
+        {
+            // Only update if client-level override is not disabled
+            if (this.ConnectionPolicy.DisablePartitionLevelFailoverClientLevelOverride)
+            {
+                DefaultTrace.TraceInformation("DocumentClient: PPAF change ignored due to client-level override disabled");
+                return;
+            }
+
+            lock (this.hedgingStrategyLock)
+            {
+                bool ppafEnablementChanged = this.ConnectionPolicy.EnablePartitionLevelFailover != latestIsEnabled;
+                bool hedgingFlagChanged = this.disableCrossRegionalHedging != latestDisableCrossRegionalHedging;
+
+                // No-op when nothing has actually changed.
+                //
+                // In production this branch is unreachable: GlobalEndpointManager's
+                // RefreshLocationAsync only fires OnEnablePartitionLevelFailoverConfigChanged when
+                // either EnablePartitionLevelFailover or lastKnownDisableCrossRegionalHedging
+                // transitions, so the callback is invoked only on a real change.
+                //
+                // The guard is defense-in-depth for direct callers of this internal method —
+                // primarily unit tests that exercise the reconcile logic without going through the
+                // GEM event, and any future caller that wires up its own invocation. Without it,
+                // ApplyHedgingStrategyForCurrentState would still run on a no-change call and could
+                // clear an SDK-default strategy that was correctly installed.
+                if (!ppafEnablementChanged && !hedgingFlagChanged)
+                {
+                    return;
+                }
+
+                // Capture the prior applied state so it can be reverted if any mutation or the reconcile
+                // below throws; otherwise the GEM re-fire (which reverts its own baseline) would be
+                // short-circuited by the no-op guard above and the missed transition would never retry.
+                // Both the hedging kill-switch and the PPAF-enablement state are captured so a throwing
+                // subscriber leaves either transition re-detectable end-to-end.
+                bool previousDisableCrossRegionalHedging = this.disableCrossRegionalHedging;
+                bool previousEnablePartitionLevelFailover = this.ConnectionPolicy.EnablePartitionLevelFailover;
+                bool previousEnablePartitionLevelCircuitBreaker = this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker;
+
+                // All applied-state mutations live inside the try so the revert in the catch is
+                // crash-consistent: if any individual mutation throws after an earlier one has
+                // committed, the catch restores every captured baseline before rethrowing, leaving
+                // the connection policy and partition-key-range location in their pre-change state so
+                // the next refresh re-detects and retries the missed transition.
+                try
+                {
+                    if (ppafEnablementChanged)
+                    {
+                        DefaultTrace.TraceInformation(
+                            "DocumentClient: PPAF Account Level Config Updated. Updating EnablePartitionLevelFailover to {0}",
+                            latestIsEnabled);
+
+                        // Step 1: Enable partition level failover.
+                        this.PartitionKeyRangeLocation.SetIsPPAFEnabled(latestIsEnabled);
+                        this.ConnectionPolicy.EnablePartitionLevelFailover = latestIsEnabled;
+
+                        // Step 2: Enable partition level circuit breaker.
+                        this.PartitionKeyRangeLocation.SetIsPPCBEnabled(latestIsEnabled);
+                        this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker = latestIsEnabled;
+                    }
+
+                    if (hedgingFlagChanged)
+                    {
+                        DefaultTrace.TraceInformation(
+                            "DocumentClient: Gateway disableCrossRegionalHedging flag changed to {0}",
+                            latestDisableCrossRegionalHedging);
+                        this.disableCrossRegionalHedging = latestDisableCrossRegionalHedging;
+                    }
+
+                    // Step 3: Reconcile the AvailabilityStrategy with the latest account state.
+                    //
+                    // Note: this call is intentionally outside the `if (hedgingFlagChanged)` block above
+                    // because reconciliation is also required when PPAF enablement toggles without the
+                    // hedging flag changing. Specifically:
+                    //   • PPAF transitioned off  → drop the SDK-default strategy we previously installed.
+                    //   • PPAF transitioned on with no customer strategy → install the SDK default.
+                    // The early-return at the top of the method already guarantees we get here only when
+                    // at least one of (ppafEnablementChanged, hedgingFlagChanged) is true, so this call
+                    // is never wasted. The gateway disable flag has the highest precedence — when true,
+                    // hedging is OFF regardless of any explicit or default configuration.
+                    this.ApplyHedgingStrategyForCurrentState();
+
+                    if (ppafEnablementChanged)
+                    {
+                        // Step 4: Update the user agent features. Hedging-flag-only changes do not affect the
+                        // PPAF-related user-agent feature flags.
+                        this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
+
+                        DefaultTrace.TraceInformation("DocumentClient: Successfully updated PPAF configuration dynamically");
+                    }
+
+                    if (hedgingFlagChanged)
+                    {
+                        DefaultTrace.TraceInformation(
+                            "DocumentClient: Successfully reconciled hedging strategy dynamically (disableCrossRegionalHedging={0})",
+                            latestDisableCrossRegionalHedging);
+                    }
+                }
+                catch
+                {
+                    // Revert the applied state so the GEM re-fire (which reverts its own baseline) is not
+                    // short-circuited by the no-op guard above; the next refresh re-detects and retries the
+                    // missed transition rather than going permanently silent.
+                    this.disableCrossRegionalHedging = previousDisableCrossRegionalHedging;
+
+                    if (ppafEnablementChanged)
+                    {
+                        // Mirror the hedging revert for PPAF enablement: restore the connection-policy flags
+                        // and the partition-key-range location PPAF/PPCB state to their pre-change values so the
+                        // no-op guard at the top of this method does not swallow the GEM-re-fired transition.
+                        this.PartitionKeyRangeLocation.SetIsPPAFEnabled(previousEnablePartitionLevelFailover);
+                        this.ConnectionPolicy.EnablePartitionLevelFailover = previousEnablePartitionLevelFailover;
+                        this.PartitionKeyRangeLocation.SetIsPPCBEnabled(previousEnablePartitionLevelCircuitBreaker);
+                        this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker = previousEnablePartitionLevelCircuitBreaker;
+                    }
+
+                    throw;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Reconciles <see cref="ConnectionPolicy.AvailabilityStrategy"/> with the current values of
+        /// <see cref="disableCrossRegionalHedging"/> and <see cref="ConnectionPolicy.EnablePartitionLevelFailover"/>.
+        /// </summary>
+        /// <remarks>
+        /// Precedence (highest first):
+        /// 1. Gateway <c>disableCrossRegionalHedging = true</c>: stash any non-default strategy and clear it.
+        /// 2. Customer explicitly configured a strategy: keep / restore that strategy.
+        /// 3. PPAF enabled with no explicit strategy: apply SDK default PPAF hedging.
+        /// 4. PPAF disabled: clear any SDK-default strategy that we previously installed.
+        /// Acquires <see cref="hedgingStrategyLock"/>. Safe to call recursively from
+        /// <see cref="UpdatePartitionLevelFailoverConfigWithAccountRefresh"/> (which already holds it)
+        /// because monitor locks are reentrant on the same thread.
+        /// </remarks>
+        private void ApplyHedgingStrategyForCurrentState()
+        {
+            lock (this.hedgingStrategyLock)
+            {
+                // Test-only failure injection so the revert-on-throw path in
+                // UpdatePartitionLevelFailoverConfigWithAccountRefresh can be exercised deterministically.
+                // Always null in production (see the ForTests accessor block below for the rationale).
+                this.reconcileFailureHookForTests?.Invoke();
+
+                if (this.disableCrossRegionalHedging)
+                {
+                    AvailabilityStrategy currentStrategy = this.ConnectionPolicy.AvailabilityStrategy;
+                    if (currentStrategy != null)
+                    {
+                        bool currentIsSdkDefault = currentStrategy is CrossRegionHedgingAvailabilityStrategy hedging
+                            && hedging.IsSDKDefaultStrategyForPPAF;
+
+                        // Only stash customer-configured strategies. The SDK default can be regenerated
+                        // deterministically from PPAF state, so re-stashing it would only cause confusion
+                        // when reconciling later.
+                        if (!currentIsSdkDefault)
+                        {
+                            if (this.customerConfiguredAvailabilityStrategy == null)
+                            {
+                                this.customerConfiguredAvailabilityStrategy = currentStrategy;
+                            }
+                            else if (!ReferenceEquals(this.customerConfiguredAvailabilityStrategy, currentStrategy))
+                            {
+                                // A previously-stashed customer strategy is still held while a different
+                                // non-default strategy is currently on ConnectionPolicy. Silently dropping
+                                // the new strategy would lose customer configuration, so surface this loudly
+                                // — it indicates a re-entrant or otherwise unexpected code path.
+                                DefaultTrace.TraceWarning(
+                                    "DocumentClient: ApplyHedgingStrategyForCurrentState observed a non-default " +
+                                    "AvailabilityStrategy while a previously-stashed customer strategy is still held; " +
+                                    "the current strategy will be cleared without being stashed. This may indicate a " +
+                                    "re-entrant code path.");
+                                System.Diagnostics.Debug.Fail(
+                                    "DocumentClient.ApplyHedgingStrategyForCurrentState reached the re-entrant " +
+                                    "duplicate-strategy branch; this path is expected to be unreachable in production.");
+                            }
+                        }
+
+                        this.ConnectionPolicy.AvailabilityStrategy = null;
+                        DefaultTrace.TraceInformation(
+                            "DocumentClient: Hedging disabled by Gateway property disableCrossRegionalHedging=true");
+                    }
+                    return;
+                }
+
+                // disableCrossRegionalHedging == false: restore or rebuild the appropriate strategy.
+                if (this.customerConfiguredAvailabilityStrategy != null)
+                {
+                    this.ConnectionPolicy.AvailabilityStrategy = this.customerConfiguredAvailabilityStrategy;
+                    this.customerConfiguredAvailabilityStrategy = null;
+                    DefaultTrace.TraceInformation(
+                        "DocumentClient: Hedging re-enabled — restored customer-configured AvailabilityStrategy");
+                    return;
+                }
+
+                if (this.ConnectionPolicy.EnablePartitionLevelFailover && this.ConnectionPolicy.AvailabilityStrategy == null)
+                {
+                    this.InitializePartitionLevelFailoverWithDefaultHedging();
+                    if (this.ConnectionPolicy.AvailabilityStrategy != null)
+                    {
+                        DefaultTrace.TraceInformation(
+                            "DocumentClient: Hedging re-enabled — applied SDK default PPAF hedging strategy");
+                    }
+                    else
+                    {
+                        // No strategy was installed (e.g. a concurrent flag flip, or PPAF still disabled).
+                        // Trace the observed state so an operator toggling the kill-switch true -> false always
+                        // has a positive record of where the SDK landed, instead of a silent no-op.
+                        DefaultTrace.TraceWarning(
+                            "DocumentClient: Hedging re-enable installed no strategy (PPAF={0}, existingStrategy={1}, disableCrossRegionalHedging={2})",
+                            this.ConnectionPolicy.EnablePartitionLevelFailover,
+                            this.ConnectionPolicy.AvailabilityStrategy?.GetType().Name ?? "null",
+                            this.disableCrossRegionalHedging);
+                    }
+                    return;
+                }
+
+                if (!this.ConnectionPolicy.EnablePartitionLevelFailover
+                    && this.ConnectionPolicy.AvailabilityStrategy is CrossRegionHedgingAvailabilityStrategy sdkDefault
+                    && sdkDefault.IsSDKDefaultStrategyForPPAF)
+                {
+                    // PPAF disabled — drop the SDK default we previously installed.
+                    this.ConnectionPolicy.AvailabilityStrategy = null;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Lock-free atomic read of the cached Gateway <c>disableCrossRegionalHedging</c> flag. Used by
+        /// <see cref="Handlers.RequestInvokerHandler.AvailabilityStrategy(RequestMessage)"/> on every
+        /// request to enforce the operator-override precedence over per-request and client-level strategy:
+        /// when the Gateway flag is <c>true</c>, hedging is OFF for every request on this client,
+        /// regardless of where the strategy was configured.
+        /// </summary>
+        /// <remarks>
+        /// Safe to read without <see cref="hedgingStrategyLock"/> because the backing field is declared
+        /// <c>volatile</c> — the read has acquire semantics, so any write that completed on the refresh
+        /// path before its lock release is visible here. Taking a monitor on every request would impose
+        /// uncontended-but-non-zero cost on the SDK hot path (steady-state benchmarks would not surface
+        /// the regression).
+        /// <para>
+        /// This read and the subsequent <see cref="ConnectionPolicy.AvailabilityStrategy"/> read in the
+        /// handler are not a single atomic snapshot. The only cross-read guarantee is one-directional: when
+        /// this returns <c>true</c>, hedging is off for the request. The reverse is not symmetric, which is
+        /// acceptable because the kill-switch only needs to win when true.
+        /// </para>
+        /// </remarks>
+        internal bool IsHedgingDisabledByGateway => this.disableCrossRegionalHedging;
+
+        // Test-only accessors. Visible to the unit-test assembly via [InternalsVisibleTo] in
+        // Microsoft.Azure.Cosmos.csproj.
+        //
+        // Why these exist rather than mocking AccountProperties:
+        //   • The "real-time" path that populates this state runs through
+        //     CosmosAccountServiceConfiguration.InitializeAsync → GatewayAccountReader.InitializeReaderAsync,
+        //     which currently performs a real HTTPS account-properties read against the configured
+        //     endpoint and has no injection seam for a fake account snapshot. Pre-populating these
+        //     fields via AccountProperties is therefore not achievable from a pure unit test today.
+        //   • These accessors let the unit tests pin the (disableCrossRegionalHedging,
+        //     customerConfiguredAvailabilityStrategy) precondition directly and then invoke the
+        //     reconcile entry points (UpdatePartitionLevelFailoverConfigWithAccountRefresh,
+        //     ApplyHedgingStrategyForCurrentState) to verify the transition logic without any I/O.
+        //   • They are preferred over System.Reflection because renames or refactors of the backing
+        //     fields are caught at compile time, rather than blowing up at test runtime with
+        //     NullReferenceException from a stale FieldInfo cache.
+        //
+        // Once a proper IGatewayAccountReader / IAccountServiceConfiguration mocking seam is
+        // introduced these accessors should be removed in favor of mocking the account snapshot.
+        internal bool DisableCrossRegionalHedgingForTests
+        {
+            // Read is lock-free because disableCrossRegionalHedging is volatile (see field declaration).
+            // The setter retains the lock so a test write happens-before any subsequent observation on the
+            // reconcile path that mutates the companion fields (customerConfiguredAvailabilityStrategy,
+            // ConnectionPolicy.AvailabilityStrategy) under the same lock.
+            get => this.disableCrossRegionalHedging;
+            set
+            {
+                lock (this.hedgingStrategyLock)
+                {
+                    this.disableCrossRegionalHedging = value;
+                }
+            }
+        }
+
+        internal AvailabilityStrategy CustomerConfiguredAvailabilityStrategyForTests
+        {
+            get
+            {
+                lock (this.hedgingStrategyLock)
+                {
+                    return this.customerConfiguredAvailabilityStrategy;
+                }
+            }
+        }
+
+        // Test-only seam: when set, ApplyHedgingStrategyForCurrentState invokes this hook (under
+        // hedgingStrategyLock) before doing any reconciliation, allowing a unit test to force the
+        // reconcile to throw. This is the only way to drive the revert-on-throw branch of
+        // UpdatePartitionLevelFailoverConfigWithAccountRefresh deterministically — the production
+        // reconcile has no naturally-injectable failure point. Always null in production.
+        private Action reconcileFailureHookForTests;
+
+        internal Action ReconcileFailureHookForTests
+        {
+            get => this.reconcileFailureHookForTests;
+            set => this.reconcileFailureHookForTests = value;
+        }
+
+        // Test-only seam: lets a unit test install a stub GlobalPartitionEndpointManager so the
+        // PPAF-enablement path (SetIsPPAFEnabled / SetIsPPCBEnabled) can run without a fully-opened
+        // client, whose PartitionKeyRangeLocation is otherwise only assigned during initialization.
+        internal GlobalPartitionEndpointManager PartitionKeyRangeLocationForTests
+        {
+            set => this.PartitionKeyRangeLocation = value;
         }
 
         internal void CaptureSessionToken(DocumentServiceRequest request, DocumentServiceResponse response)

@@ -1,0 +1,29 @@
+# A pipeline with no CI trigger
+trigger: none
+
+pr: none
+
+variables:
+  DebugArguments: ' --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal '
+  ReleaseArguments: ' --filter "TestCategory!=Quarantine" --verbosity normal '
+  VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
+
+jobs:
+- template:  templates/static-tools.yml
+  parameters:
+    BuildConfiguration: Release
+    VmImage: $(VmImage)
+
+- template:  templates/build-internal.yml
+  parameters:
+    BuildConfiguration: Release
+    Arguments: $(ReleaseArguments)
+    VmImage:  $(VmImage)
+
+- template:  templates/nuget-pack.yml
+  parameters:
+    BuildConfiguration: Release
+    VmImage: $(VmImage)
+    ReleasePackage: true
+    OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/Release/Microsoft.Azure.Cosmos'
+    BlobVersion: 'aot/$(BlobVersion)'

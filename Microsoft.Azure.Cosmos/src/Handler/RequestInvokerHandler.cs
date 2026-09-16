@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         private readonly CosmosClient client;
         private readonly Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
+        private readonly Cosmos.ReadConsistencyStrategy? RequestedClientReadConsistencyStrategy;
         private readonly Cosmos.PriorityLevel? RequestedClientPriorityLevel;
         private readonly int? RequestedClientThroughputBucket;
 
@@ -38,12 +39,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
         public RequestInvokerHandler(
             CosmosClient client,
             Cosmos.ConsistencyLevel? requestedClientConsistencyLevel,
+            Cosmos.ReadConsistencyStrategy? requestedClientReadConsistencyStrategy,
             Cosmos.PriorityLevel? requestedClientPriorityLevel,
             int? requestedClientThroughputBucket)
         {
             this.client = client;
-
-            this.RequestedClientConsistencyLevel = requestedClientConsistencyLevel;       
+            this.RequestedClientConsistencyLevel = requestedClientConsistencyLevel;
+            this.RequestedClientReadConsistencyStrategy = requestedClientReadConsistencyStrategy;
             this.RequestedClientPriorityLevel = requestedClientPriorityLevel;
             this.RequestedClientThroughputBucket = requestedClientThroughputBucket;
         }
@@ -79,13 +81,15 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             await this.ValidateAndSetConsistencyLevelAsync(request);
             this.SetPriorityLevel(request);
-            this.ValidateAndSetThroughputBucket(request);
+            this.SetThroughputBucket(request);
 
             (bool isError, ResponseMessage errorResponse) = await this.EnsureValidClientAsync(request, request.Trace);
             if (isError)
             {
                 return errorResponse;
             }
+
+            await this.ValidateAndSetReadConsistencyStrategyAsync(request);
 
             await request.AssertPartitioningDetailsAsync(this.client, cancellationToken, request.Trace);
             this.FillMultiMasterContext(request);
@@ -120,12 +124,29 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         /// <summary>
         /// This method determines if there is an availability strategy that the request can use.
-        /// Note that the request level availability strategy options override the client level options.
+        /// Note that the request level availability strategy options override the client level options,
+        /// but the Gateway-driven operator override (<see cref="DocumentClient.IsHedgingDisabledByGateway"/>)
+        /// takes absolute precedence over both — when the Gateway flag
+        /// <c>disableCrossRegionalHedging</c> is <c>true</c>, hedging is OFF for every request on this
+        /// client regardless of where the strategy was configured.
         /// </summary>
         /// <param name="request"></param>
         /// <returns>whether the request should be a parallel hedging request.</returns>
         public AvailabilityStrategyInternal AvailabilityStrategy(RequestMessage request)
         {
+            // Gateway-driven operator override has absolute precedence over any request-level or
+            // client-level AvailabilityStrategy. See spec.md → "Gateway flag disables all hedging
+            // when true" and tasks.md item 4.1.
+            //
+            // Note: this flag read and the ConnectionPolicy.AvailabilityStrategy read below are not a single
+            // atomic snapshot. The only guarantee is one-directional — a true flag always suppresses hedging
+            // for this request; the reverse is not symmetric, which is fine because the kill-switch only needs
+            // to win when true.
+            if (this.client.DocumentClient.IsHedgingDisabledByGateway)
+            {
+                return null;
+            }
+
             AvailabilityStrategy strategy = request.RequestOptions?.AvailabilityStrategy
                     ?? this.client.DocumentClient.ConnectionPolicy.AvailabilityStrategy;
 
@@ -305,17 +326,22 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             // For epk range filtering we can end up in one of 3 cases:
                             if (overlappingRanges.Count > 1)
                             {
-                                // 1) The EpkRange spans more than one physical partition
-                                // In this case it means we have encountered a split and 
-                                // we need to bubble that up to the higher layers to update their datastructures
-                                CosmosException goneException = new CosmosException(
-                                    message: $"Epk Range: {feedRangeEpk.Range} is gone.",
-                                    statusCode: System.Net.HttpStatusCode.Gone,
-                                    subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
-                                    activityId: Guid.NewGuid().ToString(),
-                                    requestCharge: default);
+                                //If we are running a query plan and our provided partition key results in a hash that resolves to more than one EPKRanges then its a valid use case
+                                bool isQueryPlanOperation = request.ResourceType == ResourceType.Document && request.OperationType == OperationType.QueryPlan;
+                                if (!isQueryPlanOperation)
+                                {
+                                    // 1) The EpkRange spans more than one physical partition
+                                    // In this case it means we have encountered a split and 
+                                    // we need to bubble that up to the higher layers to update their datastructures
+                                    CosmosException goneException = new CosmosException(
+                                        message: $"Epk Range: {feedRangeEpk.Range} is gone.",
+                                        statusCode: System.Net.HttpStatusCode.Gone,
+                                        subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
+                                        activityId: Guid.NewGuid().ToString(),
+                                        requestCharge: default);
 
-                                return goneException.ToCosmosResponseMessage(request);
+                                    return goneException.ToCosmosResponseMessage(request);
+                                }
                             }
                             // overlappingRanges.Count == 1
                             else
@@ -389,6 +415,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 operationType == OperationType.SqlQuery ||
                 operationType == OperationType.QueryPlan ||
                 operationType == OperationType.Batch ||
+                operationType == OperationType.CommitDistributedTransaction ||
+                (resourceType == ResourceType.DistributedTransactionBatch && operationType == OperationType.Read) ||
                 operationType == OperationType.ExecuteJavaScript ||
                 operationType == OperationType.CompleteUserTransaction ||
                 (resourceType == ResourceType.PartitionKey && operationType == OperationType.Delete))
@@ -499,6 +527,67 @@ namespace Microsoft.Azure.Cosmos.Handlers
         }
 
         /// <summary>
+        /// Validate and set the ReadConsistencyStrategy header.
+        /// When the strategy is LastCommittedSingleWriteRegion and the operation is a read,
+        /// also set the hub region processing header so the backend routes the request
+        /// to the hub (write) region.
+        /// </summary>
+        private Task ValidateAndSetReadConsistencyStrategyAsync(RequestMessage requestMessage)
+        {
+            Cosmos.ReadConsistencyStrategy? readConsistencyStrategy = null;
+            RequestOptions promotedRequestOptions = requestMessage.RequestOptions;
+
+            if (promotedRequestOptions?.BaseReadConsistencyStrategy.HasValue == true)
+            {
+                readConsistencyStrategy = promotedRequestOptions.BaseReadConsistencyStrategy;
+            }
+            else if (this.RequestedClientReadConsistencyStrategy.HasValue)
+            {
+                readConsistencyStrategy = this.RequestedClientReadConsistencyStrategy;
+            }
+
+            if (readConsistencyStrategy.HasValue)
+            {
+                if (requestMessage.ResourceType == ResourceType.Document)
+                {
+                    if (readConsistencyStrategy.Value == Cosmos.ReadConsistencyStrategy.LastCommittedSingleWriteRegion)
+                    {
+                        // LastCommittedSingleWriteRegion relies on hub-region routing which only applies
+                        // to single-master accounts. In multi-master accounts every region is a write
+                        // region and there is no partition-set level hub, so reject with a clear error.
+                        if (this.client.DocumentClient.UseMultipleWriteLocations)
+                        {
+                            throw new ArgumentException(
+                                $"{nameof(Cosmos.ReadConsistencyStrategy)}.{nameof(Cosmos.ReadConsistencyStrategy.LastCommittedSingleWriteRegion)} " +
+                                "is not supported for multi-master (multiple write region) accounts. " +
+                                "In multi-master accounts every region accepts writes and there is no single hub region. " +
+                                "Use a different ReadConsistencyStrategy or configure the account with a single write region.");
+                        }
+
+                        if (OperationTypeExtensions.IsReadOperation(requestMessage.OperationType))
+                        {
+                            requestMessage.Headers.Set(
+                                HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion,
+                                bool.TrueString);
+
+                            requestMessage.Headers.Set(
+                                HttpConstants.HttpHeaders.ReadConsistencyStrategy,
+                                Cosmos.ReadConsistencyStrategy.LatestCommitted.ToString());
+                        }
+                    }
+                    else
+                    {
+                        requestMessage.Headers.Set(
+                            HttpConstants.HttpHeaders.ReadConsistencyStrategy,
+                            readConsistencyStrategy.Value.ToString());
+                    }
+                }
+            }
+
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
         /// Set the PriorityLevel in the request headers
         /// </summary>
         /// <param name="requestMessage"></param>
@@ -518,22 +607,22 @@ namespace Microsoft.Azure.Cosmos.Handlers
         }
 
         /// <summary>
-        /// Set the ThroughputBucket in the request headers
+        /// Sets the ThroughputBucket in the request headers, resolving request-level over client-level precedence.
         /// </summary>
+        /// <remarks>
+        /// A request-level throughput bucket for bulk (point-item) operations is rejected earlier, in
+        /// <see cref="BatchAsyncContainerExecutor.ValidateOperationAsync"/>, because such operations are
+        /// merged into shared batches that cannot carry a per-operation bucket. All other operation types
+        /// honor the request-level bucket here; when unset, the client-level bucket (if any) is applied.
+        /// </remarks>
         /// <param name="requestMessage"></param>
-        private void ValidateAndSetThroughputBucket(RequestMessage requestMessage)
+        private void SetThroughputBucket(RequestMessage requestMessage)
         {
             int? throughputBucket = this.RequestedClientThroughputBucket;
             RequestOptions promotedRequestOptions = requestMessage.RequestOptions;
 
             if (promotedRequestOptions?.ThroughputBucket.HasValue == true)
             {
-                if (this.client.ClientOptions.AllowBulkExecution)
-                {
-                    throw new ArgumentException($"{nameof(requestMessage.RequestOptions.ThroughputBucket)} cannot be set in " +
-                        $"{nameof(requestMessage.RequestOptions)} when {nameof(this.client.ClientOptions.AllowBulkExecution)} is set to true. " +
-                        $"Instead, set {nameof(this.client.ClientOptions.ThroughputBucket)} only in {nameof(this.client.ClientOptions)}.");
-                }
                 throughputBucket = promotedRequestOptions.ThroughputBucket.Value;
             }
 

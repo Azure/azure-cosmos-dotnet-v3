@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -68,13 +67,19 @@ namespace Microsoft.Azure.Cosmos
         public int? MaxBufferedItemCount { get; set; }
 
         /// <summary>
-        /// Gets or sets the maximum number of items to be returned in the enumeration operation in the Azure Cosmos DB service.
+        /// Gets or sets the maximum number of items to be returned per page (per response) for the query in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
-        /// The maximum number of items to be returned in the enumeration operation.
+        /// The maximum number of items to be returned per page (per response) for the query.
         /// </value> 
         /// <remarks>
-        /// Used for query pagination.
+        /// Used for query pagination. This is the page size: the maximum number of items returned in a
+        /// single response (a single <c>ReadNextAsync()</c> call). It is a per-page maximum and is not a
+        /// cap on the total number of items returned across all pages. Draining the iterator (looping while
+        /// <c>HasMoreResults</c> is <c>true</c>) returns every matching item regardless of this value.
+        /// To limit the total number of items returned, bound the query itself (for example
+        /// <c>OFFSET ... LIMIT ...</c> or <c>TOP</c>, which compose with pagination), or stop reading pages
+        /// once the desired total has been reached.
         /// '-1' Used for dynamic page size.
         /// This is a maximum. Query can return 0 items in the page.
         /// </remarks>
@@ -166,6 +171,20 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Gets or sets the <see cref="ReadConsistencyStrategy"/> for the request.
+        /// </summary>
+        /// <remarks>
+        /// When set, this takes precedence over <see cref="ConsistencyLevel"/> for query operations.
+        /// The <see cref="ReadConsistencyStrategy.GlobalStrong"/> strategy is only valid
+        /// for accounts configured with Strong consistency.
+        /// </remarks>
+        public ReadConsistencyStrategy? ReadConsistencyStrategy
+        {
+            get => this.BaseReadConsistencyStrategy;
+            set => this.BaseReadConsistencyStrategy = value;
+        }
+
+        /// <summary>
         /// Gets or sets the token for use with session consistency in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
@@ -210,6 +229,25 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public QueryTextMode QueryTextMode { get; set; } = QueryTextMode.None;
 
+        /// <summary>
+        /// Gets or sets the scope for computing BM25 statistics used by FullTextScore in hybrid search queries.
+        /// </summary>
+        /// <value>
+        /// The scope for computing BM25 statistics. Defaults to <see cref="FullTextScoreScope.Global"/>.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// When set to <see cref="FullTextScoreScope.Global"/>, BM25 statistics (term frequency, inverse document frequency,
+        /// and document length) are computed across all documents in the container, including all physical and logical partitions.
+        /// </para>
+        /// <para>
+        /// When set to <see cref="FullTextScoreScope.Local"/>, statistics are computed only over the subset of documents
+        /// within the partition key values specified in the query request. This is useful for multi-tenant scenarios where scoring
+        /// should reflect statistics that are accurate for a specific tenant's dataset.
+        /// </para>
+        /// </remarks>
+        public FullTextScoreScope FullTextScoreScope { get; set; } = FullTextScoreScope.Global;
+
         internal CosmosElement CosmosElementContinuationToken { get; set; }
 
         internal string StartId { get; set; }
@@ -228,7 +266,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal FeedRange FeedRange { get; set; }
 
-        internal bool IsHybridSearchQueryPlanOptimizationDisabled { get; set; } = ConfigurationManager.IsHybridSearchQueryPlanOptimizationDisabled(defaultValue: true);
+        internal bool IsHybridSearchQueryPlanOptimizationDisabled { get; set; } = ConfigurationManager.IsHybridSearchQueryPlanOptimizationDisabled(defaultValue: false);
 
         // This is a temporary flag to enable the distributed query gateway mode.
         // This flag will be removed once we have a way for the client to determine

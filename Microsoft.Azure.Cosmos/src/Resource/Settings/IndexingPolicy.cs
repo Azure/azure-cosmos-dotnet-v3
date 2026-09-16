@@ -591,6 +591,114 @@ namespace Microsoft.Azure.Cosmos
                 return hashCode;
             }
         }
+
+        internal sealed class VectorIndexPathEqualityComparer : IEqualityComparer<VectorIndexPath>
+        {
+            public static readonly VectorIndexPathEqualityComparer Singleton = new VectorIndexPathEqualityComparer();
+
+            public bool Equals(VectorIndexPath vectorIndexPath1, VectorIndexPath vectorIndexPath2)
+            {
+                if (Object.ReferenceEquals(vectorIndexPath1, vectorIndexPath2))
+                {
+                    return true;
+                }
+
+                if (vectorIndexPath1 == null || vectorIndexPath2 == null)
+                {
+                    return false;
+                }
+
+                if (vectorIndexPath1.Path != vectorIndexPath2.Path ||
+                    vectorIndexPath1.Type != vectorIndexPath2.Type ||
+                    vectorIndexPath1.QuantizerType != vectorIndexPath2.QuantizerType ||
+                    vectorIndexPath1.QuantizationByteSize != vectorIndexPath2.QuantizationByteSize ||
+                    vectorIndexPath1.IndexingSearchListSize != vectorIndexPath2.IndexingSearchListSize ||
+                    !vectorIndexPath1.AdditionalProperties.EqualsTo(vectorIndexPath2.AdditionalProperties))
+                {
+                    return false;
+                }
+
+                // Compare VectorIndexShardKey arrays
+                if (vectorIndexPath1.VectorIndexShardKey == null && vectorIndexPath2.VectorIndexShardKey == null)
+                {
+                    return true;
+                }
+
+                if (vectorIndexPath1.VectorIndexShardKey == null || vectorIndexPath2.VectorIndexShardKey == null)
+                {
+                    return false;
+                }
+
+                if (vectorIndexPath1.VectorIndexShardKey.Length != vectorIndexPath2.VectorIndexShardKey.Length)
+                {
+                    return false;
+                }
+
+                HashSet<string> shardKeys1 = new HashSet<string>(vectorIndexPath1.VectorIndexShardKey);
+                HashSet<string> shardKeys2 = new HashSet<string>(vectorIndexPath2.VectorIndexShardKey);
+
+                return shardKeys1.SetEquals(shardKeys2);
+            }
+
+            public int GetHashCode(VectorIndexPath vectorIndexPath)
+            {
+                if (vectorIndexPath == null)
+                {
+                    return 0;
+                }
+
+                int hashCode = 0;
+                hashCode ^= vectorIndexPath.Path?.GetHashCode() ?? 0;
+                hashCode ^= vectorIndexPath.Type.GetHashCode();
+                hashCode ^= vectorIndexPath.QuantizerType?.GetHashCode() ?? 0;
+                hashCode ^= vectorIndexPath.QuantizationByteSize.GetHashCode();
+                hashCode ^= vectorIndexPath.IndexingSearchListSize.GetHashCode();
+
+                if (vectorIndexPath.VectorIndexShardKey != null)
+                {
+                    foreach (string shardKey in vectorIndexPath.VectorIndexShardKey)
+                    {
+                        hashCode ^= shardKey?.GetHashCode() ?? 0;
+                    }
+                }
+
+                return hashCode;
+            }
+        }
+
+        internal sealed class VectorIndexesEqualityComparer : IEqualityComparer<Collection<VectorIndexPath>>
+        {
+            private static readonly VectorIndexPathEqualityComparer vectorIndexPathEqualityComparer = new VectorIndexPathEqualityComparer();
+
+            public bool Equals(Collection<VectorIndexPath> vectorIndexes1, Collection<VectorIndexPath> vectorIndexes2)
+            {
+                if (Object.ReferenceEquals(vectorIndexes1, vectorIndexes2))
+                {
+                    return true;
+                }
+
+                if (vectorIndexes1 == null || vectorIndexes2 == null)
+                {
+                    return false;
+                }
+
+                HashSet<VectorIndexPath> hashedVectorIndexes1 = new HashSet<VectorIndexPath>(vectorIndexes1, vectorIndexPathEqualityComparer);
+                HashSet<VectorIndexPath> hashedVectorIndexes2 = new HashSet<VectorIndexPath>(vectorIndexes2, vectorIndexPathEqualityComparer);
+
+                return hashedVectorIndexes1.SetEquals(hashedVectorIndexes2);
+            }
+
+            public int GetHashCode(Collection<VectorIndexPath> vectorIndexes)
+            {
+                int hashCode = 0;
+                foreach (VectorIndexPath vectorIndexPath in vectorIndexes)
+                {
+                    hashCode ^= vectorIndexPathEqualityComparer.GetHashCode(vectorIndexPath);
+                }
+
+                return hashCode;
+            }
+        }
         #endregion
     }
 }

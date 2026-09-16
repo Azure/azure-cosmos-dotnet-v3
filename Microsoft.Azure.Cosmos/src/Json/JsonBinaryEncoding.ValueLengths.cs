@@ -2,6 +2,8 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
+// Ignore Spelling: unpadded Json
+
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
@@ -25,12 +27,14 @@ namespace Microsoft.Azure.Cosmos.Json
             private const int CS4BL1 = -10;      // 4-bit Compressed string w/ 1-byte length followed by 1-byte base char
             private const int CS5BL1 = -11;      // 5-bit Compressed string w/ 1-byte length followed by 1-byte base char
             private const int CS6BL1 = -12;      // 6-bit Compressed string w/ 1-byte length followed by 1-byte base char
-            private const int Arr1 = -13;        // 1-item array
-            private const int Obj1 = -14;        // 1-property object
-            private const int NC1 = -15;         // Fixed-size numeric items of 1-byte item count
-            private const int NC2 = -16;         // Fixed-size numeric items of 2-byte item count
-            private const int ANC1 = -17;        // Array of fixed-size numeric items of 1-byte item count
-            private const int ANC2 = -18;        // Array of fixed-size numeric items of 2-byte item count
+            private const int B64L1 = -13;       // Base64 string 1-byte encoded length + 1-byte padding length
+            private const int B64L2 = -14;       // Base64 string 2-byte encoded length + 1-byte padding length
+            private const int Arr1 = -15;        // 1-item array
+            private const int Obj1 = -16;        // 1-property object
+            private const int NC1 = -17;         // Fixed-size numeric items of 1-byte item count
+            private const int NC2 = -18;         // Fixed-size numeric items of 2-byte item count
+            private const int ANC1 = -19;        // Array of fixed-size numeric items of 1-byte item count
+            private const int ANC2 = -20;        // Array of fixed-size numeric items of 2-byte item count
 
             /// <summary>
             /// Lookup table for encoded value length for each TypeMarker value (0 to 255)
@@ -74,13 +78,13 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 // String Values [0x70, 0x78)
                 0,      // <empty> 0x70
-                0,      // <empty> 0x71
-                0,      // <empty> 0x72
-                0,      // <empty> 0x73
-                0,      // <empty> 0x74
-                17,     // StrGL (Lowercase GUID string)
-                17,     // StrGU (Uppercase GUID string)
-                17,     // StrGQ (Double-quoted lowercase GUID string)
+                B64L1,  // Standard Base64-encoded string with 1-byte length and 1-byte padding length
+                B64L2,  // Standard Base64-encoded string with 2-byte length and 1-byte padding length
+                B64L1,  // URL-safe Base64-encoded string with 1-byte length and 1-byte padding length
+                B64L2,  // URL-safe Base64-encoded string with 2-byte length and 1-byte padding length
+                17,     // Lowercase GUID string
+                17,     // Uppercase GUID string
+                17,     // Double-quoted lowercase GUID string
 
                 // Compressed strings [0x78, 0x80)
                 CS4L1,  // String 1-byte length - Lowercase hexadecimal digits encoded as 4-bit characters
@@ -184,6 +188,28 @@ namespace Microsoft.Azure.Cosmos.Json
 
             public static long GetValueLength(ReadOnlySpan<byte> buffer)
             {
+                return GetValueLength(buffer, depth: 0);
+            }
+
+            private static long GetValueLength(ReadOnlySpan<byte> buffer, int depth)
+            {
+                // Guard against malicious payloads that nest Arr1 (0xE1) / Obj1
+                // (0xE9) type markers deeply enough to exhaust the CLR stack.
+                // The cap matches the streaming writer's
+                // JsonObjectState.JsonMaxNestingDepth so the binary navigator
+                // path enforces the same nesting policy as the rest of the JSON
+                // stack. The depth counter is incremented per recursive frame,
+                // which corresponds to one container open or one Arr1/Obj1
+                // child slot. JsonObjectState.Push permits N = 256 simultaneous
+                // open containers (it rejects the 257th), so the guard mirrors
+                // that bound: depth > N throws JsonMaxNestingExceededException.
+                // A scalar leaf at depth = N is permitted (writer/reader
+                // round-trip parity for N-deep documents).
+                if (depth > JsonObjectState.JsonMaxNestingDepth)
+                {
+                    throw new JsonMaxNestingExceededException();
+                }
+
                 long length = ValueLengths.Lookup[buffer[0]];
                 if (length < 0)
                 {
@@ -211,21 +237,29 @@ namespace Microsoft.Azure.Cosmos.Json
                             break;
 
                         case Arr1:
-                            long arrayOneItemLength = ValueLengths.GetValueLength(buffer.Slice(1));
+                            long arrayOneItemLength = ValueLengths.GetValueLength(buffer.Slice(1), depth + 1);
                             length = arrayOneItemLength == 0 ? 0 : 1 + arrayOneItemLength;
                             break;
 
                         case Obj1:
-                            long nameLength = ValueLengths.GetValueLength(buffer.Slice(1));
+                            long nameLength = ValueLengths.GetValueLength(buffer.Slice(1), depth + 1);
                             if (nameLength == 0)
                             {
                                 length = 0;
                             }
                             else
                             {
-                                long valueLength = ValueLengths.GetValueLength(buffer.Slice(1 + (int)nameLength));
+                                long valueLength = ValueLengths.GetValueLength(buffer.Slice(1 + (int)nameLength), depth + 1);
                                 length = TypeMarkerLength + nameLength + valueLength;
                             }
+                            break;
+
+                        case B64L1:
+                            length = TypeMarkerLength + OneByteLength + OneByteLength + GetBase64ByteCount(buffer[1], buffer[2]);
+                            break;
+
+                        case B64L2:
+                            length = TypeMarkerLength + TwoByteLength + OneByteLength + GetBase64ByteCount(MemoryMarshal.Read<ushort>(buffer.Slice(1)), buffer[3]);
                             break;
 
                         case CS4L1:
@@ -278,12 +312,51 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int GetCompressedStringLength(int length, int numberOfBits) => ((length * numberOfBits) + 7) / 8;
+            public static int GetCompressedStringLength(int length, int numberOfBits)
+            {
+                return ((length * numberOfBits) + 7) / 8;
+            }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int GetUniformNumberArrayItemSize(byte typeMarker)
             {
                 return ValueLengths.Lookup[typeMarker] - 1;
+            }
+
+            public static byte GetBase64Padding(byte padding)
+            {
+                if (padding > 2)
+                {
+                    // Indicates that padding was omitted; negate the padding value and update the value length
+                    // to reflect this.
+                    return (byte)~padding;
+                }
+
+                return padding;
+            }
+
+            public static int GetBase64ByteCount(int unpaddedLength)
+            {
+                return unpaddedLength * 3 / 4;
+            }
+
+            public static int GetBase64ByteCount(int stringLengthDiv4, byte padding)
+            {
+                return GetBase64ByteCount((stringLengthDiv4 * 4) - GetBase64Padding(padding));
+            }
+
+            public static int ComputeBase64StringLength(int stringLengthDiv4, byte padding)
+            {
+                int stringLength = stringLengthDiv4 * 4;
+
+                if (padding > 2)
+                {
+                    // Indicates that padding was omitted; negate the padding value and update the value length
+                    // to reflect this.
+                    stringLength -= GetBase64Padding(padding);
+                }
+
+                return stringLength;
             }
         }
     }

@@ -20,9 +20,14 @@ namespace Microsoft.Azure.Cosmos
             this.shouldThrow503OnTimeout = shouldThrow503OnTimeout;
         }
 
+        // The first-attempt timeout was raised from 500ms to 1s to align with HttpTimeoutPolicyForThinClient
+        // (see issue #5642). The original 500ms value caused spurious TaskCanceledException retries on
+        // .NET 10 due to changes in HttpConnectionPool behavior and any environment with moderate network
+        // latency. The 5s and 65s tail attempts are preserved to keep the existing retry budget for slow
+        // control-plane operations.
         private readonly IReadOnlyList<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> TimeoutsAndDelays = new List<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)>()
         {
-            (TimeSpan.FromSeconds(.5), TimeSpan.Zero),
+            (TimeSpan.FromSeconds(1), TimeSpan.Zero),
             (TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(1)),
             (TimeSpan.FromSeconds(65), TimeSpan.Zero),
         };
@@ -36,13 +41,6 @@ namespace Microsoft.Azure.Cosmos
             return this.TimeoutsAndDelays.GetEnumerator();
         }
 
-        // The hot path should always be safe to retires since it should be retrieving meta data 
-        // information that is not idempotent.
-        public override bool IsSafeToRetry(HttpMethod httpMethod)
-        {
-            return true;
-        }
-
         public override bool ShouldRetryBasedOnResponse(HttpMethod requestHttpMethod, HttpResponseMessage responseMessage)
         { 
             if (responseMessage == null)
@@ -51,11 +49,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             if (responseMessage.StatusCode != System.Net.HttpStatusCode.RequestTimeout)
-            {
-                return false;
-            }
-
-            if (!this.IsSafeToRetry(requestHttpMethod))
             {
                 return false;
             }

@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
                     CollectionRoutingMap routingMap =
                         CollectionRoutingMap.TryCreateCompleteRoutingMap(
-                            testData.RoutingMap.Select(range => Tuple.Create(range, (ServiceIdentity)null)), string.Empty);
+                            testData.RoutingMap.Select(range => Tuple.Create(range, (ServiceIdentity)null)), string.Empty, false);
                     RoutingMapProvider routingMapProvider = new RoutingMapProvider(routingMap);              
 
                     foreach (AddFormattedContinuationToHeaderTestUnit positiveTestData in testData.TestSet.Postive)
@@ -221,7 +221,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
                     CollectionRoutingMap routingMap =
                         CollectionRoutingMap.TryCreateCompleteRoutingMap(
-                            testData.RoutingMap.Select(range => Tuple.Create(range, (ServiceIdentity)null)), string.Empty);
+                            testData.RoutingMap.Select(range => Tuple.Create(range, (ServiceIdentity)null)), string.Empty, false);
 
                     foreach (GetPartitionRoutingInfoTestCase testCase in testData.TestCases)
                     {
@@ -706,7 +706,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             CollectionRoutingMap routingMap =
                 CollectionRoutingMap.TryCreateCompleteRoutingMap(
                     rangesAndServiceIdentity,
-                    collectionRid);
+                    collectionRid, false);
 
             RoutingMapProvider routingMapProvider = new RoutingMapProvider(routingMap);
             TryCatch<PartitionedQueryExecutionInfo> tryGetQueryPlan =
@@ -747,7 +747,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             CollectionRoutingMap routingMap =
                 CollectionRoutingMap.TryCreateCompleteRoutingMap(
                     rangesAndServiceIdentity,
-                    collectionRid);
+                    collectionRid, false);
 
             RoutingMapProvider routingMapProvider = new RoutingMapProvider(routingMap);
             

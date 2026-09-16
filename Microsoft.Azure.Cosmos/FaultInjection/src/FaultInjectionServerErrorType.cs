@@ -80,5 +80,15 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// 410:1022 Lease not Found
         /// </summary>
         LeaseNotFound,
+
+        /// <summary>
+        /// 401: Unauthorized
+        /// </summary>
+        Unauthorized,
+
+        /// <summary>
+        /// 401:5013 AAD token revoked
+        /// </summary>
+        AadTokenRevoked
     }
 }

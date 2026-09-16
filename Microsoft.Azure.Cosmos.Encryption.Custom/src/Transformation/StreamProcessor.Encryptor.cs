@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 {
     using System;
@@ -24,24 +24,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             EncryptionOptions encryptionOptions,
             CancellationToken cancellationToken)
         {
-            List<string> pathsEncrypted = new ();
+            List<string> pathsEncrypted = new (encryptionOptions.PathsToEncrypt is ICollection<string> c ? c.Count : 0);
 
             using ArrayPoolManager arrayPoolManager = new ();
 
             DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionOptions.DataEncryptionKeyId, encryptionOptions.EncryptionAlgorithm, cancellationToken);
 
-            bool compressionEnabled = encryptionOptions.CompressionOptions.Algorithm != CompressionOptions.CompressionAlgorithm.None;
-
-            BrotliCompressor compressor = encryptionOptions.CompressionOptions.Algorithm == CompressionOptions.CompressionAlgorithm.Brotli
-                ? new BrotliCompressor(encryptionOptions.CompressionOptions.CompressionLevel) : null;
-
-            HashSet<string> pathsToEncrypt = encryptionOptions.PathsToEncrypt as HashSet<string> ?? new (encryptionOptions.PathsToEncrypt, StringComparer.Ordinal);
-
-            Dictionary<string, int> compressedPaths = new ();
+            // Pre-encode the paths-to-encrypt as UTF-8 byte sequences so that we can match
+            // against Utf8JsonReader tokens with ValueTextEquals (which correctly handles
+            // JSON escape sequences), without allocating a new string per property name.
+            // The leading '/' is stripped here since ValueTextEquals compares against the
+            // decoded property-name bytes, while the original slash-prefixed path string is
+            // preserved for the pathsEncrypted output list.
+            (byte[] nameBytes, string fullPath)[] encryptedPathsTable = BuildEncryptedPathsTable(encryptionOptions.PathsToEncrypt);
 
             using Utf8JsonWriter writer = new (outputStream);
 
-            byte[] buffer = arrayPoolManager.Rent(InitialBufferSize);
+            byte[] buffer = arrayPoolManager.Rent(PooledStreamConfiguration.Current.StreamProcessorBufferSize);
 
             JsonReaderState state = new (StreamProcessor.JsonReaderOptions);
 
@@ -52,41 +51,49 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             Utf8JsonWriter encryptionPayloadWriter = null;
             string encryptPropertyName = null;
             RentArrayBufferWriter bufferWriter = null;
+            bool firstTokenValidated = false;
 
-            while (!isFinalBlock)
+            try
             {
-                int dataLength = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
-                int dataSize = dataLength + leftOver;
-                isFinalBlock = dataSize == 0;
-                long bytesConsumed = 0;
-
-                bytesConsumed = TransformEncryptBuffer(buffer.AsSpan(0, dataSize));
-
-                leftOver = dataSize - (int)bytesConsumed;
-
-                // we need to scale out buffer
-                if (leftOver == dataSize)
+                while (!isFinalBlock)
                 {
-                    byte[] newBuffer = arrayPoolManager.Rent(buffer.Length * 2);
-                    buffer.AsSpan().CopyTo(newBuffer);
-                    buffer = newBuffer;
+                    int dataLength = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
+                    int dataSize = dataLength + leftOver;
+                    isFinalBlock = dataLength == 0;
+
+                    long bytesConsumed = TransformEncryptBuffer(buffer.AsSpan(0, dataSize));
+
+                    leftOver = dataSize - (int)bytesConsumed;
+
+                    buffer = HandleReadBuffer(
+                        buffer,
+                        dataSize,
+                        leftOver,
+                        isFinalBlock,
+                        arrayPoolManager,
+                        JsonFeedStreamHelper.MaximumBufferSize);
                 }
-                else if (leftOver != 0)
+
+                await inputStream.DisposeAsync();
+            }
+            finally
+            {
+                if (encryptionPayloadWriter != null)
                 {
-                    buffer.AsSpan(dataSize - leftOver, leftOver).CopyTo(buffer);
+                    await encryptionPayloadWriter.DisposeAsync();
                 }
+
+#pragma warning disable VSTHRD103 // Call async methods when in an async method
+                bufferWriter?.Dispose();
+#pragma warning restore VSTHRD103 // Call async methods when in an async method
             }
 
-            await inputStream.DisposeAsync();
-
             EncryptionProperties encryptionProperties = new (
-                encryptionFormatVersion: compressionEnabled ? 4 : 3,
+                encryptionFormatVersion: EncryptionFormatVersion.Mde,
                 encryptionOptions.EncryptionAlgorithm,
                 encryptionOptions.DataEncryptionKeyId,
                 encryptedData: null,
-                pathsEncrypted,
-                encryptionOptions.CompressionOptions.Algorithm,
-                compressedPaths);
+                pathsEncrypted);
 
             writer.WritePropertyName(this.encryptionPropertiesNameBytes);
             JsonSerializer.Serialize(writer, encryptionProperties);
@@ -101,13 +108,30 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                 while (reader.Read())
                 {
-                    Utf8JsonWriter currentWriter = encryptionPayloadWriter ?? writer;
-
                     JsonTokenType tokenType = reader.TokenType;
+
+                    if (!firstTokenValidated)
+                    {
+                        // The first non-None token must be StartObject for streaming encryption.
+                        if (tokenType == JsonTokenType.StartObject)
+                        {
+                            firstTokenValidated = true;
+                        }
+                        else if (tokenType == JsonTokenType.Comment || tokenType == JsonTokenType.None)
+                        {
+                            continue; // skip and keep waiting for first structural token
+                        }
+                        else
+                        {
+                            throw new NotSupportedException("Streaming encryption requires a JSON object root. Root arrays or primitive values are not supported.");
+                        }
+                    }
+
+                    Utf8JsonWriter currentWriter = encryptionPayloadWriter ?? writer;
 
                     switch (tokenType)
                     {
-                        case JsonTokenType.None:
+                        case JsonTokenType.None: // Unreachable after first Read()
                             break;
                         case JsonTokenType.StartObject:
                             if (encryptPropertyName != null && encryptionPayloadWriter == null)
@@ -137,11 +161,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 writer.WriteBase64StringValue(encryptedBytes);
 
                                 encryptPropertyName = null;
-#pragma warning disable VSTHRD103 // Call async methods when in an async method - this method cannot be async, Utf8JsonReader is ref struct
-                                encryptionPayloadWriter.Dispose();
-#pragma warning restore VSTHRD103 // Call async methods when in an async method
                                 encryptionPayloadWriter = null;
-                                bufferWriter.Dispose();
+                                bufferWriter?.Dispose();
                                 bufferWriter = null;
                             }
 
@@ -169,25 +190,44 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 writer.WriteBase64StringValue(encryptedBytes);
 
                                 encryptPropertyName = null;
-#pragma warning disable VSTHRD103 // Call async methods when in an async method - this method cannot be async, Utf8JsonReader is ref struct
-                                encryptionPayloadWriter.Dispose();
-#pragma warning restore VSTHRD103 // Call async methods when in an async method
                                 encryptionPayloadWriter = null;
-                                bufferWriter.Dispose();
+                                bufferWriter?.Dispose();
                                 bufferWriter = null;
                             }
 
                             break;
                         case JsonTokenType.PropertyName:
-                            string propertyName = "/" + reader.GetString();
-                            if (pathsToEncrypt.Contains(propertyName))
+                            if (reader.CurrentDepth == 1)
                             {
-                                encryptPropertyName = propertyName;
+                                // Reject a pre-existing top-level _ei up front. The Newtonsoft
+                                // default rejects the same case incidentally (JObject.Add throws
+                                // ArgumentException on the duplicate key); we throw a deliberate
+                                // InvalidOperationException. Only the reject behavior is contractual
+                                // across processors, not the exception type.
+                                if (reader.ValueTextEquals(this.encryptionPropertiesNameBytes))
+                                {
+                                    throw new InvalidOperationException($"The input document already contains a top-level '{Constants.EncryptedInfo}' property, which is reserved for encryption metadata. Encrypting a document that already contains this property is not supported (it would produce a duplicate '{Constants.EncryptedInfo}').");
+                                }
+
+                                string matchedPath = null;
+                                for (int i = 0; i < encryptedPathsTable.Length; i++)
+                                {
+                                    if (reader.ValueTextEquals(encryptedPathsTable[i].nameBytes))
+                                    {
+                                        matchedPath = encryptedPathsTable[i].fullPath;
+                                        break;
+                                    }
+                                }
+
+                                if (matchedPath != null)
+                                {
+                                    encryptPropertyName = matchedPath;
+                                }
                             }
 
-                            currentWriter.WritePropertyName(reader.ValueSpan);
+                            WritePropertyNameVerbatim(currentWriter, ref reader, arrayPoolManager);
                             break;
-                        case JsonTokenType.Comment:
+                        case JsonTokenType.Comment: // Skipped via reader options
                             currentWriter.WriteCommentValue(reader.ValueSpan);
                             break;
                         case JsonTokenType.String:
@@ -201,7 +241,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             }
                             else
                             {
-                                currentWriter.WriteStringValue(reader.ValueSpan);
+                                WriteStringValueVerbatim(currentWriter, ref reader, arrayPoolManager);
                             }
 
                             break;
@@ -249,6 +289,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             break;
                         case JsonTokenType.Null:
                             currentWriter.WriteNullValue();
+
+                            // Only clear the pending encrypt target when we are NOT buffering an
+                            // encryption payload. A null nested inside an encrypted object/array
+                            // must not wipe the path being captured, otherwise the payload's _ep
+                            // entry is lost and the value becomes undecryptable.
+                            if (encryptionPayloadWriter == null)
+                            {
+                                encryptPropertyName = null;
+                            }
+
                             break;
                     }
                 }
@@ -262,18 +312,38 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 byte[] processedBytes = payload;
                 int processedBytesLength = payloadSize;
 
-                if (compressor != null && payloadSize >= encryptionOptions.CompressionOptions.MinimalCompressedLength)
-                {
-                    byte[] compressedBytes = arrayPoolManager.Rent(BrotliCompressor.GetMaxCompressedSize(payloadSize));
-                    processedBytesLength = compressor.Compress(compressedPaths, encryptPropertyName, processedBytes, payloadSize, compressedBytes);
-                    processedBytes = compressedBytes;
-                }
-
                 (byte[] encryptedBytes, int encryptedBytesCount) = this.Encryptor.Encrypt(encryptionKey, typeMarker, processedBytes, processedBytesLength, arrayPoolManager);
 
                 pathsEncrypted.Add(encryptPropertyName);
                 return encryptedBytes.AsSpan(0, encryptedBytesCount);
             }
+        }
+
+        private static (byte[] nameBytes, string fullPath)[] BuildEncryptedPathsTable(IEnumerable<string> pathsToEncrypt)
+        {
+            List<(byte[] nameBytes, string fullPath)> table = pathsToEncrypt is ICollection<string> c
+                ? new List<(byte[], string)>(c.Count)
+                : new List<(byte[], string)>();
+            foreach (string path in pathsToEncrypt)
+            {
+                if (string.IsNullOrEmpty(path) || path[0] != '/' || path.Length < 2)
+                {
+                    // Paths are already validated by EncryptionOptions; skip defensively.
+                    continue;
+                }
+
+                // Strip the leading '/'. The property name bytes are what the JSON reader
+                // token surfaces (without the JSON Pointer prefix). The original slash-
+                // prefixed string is preserved for the output pathsEncrypted list so the
+                // serialized _ei metadata remains byte-identical to the previous
+                // implementation.
+                ReadOnlySpan<char> nameChars = path.AsSpan(1);
+                byte[] nameBytes = new byte[Encoding.UTF8.GetByteCount(nameChars)];
+                Encoding.UTF8.GetBytes(nameChars, nameBytes);
+                table.Add((nameBytes, path));
+            }
+
+            return table.ToArray();
         }
 
         private static (byte[] buffer, int length) Serialize(bool value, ArrayPoolManager arrayPoolManager)
@@ -287,18 +357,31 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
         private static (TypeMarker typeMarker, byte[] buffer, int length) SerializeNumber(ReadOnlySpan<byte> utf8bytes, ArrayPoolManager arrayPoolManager)
         {
-            if (long.TryParse(utf8bytes, out long longValue))
+            if (System.Buffers.Text.Utf8Parser.TryParse(utf8bytes, out long longValue, out int consumedLong) && consumedLong == utf8bytes.Length)
             {
                 return Serialize(longValue, arrayPoolManager);
             }
-            else if (double.TryParse(utf8bytes, out double doubleValue))
+
+            // An integer literal (no '.', 'e' or 'E') that did not fit in Int64 above would be
+            // silently coerced to a lossy double below. Reject it (fail-closed) so a value that
+            // cannot be round-tripped is never persisted. This matches the Newtonsoft processor,
+            // which also rejects out-of-range integers (its ToObject<long>() throws OverflowException).
+            // Only the reject behavior is contractual across processors, not the exception type.
+            if (utf8bytes.IndexOfAny((byte)'.', (byte)'e', (byte)'E') < 0)
             {
-                return Serialize(doubleValue, arrayPoolManager);
+                throw new InvalidOperationException("Unsupported Number type: integer literal is outside the supported Int64 range.");
             }
-            else
+
+            if (System.Buffers.Text.Utf8Parser.TryParse(utf8bytes, out double doubleValue, out int consumedDouble) && consumedDouble == utf8bytes.Length)
             {
-                throw new InvalidOperationException("Unsupported Number type");
+                // Reject non-finite numbers to keep JSON contract compatibility
+                if (double.IsFinite(doubleValue))
+                {
+                    return Serialize(doubleValue, arrayPoolManager);
+                }
             }
+
+            throw new InvalidOperationException("Unsupported Number type");
         }
 
         private static (TypeMarker typeMarker, byte[] buffer, int length) Serialize(long value, ArrayPoolManager arrayPoolManager)

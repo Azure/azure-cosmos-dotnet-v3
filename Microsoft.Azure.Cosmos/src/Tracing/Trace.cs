@@ -7,17 +7,16 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Linq;
-    using System.Runtime.CompilerServices;
-    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
 
     internal sealed class Trace : ITrace
     {
         private static readonly IReadOnlyDictionary<string, object> EmptyDictionary = new Dictionary<string, object>();
-        private readonly List<ITrace> children;
-        private readonly Lazy<Dictionary<string, object>> data;
+        private readonly object lockObject;
+        private volatile List<ITrace> children;
+        private volatile Dictionary<string, object> data;
         private ValueStopwatch stopwatch;
+        private volatile bool isBeingWalked;
 
         private Trace(
             string name,
@@ -27,6 +26,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             TraceSummary summary)
         {
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
+            this.lockObject = new object();
             this.Id = Guid.NewGuid();
             this.StartTime = DateTime.UtcNow;
             this.stopwatch = ValueStopwatch.StartNew();
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             this.Component = component;
             this.Parent = parent;
             this.children = new List<ITrace>();
-            this.data = new Lazy<Dictionary<string, object>>();
+            this.data = null;
             this.Summary = summary ?? throw new ArgumentNullException(nameof(summary));
         }
 
@@ -54,9 +54,37 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public ITrace Parent { get; }
 
-        public IReadOnlyList<ITrace> Children => this.children;
+        // NOTE: no lock necessary here only because this.children is volatile
+        // and every reference to it is immutable when isBeingWalked == true
+        // and isBeingWalked is guaranteed to be set to true before this
+        // Property is called
+        public IReadOnlyList<ITrace> Children
+        {
+            get
+            {
+                // Assert that walking state is set
+                Debug.Assert(this.isBeingWalked, "SetWalkingStateRecursively should be set to true");
 
-        public IReadOnlyDictionary<string, object> Data => this.data.IsValueCreated ? this.data.Value : Trace.EmptyDictionary;
+                return this.children;
+            }
+        }
+
+        // NOTE: no lock necessary here only because this.data is volatile
+        // and every reference to it is immutable when isBeingWalked == true
+        // and isBeingWalked is guaranteed to be set to true before this
+        // Property is called
+        public IReadOnlyDictionary<string, object> Data
+        {
+            get
+            {
+                // Assert that walking state is set
+                Debug.Assert(this.isBeingWalked, "SetWalkingStateRecursively should be set to true");
+
+                return this.data ?? Trace.EmptyDictionary;
+            }
+        }
+
+        public bool IsBeingWalked => this.isBeingWalked;
 
         public void Dispose()
         {
@@ -90,14 +118,30 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 summary: this.Summary);
 
             this.AddChild(child);
+
             return child;
         }
 
         public void AddChild(ITrace child)
         {
-            lock (this.children)
+            lock (this.lockObject)
             {
-                this.children.Add(child);
+                if (!this.isBeingWalked)
+                {
+                    this.children.Add(child);
+
+                    return;
+                }
+
+                if (child is Trace traceChild)
+                {
+                    traceChild.SetWalkingStateRecursively();
+                }
+
+                List<ITrace> writableSnapshot = new List<ITrace>(this.children.Count + 1);
+                writableSnapshot.AddRange(this.children);
+                writableSnapshot.Add(child);
+                this.children = writableSnapshot;
             }
         }
 
@@ -124,18 +168,89 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public void AddDatum(string key, TraceDatum traceDatum)
         {
-            this.data.Value.Add(key, traceDatum);
             this.Summary.UpdateRegionContacted(traceDatum);
+            this.AddDatum(key, traceDatum as Object);
         }
 
         public void AddDatum(string key, object value)
         {
-            this.data.Value.Add(key, value);
+            lock (this.lockObject)
+            {
+                this.data ??= new Dictionary<string, object>();
+
+                if (!this.isBeingWalked)
+                {
+                    // If materialization has not started yet no cloning is needed
+                    this.data.Add(key, value);
+                    return;
+                }
+
+                this.data = new Dictionary<string, object>(this.data)
+                {
+                    { key, value }
+                };
+            }
         }
 
         public void AddOrUpdateDatum(string key, object value)
         {
-            this.data.Value[key] = value;
+            lock (this.lockObject)
+            {
+                this.data ??= new Dictionary<string, object>();
+
+                if (!this.isBeingWalked)
+                {
+                    // If materialization has not started yet no cloning is needed
+                    this.data[key] = value;
+                    return; // Ignore modifications while being walked
+                }
+
+                this.data = new Dictionary<string, object>(this.data)
+                {
+                    [key] = value
+                };
+            }
+        }
+
+        internal void SetWalkingStateRecursively()
+        {
+            if (this.isBeingWalked)
+            {
+                return; // Already set, return early
+            }
+
+            lock (this.lockObject)
+            {
+                if (this.isBeingWalked)
+                {
+                    return; // Already set, return early
+                }
+
+                foreach (ITrace child in this.children)
+                {
+                    if (child is Trace concreteChild)
+                    {
+                        concreteChild.SetWalkingStateRecursively();
+                    }
+                }
+
+                // Set the walking state for this trace after processing children
+                this.isBeingWalked = true;
+            }
+        }
+
+        bool ITrace.TryGetDatum(string key, out object datum)
+        {
+            lock (this.lockObject)
+            {
+                if (this.data == null)
+                {
+                    datum = null;
+                    return false;
+                }
+
+                return this.data.TryGetValue(key, out datum);
+            }
         }
     }
 }

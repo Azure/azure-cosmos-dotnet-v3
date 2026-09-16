@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Linq;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -46,6 +48,63 @@ namespace Microsoft.Azure.Cosmos
         public string Language { get; set; }
 
         /// <summary>
+        /// Gets or sets the tokenizer method. Valid values: "word".
+        /// Only applicable with the "standard" package.
+        /// </summary>
+        [JsonProperty(PropertyName = "tokenizer", NullValueHandling = NullValueHandling.Ignore)]
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        string Tokenizer { get; set; }
+
+        /// <summary>
+        /// Gets or sets the filter pipeline. Valid values: "stop", "lowercase", "stem", "ascii".
+        /// Only applicable with the "standard" package and tokenizer "word".
+        /// </summary>
+        [JsonProperty(PropertyName = "filters", NullValueHandling = NullValueHandling.Ignore)]
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        Collection<string> Filters { get; set; }
+
+        /// <summary>
+        /// Gets or sets the stop word list kind. Valid values: "none", "basic", "extended".
+        /// </summary>
+        [JsonProperty(PropertyName = "stopWordListKind", NullValueHandling = NullValueHandling.Ignore)]
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        string StopWordListKind { get; set; }
+
+        /// <summary>
+        /// Gets or sets the custom stop words to add to the stop word list.
+        /// </summary>
+        [JsonProperty(PropertyName = "addStopWords", NullValueHandling = NullValueHandling.Ignore)]
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        Collection<string> AddStopWords { get; set; }
+
+        /// <summary>
+        /// Gets or sets the stop words to remove from the built-in stop word list.
+        /// </summary>
+        [JsonProperty(PropertyName = "removeStopWords", NullValueHandling = NullValueHandling.Ignore)]
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        Collection<string> RemoveStopWords { get; set; }
+
+        /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields.
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
@@ -69,9 +128,51 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public bool Equals(FullTextPath that)
+        public bool Equals(FullTextPath other)
         {
-            return this.Path.Equals(that.Path) && this.Language.Equals(that.Language);
+            if (other == null)
+            {
+                return false;
+            }
+
+            return string.Equals(this.Path, other.Path)
+                && string.Equals(this.Language, other.Language)
+                && string.Equals(this.Tokenizer, other.Tokenizer)
+                && string.Equals(this.StopWordListKind, other.StopWordListKind)
+                && FullTextPath.CollectionEquals(this.Filters, other.Filters)
+                && FullTextPath.CollectionEquals(this.AddStopWords, other.AddStopWords)
+                && FullTextPath.CollectionEquals(this.RemoveStopWords, other.RemoveStopWords);
+        }
+
+        /// <inheritdoc/>
+        public override bool Equals(object obj)
+        {
+            return this.Equals(obj as FullTextPath);
+        }
+
+        /// <inheritdoc/>
+        public override int GetHashCode()
+        {
+            int hashCode = this.Path?.GetHashCode() ?? 0;
+            hashCode = (hashCode * 397) ^ (this.Language?.GetHashCode() ?? 0);
+            hashCode = (hashCode * 397) ^ (this.Tokenizer?.GetHashCode() ?? 0);
+            hashCode = (hashCode * 397) ^ (this.StopWordListKind?.GetHashCode() ?? 0);
+            return hashCode;
+        }
+
+        private static bool CollectionEquals(Collection<string> left, Collection<string> right)
+        {
+            if (left == null && right == null)
+            {
+                return true;
+            }
+
+            if (left == null || right == null)
+            {
+                return false;
+            }
+
+            return left.SequenceEqual(right);
         }
     }
 }

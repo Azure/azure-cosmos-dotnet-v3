@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -62,13 +62,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                     {
                         Tuple.Create(new PartitionKeyRange{ Id = "0", MinInclusive = "", MaxExclusive = "FF"}, (ServiceIdentity)null)
                     },
-                string.Empty);
+                string.Empty, false);
             mockContainer.Setup(x => x.GetRoutingMapAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(routingMap));
             BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(mockContainer.Object, mockedContext.Object, 20, BatchAsyncContainerExecutorCache.DefaultMaxBulkRequestBodySizeInBytes);
             TransactionalBatchOperationResult result = await executor.AddAsync(itemBatchOperation, NoOpTrace.Singleton);
 
             Mock.Get(mockContainer.Object)
-                .Verify(x => x.GetCachedContainerPropertiesAsync(It.IsAny<bool>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+                .Verify(x => x.GetRoutingMapAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
             Mock.Get(mockedContext.Object)
                 .Verify(c => c.ProcessResourceOperationStreamAsync(
                     It.IsAny<string>(),
@@ -120,13 +120,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     Tuple.Create(new PartitionKeyRange{ Id = "0", MinInclusive = "", MaxExclusive = "FF"}, (ServiceIdentity)null)
                 },
-                string.Empty);
+                string.Empty, false);
             mockContainer.Setup(x => x.GetRoutingMapAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(routingMap));
             BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(mockContainer.Object, mockedContext.Object, 20, BatchAsyncContainerExecutorCache.DefaultMaxBulkRequestBodySizeInBytes);
             TransactionalBatchOperationResult result = await executor.AddAsync(itemBatchOperation, NoOpTrace.Singleton);
 
             Mock.Get(mockContainer.Object)
-                .Verify(x => x.GetCachedContainerPropertiesAsync(It.IsAny<bool>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+                .Verify(x => x.GetRoutingMapAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
             Mock.Get(mockedContext.Object)
                 .Verify(c => c.ProcessResourceOperationStreamAsync(
                     It.IsAny<string>(),
@@ -178,13 +178,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                     {
                         Tuple.Create(new PartitionKeyRange{ Id = "0", MinInclusive = "", MaxExclusive = "FF"}, (ServiceIdentity)null)
                     },
-                string.Empty);
+                string.Empty, false);
             mockContainer.Setup(x => x.GetRoutingMapAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(routingMap));
             BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(mockContainer.Object, mockedContext.Object, 20, BatchAsyncContainerExecutorCache.DefaultMaxBulkRequestBodySizeInBytes);
             TransactionalBatchOperationResult result = await executor.AddAsync(itemBatchOperation, NoOpTrace.Singleton);
 
             Mock.Get(mockContainer.Object)
-                .Verify(x => x.GetCachedContainerPropertiesAsync(It.IsAny<bool>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+                .Verify(x => x.GetRoutingMapAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
             Mock.Get(mockedContext.Object)
                 .Verify(c => c.ProcessResourceOperationStreamAsync(
                     It.IsAny<string>(),
@@ -235,13 +235,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                     {
                         Tuple.Create(new PartitionKeyRange{ Id = "0", MinInclusive = "", MaxExclusive = "FF"}, (ServiceIdentity)null)
                     },
-                string.Empty);
+                string.Empty, false);
             mockContainer.Setup(x => x.GetRoutingMapAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(routingMap));
             BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(mockContainer.Object, mockedContext.Object, 20, BatchAsyncContainerExecutorCache.DefaultMaxBulkRequestBodySizeInBytes);
             TransactionalBatchOperationResult result = await executor.AddAsync(itemBatchOperation, NoOpTrace.Singleton);
 
             Mock.Get(mockContainer.Object)
-                .Verify(x => x.GetCachedContainerPropertiesAsync(It.IsAny<bool>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Once);
+                .Verify(x => x.GetRoutingMapAsync(It.IsAny<CancellationToken>()), Times.Once);
             Mock.Get(mockedContext.Object)
                 .Verify(c => c.ProcessResourceOperationStreamAsync(
                     It.IsAny<string>(),
@@ -255,6 +255,36 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<ITrace>(),
                     It.IsAny<CancellationToken>()), Times.Once);
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task ValidateThroughputBucketRequestOptionThrows()
+        {
+            // A request-level ThroughputBucket cannot be honored for a bulk (point-item) operation,
+            // because such operations are merged into shared batches that carry a single set of headers.
+            // ValidateOperationAsync must reject it early (consistent with SessionToken / Triggers / etc.)
+            // rather than let it be silently dropped downstream.
+            Mock<CosmosClientContext> mockedContext = this.MockClientContext();
+            mockedContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
+            mockedContext.Setup(c => c.SerializerCore).Returns(MockCosmosUtil.Serializer);
+
+            Mock<ContainerInternal> mockContainer = new Mock<ContainerInternal>();
+            mockContainer.Setup(x => x.LinkUri).Returns("/dbs/db/colls/colls");
+
+            BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(
+                mockContainer.Object,
+                mockedContext.Object,
+                20,
+                BatchAsyncContainerExecutorCache.DefaultMaxBulkRequestBodySizeInBytes);
+
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => executor.ValidateOperationAsync(
+                CreateItem("test"),
+                new ItemRequestOptions() { ThroughputBucket = 1 }));
+
+            // A null request-level bucket must NOT throw (client-level bucket still applies to the batch request).
+            await executor.ValidateOperationAsync(
+                CreateItem("test"),
+                new ItemRequestOptions());
         }
 
         private static async Task<ResponseMessage> GenerateResponseAsync(
@@ -377,7 +407,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             public ClientWithSplitDetection()
             {
-                this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(MockBehavior.Strict, null, null, null, null, false);
+                this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(MockBehavior.Strict, null, null, null, null, false, false, null);
                 this.partitionKeyRangeCache.Setup(
                         m => m.TryGetOverlappingRangesAsync(
                             It.IsAny<string>(),

@@ -4,6 +4,8 @@
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
+    using System.Threading.Tasks;
+
     /// <summary>
     /// The DocumentServiceLeaseStoreManager defines a way to perform operations with <see cref="DocumentServiceLease"/>.
     /// </summary>
@@ -29,5 +31,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         /// for particular monitoring collection and lease container prefix.
         /// </summary>
         public abstract DocumentServiceLeaseStore LeaseStore { get; }
+
+        /// <summary>
+        /// Called when the processor is stopping. Implementations may override to perform
+        /// cleanup or state persistence. The default implementation (for Cosmos-backed
+        /// lease stores) is a no-op. Exceptions thrown from this method propagate to the
+        /// caller of <see cref="ChangeFeedProcessor.StopAsync"/>.
+        /// </summary>
+        public abstract Task ShutdownAsync();
     }
 }

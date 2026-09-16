@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
-    using System.Collections.Generic;
     using System.Globalization;
     using System.Linq.Expressions;
     using Microsoft.Azure.Cosmos;
@@ -61,6 +60,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                         case nameof(CosmosLinqExtensions.FullTextContainsAll):
                         case nameof(CosmosLinqExtensions.FullTextContainsAny):
                             return StringBuiltinFunctions.Visit(methodCallExpression, context);
+                        case nameof(CosmosLinqExtensions.ArrayContainsAll):
+                        case nameof(CosmosLinqExtensions.ArrayContainsAny):
                         case nameof(CosmosLinqExtensions.DocumentId):
                         case nameof(CosmosLinqExtensions.RRF):
                         case nameof(CosmosLinqExtensions.FullTextScore):
@@ -104,7 +105,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             // Array functions
-            if (declaringType.IsEnumerable())
+            // Note: In .NET 10+, array.Contains() may resolve to MemoryExtensions.Contains(ReadOnlySpan<T>, T)
+            // ReadOnlySpan<T> does not implement IEnumerable<T>, so we also check for MemoryExtensions
+            if (declaringType.IsEnumerable() || IsMemoryExtensionsMethod(methodCallExpression))
             {
                 return ArrayBuiltinFunctions.Visit(methodCallExpression, context);
             }
@@ -116,6 +119,15 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.MethodNotSupported, methodCallExpression.Method.Name));
+        }
+
+        /// <summary>
+        /// Checks if the method is MemoryExtensions.Contains (used by .NET 10+ for array.Contains()).
+        /// </summary>
+        private static bool IsMemoryExtensionsMethod(MethodCallExpression methodCallExpression)
+        {
+            return methodCallExpression.Method.DeclaringType == typeof(MemoryExtensions)
+                && methodCallExpression.Method.Name == "Contains";
         }
 
         protected abstract SqlScalarExpression VisitExplicit(MethodCallExpression methodCallExpression, TranslationContext context);

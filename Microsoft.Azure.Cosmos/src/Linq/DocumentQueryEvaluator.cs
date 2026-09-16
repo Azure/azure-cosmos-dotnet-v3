@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 LambdaExpression lambdaExpression = (LambdaExpression)paramExpression;
                 // Send the lambda expression through the partial evaluator.
-                return GetSqlQuerySpec(lambdaExpression.Compile().DynamicInvoke(null));
+                return GetSqlQuerySpec(lambdaExpression.Compile(preferInterpretation: true).DynamicInvoke(null));
             }
             else if (paramExpression.NodeType == ExpressionType.Constant)
             {
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             else
             {
                 LambdaExpression lamdaExpression = Expression.Lambda(paramExpression);
-                return GetSqlQuerySpec(lamdaExpression.Compile().DynamicInvoke(null));
+                return GetSqlQuerySpec(lamdaExpression.Compile(preferInterpretation: true).DynamicInvoke(null));
             }
         }
 

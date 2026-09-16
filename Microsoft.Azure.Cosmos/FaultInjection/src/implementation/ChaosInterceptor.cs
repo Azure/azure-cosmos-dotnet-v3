@@ -81,6 +81,21 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         public async Task<(bool, StoreResponse?)> OnRequestCallAsync(ChannelCallArguments args)
         {
             StoreResponse faultyResponse;
+            
+            // Check for custom server error rule first
+            FaultInjectionCustomServerErrorRule? customServerErrorRule = this.ruleStore?.FindRntbdCustomServerErrorRule(args);
+            if (customServerErrorRule != null)
+            {
+                this.applicationContext.AddRuleExecution(customServerErrorRule.GetId(), args.CommonArguments.ActivityId);
+
+                faultyResponse = customServerErrorRule.GetInjectedServerError(args);
+
+                DefaultTrace.TraceInformation("FaultInjection: FaultInjection Custom Rule {0} Inserted error for request {1}",
+                                    customServerErrorRule.GetId(), args.CommonArguments.ActivityId);
+
+                return (true, faultyResponse);
+            }
+
             FaultInjectionServerErrorRule? serverResponseErrorRule = this.ruleStore?.FindRntbdServerResponseErrorRule(args);
             if (serverResponseErrorRule != null)
             {
@@ -243,6 +258,25 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         public async Task<(bool, HttpResponseMessage?)> OnHttpRequestCallAsync(DocumentServiceRequest request, CancellationToken token)
         {
             HttpResponseMessage faultyResponse;
+            
+            // Check for custom server error rule first
+            FaultInjectionCustomServerErrorRule? customServerErrorRule = this.ruleStore?.FindHttpCustomServerErrorRule(request);
+            if (customServerErrorRule != null)
+            {
+                this.applicationContext.AddRuleExecution(
+                    customServerErrorRule.GetId(),
+                    new Guid(request.Headers.Get(ChaosInterceptor.FaultInjectionId)));
+
+                faultyResponse = customServerErrorRule.GetInjectedServerError(request);
+
+                DefaultTrace.TraceInformation(
+                    "FaultInjection: FaultInjection Custom Rule {0} Inserted error for request with faultInjection request id{1}",
+                    customServerErrorRule.GetId(),
+                    request.Headers.Get(ChaosInterceptor.FaultInjectionId));
+
+                return (true, faultyResponse);
+            }
+
             FaultInjectionServerErrorRule? serverResponseErrorRule = this.ruleStore?.FindHttpServerResponseErrorRule(request);
             if (serverResponseErrorRule != null)
             {

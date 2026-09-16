@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Reflection;
     using System.Threading.Tasks;
     using System.Threading;
     using Microsoft.Azure.Cosmos.Routing;
@@ -393,6 +394,227 @@ namespace Microsoft.Azure.Cosmos.Tests
                 pkRangeUriMappings[pkRange] = new Tuple<string, Uri, TransportAddressHealthState.HealthStatus>(collectionRid, originalFailedLocation, TransportAddressHealthState.HealthStatus.Connected);
             }
         }
+
+        /// <summary>
+        /// Verifies that DocumentClient.Dispose() disposes PartitionKeyRangeLocation
+        /// when the implementation is IDisposable (GlobalPartitionEndpointManagerCore)
+        /// and sets it to null.
+        /// Regression test for: https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5777
+        /// </summary>
+        [TestMethod]
+        [Timeout(10000)]
+        public void Dispose_DisposesPartitionKeyRangeLocationWhenIDisposable()
+        {
+            using MockDocumentClient documentClient = new MockDocumentClient();
+
+            Mock<IGlobalEndpointManager> mockEndpointManager = new Mock<IGlobalEndpointManager>(MockBehavior.Loose);
+            GlobalPartitionEndpointManagerCore manager = new GlobalPartitionEndpointManagerCore(
+                mockEndpointManager.Object,
+                isPartitionLevelFailoverEnabled: false,
+                isPartitionLevelCircuitBreakerEnabled: false);
+
+            PropertyInfo property = typeof(DocumentClient).GetProperty(
+                nameof(DocumentClient.PartitionKeyRangeLocation),
+                BindingFlags.Instance | BindingFlags.NonPublic);
+
+            Assert.IsNotNull(property, "Could not find PartitionKeyRangeLocation property on DocumentClient.");
+            property.SetValue(documentClient, manager);
+            Assert.IsNotNull(documentClient.PartitionKeyRangeLocation);
+            Assert.IsInstanceOfType(documentClient.PartitionKeyRangeLocation, typeof(IDisposable));
+
+            documentClient.Dispose();
+
+            Assert.IsNull(documentClient.PartitionKeyRangeLocation, "PartitionKeyRangeLocation should be null after Dispose.");
+
+            // Verify the manager was actually disposed: after disposal the cancellation token
+            // is cancelled, so re-initialization of the background loop is a no-op.
+            manager.InitializeAndStartCircuitBreakerFailbackBackgroundRefresh();
+        }
+
+        [TestMethod]
+        [Timeout(10000)]
+        public async Task Dispose_StopsBackgroundFailbackLoop()
+        {
+            Environment.SetEnvironmentVariable(ConfigurationManager.StalePartitionUnavailabilityRefreshIntervalInSeconds, "1");
+            Environment.SetEnvironmentVariable(ConfigurationManager.AllowedPartitionUnavailabilityDurationInSeconds, "1");
+            try
+            {
+                Mock<IGlobalEndpointManager> mockEndpointManager = new Mock<IGlobalEndpointManager>(MockBehavior.Strict);
+
+                List<Uri> readRegions = new();
+                for (int i = 1; i <= 3; i++)
+                {
+                    readRegions.Add(new Uri($"https://localhost:{i}/"));
+                }
+
+                mockEndpointManager.Setup(x => x.ReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
+                mockEndpointManager.Setup(x => x.AccountReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
+                mockEndpointManager.Setup(x => x.WriteEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
+                mockEndpointManager.Setup(x => x.CanSupportMultipleWriteLocations(ResourceType.Document, OperationType.Create)).Returns(true);
+
+                int callbackInvocationCount = 0;
+
+                GlobalPartitionEndpointManagerCore manager = new GlobalPartitionEndpointManagerCore(
+                    mockEndpointManager.Object,
+                    isPartitionLevelFailoverEnabled: false,
+                    isPartitionLevelCircuitBreakerEnabled: true);
+
+                manager.SetBackgroundConnectionPeriodicRefreshTask(
+                    async (pkRangeUriMappings) =>
+                    {
+                        Interlocked.Increment(ref callbackInvocationCount);
+                        await Task.CompletedTask;
+                    });
+
+                PartitionKeyRange partitionKeyRange = new PartitionKeyRange()
+                {
+                    Id = "0",
+                    MinInclusive = "",
+                    MaxExclusive = "FF"
+                };
+
+                Uri routeToLocation = new Uri("https://localhost:0/");
+
+                using DocumentServiceRequest createRequest = DocumentServiceRequest.Create(OperationType.Create, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
+                createRequest.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
+                createRequest.RequestContext.RouteToLocation(routeToLocation);
+                createRequest.RequestContext.ResolvedCollectionRid = "test-collection";
+
+                GlobalPartitionEndpointManagerUnitTests.SimulateConsecutiveFailures(manager, createRequest);
+
+                Assert.IsTrue(manager.TryMarkEndpointUnavailableForPartitionKeyRange(createRequest));
+
+                // Dispose should cancel the background loop.
+                manager.Dispose();
+
+                int countAfterDispose = callbackInvocationCount;
+
+                // Wait long enough for the background loop to have triggered if it were still running.
+                await Task.Delay(TimeSpan.FromSeconds(3));
+
+                // The callback should not be invoked after dispose.
+                Assert.AreEqual(countAfterDispose, callbackInvocationCount, "Background failback loop should not invoke callback after Dispose.");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.AllowedPartitionUnavailabilityDurationInSeconds, null);
+                Environment.SetEnvironmentVariable(ConfigurationManager.StalePartitionUnavailabilityRefreshIntervalInSeconds, null);
+            }
+        }
+
+        /// <summary>
+        /// Concurrent hub-region discovery on the same partition must converge to a single hub URI
+        /// without torn writes. N parallel callers all complete discovery with the same success URI;
+        /// the cache must end with exactly that URI as <c>Current</c> and no infinite loops.
+        /// </summary>
+#if !INTERNAL
+        [TestMethod]
+        [Timeout(15000)]
+        public void TryCacheHubRegionLocationForPartition_ParallelCallers_ConvergesToHub()
+        {
+            const int parallelism = 50;
+            Uri hubRegion = new Uri("https://hub-region/");
+            Uri staleRegion = new Uri("https://stale-region/");
+
+            Mock<IGlobalEndpointManager> mockEndpointManager = new Mock<IGlobalEndpointManager>(MockBehavior.Loose);
+            mockEndpointManager.Setup(x => x.ReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(new List<Uri> { hubRegion, staleRegion }));
+            mockEndpointManager.Setup(x => x.AccountReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(new List<Uri> { hubRegion, staleRegion }));
+            mockEndpointManager.Setup(x => x.WriteEndpoints).Returns(() => new ReadOnlyCollection<Uri>(new List<Uri> { hubRegion }));
+            mockEndpointManager.Setup(x => x.CanSupportMultipleWriteLocations(It.IsAny<ResourceType>(), It.IsAny<OperationType>())).Returns(false);
+
+            GlobalPartitionEndpointManagerCore manager = new GlobalPartitionEndpointManagerCore(
+                mockEndpointManager.Object,
+                isPartitionLevelFailoverEnabled: true,
+                isHubRegionProcessingEnabled: true);
+
+            PartitionKeyRange partitionKeyRange = new PartitionKeyRange { Id = "0", MinInclusive = "", MaxExclusive = "FF" };
+
+            Task[] callers = new Task[parallelism];
+            for (int i = 0; i < parallelism; i++)
+            {
+                callers[i] = Task.Run(() =>
+                {
+                    DocumentServiceRequest request = DocumentServiceRequest.Create(
+                        OperationType.Read, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
+                    request.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
+                    request.RequestContext.ResolvedCollectionRid = "rid";
+                    request.RequestContext.RouteToLocation(hubRegion);
+                    request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
+                    manager.TryCacheHubRegionLocationForPartition(request);
+                });
+            }
+            Task.WaitAll(callers);
+
+            DocumentServiceRequest probe = DocumentServiceRequest.Create(
+                OperationType.Read, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
+            probe.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
+            probe.RequestContext.ResolvedCollectionRid = "rid";
+            probe.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
+
+            bool hit = manager.TryAddPartitionLevelLocationOverride(probe, checkHubRegionOverrideInCache: true);
+            Assert.IsTrue(hit, "Cache must contain an entry for the partition after concurrent discovery.");
+            Assert.AreEqual(hubRegion, probe.RequestContext.LocationEndpointToRoute,
+                "Cache must converge to the hub URI under concurrent discovery on the same partition.");
+        }
+
+        /// <summary>
+        /// A late-arriving 403/3 from a stale region (no longer Current) must NOT overwrite a cache
+        /// entry already confirmed at the actual hub. Pins the <c>failedLocation != Current</c>
+        /// guard in <c>TryMoveNextLocation</c>; prevents future regressions where a "losing" 403/3
+        /// path poisons the cache.
+        /// </summary>
+        [TestMethod]
+        [Timeout(10000)]
+        public void TryMoveNextLocation_LateArrivingStale403_DoesNotOverwriteConfirmedHub()
+        {
+            Uri hubZ = new Uri("https://hub-z/");
+            Uri staleX = new Uri("https://stale-x/");
+            Uri otherY = new Uri("https://other-y/");
+
+            Mock<IGlobalEndpointManager> mockEndpointManager = new Mock<IGlobalEndpointManager>(MockBehavior.Loose);
+            mockEndpointManager.Setup(x => x.ReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(new List<Uri> { staleX, otherY, hubZ }));
+            mockEndpointManager.Setup(x => x.AccountReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(new List<Uri> { staleX, otherY, hubZ }));
+            mockEndpointManager.Setup(x => x.WriteEndpoints).Returns(() => new ReadOnlyCollection<Uri>(new List<Uri> { hubZ }));
+            mockEndpointManager.Setup(x => x.CanSupportMultipleWriteLocations(It.IsAny<ResourceType>(), It.IsAny<OperationType>())).Returns(false);
+
+            GlobalPartitionEndpointManagerCore manager = new GlobalPartitionEndpointManagerCore(
+                mockEndpointManager.Object,
+                isPartitionLevelFailoverEnabled: true,
+                isHubRegionProcessingEnabled: true);
+
+            PartitionKeyRange partitionKeyRange = new PartitionKeyRange { Id = "0", MinInclusive = "", MaxExclusive = "FF" };
+
+            // Confirm hub Z via success.
+            DocumentServiceRequest successRequest = DocumentServiceRequest.Create(
+                OperationType.Read, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
+            successRequest.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
+            successRequest.RequestContext.ResolvedCollectionRid = "rid";
+            successRequest.RequestContext.RouteToLocation(hubZ);
+            successRequest.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
+            manager.TryCacheHubRegionLocationForPartition(successRequest);
+
+            // Late-arriving 403/3 from stale X (a region that is NOT the current Current).
+            DocumentServiceRequest late403Request = DocumentServiceRequest.Create(
+                OperationType.Read, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
+            late403Request.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
+            late403Request.RequestContext.ResolvedCollectionRid = "rid";
+            late403Request.RequestContext.RouteToLocation(staleX);
+            late403Request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
+            manager.TryMarkEndpointUnavailableForPartitionKeyRange(late403Request);
+
+            // Probe: cache must still route to hub Z.
+            DocumentServiceRequest probe = DocumentServiceRequest.Create(
+                OperationType.Read, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
+            probe.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
+            probe.RequestContext.ResolvedCollectionRid = "rid";
+            probe.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
+
+            bool hit = manager.TryAddPartitionLevelLocationOverride(probe, checkHubRegionOverrideInCache: true);
+            Assert.IsTrue(hit, "Cache must remain present after a late stale 403/3.");
+            Assert.AreEqual(hubZ, probe.RequestContext.LocationEndpointToRoute,
+                "Late-arriving stale 403/3 from a region that is no longer Current must NOT overwrite the confirmed hub.");
+        }
+#endif
 
         private static void SimulateConsecutiveFailures(
             GlobalPartitionEndpointManagerCore failoverManager,

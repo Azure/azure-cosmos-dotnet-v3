@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
     using System;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
     /// <summary>
@@ -80,5 +81,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         public override DocumentServiceLeaseCheckpointer LeaseCheckpointer => this.leaseCheckpointer;
 
         public override DocumentServiceLeaseContainer LeaseContainer => this.leaseContainer;
+
+        public override Task ShutdownAsync()
+        {
+            return Task.CompletedTask;
+        }
     }
 }

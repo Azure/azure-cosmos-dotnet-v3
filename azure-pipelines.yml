@@ -4,9 +4,8 @@ trigger: none
 pr:
   branches:
     include:
-    - master
+    - main
     - releases/*
-    - msdata/direct*
   paths:
     include:
     - '*'
@@ -16,8 +15,8 @@ pr:
     - 'Microsoft.Azure.Cosmos/contracts/**/*'
 
 variables:
-  DebugArguments: ' --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal '
-  ReleaseArguments: ' --filter "TestCategory!=Quarantine" --verbosity normal '
+  DebugArguments: ' --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=Ignore" --verbosity normal '
+  ReleaseArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Ignore" --verbosity normal '
   VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
 
 
@@ -73,6 +72,16 @@ jobs:
     BuildConfiguration: Release
     Arguments: $(ReleaseArguments)
     VmImage:  $(VmImage)
+
+# FaultInjection compiles against Microsoft.Azure.Cosmos.Direct internals, so a
+# $(DirectVersion) bump can break it while the main SDK still builds. Keep this
+# gate on the PR pipeline; the live-account tests stay in the release pipeline.
+- template:  templates/build-fault-injection.yml
+  parameters:
+    BuildConfiguration: Release
+    Arguments: $(ReleaseArguments)
+    VmImage:  $(VmImage)
+    IncludeIntegration: false
     
 - template:  templates/build-thinclient.yml
   parameters:
@@ -80,5 +89,18 @@ jobs:
     Arguments: $(ReleaseArguments)
     VmImage: $(VmImage)
     ThinClientConnectionString: $(COSMOSDB_THINCLIENT)
+    ThinClientStrongConsistencyString: $(COSMOSDB_THINCLIENTSTRONG)
+    MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
     IncludePerformance: true
     IncludeCoverage: true
+
+# Live-account AAD (Microsoft Entra ID) integration tests (TestCategory=MultiRegionAad).
+# These run on every pipeline (PR + nightly), targeting the AAD-only live Cosmos DB account
+# dotnet-v3-multiregion via an Azure Resource Manager (Workload Identity Federation) service
+# connection whose app-registration identity (co-tenant with the account) holds the Cosmos DB
+# data-plane role. The job stays skipped (green) if 'AadServiceConnection' is cleared.
+- template:  templates/build-test-aad.yml
+  parameters:
+    BuildConfiguration: Release
+    AadAccountEndpoint: 'https://dotnet-v3-multiregion.documents.azure.com:443/'
+    AadServiceConnection: 'dotnet-v3-aad-ci'

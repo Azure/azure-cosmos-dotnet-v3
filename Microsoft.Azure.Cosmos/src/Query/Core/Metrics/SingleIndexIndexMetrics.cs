@@ -3,13 +3,12 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 {
-    using System;
     using Newtonsoft.Json;
 
     /// <summary>
     /// Query index utilization data for single indexes (sub-structure of the Index Metrics class) in the Azure Cosmos database service.
     /// </summary>
-    #if INTERNAL
+#if INTERNAL
 #pragma warning disable SA1600
 #pragma warning disable CS1591
     public

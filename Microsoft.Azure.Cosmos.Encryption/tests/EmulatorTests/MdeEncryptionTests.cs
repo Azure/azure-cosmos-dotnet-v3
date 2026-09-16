@@ -3918,8 +3918,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                        && this.Sensitive_DoubleFormat == doc.Sensitive_DoubleFormat
                        && this.Sensitive_IntArray == doc.Sensitive_IntArray
                        && this.Sensitive_ObjectArrayType == doc.Sensitive_ObjectArrayType
-                       && this.Sensitive_NestedObjectFormatL1 != doc.Sensitive_NestedObjectFormatL1
-                       && this.Sensitive_ArrayMultiTypes != doc.Sensitive_ArrayMultiTypes;
+                       && this.Sensitive_NestedObjectFormatL1 == doc.Sensitive_NestedObjectFormatL1
+                       && this.Sensitive_ArrayMultiTypes == doc.Sensitive_ArrayMultiTypes;
             }
 
             public bool EqualsExceptEncryptedProperty(object obj)

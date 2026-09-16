@@ -153,7 +153,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     && serverErrorResult?.GetServerErrorType() != FaultInjectionServerErrorType.DatabaseAccountNotFound
                     && serverErrorResult?.GetServerErrorType() != FaultInjectionServerErrorType.ServiceUnavailable
                     && serverErrorResult?.GetServerErrorType() != FaultInjectionServerErrorType.InternalServerError
-                    && serverErrorResult?.GetServerErrorType() != FaultInjectionServerErrorType.LeaseNotFound)
+                    && serverErrorResult?.GetServerErrorType() != FaultInjectionServerErrorType.LeaseNotFound
+                    && serverErrorResult?.GetServerErrorType() != FaultInjectionServerErrorType.Unauthorized
+                    && serverErrorResult?.GetServerErrorType() != FaultInjectionServerErrorType.AadTokenRevoked)
                 {
                     throw new ArgumentException($"{serverErrorResult?.GetServerErrorType()} is not supported for metadata requests.");
                 }

@@ -40,6 +40,11 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override string ToString()
         {
+            if (this.Value is Tracing.Trace rootConcreteTrace)
+            {
+                rootConcreteTrace.SetWalkingStateRecursively();
+            }
+            
             return this.ToJsonString();
         }
 
@@ -50,16 +55,31 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override IReadOnlyList<(string regionName, Uri uri)> GetContactedRegions()
         {
+            if (this.Value is Tracing.Trace rootConcreteTrace)
+            {
+                rootConcreteTrace.SetWalkingStateRecursively();
+            }
+            
             return this.Value?.Summary?.RegionsContacted;
         }
 
         public override ServerSideCumulativeMetrics GetQueryMetrics()
         {
+            if (this.Value is Tracing.Trace rootConcreteTrace)
+            {
+                rootConcreteTrace.SetWalkingStateRecursively();
+            }
+            
             return this.accumulatedMetrics.Value;
         }
 
         internal bool IsGoneExceptionHit()
         {
+            if (this.Value is Tracing.Trace rootConcreteTrace)
+            {
+                rootConcreteTrace.SetWalkingStateRecursively();
+            }
+            
             return this.WalkTraceTreeForGoneException(this.Value);
         }
 
@@ -138,5 +158,25 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
             return this.Value.Summary.GetFailedCount();
        }
+
+        /// <inheritdoc/>
+        public override bool HedgingStarted()
+        {
+            return this.Value?.Summary?.HedgingDetectionState?.HedgingStarted ?? false;
+        }
+
+        /// <inheritdoc/>
+        public override IReadOnlyList<RequestedRegion> GetRequestedRegions()
+        {
+            return this.Value?.Summary?.HedgingDetectionState?.GetRequestedRegionsSnapshot()
+                ?? Array.Empty<RequestedRegion>();
+        }
+
+        /// <inheritdoc/>
+        public override IReadOnlyList<string> GetRespondedRegions()
+        {
+            return this.Value?.Summary?.HedgingDetectionState?.GetRespondedRegionsSnapshot()
+                ?? Array.Empty<string>();
+        }
     }
 }

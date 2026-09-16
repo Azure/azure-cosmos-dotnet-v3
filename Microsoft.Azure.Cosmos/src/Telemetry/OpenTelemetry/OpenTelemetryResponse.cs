@@ -29,6 +29,21 @@ namespace Microsoft.Azure.Cosmos
         {
         }
 
+        internal OpenTelemetryResponse(DistributedTransactionResponse response)
+           : this(
+                  statusCode: (response ?? throw new ArgumentNullException(nameof(response))).StatusCode,
+                  requestCharge: OpenTelemetryResponse.GetHeader(response)?.RequestCharge,
+                  responseContentLength: null,
+                  diagnostics: response.Diagnostics,
+                  itemCount: response.Count.ToString(),
+                  requestMessage: null,
+                  subStatusCode: OpenTelemetryResponse.GetHeader(response)?.SubStatusCode,
+                  activityId: OpenTelemetryResponse.GetHeader(response)?.ActivityId,
+                  correlationId: OpenTelemetryResponse.GetHeader(response)?.CorrelatedActivityId,
+                  batchSize: response.Count)
+        {
+        }
+
         internal OpenTelemetryResponse(ResponseMessage responseMessage, Func<SqlQuerySpec> querySpecFunc = null)
            : this(
                   statusCode: responseMessage.StatusCode,
@@ -106,6 +121,19 @@ namespace Microsoft.Azure.Cosmos
             catch (NotImplementedException ex)
             {
                 DefaultTrace.TraceVerbose("Failed to get headers from ResponseMessage. Exception: {0}", ex.Message);
+                return null;
+            }
+        }
+
+        private static Headers GetHeader(DistributedTransactionResponse response)
+        {
+            try
+            {
+                return response?.Headers;
+            }
+            catch (NotImplementedException ex)
+            {
+                DefaultTrace.TraceVerbose("Failed to get headers from DistributedTransactionResponse. Exception: {0}", ex.Message);
                 return null;
             }
         }

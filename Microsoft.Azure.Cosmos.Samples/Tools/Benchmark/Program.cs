@@ -35,6 +35,8 @@ namespace CosmosBenchmark
             try
             {
                 BenchmarkConfig config = BenchmarkConfig.From(args);
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_THIN_CLIENT_ENABLED", config.IsThinClientEnabled.ToString());
+
                 await AddAzureInfoToRunSummary();
 
                 MeterProvider meterProvider = BuildMeterProvider(config);
@@ -71,6 +73,8 @@ namespace CosmosBenchmark
             }
             finally
             {
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_THIN_CLIENT_ENABLED", "False");
+
                 Utility.TeeTraceInformation($"{nameof(CosmosBenchmark)} completed successfully.");
                 if (Debugger.IsAttached)
                 {
@@ -144,7 +148,8 @@ namespace CosmosBenchmark
         private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config)
         {
             // V3 SDK client initialization
-            using (CosmosClient cosmosClient = config.CreateCosmosClient(config.Key))
+
+            using (CosmosClient cosmosClient = config.CreateCosmosClient())
             {
                 Microsoft.Azure.Cosmos.Database database = cosmosClient.GetDatabase(config.Database);
                 if (config.CleanupOnStart)
@@ -152,29 +157,48 @@ namespace CosmosBenchmark
                     await database.DeleteStreamAsync();
                 }
 
-                ContainerResponse containerResponse = await Program.CreatePartitionedContainerAsync(config, cosmosClient);
-                Container container = containerResponse;
+                Container container;
+                string partitionKeyPath;
+                int containerThroughput;
 
-                int? currentContainerThroughput = await container.ReadThroughputAsync();
-
-                if (!currentContainerThroughput.HasValue)
+                if (config.UseAadAuthentication)
                 {
-                    // Container throughput is not configured. It is shared database throughput
-                    ThroughputResponse throughputResponse = await database.ReadThroughputAsync(requestOptions: null);
-                    throw new InvalidOperationException($"Using database {config.Database} with {throughputResponse.Resource.Throughput} RU/s. " +
-                        $"Container {config.Container} must have a configured throughput.");
+                    // With an AAD data-plane RBAC token the SDK cannot perform control-plane
+                    // operations (create database/container or read provisioned throughput).
+                    // The database and container must already exist (create them ahead of time
+                    // via ARM / Bicep / the Azure portal / the Azure CLI).
+                    container = cosmosClient.GetContainer(config.Database, config.Container);
+                    partitionKeyPath = config.PartitionKeyPath;
+                    containerThroughput = config.Throughput;
+                }
+                else
+                {
+                    ContainerResponse containerResponse = await Program.CreatePartitionedContainerAsync(config, cosmosClient);
+                    container = containerResponse;
+                    partitionKeyPath = containerResponse.Resource.PartitionKeyPath;
+
+                    int? currentContainerThroughput = await container.ReadThroughputAsync();
+
+                    if (!currentContainerThroughput.HasValue)
+                    {
+                        // Container throughput is not configured. It is shared database throughput
+                        ThroughputResponse throughputResponse = await database.ReadThroughputAsync(requestOptions: null);
+                        throw new InvalidOperationException($"Using database {config.Database} with {throughputResponse.Resource.Throughput} RU/s. " +
+                            $"Container {config.Container} must have a configured throughput.");
+                    }
+
+                    containerThroughput = currentContainerThroughput.Value;
                 }
 
                 Container resultContainer = await GetResultContainer(config, cosmosClient);
 
                 BenchmarkProgress benchmarkProgressItem = await CreateBenchmarkProgressItem(resultContainer);
 
-                Utility.TeeTraceInformation($"Using container {config.Container} with {currentContainerThroughput} RU/s");
-                int taskCount = config.GetTaskCount(currentContainerThroughput.Value);
+                Utility.TeeTraceInformation($"Using container {config.Container} with {containerThroughput} RU/s");
+                int taskCount = config.GetTaskCount(containerThroughput);
 
                 Utility.TeePrint("Starting Inserts with {0} tasks", taskCount);
 
-                string partitionKeyPath = containerResponse.Resource.PartitionKeyPath;
                 int opsPerTask = config.ItemCount / taskCount;
 
                 // TBD: 2 clients SxS some overhead
@@ -219,8 +243,8 @@ namespace CosmosBenchmark
                     Utility.TeeTraceInformation("Publishing results");
                     runSummary.Diagnostics = CosmosDiagnosticsLogger.GetDiagnostics();
                     await this.PublishResults(
-                        config, 
-                        runSummary, 
+                        config,
+                        runSummary,
                         cosmosClient);
                 }
 
@@ -286,6 +310,13 @@ namespace CosmosBenchmark
             }
             else if (benchmarkTypeName.Name.EndsWith("V2BenchmarkOperation"))
             {
+                if (documentClient == null)
+                {
+                    throw new NotSupportedException(
+                        $"Workload '{config.WorkloadType}' uses the V2 SDK, which does not support AAD authentication. " +
+                        "Provide an account key (-k) to run V2 workloads.");
+                }
+
                 ci = benchmarkTypeName.GetConstructor(new Type[] { typeof(Microsoft.Azure.Documents.Client.DocumentClient), typeof(string), typeof(string), typeof(string), typeof(string) });
                 ctorArguments = new object[]
                     {
@@ -367,6 +398,14 @@ namespace CosmosBenchmark
         private static async Task<Container> GetResultContainer(BenchmarkConfig config, CosmosClient cosmosClient)
         {
             Database database = cosmosClient.GetDatabase(config.ResultsDatabase ?? config.Database);
+
+            if (config.UseAadAuthentication)
+            {
+                // Creating a container is a control-plane operation that a data-plane RBAC
+                // (AAD) token cannot perform. The results container must already exist.
+                return database.GetContainer(config.ResultsContainer);
+            }
+
             ContainerResponse containerResponse = await database
                 .CreateContainerIfNotExistsAsync(
                             id: config.ResultsContainer, 

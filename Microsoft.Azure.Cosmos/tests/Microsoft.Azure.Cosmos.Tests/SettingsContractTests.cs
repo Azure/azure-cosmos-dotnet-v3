@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
     using FullTextPath = Microsoft.Azure.Cosmos.FullTextPath;
+    using FullTextPolicy = Microsoft.Azure.Cosmos.FullTextPolicy;
 
     [TestClass]
     public class SettingsContractTests
@@ -127,6 +128,213 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(colId, deserializedPayload.Id);
             Assert.AreEqual(rid, deserializedPayload.ResourceId);
             Assert.AreEqual(etag, deserializedPayload.ETag);
+        }
+
+        [TestMethod]
+        public void SourceContainerMaterializedViewMetadataSerializationTest()
+        {
+            const string sourceContainerJson = @"{
+                ""id"": ""source"",
+                ""materializedViews"": [
+                    {
+                        ""id"": ""view"",
+                        ""_rid"": ""viewRid"",
+                        ""containerType"": ""GlobalSecondaryIndex"",
+                        ""requiredPathsInPreviousImage"": [""/tenantId"", ""/value""],
+                        ""futureViewProperty"": ""preserved""
+                    },
+                    {
+                        ""id"": ""minimalView"",
+                        ""_rid"": ""minimalViewRid"",
+                        ""futureMinimalViewProperty"": 17
+                    }
+                ],
+                ""futureContainerProperty"": {
+                    ""futureNestedProperty"": true
+                }
+            }";
+
+            ContainerProperties containerProperties =
+                SettingsContractTests.CosmosDeserialize<ContainerProperties>(sourceContainerJson);
+
+            Assert.IsNull(containerProperties.MaterializedViewDefinition);
+            Assert.AreEqual(2, containerProperties.MaterializedViews.Count);
+
+            MaterializedViewProperties completeView = containerProperties.MaterializedViews[0];
+            Assert.AreEqual("view", completeView.Id);
+            Assert.AreEqual("viewRid", completeView.ResourceId);
+            Assert.AreEqual("GlobalSecondaryIndex", completeView.ContainerType);
+            CollectionAssert.AreEqual(
+                new[] { "/tenantId", "/value" },
+                completeView.RequiredPathsInPreviousImage.ToArray());
+            Assert.AreEqual("preserved", (string)completeView.AdditionalProperties["futureViewProperty"]);
+
+            MaterializedViewProperties minimalView = containerProperties.MaterializedViews[1];
+            Assert.AreEqual("minimalView", minimalView.Id);
+            Assert.AreEqual("minimalViewRid", minimalView.ResourceId);
+            Assert.IsNull(minimalView.ContainerType);
+            Assert.IsNull(minimalView.RequiredPathsInPreviousImage);
+            Assert.AreEqual(17, (int)minimalView.AdditionalProperties["futureMinimalViewProperty"]);
+
+            containerProperties.Id = "updatedSource";
+            JObject roundTrip = JObject.Parse(SettingsContractTests.CosmosSerialize(containerProperties));
+            Assert.AreEqual("updatedSource", (string)roundTrip["id"]);
+            Assert.AreEqual("preserved", (string)roundTrip["materializedViews"][0]["futureViewProperty"]);
+            Assert.AreEqual(17, (int)roundTrip["materializedViews"][1]["futureMinimalViewProperty"]);
+            Assert.AreEqual(true, (bool)roundTrip["futureContainerProperty"]["futureNestedProperty"]);
+        }
+
+        [TestMethod]
+        public void SourceContainerMaterializedViewMetadataNullAndEmptySerializationTest()
+        {
+            ContainerProperties nullViews =
+                SettingsContractTests.CosmosDeserialize<ContainerProperties>(
+                    @"{""id"":""source"",""materializedViews"":null}");
+            Assert.IsNull(nullViews.MaterializedViews);
+            Assert.IsNull(nullViews.MaterializedViewDefinition);
+            Assert.IsNull(
+                JObject.Parse(SettingsContractTests.CosmosSerialize(nullViews))["materializedViews"]);
+
+            ContainerProperties emptyViews =
+                SettingsContractTests.CosmosDeserialize<ContainerProperties>(
+                    @"{""id"":""source"",""materializedViews"":[]}");
+            Assert.IsNotNull(emptyViews.MaterializedViews);
+            Assert.AreEqual(0, emptyViews.MaterializedViews.Count);
+            Assert.IsNull(emptyViews.MaterializedViewDefinition);
+
+            JToken serializedEmptyViews =
+                JObject.Parse(SettingsContractTests.CosmosSerialize(emptyViews))["materializedViews"];
+            Assert.AreEqual(JTokenType.Array, serializedEmptyViews.Type);
+            Assert.AreEqual(0, serializedEmptyViews.Count());
+        }
+
+        [TestMethod]
+        public void MaterializedViewContainerDefinitionSerializationTest()
+        {
+            const string materializedViewContainerJson = @"{
+                ""id"": ""view"",
+                ""materializedViewDefinition"": {
+                    ""sourceCollectionRid"": ""sourceRid"",
+                    ""sourceCollectionId"": ""source"",
+                    ""definition"": ""SELECT * FROM c"",
+                    ""apiSpecificDefinition"": ""{ \""pipeline\"": \""projection\"" }"",
+                    ""containerType"": ""GlobalSecondaryIndex"",
+                    ""status"": ""Active"",
+                    ""futureDefinitionProperty"": 42
+                },
+                ""futureContainerProperty"": {
+                    ""futureNestedProperty"": ""preserved""
+                }
+            }";
+
+            ContainerProperties containerProperties =
+                SettingsContractTests.CosmosDeserialize<ContainerProperties>(materializedViewContainerJson);
+            Cosmos.MaterializedViewDefinition definition = containerProperties.MaterializedViewDefinition;
+
+            Assert.IsNull(containerProperties.MaterializedViews);
+            Assert.IsNotNull(definition);
+            Assert.AreEqual("sourceRid", definition.SourceContainerResourceId);
+            Assert.AreEqual("source", definition.SourceContainerId);
+            Assert.AreEqual("SELECT * FROM c", definition.Definition);
+            Assert.AreEqual(@"{ ""pipeline"": ""projection"" }", definition.ApiSpecificDefinition);
+            Assert.AreEqual("GlobalSecondaryIndex", definition.ContainerType);
+            Assert.AreEqual("Active", definition.Status);
+            Assert.AreEqual(42, (int)definition.AdditionalProperties["futureDefinitionProperty"]);
+
+            containerProperties.Id = "updatedView";
+            JObject roundTrip = JObject.Parse(SettingsContractTests.CosmosSerialize(containerProperties));
+            Assert.AreEqual("updatedView", (string)roundTrip["id"]);
+            Assert.AreEqual(42, (int)roundTrip["materializedViewDefinition"]["futureDefinitionProperty"]);
+            Assert.AreEqual(
+                "preserved",
+                (string)roundTrip["futureContainerProperty"]["futureNestedProperty"]);
+        }
+
+        [TestMethod]
+        public void MaterializedViewContainerDefinitionOptionalMetadataIsAbsentTest()
+        {
+            const string materializedViewContainerJson = @"{
+                ""id"": ""view"",
+                ""materializedViewDefinition"": {
+                    ""sourceCollectionRid"": ""sourceRid"",
+                    ""sourceCollectionId"": ""source"",
+                    ""definition"": ""SELECT VALUE c.id FROM c"",
+                    ""status"": ""Creating""
+                }
+            }";
+
+            ContainerProperties containerProperties =
+                SettingsContractTests.CosmosDeserialize<ContainerProperties>(materializedViewContainerJson);
+            Cosmos.MaterializedViewDefinition definition = containerProperties.MaterializedViewDefinition;
+
+            Assert.IsNull(containerProperties.MaterializedViews);
+            Assert.IsNotNull(definition);
+            Assert.AreEqual("sourceRid", definition.SourceContainerResourceId);
+            Assert.AreEqual("source", definition.SourceContainerId);
+            Assert.AreEqual("SELECT VALUE c.id FROM c", definition.Definition);
+            Assert.AreEqual("Creating", definition.Status);
+            Assert.IsNull(definition.ApiSpecificDefinition);
+            Assert.IsNull(definition.ContainerType);
+        }
+
+        [TestMethod]
+        public void MaterializedViewMetadataIsAbsentByDefaultTest()
+        {
+            ContainerProperties containerProperties = new ContainerProperties("container", "/partitionKey");
+
+            Assert.IsNull(containerProperties.MaterializedViews);
+            Assert.IsNull(containerProperties.MaterializedViewDefinition);
+
+            JObject serialized = JObject.Parse(SettingsContractTests.CosmosSerialize(containerProperties));
+            Assert.IsNull(serialized["materializedViews"]);
+            Assert.IsNull(serialized["materializedViewDefinition"]);
+
+            Assert.IsFalse(typeof(Cosmos.MaterializedViewProperties).IsPublic);
+            Assert.IsFalse(typeof(Cosmos.MaterializedViewProperties).IsNestedPublic);
+            Assert.IsFalse(typeof(Cosmos.MaterializedViewDefinition).IsPublic);
+            Assert.IsFalse(typeof(Cosmos.MaterializedViewDefinition).IsNestedPublic);
+            SettingsContractTests.TypeAccessorGuard(
+                typeof(Cosmos.MaterializedViewProperties),
+                "Id",
+                "ResourceId",
+                "ContainerType",
+                "RequiredPathsInPreviousImage");
+            SettingsContractTests.TypeAccessorGuard(
+                typeof(Cosmos.MaterializedViewDefinition),
+                "SourceContainerResourceId",
+                "SourceContainerId",
+                "Definition",
+                "ApiSpecificDefinition",
+                "ContainerType",
+                "Status");
+            Assert.AreEqual(1, typeof(Cosmos.MaterializedViewProperties).GetConstructors().Length);
+            Assert.AreEqual(1, typeof(Cosmos.MaterializedViewDefinition).GetConstructors().Length);
+
+            string[] materializedViewPropertyNames =
+            {
+                "MaterializedViews",
+                "MaterializedViewDefinition",
+            };
+
+            foreach (string propertyName in materializedViewPropertyNames)
+            {
+                Assert.IsNull(
+                    typeof(ContainerProperties).GetProperty(
+                        propertyName,
+                        BindingFlags.Instance | BindingFlags.Public),
+                    $"{propertyName} must not be publicly accessible.");
+                Assert.IsNotNull(
+                    typeof(ContainerProperties).GetProperty(
+                        propertyName,
+                        BindingFlags.Instance | BindingFlags.NonPublic),
+                    $"{propertyName} must remain internally accessible.");
+
+                PropertyInfo internalProperty = typeof(ContainerProperties).GetProperty(
+                    propertyName,
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.IsTrue(internalProperty.GetMethod.IsAssembly);
+                Assert.IsTrue(internalProperty.SetMethod.IsAssembly);
+            }
         }
 
         [TestMethod]
@@ -340,7 +548,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ContainerPropertiesDeserializeWithAdditionalDataTest()
         {
-            string cosmosSerialized = "{\"indexingPolicy\":{\"automatic\":true,\"indexingMode\":\"Consistent\",\"additionalIndexPolicy\":\"indexpolicyvalue\",\"includedPaths\":[{\"path\":\"/included/path\",\"additionalIncludedPath\":\"includedPathValue\",\"indexes\":[]}],\"excludedPaths\":[{\"path\":\"/excluded/path\",\"additionalExcludedPath\":\"excludedPathValue\"}],\"compositeIndexes\":[[{\"path\":\"/composite/path\",\"additionalCompositeIndex\":\"compositeIndexValue\",\"order\":\"ascending\"}]],\"spatialIndexes\":[{\"path\":\"/spatial/path\",\"additionalSpatialIndexes\":\"spatialIndexValue\",\"types\":[]}],\"vectorIndexes\":[{\"path\":\"/vector1\",\"type\":\"flat\",\"additionalVectorIndex\":\"vectorIndexValue1\"},{\"path\":\"/vector2\",\"type\":\"quantizedFlat\",\"additionalVectorIndex\":\"vectorIndexValue2\"},{\"path\":\"/vector3\",\"type\":\"diskANN\"}],\"fullTextIndexes\":[{\"path\":\"/fullTextPath1\",\"additionalFullTextIndex\":\"fullTextIndexValue1\"},{\"path\":\"/fullTextPath2\",\"additionalFullTextIndex\":\"fullTextIndexValue2\"},{\"path\":\"/fullTextPath3\"}]},\"computedProperties\":[{\"name\":\"lowerName\",\"query\":\"SELECT VALUE LOWER(c.name) FROM c\"},{\"name\":\"estimatedTax\",\"query\":\"SELECT VALUE c.salary * 0.2 FROM c\"}],\"geospatialConfig\":{\"type\":\"Geography\",\"additionalGeospatialConfig\":\"geospatialConfigValue\"},\"uniqueKeyPolicy\":{\"additionalUniqueKeyPolicy\":\"uniqueKeyPolicyValue\",\"uniqueKeys\":[{\"paths\":[\"/unique/key/path/1\",\"/unique/key/path/2\"]}]},\"conflictResolutionPolicy\":{\"mode\":\"LastWriterWins\",\"additionalConflictResolutionPolicy\":\"conflictResolutionValue\"},\"clientEncryptionPolicy\":{\"includedPaths\":[{\"path\":\"/path\",\"clientEncryptionKeyId\":\"clientEncryptionKeyId\",\"encryptionType\":\"Randomized\",\"additionalIncludedPath\":\"includedPathValue\",\"encryptionAlgorithm\":\"AEAD_AES_256_CBC_HMAC_SHA256\"}],\"policyFormatVersion\":1,\"additionalEncryptionPolicy\":\"clientEncryptionpolicyValue\"},\"id\":\"2a9f501b-6948-4795-8fd1-797defb5c466\",\"partitionKey\":{\"paths\":[],\"kind\":\"Hash\"},\"vectorEmbeddingPolicy\":{\"vectorEmbeddings\":[{\"path\":\"/vector1\",\"dataType\":\"float32\",\"dimensions\":1200,\"distanceFunction\":\"cosine\"},{\"path\":\"/vector2\",\"dataType\":\"int8\",\"dimensions\":3,\"distanceFunction\":\"dotproduct\"},{\"path\":\"/vector3\",\"dataType\":\"uint8\",\"dimensions\":400,\"distanceFunction\":\"euclidean\"}]},\"fullTextPolicy\": {\"defaultLanguage\": \"en-US\",\"fullTextPaths\": [{\"path\": \"/fullTextPath1\",\"language\": \"en-US\"},{\"path\": \"/fullTextPath2\",\"language\": \"en-US\"},{\"path\": \"/fullTextPath3\",\"language\": \"en-US\"}]}}";
+            string cosmosSerialized = "{\"indexingPolicy\":{\"automatic\":true,\"indexingMode\":\"Consistent\",\"additionalIndexPolicy\":\"indexpolicyvalue\",\"includedPaths\":[{\"path\":\"/included/path\",\"additionalIncludedPath\":\"includedPathValue\",\"indexes\":[]}],\"excludedPaths\":[{\"path\":\"/excluded/path\",\"additionalExcludedPath\":\"excludedPathValue\"}],\"compositeIndexes\":[[{\"path\":\"/composite/path\",\"additionalCompositeIndex\":\"compositeIndexValue\",\"order\":\"ascending\"}]],\"spatialIndexes\":[{\"path\":\"/spatial/path\",\"additionalSpatialIndexes\":\"spatialIndexValue\",\"types\":[]}],\"vectorIndexes\":[{\"path\":\"/vector1\",\"type\":\"flat\",\"additionalVectorIndex\":\"vectorIndexValue1\"},{\"path\":\"/vector2\",\"type\":\"quantizedFlat\",\"additionalVectorIndex\":\"vectorIndexValue2\"},{\"path\":\"/vector3\",\"type\":\"diskANN\"}],\"fullTextIndexes\":[{\"path\":\"/fullTextPath1\",\"additionalFullTextIndex\":\"fullTextIndexValue1\"},{\"path\":\"/fullTextPath2\",\"additionalFullTextIndex\":\"fullTextIndexValue2\"},{\"path\":\"/fullTextPath3\"}]},\"computedProperties\":[{\"name\":\"lowerName\",\"query\":\"SELECT VALUE LOWER(c.name) FROM c\"},{\"name\":\"estimatedTax\",\"query\":\"SELECT VALUE c.salary * 0.2 FROM c\"}],\"geospatialConfig\":{\"type\":\"Geography\",\"additionalGeospatialConfig\":\"geospatialConfigValue\"},\"uniqueKeyPolicy\":{\"additionalUniqueKeyPolicy\":\"uniqueKeyPolicyValue\",\"uniqueKeys\":[{\"paths\":[\"/unique/key/path/1\",\"/unique/key/path/2\"]}]},\"conflictResolutionPolicy\":{\"mode\":\"LastWriterWins\",\"additionalConflictResolutionPolicy\":\"conflictResolutionValue\"},\"clientEncryptionPolicy\":{\"includedPaths\":[{\"path\":\"/path\",\"clientEncryptionKeyId\":\"clientEncryptionKeyId\",\"encryptionType\":\"Randomized\",\"additionalIncludedPath\":\"includedPathValue\",\"encryptionAlgorithm\":\"AEAD_AES_256_CBC_HMAC_SHA256\"}],\"policyFormatVersion\":1,\"additionalEncryptionPolicy\":\"clientEncryptionpolicyValue\"},\"id\":\"2a9f501b-6948-4795-8fd1-797defb5c466\",\"partitionKey\":{\"paths\":[],\"kind\":\"Hash\"},\"vectorEmbeddingPolicy\":{\"vectorEmbeddings\":[{\"path\":\"/vector1\",\"dataType\":\"float32\",\"dimensions\":1200,\"distanceFunction\":\"cosine\"},{\"path\":\"/vector2\",\"dataType\":\"int8\",\"dimensions\":3,\"distanceFunction\":\"dotproduct\"},{\"path\":\"/vector3\",\"dataType\":\"uint8\",\"dimensions\":400,\"distanceFunction\":\"euclidean\"},{\"path\":\"/vector4\",\"dataType\":\"float16\",\"dimensions\":3,\"distanceFunction\":\"dotproduct\"}]},\"fullTextPolicy\": {\"defaultLanguage\": \"en-US\",\"fullTextPaths\": [{\"path\": \"/fullTextPath1\",\"language\": \"en-US\"},{\"path\": \"/fullTextPath2\",\"language\": \"en-US\"},{\"path\": \"/fullTextPath3\",\"language\": \"en-US\"}]}}";
 
             JObject complexObject = JObject.FromObject(new { id = 1, name = new { fname = "fname", lname = "lname" } });
 
@@ -405,11 +613,27 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual("includedPathValue", containerProperties.ClientEncryptionPolicy.IncludedPaths.First().AdditionalProperties["additionalIncludedPath"]);
 
             Assert.IsNotNull(containerProperties.VectorEmbeddingPolicy);
-            Assert.AreEqual(3, containerProperties.VectorEmbeddingPolicy.Embeddings.Count);
+            Assert.AreEqual(4, containerProperties.VectorEmbeddingPolicy.Embeddings.Count);
+
             Assert.AreEqual("/vector1", containerProperties.VectorEmbeddingPolicy.Embeddings[0].Path);
             Assert.AreEqual(Cosmos.VectorDataType.Float32, containerProperties.VectorEmbeddingPolicy.Embeddings[0].DataType);
             Assert.AreEqual(1200, containerProperties.VectorEmbeddingPolicy.Embeddings[0].Dimensions);
             Assert.AreEqual(Cosmos.DistanceFunction.Cosine, containerProperties.VectorEmbeddingPolicy.Embeddings[0].DistanceFunction);
+
+            Assert.AreEqual("/vector2", containerProperties.VectorEmbeddingPolicy.Embeddings[1].Path);
+            Assert.AreEqual(Cosmos.VectorDataType.Int8, containerProperties.VectorEmbeddingPolicy.Embeddings[1].DataType);
+            Assert.AreEqual(3, containerProperties.VectorEmbeddingPolicy.Embeddings[1].Dimensions);
+            Assert.AreEqual(Cosmos.DistanceFunction.DotProduct, containerProperties.VectorEmbeddingPolicy.Embeddings[1].DistanceFunction);
+
+            Assert.AreEqual("/vector3", containerProperties.VectorEmbeddingPolicy.Embeddings[2].Path);
+            Assert.AreEqual(Cosmos.VectorDataType.Uint8, containerProperties.VectorEmbeddingPolicy.Embeddings[2].DataType);
+            Assert.AreEqual(400, containerProperties.VectorEmbeddingPolicy.Embeddings[2].Dimensions);
+            Assert.AreEqual(Cosmos.DistanceFunction.Euclidean, containerProperties.VectorEmbeddingPolicy.Embeddings[2].DistanceFunction);
+
+            Assert.AreEqual("/vector4", containerProperties.VectorEmbeddingPolicy.Embeddings[3].Path);
+            Assert.AreEqual(Cosmos.VectorDataType.Float16, containerProperties.VectorEmbeddingPolicy.Embeddings[3].DataType);
+            Assert.AreEqual(3, containerProperties.VectorEmbeddingPolicy.Embeddings[3].Dimensions);
+            Assert.AreEqual(Cosmos.DistanceFunction.DotProduct, containerProperties.VectorEmbeddingPolicy.Embeddings[3].DistanceFunction);
 
             Assert.IsNotNull(containerProperties.FullTextPolicy);
             Assert.AreEqual("en-US", containerProperties.FullTextPolicy.DefaultLanguage);
@@ -788,7 +1012,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "ClientEncryptionPolicy",
                 "PartitionKeyPaths",
                 "VectorEmbeddingPolicy",
-                "FullTextPolicy");
+                "FullTextPolicy",
+                "ChangeFeedPolicy");
 #endif
 
             // Two equivalent definitions 
@@ -1138,6 +1363,80 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void EmbeddingSourceRoundTripSerialization()
+        {
+            const string embeddingPolicyJson = "{\"vectorEmbeddings\":[{\"path\":\"/embedding\",\"dataType\":\"float32\",\"dimensions\":1536,\"distanceFunction\":\"cosine\",\"embeddingSource\":{\"sourcePaths\":[\"/journal_title\",\"/title\",\"/toc_abstract\",\"/abstract\",\"/full_text\"],\"deploymentName\":\"text-embedding-3-small\",\"modelName\":\"text-embedding-3-small\",\"endpoint\":\"https://embedding-south-central.cognitiveservices.azure.com/\",\"authType\":\"ApiKey\"}},{\"path\":\"/embedding2\",\"dataType\":\"float32\",\"dimensions\":1536,\"distanceFunction\":\"cosine\",\"embeddingSource\":{\"sourcePaths\":[\"/title\"],\"deploymentName\":\"text-embedding-3-small\",\"modelName\":\"text-embedding-3-small\",\"endpoint\":\"https://embedding-south-central.cognitiveservices.azure.com/\",\"authType\":\"Entra\"}}]}";
+
+            Cosmos.VectorEmbeddingPolicy policy = JsonConvert.DeserializeObject<Cosmos.VectorEmbeddingPolicy>(embeddingPolicyJson);
+            Cosmos.EmbeddingSource source = policy.Embeddings[0].EmbeddingSource;
+            CollectionAssert.AreEqual(
+                new[] { "/journal_title", "/title", "/toc_abstract", "/abstract", "/full_text" },
+                source.SourcePaths.ToArray());
+            Assert.AreEqual("text-embedding-3-small", source.DeploymentName);
+            Assert.AreEqual("text-embedding-3-small", source.ModelName);
+            Assert.AreEqual("https://embedding-south-central.cognitiveservices.azure.com/", source.Endpoint);
+            Assert.AreEqual(Cosmos.EmbeddingAuthType.ApiKey, source.AuthType);
+            Assert.AreEqual(Cosmos.EmbeddingAuthType.Entra, policy.Embeddings[1].EmbeddingSource.AuthType);
+
+            string roundTripped = JsonConvert.SerializeObject(policy);
+            Assert.IsTrue(
+                JToken.DeepEquals(JObject.Parse(embeddingPolicyJson), JObject.Parse(roundTripped)),
+                $"Round-tripped JSON differs.\nExpected: {embeddingPolicyJson}\nActual:   {roundTripped}");
+        }
+
+        [TestMethod]
+        public void EmbeddingSourceValueEquality()
+        {
+            static Cosmos.EmbeddingSource Build(string deployment, Cosmos.EmbeddingAuthType auth)
+            {
+                return new()
+                {
+                    SourcePaths = new Collection<string> { "/title", "/abstract" },
+                    DeploymentName = deployment,
+                    ModelName = "text-embedding-3-small",
+                    Endpoint = "https://embedding.example.com/",
+                    AuthType = auth,
+                };
+            }
+
+            Cosmos.EmbeddingSource a = Build("text-embedding-3-small", Cosmos.EmbeddingAuthType.ApiKey);
+            Cosmos.EmbeddingSource b = Build("text-embedding-3-small", Cosmos.EmbeddingAuthType.ApiKey);
+
+            Assert.AreNotSame(a, b);
+            Assert.IsTrue(a.Equals(b));
+            Assert.IsTrue(a.Equals((object)b));
+            Assert.AreEqual(a.GetHashCode(), b.GetHashCode());
+
+            Cosmos.EmbeddingSource differentAuth = Build("text-embedding-3-small", Cosmos.EmbeddingAuthType.Entra);
+            Assert.IsFalse(a.Equals(differentAuth));
+
+            Cosmos.EmbeddingSource reorderedPaths = Build("text-embedding-3-small", Cosmos.EmbeddingAuthType.ApiKey);
+            reorderedPaths.SourcePaths = new Collection<string> { "/abstract", "/title" };
+            Assert.IsFalse(a.Equals(reorderedPaths));
+
+            Assert.IsFalse(a.Equals((Cosmos.EmbeddingSource)null));
+            Assert.IsFalse(a.Equals((object)null));
+
+            Cosmos.Embedding e1 = new Cosmos.Embedding()
+            {
+                Path = "/embedding",
+                DataType = Cosmos.VectorDataType.Float32,
+                DistanceFunction = Cosmos.DistanceFunction.Cosine,
+                Dimensions = 1536,
+                EmbeddingSource = a,
+            };
+            Cosmos.Embedding e2 = new Cosmos.Embedding()
+            {
+                Path = "/embedding",
+                DataType = Cosmos.VectorDataType.Float32,
+                DistanceFunction = Cosmos.DistanceFunction.Cosine,
+                Dimensions = 1536,
+                EmbeddingSource = b,
+            };
+            Assert.IsTrue(e1.Equals(e2));
+        }
+
+        [TestMethod]
         public void FullTextPolicySerialization()
         {
             ContainerProperties containerSettings = new ContainerProperties("TestContainer", "/pk");
@@ -1188,6 +1487,353 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(fullTextPath1.Equals(fullTextPathsDeSerialized.Value<JArray>()[0].ToObject<Cosmos.FullTextPath>()));
             Assert.IsTrue(fullTextPath2.Equals(fullTextPathsDeSerialized.Value<JArray>()[1].ToObject<Cosmos.FullTextPath>()));
         }
+
+        [TestMethod]
+        [DataRow("en-US")]
+        [DataRow("fr-FR")]
+        [DataRow("de-DE")]
+        [DataRow("it-IT")]
+        [DataRow("pt-BR")]
+        [DataRow("pt-PT")]
+        [DataRow("es-ES")]
+        public void FullTextPolicySerializationWithAllSupportedLanguages(string language)
+        {
+            FullTextPolicy fullTextPolicy = new FullTextPolicy
+            {
+                DefaultLanguage = language,
+                FullTextPaths = new Collection<FullTextPath>
+                {
+                    new FullTextPath { Path = "/text1", Language = language },
+                    new FullTextPath { Path = "/text2", Language = "en-US" },
+                    new FullTextPath { Path = "/text3" } // No language specified, should use default
+                }
+            };
+
+            string serialized = CosmosSerialize(fullTextPolicy);
+            Assert.IsNotNull(serialized);
+            Assert.IsTrue(serialized.Contains($"\"defaultLanguage\":\"{language}\""),
+                $"Serialized JSON should contain defaultLanguage: {language}");
+
+            FullTextPolicy deserialized = CosmosDeserialize<FullTextPolicy>(serialized);
+            Assert.IsNotNull(deserialized);
+            Assert.AreEqual(language, deserialized.DefaultLanguage,
+                $"DefaultLanguage mismatch after deserialization for: {language}");
+            Assert.AreEqual(3, deserialized.FullTextPaths.Count);
+            Assert.AreEqual(language, deserialized.FullTextPaths[0].Language);
+            Assert.AreEqual("en-US", deserialized.FullTextPaths[1].Language);
+            Assert.IsNull(deserialized.FullTextPaths[2].Language);
+        }
+
+        [TestMethod]
+        [DataRow("en-US")]
+        [DataRow("fr-FR")]
+        [DataRow("de-DE")]
+        [DataRow("it-IT")]
+        [DataRow("ja-JP")]
+        [DataRow("pt-BR")]
+        [DataRow("pt-PT")]
+        [DataRow("es-ES")]
+        public void FullTextPathSerializationWithAllLanguages(string language)
+        {
+            FullTextPath fullTextPath = new FullTextPath
+            {
+                Path = "/testPath",
+                Language = language
+            };
+
+            string serialized = CosmosSerialize(fullTextPath);
+            Assert.IsNotNull(serialized);
+            Assert.IsTrue(serialized.Contains($"\"language\":\"{language}\""),
+                $"Serialized JSON should contain language: {language}");
+
+            FullTextPath deserialized = CosmosDeserialize<FullTextPath>(serialized);
+            Assert.IsNotNull(deserialized);
+            Assert.AreEqual("/testPath", deserialized.Path);
+            Assert.AreEqual(language, deserialized.Language,
+                $"Language mismatch after deserialization for: {language}");
+        }
+
+        [TestMethod]
+        public void FullTextPathEqualsAndGetHashCode()
+        {
+            FullTextPath path1 = new FullTextPath
+            {
+                Path = "/text",
+                Language = "en-US",
+            };
+
+            FullTextPath path2 = new FullTextPath
+            {
+                Path = "/text",
+                Language = "en-US",
+            };
+
+            // Equal paths.
+            Assert.IsTrue(path1.Equals(path2));
+            Assert.AreEqual(path1.GetHashCode(), path2.GetHashCode());
+
+            // Different language.
+            FullTextPath path3 = new FullTextPath { Path = "/text", Language = "fr-FR" };
+            Assert.IsFalse(path1.Equals(path3));
+
+            // Different path.
+            FullTextPath path4 = new FullTextPath { Path = "/other", Language = "en-US" };
+            Assert.IsFalse(path1.Equals(path4));
+
+            // Null comparison.
+            Assert.IsFalse(path1.Equals(null));
+        }
+
+#if PREVIEW
+        [TestMethod]
+        public void FullTextPathEqualsWithNewFields()
+        {
+            FullTextPath path1 = new FullTextPath
+            {
+                Path = "/text",
+                Language = "en-US",
+                Tokenizer = "word",
+                Filters = new Collection<string> { "stop", "lowercase" },
+                StopWordListKind = "basic",
+                AddStopWords = new Collection<string> { "azure" },
+                RemoveStopWords = new Collection<string> { "the" },
+            };
+
+            FullTextPath path2 = new FullTextPath
+            {
+                Path = "/text",
+                Language = "en-US",
+                Tokenizer = "word",
+                Filters = new Collection<string> { "stop", "lowercase" },
+                StopWordListKind = "basic",
+                AddStopWords = new Collection<string> { "azure" },
+                RemoveStopWords = new Collection<string> { "the" },
+            };
+
+            // Fully equal.
+            Assert.IsTrue(path1.Equals(path2));
+            Assert.AreEqual(path1.GetHashCode(), path2.GetHashCode());
+
+            // Different tokenizer.
+            FullTextPath pathDiffTokenizer = new FullTextPath
+            {
+                Path = "/text",
+                Language = "en-US",
+                Tokenizer = "ngram",
+            };
+            Assert.IsFalse(path1.Equals(pathDiffTokenizer));
+
+            // Different filters.
+            FullTextPath pathDiffFilters = new FullTextPath
+            {
+                Path = "/text",
+                Language = "en-US",
+                Tokenizer = "word",
+                Filters = new Collection<string> { "stop", "stem" },
+                StopWordListKind = "basic",
+                AddStopWords = new Collection<string> { "azure" },
+                RemoveStopWords = new Collection<string> { "the" },
+            };
+            Assert.IsFalse(path1.Equals(pathDiffFilters));
+
+            // Different stopWordListKind.
+            FullTextPath pathDiffStopWordKind = new FullTextPath
+            {
+                Path = "/text",
+                Language = "en-US",
+                Tokenizer = "word",
+                Filters = new Collection<string> { "stop", "lowercase" },
+                StopWordListKind = "extended",
+                AddStopWords = new Collection<string> { "azure" },
+                RemoveStopWords = new Collection<string> { "the" },
+            };
+            Assert.IsFalse(path1.Equals(pathDiffStopWordKind));
+
+            // Different addStopWords.
+            FullTextPath pathDiffAddStopWords = new FullTextPath
+            {
+                Path = "/text",
+                Language = "en-US",
+                Tokenizer = "word",
+                Filters = new Collection<string> { "stop", "lowercase" },
+                StopWordListKind = "basic",
+                AddStopWords = new Collection<string> { "cosmos" },
+                RemoveStopWords = new Collection<string> { "the" },
+            };
+            Assert.IsFalse(path1.Equals(pathDiffAddStopWords));
+
+            // Different removeStopWords.
+            FullTextPath pathDiffRemoveStopWords = new FullTextPath
+            {
+                Path = "/text",
+                Language = "en-US",
+                Tokenizer = "word",
+                Filters = new Collection<string> { "stop", "lowercase" },
+                StopWordListKind = "basic",
+                AddStopWords = new Collection<string> { "azure" },
+                RemoveStopWords = new Collection<string> { "am" },
+            };
+            Assert.IsFalse(path1.Equals(pathDiffRemoveStopWords));
+
+            // Null collections vs empty - one has null, other has values.
+            FullTextPath pathNullCollections = new FullTextPath
+            {
+                Path = "/text",
+                Language = "en-US",
+                Tokenizer = "word",
+                StopWordListKind = "basic",
+            };
+            Assert.IsFalse(path1.Equals(pathNullCollections));
+        }
+
+        [TestMethod]
+        public void FullTextPolicyStandardPackageSerialization()
+        {
+            FullTextPolicy policy = new FullTextPolicy
+            {
+                Package = "standard",
+                DefaultSpec = new FullTextDefaultSpec
+                {
+                    Language = "en-US",
+                    Tokenizer = "word",
+                    Filters = new Collection<string> { "stop", "lowercase", "stem" },
+                    StopWordListKind = "basic",
+                    AddStopWords = new Collection<string> { "powerbi", "azure" },
+                    RemoveStopWords = new Collection<string> { "am", "is" },
+                },
+                FullTextPaths = new Collection<FullTextPath>
+                {
+                    new FullTextPath { Path = "/description" },
+                    new FullTextPath
+                    {
+                        Path = "/title",
+                        Tokenizer = "word",
+                        Filters = new Collection<string> { "stop", "lowercase" },
+                    },
+                    new FullTextPath
+                    {
+                        Path = "/tags",
+                        Language = "en-US",
+                        StopWordListKind = "extended",
+                        AddStopWords = new Collection<string> { "cosmos" },
+                    },
+                },
+            };
+
+            string serialized = CosmosSerialize(policy);
+            Assert.IsNotNull(serialized);
+            Assert.IsTrue(serialized.Contains("\"package\":\"standard\""));
+            Assert.IsTrue(serialized.Contains("\"defaultSpec\""));
+            Assert.IsTrue(serialized.Contains("\"tokenizer\":\"word\""));
+            Assert.IsTrue(serialized.Contains("\"filters\""));
+            Assert.IsTrue(serialized.Contains("\"stopWordListKind\":\"basic\""));
+            Assert.IsTrue(serialized.Contains("\"addStopWords\""));
+            Assert.IsTrue(serialized.Contains("\"removeStopWords\""));
+
+            FullTextPolicy deserialized = CosmosDeserialize<FullTextPolicy>(serialized);
+            Assert.IsNotNull(deserialized);
+            Assert.AreEqual("standard", deserialized.Package);
+            Assert.IsNotNull(deserialized.DefaultSpec);
+            Assert.AreEqual("en-US", deserialized.DefaultSpec.Language);
+            Assert.AreEqual("word", deserialized.DefaultSpec.Tokenizer);
+            Assert.AreEqual(3, deserialized.DefaultSpec.Filters.Count);
+            Assert.AreEqual("basic", deserialized.DefaultSpec.StopWordListKind);
+            Assert.AreEqual(2, deserialized.DefaultSpec.AddStopWords.Count);
+            Assert.AreEqual(2, deserialized.DefaultSpec.RemoveStopWords.Count);
+
+            Assert.AreEqual(3, deserialized.FullTextPaths.Count);
+
+            Assert.AreEqual("/description", deserialized.FullTextPaths[0].Path);
+            Assert.IsNull(deserialized.FullTextPaths[0].Tokenizer);
+
+            Assert.AreEqual("/title", deserialized.FullTextPaths[1].Path);
+            Assert.AreEqual("word", deserialized.FullTextPaths[1].Tokenizer);
+            Assert.AreEqual(2, deserialized.FullTextPaths[1].Filters.Count);
+
+            Assert.AreEqual("/tags", deserialized.FullTextPaths[2].Path);
+            Assert.AreEqual("en-US", deserialized.FullTextPaths[2].Language);
+            Assert.AreEqual("extended", deserialized.FullTextPaths[2].StopWordListKind);
+            Assert.AreEqual(1, deserialized.FullTextPaths[2].AddStopWords.Count);
+        }
+
+        [TestMethod]
+        public void FullTextPolicyStandardPackageRoundTripFromJson()
+        {
+            string json = @"{
+                ""package"": ""standard"",
+                ""defaultSpec"": {
+                    ""language"": ""en-US"",
+                    ""tokenizer"": ""word"",
+                    ""filters"": [""stop"", ""lowercase"", ""stem""],
+                    ""stopWordListKind"": ""basic"",
+                    ""addStopWords"": [""powerbi""],
+                    ""removeStopWords"": [""am""]
+                },
+                ""fullTextPaths"": [
+                    { ""path"": ""/description"" },
+                    { ""path"": ""/title"", ""tokenizer"": ""word"", ""filters"": [""stop"", ""lowercase""] },
+                    { ""path"": ""/tags"", ""language"": ""fr-FR"", ""stopWordListKind"": ""extended"" }
+                ]
+            }";
+
+            FullTextPolicy deserialized = CosmosDeserialize<FullTextPolicy>(json);
+            Assert.AreEqual("standard", deserialized.Package);
+            Assert.AreEqual("en-US", deserialized.DefaultSpec.Language);
+            Assert.AreEqual("word", deserialized.DefaultSpec.Tokenizer);
+            Assert.AreEqual(3, deserialized.DefaultSpec.Filters.Count);
+            Assert.AreEqual("basic", deserialized.DefaultSpec.StopWordListKind);
+            Assert.AreEqual(1, deserialized.DefaultSpec.AddStopWords.Count);
+            Assert.AreEqual(1, deserialized.DefaultSpec.RemoveStopWords.Count);
+
+            Assert.AreEqual(3, deserialized.FullTextPaths.Count);
+            Assert.AreEqual("/description", deserialized.FullTextPaths[0].Path);
+
+            Assert.AreEqual("word", deserialized.FullTextPaths[1].Tokenizer);
+            Assert.AreEqual(2, deserialized.FullTextPaths[1].Filters.Count);
+
+            Assert.AreEqual("fr-FR", deserialized.FullTextPaths[2].Language);
+            Assert.AreEqual("extended", deserialized.FullTextPaths[2].StopWordListKind);
+
+            // Round-trip
+            string reserialized = CosmosSerialize(deserialized);
+            FullTextPolicy roundTripped = CosmosDeserialize<FullTextPolicy>(reserialized);
+            Assert.AreEqual("standard", roundTripped.Package);
+            Assert.AreEqual("word", roundTripped.DefaultSpec.Tokenizer);
+            Assert.AreEqual(3, roundTripped.FullTextPaths.Count);
+        }
+
+        [TestMethod]
+        public void FullTextPolicyLegacyPackageSerialization()
+        {
+            FullTextPolicy policy = new FullTextPolicy
+            {
+                Package = "legacy",
+                DefaultLanguage = "en-US",
+                FullTextPaths = new Collection<FullTextPath>
+                {
+                    new FullTextPath
+                    {
+                        Path = "/text",
+                        Language = "en-US",
+                        StopWordListKind = "extended",
+                        AddStopWords = new Collection<string> { "cosmos" },
+                        RemoveStopWords = new Collection<string> { "the" },
+                    },
+                },
+            };
+
+            string serialized = CosmosSerialize(policy);
+            Assert.IsTrue(serialized.Contains("\"package\":\"legacy\""));
+            Assert.IsTrue(serialized.Contains("\"stopWordListKind\":\"extended\""));
+
+            FullTextPolicy deserialized = CosmosDeserialize<FullTextPolicy>(serialized);
+            Assert.AreEqual("legacy", deserialized.Package);
+            Assert.AreEqual("en-US", deserialized.DefaultLanguage);
+            Assert.AreEqual("extended", deserialized.FullTextPaths[0].StopWordListKind);
+            Assert.AreEqual(1, deserialized.FullTextPaths[0].AddStopWords.Count);
+            Assert.AreEqual(1, deserialized.FullTextPaths[0].RemoveStopWords.Count);
+        }
+#endif
 
         private static T CosmosDeserialize<T>(string payload)
         {

@@ -27,7 +27,7 @@ It involves three stages
 #### Create CosmosDB account with Eventual/ConsistentPrefix/Session consistency
 
 #### Enabling/opt-in ability to upgrade consistency level 
-SDK version: MA [3.35.1](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/changelog.md#-3351---2023-06-27) or [minimum recommended version](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/changelog.md#-recommended-version)
+SDK version: MA [3.35.1](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/main/changelog.md#-3351---2023-06-27) or [minimum recommended version](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/main/changelog.md#-recommended-version)
 
 ```C#
 CosmosClientOptions clientOptions = new CosmosClientOptions();

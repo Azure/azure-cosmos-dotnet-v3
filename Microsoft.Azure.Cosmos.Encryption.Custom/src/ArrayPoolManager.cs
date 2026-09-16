@@ -12,8 +12,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     internal class ArrayPoolManager<T> : IDisposable
 #pragma warning restore SA1402 // File may only contain a single type
     {
-        private List<T[]> rentedBuffers = new ();
+        // Covers the typical decrypt rent count (~2 per encrypted property + structural)
+        // so the List<T[]> does not grow through 4/8/16/.../256 on every op.
+        private const int DefaultRentCapacity = 16;
+
+        private List<T[]> rentedBuffers;
+        private T[] scratch;
         private bool disposedValue;
+
+        public ArrayPoolManager()
+            : this(DefaultRentCapacity)
+        {
+        }
+
+        public ArrayPoolManager(int initialRentCapacity)
+        {
+            this.rentedBuffers = new List<T[]>(initialRentCapacity <= 0 ? DefaultRentCapacity : initialRentCapacity);
+        }
 
         public T[] Rent(int minimumLength)
         {
@@ -21,6 +36,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this.rentedBuffers.Add(buffer);
             return buffer;
         }
+
+        /// <summary>
+        /// Rents a single reusable scratch buffer for transient staging where the copied bytes are
+        /// fully consumed before the next call (e.g. copy-then-write). The same buffer is returned
+        /// across calls, growing only when a larger minimum length is requested, so a document with
+        /// many small transient copies (e.g. escaped pass-through strings/property names) does not
+        /// churn the shared pool with one rental per copy. The scratch buffer is returned (and
+        /// cleared) together with the rest on <see cref="Dispose()"/>.
+        /// </summary>
+        public T[] RentScratch(int minimumLength)
+        {
+            if (this.scratch == null || this.scratch.Length < minimumLength)
+            {
+                this.scratch = this.Rent(minimumLength);
+            }
+
+            return this.scratch;
+        }
+
+        internal int RentedBufferCount => this.rentedBuffers?.Count ?? 0;
 
         protected virtual void Dispose(bool disposing)
         {
@@ -34,6 +69,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     }
 
                     this.rentedBuffers = null;
+                    this.scratch = null;
                 }
 
                 this.disposedValue = true;
@@ -50,5 +86,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
     internal class ArrayPoolManager : ArrayPoolManager<byte>
     {
+        public ArrayPoolManager()
+        {
+        }
+
+        public ArrayPoolManager(int initialRentCapacity)
+            : base(initialRentCapacity)
+        {
+        }
     }
 }

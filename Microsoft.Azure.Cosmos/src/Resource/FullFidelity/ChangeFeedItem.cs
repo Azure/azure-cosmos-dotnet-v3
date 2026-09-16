@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
     /// PartitionKey partitionKey = new PartitionKey(@"learning");
     /// ChangeFeedStartFrom changeFeedStartFrom = ChangeFeedStartFrom.Now(FeedRange.FromPartitionKey(partitionKey));
     /// 
-    /// using (FeedIterator<ChangeFeedItem<ToDoActivity>> feedIterator = container.GetChangeFeedIterator<ChangeFeedItemChanges<ToDoActivity>>(
+    /// using (FeedIterator<ChangeFeedItem<ToDoActivity>> feedIterator = container.GetChangeFeedIterator<ChangeFeedItem<ToDoActivity>>(
     ///     changeFeedStartFrom: changeFeedStartFrom,
     ///     changeFeedMode: changeFeedMode))
     /// {
@@ -48,30 +48,30 @@ namespace Microsoft.Azure.Cosmos
     /// ]]>
     /// </code>
     /// </example>
-    /// <remarks><see cref="ChangeFeedItem{T}"/> is an optional helper class that uses Newtonsoft serialization libraries. Users are welcome to create their own custom helper class.</remarks>
-#if PREVIEW
-    public
-#else
-    internal
-#endif  
-        class ChangeFeedItem<T>
+    /// <remarks>
+    /// <see cref="ChangeFeedItem{T}"/> is an optional helper class that uses Newtonsoft serialization libraries. Users are welcome to create their own custom helper class.
+    /// Property setters are public to support deserialization by both Newtonsoft.Json and System.Text.Json,
+    /// as well as to allow users to construct instances for testing purposes.
+    /// </remarks>
+    public class ChangeFeedItem<T>
     {
         /// <summary>
-        /// The full fidelity change feed current item.
+        /// The current version of the item for all versions and deletes change feed mode.
+        /// It is always null for delete change feed operations.
         /// </summary>
         [JsonProperty(PropertyName = "current")]
         [JsonPropertyName("current")]
         public T Current { get; set; }
 
         /// <summary>
-        /// The full fidelity change feed metadata.
+        /// The item metadata for all versions and deletes change feed mode.
         /// </summary>
         [JsonProperty(PropertyName = "metadata", NullValueHandling = NullValueHandling.Ignore)]
         [JsonPropertyName("metadata")]
         public ChangeFeedMetadata Metadata { get; set; }
 
         /// <summary>
-        /// For delete operations, previous image is always going to be provided. The previous image on replace operations is not going to be exposed by default and requires account-level or container-level opt-in.
+        /// The previous version of the item for all versions and deletes change feed mode. The previous version on delete and replace operations is not exposed by default and requires container-level opt-in. Refer to https://aka.ms/cosmosdb-change-feed-deletes for more information.
         /// </summary>
         [JsonProperty(PropertyName = "previous", NullValueHandling = NullValueHandling.Ignore)]
         [JsonPropertyName("previous")]

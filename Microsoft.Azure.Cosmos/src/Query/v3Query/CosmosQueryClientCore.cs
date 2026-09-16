@@ -6,11 +6,9 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Globalization;
     using System.IO;
     using System.Linq;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -87,7 +85,8 @@ namespace Microsoft.Azure.Cosmos
                 effectivePartitionKeyRange,
                 containerProperties.PartitionKey,
                 containerProperties.VectorEmbeddingPolicy,
-                containerProperties.GeospatialConfig.GeospatialType);
+                containerProperties.GeospatialConfig.GeospatialType,
+                this.documentClient.UseLengthAwareRangeComparer);
         }
 
         public override async Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(
@@ -144,6 +143,7 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace,
             CancellationToken cancellationToken)
         {
+            requestOptions = (QueryRequestOptions)requestOptions.ShallowCopy();
             requestOptions.MaxItemCount = pageSize;
 
             ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
@@ -183,16 +183,24 @@ namespace Microsoft.Azure.Cosmos
             SqlQuerySpec sqlQuerySpec,
             PartitionKey? partitionKey,
             string supportedQueryFeatures,
+            IReadOnlyList<string> excludeRegions,
             Guid clientQueryCorrelationId,
             ITrace trace,
             CancellationToken cancellationToken)
         {
+            // Mirrors the real query's RequestOptions.ExcludeRegions handling (RequestMessage.cs) so that
+            // gateway query-plan requests honor caller-specified excluded regions the same way a regular
+            // Query request does, instead of always defaulting to the unfiltered/preferred read-endpoint list.
+            RequestOptions requestOptions = (excludeRegions != null && excludeRegions.Count > 0)
+                ? new RequestOptions { ExcludeRegions = excludeRegions.ToList() }
+                : null;
+
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
             using (ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
-                requestOptions: null,
+                requestOptions: requestOptions,
                 feedRange: partitionKey.HasValue ? new FeedRangePartitionKey(partitionKey.Value) : null,
                 cosmosContainerCore: this.cosmosContainerCore,
                 streamPayload: this.clientContext.SerializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, resourceType),
@@ -233,14 +241,16 @@ namespace Microsoft.Azure.Cosmos
             using (ITrace childTrace = trace.StartChild("Get Overlapping Feed Ranges", TraceComponent.Routing, Tracing.TraceLevel.Info))
             {
                 IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
-                List<Range<string>> ranges = await feedRangeInternal.GetEffectiveRangesAsync(routingMapProvider, collectionResourceId, partitionKeyDefinition, trace);
+                List<Range<string>> providedRanges = await feedRangeInternal.GetEffectiveRangesAsync(routingMapProvider, collectionResourceId, partitionKeyDefinition, trace);
 
-                return await this.GetTargetPartitionKeyRangesAsync(
+                List<PartitionKeyRange> ranges = await this.GetTargetPartitionKeyRangesAsync(
                     resourceLink,
                     collectionResourceId,
-                    ranges,
+                    providedRanges,
                     forceRefresh,
                     childTrace);
+
+                return QueryRangeUtils.LimitPartitionKeyRangesToProvidedRanges(ranges, providedRanges, this.clientContext.ClientOptions.UseLengthAwareRangeComparer);
             }
         }
 
@@ -290,7 +300,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool BypassQueryParsing()
         {
-            return CustomTypeExtensions.ByPassQueryParsing();
+            return QueryPlanRetriever.BypassQueryParsing();
         }
 
         public override void ClearSessionTokenCache(string collectionFullName)
@@ -304,7 +314,7 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage cosmosResponseMessage,
             ITrace trace)
         {
-            using (ITrace getCosmosElementResponse = trace.StartChild("Get Cosmos Element Response", TraceComponent.Json, Tracing.TraceLevel.Info))
+            using (ITrace getCosmosElementResponse = trace.StartChild(TraceDatumKeys.GetCosmosElementResponse, TraceComponent.Json, Tracing.TraceLevel.Info))
             {
                 using (cosmosResponseMessage)
                 {
@@ -315,7 +325,7 @@ namespace Microsoft.Azure.Cosmos
                                 cosmosResponseMessage.Headers.QueryMetricsText, 
                                 IndexUtilizationInfo.Empty, 
                                 ClientSideMetrics.Empty)));
-                        trace.AddDatum("Query Metrics", datum);
+                        trace.AddDatum(TraceDatumKeys.QueryMetrics, datum);
                     }
 
                     if (!cosmosResponseMessage.IsSuccessStatusCode)
@@ -371,16 +381,7 @@ namespace Microsoft.Azure.Cosmos
             //     }
             // }
 
-            QueryState queryState;
-            if (headers.ContinuationToken != null)
-            {
-                queryState = new QueryState(CosmosString.Create(headers.ContinuationToken));
-            }
-            else
-            {
-                queryState = default;
-            }
-
+            QueryState queryState = (headers.ContinuationToken != null) ? new QueryState(CosmosString.Create(headers.ContinuationToken)) : default;
             Dictionary<string, string> additionalHeaders = new Dictionary<string, string>();
             foreach (string key in headers)
             {

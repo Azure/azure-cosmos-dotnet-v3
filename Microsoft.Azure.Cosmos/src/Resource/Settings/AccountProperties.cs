@@ -7,8 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Text;
-    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -250,6 +248,23 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.EnablePerPartitionFailoverBehavior)]
         internal bool? EnablePartitionLevelFailover { get; set; }
 
+        /// <summary>
+        /// Gets the gateway-controlled override that disables cross-regional hedging for this account.
+        /// </summary>
+        /// <remarks>
+        /// When this flag is <see langword="true"/>, the SDK disables all hedging (both SDK-default PPAF
+        /// hedging and any explicit customer-configured <see cref="Cosmos.AvailabilityStrategy"/>) regardless
+        /// of any other configuration. When the flag is <see langword="false"/> or <see langword="null"/>
+        /// (absent from the Gateway response), existing hedging behavior is preserved. The flag is intended
+        /// as an operational escape hatch and is not exposed through any public SDK API surface.
+        /// </remarks>
+        // TODO: The JSON property name is hard-coded here because the corresponding constant has not yet been
+        // published in the Microsoft.Azure.Cosmos.Direct package referenced by this SDK. Once Direct is updated
+        // to expose this name on Constants.Properties, refactor this attribute to read from
+        // Constants.Properties.<NewConstant> for consistency with the other AccountProperties JSON bindings.
+        [JsonProperty(PropertyName = "disableCrossRegionalHedging")]
+        internal bool? DisableCrossRegionalHedging { get; set; }
+
         private IDictionary<string, object> QueryStringToDictConverter()
         {
             if (!string.IsNullOrEmpty(this.QueryEngineConfigurationString))
@@ -269,5 +284,7 @@ namespace Microsoft.Azure.Cosmos
         [JsonExtensionData]
         internal IDictionary<string, JToken> AdditionalProperties { get; set; }
 
+        [JsonProperty(PropertyName = Constants.Properties.EnableNRegionSynchronousCommit, NullValueHandling = NullValueHandling.Ignore)]
+        internal bool EnableNRegionSynchronousCommit { get; set; }
     }
 }

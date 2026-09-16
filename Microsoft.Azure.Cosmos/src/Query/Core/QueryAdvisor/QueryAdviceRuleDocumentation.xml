@@ -11,7 +11,7 @@
 </Rule>
 -->
 <QueryAdvice>
-    <UrlPrefix>https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/queryadvisor/</UrlPrefix>
+    <UrlPrefix>https://aka.ms/CosmosDB/QueryAdvisor/</UrlPrefix>
     <Rules>
         <Rule Id="QA1000" Name="PartialArrayContains">
             <Title>[CDATA["Query uses ARRAY_CONTAINS with partial matching."]]</Title>

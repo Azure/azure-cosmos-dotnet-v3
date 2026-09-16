@@ -1,0 +1,1 @@
+SELECT * FROM c WHERE c.id = "abc" AND c.age BETWEEN 18 AND 65 ORDER BY c.ts DESC

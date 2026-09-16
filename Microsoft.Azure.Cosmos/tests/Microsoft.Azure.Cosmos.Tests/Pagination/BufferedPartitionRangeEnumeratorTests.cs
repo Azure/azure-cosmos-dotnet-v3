@@ -95,7 +95,6 @@
             await implementation.TestMoveNextAndBufferPageAsync(aggressivePrefetch, exercisePrefetch);
         }
 
-        [TestClass]
         private sealed class Implementation : PartitionRangeEnumeratorTests<ReadFeedPage, ReadFeedState>
         {
             private const int Iterations = 1;
@@ -105,7 +104,6 @@
             {
             }
 
-            [TestMethod]
             public async Task TestSplitAsync(bool aggressivePrefetch, bool exercisePrefetch)
             {
                 int numItems = 100;
@@ -143,7 +141,6 @@
                 Assert.AreEqual(numItems, parentIdentifiers.Count + childIdentifiers.Count);
             }
 
-            [TestMethod]
             public async Task TestBufferPageAsync(bool aggressivePrefetch, bool exercisePrefetch)
             {
                 int numItems = 100;

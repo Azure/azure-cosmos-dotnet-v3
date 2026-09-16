@@ -87,14 +87,27 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             public override bool Equals(object obj)
             {
-                return obj is TestDoc doc
-                       && this.Id == doc.Id
+                if (!(obj is TestDoc doc))
+                {
+                    return false;
+                }
+
+                bool arraysEqual = (this.SensitiveArr == null && doc.SensitiveArr == null) ||
+                                   (this.SensitiveArr != null && doc.SensitiveArr != null &&
+                                    this.SensitiveArr.SequenceEqual(doc.SensitiveArr));
+
+                bool dictsEqual = (this.SensitiveDict == null && doc.SensitiveDict == null) ||
+                                  (this.SensitiveDict != null && doc.SensitiveDict != null &&
+                                   this.SensitiveDict.Count == doc.SensitiveDict.Count &&
+                                   this.SensitiveDict.All(kv => doc.SensitiveDict.ContainsKey(kv.Key) && doc.SensitiveDict[kv.Key] == kv.Value));
+
+                return this.Id == doc.Id
                        && this.PK == doc.PK
                        && this.NonSensitive == doc.NonSensitive
                        && this.SensitiveInt == doc.SensitiveInt
                        && this.SensitiveStr == doc.SensitiveStr
-                       && this.SensitiveArr?.Equals(doc.SensitiveArr) == true
-                       && this.SensitiveDict?.Equals(doc.SensitiveDict) == true;
+                       && arraysEqual
+                       && dictsEqual;
             }
 
             public override int GetHashCode()

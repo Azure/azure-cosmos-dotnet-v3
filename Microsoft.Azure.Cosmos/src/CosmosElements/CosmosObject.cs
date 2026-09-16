@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Runtime.CompilerServices;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
@@ -97,6 +98,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public bool Equals(CosmosObject cosmosObject)
         {
+            // Guard against stack exhaustion on deeply-nested input. Converts an
+            // otherwise-uncatchable StackOverflowException into a catchable
+            // InsufficientExecutionStackException.
+            RuntimeHelpers.EnsureSufficientExecutionStack();
+
             if (this.Count != cosmosObject.Count)
             {
                 return false;
@@ -124,6 +130,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public override int GetHashCode()
         {
+            // Guard against stack exhaustion on deeply-nested input. Converts an
+            // otherwise-uncatchable StackOverflowException into a catchable
+            // InsufficientExecutionStackException.
+            RuntimeHelpers.EnsureSufficientExecutionStack();
+
             uint hash = HashSeed;
             foreach (KeyValuePair<string, CosmosElement> kvp in this)
             {

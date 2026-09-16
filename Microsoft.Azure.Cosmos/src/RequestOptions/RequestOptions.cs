@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// List of regions to be excluded routing the request to.
         /// This can be used to route a request to a specific region by excluding all other regions.
-        /// If all regions are excluded, then the request will be routed to the primary/hub region.
+        /// If all regions are excluded, the SDK will route the request on a best-effort basis to maintain availability.
         /// </summary>
         public List<string> ExcludeRegions { get; set; }
 
@@ -89,12 +89,7 @@ namespace Microsoft.Azure.Cosmos
         /// reduce latency and increase availability. Currently there is one type of availability strategy, parallel request hedging.
         /// If there is a globally enabled availability strategy, setting one in the request options will override the global one.
         /// </summary>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        AvailabilityStrategy AvailabilityStrategy { get; set; }
+        public AvailabilityStrategy AvailabilityStrategy { get; set; }
 
         /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.
@@ -114,22 +109,27 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         internal virtual ConsistencyLevel? BaseConsistencyLevel { get; set; }
 
+        /// <summary>
+        /// Gets or sets the read consistency strategy for the request.
+        /// When set, this takes precedence over <see cref="BaseConsistencyLevel"/>.
+        /// </summary>
+        internal virtual ReadConsistencyStrategy? BaseReadConsistencyStrategy { get; set; }
+
         internal bool DisablePointOperationDiagnostics { get; set; }
 
         /// <summary>
         /// Gets or sets the throughput bucket for a request.
         /// </summary>
         /// <remarks>
-        /// If <see cref="CosmosClientOptions.AllowBulkExecution"/> is set to true on CosmosClient,
-        /// <see cref="RequestOptions.ThroughputBucket"/> cannot be set in RequestOptions.
+        /// When <see cref="CosmosClientOptions.AllowBulkExecution"/> is set to true on the CosmosClient,
+        /// a request-level <see cref="RequestOptions.ThroughputBucket"/> is not supported for item point
+        /// operations (create, read, replace, upsert, delete, patch), because those operations are merged
+        /// into shared batches that cannot carry a per-operation bucket; setting it on such operations
+        /// throws an <see cref="System.InvalidOperationException"/>. Set <see cref="CosmosClientOptions.ThroughputBucket"/>
+        /// at the client level instead. All other operation types honor the request-level value.
         /// </remarks>
         /// <seealso href="https://aka.ms/cosmsodb-bucketing"/>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        int? ThroughputBucket { get; set; }
+        public int? ThroughputBucket { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties

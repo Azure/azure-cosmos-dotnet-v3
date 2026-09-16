@@ -614,7 +614,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 {
                     SerializationSpec.Text(JsonWriteOptions.None),
                     SerializationSpec.Binary(JsonWriteOptions.None),
-                    SerializationSpec.Binary(JsonWriteOptions.EnableNumberArrays | JsonWriteOptions.EnableUInt64Values),
+                    SerializationSpec.Binary(JsonWriteOptions.EnableNumberArrays),
+                    SerializationSpec.Binary(JsonWriteOptions.EnableBase64Strings),
+                    SerializationSpec.Binary(JsonWriteOptions.EnableUInt64Values),
                     SerializationSpec.Binary(JsonWriteOptions.None, userStringEncoded: true),
                 };
 
@@ -703,7 +705,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                         Console.WriteLine($"        Execution Time    (ms): {roundTripResult.ExecutionTime,5}");
                         Console.WriteLine($"        Verification Time (ms): {roundTripResult.VerificationTime,5}");
 
-                        strictComparison = !expectRefStringDiffs || (outputSpec.SerializationFormat != JsonSerializationFormat.Binary);
+                        strictComparison = !(expectRefStringDiffs && outputSpec.IsBinary) &&
+                            !(inputSpec.IsBinary && !inputSpec.EnablesBase64Strings && outputSpec.IsBinary && outputSpec.EnablesBase64Strings);
                     }
                 }
             }

@@ -54,6 +54,16 @@ namespace Microsoft.Azure.Cosmos.Handler
         }
 
         /// <summary>
+        /// Returns true when <see cref="DefaultTrace"/> is configured to emit traces for the
+        /// supplied <paramref name="traceLevel"/>. Call sites use this to gate trace calls and
+        /// avoid eagerly serializing diagnostics when the trace sink is a no-op.
+        /// </summary>
+        public static bool ShouldTrace(System.Diagnostics.TraceEventType traceLevel)
+        {
+            return DefaultTrace.TraceSource.Switch.ShouldTrace(traceLevel);
+        }
+
+        /// <summary>
         /// Restart the monitor with client telemetry recorder if telemetry is enabled
         /// </summary>
         /// <param name="isClientTelemetryEnabled"></param>

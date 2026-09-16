@@ -35,9 +35,9 @@
                     return default;
                 }
 
-                if (typeof(Stream).IsAssignableFrom(typeof(T)))
+                if (typeof(Stream).IsAssignableFrom(typeof(T)) && stream is T typedStream)
                 {
-                    return (T)(object)stream;
+                    return typedStream;
                 }
 
                 return (T)this.systemTextJsonSerializer.Deserialize(stream, typeof(T), default);
@@ -47,7 +47,7 @@
         public override Stream ToStream<T>(T input)
         {
             MemoryStream streamPayload = new MemoryStream();
-            this.systemTextJsonSerializer.Serialize(streamPayload, input, input.GetType(), default);
+            this.systemTextJsonSerializer.Serialize(streamPayload, input, typeof(T), default);
             streamPayload.Position = 0;
             return streamPayload;
         }
