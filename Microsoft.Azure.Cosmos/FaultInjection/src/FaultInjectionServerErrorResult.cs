@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.FaultInjection
 {
     using System;
+    using System.Globalization;
 
     /// <summary>
     /// Fault Injection Server Error Result.
@@ -30,6 +31,14 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             bool suppressServiceRequests,
             double injectionRate = 1)
         {
+            // Negated so that double.NaN, which compares false against every bound, is rejected.
+            if (!(injectionRate > 0 && injectionRate <= 1))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(injectionRate),
+                    $"Argument '{nameof(injectionRate)}' must be within the range (0, 1].");
+            }
+
             this.serverErrorType = serverErrorType;
             this.times = times;
             this.delay = delay;
@@ -92,6 +101,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         public override string ToString()
         {
             return String.Format(
+                CultureInfo.InvariantCulture,
                 "FaultInjectionServerErrorResult{{ serverErrorType: {0}, times: {1}, delay: {2}, applicationPercentage: {3}}}",
                 this.serverErrorType,
                 this.times,
