@@ -16,8 +16,8 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="request">The request being sent to the service.</param>
         /// <remarks>
-        /// Currently only read operations will invoke this method. There is no scenario for write
-        /// operations to modify requests before retrying.
+        /// Invoked for read and write requests, including distributed transactions, so each dispatch
+        /// can update its routing state and retry headers.
         /// </remarks>
         void OnBeforeSendRequest(DocumentServiceRequest request);
 
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
         IDocumentClientRetryPolicy GetRequestPolicy();
 
         /// <summary>
-        /// Method that is called to get the retry policy for a distributed transaction request.
+        /// Gets a retry policy that shares a distributed write transaction's token-scoped dispatch history.
         /// </summary>
         IDocumentClientRetryPolicy GetRequestPolicy(
             DistributedTransactionDispatchTracker distributedTransactionDispatchTracker);

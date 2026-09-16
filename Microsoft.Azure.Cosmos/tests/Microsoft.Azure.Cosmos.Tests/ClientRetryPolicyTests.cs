@@ -3094,7 +3094,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 request,
                 bool.TrueString,
                 bool.TrueString,
-                "The coordinator in the new region has no record of this token and must be told the attempt already exists elsewhere.");
+                "The coordinator in the new region must be told this token was already dispatched to another region.");
 
             Assert.IsTrue(
                 (await retryPolicy.ShouldRetryAsync(
@@ -3140,7 +3140,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         [TestMethod]
-        [Description("A single-write-region account never changes write region, so every dispatch reports a retry but never a redirect, even though the retry policy's internal failover counter advances.")]
+        [Description("With one advertised regional write endpoint and unchanged topology, the first dispatch reports neither signal and subsequent retries report only IsRetry, even as the failover counter advances.")]
         public async Task OnBeforeSendRequest_SingleWriteRegionAccount_NeverReportsCrossRegionRedirect()
         {
             using GlobalEndpointManager endpointManager = this.Initialize(
@@ -3178,7 +3178,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 Assert.AreEqual(
                     firstRegion,
                     ClientRetryPolicyTests.ResolveDispatchRegion(endpointManager, request),
-                    $"A single-write-region account cannot route attempt {attempt} anywhere else.");
+                    $"With unchanged single-endpoint topology, attempt {attempt} must remain in the same region.");
 
                 ClientRetryPolicyTests.AssertDispatchHeaders(
                     request,
@@ -3374,7 +3374,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 request,
                 bool.TrueString,
                 bool.TrueString,
-                "Both regions can accept this commit, so the coordinator in the new one must be told the token already exists elsewhere.");
+                "The retry targets a different advertised write region, so it must report a cross-region replay.");
         }
 
         [TestMethod]

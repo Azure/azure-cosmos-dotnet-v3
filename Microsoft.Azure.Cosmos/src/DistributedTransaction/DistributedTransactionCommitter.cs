@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos
                     this.operations,
                     this.clientContext.SerializerCore,
                     cancellationToken,
-                    // Read transactions hold no commit state, so replaying one is harmless.
+                    // Read transactions have no commit state requiring write-dispatch signals.
                     tracksDispatch: this.operationType == OperationType.CommitDistributedTransaction);
 
                 return await this.ExecuteCommitWithRetryAsync(serverRequest, trace, cancellationToken);
