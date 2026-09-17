@@ -4,12 +4,19 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Collections.Generic;
     using System.IO;
 
     /// <summary>
     /// Represents a distributed transaction that supports write operations across multiple partitions and containers.
     /// </summary>
+    /// <remarks>
+    /// Add all operations before calling <see cref="DistributedTransaction.ExecuteTransactionAsync"/>.
+    /// The first execution attempt permanently consumes the transaction, even if it is empty or execution
+    /// fails or is cancelled. Subsequent attempts to add operations or execute the transaction
+    /// throw <see cref="InvalidOperationException"/>.
+    /// </remarks>
 #if PREVIEW
     public
 #else
@@ -32,6 +39,7 @@ namespace Microsoft.Azure.Cosmos
         /// container identifiers are extracted from <paramref name="container"/>; container-level behaviors
         /// such as custom serializers, client-side encryption policies, or decorator wrappers are not applied.
         /// </remarks>
+        /// <exception cref="InvalidOperationException">Thrown if <see cref="DistributedTransaction.ExecuteTransactionAsync"/> has already been called on this instance.</exception>
         public abstract DistributedWriteTransaction CreateItem<T>(
             Container container,
             PartitionKey partitionKey,
@@ -53,6 +61,7 @@ namespace Microsoft.Azure.Cosmos
         /// container identifiers are extracted from <paramref name="container"/>; container-level behaviors
         /// such as custom serializers, client-side encryption policies, or decorator wrappers are not applied.
         /// </remarks>
+        /// <exception cref="InvalidOperationException">Thrown if <see cref="DistributedTransaction.ExecuteTransactionAsync"/> has already been called on this instance.</exception>
         public abstract DistributedWriteTransaction CreateItemStream(
             Container container,
             PartitionKey partitionKey,
@@ -75,6 +84,7 @@ namespace Microsoft.Azure.Cosmos
         /// container identifiers are extracted from <paramref name="container"/>; container-level behaviors
         /// such as custom serializers, client-side encryption policies, or decorator wrappers are not applied.
         /// </remarks>
+        /// <exception cref="InvalidOperationException">Thrown if <see cref="DistributedTransaction.ExecuteTransactionAsync"/> has already been called on this instance.</exception>
         public abstract DistributedWriteTransaction ReplaceItem<T>(
             Container container,
             PartitionKey partitionKey,
@@ -96,6 +106,7 @@ namespace Microsoft.Azure.Cosmos
         /// container identifiers are extracted from <paramref name="container"/>; container-level behaviors
         /// such as custom serializers, client-side encryption policies, or decorator wrappers are not applied.
         /// </remarks>
+        /// <exception cref="InvalidOperationException">Thrown if <see cref="DistributedTransaction.ExecuteTransactionAsync"/> has already been called on this instance.</exception>
         public abstract DistributedWriteTransaction ReplaceItemStream(
             Container container,
             PartitionKey partitionKey,
@@ -116,6 +127,7 @@ namespace Microsoft.Azure.Cosmos
         /// container identifiers are extracted from <paramref name="container"/>; container-level behaviors
         /// such as custom serializers, client-side encryption policies, or decorator wrappers are not applied.
         /// </remarks>
+        /// <exception cref="InvalidOperationException">Thrown if <see cref="DistributedTransaction.ExecuteTransactionAsync"/> has already been called on this instance.</exception>
         public abstract DistributedWriteTransaction DeleteItem(
             Container container,
             PartitionKey partitionKey,
@@ -139,6 +151,7 @@ namespace Microsoft.Azure.Cosmos
         /// container identifiers are extracted from <paramref name="container"/>; container-level behaviors
         /// such as custom serializers, client-side encryption policies, or decorator wrappers are not applied.
         /// </remarks>
+        /// <exception cref="InvalidOperationException">Thrown if <see cref="DistributedTransaction.ExecuteTransactionAsync"/> has already been called on this instance.</exception>
         public abstract DistributedWriteTransaction PatchItem(
             Container container,
             PartitionKey partitionKey,
@@ -160,6 +173,7 @@ namespace Microsoft.Azure.Cosmos
         /// container identifiers are extracted from <paramref name="container"/>; container-level behaviors
         /// such as custom serializers, client-side encryption policies, or decorator wrappers are not applied.
         /// </remarks>
+        /// <exception cref="InvalidOperationException">Thrown if <see cref="DistributedTransaction.ExecuteTransactionAsync"/> has already been called on this instance.</exception>
         public abstract DistributedWriteTransaction PatchItemStream(
             Container container,
             PartitionKey partitionKey,
@@ -183,6 +197,7 @@ namespace Microsoft.Azure.Cosmos
         /// container identifiers are extracted from <paramref name="container"/>; container-level behaviors
         /// such as custom serializers, client-side encryption policies, or decorator wrappers are not applied.
         /// </remarks>
+        /// <exception cref="InvalidOperationException">Thrown if <see cref="DistributedTransaction.ExecuteTransactionAsync"/> has already been called on this instance.</exception>
         public abstract DistributedWriteTransaction UpsertItem<T>(
             Container container,
             PartitionKey partitionKey,
@@ -205,6 +220,7 @@ namespace Microsoft.Azure.Cosmos
         /// container identifiers are extracted from <paramref name="container"/>; container-level behaviors
         /// such as custom serializers, client-side encryption policies, or decorator wrappers are not applied.
         /// </remarks>
+        /// <exception cref="InvalidOperationException">Thrown if <see cref="DistributedTransaction.ExecuteTransactionAsync"/> has already been called on this instance.</exception>
         public abstract DistributedWriteTransaction UpsertItemStream(
             Container container,
             PartitionKey partitionKey,

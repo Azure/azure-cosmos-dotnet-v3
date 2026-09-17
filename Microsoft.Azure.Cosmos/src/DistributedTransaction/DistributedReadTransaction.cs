@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.IO;
 
     /// <summary>
@@ -13,6 +14,11 @@ namespace Microsoft.Azure.Cosmos
     /// Use <see cref="CosmosClient.CreateDistributedReadTransaction"/> to obtain an instance.
     /// Add read operations using <see cref="ReadItem"/> then call
     /// <see cref="DistributedTransaction.ExecuteTransactionAsync"/> to execute all reads atomically.
+    /// <para>
+    /// The first execution attempt permanently consumes the transaction, even if it is empty or execution
+    /// fails or is cancelled. Subsequent calls to <see cref="ReadItem"/> or
+    /// <see cref="DistributedTransaction.ExecuteTransactionAsync"/> throw <see cref="InvalidOperationException"/>.
+    /// </para>
     /// <para>
     /// <b>Isolation semantics:</b> All reads execute under snapshot isolation so the results reflect a
     /// consistent point in time across participating partitions.
@@ -42,6 +48,7 @@ namespace Microsoft.Azure.Cosmos
         /// container identifiers are extracted from <paramref name="container"/>; container-level behaviors
         /// such as custom serializers, client-side encryption policies, or decorator wrappers are not applied.
         /// </remarks>
+        /// <exception cref="InvalidOperationException">Thrown if <see cref="DistributedTransaction.ExecuteTransactionAsync"/> has already been called on this instance.</exception>
         public abstract DistributedReadTransaction ReadItem(
             Container container,
             PartitionKey partitionKey,

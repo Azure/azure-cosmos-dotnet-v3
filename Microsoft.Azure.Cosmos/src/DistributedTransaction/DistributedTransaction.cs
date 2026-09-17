@@ -33,13 +33,14 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <remarks>
         /// This method is single-use: it can only be called once per transaction instance.
+        /// The first call permanently consumes the instance and prevents adding any further operations,
+        /// even if the transaction is empty and the call fails validation.
         /// If the call fails for any reason (including transient network failures or cancellation),
-        /// the transaction instance is permanently consumed. To retry, construct a new transaction
-        /// with the same operations.
+        /// construct a new transaction with the same operations to retry.
         /// </remarks>
         /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A <see cref="Task{TResult}"/> containing a <see cref="DistributedTransactionResponse"/> that represents the result of the transaction.</returns>
-        /// <exception cref="InvalidOperationException">Thrown if <see cref="ExecuteTransactionAsync"/> has already been called on this instance.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if the transaction has no operations or <see cref="ExecuteTransactionAsync"/> has already been called on this instance.</exception>
         /// <exception cref="OperationCanceledException">Thrown if <paramref name="cancellationToken"/> is cancelled before or during the commit.</exception>
         public abstract Task<DistributedTransactionResponse> ExecuteTransactionAsync(CancellationToken cancellationToken = default);
     }

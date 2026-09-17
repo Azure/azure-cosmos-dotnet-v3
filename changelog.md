@@ -21,7 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Breaking Changes
 
+- Distributed Transactions (preview): Calling `ExecuteTransactionAsync` on an empty transaction now permanently consumes the instance. Construct a new transaction instead of adding operations to the empty transaction and executing it again.
+
 #### Bugs Fixed
+
+- Distributed Transactions (preview): Prevents operations from being added to read or write transactions once execution starts, avoiding incorrect failures when interpreting a successful response. Attempts to add operations after execution starts now throw `InvalidOperationException`.
 
 #### Other Changes
 
