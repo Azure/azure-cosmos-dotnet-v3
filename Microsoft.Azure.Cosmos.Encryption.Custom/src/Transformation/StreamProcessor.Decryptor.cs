@@ -250,6 +250,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 Utf8JsonReader reader = new (document, JsonReaderOptions);
                 int metadataStart = -1;
                 int metadataLength = 0;
+                bool metadataSeen = false;
+                bool invalidMetadata = false;
 
                 while (reader.Read())
                 {
@@ -275,6 +277,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                     if (reader.TokenType == JsonTokenType.StartObject)
                     {
+                        metadataSeen = true;
+                        invalidMetadata = false;
                         int objectStart = checked((int)reader.TokenStartIndex);
                         if (!reader.TrySkip())
                         {
@@ -286,6 +290,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     }
                     else
                     {
+                        metadataSeen = true;
+                        invalidMetadata = reader.TokenType != JsonTokenType.Null;
                         if (!reader.TrySkip())
                         {
                             return null;
@@ -296,15 +302,50 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     }
                 }
 
-                return metadataStart < 0
-                    ? null
-                    : JsonSerializer.Deserialize<EncryptionProperties>(
-                        document.Slice(metadataStart, metadataLength),
+                if (!metadataSeen)
+                {
+                    return null;
+                }
+
+                if (invalidMetadata)
+                {
+                    throw new InvalidOperationException(
+                        EncryptionMetadataClassifier.InvalidMetadataMessage);
+                }
+
+                if (metadataStart < 0)
+                {
+                    return null;
+                }
+
+                ReadOnlySpan<byte> metadata = document.Slice(metadataStart, metadataLength);
+                using JsonDocument metadataDocument = JsonDocument.Parse(
+                    new ReadOnlyMemory<byte>(buffer, metadataStart, metadataLength));
+                EncryptionMetadataDisposition disposition =
+                    EncryptionMetadataClassifier.Classify(metadataDocument.RootElement);
+                EncryptionMetadataClassifier.ThrowIfInvalid(disposition);
+                if (disposition == EncryptionMetadataDisposition.Plaintext)
+                {
+                    return null;
+                }
+
+                EncryptionProperties properties =
+                    JsonSerializer.Deserialize<EncryptionProperties>(
+                        metadata,
                         JsonSerializerOptions);
+                if (disposition != EncryptionMetadataDisposition.Mde)
+                {
+                    throw new NotSupportedException(
+                        $"JsonProcessor.Stream is not supported for encryption algorithm '{properties.EncryptionAlgorithm}'.");
+                }
+
+                return properties;
             }
-            catch (JsonException)
+            catch (JsonException exception)
             {
-                return null;
+                throw new InvalidOperationException(
+                    EncryptionMetadataClassifier.InvalidMetadataMessage,
+                    exception);
             }
         }
 

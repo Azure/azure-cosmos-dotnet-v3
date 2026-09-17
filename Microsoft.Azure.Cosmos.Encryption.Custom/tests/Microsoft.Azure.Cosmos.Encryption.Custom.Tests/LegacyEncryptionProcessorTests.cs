@@ -280,9 +280,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                     CancellationToken.None));
 
             Assert.IsTrue(tamperedStream.CanRead);
-            Assert.AreEqual(
-                jsonProcessor == JsonProcessor.Newtonsoft ? tamperedStream.Length : 0,
-                tamperedStream.Position);
+            Assert.AreEqual(0, tamperedStream.Position);
         }
 
         [TestMethod]
@@ -314,9 +312,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             Assert.AreSame(decryptorFailure, exception);
             Assert.IsTrue(encryptedStream.CanRead);
-            Assert.AreEqual(
-                jsonProcessor == JsonProcessor.Newtonsoft ? encryptedStream.Length : 0,
-                encryptedStream.Position);
+            Assert.AreEqual(0, encryptedStream.Position);
         }
 
         private static JObject CreateDocumentWithMissingAlgorithm(TestDoc testDoc, bool explicitNull)

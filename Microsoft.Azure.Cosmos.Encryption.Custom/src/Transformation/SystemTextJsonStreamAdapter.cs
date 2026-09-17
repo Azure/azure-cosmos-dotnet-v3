@@ -109,11 +109,6 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
         EncryptionProperties properties = await ReadMdeEncryptionPropertiesStreamingAsync(input, cancellationToken);
         if (properties == null)
         {
-            if (input.CanSeek)
-            {
-                input.Position = 0;
-            }
-
             return null;
         }
 
@@ -129,21 +124,27 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
     /// </summary>
     private static async Task<EncryptionProperties> ReadMdeEncryptionPropertiesStreamingAsync(Stream input, CancellationToken cancellationToken)
     {
-        EncryptionProperties encryptionProperties = await EncryptionPropertiesStreamReader.ReadAsync(input, PooledJsonSerializer.SerializerOptions, cancellationToken).ConfigureAwait(false);
+        EncryptionPropertiesStreamReader.EncryptionMetadataReadResult result =
+            await EncryptionPropertiesStreamReader.ReadResultAsync(
+                input,
+                PooledJsonSerializer.SerializerOptions,
+                cancellationToken).ConfigureAwait(false);
+        EncryptionMetadataClassifier.ThrowIfInvalid(result.Disposition);
 
-        if (encryptionProperties == null)
+        if (result.Disposition == EncryptionMetadataDisposition.None ||
+            result.Disposition == EncryptionMetadataDisposition.Plaintext)
         {
             return null;
         }
 
 #pragma warning disable CS0618
-        if (encryptionProperties.EncryptionAlgorithm != CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)
+        if (result.Disposition != EncryptionMetadataDisposition.Mde)
         {
-            throw new NotSupportedException($"JsonProcessor.Stream is not supported for encryption algorithm '{encryptionProperties.EncryptionAlgorithm}'. Only '{CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized}' is supported with the Stream processor.");
+            throw new NotSupportedException($"JsonProcessor.Stream is not supported for encryption algorithm '{result.Properties.EncryptionAlgorithm}'. Only '{CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized}' is supported with the Stream processor.");
         }
 #pragma warning restore CS0618
 
-        return encryptionProperties;
+        return result.Properties;
     }
 }
 #endif

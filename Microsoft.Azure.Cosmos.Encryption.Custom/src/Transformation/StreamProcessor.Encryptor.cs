@@ -28,6 +28,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         {
             List<string> pathsEncrypted = new (encryptionOptions.PathsToEncrypt is ICollection<string> c ? c.Count : 0);
 
+            if (replacePlaintextEncryptionMetadata)
+            {
+                EncryptionPropertiesStreamReader.EncryptionMetadataReadResult metadata =
+                    await EncryptionPropertiesStreamReader.ReadResultAsync(
+                        inputStream,
+                        JsonSerializerOptions,
+                        cancellationToken).ConfigureAwait(false);
+                if (metadata.Disposition != EncryptionMetadataDisposition.None &&
+                    metadata.Disposition != EncryptionMetadataDisposition.Plaintext)
+                {
+                    throw new InvalidOperationException(
+                        EncryptionMetadataClassifier.InvalidMetadataMessage);
+                }
+            }
+
             using ArrayPoolManager arrayPoolManager = new ();
 
             DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionOptions.DataEncryptionKeyId, encryptionOptions.EncryptionAlgorithm, cancellationToken);

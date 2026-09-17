@@ -113,7 +113,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [DataTestMethod]
         [DataRow(0)]
         [DataRow(1)]
-        [DataRow(2)]
         [DataRow(3)]
         [DataRow(4)]
         public async Task PlaintextSerializerFailure_DoesNotReportEncryptedContent(int metadataShape)

@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
@@ -111,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <remarks>
         /// If there isn't any data that needs to be decrypted, input stream will be returned without any modification.
         /// Else input stream will be disposed, and a new stream is returned.
-        /// In case of an exception, input stream won't be disposed, but position will be end of stream.
+        /// In case of an exception, input stream won't be disposed. Its position is reset when the inspected path can do so safely.
         /// </remarks>
         public static async Task<(Stream, DecryptionContext)> DecryptAsync(
             Stream input,
@@ -128,14 +127,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Debug.Assert(encryptor != null);
             Debug.Assert(diagnosticsContext != null);
 
-            input.Position = 0;
-            JObject itemJObj = RetrieveItem(input);
-            JObject encryptionPropertiesJObj = RetrieveEncryptionProperties(itemJObj);
+            JObject itemJObj = NewtonsoftJsonObjectReader.Read(input);
+            EncryptionMetadataDisposition disposition = ClassifyEncryptionMetadata(
+                itemJObj,
+                out JObject encryptionPropertiesJObj);
 
-            if (encryptionPropertiesJObj == null ||
-                IsEncryptionAlgorithmMissing(encryptionPropertiesJObj))
+            if (disposition == EncryptionMetadataDisposition.None ||
+                disposition == EncryptionMetadataDisposition.Plaintext)
             {
-                input.Position = 0;
                 return (input, null);
             }
 
@@ -208,7 +207,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
             catch (NotSupportedException)
             {
-                input.Position = 0;
+                if (!StreamPositionHelper.TryResetToStart(input))
+                {
+                    throw;
+                }
+
                 LegacyEncryptionDocumentStatus status = InspectLegacyEncryptionDocument(
                     input,
                     out JObject legacyDocument,
@@ -271,7 +274,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 (Stream stream, DecryptionContext context) = await MdeEncryptionProcessor.DecryptAsync(input, encryptor, jsonProcessor, diagnosticsContext, cancellationToken);
                 if (context == null)
                 {
-                    input.Position = 0;
+                    StreamPositionHelper.ResetToStart(input, nameof(input));
                     return (input, null);
                 }
 
@@ -283,7 +286,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 if (legacyFallback)
                 {
-                    input.Position = 0;
+                    if (!StreamPositionHelper.TryResetToStart(input))
+                    {
+                        throw;
+                    }
+
                     LegacyEncryptionDocumentStatus status = InspectLegacyEncryptionDocument(
                         input,
                         out JObject legacyDocument,
@@ -323,10 +330,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             Debug.Assert(encryptor != null);
 
-            JObject encryptionPropertiesJObj = RetrieveEncryptionProperties(document);
+            EncryptionMetadataDisposition disposition = ClassifyEncryptionMetadata(
+                document,
+                out JObject encryptionPropertiesJObj);
 
-            if (encryptionPropertiesJObj == null ||
-                IsEncryptionAlgorithmMissing(encryptionPropertiesJObj))
+            if (disposition == EncryptionMetadataDisposition.None ||
+                disposition == EncryptionMetadataDisposition.Plaintext)
             {
                 return (document, null);
             }
@@ -343,53 +352,29 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             document = null;
             encryptionProperties = null;
-            try
-            {
-                input.Position = 0;
-                JObject parsedDocument = RetrieveItem(input);
-                if (parsedDocument == null)
-                {
-                    return LegacyEncryptionDocumentStatus.NotLegacy;
-                }
+            JObject parsedDocument = NewtonsoftJsonObjectReader.Read(input);
+            EncryptionMetadataDisposition disposition = ClassifyEncryptionMetadata(
+                parsedDocument,
+                out JObject parsedEncryptionProperties);
 
-                JObject parsedEncryptionProperties = RetrieveEncryptionProperties(parsedDocument);
-                if (parsedEncryptionProperties == null)
-                {
-                    return LegacyEncryptionDocumentStatus.NotLegacy;
-                }
-
-                if (IsEncryptionAlgorithmMissing(parsedEncryptionProperties))
-                {
-                    return LegacyEncryptionDocumentStatus.MissingAlgorithm;
-                }
-
-                string encryptionAlgorithm = (string)parsedEncryptionProperties[Constants.EncryptionAlgorithm];
-#pragma warning disable CS0618 // Type or member is obsolete
-                if (!string.Equals(
-                    encryptionAlgorithm,
-                    CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-                    StringComparison.Ordinal))
-#pragma warning restore CS0618 // Type or member is obsolete
-                {
-                    return LegacyEncryptionDocumentStatus.NotLegacy;
-                }
-
-                document = parsedDocument;
-                encryptionProperties = parsedEncryptionProperties;
-                return LegacyEncryptionDocumentStatus.Legacy;
-            }
-            catch (JsonException)
+            if (disposition == EncryptionMetadataDisposition.None)
             {
                 return LegacyEncryptionDocumentStatus.NotLegacy;
             }
-            catch (NotSupportedException)
+
+            if (disposition == EncryptionMetadataDisposition.Plaintext)
+            {
+                return LegacyEncryptionDocumentStatus.MissingAlgorithm;
+            }
+
+            if (disposition != EncryptionMetadataDisposition.Legacy)
             {
                 return LegacyEncryptionDocumentStatus.NotLegacy;
             }
-            finally
-            {
-                input.Position = 0;
-            }
+
+            document = parsedDocument;
+            encryptionProperties = parsedEncryptionProperties;
+            return LegacyEncryptionDocumentStatus.Legacy;
         }
 
         private static async Task<(Stream, DecryptionContext)> DecryptParsedDocumentAsync(
@@ -438,13 +423,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            input.Position = 0;
-            JObject document = RetrieveItem(input);
-            JObject encryptionProperties = RetrieveEncryptionProperties(document);
-            if (encryptionProperties == null ||
-                IsEncryptionAlgorithmMissing(encryptionProperties))
+            JObject document = NewtonsoftJsonObjectReader.Read(input);
+            EncryptionMetadataDisposition disposition = ClassifyEncryptionMetadata(
+                document,
+                out JObject encryptionProperties);
+            if (disposition == EncryptionMetadataDisposition.None ||
+                disposition == EncryptionMetadataDisposition.Plaintext)
             {
-                input.Position = 0;
                 return null;
             }
 
@@ -461,7 +446,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <remarks>
         /// If there isn't any PathsToEncrypt, input stream will be returned without any modification.
         /// Else input stream will be disposed, and a new stream is returned.
-        /// In case of an exception, input stream won't be disposed, but position will be end of stream.
+        /// In case of an exception, input stream won't be disposed.
         /// </remarks>
         private static async Task<Stream> EncryptAsync(
             Stream input,
@@ -575,40 +560,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
         }
 
-        private static bool IsEncryptionAlgorithmMissing(JObject encryptionProperties)
+        private static EncryptionMetadataDisposition ClassifyEncryptionMetadata(
+            JObject document,
+            out JObject encryptionProperties)
         {
-            JProperty encryptionAlgorithm = encryptionProperties.Property(Constants.EncryptionAlgorithm);
-            return encryptionAlgorithm == null || encryptionAlgorithm.Value.Type == JTokenType.Null;
-        }
-
-        private static JObject RetrieveItem(
-            Stream input)
-        {
-            Debug.Assert(input != null);
-
-            using StreamReader sr = new (input, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
-            using JsonTextReader jsonTextReader = new (sr);
-            jsonTextReader.ArrayPool = JsonArrayPool.Instance;
-            JsonSerializerSettings jsonSerializerSettings = new ()
-            {
-                DateParseHandling = DateParseHandling.None,
-                MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
-            };
-
-            return Newtonsoft.Json.JsonSerializer.Create(jsonSerializerSettings).Deserialize<JObject>(jsonTextReader);
-        }
-
-        private static JObject RetrieveEncryptionProperties(
-            JObject item)
-        {
-            JProperty encryptionPropertiesJProp = item.Property(Constants.EncryptedInfo);
-            JObject encryptionPropertiesJObj = null;
-            if (encryptionPropertiesJProp?.Value != null && encryptionPropertiesJProp.Value.Type == JTokenType.Object)
-            {
-                encryptionPropertiesJObj = (JObject)encryptionPropertiesJProp.Value;
-            }
-
-            return encryptionPropertiesJObj;
+            JToken encryptionMetadata = document[Constants.EncryptedInfo];
+            EncryptionMetadataDisposition disposition = EncryptionMetadataClassifier.Classify(encryptionMetadata);
+            EncryptionMetadataClassifier.ThrowIfInvalid(disposition);
+            encryptionProperties = encryptionMetadata as JObject;
+            return disposition;
         }
 
         internal static Task<List<DecryptableItem>> ConvertResponseToDecryptableItemsAsync(
@@ -701,7 +661,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Encryptor encryptor,
             CosmosSerializer cosmosSerializer)
         {
-            JObject contentJObj = BaseSerializer.FromStream<JObject>(content);
+            JObject contentJObj = NewtonsoftJsonObjectReader.Read(content);
 
             if (contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is not JArray documents)
             {
@@ -739,7 +699,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
             catch (NotSupportedException)
             {
-                content.Position = 0;
+                if (!StreamPositionHelper.TryResetToStart(content))
+                {
+                    throw;
+                }
 
                 return await DecryptJsonArrayNewtonsoftAsync(content, encryptor, cancellationToken);
             }
@@ -748,7 +711,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         private static async Task<Stream> DecryptJsonArrayNewtonsoftAsync(Stream content, Encryptor encryptor, CancellationToken cancellationToken)
         {
-            JObject contentJObj = BaseSerializer.FromStream<JObject>(content);
+            JObject contentJObj = NewtonsoftJsonObjectReader.Read(content);
 
             if (contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is not JArray documents)
             {

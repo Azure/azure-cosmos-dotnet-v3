@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using Microsoft.Azure.Cosmos.Encryption.Custom.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
     using TestDoc = TestCommon.TestDoc;
 #if NET8_0_OR_GREATER
@@ -379,15 +380,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             Mock<CosmosSerializer> serializerMock = new ();
 
-            IOException thrown = await Assert.ThrowsExceptionAsync<IOException>(async () =>
-            {
-                _ = await EncryptionProcessor.ConvertResponseToDecryptableItemsAsync(
+            IOException thrown = await Assert.ThrowsExceptionAsync<IOException>(async () => _ = await EncryptionProcessor.ConvertResponseToDecryptableItemsAsync(
                     stream,
                     mockEncryptor.Object,
                     serializerMock.Object,
                     JsonProcessor.Stream,
-                    CancellationToken.None);
-            });
+                    CancellationToken.None));
 
             Assert.AreSame(sentinel, thrown, "Original exception identity must be preserved through the orphan-cleanup catch path.");
         }
@@ -462,11 +460,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
 #endif
 
-            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+            public override long Seek(long offset, SeekOrigin origin)
+            {
+                throw new NotSupportedException();
+            }
 
-            public override void SetLength(long value) => throw new NotSupportedException();
+            public override void SetLength(long value)
+            {
+                throw new NotSupportedException();
+            }
 
-            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+            public override void Write(byte[] buffer, int offset, int count)
+            {
+                throw new NotSupportedException();
+            }
         }
 
         private sealed class SingleSynchronousReadPassStream : MemoryStream
@@ -658,7 +665,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 TestDoc.Create(),
                 mockEncryptor.Object,
                 DekId);
-            ItemRequestOptions requestOptions = new ()
+            ItemRequestOptions requestOptions = new()
             {
                 Properties = new Dictionary<string, object>
                 {
@@ -686,8 +693,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 TestDoc.Create(),
                 mockEncryptor.Object,
                 DekId);
-            using MemoryStream output = new ();
-            ItemRequestOptions requestOptions = new ()
+            using MemoryStream output = new();
+            ItemRequestOptions requestOptions = new()
             {
                 Properties = new Dictionary<string, object>
                 {
@@ -719,7 +726,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 mockEncryptor.Object,
                 DekId);
             encrypted.Position = encrypted.Length;
-            using MemoryStream output = new ();
+            using MemoryStream output = new();
 
             DecryptionContext context = await EncryptionProcessor.DecryptAsync(
                 encrypted,
@@ -740,8 +747,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         public async Task Decrypt_MissingAlgorithmMetadata_ReturnsInputUnchanged(int jsonProcessorValue)
         {
             byte[] plaintext = System.Text.Encoding.UTF8.GetBytes(
-                "{\"id\":\"id1\",\"Sensitive\":\"plaintext\",\"_ei\":{\"_ef\":3,\"_en\":\"dekId\",\"_ep\":[\"/Sensitive\"]}}");
-            using MemoryStream input = new (plaintext);
+                "{\"id\":\"id1\",\"Sensitive\":\"plaintext\",\"_ei\":{\"_ef\":3,\"_en\":\"dekId\",\"_ep\":[]}}");
+            using MemoryStream input = new(plaintext);
 
             (Stream decrypted, DecryptionContext context) = await EncryptionProcessor.DecryptAsync(
                 input,
@@ -757,13 +764,292 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
+        [DynamicData(nameof(UnsafeMissingAlgorithmMetadataCases))]
+        public async Task Decrypt_UnsafeMissingAlgorithmMetadata_FailsBeforeCrypto(
+            string scenario,
+            string encryptionMetadata,
+            int jsonProcessorValue)
+        {
+            _ = scenario;
+            byte[] payload = System.Text.Encoding.UTF8.GetBytes(
+                "{\"id\":\"id1\",\"Sensitive\":\"plaintext\",\"_ei\":" + encryptionMetadata + "}");
+            using MemoryStream input = new(payload);
+            Mock<Encryptor> encryptor = new();
+
+            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                async () => await EncryptionProcessor.DecryptAsync(
+                    input,
+                    encryptor.Object,
+                    new CosmosDiagnosticsContext(),
+                    RequestOptionsOverrideHelper.Create((JsonProcessor)jsonProcessorValue),
+                    CancellationToken.None));
+
+            Assert.AreEqual("The document contains invalid encryption metadata.", exception.Message);
+            encryptor.Verify(
+                e => e.GetEncryptionKeyAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Never);
+            encryptor.Verify(
+                e => e.DecryptAsync(
+                    It.IsAny<byte[]>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Never);
+            Assert.IsTrue(input.CanRead);
+            Assert.AreEqual(0, input.Position);
+            CollectionAssert.AreEqual(payload, input.ToArray());
+        }
+
+        [TestMethod]
+        [DynamicData(nameof(SafePlaintextMetadataCases))]
+        public async Task Decrypt_SafePlaintextMetadata_ReturnsInputUnchanged(
+            string scenario,
+            string encryptionMetadata,
+            int jsonProcessorValue)
+        {
+            _ = scenario;
+            byte[] payload = System.Text.Encoding.UTF8.GetBytes(
+                "{\"id\":\"id1\",\"Sensitive\":\"plaintext\",\"_ei\":" + encryptionMetadata + "}");
+            using MemoryStream input = new(payload);
+            Mock<Encryptor> encryptor = new();
+
+            (Stream decrypted, DecryptionContext context) = await EncryptionProcessor.DecryptAsync(
+                input,
+                encryptor.Object,
+                new CosmosDiagnosticsContext(),
+                RequestOptionsOverrideHelper.Create((JsonProcessor)jsonProcessorValue),
+                CancellationToken.None);
+
+            Assert.AreSame(input, decrypted);
+            Assert.IsNull(context);
+            Assert.AreEqual(0, input.Position);
+            CollectionAssert.AreEqual(payload, input.ToArray());
+            encryptor.Verify(
+                e => e.GetEncryptionKeyAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Never);
+            encryptor.Verify(
+                e => e.DecryptAsync(
+                    It.IsAny<byte[]>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Never);
+        }
+
+        [TestMethod]
+        [DynamicData(nameof(RequiredObjectBodyCases))]
+        public async Task Decrypt_NonObjectBody_UsesStableContractException(
+            string scenario,
+            string json,
+            bool parserFailure,
+            int jsonProcessorValue)
+        {
+            _ = scenario;
+            byte[] payload = System.Text.Encoding.UTF8.GetBytes(json);
+            using MemoryStream input = new(payload);
+
+            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                async () => await EncryptionProcessor.DecryptAsync(
+                    input,
+                    mockEncryptor.Object,
+                    new CosmosDiagnosticsContext(),
+                    RequestOptionsOverrideHelper.Create((JsonProcessor)jsonProcessorValue),
+                    CancellationToken.None));
+
+            Assert.AreEqual("The response body must contain a JSON object.", exception.Message);
+            if (parserFailure)
+            {
+                Assert.IsTrue(
+                    exception.InnerException is JsonException ||
+                    exception.InnerException is System.Text.Json.JsonException);
+            }
+            Assert.IsTrue(input.CanRead);
+        }
+
+        [TestMethod]
+        [DynamicData(nameof(RequiredObjectBodyCases))]
+        public async Task DecryptProvidedOutput_NonObjectBody_PreservesOutput(
+            string scenario,
+            string json,
+            bool parserFailure,
+            int jsonProcessorValue)
+        {
+            _ = scenario;
+            byte[] originalOutput = { 1, 2, 3 };
+            using MemoryStream input = new(System.Text.Encoding.UTF8.GetBytes(json));
+            using MemoryStream output = new(originalOutput.ToArray());
+            output.Position = 1;
+
+            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                async () => await EncryptionProcessor.DecryptAsync(
+                    input,
+                    output,
+                    mockEncryptor.Object,
+                    new CosmosDiagnosticsContext(),
+                    RequestOptionsOverrideHelper.Create((JsonProcessor)jsonProcessorValue),
+                    CancellationToken.None));
+
+            Assert.AreEqual("The response body must contain a JSON object.", exception.Message);
+            if (parserFailure)
+            {
+                Assert.IsTrue(
+                    exception.InnerException is JsonException ||
+                    exception.InnerException is System.Text.Json.JsonException);
+            }
+            Assert.AreEqual(1, output.Position);
+            CollectionAssert.AreEqual(originalOutput, output.ToArray());
+            Assert.IsTrue(input.CanRead);
+        }
+
+        [TestMethod]
+        [DynamicData(nameof(SupportedJsonProcessors))]
+        public async Task Decrypt_ValidObjectWithoutMetadata_PreservesInput(int jsonProcessorValue)
+        {
+            byte[] payload = System.Text.Encoding.UTF8.GetBytes("{\"id\":\"id1\",\"value\":42}");
+            using MemoryStream input = new(payload);
+
+            (Stream result, DecryptionContext context) = await EncryptionProcessor.DecryptAsync(
+                input,
+                mockEncryptor.Object,
+                new CosmosDiagnosticsContext(),
+                RequestOptionsOverrideHelper.Create((JsonProcessor)jsonProcessorValue),
+                CancellationToken.None);
+
+            Assert.AreSame(input, result);
+            Assert.IsNull(context);
+            Assert.AreEqual(0, result.Position);
+            CollectionAssert.AreEqual(payload, input.ToArray());
+        }
+
+#if NET8_0_OR_GREATER
+        [TestMethod]
+        public async Task Decrypt_StreamFallback_ParseExceptionSurvivesResetFailure()
+        {
+            byte[] legacyProbe = System.Text.Encoding.UTF8.GetBytes(
+                "{\"_ei\":{\"_ef\":2,\"_ea\":\"AEAes256CbcHmacSha256Randomized\",\"_en\":\"dek\",\"_ed\":\"AA==\",\"_ep\":null}}");
+            byte[] malformedFallback = System.Text.Encoding.UTF8.GetBytes("{\"_ei\":");
+            IOException resetFailure = new ("simulated reset failure");
+            using AdversarialReadStream input = new (legacyProbe, malformedFallback, resetFailure);
+
+            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                async () => await EncryptionProcessor.DecryptAsync(
+                    input,
+                    mockEncryptor.Object,
+                    JsonProcessor.Stream,
+                    legacyFallback: true,
+                    new CosmosDiagnosticsContext(),
+                    CancellationToken.None));
+
+            Assert.AreEqual("The response body must contain a JSON object.", exception.Message);
+            Assert.IsInstanceOfType(exception.InnerException, typeof(JsonException));
+            Assert.AreNotSame(resetFailure, exception);
+            Assert.IsTrue(input.CanRead);
+        }
+#endif
+
+        [TestMethod]
+        [DynamicData(nameof(UnsafeTypedWriteMetadataCases))]
+        public async Task Encrypt_TypedWriteUnsafeMetadata_FailsBeforeMutationOrCrypto(
+            string scenario,
+            string encryptionMetadata,
+            int jsonProcessorValue)
+        {
+            _ = scenario;
+            byte[] payload = System.Text.Encoding.UTF8.GetBytes(
+                "{\"id\":\"id1\",\"_ei\":" + encryptionMetadata + ",\"Sensitive\":\"plaintext\"}");
+            using MemoryStream input = new(payload);
+            Mock<Encryptor> encryptor = new();
+            EncryptionItemRequestOptions requestOptions = RequestOptionsOverrideHelper.Create(
+                new EncryptionOptions
+                {
+                    DataEncryptionKeyId = DekId,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                    PathsToEncrypt = new[] { "/Sensitive" },
+                },
+                (JsonProcessor)jsonProcessorValue);
+
+            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                async () => await EncryptionProcessor.EncryptAsync(
+                    input,
+                    encryptor.Object,
+                    requestOptions,
+                    new CosmosDiagnosticsContext(),
+                    CancellationToken.None,
+                    replacePlaintextEncryptionMetadata: true));
+
+            Assert.AreEqual("The document contains invalid encryption metadata.", exception.Message);
+            encryptor.Verify(
+                e => e.GetEncryptionKeyAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Never);
+            encryptor.Verify(
+                e => e.EncryptAsync(
+                    It.IsAny<byte[]>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Never);
+            Assert.IsTrue(input.CanRead);
+            Assert.AreEqual(0, input.Position);
+            CollectionAssert.AreEqual(payload, input.ToArray());
+        }
+
+        [TestMethod]
+        [DynamicData(nameof(SafePlaintextMetadataCases))]
+        public async Task Encrypt_TypedWriteSafePlaintextMetadata_MigratesWithoutDuplicate(
+            string scenario,
+            string encryptionMetadata,
+            int jsonProcessorValue)
+        {
+            _ = scenario;
+            byte[] payload = System.Text.Encoding.UTF8.GetBytes(
+                "{\"id\":\"id1\",\"_ei\":" + encryptionMetadata + ",\"Sensitive\":\"plaintext\"}");
+            MemoryStream input = new(payload);
+            Mock<Encryptor> encryptor = TestEncryptorFactory.CreateMde(DekId, out _);
+            EncryptionItemRequestOptions requestOptions = RequestOptionsOverrideHelper.Create(
+                new EncryptionOptions
+                {
+                    DataEncryptionKeyId = DekId,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                    PathsToEncrypt = new[] { "/Sensitive" },
+                },
+                (JsonProcessor)jsonProcessorValue);
+
+            using Stream encrypted = await EncryptionProcessor.EncryptAsync(
+                input,
+                encryptor.Object,
+                requestOptions,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None,
+                replacePlaintextEncryptionMetadata: true);
+            JObject document = EncryptionProcessor.BaseSerializer.FromStream<JObject>(encrypted);
+
+            Assert.IsFalse(input.CanRead);
+            Assert.AreEqual(
+                1,
+                document.Properties().Count(property => property.Name == Constants.EncryptedInfo));
+            Assert.AreEqual(
+                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                document[Constants.EncryptedInfo][Constants.EncryptionAlgorithm].Value<string>());
+            Assert.AreNotEqual("plaintext", document["Sensitive"].Value<string>());
+        }
+
+        [TestMethod]
         [DynamicData(nameof(SupportedJsonProcessors))]
         public async Task Decrypt_NullEncryptionMetadata_ReturnsInputUnchanged(int jsonProcessorValue)
         {
             JsonProcessor jsonProcessor = (JsonProcessor)jsonProcessorValue;
             byte[] plaintext = System.Text.Encoding.UTF8.GetBytes(
                 "{\"id\":\"id1\",\"PK\":\"pk\",\"Sensitive\":\"plaintext\",\"_ei\":null}");
-            using MemoryStream input = new (plaintext);
+            using MemoryStream input = new(plaintext);
             RequestOptions requestOptions = jsonProcessor == JsonProcessor.Newtonsoft
                 ? null
                 : RequestOptionsOverrideHelper.Create(jsonProcessor);
@@ -801,7 +1087,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         {
             byte[] payload = System.Text.Encoding.UTF8.GetBytes(
                 "{\"id\":\"id1\",\"Sensitive\":\"ciphertext\",\"_ei\":{\"_ef\":3,\"_ea\":\"future-algorithm\",\"_en\":\"dekId\",\"_ep\":[\"/Sensitive\"]}}");
-            using MemoryStream input = new (payload);
+            using MemoryStream input = new(payload);
 
             NotSupportedException exception = await Assert.ThrowsExceptionAsync<NotSupportedException>(
                 async () => await EncryptionProcessor.DecryptAsync(
@@ -823,7 +1109,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 expected,
                 mockEncryptor.Object,
                 DekId);
-            using MemoryStream output = new ();
+            using MemoryStream output = new();
 
             DecryptionContext context = await EncryptionProcessor.DecryptAsync(
                 encrypted,
@@ -844,7 +1130,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [TestMethod]
         public async Task DecryptProvidedOutput_NullInput_ReturnsNullWithoutChangingOutput()
         {
-            using MemoryStream output = new (new byte[] { 1, 2, 3 });
+            using MemoryStream output = new(new byte[] { 1, 2, 3 });
             output.Position = 1;
 
             DecryptionContext context = await EncryptionProcessor.DecryptAsync(
@@ -871,13 +1157,81 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
         }
 
+        public static IEnumerable<object[]> UnsafeMissingAlgorithmMetadataCases
+        {
+            get
+            {
+                foreach (int processor in SupportedJsonProcessors.Select(values => (int)values[0]))
+                {
+                    yield return new object[] { "missing algorithm with encrypted data", "{\"_ed\":\"AA==\",\"_ep\":[]}", processor };
+                    yield return new object[] { "null algorithm with encrypted data", "{\"_ea\":null,\"_ed\":\"AA==\",\"_ep\":[]}", processor };
+                    yield return new object[] { "missing algorithm with encrypted paths", "{\"_ep\":[\"/Sensitive\"]}", processor };
+                    yield return new object[] { "null algorithm with encrypted paths", "{\"_ea\":null,\"_ep\":[\"/Sensitive\"]}", processor };
+                    yield return new object[] { "missing algorithm with null paths", "{\"_ep\":null}", processor };
+                    yield return new object[] { "missing algorithm with scalar paths", "{\"_ep\":\"/Sensitive\"}", processor };
+                    yield return new object[] { "missing algorithm with object paths", "{\"_ep\":{}}", processor };
+                    yield return new object[] { "empty algorithm", "{\"_ea\":\"\",\"_ep\":[]}", processor };
+                    yield return new object[] { "MDE algorithm with encrypted data", "{\"_ea\":\"MdeAeadAes256CbcHmac256Randomized\",\"_ed\":\"AA==\",\"_ep\":[]}", processor };
+#pragma warning disable CS0618
+                    yield return new object[] { "legacy algorithm with invalid encrypted data", $"{{\"_ea\":\"{CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized}\",\"_ed\":{{}},\"_ep\":[]}}", processor };
+                    yield return new object[] { "legacy algorithm with invalid encrypted paths", $"{{\"_ea\":\"{CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized}\",\"_ed\":\"AA==\",\"_ep\":\"/Sensitive\"}}", processor };
+#pragma warning restore CS0618
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> SafePlaintextMetadataCases
+        {
+            get
+            {
+                foreach (int processor in SupportedJsonProcessors.Select(values => (int)values[0]))
+                {
+                    yield return new object[] { "null metadata", "null", processor };
+                    yield return new object[] { "empty metadata", "{}", processor };
+                    yield return new object[] { "missing algorithm and paths", "{\"_ef\":3,\"_en\":\"old\"}", processor };
+                    yield return new object[] { "missing algorithm and empty paths", "{\"_ef\":3,\"_en\":\"old\",\"_ep\":[]}", processor };
+                    yield return new object[] { "null algorithm and null encrypted data", "{\"_ea\":null,\"_ed\":null}", processor };
+                    yield return new object[] { "null algorithm and empty paths", "{\"_ea\":null,\"_ep\":[]}", processor };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> UnsafeTypedWriteMetadataCases
+        {
+            get
+            {
+                foreach (object[] values in UnsafeMissingAlgorithmMetadataCases)
+                {
+                    yield return values;
+                }
+
+                foreach (int processor in SupportedJsonProcessors.Select(values => (int)values[0]))
+                {
+                    yield return new object[] { "unknown algorithm", "{\"_ea\":\"future-algorithm\",\"_ep\":[]}", processor };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> RequiredObjectBodyCases
+        {
+            get
+            {
+                foreach (int processor in SupportedJsonProcessors.Select(values => (int)values[0]))
+                {
+                    foreach (object[] values in JsonBoundaryCases.RequiredObjectBodies)
+                    {
+                        yield return new object[] { values[0], values[1], values[2], processor };
+                    }
+                }
+            }
+        }
         private static async Task AssertNullEncryptionMetadataReplacementProducesCurrentMdeAsync(
             JsonProcessor jsonProcessor)
         {
             byte[] plaintext = System.Text.Encoding.UTF8.GetBytes(
                 "{\"id\":\"id1\",\"PK\":\"pk\",\"_ei\":null,\"NonSensitive\":{\"n\":1},\"Sensitive\":\"plaintext\"}");
-            using MemoryStream input = new (plaintext);
-            EncryptionItemRequestOptions requestOptions = new ()
+            using MemoryStream input = new(plaintext);
+            EncryptionItemRequestOptions requestOptions = new()
             {
                 EncryptionOptions = new EncryptionOptions
                 {

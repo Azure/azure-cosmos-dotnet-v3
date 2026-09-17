@@ -25,15 +25,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             CancellationToken token,
             bool replacePlaintextEncryptionMetadata)
         {
-            JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
-            if (replacePlaintextEncryptionMetadata &&
-                itemJObj[Constants.EncryptedInfo] is JToken encryptionInfo &&
-                (encryptionInfo.Type == JTokenType.Null ||
-                    (encryptionInfo is JObject encryptionProperties &&
-                        (encryptionProperties.Property(Constants.EncryptionAlgorithm) is not JProperty encryptionAlgorithm ||
-                            encryptionAlgorithm.Value.Type == JTokenType.Null))))
+            JObject itemJObj = NewtonsoftJsonObjectReader.Read(input);
+            if (replacePlaintextEncryptionMetadata)
             {
-                itemJObj.Remove(Constants.EncryptedInfo);
+                JToken encryptionMetadata = itemJObj[Constants.EncryptedInfo];
+                EncryptionMetadataDisposition disposition = EncryptionMetadataClassifier.Classify(encryptionMetadata);
+                if (disposition == EncryptionMetadataDisposition.Invalid ||
+                    disposition == EncryptionMetadataDisposition.Unsupported ||
+                    disposition == EncryptionMetadataDisposition.Mde ||
+                    disposition == EncryptionMetadataDisposition.Legacy)
+                {
+                    throw new InvalidOperationException(EncryptionMetadataClassifier.InvalidMetadataMessage);
+                }
+
+                if (disposition == EncryptionMetadataDisposition.Plaintext)
+                {
+                    itemJObj.Remove(Constants.EncryptedInfo);
+                }
             }
 
             Stream result = await this.EncryptAsync(itemJObj, encryptor, encryptionOptions, token);

@@ -12,13 +12,6 @@ using Newtonsoft.Json.Linq;
 
 internal sealed class NewtonsoftAdapter : IMdeJsonProcessorAdapter
 {
-    private enum MdePropertyStatus
-    {
-        None,
-        Mde,
-        LegacyOther,
-    }
-
     private readonly MdeJObjectEncryptionProcessor jObjectProcessor;
 
     public NewtonsoftAdapter(MdeJObjectEncryptionProcessor jObjectProcessor)
@@ -62,10 +55,10 @@ internal sealed class NewtonsoftAdapter : IMdeJsonProcessorAdapter
 
     public async Task<(Stream, DecryptionContext)> DecryptAsync(Stream input, Encryptor encryptor, CosmosDiagnosticsContext diagnosticsContext, CancellationToken cancellationToken)
     {
-        (MdePropertyStatus status, JObject itemJObj, EncryptionProperties encryptionProperties) = this.InspectForMde(input);
+        (EncryptionMetadataDisposition status, JObject itemJObj, EncryptionProperties encryptionProperties) = this.InspectForMde(input);
         switch (status)
         {
-            case MdePropertyStatus.Mde:
+            case EncryptionMetadataDisposition.Mde:
                 {
                     DecryptionContext context = await this.jObjectProcessor.DecryptObjectAsync(itemJObj, encryptor, encryptionProperties, diagnosticsContext, cancellationToken);
                     await input.DisposeCompatAsync();
@@ -76,8 +69,10 @@ internal sealed class NewtonsoftAdapter : IMdeJsonProcessorAdapter
                     return (direct, context);
                 }
 
-            case MdePropertyStatus.None:
-            case MdePropertyStatus.LegacyOther:
+            case EncryptionMetadataDisposition.None:
+            case EncryptionMetadataDisposition.Plaintext:
+            case EncryptionMetadataDisposition.Legacy:
+            case EncryptionMetadataDisposition.Unsupported:
             default:
                 return (input, null);
         }
@@ -85,10 +80,10 @@ internal sealed class NewtonsoftAdapter : IMdeJsonProcessorAdapter
 
     public async Task<DecryptionContext> DecryptAsync(Stream input, Stream output, Encryptor encryptor, CosmosDiagnosticsContext diagnosticsContext, CancellationToken cancellationToken)
     {
-        (MdePropertyStatus status, JObject itemJObj, EncryptionProperties encryptionProperties) = this.InspectForMde(input);
+        (EncryptionMetadataDisposition status, JObject itemJObj, EncryptionProperties encryptionProperties) = this.InspectForMde(input);
         switch (status)
         {
-            case MdePropertyStatus.Mde:
+            case EncryptionMetadataDisposition.Mde:
                 {
                     DecryptionContext context = await this.jObjectProcessor.DecryptObjectAsync(itemJObj, encryptor, encryptionProperties, diagnosticsContext, cancellationToken);
                     EncryptionProcessor.BaseSerializer.WriteToStream(itemJObj, output);
@@ -97,67 +92,34 @@ internal sealed class NewtonsoftAdapter : IMdeJsonProcessorAdapter
                     return context;
                 }
 
-            case MdePropertyStatus.None:
-                if (input.CanSeek)
-                {
-                    input.Position = 0;
-                }
-
-                return null;
-            case MdePropertyStatus.LegacyOther:
+            case EncryptionMetadataDisposition.None:
+            case EncryptionMetadataDisposition.Plaintext:
+            case EncryptionMetadataDisposition.Legacy:
+            case EncryptionMetadataDisposition.Unsupported:
             default:
                 return null;
         }
     }
 
-    private (MdePropertyStatus status, JObject itemJObj, EncryptionProperties encryptionProperties) InspectForMde(Stream input)
+    private (EncryptionMetadataDisposition status, JObject itemJObj, EncryptionProperties encryptionProperties) InspectForMde(Stream input)
     {
-        input.Position = 0;
-        JObject itemJObj = this.ReadJObject(input);
-        JObject encryptionProperties = this.RetrieveEncryptionProperties(itemJObj);
-        if (encryptionProperties == null)
+        JObject itemJObj = NewtonsoftJsonObjectReader.Read(input);
+        JToken encryptionMetadata = itemJObj[Constants.EncryptedInfo];
+        EncryptionMetadataDisposition disposition = EncryptionMetadataClassifier.Classify(encryptionMetadata);
+        EncryptionMetadataClassifier.ThrowIfInvalid(disposition);
+        if (disposition == EncryptionMetadataDisposition.Unsupported)
         {
-            input.Position = 0;
-            return (MdePropertyStatus.None, null, null);
+            throw new NotSupportedException("The document uses an unsupported encryption algorithm.");
         }
 
-        EncryptionProperties parsed = encryptionProperties.ToObject<EncryptionProperties>();
-#pragma warning disable CS0618
-        if (parsed.EncryptionAlgorithm != CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)
+        if (disposition != EncryptionMetadataDisposition.Mde)
         {
-            input.Position = 0;
-            return (MdePropertyStatus.LegacyOther, null, null);
-        }
-#pragma warning restore CS0618
-
-        return (MdePropertyStatus.Mde, itemJObj, parsed);
-    }
-
-    private JObject ReadJObject(Stream input)
-    {
-        using StreamReader sr = new (input, System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
-        using Newtonsoft.Json.JsonTextReader jsonTextReader = new (sr)
-        {
-            ArrayPool = JsonArrayPool.Instance,
-        };
-
-        Newtonsoft.Json.JsonSerializerSettings settings = new ()
-        {
-            DateParseHandling = Newtonsoft.Json.DateParseHandling.None,
-            MaxDepth = 64,
-        };
-
-        return Newtonsoft.Json.JsonSerializer.Create(settings).Deserialize<JObject>(jsonTextReader);
-    }
-
-    private JObject RetrieveEncryptionProperties(JObject item)
-    {
-        JProperty encryptionPropertiesJProp = item.Property(Constants.EncryptedInfo);
-        if (encryptionPropertiesJProp?.Value is JObject jObject)
-        {
-            return jObject;
+            return (disposition, null, null);
         }
 
-        return null;
+        return (
+            disposition,
+            itemJObj,
+            ((JObject)encryptionMetadata).ToObject<EncryptionProperties>());
     }
 }
