@@ -20,15 +20,16 @@ namespace Microsoft.Azure.Cosmos
             "DistributedReadTransaction with the same items.";
 
         private readonly CosmosClientContext clientContext;
-        private readonly List<DistributedTransactionOperation> operations;
+        private readonly DistributedTransactionOperationBuffer operationBuffer;
         private readonly object idempotencyTokenLock = new object();
         private Guid latestIdempotencyToken;
-        private int isCommitInvoked;
 
         internal DistributedReadTransactionCore(CosmosClientContext clientContext)
         {
             this.clientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
-            this.operations = new List<DistributedTransactionOperation>();
+            this.operationBuffer = new DistributedTransactionOperationBuffer(
+                CommitAlreadyCalledMessage,
+                "Cannot commit a distributed read transaction with zero operations. This instance is consumed; construct a new DistributedReadTransaction and add at least one ReadItem call before executing.");
         }
 
         /// <inheritdoc/>
@@ -49,18 +50,17 @@ namespace Microsoft.Azure.Cosmos
             string id,
             DistributedTransactionRequestOptions requestOptions = null)
         {
+            this.operationBuffer.ThrowIfExecutionStarted();
             (string databaseId, string containerId) = DistributedTransactionConstants.ValidateAndUnpackContainer(container, this.clientContext.Client);
             DistributedReadTransactionCore.ValidateItemId(id);
 
-            this.operations.Add(
-                new DistributedTransactionOperation(
-                    operationType: OperationType.Read,
-                    operationIndex: this.operations.Count,
-                    database: databaseId,
-                    container: containerId,
-                    partitionKey: partitionKey,
-                    id: id,
-                    requestOptions: requestOptions));
+            this.operationBuffer.AddOperation(
+                operationType: OperationType.Read,
+                databaseId,
+                containerId,
+                partitionKey,
+                id,
+                requestOptions: requestOptions);
 
             return this;
         }
@@ -70,15 +70,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<DistributedTransactionResponse> ExecuteTransactionAsync(
             CancellationToken cancellationToken = default)
         {
-            if (this.operations.Count == 0)
-            {
-                throw new InvalidOperationException("Cannot commit a distributed read transaction with zero operations. Add at least one ReadItem call before committing.");
-            }
-
-            if (Interlocked.CompareExchange(ref this.isCommitInvoked, DistributedTransactionConstants.CommitStarted, DistributedTransactionConstants.CommitNotStarted) != DistributedTransactionConstants.CommitNotStarted)
-            {
-                throw new InvalidOperationException(CommitAlreadyCalledMessage);
-            }
+            IReadOnlyList<DistributedTransactionOperation> operations = this.operationBuffer.FreezeForExecution();
 
             return this.clientContext.OperationHelperAsync(
                 operationName: $"{nameof(DistributedReadTransaction)}.{nameof(ExecuteTransactionAsync)}",
@@ -89,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
                 task: (trace) =>
                 {
                     DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                        operations: this.operations,
+                        operations: operations,
                         clientContext: this.clientContext,
                         operationType: OperationType.Read,
                         onDispatch: this.PublishIdempotencyToken);

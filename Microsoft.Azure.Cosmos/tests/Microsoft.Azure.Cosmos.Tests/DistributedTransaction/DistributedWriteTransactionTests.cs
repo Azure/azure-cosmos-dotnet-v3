@@ -787,9 +787,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Description("Verifies that only one of N concurrent callers wins the Interlocked.CompareExchange gate. " +
-                     "Uses Task.Run + ManualResetEventSlim so that all racers hit ExecuteTransactionAsync from " +
-                     "separate thread-pool threads simultaneously, providing genuine concurrency coverage.")]
+        [Description("Verifies that racing execution attempts cannot dispatch more than once.")]
         public async Task CommitAsync_ConcurrentCalls_OnlyOneSucceeds()
         {
             int invocationCount = 0;
@@ -809,11 +807,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<ITrace>(),
                     It.IsAny<CancellationToken>()))
                 .Returns<string, ResourceType, OperationType, RequestOptions, ContainerInternal, PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
-                    async (uri, resType, opType, opts, container, pk, itemId, stream, enricher, trace, ct) =>
+                    (uri, resType, opType, opts, container, pk, itemId, stream, enricher, trace, ct) =>
                     {
                         Interlocked.Increment(ref invocationCount);
-                        await Task.Delay(50, ct);
-                        return BuildSuccessResponse(1);
+                        return Task.FromResult(BuildSuccessResponse(1));
                     });
 
             DistributedWriteTransaction tx = new DistributedWriteTransactionCore(contextMock.Object)
@@ -822,18 +819,17 @@ namespace Microsoft.Azure.Cosmos.Tests
             const int RacerCount = 16;
             using ManualResetEventSlim gate = new ManualResetEventSlim(initialState: false);
 
-            // Spawn all racers on separate thread-pool threads, each blocked on the gate.
             Task<DistributedTransactionResponse>[] tasks = new Task<DistributedTransactionResponse>[RacerCount];
             for (int i = 0; i < RacerCount; i++)
             {
                 tasks[i] = Task.Run(async () =>
                 {
-                    gate.Wait();
+                    Assert.IsTrue(gate.Wait(TimeSpan.FromSeconds(30)));
                     return await tx.ExecuteTransactionAsync(CancellationToken.None);
                 });
             }
 
-            gate.Set(); // release all racers simultaneously
+            gate.Set();
 
             int successCount = 0;
             int rejectedCount = 0;
@@ -841,20 +837,18 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 try
                 {
-                    await t;
+                    using DistributedTransactionResponse response = await t.WaitAsync(TimeSpan.FromSeconds(30));
                     successCount++;
                 }
-                catch (InvalidOperationException)
+                catch (InvalidOperationException error)
                 {
+                    Assert.AreEqual(DistributedWriteTransactionCore.CommitAlreadyCalledMessage, error.Message);
                     rejectedCount++;
                 }
             }
 
-            Assert.AreEqual(1, successCount, "Exactly one racer should win the CompareExchange.");
+            Assert.AreEqual(1, successCount, "Exactly one caller should execute the transaction.");
             Assert.AreEqual(RacerCount - 1, rejectedCount, "All other racers should be rejected by the guard.");
-            // This assertion is the key atomicity proof: without Interlocked, two threads could
-            // both read isCommitInvoked==CommitNotStarted before either writes CommitStarted,
-            // and invocationCount would be >1.
             Assert.AreEqual(1, invocationCount, "The underlying commit pipeline must only fire once.");
         }
 
@@ -1072,7 +1066,499 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        [TestMethod]
+        public async Task ExecuteTransactionAsync_ZeroOperations_ConsumesTransaction()
+        {
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
+            int dispatches = 0;
+            SetupDispatch(contextMock, (stream, ct) =>
+            {
+                dispatches++;
+                return Task.FromResult(BuildSuccessResponse(1));
+            });
+            DistributedWriteTransaction tx = new DistributedWriteTransactionCore(contextMock.Object);
+            InvalidOperationException empty = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => tx.ExecuteTransactionAsync(CancellationToken.None));
+            StringAssert.Contains(empty.Message, "zero operations");
+            StringAssert.Contains(empty.Message, "new");
+            AssertMutationsRejected(tx);
+            InvalidOperationException repeated = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => tx.ExecuteTransactionAsync(CancellationToken.None));
+            Assert.AreEqual(DistributedWriteTransactionCore.CommitAlreadyCalledMessage, repeated.Message);
+            Assert.AreEqual(Guid.Empty, tx.IdempotencyToken);
+            Assert.AreEqual(0, dispatches);
+        }
+
+        [TestMethod]
+        public async Task ExecuteTransactionAsync_PostSerializationMutation_PreservesResponse()
+        {
+            TaskCompletionSource<string> captured = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<bool> release = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
+            SetupDispatch(contextMock, async (stream, ct) =>
+            {
+                using StreamReader reader = new StreamReader(stream, Encoding.UTF8, false, 1024, leaveOpen: true);
+                captured.SetResult(await reader.ReadToEndAsync());
+                await release.Task.WaitAsync(TimeSpan.FromSeconds(30));
+                return BuildSuccessResponse(1);
+            });
+            DistributedWriteTransaction tx = new DistributedWriteTransactionCore(contextMock.Object)
+                .CreateItem(BuildMockContainer(), new PartitionKey("pk"), "item-id", new TestItem());
+            Task<DistributedTransactionResponse> execution = tx.ExecuteTransactionAsync();
+            try
+            {
+                using JsonDocument body = JsonDocument.Parse(await captured.Task.WaitAsync(TimeSpan.FromSeconds(30)));
+                Assert.AreEqual(1, body.RootElement.GetProperty("operations").GetArrayLength());
+                Assert.AreEqual(0, body.RootElement.GetProperty("operations")[0].GetProperty("index").GetInt32());
+                InvalidOperationException mutationError = null;
+                try
+                {
+                    tx.DeleteItem(BuildMockContainer(), new PartitionKey("pk"), "late");
+                }
+                catch (InvalidOperationException error)
+                {
+                    mutationError = error;
+                }
+
+                if (mutationError != null)
+                {
+                    AssertMutationsRejected(tx);
+                }
+
+                release.TrySetResult(true);
+                DistributedTransactionResponse response = await execution.WaitAsync(TimeSpan.FromSeconds(30));
+                Assert.IsTrue(response.IsSuccessStatusCode, $"One-operation success became {response.StatusCode} with {response.Count} results.");
+                Assert.AreEqual(1, response.Count);
+                Assert.AreEqual(0, response[0].Index);
+                Assert.AreEqual(HttpStatusCode.Created, response[0].StatusCode);
+                Assert.IsNotNull(mutationError, "The in-flight mutation must throw InvalidOperationException.");
+                AssertMutationsRejected(tx);
+                await AssertConsumedAsync(tx);
+                Assert.AreEqual(1, response.Count);
+                Assert.AreEqual(0, response[0].Index);
+            }
+            finally
+            {
+                release.TrySetResult(true);
+                using DistributedTransactionResponse cleanup = await execution.WaitAsync(TimeSpan.FromSeconds(30));
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task ExecuteTransactionAsync_Failure_RejectsMutations(bool throwException)
+        {
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
+            int dispatches = 0;
+            SetupDispatch(contextMock, (stream, ct) =>
+            {
+                dispatches++;
+                if (throwException)
+                {
+                    throw new IOException("dispatch failed");
+                }
+
+                return Task.FromResult(BuildErrorResponse(HttpStatusCode.BadRequest));
+            });
+            DistributedWriteTransaction tx = new DistributedWriteTransactionCore(contextMock.Object)
+                .DeleteItem(BuildMockContainer(), new PartitionKey("pk"), "original");
+            if (throwException)
+            {
+                await Assert.ThrowsExceptionAsync<IOException>(() => tx.ExecuteTransactionAsync());
+            }
+            else
+            {
+                using DistributedTransactionResponse response = await tx.ExecuteTransactionAsync();
+                Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+            }
+
+            AssertMutationsRejected(tx);
+            await AssertConsumedAsync(tx);
+            Assert.AreEqual(1, dispatches);
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task ExecuteTransactionAsync_Cancellation_RejectsMutations(bool preCancelled)
+        {
+            using CancellationTokenSource cancellation = new CancellationTokenSource();
+            TaskCompletionSource<bool> entered = NewGate();
+            TaskCompletionSource<bool> release = NewGate();
+            int dispatches = 0;
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
+            SetupDispatch(contextMock, async (stream, ct) =>
+            {
+                dispatches++;
+                entered.TrySetResult(true);
+                await release.Task.WaitAsync(TimeSpan.FromSeconds(30));
+                ct.ThrowIfCancellationRequested();
+                return BuildSuccessResponse(1);
+            });
+            DistributedWriteTransaction tx = new DistributedWriteTransactionCore(contextMock.Object)
+                .DeleteItem(BuildMockContainer(), new PartitionKey("pk"), "original");
+            if (preCancelled)
+            {
+                cancellation.Cancel();
+            }
+
+            Task<DistributedTransactionResponse> execution = tx.ExecuteTransactionAsync(cancellation.Token);
+            try
+            {
+                if (!preCancelled)
+                {
+                    await entered.Task.WaitAsync(TimeSpan.FromSeconds(30));
+                    AssertMutationsRejected(tx);
+                    cancellation.Cancel();
+                }
+
+                release.TrySetResult(true);
+                OperationCanceledException error = await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+                    async () => await execution.WaitAsync(TimeSpan.FromSeconds(30)));
+                Assert.AreEqual(cancellation.Token, error.CancellationToken);
+                AssertMutationsRejected(tx);
+                await AssertConsumedAsync(tx);
+                Assert.AreEqual(preCancelled ? 0 : 1, dispatches);
+            }
+            finally
+            {
+                cancellation.Cancel();
+                release.TrySetResult(true);
+                try
+                {
+                    using DistributedTransactionResponse cleanup = await execution.WaitAsync(TimeSpan.FromSeconds(30));
+                }
+                catch (OperationCanceledException error)
+                {
+                    Assert.AreEqual(cancellation.Token, error.CancellationToken);
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task ExecuteTransactionAsync_BeforeHelperCallback_RejectsMutationsAndReexecution()
+        {
+            TaskCompletionSource<bool> entered = NewGate();
+            TaskCompletionSource<bool> release = NewGate();
+            int helperCalls = 0;
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup(async callback =>
+            {
+                Assert.AreEqual(1, Interlocked.Increment(ref helperCalls), "Execution re-entered the operation helper.");
+                entered.TrySetResult(true);
+                await release.Task.WaitAsync(TimeSpan.FromSeconds(30));
+                return await callback(NoOpTrace.Singleton);
+            });
+            int dispatches = 0;
+            SetupDispatch(contextMock, (stream, ct) =>
+            {
+                dispatches++;
+                return Task.FromResult(BuildSuccessResponse(1));
+            });
+            DistributedWriteTransaction tx = new DistributedWriteTransactionCore(contextMock.Object)
+                .DeleteItem(BuildMockContainer(), new PartitionKey("pk"), "original");
+            Task<DistributedTransactionResponse> execution = tx.ExecuteTransactionAsync();
+            try
+            {
+                await entered.Task.WaitAsync(TimeSpan.FromSeconds(30));
+                Assert.IsFalse(execution.IsCompleted);
+                AssertMutationsRejected(tx);
+                await AssertConsumedAsync(tx);
+                Assert.AreEqual(0, dispatches);
+                Assert.AreEqual(Guid.Empty, tx.IdempotencyToken);
+                contextMock.Verify(c => c.GetCachedContainerPropertiesAsync(
+                    It.IsAny<string>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Never);
+            }
+            finally
+            {
+                release.TrySetResult(true);
+                using DistributedTransactionResponse response = await execution.WaitAsync(TimeSpan.FromSeconds(30));
+                Assert.IsTrue(response.IsSuccessStatusCode);
+                Assert.AreEqual(1, response.Count);
+            }
+
+            Assert.AreEqual(1, dispatches);
+            Assert.AreEqual(1, helperCalls);
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task ExecuteTransactionAsync_HelperFailureBeforeCallback_RemainsConsumed(bool asynchronousFailure)
+        {
+            IOException expected = new IOException("operation helper failed");
+            int helperCalls = 0;
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup(callback =>
+            {
+                helperCalls++;
+                if (asynchronousFailure)
+                {
+                    return Task.FromException<DistributedTransactionResponse>(expected);
+                }
+
+                throw expected;
+            });
+            int dispatches = 0;
+            SetupDispatch(contextMock, (stream, ct) =>
+            {
+                dispatches++;
+                return Task.FromResult(BuildSuccessResponse(1));
+            });
+            DistributedWriteTransaction tx = new DistributedWriteTransactionCore(contextMock.Object)
+                .DeleteItem(BuildMockContainer(), new PartitionKey("pk"), "original");
+            IOException error = await Assert.ThrowsExceptionAsync<IOException>(async () =>
+            {
+                using DistributedTransactionResponse response = await tx.ExecuteTransactionAsync().WaitAsync(TimeSpan.FromSeconds(30));
+            });
+
+            Assert.AreSame(expected, error);
+            AssertMutationsRejected(tx);
+            await AssertConsumedAsync(tx);
+            Assert.AreEqual(1, helperCalls);
+            Assert.AreEqual(0, dispatches);
+            Assert.AreEqual(Guid.Empty, tx.IdempotencyToken);
+            contextMock.Verify(c => c.GetCachedContainerPropertiesAsync(
+                It.IsAny<string>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [TestMethod]
+        public async Task ExecuteTransactionAsync_BeforeContainerResolution_RejectsMutations()
+        {
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
+            TaskCompletionSource<bool> entered = NewGate();
+            TaskCompletionSource<bool> release = NewGate();
+            ContainerProperties properties = ContainerProperties.CreateWithResourceId("ccZ1ANCszwk=");
+            properties.PartitionKeyPath = "/pk";
+            contextMock.Setup(c => c.GetCachedContainerPropertiesAsync(
+                It.IsAny<string>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                .Returns(async () =>
+                {
+                    entered.TrySetResult(true);
+                    await release.Task.WaitAsync(TimeSpan.FromSeconds(30));
+                    return properties;
+                });
+            int dispatches = 0;
+            SetupDispatch(contextMock, (stream, ct) =>
+            {
+                dispatches++;
+                return Task.FromResult(BuildSuccessResponse(1));
+            });
+            DistributedWriteTransaction tx = new DistributedWriteTransactionCore(contextMock.Object)
+                .DeleteItem(BuildMockContainer(), new PartitionKey("pk"), "original");
+            Task<DistributedTransactionResponse> execution = tx.ExecuteTransactionAsync();
+            try
+            {
+                await entered.Task.WaitAsync(TimeSpan.FromSeconds(30));
+                Assert.AreEqual(0, dispatches);
+                AssertMutationsRejected(tx);
+                Assert.AreEqual(Guid.Empty, tx.IdempotencyToken);
+            }
+            finally
+            {
+                release.TrySetResult(true);
+                using DistributedTransactionResponse response = await execution.WaitAsync(TimeSpan.FromSeconds(30));
+                Assert.IsTrue(response.IsSuccessStatusCode);
+                Assert.AreEqual(1, response.Count);
+            }
+        }
+
+        [TestMethod]
+        public async Task ExecuteTransactionAsync_ConcurrentEmptyCalls_OnlyOneReportsZeroOperations()
+        {
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
+            int dispatches = 0;
+            SetupDispatch(contextMock, (stream, ct) =>
+            {
+                Interlocked.Increment(ref dispatches);
+                return Task.FromResult(BuildSuccessResponse(1));
+            });
+            DistributedWriteTransaction tx = new DistributedWriteTransactionCore(contextMock.Object);
+            TaskCompletionSource<bool> start = NewGate();
+            Task<InvalidOperationException>[] executions = new Task<InvalidOperationException>[8];
+            for (int i = 0; i < executions.Length; i++)
+            {
+                executions[i] = Task.Run(async () =>
+                {
+                    await start.Task.WaitAsync(TimeSpan.FromSeconds(30));
+                    return await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => tx.ExecuteTransactionAsync());
+                });
+            }
+
+            start.SetResult(true);
+            InvalidOperationException[] errors = await Task.WhenAll(executions).WaitAsync(TimeSpan.FromSeconds(30));
+            int emptyCount = 0;
+            foreach (InvalidOperationException error in errors)
+            {
+                if (error.Message.Contains("zero operations"))
+                {
+                    emptyCount++;
+                }
+                else
+                {
+                    Assert.AreEqual(DistributedWriteTransactionCore.CommitAlreadyCalledMessage, error.Message);
+                }
+            }
+
+            Assert.AreEqual(1, emptyCount);
+            Assert.AreEqual(0, dispatches);
+            Assert.AreEqual(Guid.Empty, tx.IdempotencyToken);
+            AssertMutationsRejected(tx);
+        }
+
+        [TestMethod]
+        public async Task ExecuteTransactionAsync_RacingAppend_IsIncludedOrRejected()
+        {
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
+            string captured = null;
+            SetupDispatch(contextMock, async (stream, ct) =>
+            {
+                using StreamReader reader = new StreamReader(stream, Encoding.UTF8, false, 1024, leaveOpen: true);
+                captured = await reader.ReadToEndAsync();
+                using JsonDocument body = JsonDocument.Parse(captured);
+                return BuildSuccessResponse(body.RootElement.GetProperty("operations").GetArrayLength());
+            });
+            DistributedWriteTransaction tx = new DistributedWriteTransactionCore(contextMock.Object)
+                .DeleteItem(BuildMockContainer(), new PartitionKey("pk"), "original");
+            TaskCompletionSource<bool> start = NewGate();
+            Task<bool> mutation = Task.Run(async () =>
+            {
+                await start.Task.WaitAsync(TimeSpan.FromSeconds(30));
+                try
+                {
+                    tx.DeleteItem(BuildMockContainer(), new PartitionKey("pk"), "racing");
+                    return true;
+                }
+                catch (InvalidOperationException)
+                {
+                    return false;
+                }
+            });
+            Task<DistributedTransactionResponse> execution = Task.Run(async () =>
+            {
+                await start.Task.WaitAsync(TimeSpan.FromSeconds(30));
+                return await tx.ExecuteTransactionAsync();
+            });
+            start.SetResult(true);
+            try
+            {
+                await Task.WhenAll(mutation, execution).WaitAsync(TimeSpan.FromSeconds(30));
+                DistributedTransactionResponse response = await execution;
+                using JsonDocument request = JsonDocument.Parse(captured);
+                JsonElement operations = request.RootElement.GetProperty("operations");
+                int expected = await mutation ? 2 : 1;
+                Assert.AreEqual(expected, operations.GetArrayLength());
+                Assert.AreEqual(expected, response.Count);
+                Assert.IsTrue(response.IsSuccessStatusCode);
+                for (int i = 0; i < expected; i++)
+                {
+                    Assert.AreEqual(i, operations[i].GetProperty("index").GetInt32());
+                    Assert.AreEqual(i, response[i].Index);
+                }
+            }
+            finally
+            {
+                using DistributedTransactionResponse cleanup = await execution.WaitAsync(TimeSpan.FromSeconds(30));
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(0)]
+        [DataRow(1)]
+        [DataRow(2)]
+        [DataRow(3)]
+        [DataRow(4)]
+        [DataRow(5)]
+        [DataRow(6)]
+        [DataRow(7)]
+        [DataRow(8)]
+        public async Task ExecuteTransactionAsync_DuringMutationValidation_RejectsDelayedAppend(int mutationIndex)
+        {
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
+            SetupDispatch(contextMock, (stream, ct) => Task.FromResult(BuildSuccessResponse(1)));
+            DistributedWriteTransaction tx = new DistributedWriteTransactionCore(contextMock.Object)
+                .DeleteItem(BuildMockContainer(), new PartitionKey("pk"), "original");
+            TaskCompletionSource<bool> entered = NewGate();
+            using ManualResetEventSlim release = new ManualResetEventSlim();
+            Cosmos.Container container = BuildMockContainer();
+            Mock.Get(container).Setup(c => c.Id).Returns(() =>
+            {
+                entered.TrySetResult(true);
+                Assert.IsTrue(release.Wait(TimeSpan.FromSeconds(30)), "Container getter was not released.");
+                return ContainerName;
+            });
+            using MemoryStream payload = new MemoryStream(Encoding.UTF8.GetBytes("{}"));
+            Action mutate = GetMutations(tx, container, payload)[mutationIndex];
+            Task mutation = Task.Run(() => Assert.ThrowsException<InvalidOperationException>(mutate));
+            try
+            {
+                await entered.Task.WaitAsync(TimeSpan.FromSeconds(30));
+                using DistributedTransactionResponse response = await Task.Run(() => tx.ExecuteTransactionAsync())
+                    .WaitAsync(TimeSpan.FromSeconds(30));
+                Assert.IsTrue(response.IsSuccessStatusCode);
+                Assert.AreEqual(1, response.Count);
+            }
+            finally
+            {
+                release.Set();
+                await mutation.WaitAsync(TimeSpan.FromSeconds(30));
+            }
+
+            AssertMutationsRejected(tx);
+            await AssertConsumedAsync(tx);
+        }
+
         // Helpers
+
+        private static TaskCompletionSource<bool> NewGate() => new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        private static async Task AssertConsumedAsync(DistributedWriteTransaction tx)
+        {
+            InvalidOperationException error = await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => tx.ExecuteTransactionAsync());
+            Assert.AreEqual(DistributedWriteTransactionCore.CommitAlreadyCalledMessage, error.Message);
+        }
+
+        private static void AssertMutationsRejected(DistributedWriteTransaction tx)
+        {
+            foreach (Cosmos.Container container in new[] { BuildMockContainer(), null })
+            {
+                using MemoryStream payload = new MemoryStream(Encoding.UTF8.GetBytes("{}"));
+                foreach (Action mutation in GetMutations(tx, container, payload))
+                {
+                    InvalidOperationException error = Assert.ThrowsException<InvalidOperationException>(mutation);
+                    Assert.AreEqual(DistributedWriteTransactionCore.CommitAlreadyCalledMessage, error.Message);
+                    Assert.IsTrue(payload.CanRead, "Rejected mutations must not dispose caller streams.");
+                    Assert.AreEqual(0L, payload.Position, "Rejected mutations must not consume caller streams.");
+                }
+            }
+        }
+
+        private static Action[] GetMutations(DistributedWriteTransaction tx, Cosmos.Container container, Stream payload)
+        {
+            PartitionKey pk = new PartitionKey("pk");
+            return new Action[]
+            {
+                () => tx.CreateItem(container, pk, "late", new TestItem()),
+                () => tx.CreateItemStream(container, pk, "late", payload),
+                () => tx.ReplaceItem(container, pk, "late", new TestItem()),
+                () => tx.ReplaceItemStream(container, pk, "late", payload),
+                () => tx.DeleteItem(container, pk, "late"),
+                () => tx.PatchItem(container, pk, "late", new[] { PatchOperation.Set("/value", 1) }),
+                () => tx.PatchItemStream(container, pk, "late", payload),
+                () => tx.UpsertItem(container, pk, "late", new TestItem()),
+                () => tx.UpsertItemStream(container, pk, "late", payload),
+            };
+        }
+
+        private static void SetupDispatch(Mock<CosmosClientContext> contextMock, Func<Stream, CancellationToken, Task<ResponseMessage>> dispatch)
+        {
+            contextMock.Setup(c => c.ProcessResourceOperationStreamAsync(
+                It.IsAny<string>(), It.IsAny<ResourceType>(), It.IsAny<OperationType>(),
+                It.IsAny<RequestOptions>(), It.IsAny<ContainerInternal>(), It.IsAny<PartitionKey?>(),
+                It.IsAny<string>(), It.IsAny<Stream>(), It.IsAny<Action<RequestMessage>>(),
+                It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                .Returns<string, ResourceType, OperationType, RequestOptions, ContainerInternal, PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
+                    (uri, resource, operation, options, container, pk, id, stream, enrich, trace, ct) => dispatch(stream, ct));
+        }
 
         /// <summary>
         /// Creates a transaction backed by a minimal context mock — suitable for
@@ -1090,7 +1576,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         /// Tests that intercept the outbound request add their own
         /// <see cref="CosmosClientContext.ProcessResourceOperationStreamAsync"/> setup on top.
         /// </summary>
-        private Mock<CosmosClientContext> BuildContextSetup()
+        private Mock<CosmosClientContext> BuildContextSetup(
+            Func<Func<ITrace, Task<DistributedTransactionResponse>>, Task<DistributedTransactionResponse>> operationHelper = null)
         {
             ContainerProperties containerProps = ContainerProperties.CreateWithResourceId("ccZ1ANCszwk=");
             containerProps.PartitionKeyPath = "/pk";
@@ -1131,7 +1618,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<TraceComponent>(),
                     It.IsAny<TraceLevel>()))
                 .Returns<string, string, string, OperationType, RequestOptions, Func<ITrace, Task<DistributedTransactionResponse>>, (string, Func<DistributedTransactionResponse, Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryAttributes>)?, ResourceType?, TraceComponent, TraceLevel>(
-                    (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, resourceType, comp, level) => func(NoOpTrace.Singleton));
+                    (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, resourceType, comp, level) =>
+                        operationHelper != null ? operationHelper(func) : func(NoOpTrace.Singleton));
 
             return contextMock;
         }
