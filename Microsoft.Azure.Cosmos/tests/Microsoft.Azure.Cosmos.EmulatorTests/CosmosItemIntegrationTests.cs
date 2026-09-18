@@ -2948,6 +2948,163 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
 
+        /// <summary>
+        /// Issue #6091: a LastCommittedSingleWriteRegion read whose app region is a non-hub replica must
+        /// reach the hub after a 403/WriteForbidden instead of hanging by retrying the same replica forever.
+        /// </summary>
+        [TestMethod]
+        [Owner("aavasthy")]
+        [TestCategory("MultiRegion")]
+        [Timeout(70000)]
+        [DataRow(ConnectionMode.Direct, DisplayName = "Direct mode: LastCommittedSingleWriteRegion read on a replica reaches the hub after 403/3 from non-hub regions.")]
+        [DataRow(ConnectionMode.Gateway, DisplayName = "Gateway mode: LastCommittedSingleWriteRegion read on a replica reaches the hub after 403/3 from non-hub regions.")]
+        public async Task ReadItemAsync_LastCommittedSingleWriteRegion_On403FromNonHub_RoutesToHubAndSucceeds(
+            ConnectionMode connectionMode)
+        {
+            Environment.SetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled, "True");
+
+            try
+            {
+                // LastCommittedSingleWriteRegion only applies to single write region accounts.
+                IReadOnlyDictionary<string, Uri> writeEndpointsByLocation = this.client.DocumentClient.GlobalEndpointManager.GetAvailableWriteEndpointsByLocation();
+                if (writeEndpointsByLocation.Count != 1)
+                {
+                    Assert.Inconclusive("This test requires a single write region (single-master) account.");
+                }
+
+                string hubRegionName = writeEndpointsByLocation.Keys.First();
+
+                // The read request routed to the hub uses the hub region's read endpoint host.
+                string hubHost = this.readRegionsMapping[hubRegionName].Host;
+
+                // Order the application preferred regions so a NON-hub replica is first and the hub is last,
+                // forcing the initial read onto a replica (the repro condition).
+                List<string> preferredRegions = this.readRegionsMapping.Keys
+                    .OrderBy(regionName => string.Equals(regionName, hubRegionName, StringComparison.OrdinalIgnoreCase) ? 1 : 0)
+                    .ToList();
+
+                int forbiddenFromNonHubCount = 0;
+                bool reachedHub = false;
+
+                HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
+                {
+                    RequestCallBack = (request, cancellationToken) =>
+                    {
+                        if (request.Method == HttpMethod.Get
+                            && request.RequestUri != null
+                            && request.RequestUri.AbsolutePath.Contains("/docs/"))
+                        {
+                            // Non-hub region → 403/WriteForbidden. Hub region → passthrough (real 200).
+                            if (!string.Equals(request.RequestUri.Host, hubHost, StringComparison.OrdinalIgnoreCase))
+                            {
+                                forbiddenFromNonHubCount++;
+
+                                HttpResponseMessage writeForbiddenResponse = new HttpResponseMessage(HttpStatusCode.Forbidden)
+                                {
+                                    Content = new StringContent(
+                                        JsonConvert.SerializeObject(new { code = "WriteForbidden", message = "The requested operation cannot be performed at this region" }),
+                                        Encoding.UTF8,
+                                        "application/json")
+                                };
+
+                                writeForbiddenResponse.Headers.Add("x-ms-substatus", ((int)Documents.SubStatusCodes.WriteForbidden).ToString());
+                                writeForbiddenResponse.Headers.Add("x-ms-activity-id", Guid.NewGuid().ToString());
+                                writeForbiddenResponse.Headers.Add("x-ms-request-charge", "1.0");
+
+                                return Task.FromResult(writeForbiddenResponse);
+                            }
+
+                            reachedHub = true;
+                        }
+
+                        // Return null to let the request proceed to the real hub region.
+                        return Task.FromResult<HttpResponseMessage>(null);
+                    }
+                };
+
+                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+                {
+                    ConnectionMode = connectionMode,
+                    ConsistencyLevel = ConsistencyLevel.Session,
+                    ApplicationPreferredRegions = preferredRegions,
+                    // Hedging masks the bug (an arm pinned to the hub wins). Disable it so the primary path is tested.
+                    AvailabilityStrategy = AvailabilityStrategy.DisabledStrategy(),
+                };
+
+                if (connectionMode == ConnectionMode.Gateway)
+                {
+                    cosmosClientOptions.HttpClientFactory = () => new HttpClient(httpHandler);
+                }
+                else
+                {
+                    cosmosClientOptions.TransportClientHandlerFactory = (transport) => new TransportClientWrapper(
+                        transport,
+                        interceptorAfterResult: (request, storeResponse) =>
+                        {
+                            if (request.ResourceType == Documents.ResourceType.Document
+                                && request.OperationType == Documents.OperationType.Read)
+                            {
+                                string targetHost = request.RequestContext.LocationEndpointToRoute?.Host;
+
+                                // Non-hub region → 403/WriteForbidden. Hub region → passthrough (real 200).
+                                if (!string.Equals(targetHost, hubHost, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    forbiddenFromNonHubCount++;
+
+                                    storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.SubStatus, ((int)Documents.SubStatusCodes.WriteForbidden).ToString());
+                                    storeResponse.Headers.Set(Documents.HttpConstants.HttpHeaders.ActivityId, Guid.NewGuid().ToString());
+                                    storeResponse.Headers.Set(Documents.HttpConstants.HttpHeaders.RequestCharge, "1.0");
+
+                                    return new Documents.StoreResponse()
+                                    {
+                                        Status = 403,
+                                        Headers = storeResponse.Headers,
+                                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes("The requested operation cannot be performed at this region"))
+                                    };
+                                }
+
+                                reachedHub = true;
+                            }
+
+                            return storeResponse;
+                        });
+                }
+
+                using CosmosClient cosmosClient = new(connectionString: this.connectionString, clientOptions: cosmosClientOptions);
+                Database database = cosmosClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                // Create the item via the non-intercepted client and let it replicate to all regions.
+                ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+                await this.container.CreateItemAsync(testItem, new PartitionKey(testItem.pk));
+                await Task.Delay(3000);
+
+                // Act: read with LastCommittedSingleWriteRegion. Before the fix this hangs (caught by [Timeout]);
+                // after the fix it advances from the replica to the hub and returns 200.
+                ItemResponse<ToDoActivity> response = await container.ReadItemAsync<ToDoActivity>(
+                    testItem.id,
+                    new PartitionKey(testItem.pk),
+                    new ItemRequestOptions
+                    {
+                        ReadConsistencyStrategy = Cosmos.ReadConsistencyStrategy.LastCommittedSingleWriteRegion,
+                    });
+
+                // Assert: the read reached the hub and completed, after being rejected by at least one non-hub region.
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                Assert.IsNotNull(response.Resource);
+                Assert.AreEqual(testItem.id, response.Resource.id);
+
+                Assert.IsTrue(forbiddenFromNonHubCount >= 1,
+                    $"The read must be rejected by at least one non-hub region with 403/WriteForbidden before reaching the hub. Count: {forbiddenFromNonHubCount}");
+                Assert.IsTrue(reachedHub,
+                    "The read must ultimately be routed to the hub region and succeed — proving the retry loop converges instead of hanging.");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled, null);
+            }
+        }
+
         [TestMethod]
         [Owner("aavasthy")]
         [TestCategory("MultiRegion")]

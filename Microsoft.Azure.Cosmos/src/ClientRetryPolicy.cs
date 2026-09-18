@@ -337,9 +337,14 @@ namespace Microsoft.Azure.Cosmos
             bool hubHeaderFlagSet = this.addHubRegionProcessingOnlyHeader
                 || this.crossRegionAvailabilityContext?.ShouldAddHubRegionProcessingOnlyHeader == true;
 
+            // The last term catches the header already set by ReadConsistencyStrategy.LastCommittedSingleWriteRegion,
+            // where neither flag above is set. It matches the signal TryMarkEndpointUnavailableForPartitionKeyRange
+            // uses, so dispatch reads the hub override the failure path records. Evaluated last to short-circuit.
             if (this.isHubRegionProcessingEnabled
                 && request.IsReadOnlyRequest
-                && (this.sessionTokenRetryCount > 0 || hubHeaderFlagSet))
+                && (this.sessionTokenRetryCount > 0
+                    || hubHeaderFlagSet
+                    || GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request)))
             {
                 bool pkRangeLocationCacheHit = this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(
                     request, checkHubRegionOverrideInCache: true);
