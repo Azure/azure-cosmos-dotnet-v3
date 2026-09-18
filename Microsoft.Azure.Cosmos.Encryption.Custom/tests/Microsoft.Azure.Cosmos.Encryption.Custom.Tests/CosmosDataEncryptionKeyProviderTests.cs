@@ -172,6 +172,36 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.AreEqual(ttl, provider.PdekCacheTimeToLive);
         }
 
+        [TestMethod]
+        public void Constructor_KeyStoreProvider_CapturesZeroTtl()
+        {
+            // Zero disables caching and retains no decrypted key material; the provider must capture it verbatim so
+            // the zero lifetime reaches the MDE per-instance cache.
+            TestEncryptionKeyStoreProvider keyStoreProvider = new()
+            {
+                DataEncryptionKeyCacheTimeToLive = TimeSpan.Zero
+            };
+
+            CosmosDataEncryptionKeyProvider provider = new(keyStoreProvider);
+
+            Assert.AreEqual(TimeSpan.Zero, provider.PdekCacheTimeToLive);
+        }
+
+        [TestMethod]
+        public void Constructor_KeyStoreProvider_CapturesNullTtl()
+        {
+            // Null models "cache indefinitely"; the provider must capture it verbatim rather than coercing it to a
+            // large finite value.
+            TestEncryptionKeyStoreProvider keyStoreProvider = new()
+            {
+                DataEncryptionKeyCacheTimeToLive = null
+            };
+
+            CosmosDataEncryptionKeyProvider provider = new(keyStoreProvider);
+
+            Assert.IsFalse(provider.PdekCacheTimeToLive.HasValue);
+        }
+
         private static CosmosDataEncryptionKeyProvider CreateProvider()
         {
             return new CosmosDataEncryptionKeyProvider(new TestEncryptionKeyStoreProvider());
