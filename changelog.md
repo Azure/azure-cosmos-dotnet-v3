@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
-- Fault injection: Fixed duplicate ThinClient rule applications and incorrect decoding of injected responses, preserved injected HTTP responses in diagnostics, and ensured HTTP fault interception also runs when using a custom HTTP client factory.
+- Fault injection: Fixed duplicate ThinClient rule applications and incorrect decoding of injected responses, and preserved injected HTTP responses in diagnostics.
 
 #### Other Changes
 

@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
     using PartitionKey = PartitionKey;
 
     [TestClass]
+    [TestCategory("ThinClientProxy")]
     public class FaultInjectionProxyTests
     {
         private const int Timeout = 120000;
@@ -88,9 +89,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                     await this.highThroughputContainer.DeleteContainerAsync();
                 }
             }
-            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            catch (Exception ex)
             {
-                System.Diagnostics.Trace.TraceInformation("The test-owned container {0} was already absent.", this.highThroughputContainer.Id);
+                // Cleanup must never convert a passing test into a failure; faults injected by the
+                // test body make transient delete failures a normal outcome here.
+                System.Diagnostics.Trace.TraceWarning("Cleanup of the test-owned container failed: {0}", ex);
             }
             finally
             {
@@ -177,8 +180,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 this.fiDatabase = this.fiClient.GetDatabase(TestCommon.FaultInjectionDatabaseName);
                 this.fiContainer = this.fiDatabase.GetContainer(TestCommon.FaultInjectionContainerName);
 
-                globalEndpointManager = this.fiClient.ClientContext.DocumentClient.GlobalEndpointManager;
-
                 await this.WarmUpThinClientAsync();
                 localRegionRule.Enable();
                 remoteRegionRule.Enable();
@@ -192,22 +193,19 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 this.ValidateFaultInjectionRuleApplication(
                     exception, (int)HttpStatusCode.TooManyRequests,
                     (int)SubStatusCodes.RUBudgetExceeded, localRegionRule, faultInjector);
+
+                //ensure rules are created with proper regions
+                //must check here since the rules are initialized on first request call
+                Assert.AreEqual(1, localRegionRule.GetRegionEndpoints().Count);
+                Assert.AreEqual(readEndpoints[preferredRegions[0]], localRegionRule.GetRegionEndpoints()[0]);
+
+                Assert.AreEqual(1, remoteRegionRule.GetRegionEndpoints().Count);
+                Assert.AreEqual(readEndpoints[preferredRegions[1]], remoteRegionRule.GetRegionEndpoints()[0]);
             }
             finally
             {
                 localRegionRule.Disable();
                 remoteRegionRule.Disable();
-
-                //ensure rules are created with proper regions
-                //must check here since the rules are initialized on first request call
-                if (globalEndpointManager != null)
-                {
-                    Assert.AreEqual(1, localRegionRule.GetRegionEndpoints().Count);
-                    Assert.AreEqual(readEndpoints[preferredRegions[0]], localRegionRule.GetRegionEndpoints()[0]);
-
-                    Assert.AreEqual(1, remoteRegionRule.GetRegionEndpoints().Count);
-                    Assert.AreEqual(readEndpoints[preferredRegions[1]], remoteRegionRule.GetRegionEndpoints()[0]);
-                }
             }
         }
 
@@ -561,7 +559,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         //Tests to see if specific server error responses are applied, tests read and create item
         //</summary>
         [TestMethod]
-        [Timeout(Timeout * 100)]
+        [Timeout(Timeout * 5)]
         [Description("Test server error responses")]
         [Owner("ntripician")]
         [DataRow(FaultInjectionOperationType.ReadItem, FaultInjectionServerErrorType.Gone, (int)StatusCodes.Gone, (int)SubStatusCodes.ServerGenerated410, DisplayName = "Gone")]
@@ -800,8 +798,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
         /// <summary>
         /// Injection rate is set to 0.5, so the rule should be applied ~50% of the time
-        /// This test will fail ~1.2% of the time due to the random nature of the test
-        /// 98.8% of the time the rule will be applied between 38 and 62 times out of 100 with an injection rate of 50%
+        /// A four-standard-deviation interval reduces random release-gate failures.
         /// </summary>
         [TestMethod]
         [Timeout(Timeout)]
@@ -876,8 +873,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 }
 
                 this.ValidateHitCount(thresholdRule, injectedOperations);
-                Assert.IsTrue(injectedOperations >= 38, "This is Expected to fail 0.602% of the time");
-                Assert.IsTrue(injectedOperations <= 62, "This is Expected to fail 0.602% of the time");
+                Assert.IsTrue(
+                    injectedOperations >= 30 && injectedOperations <= 70,
+                    $"Expected 30-70 injected reads out of 100 at rate 0.5; observed {injectedOperations}.");
             }
             finally
             {

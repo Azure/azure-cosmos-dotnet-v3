@@ -155,9 +155,9 @@ If a required variable is missing, the affected tests fail fast with
 | `COSMOSDB_MULTI_REGION` | `COSMOSDB_MULTI_REGION` |
 | `COSMOSDB_THINCLIENT` | `COSMOSDB_THIN_CLIENT` |
 
-`FaultInjectionProxyTests` runs separately from the regular integration suite
-with `AZURE_COSMOS_THIN_CLIENT_ENABLED=True`. Failures in either suite block
-package publication.
+The regular integration suite runs with `AZURE_COSMOS_THIN_CLIENT_ENABLED=False`.
+`FaultInjectionProxyTests` runs separately with `AZURE_COSMOS_THIN_CLIENT_ENABLED=True`.
+Failures in either suite block package publication.
 
 The **same template** runs on every PR from `azure-pipelines.yml` with
 `IncludeIntegration: false` — it builds `src` + `tests`, runs the account-free

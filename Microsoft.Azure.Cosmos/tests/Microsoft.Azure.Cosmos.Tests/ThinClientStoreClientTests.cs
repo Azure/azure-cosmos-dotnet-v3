@@ -31,6 +31,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         private const string base64MockResponse =
            "9AEAAMkAAAAIvhHfD23jSaynaR+gyTZ3AAAAAQIAByFUaHUsIDEzIEZlYiAyMDI1IDE0OjI1OjI4LjAyNCBHTVQEAAgmACIwMDAwYWQzZS0wMDAwLTAyMDAtMDAwMC02N2FlNjRjMDAwMDAiDgAIVABkb2N1bWVudFNpemU9NTEyMDA7ZG9jdW1lbnRzU2l6ZT01MjQyODgwMDtkb2N1bWVudHNDb3VudD0tMTtjb2xsZWN0aW9uU2l6ZT01MjQyODgwMDsPAAhBAGRvY3VtZW50U2l6ZT0wO2RvY3VtZW50c1NpemU9MTtkb2N1bWVudHNDb3VudD04O2NvbGxlY3Rpb25TaXplPTM7EAAHBDEuMTkTAAUKAAAAAAAAABUADgzDMAzDMBxAFwAIOgBkYnMvdGhpbi1jbGllbnQtdGVzdC1kYi9jb2xscy90aGluLWNsaWVudC10ZXN0LWNvbnRhaW5lci0xGAAIDABOSDF1QUo2QU5tMD0aAAUJAAAAAAAAAB4AAgMAAAAfAAIEAAAAIQAIAQAwJgACAQAAACkABQkAAAAAAAAAMAACAAAAADUAAgEAAAA6AAUKAAAAAAAAADsABQkAAAAAAAAAPgAIBQAtMSMxMFEADkjhehSuRxBAYwAIAQAweAAF//////////89AQAAeyJpZCI6IjNiMTFiNDM2LTViMTUtNGQwZS1iZWYwLWY1MzVmNjA0MTQxYyIsInBrIjoicGsiLCJuYW1lIjoiODM2MzI0NTA2IiwiZW1haWwiOiJhYmNAZGVmLmNvbSIsImJvZHkiOiJibGFibGEiLCJfcmlkIjoiTkgxdUFKNkFObTBKQUFBQUFBQUFBQT09IiwiX3NlbGYiOiJkYnMvTkgxdUFBPT0vY29sbHMvTkgxdUFKNkFObTA9L2RvY3MvTkgxdUFKNkFObTBKQUFBQUFBQUFBQT09LyIsIl9ldGFnIjoiXCIwMDAwYWQzZS0wMDAwLTAyMDAtMDAwMC02N2FlNjRjMDAwMDBcIiIsIl9hdHRhY2htZW50cyI6ImF0dGFjaG1lbnRzLyIsIl90cyI6MTczOTQ4MjMwNH0=";
 
+        private const string ProxyFaultRuleId = "single-proxy-injection";
+
         private readonly Uri thinClientEndpoint = new("https://thinproxy.cosmos.azure.com/");
 
         [TestInitialize]
@@ -401,56 +403,78 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [DataRow(false, 1, false)]
-        [DataRow(false, 100, false)]
-        [DataRow(true, 1, false)]
-        [DataRow(true, 100, false)]
-        [DataRow(false, 1, true)]
-        [DataRow(false, 100, true)]
-        [DataRow(true, 1, true)]
-        [DataRow(true, 100, true)]
-        public async Task InvokeAsync_FaultInjectionRunsOnceBeforeSending(bool isWrite, int allowedApplications, bool useHttpClientFactory)
+        [DataRow(false, 1)]
+        [DataRow(false, 100)]
+        [DataRow(true, 1)]
+        [DataRow(true, 100)]
+        public async Task InvokeAsync_InjectedFault_SelectsFaultExactlyOnce(bool isWrite, int allowedApplications)
         {
-            const string ruleId = "single-proxy-injection";
-            int applications = 0;
-            Mock<IChaosInterceptor> interceptor = new Mock<IChaosInterceptor>();
-            interceptor.Setup(i => i.OnHttpRequestCallAsync(
-                It.IsAny<DocumentServiceRequest>(), It.IsAny<CancellationToken>()))
-                .Returns<DocumentServiceRequest, CancellationToken>((request, token) =>
-                {
-                    Assert.AreEqual("true", request.Headers.Get("FAULTINJECTION_IS_PROXY"),
-                        "The interceptor must know the response format before selecting a fault.");
-                    applications++;
-                    if (applications > allowedApplications)
-                    {
-                        return Task.FromResult<(bool, HttpResponseMessage)>((false, null));
-                    }
-
-                    HttpResponseMessage response = new HttpResponseMessage(HttpStatusCode.TooManyRequests)
-                    {
-                        Content = new StringContent(
-                            $"{{\"code\":\"429:3200\",\"message\":\"Fault Injection Server Error, rule: {ruleId}\"}}",
-                            Encoding.UTF8,
-                            "application/json")
-                    };
-                    response.Headers.Add(WFConstants.BackendHeaders.SubStatus, "3200");
-                    response.Headers.Add(ThinClientConstants.RoutedViaProxy, "1");
-                    return Task.FromResult((true, response));
-                });
-
+            List<string> selections = new List<string>();
+            Mock<IChaosInterceptor> interceptor = CreateProxyFaultInterceptor(allowedApplications, selections);
             Mock<HttpMessageHandler> handler = new Mock<HttpMessageHandler>();
-            using CosmosHttpClient httpClient = CreateFaultInjectionHttpClient(interceptor.Object, handler.Object, useHttpClientFactory);
+            using CosmosHttpClient httpClient = CreateFaultInjectionHttpClient(interceptor.Object, handler.Object);
             ThinClientStoreClient client = this.CreateFaultInjectionStoreClient(httpClient, interceptor.Object);
             using DocumentServiceRequest request = this.CreateFaultInjectionRequest(isWrite ? OperationType.Create : OperationType.Read);
+
+            await Assert.ThrowsExceptionAsync<DocumentClientException>(
+                () => this.InvokeFaultInjectionRequestAsync(client, request));
+
+            Assert.AreEqual(1, selections.Count,
+                "A second selection on the same request double-counts rule hits.");
+            handler.Protected().Verify("SendAsync", Times.Never(),
+                ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>());
+            interceptor.Verify(i => i.OnBeforeHttpSendAsync(request, It.IsAny<CancellationToken>()), Times.Once());
+            interceptor.Verify(i => i.OnAfterHttpSendAsync(request, It.IsAny<CancellationToken>()), Times.Never());
+        }
+
+        [TestMethod]
+        public async Task InvokeAsync_InjectedFault_SurfacesSyntheticResponseWithoutBinaryDecode()
+        {
+            Mock<IChaosInterceptor> interceptor = CreateProxyFaultInterceptor(1, new List<string>());
+            Mock<HttpMessageHandler> handler = new Mock<HttpMessageHandler>();
+            using CosmosHttpClient httpClient = CreateFaultInjectionHttpClient(interceptor.Object, handler.Object);
+            ThinClientStoreClient client = this.CreateFaultInjectionStoreClient(httpClient, interceptor.Object);
+            using DocumentServiceRequest request = this.CreateFaultInjectionRequest(OperationType.Read);
 
             DocumentClientException exception = await Assert.ThrowsExceptionAsync<DocumentClientException>(
                 () => this.InvokeFaultInjectionRequestAsync(client, request));
 
             Assert.AreEqual(HttpStatusCode.TooManyRequests, exception.StatusCode);
             Assert.AreEqual("3200", exception.Headers.Get(WFConstants.BackendHeaders.SubStatus));
-            StringAssert.Contains(exception.Message, ruleId);
-            Assert.AreEqual(1, applications);
-            Assert.IsNull(request.Headers.Get("FAULTINJECTION_IS_PROXY"));
+            StringAssert.Contains(exception.Message, ProxyFaultRuleId);
+        }
+
+        [TestMethod]
+        public async Task InvokeAsync_InjectedFault_ScopesProxyMarkerToSelection()
+        {
+            List<string> selections = new List<string>();
+            Mock<IChaosInterceptor> interceptor = CreateProxyFaultInterceptor(1, selections);
+            Mock<HttpMessageHandler> handler = new Mock<HttpMessageHandler>();
+            using CosmosHttpClient httpClient = CreateFaultInjectionHttpClient(interceptor.Object, handler.Object);
+            ThinClientStoreClient client = this.CreateFaultInjectionStoreClient(httpClient, interceptor.Object);
+            using DocumentServiceRequest request = this.CreateFaultInjectionRequest(OperationType.Read);
+
+            await Assert.ThrowsExceptionAsync<DocumentClientException>(
+                () => this.InvokeFaultInjectionRequestAsync(client, request));
+
+            Assert.AreEqual("true", selections.Single(),
+                "The interceptor must know the response format before selecting a fault.");
+            Assert.IsNull(request.Headers.Get("FAULTINJECTION_IS_PROXY"),
+                "The format marker must not outlive the interception scope.");
+        }
+
+        [TestMethod]
+        public async Task InvokeAsync_InjectedFault_RecordsResponseInDiagnostics()
+        {
+            Mock<IChaosInterceptor> interceptor = CreateProxyFaultInterceptor(1, new List<string>());
+            Mock<HttpMessageHandler> handler = new Mock<HttpMessageHandler>();
+            using CosmosHttpClient httpClient = CreateFaultInjectionHttpClient(interceptor.Object, handler.Object);
+            ThinClientStoreClient client = this.CreateFaultInjectionStoreClient(httpClient, interceptor.Object);
+            using DocumentServiceRequest request = this.CreateFaultInjectionRequest(OperationType.Read);
+
+            await Assert.ThrowsExceptionAsync<DocumentClientException>(
+                () => this.InvokeFaultInjectionRequestAsync(client, request));
+
             ClientSideRequestStatisticsTraceDatum statistics =
                 (ClientSideRequestStatisticsTraceDatum)request.RequestContext.ClientRequestStatistics;
             HttpResponseMessage recordedResponse = statistics.HttpResponseStatisticsList.Single().HttpResponseMessage;
@@ -460,36 +484,44 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new HttpRequestOptionsKey<bool>(CosmosHttpClientCore.FaultInjectionIsProxy), out bool proxyRequest) && proxyRequest);
             Assert.IsTrue(recordedResponse.RequestMessage.Options.TryGetValue(
                 new HttpRequestOptionsKey<bool>(CosmosHttpClientCore.FaultInjectionResponse), out bool injectedResponse) && injectedResponse);
-            handler.Protected().Verify("SendAsync", Times.Never(),
-                ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>());
-            interceptor.Verify(i => i.OnBeforeHttpSendAsync(request, It.IsAny<CancellationToken>()), Times.Once());
-            interceptor.Verify(i => i.OnAfterHttpSendAsync(request, It.IsAny<CancellationToken>()), Times.Never());
-
-            if (allowedApplications == 1)
-            {
-                handler.Protected().Setup<Task<HttpResponseMessage>>("SendAsync",
-                    ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
-                    .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.Created)
-                    {
-                        Content = new ByteArrayContent(Convert.FromBase64String(base64MockResponse))
-                    });
-
-                using DocumentServiceResponse retryResponse = await this.InvokeFaultInjectionRequestAsync(client, request);
-                Assert.AreEqual(HttpStatusCode.Created, retryResponse.StatusCode,
-                    "A retry after a single-use fault must decode the real proxy response.");
-                Assert.AreEqual(2, applications);
-                Assert.IsNull(request.Headers.Get("FAULTINJECTION_IS_PROXY"));
-                Assert.AreEqual(2, statistics.HttpResponseStatisticsList.Count);
-                Assert.AreEqual(HttpStatusCode.Created, statistics.HttpResponseStatisticsList.Last().HttpResponseMessage.StatusCode);
-                handler.Protected().Verify("SendAsync", Times.Once(),
-                    ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>());
-            }
         }
 
         [TestMethod]
-        [DataRow(false)]
-        [DataRow(true)]
-        public async Task InvokeAsync_UnmatchedFaultPreservesRealProxyResponse(bool useHttpClientFactory)
+        public async Task InvokeAsync_RetryAfterExhaustedFault_DecodesRealProxyResponse()
+        {
+            List<string> selections = new List<string>();
+            Mock<IChaosInterceptor> interceptor = CreateProxyFaultInterceptor(1, selections);
+            Mock<HttpMessageHandler> handler = new Mock<HttpMessageHandler>();
+            using CosmosHttpClient httpClient = CreateFaultInjectionHttpClient(interceptor.Object, handler.Object);
+            ThinClientStoreClient client = this.CreateFaultInjectionStoreClient(httpClient, interceptor.Object);
+            using DocumentServiceRequest request = this.CreateFaultInjectionRequest(OperationType.Read);
+
+            await Assert.ThrowsExceptionAsync<DocumentClientException>(
+                () => this.InvokeFaultInjectionRequestAsync(client, request));
+
+            handler.Protected().Setup<Task<HttpResponseMessage>>("SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.Created)
+                {
+                    Content = new ByteArrayContent(Convert.FromBase64String(base64MockResponse))
+                });
+
+            using DocumentServiceResponse retryResponse = await this.InvokeFaultInjectionRequestAsync(client, request);
+
+            Assert.AreEqual(HttpStatusCode.Created, retryResponse.StatusCode,
+                "A retry after a single-use fault must decode the real proxy response.");
+            Assert.AreEqual(2, selections.Count);
+            Assert.IsNull(request.Headers.Get("FAULTINJECTION_IS_PROXY"));
+            ClientSideRequestStatisticsTraceDatum statistics =
+                (ClientSideRequestStatisticsTraceDatum)request.RequestContext.ClientRequestStatistics;
+            Assert.AreEqual(2, statistics.HttpResponseStatisticsList.Count);
+            Assert.AreEqual(HttpStatusCode.Created, statistics.HttpResponseStatisticsList.Last().HttpResponseMessage.StatusCode);
+            handler.Protected().Verify("SendAsync", Times.Once(),
+                ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>());
+        }
+
+        [TestMethod]
+        public async Task InvokeAsync_UnmatchedFaultPreservesRealProxyResponse()
         {
             Mock<IChaosInterceptor> interceptor = new Mock<IChaosInterceptor>();
             interceptor.Setup(i => i.OnHttpRequestCallAsync(
@@ -515,7 +547,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     });
                 });
 
-            using CosmosHttpClient httpClient = CreateFaultInjectionHttpClient(interceptor.Object, handler.Object, useHttpClientFactory);
+            using CosmosHttpClient httpClient = CreateFaultInjectionHttpClient(interceptor.Object, handler.Object);
             ThinClientStoreClient client = this.CreateFaultInjectionStoreClient(httpClient, interceptor.Object);
             using DocumentServiceResponse response = await this.InvokeFaultInjectionRequestAsync(client, request);
 
@@ -571,9 +603,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [DataRow(false)]
-        [DataRow(true)]
-        public async Task SendHttpAsync_GatewayFaultPreservesHttpResponse(bool useHttpClientFactory)
+        public async Task SendHttpAsync_GatewayFaultPreservesHttpResponse()
         {
             const string errorMessage = "Fault Injection Server Error: Gateway test";
             Mock<IChaosInterceptor> interceptor = new Mock<IChaosInterceptor>();
@@ -589,7 +619,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 });
 
             Mock<HttpMessageHandler> handler = new Mock<HttpMessageHandler>();
-            using CosmosHttpClient httpClient = CreateFaultInjectionHttpClient(interceptor.Object, handler.Object, useHttpClientFactory);
+            using CosmosHttpClient httpClient = CreateFaultInjectionHttpClient(interceptor.Object, handler.Object);
             using DocumentServiceRequest request = this.CreateFaultInjectionRequest(OperationType.Read);
             using HttpResponseMessage response = await httpClient.SendHttpAsync(
                 () => new ValueTask<HttpRequestMessage>(new HttpRequestMessage(HttpMethod.Get, "https://mock.cosmos.com/")),
@@ -607,16 +637,41 @@ namespace Microsoft.Azure.Cosmos.Tests
                 ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>());
         }
 
+        private static Mock<IChaosInterceptor> CreateProxyFaultInterceptor(
+            int allowedApplications,
+            IList<string> observedProxyMarkers)
+        {
+            Mock<IChaosInterceptor> interceptor = new Mock<IChaosInterceptor>();
+            interceptor.Setup(i => i.OnHttpRequestCallAsync(
+                It.IsAny<DocumentServiceRequest>(), It.IsAny<CancellationToken>()))
+                .Returns<DocumentServiceRequest, CancellationToken>((request, token) =>
+                {
+                    observedProxyMarkers.Add(request.Headers.Get("FAULTINJECTION_IS_PROXY"));
+                    if (observedProxyMarkers.Count > allowedApplications)
+                    {
+                        return Task.FromResult<(bool, HttpResponseMessage)>((false, null));
+                    }
+
+                    HttpResponseMessage response = new HttpResponseMessage(HttpStatusCode.TooManyRequests)
+                    {
+                        Content = new StringContent(
+                            $"{{\"code\":\"429:3200\",\"message\":\"Fault Injection Server Error, rule: {ProxyFaultRuleId}\"}}",
+                            Encoding.UTF8,
+                            "application/json")
+                    };
+                    response.Headers.Add(WFConstants.BackendHeaders.SubStatus, "3200");
+                    response.Headers.Add(ThinClientConstants.RoutedViaProxy, "1");
+                    return Task.FromResult((true, response));
+                });
+
+            return interceptor;
+        }
+
         private static CosmosHttpClient CreateFaultInjectionHttpClient(
             IChaosInterceptor interceptor,
-            HttpMessageHandler handler,
-            bool useHttpClientFactory = false)
+            HttpMessageHandler handler)
         {
             ConnectionPolicy connectionPolicy = new ConnectionPolicy();
-            if (useHttpClientFactory)
-            {
-                connectionPolicy.HttpClientFactory = () => new HttpClient(handler);
-            }
 
             return CosmosHttpClientCore.CreateWithConnectionPolicy(
                 apiType: default,

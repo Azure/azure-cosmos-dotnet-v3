@@ -118,19 +118,19 @@ jobs:
         packageType: 'sdk'
         version: '8.x'
 
-    # Proxy tests need a separate account and do not carry the ThinClient test category.
     - task: DotNetCoreCLI@2
       displayName: Integration Test With Fault Injection
       condition: succeeded()
       inputs:
         command: test
         projects: 'Microsoft.Azure.Cosmos/FaultInjection/tests/*.csproj'
-        arguments: '--verbosity normal --configuration ${{ parameters.BuildConfiguration }} /p:OS=Windows --filter "FullyQualifiedName!~Microsoft.Azure.Cosmos.FaultInjection.Tests.FaultInjectionProxyTests"'
+        arguments: '--verbosity normal --configuration ${{ parameters.BuildConfiguration }} /p:OS=Windows --filter "TestCategory!=ThinClientProxy"'
         nugetConfigPath: NuGet.config
         publishTestResults: true
         testRunTitle: FaultInjectionTests
       env:
         COSMOSDB_MULTI_REGION: ${{ parameters.MultiRegionConnectionString }} # Real Account Connection String used by Integration Tests while running as part of release pipeline
+        AZURE_COSMOS_THIN_CLIENT_ENABLED: 'False'
 
     - task: DotNetCoreCLI@2
       displayName: ThinClient Integration Test With Fault Injection
@@ -138,7 +138,7 @@ jobs:
       inputs:
         command: test
         projects: 'Microsoft.Azure.Cosmos/FaultInjection/tests/*.csproj'
-        arguments: '--verbosity normal --configuration ${{ parameters.BuildConfiguration }} /p:OS=Windows --filter "FullyQualifiedName~Microsoft.Azure.Cosmos.FaultInjection.Tests.FaultInjectionProxyTests"'
+        arguments: '--verbosity normal --configuration ${{ parameters.BuildConfiguration }} /p:OS=Windows --filter "TestCategory=ThinClientProxy"'
         nugetConfigPath: NuGet.config
         publishTestResults: true
         testRunTitle: FaultInjectionProxyTests

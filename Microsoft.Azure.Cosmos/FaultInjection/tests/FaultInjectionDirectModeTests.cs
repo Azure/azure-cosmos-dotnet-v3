@@ -1623,7 +1623,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 Assert.IsTrue(connectionErrorRule.GetHitCount() == hitCount);
 
                 TimeSpan disposalTimeout = TimeSpan.FromSeconds(10);
-                using CancellationTokenSource disposalCancellation = new CancellationTokenSource(disposalTimeout);
+
+                // The token only guards against a hung write. Giving it a margin over the polling
+                // deadline keeps a write started near the deadline from being cancelled before the
+                // channel check that it was issued to trigger.
+                using CancellationTokenSource disposalCancellation = new CancellationTokenSource(disposalTimeout + TimeSpan.FromSeconds(30));
                 ValueStopwatch stopwatch = ValueStopwatch.StartNew();
                 bool disposedChannel;
                 do

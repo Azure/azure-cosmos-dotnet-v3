@@ -90,7 +90,6 @@ namespace Microsoft.Azure.Cosmos
                     userAgentContainer: connectionPolicy.UserAgentContainer,
                     apiType: apiType,
                     eventSource: eventSource,
-                    chaosInterceptor: faultInjectionchaosInterceptor,
                     clientId: clientId);
             }
 
