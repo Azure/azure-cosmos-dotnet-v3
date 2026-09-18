@@ -245,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.Common
             return null;
         }
 
-        private Task<ContainerProperties> ResolveByRidAsync(
+        internal Task<ContainerProperties> ResolveByRidAsync(
             string apiVersion,
             string resourceId,
             ITrace trace,
