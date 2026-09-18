@@ -38,7 +38,17 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.Encryption.Custom.csproj" />
+    <ProjectReference
+      Include="..\Microsoft.Azure.Cosmos.Encryption.Custom.Preview07Compatibility\Microsoft.Azure.Cosmos.Encryption.Custom.Preview07Compatibility.csproj"
+      ReferenceOutputAssembly="false"
+      PrivateAssets="all" />
   </ItemGroup>
+
+  <Target Name="CopyPreview07CompatibilityFixture" AfterTargets="Build">
+    <Copy
+      SourceFiles="..\Microsoft.Azure.Cosmos.Encryption.Custom.Preview07Compatibility\bin\$(Configuration)\netstandard2.0\Microsoft.Azure.Cosmos.Encryption.Custom.Preview07Compatibility.dll"
+      DestinationFolder="$(TargetDir)" />
+  </Target>
 
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
