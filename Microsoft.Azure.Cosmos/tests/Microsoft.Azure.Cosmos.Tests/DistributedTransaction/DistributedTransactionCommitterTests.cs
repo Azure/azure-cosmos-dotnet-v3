@@ -1302,6 +1302,83 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 "The same token is replayed through a fresh retry policy, so both signals must survive that policy's reset.");
         }
 
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task ExecuteTransactionAsync_PendingAttempt_PreservesTokenTrackerOwnership(bool abortFirstAttempt)
+        {
+            TaskCompletionSource<bool> firstAttemptStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<ResponseMessage> firstAttemptResponse = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            List<(Guid Token, DistributedTransactionDispatchTracker Tracker)> attempts = new();
+            List<(bool IsRetry, bool IsCrossRegionRedirect)> startingSignals = new();
+            int callCount = 0;
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            this.SetupProcessResourceOperationWithStreamAndEnricherCapture(
+                mockContext,
+                (stream, enricher) => CaptureDispatchTracker(
+                    enricher,
+                    OperationType.CommitDistributedTransaction,
+                    (token, tracker) =>
+                    {
+                        attempts.Add((token, tracker));
+                        startingSignals.Add(tracker.RecordDispatch("East US"));
+                        tracker.RecordDispatch("West US");
+                    }),
+                () =>
+                {
+                    if (Interlocked.Increment(ref callCount) == 1)
+                    {
+                        firstAttemptStarted.TrySetResult(true);
+                        return firstAttemptResponse.Task;
+                    }
+
+                    return Task.FromResult(CreateSuccessResponseMessage(operationCount: 1));
+                });
+
+            using CancellationTokenSource cancellation = new(TimeSpan.FromSeconds(10));
+            using ResponseMessage retryResponse = abortFirstAttempt
+                ? new ResponseMessage((HttpStatusCode)StatusCodes.TransactionAborted)
+                {
+                    Content = new MemoryStream(Encoding.UTF8.GetBytes("{\"isRetriable\":true}"))
+                }
+                : CreateRetriableNonAbortedResponseMessage();
+            DistributedTransactionCommitter committer = new(
+                CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
+            Task<DistributedTransactionResponse> execution = committer.ExecuteTransactionAsync(
+                NoOpTrace.Singleton, cancellation.Token);
+            try
+            {
+                await firstAttemptStarted.Task.WaitAsync(cancellation.Token);
+                Assert.AreEqual(1, Volatile.Read(ref callCount));
+                Assert.AreEqual(1, attempts.Count);
+                Assert.AreNotEqual(Guid.Empty, attempts[0].Token);
+                Assert.IsFalse(execution.IsCompleted);
+            }
+            finally
+            {
+                firstAttemptResponse.TrySetResult(retryResponse);
+                using DistributedTransactionResponse response = await execution.WaitAsync(cancellation.Token);
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            }
+
+            Assert.AreEqual(2, attempts.Count);
+            Assert.AreEqual((false, false), startingSignals[0]);
+            if (abortFirstAttempt)
+            {
+                Assert.AreNotEqual(attempts[0].Token, attempts[1].Token);
+                Assert.AreNotSame(attempts[0].Tracker, attempts[1].Tracker);
+                Assert.AreEqual((false, false), startingSignals[1]);
+            }
+            else
+            {
+                Assert.AreEqual(attempts[0].Token, attempts[1].Token);
+                Assert.AreSame(attempts[0].Tracker, attempts[1].Tracker);
+                Assert.AreEqual((true, true), startingSignals[1]);
+            }
+
+            Assert.AreEqual((true, true), attempts[0].Tracker.RecordDispatch("East US"));
+        }
+
         /// <summary>
         /// Stands in for <see cref="ClientRetryPolicy"/> driving one attempt across a write-region
         /// boundary, recording the signals the attempt started with.
@@ -1327,7 +1404,8 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
         private static DistributedTransactionDispatchTracker CaptureDispatchTracker(
             Action<RequestMessage> enricher,
-            OperationType operationType)
+            OperationType operationType,
+            Action<Guid, DistributedTransactionDispatchTracker> capture = null)
         {
             using (RequestMessage request = new RequestMessage
             {
@@ -1341,6 +1419,9 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     request.IsPropertiesInitialized,
                     "Publishing the DTX tracker must not initialize or mutate the public Properties dictionary.");
 
+                capture?.Invoke(
+                    Guid.Parse(request.Headers[HttpConstants.HttpHeaders.IdempotencyToken]),
+                    request.DistributedTransactionDispatchTracker);
                 return request.DistributedTransactionDispatchTracker;
             }
         }

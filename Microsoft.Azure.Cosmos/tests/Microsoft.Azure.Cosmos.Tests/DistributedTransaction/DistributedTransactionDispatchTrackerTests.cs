@@ -5,10 +5,13 @@
 namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 {
     using System;
+    using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
 
     /// <summary>
     /// Unit tests for <see cref="DistributedTransactionDispatchTracker"/>, which owns the emission rules
@@ -275,6 +278,88 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             Assert.IsTrue(final.IsCrossRegionRedirect);
         }
 
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public void StampDispatchHeaders_HeaderWriteFails_PropagatesAndRetainsDispatch(bool failSecondHeader)
+        {
+            DistributedTransactionDispatchTracker tracker = new();
+            InvalidOperationException failure = new("Injected header assignment failure.");
+            string failedHeader = failSecondHeader
+                ? DistributedTransactionConstants.IsDtxCrossRegionRedirect
+                : DistributedTransactionConstants.IsDtxRetry;
+            Mock<INameValueCollection> headers = new();
+            headers.SetupSet(collection => collection[failedHeader] = It.IsAny<string>()).Throws(failure);
+
+            using (DocumentServiceRequest request = CreateRequest(headers.Object))
+            {
+                Assert.AreSame(headers.Object, request.Headers);
+                Assert.AreSame(
+                    failure,
+                    Assert.ThrowsException<InvalidOperationException>(
+                        () => tracker.StampDispatchHeaders(request, EastUs)));
+            }
+
+            headers.VerifySet(
+                collection => collection[DistributedTransactionConstants.IsDtxRetry] = bool.FalseString,
+                Times.Once);
+            headers.VerifySet(
+                collection => collection[DistributedTransactionConstants.IsDtxCrossRegionRedirect] = bool.FalseString,
+                failSecondHeader ? Times.Once() : Times.Never());
+
+            using (DocumentServiceRequest nextRequest = CreateRequest())
+            {
+                tracker.StampDispatchHeaders(nextRequest, WestUs);
+                AssertHeaders(nextRequest, bool.TrueString, bool.TrueString);
+            }
+        }
+
+        [TestMethod]
+        public async Task StampDispatchHeaders_DistinctRequestsCompleteOutOfOrder_PreserveRecordingOrder()
+        {
+            DistributedTransactionDispatchTracker tracker = new();
+            TaskCompletionSource<bool> firstHeaderEntered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            using ManualResetEventSlim releaseFirstHeader = new(false);
+            using DocumentServiceRequest secondRequest = CreateRequest();
+            INameValueCollection originalHeaders = new RequestNameValueCollection();
+            Mock<INameValueCollection> delayedHeaders = new();
+            delayedHeaders.Setup(collection => collection[It.IsAny<string>()])
+                .Returns((string name) => originalHeaders[name]);
+            delayedHeaders.SetupSet(
+                collection => collection[DistributedTransactionConstants.IsDtxRetry] = bool.FalseString)
+                .Callback(() =>
+                {
+                    firstHeaderEntered.TrySetResult(true);
+                    Assert.IsTrue(
+                        releaseFirstHeader.Wait(TimeSpan.FromSeconds(10)),
+                        "The test must release the first request's header assignment.");
+                    originalHeaders[DistributedTransactionConstants.IsDtxRetry] = bool.FalseString;
+                });
+            delayedHeaders.SetupSet(
+                collection => collection[DistributedTransactionConstants.IsDtxCrossRegionRedirect] = bool.FalseString)
+                .Callback(() => originalHeaders[DistributedTransactionConstants.IsDtxCrossRegionRedirect] = bool.FalseString);
+            using DocumentServiceRequest firstRequest = CreateRequest(delayedHeaders.Object);
+            Assert.AreSame(delayedHeaders.Object, firstRequest.Headers);
+
+            Task firstDispatch = Task.Run(() => tracker.StampDispatchHeaders(firstRequest, EastUs));
+            try
+            {
+                await firstHeaderEntered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+                tracker.StampDispatchHeaders(secondRequest, WestUs);
+
+                AssertHeaders(secondRequest, bool.TrueString, bool.TrueString);
+                Assert.IsFalse(firstDispatch.IsCompleted, "The first recorded dispatch has not finished stamping.");
+            }
+            finally
+            {
+                releaseFirstHeader.Set();
+                await firstDispatch.WaitAsync(TimeSpan.FromSeconds(10));
+            }
+
+            AssertHeaders(firstRequest, bool.FalseString, bool.FalseString);
+            AssertHeaders(secondRequest, bool.TrueString, bool.TrueString);
+        }
+
         private static void AssertHeaders(
             DocumentServiceRequest request,
             string expectedIsRetry,
@@ -284,12 +369,14 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             Assert.AreEqual(expectedIsCrossRegionRedirect, request.Headers[DistributedTransactionConstants.IsDtxCrossRegionRedirect]);
         }
 
-        private static DocumentServiceRequest CreateRequest()
+        private static DocumentServiceRequest CreateRequest(INameValueCollection headers = null)
         {
             return DocumentServiceRequest.Create(
                 OperationType.CommitDistributedTransaction,
                 ResourceType.DistributedTransactionBatch,
-                AuthorizationTokenType.PrimaryMasterKey);
+                stream: new MemoryStream(),
+                authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey,
+                headers: headers);
         }
     }
 }

@@ -439,6 +439,79 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public async Task RetryHandler_DistributedTransaction_AwaitsDispatchBeforeReusingRequest()
+        {
+            using MockDocumentClient documentClient = new();
+            documentClient.MockGlobalEndpointManager
+                .Setup(manager => manager.GetExactLocation(It.IsAny<Uri>()))
+                .Returns("location1");
+            using CosmosClient client = new(
+                RetryHandlerTests.TestUri.OriginalString,
+                MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey,
+                new CosmosClientOptions(),
+                documentClient);
+            using CancellationTokenSource cancellation = new(TimeSpan.FromSeconds(10));
+            using ResponseMessage retryResponse = new(HttpStatusCode.TooManyRequests);
+            TaskCompletionSource<bool> firstDispatchStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<bool> releaseFirstDispatch = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            List<DocumentServiceRequest> serviceRequests = new();
+            List<(string IsRetry, string IsCrossRegionRedirect)> dispatchHeaders = new();
+            int activeDispatches = 0;
+            int dispatchCount = 0;
+            RetryHandler retryHandler = new(client)
+            {
+                InnerHandler = new TestHandler(async (request, cancellationToken) =>
+                {
+                    Assert.AreEqual(1, Interlocked.Increment(ref activeDispatches));
+                    try
+                    {
+                        int attempt = Interlocked.Increment(ref dispatchCount);
+                        DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
+                        serviceRequests.Add(serviceRequest);
+                        dispatchHeaders.Add((
+                            serviceRequest.Headers[DistributedTransactionConstants.IsDtxRetry],
+                            serviceRequest.Headers[DistributedTransactionConstants.IsDtxCrossRegionRedirect]));
+                        if (attempt == 1)
+                        {
+                            firstDispatchStarted.TrySetResult(true);
+                            await releaseFirstDispatch.Task.WaitAsync(cancellationToken);
+                            return retryResponse;
+                        }
+
+                        return await TestHandler.ReturnSuccess();
+                    }
+                    finally
+                    {
+                        Interlocked.Decrement(ref activeDispatches);
+                    }
+                })
+            };
+
+            using RequestMessage request = CreateDtxRequestMessage(new DistributedTransactionDispatchTracker());
+            Task<ResponseMessage> send = retryHandler.SendAsync(request, cancellation.Token);
+            try
+            {
+                await firstDispatchStarted.Task.WaitAsync(cancellation.Token);
+                Assert.AreEqual(1, Volatile.Read(ref dispatchCount));
+                Assert.AreEqual(1, Volatile.Read(ref activeDispatches));
+                Assert.IsFalse(send.IsCompleted);
+            }
+            finally
+            {
+                releaseFirstDispatch.TrySetResult(true);
+                using ResponseMessage response = await send.WaitAsync(cancellation.Token);
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            }
+
+            Assert.AreEqual(0, activeDispatches);
+            Assert.AreEqual(2, serviceRequests.Count);
+            Assert.AreSame(serviceRequests[0], serviceRequests[1], "Sequential retries reuse the service request.");
+            CollectionAssert.AreEqual(
+                new[] { (bool.FalseString, bool.FalseString), (bool.TrueString, bool.FalseString) },
+                dispatchHeaders);
+        }
+
+        [TestMethod]
         public async Task RetryHandlerNoRetryOnAuthError()
         {
             await this.RetryHandlerDontRetryOnStatusCode(HttpStatusCode.Unauthorized);

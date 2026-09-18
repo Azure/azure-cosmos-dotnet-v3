@@ -17,6 +17,8 @@ namespace Microsoft.Azure.Cosmos
     /// write region within a single commit attempt, and the committer replays the same token through a new
     /// policy on any retriable non-abort response, so policy-local state would reset while the token lives
     /// on and under-report both signals.
+    /// Token rotation creates a new tracker.
+    /// The committer and retry handler serialize DTX attempts; DTX is not hedged.
     /// </remarks>
     internal sealed class DistributedTransactionDispatchTracker
     {
@@ -33,7 +35,12 @@ namespace Microsoft.Azure.Cosmos
         /// Records intent rather than delivery: a failed dispatch may still have reached the coordinator,
         /// so it counts, over-reporting in the safe direction. Lower-level transport resends do not
         /// record a new dispatch. Once set, the cross-region signal stays true for this token.
+        /// The locked update defines recording order, not completion or network arrival order.
         /// </remarks>
+        /// <param name="regionName">
+        /// The account-topology region key, or null/empty if unresolved. Comparison ignores casing,
+        /// but does not trim whitespace or resolve aliases.
+        /// </param>
         /// <returns>A consistent snapshot of both dispatch signals after recording this dispatch.</returns>
         internal (bool IsRetry, bool IsCrossRegionRedirect) RecordDispatch(string regionName)
         {
@@ -73,6 +80,11 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Stamps both headers for the next dispatch.
         /// </summary>
+        /// <remarks>
+        /// Callers must exclusively own the request and headers through sending; sequential reuse is allowed.
+        /// Concurrent calls require separate requests and header collections. Header writes are not atomic.
+        /// Recording precedes header writes; exceptions propagate without undoing the dispatch or earlier writes.
+        /// </remarks>
         internal void StampDispatchHeaders(DocumentServiceRequest request, string regionName)
         {
             if (request == null)
