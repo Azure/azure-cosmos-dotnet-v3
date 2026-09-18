@@ -10,6 +10,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Security.Cryptography;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -637,6 +639,474 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 new CosmosDiagnosticsContext(),
                 new ItemRequestOptions { Properties = new Dictionary<string, object> { { "encryption-json-processor", "Stream" } } },
                 CancellationToken.None);
+        }
+
+        [TestMethod]
+        public async Task EncryptionTransactionalBatchMigratesSupportedStoredStates()
+        {
+            Container rawContainer = null;
+            try
+            {
+                (rawContainer, Container reader, TestItem[] originalDocuments) =
+                    await CreateBatchMigrationFixtureAsync();
+                await VerifyDocumentsWithBothProcessorsAsync(reader, originalDocuments);
+
+                TestItem[] migratedDocuments = originalDocuments
+                    .Select((document, index) => CreateMigratedDocument(document, index))
+                    .ToArray();
+                TransactionalBatchResponse response = null;
+                List<string> scopes = await CaptureEncryptionScopesAsync(async () =>
+                {
+                    TransactionalBatch batch = reader.CreateTransactionalBatch(
+                            new PartitionKey(BatchFixturePartitionKey))
+                        .ReplaceItem(
+                            migratedDocuments[0].Id,
+                            migratedDocuments[0],
+                            CreateBatchEncryptionOptions(JsonProcessor.Newtonsoft))
+                        .ReplaceItemStream(
+                            migratedDocuments[1].Id,
+                            ToStream(migratedDocuments[1]),
+                            CreateBatchEncryptionOptions(JsonProcessor.Stream))
+                        .ReplaceItem(
+                            migratedDocuments[2].Id,
+                            migratedDocuments[2],
+                            CreateBatchEncryptionOptions(JsonProcessor.Newtonsoft))
+                        .ReplaceItemStream(
+                            migratedDocuments[3].Id,
+                            ToStream(migratedDocuments[3]),
+                            CreateBatchEncryptionOptions(JsonProcessor.Stream));
+                    response = await batch.ExecuteAsync();
+                });
+
+                using (response)
+                {
+                    Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                    Assert.AreEqual(migratedDocuments.Length, response.Count);
+                    for (int index = 0; index < migratedDocuments.Length; index++)
+                    {
+                        VerifyExpectedTestItem(
+                            migratedDocuments[index],
+                            response.GetOperationResultAtIndex<TestItem>(index).Resource);
+                        byte[] rawDocument = await ReadRawDocumentAsync(
+                            rawContainer,
+                            migratedDocuments[index]);
+                        VerifyRawMdeDocument(rawDocument, migratedDocuments[index]);
+                    }
+                }
+
+                AssertBatchProcessorScopes(
+                    scopes,
+                    expectedNewtonsoftEncrypt: 2,
+                    expectedStreamEncrypt: 2,
+                    expectedNewtonsoftDecrypt: 2,
+                    expectedStreamDecrypt: 2);
+                await VerifyDocumentsWithBothProcessorsAsync(reader, migratedDocuments);
+            }
+            finally
+            {
+                if (rawContainer != null)
+                {
+                    await rawContainer.DeleteContainerStreamAsync();
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task EncryptionTransactionalBatchFailureRollsBackEveryStoredStateByteForByte()
+        {
+            Container rawContainer = null;
+            try
+            {
+                (rawContainer, Container reader, TestItem[] originalDocuments) =
+                    await CreateBatchMigrationFixtureAsync();
+                Dictionary<string, byte[]> originalRawDocuments = new ();
+                foreach (TestItem document in originalDocuments)
+                {
+                    originalRawDocuments[document.Id] = await ReadRawDocumentAsync(
+                        rawContainer,
+                        document);
+                }
+
+                TestItem[] attemptedDocuments = originalDocuments
+                    .Select((document, index) => CreateMigratedDocument(document, index))
+                    .ToArray();
+                TransactionalBatch batch = null;
+                TransactionalBatchResponse failedResponse = null;
+                List<string> scopes = await CaptureEncryptionScopesAsync(async () =>
+                {
+                    batch = reader.CreateTransactionalBatch(new PartitionKey(BatchFixturePartitionKey))
+                        .ReplaceItem(
+                            attemptedDocuments[0].Id,
+                            attemptedDocuments[0],
+                            CreateBatchEncryptionOptions(JsonProcessor.Newtonsoft))
+                        .ReplaceItemStream(
+                            attemptedDocuments[1].Id,
+                            ToStream(attemptedDocuments[1]),
+                            CreateBatchEncryptionOptions(JsonProcessor.Stream))
+                        .ReplaceItem(
+                            attemptedDocuments[2].Id,
+                            attemptedDocuments[2],
+                            CreateBatchEncryptionOptions(JsonProcessor.Newtonsoft))
+                        .ReplaceItemStream(
+                            attemptedDocuments[3].Id,
+                            ToStream(attemptedDocuments[3]),
+                            CreateBatchEncryptionOptions(
+                                JsonProcessor.Stream,
+                                ifMatchEtag: Guid.NewGuid().ToString()));
+                    failedResponse = await batch.ExecuteAsync();
+                });
+
+                using (failedResponse)
+                {
+                    Assert.AreEqual(HttpStatusCode.PreconditionFailed, failedResponse.StatusCode);
+                    Assert.AreEqual(attemptedDocuments.Length, failedResponse.Count);
+                    for (int index = 0; index < attemptedDocuments.Length - 1; index++)
+                    {
+                        Assert.AreEqual(HttpStatusCode.FailedDependency, failedResponse[index].StatusCode);
+                    }
+
+                    Assert.AreEqual(
+                        HttpStatusCode.PreconditionFailed,
+                        failedResponse[attemptedDocuments.Length - 1].StatusCode);
+                }
+
+                AssertBatchProcessorScopes(
+                    scopes,
+                    expectedNewtonsoftEncrypt: 2,
+                    expectedStreamEncrypt: 2,
+                    expectedNewtonsoftDecrypt: 0,
+                    expectedStreamDecrypt: 0);
+                foreach (TestItem document in originalDocuments)
+                {
+                    byte[] rawDocumentAfterFailure = await ReadRawDocumentAsync(
+                        rawContainer,
+                        document);
+                    CollectionAssert.AreEqual(
+                        originalRawDocuments[document.Id],
+                        rawDocumentAfterFailure,
+                        $"Raw document '{document.Id}' changed despite transactional rollback.");
+                }
+
+                await VerifyDocumentsWithBothProcessorsAsync(reader, originalDocuments);
+
+                TestItem committedDocument = CreateMigratedDocument(originalDocuments[0], index: 10);
+                batch.ReplaceItem(
+                    committedDocument.Id,
+                    committedDocument,
+                    CreateBatchEncryptionOptions(JsonProcessor.Newtonsoft));
+                using TransactionalBatchResponse retryResponse = await batch.ExecuteAsync();
+
+                Assert.AreEqual(HttpStatusCode.OK, retryResponse.StatusCode);
+                Assert.AreEqual(1, retryResponse.Count);
+                VerifyExpectedTestItem(
+                    committedDocument,
+                    retryResponse.GetOperationResultAtIndex<TestItem>(0).Resource);
+                byte[] committedRawDocument = await ReadRawDocumentAsync(
+                    rawContainer,
+                    committedDocument);
+                Assert.IsFalse(
+                    originalRawDocuments[committedDocument.Id].SequenceEqual(committedRawDocument),
+                    "A successful batch reuse must produce an observable committed write.");
+                VerifyRawMdeDocument(committedRawDocument, committedDocument);
+            }
+            finally
+            {
+                if (rawContainer != null)
+                {
+                    await rawContainer.DeleteContainerStreamAsync();
+                }
+            }
+        }
+
+        internal const string BatchFixturePartitionKey = "batch-fixture-pk";
+        internal const string BatchFixtureDekId = "batch-fixture-dek";
+
+        // Produced by published Microsoft.Azure.Cosmos.Encryption.Custom 1.0.0-preview07,
+        // package SHA-256 121AA0ED2A518D1F791992AC4E6A90B8E3A16A9BEDE4CB719F6156CF384398F8.
+        internal const string LegacyBatchFixtureBase64 =
+            "eyJpZCI6ImJhdGNoLWZpeHR1cmUtbGVnYWN5IiwiUEsiOiJiYXRjaC1maXh0dXJlLXBrIiwiTm9uU2Vuc2l0aXZlIjoibGVnYWN5LXBsYWluIiwiX2VpIjp7Il9lZiI6MiwiX2VuIjoiYmF0Y2gtZml4dHVyZS1kZWsiLCJfZWEiOiJBRUFlczI1NkNiY0htYWNTaGEyNTZSYW5kb21pemVkIiwiX2VkIjoiQWJxZFd2RFVGSjB2Y2J1YXdjRVlwT2EyNkhoaS9xd01LeXNkOEV6d3VDQTFIUTB5bVhtY2VtdVY4bTVzbGU4b2d2a1BYcGcvQmcvUmkrVldvaVBNZkRMelBnNkF1ZFJVckhXMEt2Y3R0ZkN2IiwiX2VwIjpbIi9TZW5zaXRpdmUiXX19";
+        internal const string LegacyBatchFixtureSha256 =
+            "0A1FD7A034303BAF74F8B4EE8176B1059D9AFE1B6BF5873FE9250C8D99061DA7";
+
+        // Produced by the same published preview07 package and fixed key.
+        internal const string NewtonsoftBatchFixtureBase64 =
+            "eyJpZCI6ImJhdGNoLWZpeHR1cmUtbWRlLW5ld3RvbnNvZnQiLCJQSyI6ImJhdGNoLWZpeHR1cmUtcGsiLCJOb25TZW5zaXRpdmUiOiJtZGUtbmV3dG9uc29mdC1wbGFpbiIsIlNlbnNpdGl2ZSI6IkFnR09SN3ZrcWtqQVZZZXdXNkJwcUFQaEt3RWE1YU9KQmNQYTZyK25Scnhtcm9CMjVFV0ZrY3grVUhRRmRRZ1Z1UE9adVA4SHIvL0VNdHkvOGlYRHdKWnI5b2xjT2dYVjR5TmFHQ1U4eHJuTmtBPT0iLCJfZWkiOnsiX2VmIjozLCJfZW4iOiJiYXRjaC1maXh0dXJlLWRlayIsIl9lYSI6Ik1kZUFlYWRBZXMyNTZDYmNIbWFjMjU2UmFuZG9taXplZCIsIl9lZCI6bnVsbCwiX2VwIjpbIi9TZW5zaXRpdmUiXX19";
+        internal const string NewtonsoftBatchFixtureSha256 =
+            "FCE536F8169446D9E488D2D318176F924E62A8A43BD315AC72073C1CD36B5D4F";
+
+        // Produced by pre-fix candidate commit 8fcd60810fe6f3ac830774912e74e36c2cae4483,
+        // package SHA-256 9510AA32D5D0FD4ED80B746E05AC7B5402CC21A2AEB6692FF80B9BE29185939B.
+        internal const string StreamBatchFixtureBase64 =
+            "eyJpZCI6ImJhdGNoLWZpeHR1cmUtbWRlLXN0cmVhbSIsIlBLIjoiYmF0Y2gtZml4dHVyZS1wayIsIk5vblNlbnNpdGl2ZSI6Im1kZS1zdHJlYW0tcGxhaW4iLCJTZW5zaXRpdmUiOiJBZ0hUdXRoc0NpOFArZGg5OGFTSUNLMkRKVC90QkJkSWloQkhXUGVpR3ZRMGsxRlFveUE1c2RROGhvNy8vaW42azk3MkRST0dLenM5UHNpOGJtd0xyQ3lFWGlyd3l6ZFI1VmdxeTlMZ3BTNzdZQT09IiwiX2VpIjp7Il9lZiI6MywiX2VuIjoiYmF0Y2gtZml4dHVyZS1kZWsiLCJfZWEiOiJNZGVBZWFkQWVzMjU2Q2JjSG1hYzI1NlJhbmRvbWl6ZWQiLCJfZWQiOm51bGwsIl9lcCI6WyIvU2Vuc2l0aXZlIl19fQ==";
+        internal const string StreamBatchFixtureSha256 =
+            "00B4BA81715AD19911F90299BFD3B1F1690F15F467E04E825F0A0E298238A797";
+
+        private static async Task<(Container RawContainer, Container Reader, TestItem[] Documents)>
+            CreateBatchMigrationFixtureAsync()
+        {
+            Container rawContainer = await database.CreateContainerAsync(
+                Guid.NewGuid().ToString(),
+                "/PK",
+                400);
+            Container reader = rawContainer.WithEncryptor(CreateBatchFixtureEncryptor());
+            TestItem[] documents =
+            {
+                CreateBatchTestItem("plaintext"),
+                CreateBatchTestItem("legacy"),
+                CreateBatchTestItem("mde-newtonsoft"),
+                CreateBatchTestItem("mde-stream"),
+            };
+
+            byte[] plaintextFixture = Encoding.UTF8.GetBytes(
+                JsonConvert.SerializeObject(documents[0]));
+            byte[] legacyFixture = VerifyHistoricalFixture(
+                LegacyBatchFixtureBase64,
+                LegacyBatchFixtureSha256);
+            byte[] newtonsoftFixture = VerifyHistoricalFixture(
+                NewtonsoftBatchFixtureBase64,
+                NewtonsoftBatchFixtureSha256);
+            byte[] streamFixture = VerifyHistoricalFixture(
+                StreamBatchFixtureBase64,
+                StreamBatchFixtureSha256);
+            await CreateRawFixtureAsync(rawContainer, plaintextFixture);
+            await CreateRawFixtureAsync(rawContainer, legacyFixture);
+            await CreateRawFixtureAsync(rawContainer, newtonsoftFixture);
+            await CreateRawFixtureAsync(rawContainer, streamFixture);
+
+            JObject plaintextRaw = JObject.Parse(Encoding.UTF8.GetString(plaintextFixture));
+            JObject legacyRaw = JObject.Parse(Encoding.UTF8.GetString(legacyFixture));
+            JObject newtonsoftRaw = JObject.Parse(Encoding.UTF8.GetString(newtonsoftFixture));
+            JObject streamRaw = JObject.Parse(Encoding.UTF8.GetString(streamFixture));
+            Assert.IsNull(plaintextRaw[Constants.EncryptedInfo]);
+            Assert.AreEqual(2, legacyRaw[Constants.EncryptedInfo][Constants.EncryptionFormatVersion].Value<int>());
+            Assert.AreEqual(EncryptionFormatVersion.Mde, newtonsoftRaw[Constants.EncryptedInfo][Constants.EncryptionFormatVersion].Value<int>());
+            Assert.AreEqual(EncryptionFormatVersion.Mde, streamRaw[Constants.EncryptedInfo][Constants.EncryptionFormatVersion].Value<int>());
+
+            return (rawContainer, reader, documents);
+        }
+
+        private static TestItem CreateBatchTestItem(string origin)
+        {
+            return new TestItem
+            {
+                Id = "batch-fixture-" + origin,
+                PK = BatchFixturePartitionKey,
+                NonSensitive = origin + "-plain",
+                Sensitive = origin + "-secret",
+            };
+        }
+
+        private static TestItem CreateMigratedDocument(TestItem document, int index)
+        {
+            return new TestItem
+            {
+                Id = document.Id,
+                PK = document.PK,
+                NonSensitive = document.NonSensitive + "-migrated-" + index,
+                Sensitive = document.Sensitive + "-migrated-" + index,
+            };
+        }
+
+        private static async Task VerifyDocumentsWithBothProcessorsAsync(
+            Container reader,
+            IEnumerable<TestItem> expectedDocuments)
+        {
+            foreach (JsonProcessor jsonProcessor in new[] { JsonProcessor.Newtonsoft, JsonProcessor.Stream })
+            {
+                foreach (TestItem expectedDocument in expectedDocuments)
+                {
+                    ItemResponse<TestItem> response = await reader.ReadItemAsync<TestItem>(
+                        expectedDocument.Id,
+                        new PartitionKey(expectedDocument.PK),
+                        new ItemRequestOptions
+                        {
+                            Properties = new Dictionary<string, object>
+                            {
+                                { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, jsonProcessor },
+                            },
+                        });
+                    VerifyExpectedTestItem(expectedDocument, response.Resource);
+                }
+            }
+        }
+
+        private static EncryptionTransactionalBatchItemRequestOptions CreateBatchEncryptionOptions(
+            JsonProcessor jsonProcessor,
+            string ifMatchEtag = null)
+        {
+            return new EncryptionTransactionalBatchItemRequestOptions
+            {
+                EncryptionOptions = new EncryptionOptions
+                {
+                    DataEncryptionKeyId = BatchFixtureDekId,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                    PathsToEncrypt = new List<string> { "/Sensitive" },
+                },
+                IfMatchEtag = ifMatchEtag,
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, jsonProcessor },
+                },
+            };
+        }
+
+        private static MemoryStream ToStream(TestItem document)
+        {
+            return new MemoryStream(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(document)));
+        }
+
+        private static async Task CreateRawFixtureAsync(Container container, byte[] fixture)
+        {
+            using ResponseMessage response = await container.CreateItemStreamAsync(
+                new MemoryStream(fixture),
+                new PartitionKey(BatchFixturePartitionKey));
+            Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+        }
+
+        internal static byte[] VerifyHistoricalFixture(string base64, string expectedSha256)
+        {
+            byte[] fixture = Convert.FromBase64String(base64);
+            Assert.AreEqual(expectedSha256, Convert.ToHexString(SHA256.HashData(fixture)));
+            return fixture;
+        }
+
+        private static async Task<byte[]> ReadRawDocumentAsync(
+            Container rawContainer,
+            TestItem document)
+        {
+            using ResponseMessage response = await rawContainer.ReadItemStreamAsync(
+                document.Id,
+                new PartitionKey(document.PK));
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            using MemoryStream buffer = new ();
+            await response.Content.CopyToAsync(buffer);
+            return buffer.ToArray();
+        }
+
+        private static void VerifyRawMdeDocument(
+            byte[] rawDocument,
+            TestItem expectedDocument)
+        {
+            JObject parsed = JObject.Parse(Encoding.UTF8.GetString(rawDocument));
+            Assert.AreEqual(expectedDocument.Id, parsed.Value<string>("id"));
+            Assert.AreEqual(expectedDocument.PK, parsed.Value<string>(nameof(TestItem.PK)));
+            Assert.AreEqual(
+                expectedDocument.NonSensitive,
+                parsed.Value<string>(nameof(TestItem.NonSensitive)));
+            Assert.AreNotEqual(
+                expectedDocument.Sensitive,
+                parsed.Value<string>(nameof(TestItem.Sensitive)));
+            Assert.AreEqual(
+                EncryptionFormatVersion.Mde,
+                parsed[Constants.EncryptedInfo][Constants.EncryptionFormatVersion].Value<int>());
+            Assert.AreEqual(
+                BatchFixtureDekId,
+                parsed[Constants.EncryptedInfo][Constants.EncryptionDekId].Value<string>());
+            CollectionAssert.Contains(
+                parsed[Constants.EncryptedInfo][Constants.EncryptedPaths]
+                    .Values<string>()
+                    .ToArray(),
+                "/Sensitive");
+        }
+
+        private static void AssertBatchProcessorScopes(
+            IEnumerable<string> scopes,
+            int expectedNewtonsoftEncrypt,
+            int expectedStreamEncrypt,
+            int expectedNewtonsoftDecrypt,
+            int expectedStreamDecrypt)
+        {
+            (int streamEncrypt, int streamDecrypt, int newtonsoftEncrypt, int newtonsoftDecrypt) =
+                CountJsonProcessorScopes(scopes);
+            Assert.AreEqual(expectedNewtonsoftEncrypt, newtonsoftEncrypt);
+            Assert.AreEqual(expectedStreamEncrypt, streamEncrypt);
+            Assert.AreEqual(expectedNewtonsoftDecrypt, newtonsoftDecrypt);
+            Assert.AreEqual(expectedStreamDecrypt, streamDecrypt);
+        }
+
+        internal static Encryptor CreateBatchFixtureEncryptor()
+        {
+            byte[] rawKey = Enumerable.Range(1, 32).Select(value => (byte)value).ToArray();
+#pragma warning disable CS0618
+            Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey legacyDataEncryptionKey =
+                Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey.Create(
+                    rawKey,
+                    CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized);
+#pragma warning restore CS0618
+            Microsoft.Data.Encryption.Cryptography.PlaintextDataEncryptionKey plaintextDek =
+                new (BatchFixtureDekId, rawKey);
+            MdeEncryptionAlgorithm mdeDataEncryptionKey = new (
+                rawKey,
+                plaintextDek,
+                Microsoft.Data.Encryption.Cryptography.EncryptionType.Randomized);
+            return new BatchFixtureEncryptor(
+                legacyDataEncryptionKey,
+                mdeDataEncryptionKey);
+        }
+
+        private static void VerifyExpectedTestItem(TestItem expected, TestItem actual)
+        {
+            Assert.IsNotNull(actual);
+            Assert.AreEqual(expected.Id, actual.Id);
+            Assert.AreEqual(expected.PK, actual.PK);
+            Assert.AreEqual(expected.NonSensitive, actual.NonSensitive);
+            Assert.AreEqual(expected.Sensitive, actual.Sensitive);
+        }
+
+        private sealed class BatchFixtureEncryptor : Encryptor
+        {
+            private readonly Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey legacyDataEncryptionKey;
+            private readonly Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey mdeDataEncryptionKey;
+
+            public BatchFixtureEncryptor(
+                Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey legacyDataEncryptionKey,
+                Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey mdeDataEncryptionKey)
+            {
+                this.legacyDataEncryptionKey = legacyDataEncryptionKey;
+                this.mdeDataEncryptionKey = mdeDataEncryptionKey;
+            }
+
+            public override Task<Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey>
+                GetEncryptionKeyAsync(
+                    string dataEncryptionKeyId,
+                    string encryptionAlgorithm,
+                    CancellationToken cancellationToken = default)
+            {
+                Assert.AreEqual(BatchFixtureDekId, dataEncryptionKeyId);
+                return Task.FromResult(this.mdeDataEncryptionKey);
+            }
+
+            public override Task<byte[]> EncryptAsync(
+                byte[] plainText,
+                string dataEncryptionKeyId,
+                string encryptionAlgorithm,
+                CancellationToken cancellationToken = default)
+            {
+                Assert.AreEqual(BatchFixtureDekId, dataEncryptionKeyId);
+                return Task.FromResult(
+                    this.SelectDataEncryptionKey(encryptionAlgorithm).EncryptData(plainText));
+            }
+
+            public override Task<byte[]> DecryptAsync(
+                byte[] cipherText,
+                string dataEncryptionKeyId,
+                string encryptionAlgorithm,
+                CancellationToken cancellationToken = default)
+            {
+                Assert.AreEqual(BatchFixtureDekId, dataEncryptionKeyId);
+                return Task.FromResult(
+                    this.SelectDataEncryptionKey(encryptionAlgorithm).DecryptData(cipherText));
+            }
+
+            private Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey SelectDataEncryptionKey(
+                string encryptionAlgorithm)
+            {
+#pragma warning disable CS0618
+                return encryptionAlgorithm == CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized
+                    ? this.legacyDataEncryptionKey
+                    : this.mdeDataEncryptionKey;
+#pragma warning restore CS0618
+            }
         }
 
         private class TestItem
@@ -3138,5 +3608,117 @@ cancellationToken) =>
 #pragma warning restore CS0618 // Type or member is obsolete
         #endregion
     }
-}
 
+#if NET8_0_OR_GREATER
+    [TestClass]
+    public class TransactionalBatchHistoricalFixtureTests
+    {
+        [TestMethod]
+        public void HistoricalFixtures_AreHashPinnedAndHaveExpectedEnvelopes()
+        {
+            VerifyFixtureEnvelope(
+                MdeCustomEncryptionTests.LegacyBatchFixtureBase64,
+                MdeCustomEncryptionTests.LegacyBatchFixtureSha256,
+                "legacy",
+                expectedFormatVersion: 2);
+            VerifyFixtureEnvelope(
+                MdeCustomEncryptionTests.NewtonsoftBatchFixtureBase64,
+                MdeCustomEncryptionTests.NewtonsoftBatchFixtureSha256,
+                "mde-newtonsoft",
+                expectedFormatVersion: EncryptionFormatVersion.Mde);
+            VerifyFixtureEnvelope(
+                MdeCustomEncryptionTests.StreamBatchFixtureBase64,
+                MdeCustomEncryptionTests.StreamBatchFixtureSha256,
+                "mde-stream",
+                expectedFormatVersion: EncryptionFormatVersion.Mde);
+        }
+
+        [DataTestMethod]
+        [DataRow("legacy", "Newtonsoft")]
+        [DataRow("legacy", "Stream")]
+        [DataRow("mde-newtonsoft", "Newtonsoft")]
+        [DataRow("mde-newtonsoft", "Stream")]
+        [DataRow("mde-stream", "Newtonsoft")]
+        [DataRow("mde-stream", "Stream")]
+        public async Task HistoricalFixtures_DecryptWithBothProcessors(
+            string origin,
+            string processor)
+        {
+            using MemoryStream input = new (GetFixture(origin));
+            Encryptor encryptor = MdeCustomEncryptionTests.CreateBatchFixtureEncryptor();
+            Stream decrypted;
+            DecryptionContext context;
+            if (processor == "Newtonsoft")
+            {
+                (decrypted, context) = await EncryptionProcessor.DecryptAsync(
+                    input,
+                    encryptor,
+                    new CosmosDiagnosticsContext(),
+                    requestOptions: null,
+                    CancellationToken.None);
+            }
+            else
+            {
+                (decrypted, context) = await EncryptionProcessor.DecryptAsync(
+                    input,
+                    encryptor,
+                    JsonProcessor.Stream,
+                    legacyFallback: true,
+                    new CosmosDiagnosticsContext(),
+                    CancellationToken.None);
+            }
+
+            Assert.IsNotNull(context);
+            using (decrypted)
+            using (StreamReader reader = new (decrypted))
+            {
+                JObject document = JObject.Parse(await reader.ReadToEndAsync());
+                Assert.AreEqual("batch-fixture-" + origin, document.Value<string>("id"));
+                Assert.AreEqual(
+                    MdeCustomEncryptionTests.BatchFixturePartitionKey,
+                    document.Value<string>("PK"));
+                Assert.AreEqual(origin + "-plain", document.Value<string>("NonSensitive"));
+                Assert.AreEqual(origin + "-secret", document.Value<string>("Sensitive"));
+                Assert.IsNull(document[Constants.EncryptedInfo]);
+            }
+        }
+
+        private static void VerifyFixtureEnvelope(
+            string base64,
+            string expectedSha256,
+            string origin,
+            int expectedFormatVersion)
+        {
+            byte[] fixture = MdeCustomEncryptionTests.VerifyHistoricalFixture(
+                base64,
+                expectedSha256);
+            JObject document = JObject.Parse(Encoding.UTF8.GetString(fixture));
+            Assert.AreEqual("batch-fixture-" + origin, document.Value<string>("id"));
+            Assert.AreEqual(
+                MdeCustomEncryptionTests.BatchFixturePartitionKey,
+                document.Value<string>("PK"));
+            Assert.AreEqual(origin + "-plain", document.Value<string>("NonSensitive"));
+            Assert.AreEqual(
+                expectedFormatVersion,
+                document[Constants.EncryptedInfo][Constants.EncryptionFormatVersion].Value<int>());
+            Assert.AreEqual(
+                MdeCustomEncryptionTests.BatchFixtureDekId,
+                document[Constants.EncryptedInfo][Constants.EncryptionDekId].Value<string>());
+        }
+
+        private static byte[] GetFixture(string origin)
+        {
+            return origin switch
+            {
+                "legacy" => Convert.FromBase64String(
+                    MdeCustomEncryptionTests.LegacyBatchFixtureBase64),
+                "mde-newtonsoft" => Convert.FromBase64String(
+                    MdeCustomEncryptionTests.NewtonsoftBatchFixtureBase64),
+                "mde-stream" => Convert.FromBase64String(
+                    MdeCustomEncryptionTests.StreamBatchFixtureBase64),
+                _ => throw new ArgumentOutOfRangeException(nameof(origin)),
+            };
+        }
+    }
+#endif
+}
