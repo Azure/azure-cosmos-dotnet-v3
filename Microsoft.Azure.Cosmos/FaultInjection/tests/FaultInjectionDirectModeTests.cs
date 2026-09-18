@@ -1451,7 +1451,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 // Session reads can recover from an injected 429 by trying another replica, even with
                 // throttling retries disabled. Measure rule applications rather than surfaced exceptions.
-                long fullRateHits = await ReadBatchAndGetRuleHitsAsync(this.fiContainer, dynamicRateRule, 100);
+                long fullRateHits = await this.ReadBatchAndGetRuleHitsAsync(this.fiContainer, dynamicRateRule, 100);
 
                 Assert.AreEqual(
                     100L,
@@ -1461,7 +1461,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 // The client is already built and running; this is the behavior under test.
                 dynamicRateRule.SetInjectionRate(0.5);
 
-                long halfRateHits = await ReadBatchAndGetRuleHitsAsync(this.fiContainer, dynamicRateRule, 100);
+                long halfRateHits = await this.ReadBatchAndGetRuleHitsAsync(this.fiContainer, dynamicRateRule, 100);
 
                 //50% injection rate over 100 requests is Binomial(100, 0.5): mean 50, standard deviation 5.
                 //[30, 70] is +/- 4 standard deviations, so a passing run is not a coin flip while a rate change
@@ -1479,7 +1479,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             }
         }
 
-        private static async Task<long> ReadBatchAndGetRuleHitsAsync(
+        private async Task<long> ReadBatchAndGetRuleHitsAsync(
             Container container,
             FaultInjectionRule rule,
             int requestCount)
@@ -1488,17 +1488,32 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             int throttledReadCount = 0;
             for (int i = 0; i < requestCount; i++)
             {
+                long previousHitCount = rule.GetHitCount();
+                CosmosDiagnostics diagnostics;
                 try
                 {
-                    await container.ReadItemAsync<FaultInjectionTestObject>(
+                    ItemResponse<FaultInjectionTestObject> response = await container.ReadItemAsync<FaultInjectionTestObject>(
                         "testId",
                         new PartitionKey("pk"));
+                    Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                    diagnostics = response.Diagnostics;
                 }
                 catch (CosmosException ex) when (
                     ex.StatusCode == HttpStatusCode.TooManyRequests
                     && ex.Message.Contains(rule.GetId()))
                 {
+                    Assert.AreEqual((int)SubStatusCodes.RUBudgetExceeded, ex.SubStatusCode, ex.Message);
                     throttledReadCount++;
+                    diagnostics = ex.Diagnostics;
+                }
+
+                if (rule.GetHitCount() > previousHitCount)
+                {
+                    this.ValidateFaultInjectionRuleApplication(
+                        diagnostics,
+                        (int)StatusCodes.TooManyRequests,
+                        (int)SubStatusCodes.RUBudgetExceeded,
+                        rule);
                 }
             }
 
@@ -1608,10 +1623,18 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 Assert.IsTrue(connectionErrorRule.GetHitCount() == hitCount);
 
                 TimeSpan disposalTimeout = TimeSpan.FromSeconds(10);
+                using CancellationTokenSource disposalCancellation = new CancellationTokenSource(disposalTimeout);
                 ValueStopwatch stopwatch = ValueStopwatch.StartNew();
                 bool disposedChannel;
                 do
                 {
+                    // A write revisits the original primary so channel acquisition can reclaim it.
+                    await this.fiContainer.ReplaceItemAsync(
+                        createdItem,
+                        id,
+                        new PartitionKey(pk),
+                        cancellationToken: disposalCancellation.Token);
+
                     List<Guid> currentChannelGuids = channelStore.GetAllChannelIds();
                     disposedChannel = channelGuids.Any(channelGuid => !currentChannelGuids.Contains(channelGuid));
                     if (disposedChannel)
