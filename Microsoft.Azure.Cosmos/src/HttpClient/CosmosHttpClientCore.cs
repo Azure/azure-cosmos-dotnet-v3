@@ -26,6 +26,8 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class CosmosHttpClientCore : CosmosHttpClient
     {
         private const string FautInjecitonId = "FaultInjectionId";
+        internal const string FaultInjectionIsProxy = "FAULTINJECTION_IS_PROXY";
+        internal const string FaultInjectionResponse = "FaultInjectionResponse";
 
         // SDK-generated header carrying a stable per-client identifier. It is applied to the
         // HttpClient's default request headers so every HTTP request issued by this client
@@ -429,6 +431,11 @@ namespace Microsoft.Azure.Cosmos
                             (bool hasFault, HttpResponseMessage fiResponseMessage) = await this.InjectFaultsAsync(cancellationTokenSource, documentServiceRequest, requestMessage);
                             if (hasFault)
                             {
+                                if (clientSideRequestStatistics is ClientSideRequestStatisticsTraceDatum faultStatistics)
+                                {
+                                    faultStatistics.RecordHttpResponse(requestMessage, fiResponseMessage, resourceType, requestStartTime);
+                                }
+
                                 return fiResponseMessage;
                             }
                         }
@@ -562,16 +569,43 @@ namespace Microsoft.Azure.Cosmos
             {
                 documentServiceRequest.Headers.Set(CosmosHttpClientCore.FautInjecitonId, Guid.NewGuid().ToString());
             }
-            await this.chaosInterceptor.OnBeforeHttpSendAsync(documentServiceRequest, fiToken);
-
-            (bool hasFault,
-                HttpResponseMessage fiResponseMessage) = await this.chaosInterceptor.OnHttpRequestCallAsync(documentServiceRequest, fiToken);
-
-            if (hasFault)
+            bool isProxyRequest = requestMessage.Properties.TryGetValue(FaultInjectionIsProxy, out object proxyRequest)
+                && proxyRequest is true;
+            string previousProxyMarker = documentServiceRequest.Headers.Get(FaultInjectionIsProxy);
+            try
             {
-                fiResponseMessage.RequestMessage = requestMessage;
+                if (isProxyRequest)
+                {
+                    documentServiceRequest.Headers.Set(FaultInjectionIsProxy, "true");
+                }
+
+                await this.chaosInterceptor.OnBeforeHttpSendAsync(documentServiceRequest, fiToken);
+
+                (bool hasFault,
+                    HttpResponseMessage fiResponseMessage) = await this.chaosInterceptor.OnHttpRequestCallAsync(documentServiceRequest, fiToken);
+
+                if (hasFault)
+                {
+                    fiResponseMessage.RequestMessage = requestMessage;
+                    requestMessage.Properties[FaultInjectionResponse] = true;
+                }
+
+                return (hasFault, fiResponseMessage);
             }
-            return (hasFault, fiResponseMessage);
+            finally
+            {
+                if (isProxyRequest)
+                {
+                    if (previousProxyMarker == null)
+                    {
+                        documentServiceRequest.Headers.Remove(FaultInjectionIsProxy);
+                    }
+                    else
+                    {
+                        documentServiceRequest.Headers.Set(FaultInjectionIsProxy, previousProxyMarker);
+                    }
+                }
+            }
         }
 
         private static bool IsOutOfRetries(
