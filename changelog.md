@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
+- Fault injection: Fixed duplicate ThinClient rule applications and incorrect decoding of injected responses, preserved injected HTTP responses in diagnostics, and ensured HTTP fault interception also runs when using a custom HTTP client factory.
+
 #### Other Changes
 
 ### <a name="3.64.0-preview.0"/> [3.64.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.64.0-preview.0) - 2026-9-8

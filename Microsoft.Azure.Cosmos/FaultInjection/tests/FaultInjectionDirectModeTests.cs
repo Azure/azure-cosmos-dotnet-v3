@@ -354,10 +354,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 writeRegionServerGoneRule.Enable();
 
-                //Gone rules cannot be limited to an operation type: FaultInjectionRuleProcessor.CanErrorLimitToOperation
-                //returns false for Gone, so the rule's operation type filter is dropped once the addresses are
-                //resolved and the rule applies to every operation, not just writes.
-                bool ruleApplied = true;
+                // Gone drops the operation filter but retains the write-region endpoints selected by CreateItem.
+                // Read and Query use the preferred read-only region, outside this rule's scope.
+                bool ruleApplied = operationType.IsWriteOperation();
                 await this.PerformDocumentOperationAndCheckApplication(
                     this.fiContainer,
                     operationType,
@@ -1444,32 +1443,35 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 this.fiDatabase = this.fiClient.GetDatabase(this.database.Id);
                 this.fiContainer = this.fiDatabase.GetContainer(this.container.Id);
 
+                await this.fiContainer.ReadItemAsync<FaultInjectionTestObject>(
+                    "testId",
+                    new PartitionKey("pk"));
+
                 dynamicRateRule.Enable();
 
-                //Count the injected 429s directly: this tests the user-visible probability contract and is
-                //immune to any internal re-entry of the rule.
-                int fullRateInjected = await ReadBatchAsync(this.fiContainer, 100);
+                // Session reads can recover from an injected 429 by trying another replica, even with
+                // throttling retries disabled. Measure rule applications rather than surfaced exceptions.
+                long fullRateHits = await ReadBatchAndGetRuleHitsAsync(this.fiContainer, dynamicRateRule, 100);
 
-                //A rate of 1 with retries disabled injects into every one of the 100 reads.
                 Assert.AreEqual(
-                    100,
-                    fullRateInjected,
+                    100L,
+                    fullRateHits,
                     $"A rate of 1 should inject into every read. {Describe(dynamicRateRule)}");
 
                 // The client is already built and running; this is the behavior under test.
                 dynamicRateRule.SetInjectionRate(0.5);
 
-                int halfRateInjected = await ReadBatchAsync(this.fiContainer, 100);
+                long halfRateHits = await ReadBatchAndGetRuleHitsAsync(this.fiContainer, dynamicRateRule, 100);
 
                 //50% injection rate over 100 requests is Binomial(100, 0.5): mean 50, standard deviation 5.
                 //[30, 70] is +/- 4 standard deviations, so a passing run is not a coin flip while a rate change
                 //that never reached the live client (which would inject 100 times) is still caught.
                 Assert.IsTrue(
-                    halfRateInjected >= 30,
-                    $"Injection rate too low after SetInjectionRate. Injected: {halfRateInjected}. {Describe(dynamicRateRule)}");
+                    halfRateHits >= 30,
+                    $"Injection rate too low after SetInjectionRate. Batch hits: {halfRateHits}. {Describe(dynamicRateRule)}");
                 Assert.IsTrue(
-                    halfRateInjected <= 70,
-                    $"Injection rate too high after SetInjectionRate. Injected: {halfRateInjected}. {Describe(dynamicRateRule)}");
+                    halfRateHits <= 70,
+                    $"Injection rate too high after SetInjectionRate. Batch hits: {halfRateHits}. {Describe(dynamicRateRule)}");
             }
             finally
             {
@@ -1477,9 +1479,13 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             }
         }
 
-        private static async Task<int> ReadBatchAsync(Container container, int requestCount)
+        private static async Task<long> ReadBatchAndGetRuleHitsAsync(
+            Container container,
+            FaultInjectionRule rule,
+            int requestCount)
         {
-            int injectedCount = 0;
+            long initialHitCount = rule.GetHitCount();
+            int throttledReadCount = 0;
             for (int i = 0; i < requestCount; i++)
             {
                 try
@@ -1488,13 +1494,18 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                         "testId",
                         new PartitionKey("pk"));
                 }
-                catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.TooManyRequests)
+                catch (CosmosException ex) when (
+                    ex.StatusCode == HttpStatusCode.TooManyRequests
+                    && ex.Message.Contains(rule.GetId()))
                 {
-                    injectedCount++;
+                    throttledReadCount++;
                 }
             }
 
-            return injectedCount;
+            long hitCount = rule.GetHitCount() - initialHitCount;
+            Console.WriteLine(
+                $"Batch reads={requestCount}, surfaced429s={throttledReadCount}, ruleHits={hitCount}. {Describe(rule)}");
+            return hitCount;
         }
 
         [TestMethod]
@@ -1566,8 +1577,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 }
 
                 FaultInjectionDynamicChannelStore channelStore = interceptor.GetChannelStore();
-                Assert.IsTrue(channelStore.GetAllChannels().Count > 0);
                 List<Guid> channelGuids = channelStore.GetAllChannelIds();
+                Assert.IsTrue(channelGuids.Count > 0, Describe(connectionErrorRule));
 
                 try
                 {
@@ -1596,12 +1607,26 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 Assert.IsTrue(connectionErrorRule.GetHitCount() == hitCount);
 
-                bool disposedChannel = false;
-                foreach (Guid channelGuid in channelGuids)
+                TimeSpan disposalTimeout = TimeSpan.FromSeconds(10);
+                ValueStopwatch stopwatch = ValueStopwatch.StartNew();
+                bool disposedChannel;
+                do
                 {
-                    disposedChannel = disposedChannel || channelStore.GetAllChannelIds().Contains(channelGuid);
+                    List<Guid> currentChannelGuids = channelStore.GetAllChannelIds();
+                    disposedChannel = channelGuids.Any(channelGuid => !currentChannelGuids.Contains(channelGuid));
+                    if (disposedChannel)
+                    {
+                        break;
+                    }
+
+                    await Task.Delay(TimeSpan.FromMilliseconds(100));
                 }
-                Assert.IsTrue(disposedChannel);
+                while (stopwatch.Elapsed < disposalTimeout);
+                stopwatch.Stop();
+
+                Assert.IsTrue(
+                    disposedChannel,
+                    $"No original channel was disposed within {disposalTimeout}. {Describe(connectionErrorRule)}");
 
             }
             finally
