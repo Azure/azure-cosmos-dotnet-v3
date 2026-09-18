@@ -25,6 +25,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Other Changes
 
+### <a name="3.64.0-preview.1"/> [3.64.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.64.0-preview.1) - 2026-9-17
+
+### <a name="3.63.1"/> [3.63.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.63.1) - 2026-9-17
+
+#### Bugs Fixed
+
+- [6079](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6079) ChangeFeedProcessor: Fixes partition split/merge issues with in-memory leases: a `NullReferenceException` when a lease's `FeedRange` was missing after rehydration (now backfilled on acquire, with a routing-map fallback), and a continuation token being silently discarded when a split happened while the host was offline (the SDK now defers creating a post-split range's lease to its parent's own split handling when the parent lease still exists, instead of racing ahead with a fresh, continuation-less lease).
+
 ### <a name="3.64.0-preview.0"/> [3.64.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.64.0-preview.0) - 2026-9-8
 
 #### Features Added
