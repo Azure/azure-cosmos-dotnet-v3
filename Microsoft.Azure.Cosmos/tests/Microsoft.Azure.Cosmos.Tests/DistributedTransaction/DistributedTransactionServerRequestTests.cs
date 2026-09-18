@@ -23,7 +23,8 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionServerRequest request = await DistributedTransactionServerRequest.CreateAsync(
                 CreateTestOperations(),
                 MockCosmosUtil.Serializer,
-                CancellationToken.None);
+                CancellationToken.None,
+                tracksDispatch: false);
 
             using (MemoryStream stream1 = request.CreateBodyStream())
             using (MemoryStream stream2 = request.CreateBodyStream())
@@ -43,6 +44,63 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 Assert.IsTrue(stream3.CanRead, "A stream obtained after disposing siblings must still be readable.");
                 Assert.AreEqual(0, stream3.Position, "stream3 must be positioned at offset 0.");
             }
+        }
+
+        [TestMethod]
+        [Description("Rotating the idempotency token installs a fresh tracker, so sticky signals from the prior token cannot leak onto the new one.")]
+        public async Task RotateIdempotencyToken_ReplacesDispatchTracker()
+        {
+            DistributedTransactionServerRequest request = await DistributedTransactionServerRequest.CreateAsync(
+                CreateTestOperations(),
+                MockCosmosUtil.Serializer,
+                CancellationToken.None,
+                tracksDispatch: true);
+
+            Assert.IsNull(request.DispatchTracker, "No tracker is needed before the first token is generated.");
+
+            System.Guid firstToken = request.RotateIdempotencyToken();
+
+            DistributedTransactionDispatchTracker firstTokenTracker = request.DispatchTracker;
+            Assert.IsNotNull(firstTokenTracker);
+            firstTokenTracker.RecordDispatch("East US");
+            (bool IsRetry, bool IsCrossRegionRedirect) firstTokenSignals = firstTokenTracker.RecordDispatch("West US");
+            Assert.IsTrue(firstTokenSignals.IsRetry, "Test precondition: the retry signal must be set before rotation.");
+            Assert.IsTrue(firstTokenSignals.IsCrossRegionRedirect, "Test precondition: the redirect signal must be set before rotation.");
+
+            request.RotateIdempotencyToken();
+
+            Assert.AreNotEqual(firstToken, request.IdempotencyToken);
+            Assert.AreNotSame(
+                firstTokenTracker,
+                request.DispatchTracker,
+                "A rotated token must not reuse the tracker that describes its predecessor.");
+            (bool IsRetry, bool IsCrossRegionRedirect) rotatedTokenSignals = request.DispatchTracker.RecordDispatch("West US");
+            Assert.IsFalse(
+                rotatedTokenSignals.IsRetry,
+                "A rotated token has never been dispatched, so the retry signal must not carry over.");
+            Assert.IsFalse(
+                rotatedTokenSignals.IsCrossRegionRedirect,
+                "A rotated token has no record in any region, so the redirect signal must not carry over.");
+            Assert.AreEqual((true, true), firstTokenTracker.RecordDispatch("East US"),
+                "Rotation must not clear the previous token's tracker.");
+        }
+
+        [TestMethod]
+        [Description("Rotating the idempotency token is safe for a read transaction, which carries no dispatch tracker.")]
+        public async Task RotateIdempotencyToken_WithoutTracker_DoesNotThrow()
+        {
+            DistributedTransactionServerRequest request = await DistributedTransactionServerRequest.CreateAsync(
+                CreateTestOperations(),
+                MockCosmosUtil.Serializer,
+                CancellationToken.None,
+                tracksDispatch: false);
+
+            Assert.IsNull(request.DispatchTracker);
+
+            request.RotateIdempotencyToken();
+
+            Assert.AreNotEqual(System.Guid.Empty, request.IdempotencyToken);
+            Assert.IsNull(request.DispatchTracker, "Rotating a read token must not allocate a tracker.");
         }
 
         private static IReadOnlyList<DistributedTransactionOperation> CreateTestOperations()

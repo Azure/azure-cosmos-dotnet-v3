@@ -91,6 +91,58 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             }
         }
 
+        [TestMethod]
+        [Owner("atulk")]
+        public void ValidateGetExactLocationDoesNotInferDefaultEndpoint()
+        {
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: false);
+
+            Assert.IsNull(this.cache.GetExactLocation(LocationCacheTests.DefaultEndpoint));
+
+            foreach (AccountRegion databaseAccountLocation in this.databaseAccount.WriteLocationsInternal)
+            {
+                Assert.AreEqual(
+                    databaseAccountLocation.Name,
+                    this.cache.GetExactLocation(new Uri(databaseAccountLocation.Endpoint)));
+            }
+
+            foreach (AccountRegion databaseAccountLocation in this.databaseAccount.ReadLocationsInternal)
+            {
+                Assert.AreEqual(
+                    databaseAccountLocation.Name,
+                    this.cache.GetExactLocation(new Uri(databaseAccountLocation.Endpoint)));
+            }
+        }
+
+
+        [DataTestMethod]
+        [DataRow("LOCATION1", false)]
+        [DataRow(" location1 ", true)]
+        [DataRow("location-1", true)]
+        public void GetExactLocation_MetadataNameChanges_PreserveAccountKeyIdentity(string regionName, bool expectedRedirect)
+        {
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: false);
+            DistributedTransactionDispatchTracker tracker = new();
+            Assert.AreEqual(
+                (false, false),
+                tracker.RecordDispatch(this.cache.GetExactLocation(LocationCacheTests.Location1Endpoint)));
+
+            this.databaseAccount.WriteLocationsInternal.First().Name = regionName;
+            this.cache.OnDatabaseAccountRead(this.databaseAccount);
+
+            string resolvedRegion = this.cache.GetExactLocation(LocationCacheTests.Location1Endpoint);
+            Assert.AreEqual(regionName, resolvedRegion, "Metadata names are not trimmed or alias-normalized.");
+            Assert.AreEqual(
+                (true, expectedRedirect),
+                tracker.RecordDispatch(resolvedRegion),
+                "The same endpoint can have a different account key; only casing is ignored.");
+        }
 
         [TestMethod]
         [Owner("sourabhjain")]
