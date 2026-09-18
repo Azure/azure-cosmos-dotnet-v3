@@ -182,6 +182,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 return;
             }
 
+            if (IsLegacyEncryptionAlgorithm(encryptionProperties.EncryptionAlgorithm))
+            {
+                await DecryptLegacyEncryptedObjectAsync(
+                    objectBytes,
+                    length,
+                    objectBuffer,
+                    outputStream,
+                    encryptor,
+                    diagnosticsContext,
+                    cancellationToken).ConfigureAwait(false);
+                return;
+            }
+
+            ValidateMdeEncryptionAlgorithm(encryptionProperties.EncryptionAlgorithm);
+
             await this.DecryptEncryptedObjectAsync(
                 objectBytes,
                 length,
@@ -192,6 +207,30 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 encryptionProperties,
                 diagnosticsContext,
                 cancellationToken).ConfigureAwait(false);
+        }
+
+        private static async Task DecryptLegacyEncryptedObjectAsync(
+            byte[] objectBytes,
+            int length,
+            RentArrayBufferWriter objectBuffer,
+            Stream outputStream,
+            Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            using MemoryStream objectInput = new (objectBytes, 0, length, writable: false);
+            (Stream decryptedObject, _) = await EncryptionProcessor.DecryptAsync(
+                objectInput,
+                encryptor,
+                diagnosticsContext,
+                cancellationToken).ConfigureAwait(false);
+
+            using (decryptedObject)
+            {
+                await decryptedObject.CopyToAsync(outputStream, cancellationToken).ConfigureAwait(false);
+            }
+
+            objectBuffer.Clear();
         }
 
         private async Task DecryptEncryptedObjectAsync(
@@ -348,6 +387,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 throw new NotSupportedException($"Unknown encryption format version: {properties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
             }
 
+            ValidateMdeEncryptionAlgorithm(properties.EncryptionAlgorithm);
+
             int encryptedPathCount = properties.EncryptedPaths is ICollection<string> ec ? ec.Count : properties.EncryptedPaths.Count();
             using ArrayPoolManager arrayPoolManager = new (initialRentCapacity: (encryptedPathCount * 2) + 4);
 
@@ -392,6 +433,29 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             writer.Flush();
 
             return EncryptionProcessor.CreateDecryptionContext(pathsDecrypted, properties.DataEncryptionKeyId);
+        }
+
+        private static bool IsLegacyEncryptionAlgorithm(string encryptionAlgorithm)
+        {
+#pragma warning disable CS0618
+            return string.Equals(
+                encryptionAlgorithm,
+                CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
+                StringComparison.Ordinal);
+#pragma warning restore CS0618
+        }
+
+        private static void ValidateMdeEncryptionAlgorithm(string encryptionAlgorithm)
+        {
+            if (!string.Equals(
+                encryptionAlgorithm,
+                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                StringComparison.Ordinal))
+            {
+                throw new NotSupportedException(
+                    $"JsonProcessor.Stream is not supported for encryption algorithm '{encryptionAlgorithm}'. " +
+                    $"Only '{CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized}' is supported with the Stream processor.");
+            }
         }
 
         internal static byte[] HandleReadBuffer(
