@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Breaking Changes
 
 #### Bugs Fixed
+- [#5930](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5930) DistributedTransaction: Fixes operation type on the wire for `DistributedReadTransaction.CommitTransactionAsync` to be a read operation (previously sent as `CommitDistributedTransaction`). `DistributedWriteTransaction.CommitTransactionAsync` continues to send `CommitDistributedTransaction`.
 
 #### Other Changes
 
