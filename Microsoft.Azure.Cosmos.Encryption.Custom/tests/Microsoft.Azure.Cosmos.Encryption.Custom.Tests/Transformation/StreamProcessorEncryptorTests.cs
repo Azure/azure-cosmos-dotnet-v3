@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Encryption.Custom;
+    using Microsoft.Azure.Cosmos.Encryption.Custom.Tests;
     using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -216,6 +217,62 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             EncryptionProperties props = System.Text.Json.JsonSerializer.Deserialize<EncryptionProperties>(root.GetProperty(Constants.EncryptedInfo).GetRawText());
             Assert.IsFalse(props.EncryptedPaths.Contains("/Maybe"));
             Assert.AreEqual(JsonValueKind.Null, root.GetProperty("Maybe").ValueKind);
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task Encrypt_PointWritePlaintextMetadataReplacement_ProducesCurrentMde(
+            bool explicitNullAlgorithm)
+        {
+            string algorithmProperty = explicitNullAlgorithm ? ",\"_ea\":null" : string.Empty;
+            string json =
+                "{\"id\":\"1\",\"PK\":\"pk\",\"_ei\":{\"_ef\":3,\"_en\":\"old\",\"padding\":\"0123456789abcdef\"" +
+                algorithmProperty +
+                ",\"_ep\":[]},\"NonSensitive\":{\"n\":1},\"Sensitive\":\"secret\"}";
+            using MemoryStream input = new (Encoding.UTF8.GetBytes(json));
+            EncryptionItemRequestOptions requestOptions = RequestOptionsOverrideHelper.Create(
+                CreateOptions(new[] { "/Sensitive" }),
+                JsonProcessor.Stream);
+
+            using Stream encrypted = await EncryptionProcessor.EncryptAsync(
+                input,
+                mockEncryptor.Object,
+                requestOptions,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None,
+                replacePlaintextEncryptionMetadata: true);
+            using JsonDocument document = Parse(encrypted);
+            JsonElement root = document.RootElement;
+
+            Assert.AreEqual("1", root.GetProperty("id").GetString());
+            Assert.AreEqual("pk", root.GetProperty("PK").GetString());
+            Assert.AreEqual("{\"n\":1}", root.GetProperty("NonSensitive").GetRawText());
+            string ciphertext = root.GetProperty("Sensitive").GetString();
+            Assert.AreNotEqual("secret", ciphertext);
+            Assert.IsTrue(Convert.FromBase64String(ciphertext).Length > 0);
+
+            Assert.AreEqual(
+                1,
+                root.EnumerateObject().Count(property => property.NameEquals(Constants.EncryptedInfo)));
+            JsonElement encryptionInfo = root.GetProperty(Constants.EncryptedInfo);
+            Assert.AreEqual(5, encryptionInfo.EnumerateObject().Count());
+            Assert.IsFalse(encryptionInfo.TryGetProperty("padding", out _));
+            Assert.AreEqual(
+                3,
+                encryptionInfo.GetProperty(Constants.EncryptionFormatVersion).GetInt32());
+            Assert.AreEqual(
+                "MdeAeadAes256CbcHmac256Randomized",
+                encryptionInfo.GetProperty(Constants.EncryptionAlgorithm).GetString());
+            Assert.AreEqual(
+                DekId,
+                encryptionInfo.GetProperty(Constants.EncryptionDekId).GetString());
+            Assert.AreEqual(
+                "/Sensitive",
+                encryptionInfo.GetProperty(Constants.EncryptedPaths)[0].GetString());
+            Assert.AreEqual(
+                JsonValueKind.Null,
+                encryptionInfo.GetProperty(Constants.EncryptedData).ValueKind);
         }
 
         [TestMethod]

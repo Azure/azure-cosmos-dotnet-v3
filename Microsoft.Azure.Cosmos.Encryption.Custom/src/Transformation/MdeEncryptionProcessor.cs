@@ -37,14 +37,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             EncryptionOptions encryptionOptions,
             JsonProcessor jsonProcessor,
             CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken token)
+            CancellationToken token,
+            bool replacePlaintextEncryptionMetadata)
         {
             ArgumentValidation.ThrowIfNull(diagnosticsContext);
 
             using IDisposable selectionScope = diagnosticsContext.CreateScope(CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + jsonProcessor);
 
             IMdeJsonProcessorAdapter adapter = this.GetAdapter(jsonProcessor);
-            return await adapter.EncryptAsync(input, encryptor, encryptionOptions, token);
+            return await adapter.EncryptAsync(
+                input,
+                encryptor,
+                encryptionOptions,
+                token,
+                replacePlaintextEncryptionMetadata);
         }
 
         internal async Task<DecryptionContext> DecryptObjectAsync(
@@ -137,7 +143,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             // Fall back to Newtonsoft for netstandard2.0 or when Stream processor not requested
             IMdeJsonProcessorAdapter newtonsoftAdapter = this.GetAdapter(JsonProcessor.Newtonsoft);
-            Stream encryptedStream = await newtonsoftAdapter.EncryptAsync(input, encryptor, encryptionOptions, cancellationToken);
+            Stream encryptedStream = await newtonsoftAdapter.EncryptAsync(
+                input,
+                encryptor,
+                encryptionOptions,
+                cancellationToken,
+                replacePlaintextEncryptionMetadata: false);
             await encryptedStream.CopyToAsync(output);
             await encryptedStream.DisposeCompatAsync();
         }
