@@ -20,13 +20,15 @@
       per-account endpoint), and require a manually-built Authorization header of the form
       "type=aad&ver=1.0&sig=<token>" (Bearer auth is rejected) - done via Invoke-RestMethod
       rather than `az rest` to avoid shell quoting problems with the '&' characters.
-    - GSI capability "EnableMaterializedViews" additionally requires the subscription-level
-      preview feature Microsoft.DocumentDB/MaterializedViewsForNoSQL to be in state
-      "Registered" (az feature show ...). If it's still "Pending" (Azure-gated approval),
-      enabling the capability fails with "(BadRequest) Invalid capability
-      EnableMaterializedViews" - this script detects that and continues the rest of the
-      scenario (seed data / background writes / failover) without the GSI container,
-      logging a clear warning instead of failing the whole run.
+    - GSI (Global Secondary Index, formerly "Materialized Views") is enabled per the
+      documented preview-API flow (learn.microsoft.com/azure/cosmos-db/how-to-configure-global-secondary-indexes):
+      an account-level REST PATCH with api-version=2022-11-15-preview and body
+      {"properties":{"enableMaterializedViews":true}}. This REQUIRES continuous backup
+      (PITR) to already be enabled on the account - use -EnableContinuousBackup (auto-forced
+      on when -RequireGsi is set). The GSI container itself is created the same way, using
+      materializedViewDefinition.sourceCollectionId (plain source container name) on the same
+      preview API version. With -RequireGsi the script throws instead of skipping if any of
+      this fails.
 #>
 [CmdletBinding()]
 param(
@@ -39,7 +41,14 @@ param(
     [string]$GsiCapabilityName = "EnableMaterializedViews",
     [int]$DocCount = 100,
     [int]$BackgroundInsertIntervalSeconds = 3,
-    [int]$ScenarioTag = 0
+    [int]$ScenarioTag = 0,
+    # When set, GSI MUST end up enabled or the script throws (instead of the default
+    # best-effort behavior of skipping GSI steps with a warning). Forces -EnableContinuousBackup on.
+    [switch]$RequireGsi,
+    # Enable point-in-time restore via continuous backup mode on account creation.
+    [switch]$EnableContinuousBackup,
+    [ValidateSet("Continuous7Days","Continuous30Days")]
+    [string]$ContinuousTier = "Continuous7Days"
 )
 
 $ErrorActionPreference = "Stop"
@@ -78,12 +87,19 @@ function Add-CosmosDocument {
 }
 
 function Invoke-CosmosQuery {
-    param($Endpoint, $DbName, $ContainerName, $QueryText, $AuthHeader)
+    param($Endpoint, $DbName, $ContainerName, $QueryText, $AuthHeader, $PkValue)
     $uri = "$Endpoint/dbs/$DbName/colls/$ContainerName/docs"
     $body = @{ query = $QueryText; parameters = @() } | ConvertTo-Json
-    return Invoke-RestMethod -Uri $uri -Method Post -ContentType "application/query+json" `
-        -Headers @{ Authorization = $AuthHeader; 'x-ms-version' = '2018-12-31'; 'x-ms-documentdb-isquery' = 'true'; 'x-ms-documentdb-query-enablecrosspartition' = 'true' } `
-        -Body $body
+    $headers = @{ Authorization = $AuthHeader; 'x-ms-version' = '2018-12-31'; 'x-ms-documentdb-isquery' = 'true' }
+    if ($PkValue) {
+        # Single-partition query: raw REST gateway calls can't fan out cross-partition
+        # aggregate queries (that needs the SDK's query engine) - scoping to a known
+        # partition key value lets a plain REST call serve the query directly.
+        $headers['x-ms-documentdb-partitionkey'] = "[`"$PkValue`"]"
+    } else {
+        $headers['x-ms-documentdb-query-enablecrosspartition'] = 'true'
+    }
+    return Invoke-RestMethod -Uri $uri -Method Post -ContentType "application/query+json" -Headers $headers -Body $body
 }
 
 function Wait-ArmContainer {
@@ -101,12 +117,17 @@ function Wait-ArmContainer {
 $mode = if ($MultiMaster) { "multi-master" } else { "single-master" }
 Write-Step "SCENARIO: $($Regions.Count)-region, $mode -> regions=[$($Regions -join ', ')]"
 
-# Pre-flight: check subscription-level preview feature registration so we don't waste
-# minutes polling for a container that will never materialize with allowMaterializedViews set.
-$featureState = (az feature show --namespace Microsoft.DocumentDB --name MaterializedViewsForNoSQL --query "properties.state" -o tsv 2>$null)
-$gsiFeatureRegistered = ($featureState -eq "Registered")
-if (-not $gsiFeatureRegistered) {
-    Write-Warning "Subscription feature Microsoft.DocumentDB/MaterializedViewsForNoSQL state='$featureState' (not 'Registered'). GSI (materialized view) container/capability will be skipped for this scenario; rest of the workflow proceeds normally."
+$mode = if ($MultiMaster) { "multi-master" } else { "single-master" }
+Write-Step "SCENARIO: $($Regions.Count)-region, $mode -> regions=[$($Regions -join ', ')]"
+
+# GSI (Global Secondary Index, formerly "Materialized Views") is enabled via the account-level
+# REST PATCH documented at https://learn.microsoft.com/azure/cosmos-db/how-to-configure-global-secondary-indexes
+# using the PREVIEW api-version 2022-11-15-preview and body {"properties":{"enableMaterializedViews":true}}.
+# Continuous backup (PITR) MUST already be enabled on the account before this call succeeds.
+$gsiPreviewApiVersion = "2022-11-15-preview"
+if ($RequireGsi -and -not $EnableContinuousBackup) {
+    Write-Warning "-RequireGsi requires continuous backup (PITR) to be enabled first; forcing -EnableContinuousBackup on."
+    $EnableContinuousBackup = $true
 }
 
 # ---------------------------------------------------------------------------
@@ -170,6 +191,13 @@ if ($MultiMaster) {
     $azCreateCmd += "--enable-automatic-failover"
     $azCreateCmd += "false"
 }
+if ($EnableContinuousBackup) {
+    $azCreateCmd += "--backup-policy-type"
+    $azCreateCmd += "Continuous"
+    $azCreateCmd += "--continuous-tier"
+    $azCreateCmd += $ContinuousTier
+    Write-Host "PITR: continuous backup enabled ($ContinuousTier)."
+}
 Invoke-AzJson $azCreateCmd | Out-Null
 
 $accountShow = Invoke-AzJson @("cosmosdb","show","-n",$accountName,"-g",$ResourceGroup,"-o","json")
@@ -194,7 +222,6 @@ az cosmosdb sql database create --account-name $accountName --resource-group $Re
 $armApiVersion = "2024-11-15"
 $srcContainerUri = "https://management.azure.com/subscriptions/$Subscription/resourceGroups/$ResourceGroup/providers/Microsoft.DocumentDB/databaseAccounts/$accountName/sqlDatabases/$dbName/containers/${srcContainerName}?api-version=$armApiVersion"
 $srcResource = @{ id = $srcContainerName; partitionKey = @{ paths = @("/srcPk"); kind = "Hash" } }
-if ($gsiFeatureRegistered) { $srcResource["allowMaterializedViews"] = $true }
 $srcBody = @{ properties = @{ resource = $srcResource; options = @{} } } | ConvertTo-Json -Depth 10
 $srcBodyFile = "$env:TEMP\srcBody-$accountName.json"
 $srcBody | Out-File -Encoding utf8 $srcBodyFile
@@ -214,23 +241,32 @@ for ($i = 1; $i -le $DocCount; $i++) {
 Write-Host "Inserted $DocCount documents."
 
 # ---------------------------------------------------------------------------
-# 9/10. Enable + verify GSI capability (best-effort; subscription may still be Pending)
+# 9/10. Enable + verify GSI (documented preview-API account PATCH; requires PITR already on)
 # ---------------------------------------------------------------------------
-Write-Step "Enabling GSI capability '$GsiCapabilityName'"
+Write-Step "Enabling GSI (enableMaterializedViews) via preview API $gsiPreviewApiVersion"
 $gsiAvailable = $false
-if ($gsiFeatureRegistered) {
-    try {
-        az cosmosdb update --name $accountName --resource-group $ResourceGroup --capabilities $GsiCapabilityName 2>$null | Out-Null
-        if ($LASTEXITCODE -ne 0) { throw "capability update failed" }
-        $capCheck = Invoke-AzJson @("cosmosdb","show","-n",$accountName,"-g",$ResourceGroup,"-o","json")
-        if (-not ($capCheck.capabilities | Where-Object { $_.name -eq $GsiCapabilityName })) { throw "capability not present after update" }
-        $gsiAvailable = $true
-        Write-Host "GSI capability confirmed enabled."
-    } catch {
-        Write-Warning "GSI capability could not be enabled even though the subscription feature reports Registered. Error: $($_.Exception.Message)"
+$accountId = "/subscriptions/$Subscription/resourceGroups/$ResourceGroup/providers/Microsoft.DocumentDB/databaseAccounts/$accountName"
+$gsiEnableBody = @{ properties = @{ enableMaterializedViews = $true } } | ConvertTo-Json -Depth 5
+$gsiEnableBodyFile = "$env:TEMP\gsiEnable-$accountName.json"
+$gsiEnableBody | Out-File -Encoding utf8 $gsiEnableBodyFile
+try {
+    az rest --method patch --uri "https://management.azure.com$($accountId)?api-version=$gsiPreviewApiVersion" --body "@$gsiEnableBodyFile" | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "enableMaterializedViews PATCH failed" }
+    # Poll until the account reflects the flag (PATCH is an async LRO).
+    $elapsed = 0
+    while ($elapsed -lt 180) {
+        $capCheck = az rest --method get --uri "https://management.azure.com$($accountId)?api-version=$gsiPreviewApiVersion" --query "properties.enableMaterializedViews" -o tsv 2>$null
+        if ($capCheck -eq "true") { $gsiAvailable = $true; break }
+        Start-Sleep -Seconds 10
+        $elapsed += 10
     }
-} else {
-    Write-Host "Skipping GSI capability enable - subscription feature not Registered yet."
+    if (-not $gsiAvailable) { throw "enableMaterializedViews not reflected on account after 180s" }
+    Write-Host "GSI (enableMaterializedViews) confirmed enabled."
+} catch {
+    if ($RequireGsi) {
+        throw "GSI is required (-RequireGsi) but could not be enabled: $($_.Exception.Message)"
+    }
+    Write-Warning "GSI could not be enabled. Error: $($_.Exception.Message)"
 }
 
 # ---------------------------------------------------------------------------
@@ -238,10 +274,8 @@ if ($gsiFeatureRegistered) {
 # ---------------------------------------------------------------------------
 if ($gsiAvailable) {
     Write-Step "Creating GSI container '$mvContainerName'"
-    $srcContainerShow = Invoke-AzJson @("cosmosdb","sql","container","show","--account-name",$accountName,"--resource-group",$ResourceGroup,"--database-name",$dbName,"--name",$srcContainerName,"-o","json")
-    $srcResourceId = $srcContainerShow.resource.rid
-    $mvContainerUri = "https://management.azure.com/subscriptions/$Subscription/resourceGroups/$ResourceGroup/providers/Microsoft.DocumentDB/databaseAccounts/$accountName/sqlDatabases/$dbName/containers/${mvContainerName}?api-version=$armApiVersion"
-    $mvBody = @{ properties = @{ resource = @{ id = $mvContainerName; partitionKey = @{ paths = @("/mvPk"); kind = "Hash" }; materializedViewDefinition = @{ sourceContainerId = $srcContainerName; sourceContainerResourceId = $srcResourceId; definition = "SELECT * FROM c" } }; options = @{ autoscaleSettings = @{ maxThroughput = 4000 } } } } | ConvertTo-Json -Depth 10
+    $mvContainerUri = "https://management.azure.com/subscriptions/$Subscription/resourceGroups/$ResourceGroup/providers/Microsoft.DocumentDB/databaseAccounts/$accountName/sqlDatabases/$dbName/containers/${mvContainerName}?api-version=$gsiPreviewApiVersion"
+    $mvBody = @{ properties = @{ resource = @{ id = $mvContainerName; partitionKey = @{ paths = @("/mvPk"); kind = "Hash" }; materializedViewDefinition = @{ sourceCollectionId = $srcContainerName; definition = "SELECT * FROM c" } }; options = @{ autoscaleSettings = @{ maxThroughput = 4000 } } } } | ConvertTo-Json -Depth 10
     $mvBodyFile = "$env:TEMP\mvBody-$accountName.json"
     $mvBody | Out-File -Encoding utf8 $mvBodyFile
     az rest --method put --uri $mvContainerUri --body "@$mvBodyFile" | Out-Null
@@ -250,10 +284,11 @@ if ($gsiAvailable) {
     Start-Sleep -Seconds 30
 
     Write-Step "Querying GSI container"
-    $queryResult = Invoke-CosmosQuery -Endpoint $documentEndpoint -DbName $dbName -ContainerName $mvContainerName -QueryText "SELECT VALUE COUNT(1) FROM c" -AuthHeader $authHeader
-    Write-Host "GSI container document count: $($queryResult.Documents[0])"
+    $queryResult = Invoke-CosmosQuery -Endpoint $documentEndpoint -DbName $dbName -ContainerName $mvContainerName -QueryText "SELECT * FROM c" -AuthHeader $authHeader -PkValue "pk-1"
+    Write-Host "GSI container query (partition pk-1) returned $($queryResult.Documents.Count) document(s)."
 } else {
-    Write-Host "Skipping steps 11/12 (GSI container + query) - GSI not enabled for this subscription yet."
+    if ($RequireGsi) { throw "GSI is required (-RequireGsi) but was not available; aborting before container creation." }
+    Write-Host "Skipping steps 11/12 (GSI container + query) - GSI not enabled for this account."
 }
 
 # ---------------------------------------------------------------------------
