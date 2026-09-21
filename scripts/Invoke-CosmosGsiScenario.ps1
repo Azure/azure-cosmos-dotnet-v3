@@ -87,19 +87,45 @@ function Add-CosmosDocument {
 }
 
 function Invoke-CosmosQuery {
-    param($Endpoint, $DbName, $ContainerName, $QueryText, $AuthHeader, $PkValue)
+    param($Endpoint, $DbName, $ContainerName, $QueryText, $AuthHeader, $PkValue, [int]$PageSize = 100)
     $uri = "$Endpoint/dbs/$DbName/colls/$ContainerName/docs"
     $body = @{ query = $QueryText; parameters = @() } | ConvertTo-Json
-    $headers = @{ Authorization = $AuthHeader; 'x-ms-version' = '2018-12-31'; 'x-ms-documentdb-isquery' = 'true' }
-    if ($PkValue) {
-        # Single-partition query: raw REST gateway calls can't fan out cross-partition
-        # aggregate queries (that needs the SDK's query engine) - scoping to a known
-        # partition key value lets a plain REST call serve the query directly.
-        $headers['x-ms-documentdb-partitionkey'] = "[`"$PkValue`"]"
-    } else {
-        $headers['x-ms-documentdb-query-enablecrosspartition'] = 'true'
-    }
-    return Invoke-RestMethod -Uri $uri -Method Post -ContentType "application/query+json" -Headers $headers -Body $body
+
+    $allDocuments = @()
+    $continuationToken = $null
+    do {
+        $headers = @{
+            Authorization = $AuthHeader
+            'x-ms-version' = '2018-12-31'
+            'x-ms-documentdb-isquery' = 'true'
+            'x-ms-max-item-count' = $PageSize
+        }
+        if ($PkValue) {
+            # Single-partition query: raw REST gateway calls can't fan out cross-partition
+            # aggregate queries (that needs the SDK's query engine) - scoping to a known
+            # partition key value lets a plain REST call serve the query directly.
+            $headers['x-ms-documentdb-partitionkey'] = "[`"$PkValue`"]"
+        } else {
+            $headers['x-ms-documentdb-query-enablecrosspartition'] = 'true'
+        }
+        # If the previous page returned a continuation token, pass it back so the next
+        # call resumes from where it left off instead of re-querying from the start.
+        if ($continuationToken) {
+            $headers['x-ms-continuation'] = $continuationToken
+        }
+
+        $responseHeaders = $null
+        $page = Invoke-RestMethod -Uri $uri -Method Post -ContentType "application/query+json" -Headers $headers -Body $body -ResponseHeadersVariable responseHeaders
+
+        if ($page.Documents) { $allDocuments += $page.Documents }
+
+        # The gateway returns the token to fetch the next page in the x-ms-continuation
+        # response header (absent/empty once the last page has been returned).
+        $continuationToken = $responseHeaders['x-ms-continuation']
+        if ($continuationToken -is [array]) { $continuationToken = $continuationToken[0] }
+    } while (-not [string]::IsNullOrEmpty($continuationToken))
+
+    return [pscustomobject]@{ Documents = $allDocuments }
 }
 
 function Wait-ArmContainer {
