@@ -1382,80 +1382,99 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
-        [Description("Exercises the committer and retry handler together, recording endpoint, token, DTX headers, and payload across inner failover, same-token outer replay, and post-abort rotation.")]
-        public async Task ExecuteTransactionAsync_ThroughRetryHandler_RecordsCompleteDispatchSequence()
+        [Description("Exercises the production retry-policy wrapper and gateway HTTP transport, recording URI, token, DTX headers, 449 suppression, and payload across inner failover, same-token outer replay, and post-abort rotation.")]
+        public async Task ExecuteTransactionAsync_ThroughProductionGatewayPipeline_RecordsCompleteDispatchSequence()
         {
+            Uri accountEndpoint = new Uri("https://account.documents.azure.com/");
             Uri eastEndpoint = new Uri("https://account-eastus.documents.azure.com/");
             Uri westEndpoint = new Uri("https://account-westus.documents.azure.com/");
-            Uri requestUri = new Uri("https://account.documents.azure.com/operations/dtc");
-
-            using MockDocumentClient documentClient = new MockDocumentClient();
-            Uri[] dispatchEndpoints = { eastEndpoint, westEndpoint, eastEndpoint, eastEndpoint };
-            int endpointResolutionCount = 0;
-            documentClient.MockGlobalEndpointManager
-                .Setup(manager => manager.ResolveServiceEndpoint(It.IsAny<DocumentServiceRequest>()))
-                .Returns((DocumentServiceRequest request) =>
+            AccountProperties accountProperties = new AccountProperties
+            {
+                EnableMultipleWriteLocations = true,
+                Consistency = new AccountConsistency
                 {
-                    int dispatchIndex = Math.Min(endpointResolutionCount++ / 2, dispatchEndpoints.Length - 1);
-                    Uri endpoint = dispatchEndpoints[dispatchIndex];
-                    request.RequestContext.RouteToLocation(endpoint);
-                    return endpoint;
-                });
-            documentClient.MockGlobalEndpointManager
-                .Setup(manager => manager.GetExactLocation(It.IsAny<Uri>()))
-                .Returns((Uri endpoint) => endpoint == westEndpoint ? "West US" : "East US");
-            documentClient.MockGlobalEndpointManager
-                .Setup(manager => manager.RefreshLocationAsync(It.IsAny<bool>()))
-                .Returns(Task.CompletedTask);
+                    DefaultConsistencyLevel = Cosmos.ConsistencyLevel.Session,
+                },
+                ReadLocationsInternal = new System.Collections.ObjectModel.Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "East US", Endpoint = eastEndpoint.ToString() },
+                    new AccountRegion { Name = "West US", Endpoint = westEndpoint.ToString() },
+                },
+                WriteLocationsInternal = new System.Collections.ObjectModel.Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "East US", Endpoint = eastEndpoint.ToString() },
+                    new AccountRegion { Name = "West US", Endpoint = westEndpoint.ToString() },
+                },
+            };
+            List<(Uri Uri, Guid Token, string IsRetry, string IsCrossRegionRedirect, string NoRetryOn449, byte[] Payload)> dispatches = new();
+            RecordingHttpMessageHandler recordingHandler = new RecordingHttpMessageHandler(async request =>
+            {
+                if (request.Method == HttpMethod.Get && request.RequestUri.AbsolutePath == "/")
+                {
+                    return new HttpResponseMessage(HttpStatusCode.OK)
+                    {
+                        Content = new StringContent(
+                            Newtonsoft.Json.JsonConvert.SerializeObject(accountProperties),
+                            Encoding.UTF8,
+                            "application/json"),
+                    };
+                }
+
+                int sendIndex = dispatches.Count;
+                dispatches.Add((
+                    request.RequestUri,
+                    Guid.Parse(GetRequiredHeader(request, HttpConstants.HttpHeaders.IdempotencyToken)),
+                    GetRequiredHeader(request, DistributedTransactionConstants.IsDtxRetry),
+                    GetRequiredHeader(request, DistributedTransactionConstants.IsDtxCrossRegionRedirect),
+                    GetRequiredHeader(request, HttpConstants.HttpHeaders.NoRetryOn449StatusCode),
+                    await request.Content.ReadAsByteArrayAsync()));
+
+                switch (sendIndex)
+                {
+                    case 0:
+                        return CreateHttpResponse(
+                            HttpStatusCode.Forbidden,
+                            SubStatusCodes.WriteForbidden);
+                    case 1:
+                        return CreateHttpResponse(
+                            (HttpStatusCode)StatusCodes.RetryWith,
+                            SubStatusCodes.DtcCoordinatorRaceConflict,
+                            "{\"isRetriable\":true}");
+                    case 2:
+                        return CreateHttpResponse(
+                            (HttpStatusCode)StatusCodes.TransactionAborted,
+                            SubStatusCodes.Unknown,
+                            "{\"isRetriable\":true}");
+                    default:
+                        return CreateHttpResponse(
+                            HttpStatusCode.OK,
+                            SubStatusCodes.Unknown,
+                            BuildDtcResponseJson(new[] { (200, (string)null) }));
+                }
+            });
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+            };
+            connectionPolicy.PreferredLocations.Add("East US");
+
+            using DocumentClient documentClient = new DocumentClient(
+                accountEndpoint,
+                MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey,
+                recordingHandler,
+                connectionPolicy);
+            await documentClient.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             using CosmosClient client = new CosmosClient(
-                requestUri.GetLeftPart(UriPartial.Authority),
+                accountEndpoint.ToString(),
                 MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey,
-                new CosmosClientOptions(),
-                documentClient);
-
-            List<(Uri Endpoint, Guid Token, string IsRetry, string IsCrossRegionRedirect, byte[] Payload)> dispatches = new();
-            int transportSendCount = 0;
-            RetryHandler retryHandler = new RetryHandler(client)
-            {
-                InnerHandler = new TestHandler((request, cancellationToken) =>
+                new CosmosClientOptions
                 {
-                    int sendIndex = transportSendCount++;
-                    DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
-                    Guid token = Guid.Parse(request.Headers[HttpConstants.HttpHeaders.IdempotencyToken]);
-                    DistributedTransactionDispatchTracker tracker = request.DistributedTransactionDispatchTracker;
-
-                    Assert.IsNotNull(tracker);
-                    Assert.AreEqual(token, tracker.IdempotencyToken);
-
-                    dispatches.Add((
-                        serviceRequest.RequestContext.LocationEndpointToRoute,
-                        token,
-                        serviceRequest.Headers[DistributedTransactionConstants.IsDtxRetry],
-                        serviceRequest.Headers[DistributedTransactionConstants.IsDtxCrossRegionRedirect],
-                        ((MemoryStream)request.Content).ToArray()));
-
-                    switch (sendIndex)
-                    {
-                        case 0:
-                            return TestHandler.ReturnStatusCode(
-                                HttpStatusCode.Forbidden,
-                                SubStatusCodes.WriteForbidden);
-                        case 1:
-                            ResponseMessage retryWith = new ResponseMessage((HttpStatusCode)StatusCodes.RetryWith)
-                            {
-                                Content = new MemoryStream(Encoding.UTF8.GetBytes("{\"isRetriable\":true}"))
-                            };
-                            retryWith.Headers.SubStatusCodeLiteral =
-                                ((int)SubStatusCodes.DtcCoordinatorRaceConflict).ToString(CultureInfo.InvariantCulture);
-                            return Task.FromResult(retryWith);
-                        case 2:
-                            return Task.FromResult(CreateRetriableErrorResponseMessage());
-                        default:
-                            return Task.FromResult(CreateSuccessResponseMessage(operationCount: 1));
-                    }
-                })
-            };
+                    ConnectionMode = ConnectionMode.Gateway,
+                    ApplicationPreferredRegions = new List<string> { "East US" },
+                },
+                documentClient);
 
             Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
             mockContext
@@ -1472,18 +1491,19 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     It.IsAny<ITrace>(),
                     It.IsAny<CancellationToken>()))
                 .Returns<string, ResourceType, OperationType, RequestOptions, ContainerInternal, Cosmos.PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
-                    async (_, resourceType, operationType, _, _, _, _, stream, enricher, trace, cancellationToken) =>
-                    {
-                        using RequestMessage request = new RequestMessage(HttpMethod.Post, requestUri)
-                        {
-                            ResourceType = resourceType,
-                            OperationType = operationType,
-                            Content = stream,
-                            Trace = trace
-                        };
-                        enricher(request);
-                        return await retryHandler.SendAsync(request, cancellationToken);
-                    });
+                    (resourceUri, resourceType, operationType, requestOptions, container, partitionKey, itemId, stream, enricher, trace, cancellationToken) =>
+                        client.ClientContext.ProcessResourceOperationStreamAsync(
+                            resourceUri,
+                            resourceType,
+                            operationType,
+                            requestOptions,
+                            container,
+                            partitionKey,
+                            itemId,
+                            stream,
+                            enricher,
+                            trace,
+                            cancellationToken));
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 CreateTestOperations(),
@@ -1500,8 +1520,14 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             Assert.AreEqual(4, dispatches.Count);
             CollectionAssert.AreEqual(
-                new[] { eastEndpoint, westEndpoint, eastEndpoint, eastEndpoint },
-                dispatches.Select(dispatch => dispatch.Endpoint).ToArray());
+                new[]
+                {
+                    new Uri(eastEndpoint, "operations/dtc"),
+                    new Uri(westEndpoint, "operations/dtc"),
+                    new Uri(eastEndpoint, "operations/dtc"),
+                    new Uri(eastEndpoint, "operations/dtc"),
+                },
+                dispatches.Select(dispatch => dispatch.Uri).ToArray());
 
             Assert.AreEqual(dispatches[0].Token, dispatches[1].Token, "Inner failover must retain the token.");
             Assert.AreEqual(dispatches[1].Token, dispatches[2].Token, "A non-aborted outer retry must replay the token.");
@@ -1517,8 +1543,9 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 },
                 dispatches.Select(dispatch => (dispatch.IsRetry, dispatch.IsCrossRegionRedirect)).ToArray());
 
+            Assert.IsTrue(dispatches.All(dispatch => dispatch.NoRetryOn449 == bool.TrueString));
             Assert.IsTrue(dispatches[0].Payload.Length > 0);
-            foreach ((Uri Endpoint, Guid Token, string IsRetry, string IsCrossRegionRedirect, byte[] Payload) dispatch in dispatches.Skip(1))
+            foreach ((Uri Uri, Guid Token, string IsRetry, string IsCrossRegionRedirect, string NoRetryOn449, byte[] Payload) dispatch in dispatches.Skip(1))
             {
                 CollectionAssert.AreEqual(dispatches[0].Payload, dispatch.Payload);
             }
@@ -2503,6 +2530,49 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         // ─── Helpers ───────────────────────────────────────────────────────────
+
+        private static string GetRequiredHeader(HttpRequestMessage request, string headerName)
+        {
+            Assert.IsTrue(
+                request.Headers.TryGetValues(headerName, out IEnumerable<string> values),
+                $"Expected HTTP header '{headerName}'.");
+            return values.Single();
+        }
+
+        private static HttpResponseMessage CreateHttpResponse(
+            HttpStatusCode statusCode,
+            SubStatusCodes subStatusCode,
+            string content = null)
+        {
+            HttpResponseMessage response = new HttpResponseMessage(statusCode);
+            response.Headers.Add(
+                WFConstants.BackendHeaders.SubStatus,
+                ((int)subStatusCode).ToString(CultureInfo.InvariantCulture));
+            if (content != null)
+            {
+                response.Content = new StringContent(content, Encoding.UTF8, "application/json");
+            }
+
+            return response;
+        }
+
+        private sealed class RecordingHttpMessageHandler : HttpMessageHandler
+        {
+            private readonly Func<HttpRequestMessage, Task<HttpResponseMessage>> sendAsync;
+
+            internal RecordingHttpMessageHandler(
+                Func<HttpRequestMessage, Task<HttpResponseMessage>> sendAsync)
+            {
+                this.sendAsync = sendAsync;
+            }
+
+            protected override Task<HttpResponseMessage> SendAsync(
+                HttpRequestMessage request,
+                CancellationToken cancellationToken)
+            {
+                return this.sendAsync(request);
+            }
+        }
 
         private static string BuildDtcResponseJson(
             (int statusCode, string sessionToken)[] operations)
