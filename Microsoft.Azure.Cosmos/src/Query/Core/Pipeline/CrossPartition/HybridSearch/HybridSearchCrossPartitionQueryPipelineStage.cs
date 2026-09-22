@@ -601,7 +601,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             return TryCatch<IReadOnlyList<List<ScoreTuple>>>.FromResult(componentScores);
         }
 
-        internal static int[,] ComputeRanks(IReadOnlyList<List<ScoreTuple>> componentScores)
+        private static int[,] ComputeRanks(IReadOnlyList<List<ScoreTuple>> componentScores)
         {
             int[,] ranks = new int[componentScores.Count, componentScores[0].Count];
             for (int componentIndex = 0; componentIndex < componentScores.Count; ++componentIndex)
@@ -805,7 +805,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             }
         }
 
-        internal readonly struct ScoreTuple
+        private readonly struct ScoreTuple
         {
             public double Score { get; }
 
