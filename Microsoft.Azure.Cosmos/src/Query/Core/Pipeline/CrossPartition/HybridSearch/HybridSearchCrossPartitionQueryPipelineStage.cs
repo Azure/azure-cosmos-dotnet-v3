@@ -435,7 +435,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             // After sorting, each HybridSearchQueryResult has a fixed index in the list
             // This index can be used as the key for the ranking array
             // Now create an array (per dimension) of tuples (score, index) and sort it by score
-            // We can use these sorted arrays to compute standard competition ranks.
+            // We can use these sorted arrays to compute standard competition ranks. Identical scores get the same rank.
             // Create an array of tuples of (RRF scores, index) for each document using the ranks
             // Use the ranks array to compute the RRF scores
             // Sort the array by RRF scores
@@ -609,6 +609,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 int rank = 1; // ranks are 1 based
                 for (int index = 0; index < componentScores[componentIndex].Count; ++index)
                 {
+                    // Identical scores should have the same rank
                     if ((index > 0) && (componentScores[componentIndex][index].Score != componentScores[componentIndex][index - 1].Score))
                     {
                         rank = index + 1;
