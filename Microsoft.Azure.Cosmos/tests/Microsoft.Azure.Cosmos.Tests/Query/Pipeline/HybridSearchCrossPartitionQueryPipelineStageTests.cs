@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using System.Linq;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using ScoreTuple = Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch.HybridSearchCrossPartitionQueryPipelineStage.ScoreTuple;
 
     [TestClass]
     public sealed class HybridSearchCrossPartitionQueryPipelineStageTests
@@ -32,24 +33,24 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         [TestMethod]
         public void CompetitionRanksDetermineRrfOrder()
         {
-            IReadOnlyList<List<HybridSearchCrossPartitionQueryPipelineStage.ScoreTuple>> componentScores =
-                new List<List<HybridSearchCrossPartitionQueryPipelineStage.ScoreTuple>>
+            IReadOnlyList<List<ScoreTuple>> componentScores =
+                new List<List<ScoreTuple>>
                 {
-                    new List<HybridSearchCrossPartitionQueryPipelineStage.ScoreTuple>
+                    new List<ScoreTuple>
                     {
-                        new HybridSearchCrossPartitionQueryPipelineStage.ScoreTuple(10, 0),
-                        new HybridSearchCrossPartitionQueryPipelineStage.ScoreTuple(5, 1),
-                        new HybridSearchCrossPartitionQueryPipelineStage.ScoreTuple(5, 2),
-                        new HybridSearchCrossPartitionQueryPipelineStage.ScoreTuple(5, 3),
-                        new HybridSearchCrossPartitionQueryPipelineStage.ScoreTuple(0, 4),
+                        new ScoreTuple(10, 0),
+                        new ScoreTuple(5, 1),
+                        new ScoreTuple(5, 2),
+                        new ScoreTuple(5, 3),
+                        new ScoreTuple(0, 4),
                     },
-                    new List<HybridSearchCrossPartitionQueryPipelineStage.ScoreTuple>
+                    new List<ScoreTuple>
                     {
-                        new HybridSearchCrossPartitionQueryPipelineStage.ScoreTuple(10, 4),
-                        new HybridSearchCrossPartitionQueryPipelineStage.ScoreTuple(9, 3),
-                        new HybridSearchCrossPartitionQueryPipelineStage.ScoreTuple(8, 2),
-                        new HybridSearchCrossPartitionQueryPipelineStage.ScoreTuple(7, 1),
-                        new HybridSearchCrossPartitionQueryPipelineStage.ScoreTuple(6, 0),
+                        new ScoreTuple(10, 4),
+                        new ScoreTuple(9, 3),
+                        new ScoreTuple(8, 2),
+                        new ScoreTuple(7, 1),
+                        new ScoreTuple(6, 0),
                     },
                 };
 
@@ -69,11 +70,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private static void AssertRanks(double[] scores, int[] expectedRanks)
         {
-            IReadOnlyList<List<HybridSearchCrossPartitionQueryPipelineStage.ScoreTuple>> componentScores =
-                new List<List<HybridSearchCrossPartitionQueryPipelineStage.ScoreTuple>>
+            IReadOnlyList<List<ScoreTuple>> componentScores =
+                new List<List<ScoreTuple>>
                 {
                     scores.Select((score, index) =>
-                        new HybridSearchCrossPartitionQueryPipelineStage.ScoreTuple(score, index)).ToList(),
+                        new ScoreTuple(score, index)).ToList(),
                 };
 
             int[,] ranks = HybridSearchCrossPartitionQueryPipelineStage.ComputeRanks(componentScores);
