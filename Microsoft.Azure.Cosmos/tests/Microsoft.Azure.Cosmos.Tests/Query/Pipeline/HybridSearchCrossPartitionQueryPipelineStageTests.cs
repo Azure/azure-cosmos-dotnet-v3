@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         }
 
         [TestMethod]
-        public void CompetitionRanksDetermineRrfOrder()
+        public void CompetitionRanksDetermineWeightedRrfOrder()
         {
             IReadOnlyList<List<ScoreTuple>> componentScores =
                 new List<List<ScoreTuple>>
