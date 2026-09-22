@@ -114,36 +114,14 @@
         }
 
         [TestMethod]
-        public void CaptureRequestHeadersReturnsNullWhenNoAllowlistedHeaderIsPresent()
-        {
-            using HttpRequestMessage requestMessage = new HttpRequestMessage();
-            requestMessage.Headers.Add("x-ms-version", "2020-07-15");
-
-            Assert.IsNull(ClientSideRequestStatisticsTraceDatum.CaptureRequestHeaders(requestMessage));
-        }
-
-        [TestMethod]
-        public void CaptureRequestHeadersCapturesOnlyAllowlistedHeaders()
-        {
-            using HttpRequestMessage requestMessage = new HttpRequestMessage();
-            requestMessage.Headers.Add(DistributedTransactionConstants.IsDtxRetry, "true");
-            requestMessage.Headers.Add("x-ms-cosmos-internal-something-else", "true");
-
-            IReadOnlyList<KeyValuePair<string, string>> captured = ClientSideRequestStatisticsTraceDatum.CaptureRequestHeaders(requestMessage);
-
-            Assert.AreEqual(1, captured.Count);
-            Assert.AreEqual("IsDtxRetry", captured[0].Key);
-            Assert.AreEqual("true", captured[0].Value);
-        }
-
-        [TestMethod]
-        public void RecordHttpResponseEmitsAllowlistedRequestHeaders()
+        public void RecordHttpResponseEmitsDtxRequestHeaders()
         {
             using HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Post, ClientSideRequestStatisticsTraceDatumTests.uri);
-            requestMessage.Headers.Add(DistributedTransactionConstants.IsDtxRetry, "true");
+            requestMessage.Headers.Add(DistributedTransactionConstants.IsDtxRetry, new[] { "true", "false" });
             requestMessage.Headers.Add(DistributedTransactionConstants.IsDtxCrossRegionRedirect, "false");
+            requestMessage.Headers.Add("x-ms-cosmos-internal-something-else", "true");
 
-            ITrace trace = Trace.GetRootTrace(nameof(RecordHttpResponseEmitsAllowlistedRequestHeaders));
+            ITrace trace = Trace.GetRootTrace(nameof(RecordHttpResponseEmitsDtxRequestHeaders));
             ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
 
             using HttpResponseMessage responseMessage = new HttpResponseMessage();
@@ -155,15 +133,16 @@
 
             Assert.AreEqual("true", httpResponseStat["IsDtxRetry"].Value<string>());
             Assert.AreEqual("false", httpResponseStat["IsDtxCrossRegionRedirect"].Value<string>());
+            Assert.IsNull(httpResponseStat["x-ms-cosmos-internal-something-else"]);
         }
 
         [TestMethod]
-        public void RecordHttpResponseOmitsRequestHeadersWhenNoneAreAllowlisted()
+        public void RecordHttpResponseOmitsDtxRequestHeadersWhenAbsent()
         {
             using HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, ClientSideRequestStatisticsTraceDatumTests.uri);
             requestMessage.Headers.Add("x-ms-version", "2020-07-15");
 
-            ITrace trace = Trace.GetRootTrace(nameof(RecordHttpResponseOmitsRequestHeadersWhenNoneAreAllowlisted));
+            ITrace trace = Trace.GetRootTrace(nameof(RecordHttpResponseOmitsDtxRequestHeadersWhenAbsent));
             ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
 
             using HttpResponseMessage responseMessage = new HttpResponseMessage();
@@ -178,12 +157,12 @@
         }
 
         [TestMethod]
-        public void RecordHttpExceptionEmitsAllowlistedRequestHeaders()
+        public void RecordHttpExceptionEmitsDtxRequestHeaders()
         {
             using HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Post, ClientSideRequestStatisticsTraceDatumTests.uri);
             requestMessage.Headers.Add(DistributedTransactionConstants.IsDtxRetry, "true");
 
-            ITrace trace = Trace.GetRootTrace(nameof(RecordHttpExceptionEmitsAllowlistedRequestHeaders));
+            ITrace trace = Trace.GetRootTrace(nameof(RecordHttpExceptionEmitsDtxRequestHeaders));
             ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
 
             datum.RecordHttpException(requestMessage, new OperationCanceledException(), ResourceType.Document, DateTime.UtcNow);
@@ -196,12 +175,12 @@
         }
 
         [TestMethod]
-        public void TraceToTextEmitsAllowlistedRequestHeaders()
+        public void TraceToTextEmitsDtxRequestHeaders()
         {
             using HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Post, ClientSideRequestStatisticsTraceDatumTests.uri);
             requestMessage.Headers.Add(DistributedTransactionConstants.IsDtxRetry, "true");
 
-            Trace trace = Trace.GetRootTrace(nameof(TraceToTextEmitsAllowlistedRequestHeaders));
+            Trace trace = Trace.GetRootTrace(nameof(TraceToTextEmitsDtxRequestHeaders));
             ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
 
             using HttpResponseMessage responseMessage = new HttpResponseMessage();
