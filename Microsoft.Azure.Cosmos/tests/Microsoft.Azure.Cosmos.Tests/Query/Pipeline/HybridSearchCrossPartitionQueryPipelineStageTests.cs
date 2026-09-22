@@ -65,6 +65,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     (1.0 / (60 + ranks[1, documentIndex])))
                 .ToArray();
 
+            // Verify that standard competition ranks produce the expected fused order with a 2:1 component weight ratio.
             CollectionAssert.AreEqual(new[] { 3, 0, 2, 1, 4 }, fusedOrder);
         }
 
